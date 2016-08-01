@@ -18,8 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -27,7 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -89,16 +87,13 @@ class BaseColumnFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
-  private val resolvedName: String = externalStore.tryExecute(table, conn => {
-    StoreUtils.lookupName(table, conn.getSchema)
-  })
-
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
     resolvedName, userSchema)
 
+  @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
+    true).asInstanceOf[PartitionedRegion]
+
   override lazy val numPartitions: Int = {
-    val region = Misc.getRegionForTable(resolvedName, true).
-        asInstanceOf[PartitionedRegion]
     region.getTotalNumberOfBuckets
   }
 
@@ -125,13 +120,15 @@ class BaseColumnFormatRelation(
     // finally skipping any IDs greater than the noted ones.
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
+    val isPartitioned = region.getPartitionAttributes != null
     val zipped = connectionType match {
       case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
-          table,
+          resolvedName,
+          isPartitioned,
           requiredColumns,
           connProperties,
           filters,
@@ -142,16 +139,15 @@ class BaseColumnFormatRelation(
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
           leftItr ++ rightItr
         }
-
       case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
-          table,
+          resolvedName,
+          isPartitioned,
           requiredColumns,
           connProperties,
-          externalStore,
           filters
         ).asInstanceOf[RDD[Row]]
 
@@ -162,22 +158,18 @@ class BaseColumnFormatRelation(
     zipped
   }
 
-  override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    // TODO - currently using the length from the part Object but it needs
-    // to be handled more generically in order to replace UUID
-    // if number of rows are greater than columnBatchSize then store otherwise store locally
+  override def cachedBatchAggregate(batch: CachedBatch): Unit = {
+    // if number of rows are greater than columnBatchSize then store
+    // otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
+      externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
-      accumulated += uuid
     } else {
       // TODO: can we do it before compressing. Might save a bit
       val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
-        Iterator(batch), schema.map(_.name).toArray, schema)
+        Iterator(batch), schema.map(_.name).toArray, schema, forScan = true)
       insert(unCachedRows)
     }
-    accumulated
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
@@ -323,14 +315,15 @@ class BaseColumnFormatRelation(
     val (primarykey, partitionStrategy) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
-        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId) ", d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
+        (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
+            "primary key (uuid, partitionId) ",
+            d.getPartitionByClause("partitionId"))
+      case _ => ("primary key (uuid)", "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer, numRows integer not null, stats blob, " +
+        "not null, partitionId integer, numRows integer not null, stats blob, " +
         userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",

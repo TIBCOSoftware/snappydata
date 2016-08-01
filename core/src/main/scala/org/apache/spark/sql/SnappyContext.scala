@@ -18,26 +18,18 @@ package org.apache.spark.sql
 
 import java.sql.SQLException
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
-
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
-import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -55,6 +47,13 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -107,6 +106,7 @@ class SnappyContext protected[spark](
   @transient override val prepareForExecution: RuleExecutor[SparkPlan] =
     snappyContextFunctions.getAQPRuleExecutor(this)
 
+  @transient
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
@@ -131,6 +131,10 @@ class SnappyContext protected[spark](
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
 
+  override def sql(sqlText: String): DataFrame = snappyContextFunctions.sql(
+      super.sql(sqlText))
+
+  @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
@@ -172,7 +176,7 @@ class SnappyContext protected[spark](
 
       val rddRows = if ( transform != null) {
         transform(rdd)
-      }else {
+      } else {
         rdd.asInstanceOf[RDD[Row]]
       }
       snappyContextFunctions.collectSamples(this, rddRows, aqpTables, time.milliseconds)
@@ -189,7 +193,7 @@ class SnappyContext protected[spark](
    */
   @DeveloperApi
   def appendToTempTableCache(df: DataFrame, table: String,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = {
     val tableIdent = catalog.newQualifiedTableName(table)
     val plan = catalog.lookupRelation(tableIdent, None)
     // cache the new DataFrame
@@ -235,17 +239,19 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
+   * @param baseTable the base table of the sample table, if any
    * @param samplingOptions sampling options like QCS, reservoir size etc.
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
-    */
+   */
   def createSampleTable(tableName: String,
+      baseTable: Option[String],
       samplingOptions: Map[String, String],
       allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
-      onlyBuiltIn = true, onlyExternal = false)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -254,35 +260,39 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
+   * @param baseTable the base table of the sample table, if any, or null
    * @param samplingOptions sampling options like QCS, reservoir size etc.
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
+      baseTable: String,
       samplingOptions: java.util.Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    createSampleTable(tableName, samplingOptions.asScala.toMap, allowExisting)
+    createSampleTable(tableName, Option(baseTable),
+      samplingOptions.asScala.toMap, allowExisting)
   }
-
 
   /**
    * Create a stratified sample table.
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
+   * @param baseTable the base table of the sample table, if any
    * @param schema schema of the table
    * @param samplingOptions sampling options like QCS, reservoir size etc.
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
+      baseTable: Option[String],
       schema: StructType,
       samplingOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
-      onlyBuiltIn = true, onlyExternal = false)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -291,38 +301,42 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
+   * @param baseTable the base table of the sample table, if any, or null
    * @param schema schema of the table
    * @param samplingOptions sampling options like QCS, reservoir size etc.
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
+      baseTable: String,
       schema: StructType,
       samplingOptions: java.util.Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    createSampleTable(tableName, schema, samplingOptions.asScala.toMap, allowExisting)
+    createSampleTable(tableName, Option(baseTable), schema,
+      samplingOptions.asScala.toMap, allowExisting)
   }
-
 
   /**
    * Create approximate structure to query top-K with time series support.
    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
+   * @param baseTable the base table of the top-K structure, if any
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
-  def createApproxTSTopK(topKName: String, keyColumnName: String,
-      inputDataSchema: StructType, topkOptions: Map[String, String],
+  def createApproxTSTopK(topKName: String, baseTable: Option[String],
+      keyColumnName: String, inputDataSchema: StructType,
+      topkOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      topkOptions + ("key" -> keyColumnName),
-      onlyBuiltIn = true, onlyExternal = false)
+      addBaseTableOption(baseTable, topkOptions) + ("key" -> keyColumnName),
+      isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -332,17 +346,19 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
+   * @param baseTable the base table of the top-K structure, if any, or null
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
-  def createApproxTSTopK(topKName: String, keyColumnName: String,
-      inputDataSchema: StructType, topkOptions: java.util.Map[String, String],
+  def createApproxTSTopK(topKName: String, baseTable: String,
+      keyColumnName: String, inputDataSchema: StructType,
+      topkOptions: java.util.Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    createApproxTSTopK(topKName, keyColumnName, inputDataSchema,
-      topkOptions.asScala.toMap, allowExisting)
+    createApproxTSTopK(topKName, Option(baseTable), keyColumnName,
+      inputDataSchema, topkOptions.asScala.toMap, allowExisting)
   }
 
   /**
@@ -350,18 +366,20 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
+   * @param baseTable the base table of the top-K structure, if any
    * @param keyColumnName
    * @param topkOptions
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
-  def createApproxTSTopK(topKName: String, keyColumnName: String,
-      topkOptions: Map[String, String], allowExisting: Boolean): DataFrame = {
+  def createApproxTSTopK(topKName: String, baseTable: Option[String],
+      keyColumnName: String, topkOptions: Map[String, String],
+      allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      topkOptions + ("key" -> keyColumnName),
-      onlyBuiltIn = true, onlyExternal = false)
+      addBaseTableOption(baseTable, topkOptions) + ("key" -> keyColumnName),
+      isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -371,14 +389,17 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
+   * @param baseTable the base table of the top-K structure, if any, or null
    * @param keyColumnName
    * @param topkOptions
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    */
-  def createApproxTSTopK(topKName: String, keyColumnName: String,
-      topkOptions: java.util.Map[String, String], allowExisting: Boolean): DataFrame = {
-    createApproxTSTopK(topKName, keyColumnName, topkOptions.asScala.toMap, allowExisting)
+  def createApproxTSTopK(topKName: String, baseTable: String,
+      keyColumnName: String, topkOptions: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createApproxTSTopK(topKName, Option(baseTable), keyColumnName,
+      topkOptions.asScala.toMap, allowExisting)
   }
 
   /**
@@ -407,8 +428,7 @@ class SnappyContext protected[spark](
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options,
-      onlyBuiltIn = true, onlyExternal = false)
+      options, isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -439,6 +459,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean): DataFrame = {
     createTable(tableName, provider, options.asScala.toMap, allowExisting)
   }
+
   /**
    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
    * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
@@ -471,8 +492,7 @@ class SnappyContext protected[spark](
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       Some(schema), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options,
-      onlyBuiltIn = true, onlyExternal = false)
+      options, isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -510,6 +530,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean): DataFrame = {
     createTable(tableName, provider, schema, options.asScala.toMap, allowExisting)
   }
+
   /**
    * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
    * should adhere to syntax of underlying JDBC store. SnappyData ships with inbuilt JDBC store ,
@@ -566,8 +587,7 @@ class SnappyContext protected[spark](
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options,
-      onlyBuiltIn = true, onlyExternal = false)
+      options, isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -614,7 +634,6 @@ class SnappyContext protected[spark](
     *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
-
   @Experimental
   def createTable(
       tableName: String,
@@ -622,7 +641,8 @@ class SnappyContext protected[spark](
       schemaDDL: String,
       options: java.util.Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    createTable(tableName , provider , schemaDDL , options.asScala.toMap, allowExisting)
+    createTable(tableName , provider , schemaDDL , options.asScala.toMap,
+      allowExisting)
   }
 
   /**
@@ -635,8 +655,7 @@ class SnappyContext protected[spark](
       schemaDDL: Option[String],
       mode: SaveMode,
       options: Map[String, String],
-      onlyBuiltIn: Boolean,
-      onlyExternal: Boolean): LogicalPlan = {
+      isBuiltIn: Boolean): LogicalPlan = {
 
     if (catalog.tableExists(tableIdent)) {
       mode match {
@@ -659,8 +678,8 @@ class SnappyContext protected[spark](
     }
 
     val schema = userSpecifiedSchema.map(catalog.normalizeSchema)
-    val source = if (onlyExternal) provider
-    else SnappyContext.getProvider(provider, onlyBuiltIn)
+    val source = if (isBuiltIn) SnappyContext.getProvider(provider,
+      onlyBuiltIn = true) else provider
 
     val resolved = schemaDDL match {
       case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
@@ -690,8 +709,7 @@ class SnappyContext protected[spark](
       mode: SaveMode,
       options: Map[String, String],
       query: LogicalPlan,
-      onlyBuiltIn: Boolean,
-      onlyExternal: Boolean): LogicalPlan = {
+      isBuiltIn: Boolean): LogicalPlan = {
 
     var data = DataFrame(self, query)
     if (catalog.tableExists(tableIdent)) {
@@ -723,8 +741,8 @@ class SnappyContext protected[spark](
 
     // this gives the provider..
 
-    val source = if (onlyExternal) provider
-    else SnappyContext.getProvider(provider, onlyBuiltIn)
+    val source = if (isBuiltIn) SnappyContext.getProvider(provider,
+      onlyBuiltIn = true) else provider
 
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
@@ -741,8 +759,21 @@ class SnappyContext protected[spark](
     LogicalRelation(resolved.relation)
   }
 
+  private[sql] def addBaseTableOption(baseTable: Option[_],
+      options: Map[String, String]): Map[String, String] = baseTable match {
+    // TODO: SW: proper schema handling here and every in our query
+    // processing rules as well as of Catalyst
+    case Some(t: TableIdentifier) => options + (JdbcExtendedUtils
+        .BASETABLE_PROPERTY -> catalog.processTableIdentifier(t.table))
+    case Some(s: String) => options + (JdbcExtendedUtils
+        .BASETABLE_PROPERTY -> catalog.processTableIdentifier(s).toString())
+    case _ => options
+  }
+
   /**
-   * Drop a SnappyData table created by a call to SnappyContext.createTable
+   * Drop a SnappyData table created by a call to SnappyContext.createTable,
+   * createExternalTable or registerTempTable.
+   *
    * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
@@ -750,7 +781,9 @@ class SnappyContext protected[spark](
     dropTable(catalog.newQualifiedTableName(tableName), ifExists)
 
   /**
-   * Drop a SnappyData table created by a call to SnappyContext.createTable
+   * Drop a SnappyData table created by a call to SnappyContext.createTable,
+   * createExternalTable or registerTempTable.
+   *
    * @param tableIdent table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
@@ -771,7 +804,7 @@ class SnappyContext protected[spark](
           case NonFatal(e) =>
             if (ifExists) return
             else throw new TableNotFoundException(
-              s"Table Not Found: $tableIdent", e)
+              s"Table '$tableIdent' not found", e)
         }
     }
     // additional cleanup for external tables, if required
@@ -829,10 +862,10 @@ class SnappyContext protected[spark](
   }
 
   /**
-   * Set current database/schema .
-   * @param schemaName  schema name which goes in the catalog
+   * Set current database/schema.
+   * @param schemaName schema name which goes in the catalog
    */
-  def setSchema(schemaName :String) : Unit = {
+  def setSchema(schemaName :String): Unit = {
     catalog.setSchema(schemaName)
   }
 
@@ -852,8 +885,17 @@ class SnappyContext protected[spark](
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
-    val tableIdent = catalog.newQualifiedTableName(baseTable)
-    val indexIdent = catalog.newQualifiedTableName(indexName)
+    createIndex(catalog.newQualifiedTableName(indexName),
+      catalog.newQualifiedTableName(baseTable), indexColumns, options)
+  }
+
+  /**
+    * Create an index on a table.
+    */
+  private[sql] def createIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
 
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
@@ -877,16 +919,14 @@ class SnappyContext protected[spark](
   }
 
   private[sql] def getIndexTable(indexIdent: QualifiedTableName): QualifiedTableName = {
-    new QualifiedTableName(Some(Constant.INTERNAL_SCHEMA_NAME),
-      indexIdent.table)
+    new QualifiedTableName(Constant.INTERNAL_SCHEMA_NAME, indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,
       ifExists : Boolean): String = {
 
     val ifExistsClause = if (ifExists) "IF EXISTS" else ""
-
-    return s"DROP INDEX $ifExistsClause $indexName"
+    s"DROP INDEX $ifExistsClause $indexName"
   }
 
   /**
@@ -895,12 +935,19 @@ class SnappyContext protected[spark](
     * @param ifExists Drop if exists, else exit gracefully
     */
   def dropIndex(indexName: String, ifExists: Boolean): Unit = {
+    dropIndex(catalog.newQualifiedTableName(indexName), ifExists)
+  }
 
-    val indexIdent = getIndexTable(catalog.newQualifiedTableName(indexName))
+  /**
+   * Drops an index on a table
+   */
+  def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
+
+    val indexIdent = getIndexTable(indexName)
 
     // Since the index does not exist in catalog, it may be a row table index.
     if (!catalog.tableExists(indexIdent)) {
-      dropRowStoreIndex(indexName, ifExists)
+      dropRowStoreIndex(indexName.toString(), ifExists)
     } else {
       catalog.lookupRelation(indexIdent) match {
         case LogicalRelation(dr: DependentRelation, _) =>
@@ -1422,12 +1469,12 @@ object SnappyContext extends Logging {
   /**
    * Checks if the passed provider is recognized
    * @param providerName
-   * @param onlyBuiltin
+   * @param onlyBuiltIn
    * @return
    */
-  def getProvider(providerName: String, onlyBuiltin: Boolean): String =
+  def getProvider(providerName: String, onlyBuiltIn: Boolean): String =
     builtinSources.getOrElse(providerName,
-      if (onlyBuiltin) throw new AnalysisException(
+      if (onlyBuiltIn) throw new AnalysisException(
         s"Failed to find a builtin provider $providerName") else providerName)
 }
 

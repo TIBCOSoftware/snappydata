@@ -23,7 +23,8 @@ object TPCHColumnPartitionedTable  {
         "P_CONTAINER   VARCHAR(10) NOT NULL,"+
         "P_RETAILPRICE DECIMAL(15,2) NOT NULL,"+
         "P_COMMENT     VARCHAR(23) NOT NULL," +
-        "KEY (P_PARTKEY) USING CLUSTERED COLUMNSTORE)"
+        "KEY (P_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
+        "SHARD KEY (P_PARTKEY))"
     )
     println("Created Table PART")
   }
@@ -36,7 +37,8 @@ object TPCHColumnPartitionedTable  {
         "PS_AVAILQTY    INTEGER NOT NULL," +
         "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL," +
         "PS_COMMENT     VARCHAR(199) NOT NULL," +
-        "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE)"
+        "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
+	      "SHARD KEY (PS_PARTKEY))"
       //    stmt.execute("CREATE TABLE PARTSUPP ( " +
       //        "PS_PARTKEY     INTEGER NOT NULL," +
       //        "PS_SUPPKEY     INTEGER NOT NULL," +
