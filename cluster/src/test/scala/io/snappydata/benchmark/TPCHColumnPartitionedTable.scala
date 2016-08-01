@@ -38,7 +38,7 @@ object TPCHColumnPartitionedTable  {
         "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL," +
         "PS_COMMENT     VARCHAR(199) NOT NULL," +
         "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
-	"SHARD KEY (PS_PARTKEY))"
+	      "SHARD KEY (PS_PARTKEY))"
       //    stmt.execute("CREATE TABLE PARTSUPP ( " +
       //        "PS_PARTKEY     INTEGER NOT NULL," +
       //        "PS_SUPPKEY     INTEGER NOT NULL," +
