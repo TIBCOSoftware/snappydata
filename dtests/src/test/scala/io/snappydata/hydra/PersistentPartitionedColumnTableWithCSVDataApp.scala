@@ -46,11 +46,10 @@ object PersistentPartitionedColumnTableWithCSVDataApp {
 
   def createTableLoadData(snContext: SnappyContext, tableName: String) = {
     var airlineDataFrame: DataFrame = null
-    var hfile: String = "/home/swati/Downloads/2015.csv"
+    var hfile: String = "/home/swati/2015.csv"
     val codetableFile = "/home/swati/Downloads/airportCode.csv"
         // All these properties will default when using snappyContext in the release
-    val props = Map(
-      "buckets" -> "11", "PERSISTENT" -> "")
+    val props = Map("PERSISTENT" -> "")
 
     // Create the Airline columnar table
     airlineDataFrame = snContext.read
@@ -70,6 +69,8 @@ object PersistentPartitionedColumnTableWithCSVDataApp {
     snContext.createTable(tableName, "column",
       airlineDataFrame.schema, props)
     airlineDataFrame.write.mode(SaveMode.Append).saveAsTable(tableName)
+
+    println(s"Done with loading data into airline ..")
 
     //Now create the airline code row replicated table
     val codeTabledf = snContext.read
@@ -155,6 +156,8 @@ object PersistentPartitionedColumnTableWithCSVDataApp {
 
       Thread.sleep(3000)
     }
+
+    println(s"Done with running queries...")
   }
 
   def msg(s: String) = {
