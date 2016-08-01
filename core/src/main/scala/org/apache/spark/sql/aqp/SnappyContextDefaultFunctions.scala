@@ -135,8 +135,10 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
         sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
 
-  def sql(defaultCall: => () => DataFrame)(context: SnappyContext,
-      parse: => () => LogicalPlan): DataFrame = defaultCall()
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T = fn(rowRDD, df)
+
+  def sql[T](fn: => T): T = fn
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)

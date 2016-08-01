@@ -22,7 +22,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.joins.LocalJoin
+import org.apache.spark.sql.execution.joins.{SortMergeJoin, LocalJoin}
 import org.apache.spark.sql.execution.{Exchange, PartitionedPhysicalRDD, PhysicalRDD, QueryExecution}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
@@ -138,6 +138,51 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val sumDF = snc.sql("select SUM(R.ORDERID)from RR_TABLE1 P JOIN " +
         "RR_TABLE2 R ON P.ORDERREF = R.ORDERREF")
     assert(sumDF.collect()(0).getLong(0) === ((1000 * 1001) / 2))
+
+  }
+
+  test("Join multiple replicated tables followed by a partitioned table") {
+
+    val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
+    val refDf = snc.createDataFrame(rdd)
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE1")
+
+    snc.sql("CREATE TABLE RR_TABLE1(OrderRef INT NOT NULL, " +
+      "description String) USING row options()")
+
+    refDf.write.insertInto("RR_TABLE1")
+
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE2")
+
+    snc.sql("CREATE TABLE RR_TABLE2(OrderId INT NOT NULL," +
+      "description String, OrderRef INT) USING row options()")
+
+    val dimension = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 5 + 1)))
+    val dimensionDf = snc.createDataFrame(dimension)
+    dimensionDf.write.insertInto("RR_TABLE2")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE")
+
+    snc.sql("CREATE TABLE PR_TABLE(OrderId INT,description String, " +
+      "OrderRef INT) USING column " +
+      "options (" +
+      "PARTITION_BY 'OrderId')")
+
+    val dimension_pr= sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 5 + 1)))
+    val dimensionDf_pr = snc.createDataFrame(dimension_pr)
+    dimensionDf_pr.write.insertInto("PR_TABLE")
+
+    val countDf = snc.sql(
+      "select * from RR_TABLE1 R1,  RR_TABLE2 R2, PR_TABLE P where R1.ORDERREF = R2.ORDERREF AND P.OrderId = R2.OrderId")
+    val qe = new QueryExecution(snc, countDf.logicalPlan)
+
+    qe.executedPlan foreach {
+      case SortMergeJoin (_,_,_,_) => throw new Exception("This should have been a local join")
+      case _ =>
+    }
+    assert(countDf.count() === 1000) // Make sure aggregation is working with local join
 
   }
 

@@ -208,7 +208,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     try
     {
       val s = conn.createStatement()
-      s.execute("CREATE TABLE airlineRef_temp(Code VARCHAR(25),Description VARCHAR(25)) USING parquet OPTIONS()")
+      s.execute("CREATE EXTERNAL TABLE airlineRef_temp(Code VARCHAR(25), " +
+          "Description VARCHAR(25)) USING parquet OPTIONS()")
       //println("Successfully Created ColumnTable = " + tableName)
     }
     catch {

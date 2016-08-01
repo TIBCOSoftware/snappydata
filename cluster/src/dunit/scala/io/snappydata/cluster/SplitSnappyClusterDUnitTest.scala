@@ -26,9 +26,9 @@ import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.calcite.DataContext.Variable
 
-import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.

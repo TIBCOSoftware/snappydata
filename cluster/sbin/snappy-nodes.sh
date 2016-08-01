@@ -94,7 +94,7 @@ fi
 
 MEMBERS_FILE="$SPARK_HOME/work/members.txt"
 
-function startComponent() {
+function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
   # Set directory folder if not already set.
@@ -167,19 +167,34 @@ function startComponent() {
 }
 
 index=1
-
+declare -a arr
 if [ -n "${HOSTLIST}" ]; then
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
+    arr+=("${slave}");
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-    startComponent "$@"
+    if echo $"${@// /\\ }" | grep -wq "start\|status"; then
+      execute "$@"
+    fi
     ((index++))
   done < $HOSTLIST
+  if echo $"${@// /\\ }" | grep -wq "stop"; then
+    line=${#arr[@]}
+    if [ $((index-1)) -eq $line ]; then
+      for (( i=${#arr[@]}-1 ; i>=0 ; i-- )) ; do
+        ((index--))
+        CONF_ARG=${arr[$i]}
+        host="$(echo "$CONF_ARG "| tr -s ' ' | cut -d ' ' -f1)"
+        args="$(echo "$CONF_ARG "| tr -s ' ' | cut -d ' ' -f2-)"
+        execute "$@"
+      done
+    fi
+  fi
 else
     host="localhost"
     args=""
-    startComponent "$@"
+    execute "$@"
 fi
 wait
 
