@@ -32,8 +32,7 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -101,8 +100,7 @@ object StoreUtils extends Logging {
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
   def getPartitionsPartitionedTable(sc: SparkContext,
-      region: PartitionedRegion,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      region: PartitionedRegion): Array[Partition] = {
 
     val numPartitions = region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
@@ -110,8 +108,8 @@ object StoreUtils extends Logging {
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
-        m => blockMap.get(m)
-      )
+        m => SnappyContext.storeToBlockMap.get(m.toString)
+      ).filter(m => m != None)
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
@@ -119,8 +117,7 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsReplicatedTable(sc: SparkContext,
-      region: CacheDistributionAdvisee,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      region: CacheDistributionAdvisee): Array[Partition] = {
 
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
@@ -130,7 +127,7 @@ object StoreUtils extends Logging {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
@@ -139,12 +136,10 @@ object StoreUtils extends Logging {
       table: String,
       schema: Option[StructType],
       partitions: Int,
-      connProperties: ConnectionProperties): Map[InternalDistributedMember,
-      BlockManagerId] = {
+      connProperties: ConnectionProperties): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    val blockMap = new StoreInitRDD(sqlContext, table,
-      schema, partitions, connProperties).collect()
-    blockMap.toMap
+    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
+        .collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
