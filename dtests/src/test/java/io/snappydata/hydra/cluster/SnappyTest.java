@@ -90,7 +90,7 @@ public class SnappyTest implements Serializable {
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
     public static boolean waitForJobCompletion = TestConfig.tab().booleanAt(SnappyPrms.waitForJobCompletion, false);  //default to false
-    public static boolean firstLocatorStarted = false;
+    private static String primaryLocator = null;
     private static String leadHost = null;
     public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
     private static Boolean logDirExists = false;
@@ -183,8 +183,8 @@ public class SnappyTest implements Serializable {
             /*if (files.size() != 1) {
                 throw new IllegalStateException(String.format("Searching for a file '%s' did not result in the correct number of files! Found %d, expected %d", jarName, files.size(), 1));
             }*/
-            for(File file1 : files) {
-                if(!file1.getAbsolutePath().contains("/work/"))  userAppJarPath = file1.getAbsolutePath();
+            for (File file1 : files) {
+                if (!file1.getAbsolutePath().contains("/work/")) userAppJarPath = file1.getAbsolutePath();
             }
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
@@ -277,26 +277,33 @@ public class SnappyTest implements Serializable {
         String nodeLogDir = null;
         String timeStatistics = " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=";
         String logLevel = " -log-level=" + SnappyPrms.getLogLevel();
+        String hostnameForPrimaryLocator = null;
         switch (snappyNode) {
             case LOCATOR:
                 int locPort;
                 do locPort = PortHelper.getRandomPort();
                 while (locPort < 0 && locPort > 65535);
                 Log.getLogWriter().info("SS - mcastPort is: " + locPort);
-                locatorsList = getLocatorsList(locators);
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port + locPortString + locPort + timeStatistics + "snappylocator.gfs" + logLevel;
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + locPortString + locPort + timeStatistics + "snappylocator.gfs" + logLevel;
                 Log.getLogWriter().info("SS - nodeLogDir for locator : " + nodeLogDir);
                 SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(port));
                 SnappyBB.getBB().getSharedMap().put("locatorMcastPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(locPort));
                 SnappyBB.getBB().getSharedMap().put("locators" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost() + ":" + Integer.toString(locPort));
+                SnappyBB.getBB().getSharedMap().put(Integer.toString(locPort), HostHelper.getLocalHost());
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-                if (!firstLocatorStarted) {
-                    SnappyBB.getBB().getSharedMap().put("firstLocatorHost" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost());
-                    SnappyBB.getBB().getSharedMap().put("firstLocatorPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(port));
+                int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.primaryLocatorStarted);
+                if (num == 1) {
+                    Log.getLogWriter().info("swati entered into primaryLocator loop: " + endpoint);
+                    primaryLocator = endpoint;
+                    hostnameForPrimaryLocator = HostHelper.getLocalHost();
+                    Log.getLogWriter().info("swati - hostnameForPrimaryLocator " + hostnameForPrimaryLocator);
+                    SnappyBB.getBB().getSharedMap().put("primaryLocatorHost", hostnameForPrimaryLocator);
+                    SnappyBB.getBB().getSharedMap().put("primaryLocatorPort", Integer.toString(port));
+                    Log.getLogWriter().info("swati entered into primaryLocator loop: " + SnappyBB.getBB().getSharedMap().get("primaryLocatorHost") + ":::" + SnappyBB.getBB().getSharedMap().get("primaryLocatorPort"));
                 }
-                firstLocatorStarted = true;
+                Log.getLogWriter().info("Primary locator host is: " + hostnameForPrimaryLocator);
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
@@ -324,7 +331,7 @@ public class SnappyTest implements Serializable {
                         SnappyBB.getBB().getSharedMap().put("leadHost", leadHost);
                     }
                 } catch (UnknownHostException e) {
-                    String s = "Lead host not found";
+                    String s = "Lead host not found...";
                     throw new HydraRuntimeException(s, e);
                 }
                 Log.getLogWriter().info("Lead host is: " + leadHost);
@@ -415,7 +422,8 @@ public class SnappyTest implements Serializable {
      * Write the configuration data required to start the snappy locator/s in locators file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLocatorConfigData() {
-        snappyTest.writeConfigData("locators", "locatorLogDir");
+//        snappyTest.writeConfigData("locators", "locatorLogDir");
+        snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
         if (isLongRunningTest) writeLocatorConnectionInfo();
     }
 
@@ -454,6 +462,44 @@ public class SnappyTest implements Serializable {
         }
         for (String s : fileContent) {
             snappyTest.writeToFile(s, file);
+        }
+    }
+
+    protected void writeLocatorConfigData(String fileName, String logDir) {
+        String filePath = productConfDirPath + fileName;
+        File file = new File(filePath);
+        String peerDiscoveryPort = null;
+        Set<String> fileContent = new LinkedHashSet<String>();
+        fileContent = snappyTest.getFileContents(logDir, fileContent);
+        if (fileContent.size() == 0) {
+            String s = "No data found for writing to " + fileName + " file under conf directory";
+            throw new TestException(s);
+        }
+        String locatorsList = getLocatorsList("locators");
+        Log.getLogWriter().info("swati - locatorsList in writeLocatorConfigData : " + locatorsList);
+        for (String s : fileContent) {
+            String[] splited = s.split(" ");
+            Log.getLogWriter().info("swati - config String : " + s);
+            for (String str : splited) {
+                String peerDiscoveryPortString = "-peer-discovery-port=";
+                if (str.contains(peerDiscoveryPortString)) {
+                    peerDiscoveryPort = str.substring(str.indexOf("=") + 1);
+                }
+            }
+            String host = (String) SnappyBB.getBB().getSharedMap().get(peerDiscoveryPort);
+            String replaceString = host + ":" + peerDiscoveryPort + ",";
+            String newLocatorsList;
+            Log.getLogWriter().info("swati - replaceString is : " + replaceString);
+            if (locatorsList.contains(replaceString)) {
+                newLocatorsList = locatorsList.replace(replaceString, "");
+            } else {
+                replaceString = host + ":" + peerDiscoveryPort;
+                newLocatorsList = locatorsList.replace(replaceString, "");
+            }
+            Log.getLogWriter().info("swati - final locators list is : " + newLocatorsList);
+            String nodeLogDir = s.concat(" -locators=" + newLocatorsList);
+            Log.getLogWriter().info("swati - config String after concatination : " + nodeLogDir);
+            snappyTest.writeToFile(nodeLogDir, file);
         }
     }
 
@@ -1205,19 +1251,19 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult.log";
                 logFile = new File(dest);
-                HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
+                /*HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
                 Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
                 String clientHost = entry.getKey();
                 int clientPort = entry.getValue();
                 Log.getLogWriter().info("SS - client port in HydraTask_executeSQLScripts : " + clientPort);
                 String locatorsList = getLocatorsList("locators");
-                Log.getLogWriter().info("SS - locatorsList in executeSQLScripts : " + locatorsList);
-                String firstLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("firstLocatorHost");
-                String firstLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("firstLocatorPort");
-                Log.getLogWriter().info("SS - client firstLocatorHost in HydraTask_executeSQLScripts : " + firstLocatorHost);
-                Log.getLogWriter().info("SS - client firstLocatorPort in HydraTask_executeSQLScripts : " + firstLocatorPort);
+                Log.getLogWriter().info("SS - locatorsList in executeSQLScripts : " + locatorsList);*/
+                String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
+                String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+                Log.getLogWriter().info("SS - client firstLocatorHost in HydraTask_executeSQLScripts : " + primaryLocatorHost);
+                Log.getLogWriter().info("SS - client firstLocatorPort in HydraTask_executeSQLScripts : " + primaryLocatorPort);
                 //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-locators=" + locatorsList);
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1554,6 +1600,7 @@ public class SnappyTest implements Serializable {
                     boolean found = false;
                     while (!found) {
                         Log.getLogWriter().info("swati - found " + found);
+//                        String searchString = "Done with loading data in all tables...";
                         String searchString = "Done with running queries...";
                         FileInputStream fis = new FileInputStream(logFile);
                         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
