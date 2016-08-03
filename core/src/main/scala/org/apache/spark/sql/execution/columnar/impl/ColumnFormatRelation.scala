@@ -67,7 +67,6 @@ class BaseColumnFormatRelation(
     ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
     _context: SQLContext)
     extends JDBCAppendableRelation(
@@ -132,8 +131,7 @@ class BaseColumnFormatRelation(
           requiredColumns,
           connProperties,
           filters,
-          Array.empty[Partition],
-          blockMap
+          Array.empty[Partition]
         ).asInstanceOf[RDD[Row]]
 
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
@@ -405,7 +403,6 @@ class ColumnFormatRelation(
     ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
     _context: SQLContext)
   extends BaseColumnFormatRelation(
@@ -417,7 +414,6 @@ class ColumnFormatRelation(
     ddlExtensionForShadowTable,
     _origOptions,
     _externalStore,
-    blockMap,
     partitioningColumns,
     _context)
   with ParentRelation {
@@ -539,7 +535,6 @@ class IndexColumnFormatRelation(
     _ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    _blockMap: Map[InternalDistributedMember, BlockManagerId],
     _partitioningColumns: Seq[String],
     _context: SQLContext,
     baseTableName: String)
@@ -552,7 +547,6 @@ class IndexColumnFormatRelation(
     _ddlExtensionForShadowTable,
     _origOptions,
     _externalStore,
-    _blockMap,
     _partitioningColumns,
     _context)
   with DependentRelation {
@@ -615,10 +609,10 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val blockMap = connProperties.dialect match {
+    connProperties.dialect match {
       case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
         Some(schema), partitions, connProperties)
-      case _ => Map.empty[InternalDistributedMember, BlockManagerId]
+      case _ =>
     }
     val schemaString = JdbcExtendedUtils.schemaString(schema,
       connProperties.dialect)
@@ -631,7 +625,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     }
 
     val externalStore = new JDBCSourceAsColumnarStore(connProperties,
-      partitions, blockMap)
+      partitions)
 
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table,
       schema, externalStore)
@@ -649,7 +643,6 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        blockMap,
         partitioningColumn,
         sqlContext,
         baseTable)
@@ -662,7 +655,6 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        blockMap,
         partitioningColumn,
         sqlContext)
     }

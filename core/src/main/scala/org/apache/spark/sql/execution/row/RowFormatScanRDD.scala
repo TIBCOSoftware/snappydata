@@ -56,9 +56,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     columns: Array[String],
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
+    partitions: Array[Partition] = Array.empty[Partition])
     extends JDBCRDD(sc, getConnection, schema, tableName, columns,
       filters, partitions, connProperties.url,
       connProperties.executorConnProps) {
@@ -240,9 +238,9 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          StoreUtils.getPartitionsPartitionedTable(sc, pr, blockMap)
+          StoreUtils.getPartitionsPartitionedTable(sc, pr)
         case dr =>
-          StoreUtils.getPartitionsReplicatedTable(sc, dr, blockMap)
+          StoreUtils.getPartitionsReplicatedTable(sc, dr)
       }
     } finally {
       conn.close()
