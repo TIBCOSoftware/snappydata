@@ -16,7 +16,7 @@ object TPCH_Memsql {
      avgFileStream.close()
    }
 
-   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement): Unit = {
+   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement, warmup:Integer, runsForAverage:Integer): Unit = {
 
      var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
      var queryPrintStream = new PrintStream(queryFileStream)
@@ -74,9 +74,9 @@ object TPCH_Memsql {
          if (queryNumber.equals("q15")) {
            stmt.execute("drop view revenue")
          }
-       }else{
-         var totalTimeForLast5Iterations:Long = 0
-         for (i <- 1 to 4) {
+       } else {
+         var totalTime: Long = 0
+         for (i <- 1 to (warmup + runsForAverage)) {
            val startTime = System.currentTimeMillis()
            rs = queryExecution(queryNumber, stmt)
            //rs = stmt.executeQuery(query)
@@ -86,8 +86,8 @@ object TPCH_Memsql {
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
            queryPrintStream.println(s"$iterationTime")
-           if (i > 2) {
-             totalTimeForLast5Iterations += iterationTime
+           if (i > warmup) {
+             totalTime += iterationTime
            }
            if (queryNumber.equals("q13")) {
              stmt.execute("drop view ViewQ13")
@@ -96,8 +96,8 @@ object TPCH_Memsql {
              stmt.execute("drop view revenue")
            }
          }
-         queryPrintStream.println(s"${totalTimeForLast5Iterations / 2}")
-         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations /2}")
+         queryPrintStream.println(s"${totalTime / runsForAverage}")
+         avgPrintStream.println(s"$queryNumber,${totalTime /runsForAverage}")
        }
        println(s"Finished executing $queryNumber")
 
