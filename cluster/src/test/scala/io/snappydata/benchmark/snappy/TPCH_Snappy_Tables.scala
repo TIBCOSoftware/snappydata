@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.benchmark.snappy
 
 import java.io.File
@@ -8,15 +24,14 @@ import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.sql.SnappySQLJob
 
-/**
-  * Created by kishor on 28/1/16.
-  */
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
    var tpchDataPath: String = _
    var buckets_Order_Lineitem: String = _
    var buckets_Cust_Part_PartSupp: String = _
+   var buckets_Nation_Region_Supp: String = _
    var useIndex: Boolean = _
+   var nation_Region_Supp_col = false
 
    override def runJob(snc: C, jobConfig: Config): Any = {
      val props : Map[String, String] = null
@@ -27,11 +42,18 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
            USING row
            OPTIONS ()"""
 
+     if (nation_Region_Supp_col) {
+       TPCHColumnPartitionedTable.createAndPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+     } else {
+       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
+       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
+       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
+     }
+
      TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
      TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
-     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-     TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
      TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
      TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
@@ -55,10 +77,23 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
        "15"
      }
 
+
      buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
        config.getString("Buckets_Cust_Part_PartSupp")
      } else {
        "15"
+     }
+
+     buckets_Nation_Region_Supp = if (config.hasPath("Buckets_Nation_Region_Supp")) {
+       config.getString("Buckets_Nation_Region_Supp")
+     } else {
+       "3"
+     }
+
+     nation_Region_Supp_col = if (config.hasPath("Nation_Region_Supp_col")) {
+       config.getBoolean("Nation_Region_Supp_col")
+     } else {
+       false
      }
 
      if (!(new File(tpchDataPath)).exists()) {
