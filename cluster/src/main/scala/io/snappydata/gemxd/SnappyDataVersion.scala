@@ -22,6 +22,7 @@ import com.gemstone.gemfire.internal.{ClassPathLoader, SharedLibrary, GemFireVer
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
+import com.pivotal.gemfirexd.internal.iapi.services.sanity.SanityManager
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 
 class SnappyDataVersion {
@@ -35,8 +36,6 @@ object SnappyDataVersion {
   private val SNAPPYDATA_VERSION_PROPERTIES = "io/snappydata/SnappyDataVersion.properties"
 
   private val AQP_VERSION_PROPERTIES = "io/snappydata/SnappyAQPVersion.properties"
-
-  val instance = GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
 
   private val isNativeLibLoaded: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
@@ -52,6 +51,7 @@ object SnappyDataVersion {
   }
 
   def loadProperties {
+    GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
   }
 
@@ -59,6 +59,7 @@ object SnappyDataVersion {
     val pw: PrintWriter = new PrintWriter(ps)
 
     // platform version
+    loadProperties
     pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
     // rowstore version
