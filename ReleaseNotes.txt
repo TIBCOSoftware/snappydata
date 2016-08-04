@@ -7,6 +7,9 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+
+  [SNAP-864] Script to launch SnappyData cluster on AWS
+
 Release 0.5
 
   Rowstore quickstarts are now packaged into the SnappyData distribution.
