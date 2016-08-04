@@ -199,6 +199,11 @@ public class SnappyPrms extends BasePrms {
     public static Long compressedInMemoryColumnarStorage;
 
     /**
+     * (long) inMemoryColumnarStorageBatchSize
+     */
+    public static Long inMemoryColumnarStorageBatchSize;
+
+    /**
      * (boolean) - whether to use conserveSockets. Defaults to false if not provided.
      */
     public static Long conserveSockets;
@@ -251,6 +256,11 @@ public class SnappyPrms extends BasePrms {
     public static boolean getCompressedInMemoryColumnarStorage() {
         Long key = compressedInMemoryColumnarStorage;
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
+    }
+
+    public static long getInMemoryColumnarStorageBatchSize() {
+        Long key = inMemoryColumnarStorageBatchSize;
+        return tasktab().longAt(key, tab().longAt(key, 10000));
     }
 
     public static boolean getConserveSockets() {
