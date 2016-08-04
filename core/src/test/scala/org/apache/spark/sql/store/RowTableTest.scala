@@ -543,4 +543,68 @@ class RowTableTest
     assert(cnts === 2000)
 
   }
+
+  test("Test insert into select from  ") {
+
+    snc.sql("DROP table if exists row_tab1");
+    snc.sql("DROP table if exists row_tab2");
+    snc.sql("DROP table if exists col_tab1");
+    snc.sql("DROP table if exists col_tab2");
+
+    snc.sql("create table row_tab1(col1 Integer,col2 Integer)");
+    snc.sql("insert into row_tab1 values(1,2)");
+    snc.sql("create table row_tab2 (col1 Integer,col2 Integer) ");
+    snc.sql("create table col_tab1 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+    snc.sql("insert into col_tab1 values(1,2)");
+    snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+
+    //inserting the data to row table from row table
+    snc.sql("insert into row_tab2 select * from row_tab1")
+    val df1 = snc.sql("select * from row_tab2")
+    assert(df1.count() === 1)
+
+
+    //inserting into column table from row_table
+    snc.sql("insert into col_tab1 select * from row_tab1")
+    val df2 = snc.sql("select * from col_tab1")
+    //Row count will be 2 as we have already inserted a row after creating the table
+    assert(df2.count() === 2)
+
+
+    //inserting the data to row table from row table
+    snc.sql("insert into row_tab2 select * from col_tab1")
+    val df3 = snc.sql("select * from row_tab2")
+    assert(df3.count() === 3)
+
+    //inserting into column table from column table
+    snc.sql("insert into col_tab2 select * from col_tab1")
+    val df4 = snc.sql("select * from col_tab2")
+    assert(df4.count() === 2)
+
+  }
+
+
+  test("Test the creation of table using CREATE TABLE AS STATEMENT without specifying USING..OPTIONS") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    val tableName2 = "RowTable2"
+    snc.sql("DROP TABLE IF EXISTS RowTable2")
+    snc.sql("CREATE TABLE " + tableName2 + " AS (SELECT * FROM " + tableName + ")"
+    )
+    var result = snc.sql("SELECT * FROM " + tableName2)
+    var r = result.collect
+    assert(r.length == 5)
+
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName2)
+    result = snc.sql("SELECT * FROM " + tableName2)
+    r = result.collect
+    assert(r.length == 10)
+
+    snc.dropTable(tableName2)
+    println("Successful")
+  }
 }

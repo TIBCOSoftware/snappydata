@@ -20,7 +20,7 @@
 package io.snappydata
 
 import java.sql.Connection
-import java.util.ArrayList
+import java.util.{ArrayList, HashMap}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,15 +31,15 @@ import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.{RegionSizeCalculatorFunction, GfxdListResultCollector, GfxdMessage}
+import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage, RegionSizeCalculatorFunction}
 import io.snappydata.Constant._
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
-import java.util.HashMap
-import org.apache.spark.sql.collection.Utils
+
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
@@ -72,18 +72,17 @@ object StoreTableValueSizeProviderService extends Logging {
       }
 
       override def getLoggerI18n: LogWriterI18n = {
-        return Misc.getGemFireCache.getLoggerI18n
+        Misc.getGemFireCache.getLoggerI18n
       }
     }
   }
 
-  def getTableSize(tableName: String, isColumnTable: Boolean = false):
-  Option[Long] = {
+  def getTableSize(tableName: String,
+      isColumnTable: Boolean = false): Option[Long] = {
     val currentTableSizeInfo = tableSizeInfo
-    if (currentTableSizeInfo == null || !currentTableSizeInfo.contains(tableName)) {
+    if (currentTableSizeInfo == null) {
       None
-    }
-    else currentTableSizeInfo.get(tableName) match {
+    } else currentTableSizeInfo.get(tableName) match {
       case v if isColumnTable =>
         val size: Long = v.getOrElse(0)
         currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName)).
@@ -97,26 +96,35 @@ object StoreTableSizeProvider {
 
   private val memoryAnalyticsDefault = MemoryAnalytics(0, 0)
 
-  def getTableSizes: Seq[UIAnalytics] = {
+  def getTableSizes: (mutable.Set[UIAnalytics] , mutable.Set[UIAnalytics]) = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
     if (currentTableStats == null) {
-      return Seq.empty
+      return  (mutable.Set() , mutable.Set())
     }
-    currentTableStats.filter(entry => !isColumnTable(entry._1)).map(details => {
+    val columnSet = mutable.Set[UIAnalytics]()
+    val rowSet = mutable.Set[UIAnalytics]()
+
+    currentTableStats.filter(entry => !isColumnTable(entry._1)).foreach(details => {
       val maForRowBuffer = details._2
       val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
       val maForColumn = currentTableStats.
           getOrElse(columnTableName, memoryAnalyticsDefault)
-      val isColumnTable = currentTableStats.contains(columnTableName)
-      new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
-        maForColumn.totalSize, maForColumn.totalRows, isColumnTable)
-    }).toSeq
+      if ( currentTableStats.contains(columnTableName) ) {
+        columnSet += (
+            new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
+              maForColumn.totalSize, maForColumn.totalRows, true))
+      }
+      else {
+        rowSet += ( new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
+          maForColumn.totalSize, maForColumn.totalRows, false))
+      }
+    })
 
+     (rowSet , columnSet)
   }
 
-
-
-  private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, MemoryAnalytics] = {
+  private def getMemoryAnalyticsDetails(
+      conn: Connection): mutable.Map[String, MemoryAnalytics] = {
     val currentTableStats = mutable.Map[String, MemoryAnalytics]()
     val stmt = "select TABLE_NAME," +
         " SUM(TOTAL_SIZE) ," +
@@ -173,9 +181,9 @@ object StoreTableSizeProvider {
       }
     }
   }
-
 }
 
 case class MemoryAnalytics(totalSize: Long, totalRows: Long)
+
 case class UIAnalytics(tableName: String, rowBufferSize: Long, rowBufferCount: Long,
-    columnBufferSize: Long, columnBufferCount: Long , isColumnTable: Boolean)
+    columnBufferSize: Long, columnBufferCount: Long, isColumnTable: Boolean)

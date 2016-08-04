@@ -48,6 +48,7 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv}
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
 class SparkSQLExecuteImpl(val sql: String,
+    val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
 
@@ -57,12 +58,14 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
 
+  snc.setSchema(schema)
+
   private[this] val df: DataFrame = snc.sql(sql)
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
-  private[this] val schema = df.schema
+  private[this] val querySchema = df.schema
 
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
@@ -80,17 +83,18 @@ class SparkSQLExecuteImpl(val sql: String,
     val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
-    val serializeComplexType = !complexTypeAsClob && schema.exists(
+    val serializeComplexType = !complexTypeAsClob && querySchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
       })
-    val handler = new ExecutionHandler(sql, schema, resultsRdd.id,
+    val handler = new ExecutionHandler(sql, querySchema, resultsRdd.id,
       partitionBlockIds, serializeComplexType)
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
-      handler(resultsRdd, df)
+      snc.handleErrorLimitExceeded[Unit](handler.apply, resultsRdd, df, df.queryExecution.logical,
+        bm.removeRdd(resultsRdd.id))
 
       hdos.clearForReuse()
       var metaDataSent = false
@@ -201,11 +205,11 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   def getColumnNames: Array[String] = {
-    schema.fieldNames
+    querySchema.fieldNames
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    schema.map(f => getSQLType(f.dataType)).toArray
+    querySchema.map(f => getSQLType(f.dataType)).toArray
 
   private def getSQLType(dataType: DataType): (Int, Int, Int) = {
     dataType match {

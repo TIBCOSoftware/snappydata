@@ -48,6 +48,7 @@ import org.apache.spark.storage.BlockManagerId
 object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
+  final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent = new NormalDistribution().

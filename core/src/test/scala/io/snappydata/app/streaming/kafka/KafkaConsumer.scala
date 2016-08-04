@@ -17,7 +17,7 @@
 package io.snappydata.app.streaming.kafka
 
 import org.apache.spark._
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.streaming._
 
 object KafkaConsumer {
@@ -60,12 +60,12 @@ object KafkaConsumer {
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
 
-    ssnc.snappyContext.createSampleTable("tweetstreamtable_sampled", Map(
+    ssnc.snappyContext.createSampleTable("tweetstreamtable_sampled",
+      Some("tweetstreamtable"), Map(
       "qcs" -> "hashtag",
       "fraction" -> "0.05",
       "strataReservoirSize" -> "300",
-      "timeInterval" -> "3m", "baseTable" -> "tweetstreamtable"),
-      allowExisting = false)
+      "timeInterval" -> "3m"), allowExisting = false)
 
     ssnc.snappyContext.saveStream(tableStream, Seq("tweetstreamtable_sampled"), None)
 

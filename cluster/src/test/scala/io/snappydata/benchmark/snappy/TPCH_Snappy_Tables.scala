@@ -16,6 +16,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
    var tpchDataPath: String = _
    var buckets_Order_Lineitem: String = _
    var buckets_Cust_Part_PartSupp: String = _
+   var useIndex: Boolean = _
 
    override def runJob(snc: C, jobConfig: Config): Any = {
      val props : Map[String, String] = null
@@ -31,14 +32,13 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
      TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-//     TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
-//     TPCHRowPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
-//     TPCHRowPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
      TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
      TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
      TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
-
-
+     if (useIndex) {
+       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+     }
    }
 
    override def validate(sc: C, config: Config): SparkJobValidation = {
@@ -66,7 +66,11 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
            "Specify correct location")
      }
 
-
+     useIndex = if (config.hasPath("useIndex")) {
+       config.getBoolean("useIndex")
+     } else {
+       return new SparkJobInvalid("Specify whether to use Index")
+     }
      SparkJobValid
    }
  }

@@ -1,6 +1,6 @@
 How to run TPCH queries on snappy cluster
 1> Create a file PerfRun.conf.
-    A tepmplate file is provided in which all mandatory variables (like machine names, queries, spark properties,
+    A template file is provided in which all mandatory variables (like machine names, queries, spark properties,
     snappy location, output location, data size) are defined
 2> Run 1_cleanJavaOnMachines.
     which stops locators, servers, leads defined. Also you can kill all java process running on these machines

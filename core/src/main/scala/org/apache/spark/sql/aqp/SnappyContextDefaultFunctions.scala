@@ -34,7 +34,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
 
   def clear(): Unit = {}
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit ={}
+  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit = {}
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
@@ -90,7 +90,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
     throw new UnsupportedOperationException("missing aqp jar")
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double): DataFrame =
+      confidence: Double, behavior: String): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def getPlanner(context: SnappyContext): SparkPlanner =
@@ -134,6 +134,11 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
       override val extendedCheckRules = Seq(
         sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
+
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T = fn(rowRDD, df)
+
+  def sql[T](fn: => T): T = fn
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)
@@ -150,9 +155,9 @@ class DefaultPlanner(snappyContext: SnappyContext)
   val storeOptimization = snappyContext.sparkContext.getConf.get(
     "snappy.store.optimization", "true").toBoolean
 
-  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization) {
     Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-  else Nil
+  } else Nil
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

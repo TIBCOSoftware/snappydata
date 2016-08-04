@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
 
@@ -28,7 +27,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -66,6 +65,10 @@ case class JDBCAppendableRelation(
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
+
+  val resolvedName: String = externalStore.tryExecute(table, conn => {
+    ExternalStoreUtils.lookupName(table, conn.getSchema)
+  })
 
   override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table,
     isColumnTable = true).getOrElse(super.sizeInBytes)
@@ -131,7 +134,8 @@ case class JDBCAppendableRelation(
       // If none are requested, use the narrowest (the field with
       // minimum default element size).
 
-      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator, requestedColumns, schema)
+      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
+        requestedColumns, schema, forScan = true)
     }.asInstanceOf[RDD[Row]]
   }
 
@@ -139,12 +143,8 @@ case class JDBCAppendableRelation(
     insert(df.queryExecution.toRdd, df, overwrite)
   }
 
-  def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    // TODO - currently using the length from the part Object but
-    // it needs to be handled more generically in order to replace UUID
-    val uuid = externalStore.storeCachedBatch(table, batch)
-    accumulated += uuid
+  def cachedBatchAggregate(batch: CachedBatch): Unit = {
+    externalStore.storeCachedBatch(table, batch)
   }
 
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
@@ -171,9 +171,9 @@ case class JDBCAppendableRelation(
       }.toArray
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        schema, new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
+        schema, cachedBatchAggregate)
 
-      rowIterator.foreach(holder.appendRow((), _))
+      rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()
       Iterator.empty
     }, preservesPartitioning = true)
@@ -220,13 +220,14 @@ case class JDBCAppendableRelation(
     val (primarykey, partitionStrategy) = dialect match {
       // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
-        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId)", d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
+        (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
+            "primary key (uuid, partitionId)",
+            d.getPartitionByClause("partitionId"))
+      case _ => ("primary key (uuid)", "")
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer not null, numRows integer not null, " +
+        "not null, partitionId integer not null, numRows integer not null, " +
         "stats blob, " + userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy",

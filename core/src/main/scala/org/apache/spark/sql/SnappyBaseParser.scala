@@ -23,9 +23,9 @@ import scala.util.{Failure, Success}
 import org.parboiled2._
 
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types._
 
 /**
@@ -226,10 +226,10 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
         ((fields: Seq[StructField]) => StructType(fields.toArray))
   }
 
-  protected final def tableIdentifier: Rule1[QualifiedTableName] = rule {
+  protected final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schemaOpt: Option[String],
-        table: String) => new QualifiedTableName(schemaOpt, table))
+        table: String) => TableIdentifier(table, schemaOpt))
   }
 
   /** Returns the rest of the input string that are not parsed yet */

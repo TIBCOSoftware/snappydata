@@ -17,11 +17,13 @@
 package org.apache.spark.sql.store
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.Growable
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -30,8 +32,7 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -68,6 +69,24 @@ object StoreUtils extends Logging {
   val LRUCOUNT = "LRUCOUNT"
   val GEM_INDEXED_TABLE = "INDEXED_TABLE"
 
+  // int values for Spark SQL types for efficient switching avoiding reflection
+  val STRING_TYPE = 0
+  val INT_TYPE = 1
+  val LONG_TYPE = 2
+  val BINARY_LONG_TYPE = 3
+  val SHORT_TYPE = 4
+  val BYTE_TYPE = 5
+  val BOOLEAN_TYPE = 6
+  val DECIMAL_TYPE = 7
+  val DOUBLE_TYPE = 8
+  val FLOAT_TYPE = 9
+  val DATE_TYPE = 10
+  val TIMESTAMP_TYPE = 11
+  val BINARY_TYPE = 12
+  val ARRAY_TYPE = 13
+  val MAP_TYPE = 14
+  val STRUCT_TYPE = 15
+
   val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
@@ -80,29 +99,17 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
-  def lookupName(tableName: String, schema: String): String = {
-    val lookupName = {
-      if (tableName.indexOf('.') <= 0) {
-        schema + '.' + tableName
-      } else tableName
-    }
-    lookupName
-  }
-
   def getPartitionsPartitionedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      region: PartitionedRegion): Array[Partition] = {
 
-    val resolvedName = lookupName(tableName, schema)
-    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
     val numPartitions = region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
 
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
-        m => blockMap.get(m)
-      )
+        m => SnappyContext.storeToBlockMap.get(m.toString)
+      ).filter(m => m != None)
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
@@ -110,20 +117,17 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsReplicatedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      region: CacheDistributionAdvisee): Array[Partition] = {
 
-    val resolvedName = lookupName(tableName, schema)
-    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
 
     val regionMembers = if (Utils.isLoner(sc)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
-      region.getDistributionAdvisor.adviseInitializedReplicates().asScala
+      region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
@@ -132,12 +136,10 @@ object StoreUtils extends Logging {
       table: String,
       schema: Option[StructType],
       partitions: Int,
-      connProperties: ConnectionProperties): Map[InternalDistributedMember,
-      BlockManagerId] = {
+      connProperties: ConnectionProperties): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    val blockMap = new StoreInitRDD(sqlContext, table,
-      schema, partitions, connProperties).collect()
-    blockMap.toMap
+    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
+        .collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
@@ -315,5 +317,40 @@ object StoreUtils extends Logging {
       }
       true
     })
+  }
+
+  def mapCatalystTypes(schema: StructType,
+      types: Growable[DataType]): Array[Int] = {
+    var i = 0
+    val result = new Array[Int](schema.length)
+    while (i < schema.length) {
+      val field = schema.fields(i)
+      val dataType = field.dataType
+      if (types != null) {
+        types += dataType
+      }
+      result(i) = dataType match {
+        case StringType => STRING_TYPE
+        case IntegerType => INT_TYPE
+        case LongType => if (field.metadata.contains("binarylong"))
+          BINARY_LONG_TYPE else LONG_TYPE
+        case ShortType => SHORT_TYPE
+        case ByteType => BYTE_TYPE
+        case BooleanType => BOOLEAN_TYPE
+        case _: DecimalType => DECIMAL_TYPE
+        case DoubleType => DOUBLE_TYPE
+        case FloatType => FLOAT_TYPE
+        case DateType => DATE_TYPE
+        case TimestampType => TIMESTAMP_TYPE
+        case BinaryType => BINARY_TYPE
+        case _: ArrayType => ARRAY_TYPE
+        case _: MapType => MAP_TYPE
+        case _: StructType => STRUCT_TYPE
+        case _ => throw new IllegalArgumentException(
+          s"Unsupported field $field")
+      }
+      i += 1
+    }
+    result
   }
 }

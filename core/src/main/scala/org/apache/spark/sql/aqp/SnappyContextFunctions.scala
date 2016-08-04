@@ -64,7 +64,7 @@ trait SnappyContextFunctions {
       aqpTables: Seq[String], time: Long): Unit
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double): DataFrame
+      confidence: Double, behavior: String): DataFrame
 
   def createSampleDataFrameContract(context: SnappyContext,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
@@ -86,4 +86,9 @@ trait SnappyContextFunctions {
       planGenerator: String => LogicalPlan): DDLParser
 
   def createAnalyzer(context: SnappyContext): Analyzer
+
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T
+
+  def sql[T](fn: => T): T
 }
