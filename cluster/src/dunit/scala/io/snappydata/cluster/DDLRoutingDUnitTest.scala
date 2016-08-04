@@ -21,29 +21,30 @@ import java.sql.{Connection, DriverManager}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
+import org.apache.spark.sql.collection.Utils
+
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
-    Class.forName(driver).newInstance
+    Utils.classForName(driver).newInstance
     val url = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url)
   }
 
   def testColumnTableRouting(): Unit = {
-    val tableName: String = "ColumnTableQR"
-
+    val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
     // first fail a statement
-    failCreateTableXD(conn, tableName, true, " column ")
+    failCreateTableXD(conn, tableName, doFail = true, " column ")
 
     createTableXD(conn, tableName, " column ")
-    tableMetadataAssertColumnTable(tableName)
+    tableMetadataAssertColumnTable("TEST", "ColumnTableQR")
     // Test create table - error for recreate
-    failCreateTableXD(conn, tableName, false, " column ")
+    failCreateTableXD(conn, tableName, doFail = false, " column ")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -73,7 +74,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " row ")
 
     createTableXD(conn, tableName, " row ")
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("APP", tableName)
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " row ")
 
@@ -95,14 +96,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testRowTableByDefaultRouting(): Unit = {
-    val tableName: String = "DefaultRowTableQR"
+    val tableName: String = "TEST.DefaultRowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
     createTableByDefaultXD(conn, tableName)
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("TEST", "DefaultRowTableQR")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -122,8 +123,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
     val s = conn.createStatement()
     val options = ""
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 STRING) " + " USING " + usingStr +
-        " " + options)
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, " +
+        "Col3 STRING) USING " + usingStr + " " + options)
   }
 
   def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
@@ -136,55 +137,60 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     {
       val snc = org.apache.spark.sql.SnappyContext(sc)
       snc.sql("set spark.sql.shuffle.partitions=10")
-      val val1 = snc.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+      val val1 = snc.getAllConfs.getOrElse("spark.sql.shuffle.partitions", "0")
       assert(val1.equals("10"), "Expect 10 but got " + val1)
 
-      { // Change by DRDA has no effects
+      {
+        // Change by DRDA has no effects
         val s = conn.createStatement()
         s.execute("set spark.sql.shuffle.partitions=5")
-        val val2 = snc.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+        val val2 = snc.getAllConfs.getOrElse("spark.sql.shuffle.partitions", "0")
         assert(val2.equals("10"), "Expect 10 but got " + val2)
       }
     }
 
-    { // This setting has no effect in other Snappy Context
+    {
+      // This setting has no effect in other Snappy Context
       val snc3 = org.apache.spark.sql.SnappyContext(sc)
-      val val3 = snc3.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+      val val3 = snc3.getAllConfs.getOrElse("spark.sql.shuffle.partitions", "0")
       assert(val3.equals("0"), "Expect 0 but got " + val3)
     }
   }
 
-  def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean, usingStr : String): Unit = {
-    try
-    {
+  def failCreateTableXD(conn: Connection, tableName: String, doFail: Boolean,
+      usingStr: String): Unit = {
+    try {
       val s = conn.createStatement()
       val options = ""
-      s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + (if (doFail) "fail" orElse "") + " USING " + usingStr
-          + " " + options)
-      //println("Successfully Created ColumnTable = " + tableName)
+      s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, " +
+          "Col3 INT) " + (if (doFail) "fail" orElse "") + " USING " +
+          usingStr + " " + options)
+      // println("Successfully Created ColumnTable = " + tableName)
     }
     catch {
-      case e: Exception => println("create: Caught exception " + e.getMessage +
-        " for ColumnTable = " + tableName)
-      //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
+      case e: Exception => getLogWriter.error("create: Caught exception " +
+          e.getMessage + " for ColumnTable = " + tableName, e)
+      // println("Exception stack. create. ex=" + e.getMessage + " ,stack=" +
+      //   ExceptionUtils.getFullStackTrace(e))
     }
-    //println("Created ColumnTable = " + tableName)
+    // println("Created ColumnTable = " + tableName)
   }
 
-  def tableMetadataAssertColumnTable(tableName: String): Unit = {
+  def tableMetadataAssertColumnTable(schemaName: String,
+      tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable(tableName, false))
+        assert(catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }
 
-  def tableMetadataAssertRowTable(tableName: String): Unit = {
+  def tableMetadataAssertRowTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(!catalog.isColumnTable(tableName, false))
+        assert(!catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }
@@ -206,41 +212,41 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     s.execute("truncate table " + tableName)
   }
 
-  def createTempTableXD(conn : Connection): Unit = {
-    try
-    {
+  def createTempTableXD(conn: Connection): Unit = {
+    try {
       val s = conn.createStatement()
-      s.execute("CREATE TABLE airlineRef_temp(Code VARCHAR(25),Description VARCHAR(25)) USING parquet OPTIONS()")
-      //println("Successfully Created ColumnTable = " + tableName)
+      s.execute("CREATE EXTERNAL TABLE airlineRef_temp(Code VARCHAR(25), " +
+          "Description VARCHAR(25)) USING parquet OPTIONS()")
+      // println("Successfully Created ColumnTable = " + tableName)
+    } catch {
+      case e: java.sql.SQLException =>
+      // println("Exception stack. create. ex=" + e.getMessage +
+      //   " ,stack=" + ExceptionUtils.getFullStackTrace(e))
     }
-    catch {
-      case e: java.sql.SQLException => //println("create temp: Caught exception " + e.getMessage)
-      //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
-    }
-    //println("Created ColumnTable = " + tableName)
+    // println("Created ColumnTable = " + tableName)
   }
 
-  def queryData(tableName : String): Unit = {
+  def queryData(tableName: String): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-    //println("Firing select on ColumnTable = " + tableName)
+    // println("Firing select on ColumnTable = " + tableName)
     val dataDF = snc.sql("Select * from " + tableName)
-    //dataDF.map(t => "Select Query: Col1: " + t(0) + " Col2: " + t(1) + " Col3: " + t(2)).collect().foreach(println)
+    // dataDF.map(t => "Select Query: Col1: " + t(0) + " Col2: " + t(1) +
+    //   " Col3: " + t(2)).collect().foreach(println)
 
-    assert(dataDF.map(t => t(0)).count() == 5)
-    dataDF.map(t => t(0)).collect().foreach(verifyData)
+    assert(dataDF.rdd.map(t => t(0)).count() == 5)
+    dataDF.rdd.map(t => t(0)).collect().foreach(verifyData)
   }
 
-  def verifyData(v : Any): Unit = {
+  def verifyData(v: Any): Unit = {
     assert(Seq(10, 70, 90, 40, 50).contains(v))
   }
 
-  def queryDataXD(conn : Connection, tableName : String): Unit = {
+  def queryDataXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     val rs = s.executeQuery("Select col1 from " + tableName)
-    var cnt = 0;
-    var expected =
+    var cnt = 0
     while (rs.next()) {
-      cnt = cnt + 1;
+      cnt += 1
       assert(Seq(10, 70, 90, 40, 50).contains(rs.getInt(1)))
     }
     assert(cnt == 5, cnt)

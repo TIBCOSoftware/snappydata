@@ -232,6 +232,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         Random.nextInt())
     }
 
+    stmt.execute(s"drop table if exists $tableName")
+
     stmt.execute(s"""
         CREATE TABLE $tableName (
           col1 Int, col2 String, col3 Int

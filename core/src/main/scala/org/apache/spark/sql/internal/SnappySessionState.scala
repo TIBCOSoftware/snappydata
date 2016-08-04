@@ -17,26 +17,27 @@
 
 package org.apache.spark.sql.internal
 
-
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation, Analyzer, EliminateSubqueryAliases}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.catalog.CatalogRelation
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.{Rule}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.execution.{datasources, QueryExecution, SparkPlan, SparkPlanner}
-import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation,
-PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
-import org.apache.spark.sql.{execution => sparkexecution, _}
+import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
+import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
 
 class SnappySessionState(snappySession: SnappySession)
     extends SessionState(snappySession) {
 
   self =>
+
+  @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
   protected lazy val sharedState: SnappySharedState =
@@ -53,12 +54,13 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val analyzer: Analyzer = {
     new Analyzer(catalog, conf) {
       override val extendedResolutionRules =
-        PreInsertCheckCastAndRename ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis :: ResolveRelationsExtended ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+        new PreprocessTableInsertOrPut(conf) ::
+        new FindDataSourceTable(snappySession) ::
+        DataSourceAnalysis(conf) :: ResolveRelationsExtended ::
+        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
-      override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+      override val extendedCheckRules = Seq(
+        datasources.PreWriteCheck(conf, catalog), PrePutCheck)
     }
   }
 
@@ -81,8 +83,6 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-
-
   /**
    * Internal catalog for managing table and database states.
    */
@@ -101,11 +101,10 @@ class SnappySessionState(snappySession: SnappySession)
 
   override def executePlan(plan: LogicalPlan): QueryExecution =
     contextFunctions.executePlan(snappySession, plan)
-
 }
 
-
-class DefaultPlanner(snappySession: SnappySession, conf: SQLConf, extraStrategies: Seq[Strategy])
+class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
+    extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
     with SnappyStrategies {
 
@@ -133,17 +132,14 @@ class DefaultPlanner(snappySession: SnappySession, conf: SQLConf, extraStrategie
         super.strategies
 }
 
-private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
+private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
+    extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-    // Wait until children are resolved.
-    case p: LogicalPlan if !p.childrenResolved => p
-
     // Check for SchemaInsertableRelation first
-    case i@InsertIntoTable(l@LogicalRelation(r:
-        SchemaInsertableRelation, _, _), _, query, _, _) =>
-      r.schemaForInsert(query.output) match {
-        case Some(output) =>
-          PreInsertCastAndRename.castAndRenameChildOutput(i, output, query)
+    case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
+    _, _), _, child, _, _) if l.resolved && child.resolved =>
+      r.schemaForInsert(child.output) match {
+        case Some(output) => castAndRenameChildOutput(i, output, l, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
@@ -154,59 +150,110 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT
-    case p@PutIntoTable(table, query) =>
+    case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(_: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
-          if (l.output.size != query.output.size) {
+          val expectedOutput = l.output
+          if (expectedOutput.size != child.output.size) {
             throw new AnalysisException(s"$l requires that the query in the " +
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutput(p, l, query)
+          castAndRenameChildOutput(p, expectedOutput, l, child)
 
         case _ => p
       }
 
-    // We are inserting into an InsertableRelation or HadoopFsRelation.
-    case i@InsertIntoTable(l@LogicalRelation(_: InsertableRelation |
-                                             _: HadoopFsRelation, _, _), _, child, _, _) =>
-      // First, make sure the data to be inserted have the same number of
-      // fields with the schema of the relation.
-      if (l.output.size != child.output.size) {
-        throw new AnalysisException(s"$l requires that the query in the " +
-            "SELECT clause of the INSERT/OVERWRITE statement " +
-            "generates the same number of columns as its schema.")
+    // other cases handled like in PreprocessTableInsertion
+    case i@InsertIntoTable(table, partition, child, _, _)
+        if table.resolved && child.resolved =>
+      table match {
+        case relation: CatalogRelation =>
+          val metadata = relation.catalogTable
+          preprocess(i, metadata.identifier.quotedString, metadata.partitionColumnNames)
+        case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
+          val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+          preprocess(i, tblName, h.partitionSchema.map(_.name))
+        case LogicalRelation(_: InsertableRelation, _, identifier) =>
+          val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+          preprocess(i, tblName, Nil)
+        case other => i
       }
-      PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
+  }
+
+  private def preprocess(
+      insert: InsertIntoTable,
+      tblName: String,
+      partColNames: Seq[String]): InsertIntoTable = {
+
+    val expectedColumns = insert.expectedColumns
+    val child = insert.child
+    if (expectedColumns.isDefined && expectedColumns.get.length != child.schema.length) {
+      throw new AnalysisException(
+        s"Cannot insert into table $tblName because the number of columns are different: " +
+            s"need ${expectedColumns.get.length} columns, " +
+            s"but query has ${child.schema.length} columns.")
+    }
+
+    if (insert.partition.nonEmpty) {
+      // the query's partitioning must match the table's partitioning
+      // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
+      val samePartitionColumns =
+      if (conf.caseSensitiveAnalysis) {
+        insert.partition.keySet == partColNames.toSet
+      } else {
+        insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
+      }
+      if (!samePartitionColumns) {
+        throw new AnalysisException(
+          s"""
+             |Requested partitioning does not match the table $tblName:
+             |Requested partitions: ${insert.partition.keys.mkString(",")}
+             |Table partitions: ${partColNames.mkString(",")}
+           """.stripMargin)
+      }
+      expectedColumns.map(castAndRenameChildOutput(insert, _, null, child))
+          .getOrElse(insert)
+    } else {
+      // All partition columns are dynamic because because the InsertIntoTable
+      // command does not explicitly specify partitioning columns.
+      expectedColumns.map(castAndRenameChildOutput(insert, _, null, child))
+          .getOrElse(insert).copy(partition = partColNames.map(_ -> None).toMap)
+    }
   }
 
   /**
-   * If necessary, cast data types and rename fields to the expected
-   * types and names.
-   */
-  def castAndRenameChildOutput(
-      putInto: PutIntoTable,
+    * If necessary, cast data types and rename fields to the expected
+    * types and names.
+    */
+  // TODO: do we really need to rename?
+  def castAndRenameChildOutput[T <: LogicalPlan](
+      plan: T,
+      expectedOutput: Seq[Attribute],
       relation: LogicalRelation,
-      child: LogicalPlan): PutIntoTable = {
-    val newChildOutput = relation.output.zip(child.output).map {
+      child: LogicalPlan): T = {
+    val newChildOutput = expectedOutput.zip(child.output).map {
       case (expected, actual) =>
-        val needCast = !expected.dataType.sameType(actual.dataType)
-        // We want to make sure the filed names in the data to be inserted exactly match
-        // names in the schema.
-        val needRename = expected.name != actual.name
-        (needCast, needRename) match {
-          case (true, _) => Alias(Cast(actual, expected.dataType), expected.name)()
-          case (false, true) => Alias(actual, expected.name)()
-          case (_, _) => actual
+        if (expected.dataType.sameType(actual.dataType) &&
+            expected.name == actual.name) {
+          actual
+        } else {
+          Alias(Cast(actual, expected.dataType), expected.name)()
         }
     }
 
     if (newChildOutput == child.output) {
-      putInto.copy(table = relation)
-    } else {
-      putInto.copy(table = relation, child = Project(newChildOutput, child))
+      plan match {
+        case p: PutIntoTable => p.copy(table = relation).asInstanceOf[T]
+        case _ => plan
+      }
+    } else plan match {
+      case p: PutIntoTable => p.copy(table = relation,
+        child = Project(newChildOutput, child)).asInstanceOf[T]
+      case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
+        child)).asInstanceOf[T]
     }
   }
 }
@@ -234,4 +281,3 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
-

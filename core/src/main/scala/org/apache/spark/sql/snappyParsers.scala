@@ -19,27 +19,24 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.execution.SubqueryExec
-import org.apache.spark.sql.internal.SnappySessionState
-
 import scala.language.implicitConversions
 
 import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{plusOrMinus, trueFn}
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedExtractValue, UnresolvedFunction, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count, HyperLogLogPlusPlus}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftOuter, LeftSemi, RightOuter}
-import org.apache.spark.sql.catalyst.{TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command.RunnableCommand
-import org.apache.spark.sql.execution.datasources.{DataSource, CreateTableUsing, CreateTableUsingAsSelect}
-import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog, QualifiedTableName}
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, ExternalSchemaRelationProvider, PutIntoTable}
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DataSource}
+import org.apache.spark.sql.internal.SnappySessionState
+import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
@@ -57,75 +54,75 @@ class SnappyParser(session: SnappySession)
     _input = in
   }
 
-  final def ALL = rule { keyword(SnappyParserConsts.ALL) }
-  final def AND = rule { keyword(SnappyParserConsts.AND) }
-  final def APPROXIMATE = rule { keyword(SnappyParserConsts.APPROXIMATE) }
-  final def AS = rule { keyword(SnappyParserConsts.AS) }
-  final def ASC = rule { keyword(SnappyParserConsts.ASC) }
-  final def BETWEEN = rule { keyword(SnappyParserConsts.BETWEEN) }
-  final def BY = rule { keyword(SnappyParserConsts.BY) }
-  final def CASE = rule { keyword(SnappyParserConsts.CASE) }
-  final def CAST = rule { keyword(SnappyParserConsts.CAST) }
-  final def DELETE = rule { keyword(SnappyParserConsts.DELETE) }
-  final def DESC = rule { keyword(SnappyParserConsts.DESC) }
-  final def DISTINCT = rule { keyword(SnappyParserConsts.DISTINCT) }
-  final def ELSE = rule { keyword(SnappyParserConsts.ELSE) }
-  final def END = rule { keyword(SnappyParserConsts.END) }
-  final def EXCEPT = rule { keyword(SnappyParserConsts.EXCEPT) }
-  final def EXISTS = rule { keyword(SnappyParserConsts.EXISTS) }
-  final def FALSE = rule { keyword(SnappyParserConsts.FALSE) }
-  final def FROM = rule { keyword(SnappyParserConsts.FROM) }
-  final def FULL = rule { keyword(SnappyParserConsts.FULL) }
-  final def GROUP = rule { keyword(SnappyParserConsts.GROUP) }
-  final def HAVING = rule { keyword(SnappyParserConsts.HAVING) }
-  final def IN = rule { keyword(SnappyParserConsts.IN) }
-  final def INNER = rule { keyword(SnappyParserConsts.INNER) }
-  final def INSERT = rule { keyword(SnappyParserConsts.INSERT) }
-  final def INTERSECT = rule { keyword(SnappyParserConsts.INTERSECT) }
-  final def INTERVAL = rule { keyword(SnappyParserConsts.INTERVAL) }
-  final def INTO = rule { keyword(SnappyParserConsts.INTO) }
-  final def IS = rule { keyword(SnappyParserConsts.IS) }
-  final def JOIN = rule { keyword(SnappyParserConsts.JOIN) }
-  final def LEFT = rule { keyword(SnappyParserConsts.LEFT) }
-  final def LIKE = rule { keyword(SnappyParserConsts.LIKE) }
-  final def LIMIT = rule { keyword(SnappyParserConsts.LIMIT) }
-  final def NOT = rule { keyword(SnappyParserConsts.NOT) }
-  final def NULL = rule { keyword(SnappyParserConsts.NULL) }
-  final def ON = rule { keyword(SnappyParserConsts.ON) }
-  final def OR = rule { keyword(SnappyParserConsts.OR) }
-  final def ORDER = rule { keyword(SnappyParserConsts.ORDER) }
-  final def OUTER = rule { keyword(SnappyParserConsts.OUTER) }
-  final def OVERWRITE = rule { keyword(SnappyParserConsts.OVERWRITE) }
-  final def PUT = rule { keyword(SnappyParserConsts.PUT) }
-  final def REGEXP = rule { keyword(SnappyParserConsts.REGEXP) }
-  final def RIGHT = rule { keyword(SnappyParserConsts.RIGHT) }
-  final def RLIKE = rule { keyword(SnappyParserConsts.RLIKE) }
-  final def SELECT = rule { keyword(SnappyParserConsts.SELECT) }
-  final def SEMI = rule { keyword(SnappyParserConsts.SEMI) }
-  final def SORT = rule { keyword(SnappyParserConsts.SORT) }
-  final def TABLE = rule { keyword(SnappyParserConsts.TABLE) }
-  final def THEN = rule { keyword(SnappyParserConsts.THEN) }
-  final def TO = rule { keyword(SnappyParserConsts.TO) }
-  final def TRUE = rule { keyword(SnappyParserConsts.TRUE) }
-  final def UNION = rule { keyword(SnappyParserConsts.UNION) }
-  final def UPDATE = rule { keyword(SnappyParserConsts.UPDATE) }
-  final def WHEN = rule { keyword(SnappyParserConsts.WHEN) }
-  final def WHERE = rule { keyword(SnappyParserConsts.WHERE) }
-  final def WITH = rule { keyword(SnappyParserConsts.WITH) }
+  final def ALL: Rule0 = rule { keyword(SnappyParserConsts.ALL) }
+  final def AND: Rule0 = rule { keyword(SnappyParserConsts.AND) }
+  final def APPROXIMATE: Rule0 = rule { keyword(SnappyParserConsts.APPROXIMATE) }
+  final def AS: Rule0 = rule { keyword(SnappyParserConsts.AS) }
+  final def ASC: Rule0 = rule { keyword(SnappyParserConsts.ASC) }
+  final def BETWEEN: Rule0 = rule { keyword(SnappyParserConsts.BETWEEN) }
+  final def BY: Rule0 = rule { keyword(SnappyParserConsts.BY) }
+  final def CASE: Rule0 = rule { keyword(SnappyParserConsts.CASE) }
+  final def CAST: Rule0 = rule { keyword(SnappyParserConsts.CAST) }
+  final def DELETE: Rule0 = rule { keyword(SnappyParserConsts.DELETE) }
+  final def DESC: Rule0 = rule { keyword(SnappyParserConsts.DESC) }
+  final def DISTINCT: Rule0 = rule { keyword(SnappyParserConsts.DISTINCT) }
+  final def ELSE: Rule0 = rule { keyword(SnappyParserConsts.ELSE) }
+  final def END: Rule0 = rule { keyword(SnappyParserConsts.END) }
+  final def EXCEPT: Rule0 = rule { keyword(SnappyParserConsts.EXCEPT) }
+  final def EXISTS: Rule0 = rule { keyword(SnappyParserConsts.EXISTS) }
+  final def FALSE: Rule0 = rule { keyword(SnappyParserConsts.FALSE) }
+  final def FROM: Rule0 = rule { keyword(SnappyParserConsts.FROM) }
+  final def FULL: Rule0 = rule { keyword(SnappyParserConsts.FULL) }
+  final def GROUP: Rule0 = rule { keyword(SnappyParserConsts.GROUP) }
+  final def HAVING: Rule0 = rule { keyword(SnappyParserConsts.HAVING) }
+  final def IN: Rule0 = rule { keyword(SnappyParserConsts.IN) }
+  final def INNER: Rule0 = rule { keyword(SnappyParserConsts.INNER) }
+  final def INSERT: Rule0 = rule { keyword(SnappyParserConsts.INSERT) }
+  final def INTERSECT: Rule0 = rule { keyword(SnappyParserConsts.INTERSECT) }
+  final def INTERVAL: Rule0 = rule { keyword(SnappyParserConsts.INTERVAL) }
+  final def INTO: Rule0 = rule { keyword(SnappyParserConsts.INTO) }
+  final def IS: Rule0 = rule { keyword(SnappyParserConsts.IS) }
+  final def JOIN: Rule0 = rule { keyword(SnappyParserConsts.JOIN) }
+  final def LEFT: Rule0 = rule { keyword(SnappyParserConsts.LEFT) }
+  final def LIKE: Rule0 = rule { keyword(SnappyParserConsts.LIKE) }
+  final def LIMIT: Rule0 = rule { keyword(SnappyParserConsts.LIMIT) }
+  final def NOT: Rule0 = rule { keyword(SnappyParserConsts.NOT) }
+  final def NULL: Rule0 = rule { keyword(SnappyParserConsts.NULL) }
+  final def ON: Rule0 = rule { keyword(SnappyParserConsts.ON) }
+  final def OR: Rule0 = rule { keyword(SnappyParserConsts.OR) }
+  final def ORDER: Rule0 = rule { keyword(SnappyParserConsts.ORDER) }
+  final def OUTER: Rule0 = rule { keyword(SnappyParserConsts.OUTER) }
+  final def OVERWRITE: Rule0 = rule { keyword(SnappyParserConsts.OVERWRITE) }
+  final def PUT: Rule0 = rule { keyword(SnappyParserConsts.PUT) }
+  final def REGEXP: Rule0 = rule { keyword(SnappyParserConsts.REGEXP) }
+  final def RIGHT: Rule0 = rule { keyword(SnappyParserConsts.RIGHT) }
+  final def RLIKE: Rule0 = rule { keyword(SnappyParserConsts.RLIKE) }
+  final def SELECT: Rule0 = rule { keyword(SnappyParserConsts.SELECT) }
+  final def SEMI: Rule0 = rule { keyword(SnappyParserConsts.SEMI) }
+  final def SORT: Rule0 = rule { keyword(SnappyParserConsts.SORT) }
+  final def TABLE: Rule0 = rule { keyword(SnappyParserConsts.TABLE) }
+  final def THEN: Rule0 = rule { keyword(SnappyParserConsts.THEN) }
+  final def TO: Rule0 = rule { keyword(SnappyParserConsts.TO) }
+  final def TRUE: Rule0 = rule { keyword(SnappyParserConsts.TRUE) }
+  final def UNION: Rule0 = rule { keyword(SnappyParserConsts.UNION) }
+  final def UPDATE: Rule0 = rule { keyword(SnappyParserConsts.UPDATE) }
+  final def WHEN: Rule0 = rule { keyword(SnappyParserConsts.WHEN) }
+  final def WHERE: Rule0 = rule { keyword(SnappyParserConsts.WHERE) }
+  final def WITH: Rule0 = rule { keyword(SnappyParserConsts.WITH) }
   // interval units are not reserved (handled in SnappyParserConsts singleton)
-  final def DAY = rule { intervalUnit(SnappyParserConsts.DAY) }
-  final def HOUR = rule { intervalUnit(SnappyParserConsts.HOUR) }
-  final def MICROSECOND = rule { intervalUnit(SnappyParserConsts.MICROSECOND) }
-  final def MILLISECOND = rule { intervalUnit(SnappyParserConsts.MILLISECOND) }
-  final def MINUTE = rule { intervalUnit(SnappyParserConsts.MINUTE) }
-  final def MONTH = rule { intervalUnit(SnappyParserConsts.MONTH) }
-  final def SECOND = rule { intervalUnit(SnappyParserConsts.SECOND) }
-  final def WEEK = rule { intervalUnit(SnappyParserConsts.WEEK) }
-  final def YEAR = rule { intervalUnit(SnappyParserConsts.YEAR) }
+  final def DAY: Rule0 = rule { intervalUnit(SnappyParserConsts.DAY) }
+  final def HOUR: Rule0 = rule { intervalUnit(SnappyParserConsts.HOUR) }
+  final def MICROSECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.MICROSECOND) }
+  final def MILLISECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.MILLISECOND) }
+  final def MINUTE: Rule0 = rule { intervalUnit(SnappyParserConsts.MINUTE) }
+  final def MONTH: Rule0 = rule { intervalUnit(SnappyParserConsts.MONTH) }
+  final def SECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.SECOND) }
+  final def WEEK: Rule0 = rule { intervalUnit(SnappyParserConsts.WEEK) }
+  final def YEAR: Rule0 = rule { intervalUnit(SnappyParserConsts.YEAR) }
   // Added for streaming window CQs
-  final def DURATION = rule { keyword(SnappyParserConsts.DURATION) }
-  final def SLIDE = rule { keyword(SnappyParserConsts.SLIDE) }
-  final def WINDOW = rule { keyword(SnappyParserConsts.WINDOW) }
+  final def DURATION: Rule0 = rule { keyword(SnappyParserConsts.DURATION) }
+  final def SLIDE: Rule0 = rule { keyword(SnappyParserConsts.SLIDE) }
+  final def WINDOW: Rule0 = rule { keyword(SnappyParserConsts.WINDOW) }
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
@@ -188,7 +185,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ ws ~>
+    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ delimiter ~>
         ((s: String) => toNumericLiteral(s))
   }
 
@@ -365,6 +362,29 @@ class SnappyParser(session: SnappySession)
         ((e1: Expression, e2: Expression) => RLike(e1, e2))
   }
 
+  /*
+  TODO: SW: Add support for IN and EXISTS
+  override protected def comparisonExpression1: Rule[Expression :: HNil,
+      Expression :: HNil] = rule {
+    super.comparisonExpression1 |
+    IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
+      InSubquery(e, subQuery, positive = true)) |
+    NOT ~ IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
+      InSubquery(e, subQuery, positive = false)) |
+    '=' ~ ws ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
+      InSubquery(e, subQuery, positive = true))
+  }
+
+  override protected def primary: Rule1[Expression] = rule {
+    super.primary |
+    EXISTS ~ query ~> ((subQuery: LogicalPlan) =>
+      Exists(subQuery, positive = true)) |
+    NOT ~ EXISTS ~ query ~> ((subQuery: LogicalPlan) =>
+      Exists(subQuery, positive = false))
+
+  }
+  */
+
   protected final def termExpression: Rule1[Expression] = rule {
     productExpression ~ (capture(plusOrMinus) ~ ws ~ productExpression ~>
         ((e1: Expression, op: String, e2: Expression) =>
@@ -413,7 +433,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
-        ((tableIdent: QualifiedTableName,
+        ((tableIdent: TableIdentifier,
             window: Option[(Duration, Option[Duration])],
             alias: Option[String]) => window match {
           case None => UnresolvedRelation(tableIdent, alias)
@@ -614,13 +634,13 @@ class SnappyParser(session: SnappySession)
 
   protected def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
-    TABLE ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
+    TABLE.? ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
         s, o, ifNotExists = false))
   }
 
   protected def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE ~ relation ~ select ~> ((r: LogicalPlan,
+    PUT ~ INTO ~ TABLE.? ~ relation ~ select ~> ((r: LogicalPlan,
         s: LogicalPlan) => PutIntoTable(r, s))
   }
 
@@ -633,7 +653,7 @@ class SnappyParser(session: SnappySession)
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     (INSERT ~ INTO | PUT ~ INTO | DELETE ~ FROM | UPDATE) ~ tableIdentifier ~
-        ANY.* ~> ((r: QualifiedTableName) => DMLExternalTable(r,
+        ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
@@ -695,6 +715,7 @@ private[sql] class SnappyDDLParser(session: SnappySession,
   }
 
   override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
+
     try {
       parse(input)
     } catch {
@@ -708,6 +729,7 @@ private[sql] class SnappyDDLParser(session: SnappySession,
     createTable | describeTable | refreshTable | dropTable |
         createStream  | streamContext | truncateTable | createIndex | dropIndex
 
+  protected val EXTERNAL = Keyword("EXTERNAL")
   protected val STREAM = Keyword("STREAM")
   protected val STREAMING = Keyword("STREAMING")
   protected val CONTEXT = Keyword("CONTEXT")
@@ -733,19 +755,18 @@ private[sql] class SnappyDDLParser(session: SnappySession,
       else s.map(Utils.toLowerCase).mkString(".")
     }
 
-  private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
-      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
+  private val DDLEnd = Pattern.compile(s"\\b${USING.str}\\s|" +
+      s"\\b${OPTIONS.str}\\s*\\(|\\b${AS.str}\\s|$$", Pattern.CASE_INSENSITIVE)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
-    (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
+    (CREATE ~> (TEMPORARY | EXTERNAL).? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
         tableIdentifier ~ externalTableInput ~ (USING ~> className).? ~
         (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
-      case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
+      case tempOrExternal ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName.getOrElse(
-          SnappyContext.DEFAULT_SOURCE), onlyBuiltin = false)
+        val provider = providerName.getOrElse(SnappyContext.DEFAULT_SOURCE)
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
@@ -757,22 +778,29 @@ private[sql] class SnappyDDLParser(session: SnappySession,
           else SaveMode.ErrorIfExists
           val queryPlan = parseQuery(query.get)
 
-          if (temporary.isDefined) {
-            CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
-              Array.empty[String], None, mode, options, queryPlan)
-          } else {
-            CreateMetastoreTableUsingSelect(tableIdent, provider,
-              Array.empty[String], mode, options, queryPlan)
+          tempOrExternal match {
+            case None =>
+              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
+                Array.empty[String], mode, options, queryPlan,
+                isBuiltIn = true)
+            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
+              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
+                Array.empty[String], mode, options, queryPlan,
+                isBuiltIn = false)
+            case Some(_) => throw new DDLException(
+              "CREATE TEMPORARY TABLE ... USING ... does not allow AS query")
           }
         } else {
-          val hasExternalSchema = if (temporary.isDefined) false
+          val hasExternalSchema = if (tempOrExternal.isDefined) false
           else {
             // check if provider class implements ExternalSchemaRelationProvider
             try {
-              val clazz: Class[_] = DataSource(session, provider).providingClass
+              val clazz: Class[_] = DataSource(session, SnappyContext
+                .getProvider(provider, onlyBuiltIn = false)).providingClass
               classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
             } catch {
-              case cnfe: ClassNotFoundException => throw new DDLException(cnfe.toString)
+              case ce: ClassNotFoundException =>
+                throw new DDLException(ce.toString)
               case t: Throwable => throw t
             }
           }
@@ -787,30 +815,28 @@ private[sql] class SnappyDDLParser(session: SnappySession,
           }
           val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
 
-          if (temporary.isDefined) {
-            CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-              temporary = true, options, Array.empty[String], None, allowExisting.isDefined,
-              managedIfNoPath = false)
-          } else {
-            CreateMetastoreTableUsing(tableIdent, userSpecifiedSchema,
-              schemaDDL, provider, allowExisting.isDefined, options)
+          tempOrExternal match {
+            case None =>
+              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting.isDefined, options,
+                isBuiltIn = true)
+            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
+              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting.isDefined, options,
+                isBuiltIn = false)
+            case Some(_) =>
+              CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
+                temporary = true, options, Array.empty[String], None,
+                allowExisting.isDefined, managedIfNoPath = false)
           }
         }
     }
 
   // This is the same as tableIdentifier in SnappyParser.
-  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
     (ident <~ ".").? ~ ident ^^ {
-      case maybeSchemaName ~ tableName => {
-        val schemaName = maybeSchemaName match {
-          case Some(schema) => schema
-          case _ => session.sessionCatalog.getCurrentDatabase
-        }
-        new QualifiedTableName(Some(SnappyStoreHiveCatalog.processTableIdentifier(schemaName,
-          session.sessionState.conf)),
-          tableName)
-      }
-
+      case maybeSchemaName ~ tableName =>
+        TableIdentifier(tableName, maybeSchemaName)
     }
 
   protected override lazy val primitiveType: Parser[DataType] =
@@ -827,7 +853,8 @@ private[sql] class SnappyDDLParser(session: SnappySession,
     "(?i)(?:smallint|short)".r ^^^ ShortType |
     "(?i)(?:tinyint|byte)".r ^^^ ByteType |
     "(?i)boolean".r ^^^ BooleanType |
-    varchar
+    varchar |
+    char
 
   protected override lazy val fixedDecimalType: Parser[DataType] =
     ("(?i)(?:decimal|numeric)".r ~> "(" ~> numericLit) ~ ("," ~> numericLit <~ ")") ^^ {
@@ -835,9 +862,12 @@ private[sql] class SnappyDDLParser(session: SnappySession,
         DecimalType(precision.toInt, scale.toInt)
     }
 
+  protected override lazy val char: Parser[DataType] =
+    "(?i)(?:character|char)".r ~> "(" ~> (numericLit <~ ")") ^^^ StringType
+
   protected lazy val createIndex: Parser[LogicalPlan] =
     (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
-      (tableIdentifier) ~ (ON ~> tableIdentifier) ~
+      tableIdentifier ~ (ON ~> tableIdentifier) ~
       colWithDirection ~ (OPTIONS ~> options).? ^^ {
       case indexType ~ indexName ~ tableName ~ cols ~ opts =>
         val parameters = opts.getOrElse(Map.empty[String, String])
@@ -848,10 +878,10 @@ private[sql] class SnappyDDLParser(session: SnappySession,
             case Some(x) if x.toString.equals("(global~hash)") =>
               "global hash"
           }
-          CreateIndex(indexName.toString, tableName,
+          CreateIndex(indexName, tableName,
             cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
         } else {
-          CreateIndex(indexName.toString, tableName, cols, parameters)
+          CreateIndex(indexName, tableName, cols, parameters)
         }
 
     }
@@ -864,7 +894,7 @@ private[sql] class SnappyDDLParser(session: SnappySession,
   protected lazy val dropIndex: Parser[LogicalPlan] =
     DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
       case ifExists ~ indexName =>
-        DropIndex(indexName.toString, ifExists.isDefined)
+        DropIndex(indexName, ifExists.isDefined)
     }
 
   protected lazy val direction: Parser[SortDirection] =
@@ -874,15 +904,14 @@ private[sql] class SnappyDDLParser(session: SnappySession,
 
 
   protected lazy val dropTable: Parser[LogicalPlan] =
-    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
-      case temporary ~ allowExisting ~ tableName =>
-        DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
+    DROP ~> TABLE ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
+      case allowExisting ~ tableName =>
+        DropTable(tableName, allowExisting.isDefined)
     }
 
   protected lazy val truncateTable: Parser[LogicalPlan] =
-    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ tableIdentifier ^^ {
-      case temporary ~ tableName =>
-        TruncateTable(tableName, temporary.isDefined)
+    TRUNCATE ~> TABLE ~> tableIdentifier ^^ {
+      case tableName => TruncateTable(tableName)
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
@@ -891,15 +920,17 @@ private[sql] class SnappyDDLParser(session: SnappySession,
       case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
         val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName,
-          onlyBuiltin = false)
+          onlyBuiltIn = false)
         // check that the provider is a stream relation
         val clazz = DataSource(session, provider).providingClass
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw Utils.analysisException(s"CREATE STREAM provider $providerName" +
               " does not implement StreamPlanProvider")
         }
-        CreateMetastoreTableUsing(streamName, specifiedSchema, None,
-          provider, allowExisting.isDefined, opts, onlyExternal = false)
+        // provider has already been resolved, so isBuiltIn==false allows
+        // for both builtin as well as external implementations
+        CreateMetastoreTableUsing(streamName, None, specifiedSchema, None,
+          provider, allowExisting.isDefined, opts, isBuiltIn = false)
     }
 
   protected lazy val streamContext: Parser[LogicalPlan] =
@@ -936,94 +967,97 @@ private[sql] class SnappyDDLParser(session: SnappySession,
 
 private[sql] case class CreateMetastoreTableUsing(
     tableIdent: TableIdentifier,
+    baseTable: Option[TableIdentifier],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String],
-    onlyExternal: Boolean = false) extends RunnableCommand {
+    isBuiltIn: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(
-      snc.sessionState.asInstanceOf[SnappySessionState].catalog.newQualifiedTableName(tableIdent), provider,
-      userSpecifiedSchema, schemaDDL, mode, options,
-      onlyBuiltIn = false, onlyExternal)
+    snc.createTable(snc.sessionState.asInstanceOf[SnappySessionState].catalog
+        .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
+      schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
     Seq.empty
   }
 }
 
 private[sql] case class CreateMetastoreTableUsingSelect(
     tableIdent: TableIdentifier,
+    baseTable: Option[TableIdentifier],
     provider: String,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
     query: LogicalPlan,
-    onlyExternal: Boolean = false) extends RunnableCommand {
+    isBuiltIn: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
-    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
-    snc.createTable(qualifiedName, provider, partitionColumns, mode,
-      options, query, onlyBuiltIn = false, onlyExternal)
-    // refresh cache of the table in catalog
-    catalog.invalidateTable(qualifiedName)
+    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
+      partitionColumns, mode, snc.addBaseTableOption(baseTable, options),
+      query, isBuiltIn)
     Seq.empty
   }
 }
 
 private[sql] case class DropTable(
-    tableIdent: QualifiedTableName,
-    temporary: Boolean,
+    tableIdent: TableIdentifier,
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    snc.dropTable(tableIdent, ifExists)
+    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists)
     Seq.empty
   }
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: QualifiedTableName,
-    temporary: Boolean) extends RunnableCommand {
+    tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    snc.truncateTable(tableIdent)
+    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    snc.truncateTable(catalog.newQualifiedTableName(tableIdent))
     Seq.empty
   }
 }
 
-private[sql] case class CreateIndex(indexName: String,
-    baseTable: QualifiedTableName,
+private[sql] case class CreateIndex(indexName: TableIdentifier,
+    baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    snc.createIndex(indexName, baseTable.toString,
-      indexColumns, options)
+    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val tableIdent = catalog.newQualifiedTableName(baseTable)
+    val indexIdent = catalog.newQualifiedTableName(indexName)
+    snc.createIndex(indexIdent, tableIdent, indexColumns, options)
     Seq.empty
   }
 }
 
 private[sql] case class DropIndex(
-    indexName: String,
+    indexName: TableIdentifier,
     ifExists : Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    snc.dropIndex(indexName, ifExists)
+    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val indexIdent = catalog.newQualifiedTableName(indexName)
+    snc.dropIndex(indexIdent, ifExists)
     Seq.empty
   }
 }
 
 case class DMLExternalTable(
-    tableName: QualifiedTableName,
+    tableName: TableIdentifier,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {

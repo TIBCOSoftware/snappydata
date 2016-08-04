@@ -46,9 +46,9 @@ final class RabbitMQStringDecoder extends RabbitMQDecoder[String] {
 }
 
 final class RabbitMQInputDStream[T: ClassTag, D: ClassTag](
-    @transient snsc: SnappyStreamingContext,
-    options: Map[String, String]
-) extends ReceiverInputDStream[T](snsc){
+    _snsc: SnappyStreamingContext,
+    options: Map[String, String])
+    extends ReceiverInputDStream[T](_snsc) {
 
   override def getReceiver(): Receiver[T] = {
     new RabbitMQReceiver[T, D](options)
@@ -59,7 +59,7 @@ final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: Map[String, Stri
     extends Receiver[T](StorageLevel.MEMORY_AND_DISK_SER_2) with Logging {
 
   override def onStart() {
-    implicit val akkaSystem = akka.actor.ActorSystem()
+    // implicit val akkaSystem = akka.actor.ActorSystem()
     getConnectionAndChannel match {
       case Success((connection: Connection, channel: Channel)) =>
         new Thread() {
@@ -67,9 +67,8 @@ final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: Map[String, Stri
             receive(connection, channel)
           }
         }.start()
-      case Failure(f) => {
+      case Failure(f) =>
         restart("Failed to connect", f)
-      }
     }
   }
 
@@ -86,7 +85,7 @@ final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: Map[String, Stri
 
   private def receive(connection: Connection,
       channel: Channel): Unit = {
-    val queueName: String = options.get("queuename").get
+    val queueName: String = options("queuename")
     val consumer: QueueingConsumer = new QueueingConsumer(channel)
     channel.basicConsume(queueName, false, consumer)
     while (!isStopped()) {
@@ -101,4 +100,3 @@ final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: Map[String, Stri
   override def onStop() {
   }
 }
-

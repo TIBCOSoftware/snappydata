@@ -1,5 +1,4 @@
 apply plugin: 'scala'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 compileScala.options.encoding = 'UTF-8'
 
@@ -22,32 +21,31 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0-8_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
-    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-kafka-0-8_' + scalaBinaryVersion + ':' +
-        sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
     testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
   } else {
-    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
+    testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
   if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
@@ -57,18 +55,38 @@ dependencies {
 
   testCompile project(':dunit')
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
-  //Uncomment after AQP merge
-/*
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
-    testCompile project(":snappy-aqp_${scalaBinaryVersion}")
-  } else {
-    testCompile "io.snappydata:snappy-aqp_${scalaBinaryVersion}:${version}"
-  }
-*/
-  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.6'
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testRuntime 'org.pegdown:pegdown:1.1.0'
+  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
+
+// Creates the version properties file and writes it to the resources dir
+task createVersionPropertiesFile(dependsOn: 'processResources') {
+  def propertiesDir = file("${buildDir}/resources/main/io/snappydata")
+  outputs.file "${propertiesDir}/SnappyDataVersion.properties"
+  inputs.dir compileJava.destinationDir
+
+  doLast {
+
+    def props = [
+      "Product-Name"      : productName,
+      "Product-Version"   : version,
+      "Build-Id"          : System.env.USER + ' ' + buildNumber,
+      "Build-Date"        : buildDate,
+      "Build-Platform"    : osName.getName() + osVersion + osArch,
+      "Build-Java-Version": jdkVersion,
+      "Source-Date"       : sourceDate,
+      "Source-Revision"   : commitId,
+      "Source-Repository" : gitBranch,
+    ]
+
+   writeProperties(propertiesDir, 'SnappyDataVersion.properties',
+        "Properties that control what version ${productName} will think it is. Changing these values may cause ${productName} to no longer function.", props)
+  }
+}
+
+compileJava.dependsOn createVersionPropertiesFile
+
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
@@ -144,35 +162,3 @@ scalaTest {
   }
 }
 check.dependsOn test, scalaTest, dunitTest
-
-shadowJar {
-  zip64 = true
-
-  //inputs.files jar.outputs.files
-  //outputs.file "${buildDir}/libs/${archiveName}"
-
-  mergeServiceFiles {
-    exclude 'META-INF/*.SF'
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.RSA'
-  }
-  append('META-INF/services/org.apache.hadoop.fs.FileSystem')
-  append('reference.conf')
-  exclude 'org/datanucleus/**'
-  exclude 'log4j.properties'
-
-  if (rootProject.hasProperty('enablePublish')) {
-    createdBy = "SnappyData Build Team"
-  } else {
-    createdBy = System.getProperty("user.name")
-  }
-  manifest {
-    attributes(
-      "Manifest-Version"  : "1.0",
-      "Created-By"        : createdBy,
-      "Title"             : rootProject.name,
-      "Version"           : version,
-      "Vendor"            : "SnappyData, Inc."
-    )
-  }
-}

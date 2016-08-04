@@ -32,13 +32,13 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
  * This RDD is responsible for booting up GemFireXD store (for non-snappydata
  * clusters) and other setup for tables on executors.
  */
-class StoreInitRDD(@transient sqlContext: SQLContext,
+class StoreInitRDD(@transient private val sqlContext: SQLContext,
     table: String,
     userSchema: Option[StructType],
     partitions: Int,
@@ -58,8 +58,9 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     GemFireXDDialect.init()
     DriverRegistry.register(connProperties.driver)
 
-    //TODO:Suranjan Hackish as we have to register this store at each executor, for storing the cachedbatch
-    // We are creating JDBCSourceAsColumnarStore without blockMap as storing at each executor
+    // TODO:Suranjan Hackish as we have to register this store at each
+    // executor, for storing the CachedBatch we are creating
+    // JDBCSourceAsColumnarStore without blockMap as storing at each executor
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
@@ -115,4 +116,3 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
 }
-

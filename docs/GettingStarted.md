@@ -45,7 +45,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData Preview 0.4.0 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.zip)
+* SnappyData 0.5 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5/snappydata-0.5-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5/snappydata-0.5-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -60,11 +60,11 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappy-core_2.10
-version: 0.4.0-PREVIEW
+version: 0.5
 
 groupId: io.snappydata
 artifactId: snappy-cluster_2.10
-version: 0.4.0-PREVIEW
+version: 0.5
 ```
 
 ## Working with SnappyData Source Code
@@ -73,8 +73,8 @@ If you are interested in working with the latest code or contributing to SnappyD
 Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
-###### 0.x preview release branch with stability and other fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview --recursive
+###### 0.5 release branch with stability and other fixes ######
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.5 --recursive
 ```
 
 #### Building SnappyData from source
@@ -327,13 +327,13 @@ The following DDL creates a sample that is 3% of the full data set and stratifie
 
 ```sql
 CREATE SAMPLE TABLE AIRLINE_SAMPLE
+   ON AIRLINE                             -- The parent base table
    OPTIONS(
     buckets '5',                          -- Number of partitions 
     qcs 'UniqueCarrier, Year_, Month_',   -- QueryColumnSet(qcs): The strata - 3% of each combination of Carrier, 
                                           -- Year and Month are stored as sample
     fraction '0.03',                      -- How big should the sample be
-    strataReservoirSize '50',             -- Reservoir sampling to support streaming inserts
-    basetable 'Airline')                  -- The parent base table
+    strataReservoirSize '50'              -- Reservoir sampling to support streaming inserts
 ```
 You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
 
@@ -503,7 +503,7 @@ Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column 
 
 ```bash
 # Submit a job to Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.4.0-PREVIEW.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.5.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
@@ -548,7 +548,7 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 
 ```bash
 # Submit AirlineDataJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./lib/quickstart-0.4.0-PREVIEW.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./lib/quickstart-0.5.jar
 { "status": "STARTED",
   "result": {
     "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2",
@@ -577,13 +577,12 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 The following scala code creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ clauses make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
 ```scala
-val sampleDF = snappyContext.createTable(sampleTable, 
+val sampleDF = snappyContext.createTable(sampleTable, Some("Airline"),
         "column_sample", // DataSource provider for sample tables
         updatedSchema, Map("buckets" -> "5",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
-          "strataReservoirSize" -> "50",
-          "basetable" -> "Airline"
+          "strataReservoirSize" -> "50"
         ))
 ```
 You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
@@ -642,12 +641,11 @@ SnappyData provides an API in the [SnappyContext](http://snappydatainc.github.io
 
 ```scala
 --- Create a topk table from a stream table
-snappyContext.createApproxTSTopK("topktable", "hashtag",
+snappyContext.createApproxTSTopK("topktable", Some("hashtagTable"), "hashtag",
     Some(schema), Map(
       "epoch" -> System.currentTimeMillis().toString,
       "timeInterval" -> "2000ms",
-      "size" -> "10",
-      "basetable" -> "HASHTAGTABLE"
+      "size" -> "10"
     ))
 --- Query a topk table for the last two seconds
 val topKDF = snappyContext.queryApproxTSTopK("topktable",
@@ -664,7 +662,7 @@ Submit the `TwitterPopularTagsJob` that declares a stream table, creates and pop
  
 ```bash
 # Submit the TwitterPopularTagsJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.4.0-PREVIEW.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.5.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -679,7 +677,7 @@ $ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,ac
 
 # submit the TwitterPopularTagsJob Lead node on port 8090 that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.4.0-PREVIEW.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.5.jar --stream
 
 ```
 The output of the job can be found in `TwitterPopularTagsJob_timestamp.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. 
@@ -707,7 +705,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.4.0-PREVIEW.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.5.jar
 
 # The results can be seen on the command line. 
 ```

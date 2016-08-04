@@ -182,6 +182,8 @@ object ClusterManagerTestBase {
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+    // conf.set("spark.executor.memory", "2g")
+    // conf.set("spark.shuffle.manager", "SORT")
 
     props.asScala.foreach({ case (k, v) =>
       if (k.indexOf(".") < 0) {

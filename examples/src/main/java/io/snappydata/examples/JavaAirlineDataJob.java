@@ -74,13 +74,12 @@ public class JavaAirlineDataJob {
     options.put("qcs", "UniqueCarrier, Year_, Month_");
     options.put("fraction", "0.03");
     options.put("strataReservoirSize", "50");
-    options.put("basetable", "Airline");
 
-    snc.createSampleTable(sampleTable, options, false);
+    snc.createSampleTable(sampleTable, "Airline", options, false);
 
 
     // Initiate the sampling from base table to sample table.
-    snc.table(colTable).write().mode(SaveMode.Append).saveAsTable(sampleTable);
+    snc.table(colTable).write().insertInto(sampleTable);
 
     System.out.println(String.format("Created and imported data in %s table.", sampleTable));
 

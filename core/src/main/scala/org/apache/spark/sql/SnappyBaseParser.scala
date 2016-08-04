@@ -23,9 +23,9 @@ import scala.util.{Failure, Success}
 import org.parboiled2._
 
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types._
 
 /**
@@ -142,32 +142,32 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   // It is not useful to see long list of "expected ARRAY or BIGINT or ..."
   // for parse errors, so not making these separate rules and instead naming
   // the common rule as "datatype" which is otherwise identical to "keyword"
-  final def ARRAY = dataType(SnappyParserConsts.ARRAY)
-  final def BIGINT = dataType(SnappyParserConsts.BIGINT)
-  final def BINARY = dataType(SnappyParserConsts.BINARY)
-  final def BLOB = dataType(SnappyParserConsts.BLOB)
-  final def BOOLEAN = dataType(SnappyParserConsts.BOOLEAN)
-  final def BYTE = dataType(SnappyParserConsts.BYTE)
-  final def CHAR = dataType(SnappyParserConsts.CHAR)
-  final def CLOB = dataType(SnappyParserConsts.CLOB)
-  final def DATE = dataType(SnappyParserConsts.DATE)
-  final def DECIMAL = dataType(SnappyParserConsts.DECIMAL)
-  final def DOUBLE = dataType(SnappyParserConsts.DOUBLE)
-  final def FLOAT = dataType(SnappyParserConsts.FLOAT)
-  final def INT = dataType(SnappyParserConsts.INT)
-  final def INTEGER = dataType(SnappyParserConsts.INTEGER)
-  final def LONG = dataType(SnappyParserConsts.LONG)
-  final def MAP = dataType(SnappyParserConsts.MAP)
-  final def NUMERIC = dataType(SnappyParserConsts.NUMERIC)
-  final def REAL = dataType(SnappyParserConsts.REAL)
-  final def SHORT = dataType(SnappyParserConsts.SHORT)
-  final def SMALLINT = dataType(SnappyParserConsts.SMALLINT)
-  final def STRING = dataType(SnappyParserConsts.STRING)
-  final def STRUCT = dataType(SnappyParserConsts.STRUCT)
-  final def TIMESTAMP = dataType(SnappyParserConsts.TIMESTAMP)
-  final def TINYINT = dataType(SnappyParserConsts.TINYINT)
-  final def VARBINARY = dataType(SnappyParserConsts.VARBINARY)
-  final def VARCHAR = dataType(SnappyParserConsts.VARCHAR)
+  final def ARRAY: Rule0 = dataType(SnappyParserConsts.ARRAY)
+  final def BIGINT: Rule0 = dataType(SnappyParserConsts.BIGINT)
+  final def BINARY: Rule0 = dataType(SnappyParserConsts.BINARY)
+  final def BLOB: Rule0 = dataType(SnappyParserConsts.BLOB)
+  final def BOOLEAN: Rule0 = dataType(SnappyParserConsts.BOOLEAN)
+  final def BYTE: Rule0 = dataType(SnappyParserConsts.BYTE)
+  final def CHAR: Rule0 = dataType(SnappyParserConsts.CHAR)
+  final def CLOB: Rule0 = dataType(SnappyParserConsts.CLOB)
+  final def DATE: Rule0 = dataType(SnappyParserConsts.DATE)
+  final def DECIMAL: Rule0 = dataType(SnappyParserConsts.DECIMAL)
+  final def DOUBLE: Rule0 = dataType(SnappyParserConsts.DOUBLE)
+  final def FLOAT: Rule0 = dataType(SnappyParserConsts.FLOAT)
+  final def INT: Rule0 = dataType(SnappyParserConsts.INT)
+  final def INTEGER: Rule0 = dataType(SnappyParserConsts.INTEGER)
+  final def LONG: Rule0 = dataType(SnappyParserConsts.LONG)
+  final def MAP: Rule0 = dataType(SnappyParserConsts.MAP)
+  final def NUMERIC: Rule0 = dataType(SnappyParserConsts.NUMERIC)
+  final def REAL: Rule0 = dataType(SnappyParserConsts.REAL)
+  final def SHORT: Rule0 = dataType(SnappyParserConsts.SHORT)
+  final def SMALLINT: Rule0 = dataType(SnappyParserConsts.SMALLINT)
+  final def STRING: Rule0 = dataType(SnappyParserConsts.STRING)
+  final def STRUCT: Rule0 = dataType(SnappyParserConsts.STRUCT)
+  final def TIMESTAMP: Rule0 = dataType(SnappyParserConsts.TIMESTAMP)
+  final def TINYINT: Rule0 = dataType(SnappyParserConsts.TINYINT)
+  final def VARBINARY: Rule0 = dataType(SnappyParserConsts.VARBINARY)
+  final def VARCHAR: Rule0 = dataType(SnappyParserConsts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
     (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ ',' ~ ws ~ digits ~ ')' ~ ws ~>
@@ -226,10 +226,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
         ((fields: Seq[StructField]) => StructType(fields.toArray))
   }
 
-  protected final def tableIdentifier: Rule1[QualifiedTableName] = rule {
+  protected final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schemaOpt: Option[String],
-        table: String) => new QualifiedTableName(schemaOpt, table))
+        table: String) => TableIdentifier(table, schemaOpt))
   }
 
   /** Returns the rest of the input string that are not parsed yet */

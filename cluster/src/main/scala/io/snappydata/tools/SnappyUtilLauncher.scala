@@ -18,14 +18,16 @@ package io.snappydata.tools
 
 import java.io.{File, IOException}
 
-import com.gemstone.gemfire.internal.GemFireTerminateError
+import com.gemstone.gemfire.internal.{GemFireUtilLauncher, GemFireTerminateError}
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdUtilLauncher}
+import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdAgentLauncher, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
+import io.snappydata.gemxd.SnappySystemAdmin
 
 /**
  * Launcher class encompassing snappy processes command lines.
@@ -50,6 +52,13 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
     val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
     types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher],
       LocalizedStrings.GemFireUtilLauncher_Agent_Usage.toString(Array[AnyRef](product)), false))
+
+    for (cmd <- GfxdSystemAdmin.getValidCommands) {
+      if ("version".equals(cmd)) {
+        types.put(cmd, new GemFireUtilLauncher.CommandEntry(classOf[SnappySystemAdmin],
+          LocalizedResource.getMessage("UTIL_" + cmd.replace('-', '_') + "_ShortDesc"), true))
+      }
+    }
 
     // MiscTools utilities
     val miscToolsIterator = MiscTools.getValidCommands.entrySet.iterator()

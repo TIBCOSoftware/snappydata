@@ -37,7 +37,8 @@ public class SnappyJavaUtils {
    * A static factory method to create a {@link DataFrameWriterJavaFunctions} based
    * on an existing {@link DataFrameWriter} instance.
    */
-  public static DataFrameWriterJavaFunctions snappyJavaUtil(DataFrameWriter dataFrameWriter) {
+  public static DataFrameWriterJavaFunctions snappyJavaUtil(
+      DataFrameWriter<?> dataFrameWriter) {
     return new DataFrameWriterJavaFunctions(dataFrameWriter);
   }
 

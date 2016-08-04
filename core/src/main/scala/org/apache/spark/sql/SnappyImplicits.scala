@@ -123,18 +123,19 @@ object snappy extends Serializable {
    * Unfortunately everything including DataFrame is private in
    * DataFrameWriter so have to use reflection.
    */
-  private[this] val dfField = classOf[DataFrameWriter].getDeclaredFields.find {
+  private[this] val dfField = classOf[DataFrameWriter[_]].getDeclaredFields.find {
     f => f.getName == "df" || f.getName.endsWith("$df")
   }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
 
-  private[this] val parColsMethod = classOf[DataFrameWriter].getDeclaredMethods().find {f => f
-      .getName.contains("$normalizedParCols")}.getOrElse(sys.error("Failed to obtain method  " +
+  private[this] val parColsMethod = classOf[DataFrameWriter[_]]
+      .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
+      .getOrElse(sys.error("Failed to obtain method  " +
       "normalizedParCols from DataFrameWriter"))
 
   dfField.setAccessible(true)
   parColsMethod.setAccessible(true)
 
-  implicit class DataFrameWriterExtensions(writer: DataFrameWriter)
+  implicit class DataFrameWriterExtensions(writer: DataFrameWriter[_])
       extends Serializable {
 
     /**
@@ -163,10 +164,9 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sparkSession.sessionState.executePlan(
-        PutIntoTable(
-          UnresolvedRelation(session.sessionState.catalog.newQualifiedTableName(tableName)),
-          input)).toRdd
+      df.sparkSession.sessionState.executePlan(PutIntoTable(
+          UnresolvedRelation(session.sessionState.catalog
+              .newQualifiedTableName(tableName)), input)).toRdd.count()
     }
   }
 }

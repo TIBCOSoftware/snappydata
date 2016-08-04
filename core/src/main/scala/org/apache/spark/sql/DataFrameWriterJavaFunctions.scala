@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import org.apache.spark.sql.snappy.DataFrameWriterExtensions
 
 
-class DataFrameWriterJavaFunctions(val dfWriter: DataFrameWriter) {
+class DataFrameWriterJavaFunctions(val dfWriter: DataFrameWriter[_]) {
 
   /**
    * Inserts the content of the [[DataFrame]] to the specified table. It requires

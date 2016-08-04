@@ -16,34 +16,25 @@
 */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTableUsingAsSelect, CreateTableUsing, RefreshTable}
-
-import scala.language.implicitConversions
-
-import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import scala.language.implicitConversions
 import scala.util.matching.Regex
-import scala.util.parsing.combinator.PackratParsers
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
-import org.apache.spark.sql.types._
-import scala.util.parsing.combinator.RegexParsers
-
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
-import org.apache.spark.sql.catalyst.plans.logical
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.types.StringType
-
+import scala.util.parsing.combinator.{PackratParsers, RegexParsers}
 import scala.util.parsing.input.CharArrayReader._
 
+import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.parser.ParserUtils
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.execution.command._
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, RefreshTable}
+import org.apache.spark.sql.types.{StringType, _}
 
 abstract class ParserDialect {
   // this is the main function that will be implemented by sql parser.
   def parse(sqlText: String): LogicalPlan
 }
-
 
 /**
  * A parser for foreign DDL commands.
@@ -102,14 +93,18 @@ class DDLParser(parseQuery: String => LogicalPlan)
       case temp ~ allowExisting ~ tableIdent ~ columns ~ provider ~ opts ~ query =>
         if (temp.isDefined && allowExisting.isDefined) {
           throw new DDLException(
-            "a CREATE TEMPORARY TABLE statement does not allow IF NOT EXISTS clause.")
+            "CREATE TEMPORARY TABLE statement does not allow IF NOT EXISTS clause.")
         }
 
         val options = opts.getOrElse(Map.empty[String, String])
         if (query.isDefined) {
           if (columns.isDefined) {
             throw new DDLException(
-              "a CREATE TABLE AS SELECT statement does not allow column definitions.")
+              "CREATE TABLE AS SELECT statement does not allow column definitions.")
+          }
+          if (temp.isDefined) {
+            throw new DDLException(
+              "CREATE TEMPORARY TABLE ... USING ... does not allow AS query")
           }
           // When IF NOT EXISTS clause appears in the query, the save mode will be ignore.
           val mode = if (allowExisting.isDefined) {
@@ -123,7 +118,6 @@ class DDLParser(parseQuery: String => LogicalPlan)
           val queryPlan = parseQuery(query.get)
           CreateTableUsingAsSelect(tableIdent,
             provider,
-            temp.isDefined,
             Array.empty[String],
             None,
             mode,
@@ -151,28 +145,27 @@ class DDLParser(parseQuery: String => LogicalPlan)
       case maybeDbName ~ tableName => TableIdentifier(tableName, maybeDbName)
     }
 
-  protected lazy val tableCols: Parser[Seq[StructField]] = "(" ~> repsep(column, ",") <~ ")"
+  protected lazy val tableCols: Parser[Seq[StructField]] =
+    "(" ~> repsep(column, ",") <~ ")"
 
   /*
    * describe [extended] table avroTable
-   * This will display all columns of table `avroTable` includes column_name,column_type,comment
+   * This will display all columns of table `avroTable` includes column_name,
+   *   column_type,comment
    */
   protected lazy val describeTable: Parser[LogicalPlan] =
     (DESCRIBE ~> opt(EXTENDED)) ~ tableIdentifier ^^ {
       case e ~ tableIdent =>
-        DescribeTableCommand(tableIdent, e.isDefined, false)
+        DescribeTableCommand(tableIdent, e.isDefined, isFormatted = false)
     }
 
   protected lazy val refreshTable: Parser[LogicalPlan] =
-    REFRESH ~> TABLE ~> tableIdentifier ^^ {
-      case tableIndet =>
-        RefreshTable(tableIndet)
-    }
+    REFRESH ~> TABLE ~> tableIdentifier ^^ RefreshTable
 
   protected lazy val options: Parser[Map[String, String]] =
-    "(" ~> repsep(pair, ",") <~ ")" ^^ { case s: Seq[(String, String)] => s.toMap }
+    "(" ~> repsep(pair, ",") <~ ")" ^^ (_.toMap)
 
-  protected lazy val className: Parser[String] = repsep(ident, ".") ^^ { case s => s.mkString(".")}
+  protected lazy val className: Parser[String] = repsep(ident, ".") ^^ (_.mkString("."))
 
   override implicit def regexToParser(regex: Regex): Parser[String] = acceptMatch(
     s"identifier matching regex $regex", {
@@ -181,13 +174,10 @@ class DDLParser(parseQuery: String => LogicalPlan)
     }
   )
 
-  protected lazy val optionPart: Parser[String] = "[_a-zA-Z][_a-zA-Z0-9]*".r ^^ {
-    case name => name
-  }
+  protected lazy val optionPart: Parser[String] = "[_a-zA-Z][_a-zA-Z0-9]*".r
 
-  protected lazy val optionName: Parser[String] = repsep(optionPart, ".") ^^ {
-    case parts => parts.mkString(".")
-  }
+  protected lazy val optionName: Parser[String] = repsep(optionPart, ".") ^^
+      (_.mkString("."))
 
   protected lazy val pair: Parser[(String, String)] =
     optionName ~ stringLit ^^ { case k ~ v => (k, v) }
@@ -195,8 +185,8 @@ class DDLParser(parseQuery: String => LogicalPlan)
   protected lazy val column: Parser[StructField] =
     ident ~ dataType ~ (COMMENT ~> stringLit).?  ^^ { case columnName ~ typ ~ cm =>
       val meta = cm match {
-        case Some(comment) =>
-          new MetadataBuilder().putString(COMMENT.str.toLowerCase, comment).build()
+        case Some(comment) => new MetadataBuilder().putString(
+          COMMENT.str.toLowerCase, comment).build()
         case None => Metadata.empty
       }
 
@@ -214,7 +204,7 @@ private[sql] trait DataTypeParser extends StandardTokenParsers {
   // since these strings can be also used as column names or field names.
   import lexical.Identifier
   implicit def regexToParser(regex: Regex): Parser[String] = acceptMatch(
-    s"identifier matching regex ${regex}",
+    s"identifier matching regex $regex",
     { case Identifier(str) if regex.unapplySeq(str).isDefined => str }
   )
 
@@ -248,9 +238,7 @@ private[sql] trait DataTypeParser extends StandardTokenParsers {
     "(?i)varchar".r ~> "(" ~> (numericLit <~ ")") ^^^ StringType
 
   protected lazy val arrayType: Parser[DataType] =
-    "(?i)array".r ~> "<" ~> dataType <~ ">" ^^ {
-      case tpe => ArrayType(tpe)
-    }
+    "(?i)array".r ~> "<" ~> dataType <~ ">" ^^ (ArrayType(_))
 
   protected lazy val mapType: Parser[DataType] =
     "(?i)map".r ~> "<" ~> dataType ~ "," ~ dataType <~ ">" ^^ {
@@ -263,8 +251,8 @@ private[sql] trait DataTypeParser extends StandardTokenParsers {
     }
 
   protected lazy val structType: Parser[DataType] =
-    ("(?i)struct".r ~> "<" ~> repsep(structField, ",") <~ ">"  ^^ {
-      case fields => new StructType(fields.toArray)
+    ("(?i)struct".r ~> "<" ~> repsep(structField, ",") <~ ">"  ^^ { fields =>
+      new StructType(fields.toArray)
     }) |
       ("(?i)struct".r ~ "<>" ^^^ StructType(Nil))
 
@@ -277,7 +265,8 @@ private[sql] trait DataTypeParser extends StandardTokenParsers {
   def toDataType(dataTypeString: String): DataType = synchronized {
     phrase(dataType)(new lexical.Scanner(dataTypeString)) match {
       case Success(result, _) => result
-      case failure: NoSuccess => throw new DataTypeException(failMessage(dataTypeString))
+      case failure: NoSuccess =>
+        throw new DataTypeException(failMessage(dataTypeString))
     }
   }
 
@@ -389,11 +378,11 @@ class SqlLexical extends StdLexical {
       case i ~ Some(d) => DecimalLit(i.mkString + "." + d.mkString)
     }
       | '\'' ~> chrExcept('\'', '\n', EofCh).* <~ '\'' ^^
-      { case chars => StringLit(chars mkString "") }
+        (chars => StringLit(chars mkString ""))
       | '"' ~> chrExcept('"', '\n', EofCh).* <~ '"' ^^
-      { case chars => StringLit(chars mkString "") }
+        (chars => StringLit(chars mkString ""))
       | '`' ~> chrExcept('`', '\n', EofCh).* <~ '`' ^^
-      { case chars => Identifier(chars mkString "") }
+        (chars => Identifier(chars mkString ""))
       | EofCh ^^^ EOF
       | '\'' ~> failure("unclosed string literal")
       | '"' ~> failure("unclosed string literal")
@@ -435,8 +424,6 @@ class SparkSQLParser(fallback: String => LogicalPlan) extends AbstractSparkSQLPa
 
     private val value: Parser[String] = "(?m).*$".r
 
-    private val output: Seq[Attribute] = Seq(AttributeReference("", StringType, nullable = false)())
-
     private val pair: Parser[LogicalPlan] =
       (key ~ ("=".r ~> value).?).? ^^ {
         case None => SetCommand(None)
@@ -454,9 +441,11 @@ class SparkSQLParser(fallback: String => LogicalPlan) extends AbstractSparkSQLPa
   protected val CLEAR = Keyword("CLEAR")
   protected val DESCRIBE = Keyword("DESCRIBE")
   protected val EXTENDED = Keyword("EXTENDED")
+  protected val FROM = Keyword("FROM")
   protected val FUNCTION = Keyword("FUNCTION")
   protected val FUNCTIONS = Keyword("FUNCTIONS")
   protected val IN = Keyword("IN")
+  protected val LIKE = Keyword("LIKE")
   protected val LAZY = Keyword("LAZY")
   protected val SET = Keyword("SET")
   protected val SHOW = Keyword("SHOW")
@@ -467,23 +456,25 @@ class SparkSQLParser(fallback: String => LogicalPlan) extends AbstractSparkSQLPa
   override protected lazy val start: Parser[LogicalPlan] =
     cache | uncache | set | show | desc | others
 
+  // This is the same as tableIdentifier in SqlParser.
+  protected lazy val tableIdentifier: Parser[TableIdentifier] =
+    (ident <~ ".").? ~ ident ^^ {
+      case maybeDbName ~ tableName => TableIdentifier(tableName, maybeDbName)
+    }
+
   private lazy val cache: Parser[LogicalPlan] =
-    CACHE ~> LAZY.? ~ (TABLE ~> ident) ~ (AS ~> restInput).? ^^ {
+    CACHE ~> LAZY.? ~ (TABLE ~> tableIdentifier) ~ (AS ~> restInput).? ^^ {
       case isLazy ~ tableName ~ plan =>
         CacheTableCommand(tableName, plan.map(fallback), isLazy.isDefined)
     }
 
   private lazy val uncache: Parser[LogicalPlan] =
-    ( UNCACHE ~ TABLE ~> ident ^^ {
-      case tableName => UncacheTableCommand(tableName)
-    }
-      | CLEAR ~ CACHE ^^^ ClearCacheCommand
-      )
+    ( UNCACHE ~ TABLE ~> tableIdentifier ^^ UncacheTableCommand
+    | CLEAR ~ CACHE ^^^ ClearCacheCommand
+    )
 
   private lazy val set: Parser[LogicalPlan] =
-    SET ~> restInput ^^ {
-      case input => SetCommandParser(input)
-    }
+    SET ~> restInput ^^ (SetCommandParser(_))
 
   // It can be the following patterns:
   // SHOW FUNCTIONS;
@@ -491,14 +482,24 @@ class SparkSQLParser(fallback: String => LogicalPlan) extends AbstractSparkSQLPa
   // SHOW FUNCTIONS func1;
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   private lazy val show: Parser[LogicalPlan] =
-    ( SHOW ~> TABLES ~ (IN ~> ident).? ^^ {
-      case _ ~ dbName => ShowTablesCommand(dbName, None)
-    }
-      | SHOW ~ FUNCTIONS ~> ((ident <~ ".").? ~ (ident | stringLit)).? ^^ {
-      case Some(f) => ShowFunctionsCommand(f._1, Some(f._2))
-      case None => ShowFunctionsCommand(None, None)
-    }
-      )
+    ( SHOW ~> TABLES ~> ((FROM | IN) ~> ident).? ^^ (ShowTablesCommand(_, None))
+    | (SHOW ~> ident.? <~ FUNCTIONS <~ LIKE.?) ~ (tableIdentifier | stringLit).? ^^ {
+      case id ~ nameOrPat =>
+        val (user, system) = id.map(_.toLowerCase) match {
+          case None | Some("all") => (true, true)
+          case Some("system") => (false, true)
+          case Some("user") => (true, false)
+          case Some(x) =>
+            throw new DDLException(s"SHOW $x FUNCTIONS not supported")
+        }
+        nameOrPat match {
+          case Some(name: TableIdentifier) => ShowFunctionsCommand(
+            name.database, Some(name.table), user, system)
+          case Some(pat: String) => ShowFunctionsCommand(
+            None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
+          case _ => ShowFunctionsCommand(None, None, user, system)
+        }
+    })
 
   private lazy val desc: Parser[LogicalPlan] =
     DESCRIBE ~ FUNCTION ~> EXTENDED.? ~ (ident | stringLit) ^^ {
@@ -507,8 +508,5 @@ class SparkSQLParser(fallback: String => LogicalPlan) extends AbstractSparkSQLPa
     }
 
   private lazy val others: Parser[LogicalPlan] =
-    wholeInput ^^ {
-      case input => fallback(input)
-    }
-
+    wholeInput ^^ fallback
 }

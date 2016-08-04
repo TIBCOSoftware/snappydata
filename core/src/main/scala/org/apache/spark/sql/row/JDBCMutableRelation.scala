@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.{StoreTableValueSizeProviderService}
+import io.snappydata.StoreTableValueSizeProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -37,14 +37,14 @@ import org.apache.spark.{Logging, Partition}
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-class JDBCMutableRelation(
-    val connProperties: ConnectionProperties,
-    val table: String,
-    val provider: String,
+case class JDBCMutableRelation(
+    connProperties: ConnectionProperties,
+    table: String,
+    provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
-    val parts: Array[Partition],
-    val origOptions: Map[String, String],
+    parts: Array[Partition],
+    origOptions: Map[String, String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
@@ -71,6 +71,9 @@ class JDBCMutableRelation(
     connProperties.url, table, connProperties.connProps)
 
   final lazy val schemaFields = Utils.schemaFields(schema)
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+    filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
@@ -155,7 +158,7 @@ class JDBCMutableRelation(
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
-      filters,
+      filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
       connProperties.executorConnProps).asInstanceOf[RDD[Row]]

@@ -32,11 +32,13 @@ import org.apache.spark.{OneToOneDependency, Partition, SparkContext, SparkEnv, 
 
 
 /**
- * :: DeveloperApi ::
- * Performs an local hash join of two child relations.  If a relation (out of a datasource) is already replicated
- * accross all nodes then rather than doing a Broadcast join which can be expensive, this join just
- * scans through the single partition of the replicated relation while streaming through the other relation
- */
+  * :: DeveloperApi ::
+  * Performs an local hash join of two child relations. If a relation
+  * (out of a datasource) is already replicated accross all nodes then rather
+  * than doing a Broadcast join which can be expensive, this join just
+  * scans through the single partition of the replicated relation while
+  * streaming through the other relation.
+  */
 @DeveloperApi
 case class LocalJoin(leftKeys: Seq[Expression],
     rightKeys: Seq[Expression],
@@ -81,7 +83,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val hashedRDD = new HashRelationRDD(sc, buildRDD,
       streamRDD.partitions.length, sc.clean(hashedRelationIter))
 
-    narrowPartitions(hashedRDD, streamRDD, true) {
+    narrowPartitions(hashedRDD, streamRDD, preservesPartitioning = true) {
       (hashedIter, streamIter) => {
         val hashed = hashedIter.next()
         join(streamIter, hashed, numOutputRows)
@@ -110,27 +112,26 @@ private[spark] class HashRelationRDD(
     var f: (Iterator[InternalRow]) => HashedRelation
     ) extends RDD[HashedRelation](sc, Seq(new OneToOneDependency(buildRDD))) {
 
-  override def compute(s: Partition, context: TaskContext): Iterator[HashedRelation] = {
+  override def compute(s: Partition,
+      context: TaskContext): Iterator[HashedRelation] = {
 
     val blockId = RDDBlockId(this.id, s.index)
 
     val rel1 = SparkEnv.get.blockManager.getSingle(blockId) match {
       case Some(x) => x.asInstanceOf[HashedRelation]
-      case None => {
+      case None =>
         HashRelationRDD.synchronized {
           SparkEnv.get.blockManager.getSingle(blockId) match {
             case Some(x) => x.asInstanceOf[HashedRelation]
-            case None => {
+            case None =>
               val hashedRelation = f(buildRDD.iterator(s, context))
-              SparkEnv.get.blockManager.putSingle(
-                blockId, hashedRelation, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
+              SparkEnv.get.blockManager.putSingle(blockId, hashedRelation,
+                StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
 
               hashedRelation
-            }
           }
 
         }
-      }
     }
 
     Seq(rel1).iterator
@@ -146,13 +147,12 @@ private[spark] class HashRelationRDD(
   }
 }
 
-private[spark] class NarrowPartitionsRDD(
-    @transient sc: SparkContext,
+private[spark] class NarrowPartitionsRDD(_sc: SparkContext,
     var f: (Iterator[HashedRelation], Iterator[InternalRow]) => Iterator[InternalRow],
     var hashedRDD: RDD[HashedRelation],
     var streamRDD: RDD[InternalRow],
     preservesPartitioning: Boolean = false)
-    extends RDD[InternalRow](sc, Seq(new OneToOneDependency(streamRDD))) {
+    extends RDD[InternalRow](_sc, Seq(new OneToOneDependency(streamRDD))) {
 
   override def compute(s: Partition, context: TaskContext): Iterator[InternalRow] = {
     val partitions = s.asInstanceOf[NarrowPartitionsPartition]
@@ -167,10 +167,10 @@ private[spark] class NarrowPartitionsRDD(
       val streamLocs = streamRDD.preferredLocations(streamRDD.partitions(i))
       val buildLocs = hashedRDD.preferredLocations(part)
       val exactMatchLocations = streamLocs.intersect(buildLocs)
-      val locs = if (exactMatchLocations.nonEmpty) exactMatchLocations else
-                         (streamLocs ++ buildLocs).distinct
+      val locs = if (exactMatchLocations.nonEmpty) exactMatchLocations
+      else (streamLocs ++ buildLocs).distinct
 
-      new NarrowPartitionsPartition(part.index, hashedRDD, i, streamRDD , locs)
+      new NarrowPartitionsPartition(part.index, hashedRDD, i, streamRDD, locs)
     }
   }
 

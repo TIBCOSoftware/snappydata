@@ -21,15 +21,12 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
-
-import scala.reflect.ClassTag
 
 class SnappyContextFunctions {
 
@@ -41,7 +38,7 @@ class SnappyContextFunctions {
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
         Batch("Add exchange", Once, EnsureRequirements(session.sessionState.conf))
-        //Batch("Add row converters", Once, EnsureRowFormats)
+        // Batch("Add row converters", Once, EnsureRowFormats)
         // @TODO check why not needed, may
         // be because everything is expected in terms of unsafe row now
       )
@@ -50,71 +47,64 @@ class SnappyContextFunctions {
   def registerAQPErrorFunctions(session: SnappySession) {}
 
   def createTopK(session: SnappySession, tableName: String,
-    keyColumnName: String, schema: StructType,
-    topkOptions: Map[String, String], ifExists: Boolean): Unit =
+      keyColumnName: String, schema: StructType,
+      topkOptions: Map[String, String], ifExists: Boolean): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def dropTopK(session: SnappySession, topKName: String): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def insertIntoTopK(session: SnappySession, rows: RDD[Row],
-    topKName: QualifiedTableName, time: Long): Unit =
+      topKName: QualifiedTableName, time: Long): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def queryTopK(session: SnappySession, topKName: String,
-     startTime: String, endTime: String, k: Int): DataFrame =
+      startTime: String, endTime: String, k: Int): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def queryTopK(session: SnappySession, topK: String,
-     startTime: Long, endTime: Long, k: Int): DataFrame =
+      startTime: Long, endTime: Long, k: Int): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def queryTopKRDD(session: SnappySession, topK: String,
-     startTime: String,
-     endTime: String, schema: StructType): RDD[InternalRow] =
+      startTime: String,
+      endTime: String, schema: StructType): RDD[InternalRow] =
     throw new UnsupportedOperationException("missing aqp jar")
 
   protected[sql] def collectSamples(session: SnappySession, rows: RDD[Row],
-     aqpTables: Seq[String], time: Long): Unit =
+      aqpTables: Seq[String], time: Long): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def createSampleDataFrameContract(session: SnappySession, df: DataFrame,
-     logicalPlan: LogicalPlan): SampleDataFrameContract =
+      logicalPlan: LogicalPlan): SampleDataFrameContract =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def convertToStratifiedSample(options: Map[String, Any], session: SnappySession,
-    logicalPlan: LogicalPlan): LogicalPlan =
+      logicalPlan: LogicalPlan): LogicalPlan =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def isStratifiedSample(logicalPlan: LogicalPlan): Boolean =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-    confidence: Double): DataFrame =
+      confidence: Double, behavior: String): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def getSQLDialect(session: SnappySession): ParserDialect = {
-    try {
-      val clazz = Utils.classForName(
-        "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[SnappySession]).newInstance(session)
-        .asInstanceOf[ParserDialect]
-    } catch {
-      case _: Exception =>
-        new SnappyParserDialect(session)
-    }
+    new SnappyParserDialect(session)
   }
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType
-      .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
+    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
+      ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
   def executePlan(session: SnappySession,
-    plan: LogicalPlan): QueryExecution =
-    new QueryExecution(session, plan)
+      plan: LogicalPlan): QueryExecution = new QueryExecution(session, plan)
 
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T = fn(rowRDD, df)
 
+  def sql[T](fn: => T): T = fn
 }
-

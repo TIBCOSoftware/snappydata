@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -27,8 +27,9 @@ import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
 
 /**
- * This trait is an extension to SparkPlanner and introduces number of enhancements specific to Snappy.
- */
+  * This trait is an extension to SparkPlanner and introduces number of
+  * enhancements specific to SnappyData.
+  */
 private[sql] trait SnappyStrategies {
 
   self: DefaultPlanner =>
@@ -85,7 +86,26 @@ private[sql] trait SnappyStrategies {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
           if (t.numPartitions == 1) Some(plan) else None
-        case _ => None
+        case PhysicalOperation(projects, filters,
+        Join(left, right, _, _)) =>
+          val leftPlan = CanLocalJoin.unapply(left)
+          val rightPlan = CanLocalJoin.unapply(right)
+          // If join is a result of join of replicated tables, this
+          // join result should also be a local join with any other table
+          leftPlan match {
+            case Some(_) => rightPlan match {
+              case Some(_) => Some(plan)
+              case None => None
+            }
+            case None => None
+          }
+        case PhysicalOperation(_, _, node) if node.children.size == 1 =>
+          CanLocalJoin.unapply(node.children.head) match {
+            case Some(_) => Some(plan)
+            case None => None
+          }
+
+        case x => None
       }
     }
 
@@ -101,8 +121,6 @@ private[sql] trait SnappyStrategies {
         leftKeys, rightKeys, side, condition, Inner, planLater(left), planLater(right))
       condition.map(FilterExec(_, localHashJoin)).getOrElse(localHashJoin) :: Nil
     }
-
   }
-
 
 }

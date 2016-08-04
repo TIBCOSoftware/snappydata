@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.{Collections, UUID}
 
-import scala.collection.JavaConversions
 import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.internal.cache.BucketRegion
@@ -45,7 +44,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val partioner = new StoreHashFunction
 
-
   var useCompression = false
   var cachedBatchSize = 0
 
@@ -67,10 +65,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
-      bucketID: Int): java.util.Set[Any] = {
+      bucketID: Int): java.util.Set[AnyRef] = {
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
-    val store = stores.get(container.getTableName)
+    val store = stores.get(container.getQualifiedTableName)
+
     if (store.isDefined) {
       val (schema, externalStore) = store.get
       // LCC should be available assuming insert is already being done
@@ -100,18 +99,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             null, null, 0, null, null, 0, null)
 
           val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(container.getTableName),
-            container.getTableName, schema,
+            ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
+            container.getQualifiedTableName, schema,
             externalStore, cachedBatchSize, useCompression)
-          val keys = batchCreator.createAndStoreBatch(sc, row,
+          batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
-          JavaConversions.mutableSetAsJavaSet(keys)
-        }
-        finally {
+        } finally {
           lcc.setExecuteLocally(null, null, false, null)
         }
-      }
-      catch {
+      } catch {
         case e: Throwable => throw e
       } finally {
         if (contextSet) {
@@ -119,7 +115,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       }
     } else {
-      new java.util.HashSet()
+      java.util.Collections.emptySet[AnyRef]()
     }
   }
 
@@ -140,11 +136,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def haveRegisteredExternalStore(tableName: String): Boolean = {
     // TODO -  remove below that deals with default schema and all
-    // entries in store should come with fully qualified tableName
-    val table = if (tableName.startsWith(Constant.DEFAULT_SCHEMA + ".")) {
-      tableName.substring(Constant.DEFAULT_SCHEMA.length + 1)
-    } else tableName
-    stores.contains(table)
+    stores.contains(tableName)
   }
 
 }

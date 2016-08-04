@@ -23,8 +23,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.joins.LocalJoin
-import org.apache.spark.sql.execution.{RowDataSourceScanExec, PartitionedPhysicalRDD, QueryExecution}
+import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
+import org.apache.spark.sql.execution.{PartitionedPhysicalRDD, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
@@ -85,7 +85,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val t1 = System.currentTimeMillis()
     assert(countDf.count() === 1000) // Make sure aggregation is working with local join
     val t2 = System.currentTimeMillis()
-    println("Time taken = " + (t2 - t1))
+    logInfo("Time taken = " + (t2 - t1))
 
     val projectDF = snc.sql("select ORDERID, P.DESCRIPTION, R.DESCRIPTION " +
         "from PR_TABLE P JOIN RR_TABLE R ON P.ORDERREF = R.ORDERREF")
@@ -130,7 +130,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val t1 = System.currentTimeMillis()
     assert(countDf.count() === 1000) // Make sure aggregation is working with local join
     val t2 = System.currentTimeMillis()
-    println("Time taken = " + (t2 - t1))
+    logInfo("Time taken = " + (t2 - t1))
 
     val projectDF = snc.sql("select R.ORDERID, P.DESCRIPTION, R.DESCRIPTION " +
         "from RR_TABLE1 P JOIN RR_TABLE2 R ON P.ORDERREF = R.ORDERREF")
@@ -142,6 +142,51 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("Join multiple replicated tables followed by a partitioned table") {
+
+    val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
+    val refDf = snc.createDataFrame(rdd)
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE1")
+
+    snc.sql("CREATE TABLE RR_TABLE1(OrderRef INT NOT NULL, " +
+        "description String) USING row options()")
+
+    refDf.write.insertInto("RR_TABLE1")
+
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE2")
+
+    snc.sql("CREATE TABLE RR_TABLE2(OrderId INT NOT NULL," +
+        "description String, OrderRef INT) USING row options()")
+
+    val dimension = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 5 + 1)))
+    val dimensionDf = snc.createDataFrame(dimension)
+    dimensionDf.write.insertInto("RR_TABLE2")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE")
+
+    snc.sql("CREATE TABLE PR_TABLE(OrderId INT,description String, " +
+        "OrderRef INT) USING column " +
+        "options (" +
+        "PARTITION_BY 'OrderId')")
+
+    val dimension_pr = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 5 + 1)))
+    val dimensionDf_pr = snc.createDataFrame(dimension_pr)
+    dimensionDf_pr.write.insertInto("PR_TABLE")
+
+    val countDf = snc.sql("select * from RR_TABLE1 R1, RR_TABLE2 R2, " +
+        "PR_TABLE P where R1.ORDERREF = R2.ORDERREF AND P.OrderId = R2.OrderId")
+    val qe = new QueryExecution(snc.snappySession, countDf.logicalPlan)
+
+    qe.executedPlan foreach {
+      case SortMergeJoinExec(_, _, _, _, _, _) =>
+        throw new Exception("This should have been a local join")
+      case _ =>
+    }
+    assert(countDf.count() === 1000) // Make sure aggregation is working with local join
+  }
+
   /**
    * This method is very specific to  PartitionedDataSourceScan and
    * snappy join improvements
@@ -150,7 +195,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
       shuffleExpected: Boolean): Unit = {
 
     val qe = new QueryExecution(snc.snappySession, plan)
-    //println(qe.executedPlan)
+    // logInfo(qe.executedPlan)
     val lj = qe.executedPlan collect {
       case ex: Exchange => ex
     }

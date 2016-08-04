@@ -19,9 +19,9 @@ package org.apache.spark.sql.sources
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.command.{RunnableCommand, ExecutedCommandExec}
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
-import org.apache.spark.sql.execution.{SparkPlan}
 import org.apache.spark.sql.types.DataType
 
 /**
@@ -31,18 +31,18 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-    false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
-      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent,
-        userSpecifiedSchema, None, provider, allowExisting, opts,
-        onlyExternal = true)) :: Nil
+        false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
+      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
+        userSpecifiedSchema, None, SnappyContext.getProvider(provider,
+          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = true)) :: Nil
 
-    case CreateTableUsingAsSelect(tableIdent, provider, false,
-    partitionCols, bucketSpec, mode, opts, query) =>
+    case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
+        bucketSpec, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
-      ExecutedCommandExec(CreateMetastoreTableUsingSelect(
-        tableIdent, provider, partitionCols, mode, opts, query,
-        onlyExternal = false)) :: Nil
+      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
+        SnappyContext.getProvider(provider, onlyBuiltIn = false),
+        partitionCols, mode, opts, query, isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
       ExecutedCommandExec(create) :: Nil

@@ -52,31 +52,33 @@ final class SampleDataFrame(@transient val snappySession: SnappySession,
       this, logicalPlan)
 }
 
-final class DataFrameWithTime(@transient snappySession: SnappySession,
-    @transient _logicalPlan: LogicalPlan, val time: Long)
-    extends DataFrame(snappySession, _logicalPlan, DataFrameUtil.encoder(snappySession,
-      _logicalPlan)) with Serializable
+final class DataFrameWithTime(_snappySession: SnappySession,
+    _logicalPlan: LogicalPlan, val time: Long)
+    extends DataFrame(_snappySession, _logicalPlan, DataFrameUtil.encoder(
+      _snappySession, _logicalPlan)) with Serializable
 
-case class AQPDataFrame(@transient val snappySession: SnappySession,
-    @transient qe: QueryExecution) extends DataFrame(snappySession, qe, DataFrameUtil.encoder(snappySession,
-  qe)) {
+case class AQPDataFrame(@transient snappySession: SnappySession,
+    @transient qe: QueryExecution) extends DataFrame(snappySession, qe,
+    DataFrameUtil.encoder(snappySession, qe)) {
 
   def withError(error: Double,
-      confidence: Double = Constant.DEFAULT_CONFIDENCE): DataFrame =
+      confidence: Double = Constant.DEFAULT_CONFIDENCE,
+      behavior: String = Constant.DEFAULT_BEHAVIOR): DataFrame =
     snappySession.snappyContextFunctions.withErrorDataFrame(this, error,
-      confidence)
+      confidence, behavior)
 }
-
 
 object DataFrameUtil {
 
-  def encoder(sparkSession: SparkSession, logicalPlan: LogicalPlan): ExpressionEncoder[Row] = {
+  def encoder(sparkSession: SparkSession,
+      logicalPlan: LogicalPlan): ExpressionEncoder[Row] = {
     val qe = sparkSession.sessionState.executePlan(logicalPlan)
     qe.assertAnalyzed()
     RowEncoder(qe.analyzed.schema)
   }
 
-  def encoder(sparkSession: SparkSession, qe: QueryExecution): ExpressionEncoder[Row] = {
+  def encoder(sparkSession: SparkSession,
+      qe: QueryExecution): ExpressionEncoder[Row] = {
     qe.assertAnalyzed()
     RowEncoder(qe.analyzed.schema)
   }
