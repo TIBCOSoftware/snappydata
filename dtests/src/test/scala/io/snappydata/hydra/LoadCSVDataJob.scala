@@ -66,7 +66,7 @@ class LoadCSVDataJob extends SnappySQLJob {
     val rowIndexes = rowTableList.split("-")
 
     columnIndexes.foreach(index => createTable(columnTables.get(index.toInt).get, "column"))
-    columnIndexes.foreach(index => createTable(rowTables.get(index.toInt).get, "row"))
+    rowIndexes.foreach(index => createTable(rowTables.get(index.toInt).get, "row"))
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {
