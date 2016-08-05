@@ -82,13 +82,13 @@ object PersistentPartitionedColumnTableWithCSVDataApp {
     codeTabledf.schema.printTreeString()
     codeTabledf.show(10)
 
-    snContext.dropTable("airlineCode", ifExists = true)
+    snContext.dropTable("airlineref", ifExists = true)
 
-    codeTabledf.write.format("row").options(props).saveAsTable("airlineCode")
+    codeTabledf.write.format("row").options(props).saveAsTable("airlineref")
 
     // finally creates some samples
-    snContext.dropTable("airlineSampled", ifExists = true)
-    snContext.sql("create sample table airlineSampled on airline " +
+    snContext.dropTable("airline_sample", ifExists = true)
+    snContext.sql("create sample table airline_sample on airline " +
       "options(qcs 'UniqueCarrier,YearI,MonthI', fraction '0.03'," +
       "  strataReservoirSize '50')")
 
@@ -124,7 +124,7 @@ object PersistentPartitionedColumnTableWithCSVDataApp {
       start = System.currentTimeMillis
       results = snContext.sql(
         s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier, t2.DESCRIPTION,
-	        YearI, MonthI FROM $tableName t1, airlineCode t2 where t1.UniqueCarrier = t2.CODE
+	        YearI, MonthI FROM $tableName t1, airlineref t2 where t1.UniqueCarrier = t2.CODE
 	        GROUP BY UniqueCarrier, DESCRIPTION, YearI,MonthI""")
       results.collect()
       end = System.currentTimeMillis
