@@ -41,7 +41,13 @@ object SnappyDataVersion {
     val isNativeLibLoaded = if (NativeCalls.getInstance.loadNativeLibrary) SharedLibrary.register("gemfirexd") else false
     val instance: GemFireVersion = GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
     if (isNativeLibLoaded) {
-      instance.setNativeVersion(GemFireXDVersion._getNativeVersion)
+      // try to load _getNativeVersion by reflection
+      try {
+        val m = classOf[GemFireXDVersion].getDeclaredMethod("_getNativeVersion")
+        instance.setNativeVersion(m.invoke(null).asInstanceOf[String])
+      } catch {
+        case e: Exception => // ignore
+      }
     }
     else {
       instance.setNativeVersion("gemfirexd " + instance.getNativeVersion)
