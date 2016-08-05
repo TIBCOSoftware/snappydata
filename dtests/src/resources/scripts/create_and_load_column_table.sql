@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS STAGING_AIRLINE ;
 DROP TABLE IF EXISTS AIRLINE ;
 
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
-CREATE TABLE STAGING_AIRLINE
+CREATE EXTERNAL TABLE STAGING_AIRLINE
     USING parquet OPTIONS(path ':path');
 -- Use below line to work with larger data set
 --  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData_2007-15');

@@ -2,14 +2,14 @@ package io.snappydata.benchmark.memsql
 
 import java.sql.DriverManager
 
-import io.snappydata.benchmark.{TPCHRowPartitionedTable, TPCHColumnPartitionedTable, TPCHReplicatedTable}
+import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 
 object TPCH_Memsql_Tables {
 
    def main(args: Array[String]) {
 
      val host = args(0)
-     val port = 3307
+     val port = args(1)
      val dbName = "TPCH"
      val user = "root"
      val password = ""
@@ -29,12 +29,6 @@ object TPCH_Memsql_Tables {
 
      TPCHReplicatedTable.createSupplierTable_Memsql(stmt)
 
-//     TPCHRowPartitionedTable.createPartTable_Memsql(stmt)
-//
-//    TPCHRowPartitionedTable.createPartSuppTable_Memsql(stmt)
-//
-//     TPCHRowPartitionedTable.createCustomerTable_Memsql(stmt)
-//
      TPCHColumnPartitionedTable.createPartTable_Memsql(stmt)
 
      TPCHColumnPartitionedTable.createPartSuppTable_Memsql(stmt)

@@ -26,13 +26,11 @@ The example above create a TopK table called MostPopularTweets, the base table f
         "epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
         "size" -> "40",
-        "frequencyCol" -> "retweets",
-        "basetable" -> "tweetStreamTable"
-
+        "frequencyCol" -> "retweets"
       )
       val schema = StructType(List(StructField("HashTag", StringType)))
-      snc.createApproxTSTopK("MostPopularTweets", "HashTag",
-        schema, topKOptionMap)
+      snc.createApproxTSTopK("MostPopularTweets", Some("tweetStreamTable"),
+        "HashTag", schema, topKOptionMap)
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
@@ -59,27 +57,27 @@ If time is an attribute in the incoming data set, it can be used instead of the 
 
 In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
-```  
+```scala
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
 ```  
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
 *Scala API for creating a TopK table*  
-   
-	val topKOptionMap = Map(
+
+```scala
+    val topKOptionMap = Map(
         "epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
         "size" -> "40",
         "frequencyCol" -> "retweets",
         "timeSeriesColumn" -> "tweetTime"
-        "basetable" -> "tweetStreamTable"
-
       )
       val schema = StructType(List(StructField("HashTag", StringType)))
-      snc.createApproxTSTopK("MostPopularTweets", "HashTag",
-        schema, topKOptionMap)
-	  
+      snc.createApproxTSTopK("MostPopularTweets", Some("tweetStreamTable"),
+        "HashTag", schema, topKOptionMap)
+```
+
 The code above shows how to do the same thing using the SnappyData Scala API.
 
 It is worth noting that the user has the ability to disable time as a dimension if desired. This is done by not providing the *timeInterval* attribute when creating the TopK table.
@@ -97,12 +95,11 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
 
 *The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns* 
 
-	CREATE SAMPLE TABLE AIRLINE_SAMPLE OPTIONS(
+	CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS(
     buckets '5',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
-    strataReservoirSize '50',
-    basetable 'Airline') AS (
+    strataReservoirSize '50') AS (
     SELECT Year_, Month_ , DayOfMonth,
       DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
       UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
@@ -114,18 +111,19 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
     
    
 *Equivalent Scala API for creating  the same sample table*  	 
-	
-	 String baseTable = "AIRLINE"		
+
+```scala
+    String baseTable = "AIRLINE"
        // Create a sample table sampling parameters.
-      snc.createSampleTable(sampleTable, None,
+      snc.createSampleTable(sampleTable, Some(baseTable),
         Map("buckets" -> "5",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
-          "strataReservoirSize" -> "50",
-          "basetable" -> baseTable
+          "strataReservoirSize" -> "50"
         ))
         snc.table(baseTable).write.insertInto(sampleTable)
-     
+```
+
 Here is an example of a query that can be run after the sample table has been created.  
 
 	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order
