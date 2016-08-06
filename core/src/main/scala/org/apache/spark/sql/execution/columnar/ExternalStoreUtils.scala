@@ -215,6 +215,8 @@ object ExternalStoreUtils {
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
+    connProps.setProperty("driver", driver)
+    executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
