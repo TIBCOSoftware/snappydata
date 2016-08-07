@@ -43,9 +43,9 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
            OPTIONS ()"""
 
      if (nation_Region_Supp_col) {
-       TPCHColumnPartitionedTable.createAndPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
-       TPCHColumnPartitionedTable.createAndPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
-       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateNationTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateRegionTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
      } else {
        TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
        TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
