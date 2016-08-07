@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.benchmark
 
 import java.sql.{Date, Statement}
@@ -7,9 +23,6 @@ import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 
-/**
- * Created by kishor on 19/10/15.
- */
 object TPCHColumnPartitionedTable  {
 
   def createPartTable_Memsql(stmt:Statement): Unit = {
@@ -421,6 +434,129 @@ object TPCHColumnPartitionedTable  {
     snappyContext.cacheTable("lineitem_sampled")
     println("Created Sampled Table LINEITEM_SAMPLED " + snappyContext.sql(
       "select count(*) as sample_count from lineitem_sampled").collectAsList())
+  }
+
+  def createAndPopulateNationTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val orderData = sc.textFile(s"$path/nation.tbl")
+    val nationreadings = orderData.map(s => s.split('|')).map(s => parseNationRow(s))
+    val nationdf = sqlContext.createDataFrame(nationreadings)
+    println("KBKBKBKB: Buckets : " + 3)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "N_NATIONKEY"),("BUCKETS"-> "3"))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("NATION", ifExists = true)
+      snappyContext.createTable("NATION", "column", nationdf.schema, p1)
+      nationdf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("NATION")
+      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+      println("Created Table NATION")
+    } else {
+      nationdf.registerTempTable("NATION")
+      sqlContext.cacheTable("NATION")
+      val cnts = sqlContext.sql("select count(*) from NATION").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+  case class StreamMessageNationObject(N_NATIONKEY: Int,
+      N_NAME : String,
+      N_REGIONKEY : Int,
+      N_COMMENT: String)
+
+  def  parseNationRow(s: Array[String]): StreamMessageNationObject = {
+    StreamMessageNationObject(
+      s(0).toInt,
+      s(1),
+      s(2).toInt,
+      s(3)
+    )
+  }
+
+  def createAndPopulateRegionTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val orderData = sc.textFile(s"$path/region.tbl")
+    val regionreadings = orderData.map(s => s.split('|')).map(s => parseRegionRow(s))
+    val regiondf = sqlContext.createDataFrame(regionreadings)
+    println("KBKBKBKB: Buckets : " + 3)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "R_REGIONKEY"),("BUCKETS"-> "3"))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("REGION", ifExists = true)
+      snappyContext.createTable("REGION", "column", regiondf.schema, p1)
+      regiondf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("REGION")
+      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+      println("Created Table REGION")
+    } else {
+      regiondf.registerTempTable("REGION")
+      sqlContext.cacheTable("REGION")
+      val cnts = sqlContext.sql("select count(*) from REGION").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+  case class StreamMessageRegionObject(R_REGIONKEY: Int,
+                                       R_NAME : String, R_COMMENT: String )
+
+  def  parseRegionRow(s: Array[String]): StreamMessageRegionObject = {
+    StreamMessageRegionObject(
+      s(0).toInt,
+      s(1),
+      s(2)
+    )
+  }
+  def createAndPopulateSupplierTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val orderData = sc.textFile(s"$path/supplier.tbl")
+    val suppreadings = orderData.map(s => s.split('|')).map(s => parseSUPPLIERRow(s))
+    val suppdf = sqlContext.createDataFrame(suppreadings)
+    println("KBKBKBKB: Buckets : " + 3)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "S_SUPPKEY"),("BUCKETS"-> "3"))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("SUPPLIER", ifExists = true)
+      snappyContext.createTable("SUPPLIER", "column", suppdf.schema, p1)
+      suppdf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("SUPPLIER")
+      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+      println("Created Table SUPPLIER")
+    } else {
+      suppdf.registerTempTable("SUPPLIER")
+      sqlContext.cacheTable("SUPPLIER")
+      val cnts = sqlContext.sql("select count(*) from SUPPLIER").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+  case class StreamMessageSUPPLIERObject(S_SUPPKEY: Int, S_NAME : String,
+                                         S_ADDRESS: String, S_NATIONKEY: Int,
+                                         S_PHONE: String, S_ACCTBAL: Double,
+                                         S_COMMENT: String)
+
+
+  def  parseSUPPLIERRow(s: Array[String]): StreamMessageSUPPLIERObject = {
+    StreamMessageSUPPLIERObject(
+      s(0).toInt,
+      s(1),
+      s(2),
+      s(3).toInt,
+      s(4),
+      s(5).toDouble,
+      s(6)
+    )
   }
 
   case class StreamMessageOrderObject(
