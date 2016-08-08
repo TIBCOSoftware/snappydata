@@ -71,6 +71,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   def createSchedulerBackend(sc: SparkContext,
       scheduler: TaskScheduler): SchedulerBackend = {
+    sc.addSparkListener(new BlockManagerIdListener)
     schedulerBackend = new SnappyCoarseGrainedSchedulerBackend(
       scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
 

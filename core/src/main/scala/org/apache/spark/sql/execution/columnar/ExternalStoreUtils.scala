@@ -155,7 +155,7 @@ object ExternalStoreUtils {
         // Already connected to SnappyData in embedded mode.
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case SplitClusterMode(_, _) =>
-        ServiceUtils.getLocatorJDBCURL(sc) + "/route-query=false"
+        ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
@@ -215,6 +215,8 @@ object ExternalStoreUtils {
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
+    connProps.setProperty("driver", driver)
+    executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)

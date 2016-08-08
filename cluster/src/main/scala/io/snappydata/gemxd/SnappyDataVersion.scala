@@ -36,14 +36,18 @@ object SnappyDataVersion {
 
   private val AQP_VERSION_PROPERTIES = "io/snappydata/SnappyAQPVersion.properties"
 
-  val instance = GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
-
   private val isNativeLibLoaded: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     val isNativeLibLoaded = if (NativeCalls.getInstance.loadNativeLibrary) SharedLibrary.register("gemfirexd") else false
     val instance: GemFireVersion = GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
     if (isNativeLibLoaded) {
-      instance.setNativeVersion(GemFireXDVersion._getNativeVersion)
+      // try to load _getNativeVersion by reflection
+      try {
+        val m = classOf[GemFireXDVersion].getDeclaredMethod("_getNativeVersion")
+        instance.setNativeVersion(m.invoke(null).asInstanceOf[String])
+      } catch {
+        case e: Exception => // ignore
+      }
     }
     else {
       instance.setNativeVersion("gemfirexd " + instance.getNativeVersion)
@@ -52,6 +56,7 @@ object SnappyDataVersion {
   }
 
   def loadProperties {
+    GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
   }
 
@@ -59,6 +64,7 @@ object SnappyDataVersion {
     val pw: PrintWriter = new PrintWriter(ps)
 
     // platform version
+    loadProperties
     pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
     // rowstore version

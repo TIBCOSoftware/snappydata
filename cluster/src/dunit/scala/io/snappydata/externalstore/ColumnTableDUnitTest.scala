@@ -550,8 +550,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     assert(r.length == 10012)
 
-    println("startSparkJob6 " + region.size())
-    println("startSparkJob6 " + shadowRegion.size())
+    println("startSparkJob7 " + region.size())
+    println("startSparkJob7 " + shadowRegion.size())
 
     //assert(0 == region.size())
     assert(shadowRegion.size() > 0)

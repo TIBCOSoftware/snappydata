@@ -683,6 +683,15 @@ task product {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+    copy {
+      from("${clusterProject.projectDir}/ec2")
+      into "${snappyProductDir}/ec2"
+      exclude "deploy/home/ec2-user/snappydata/servers"
+      exclude "deploy/home/ec2-user/snappydata/leads"
+      exclude "deploy/home/ec2-user/snappydata/locators"
+      exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
+      exclude "lib"
+    }
   }
 }
 
@@ -985,6 +994,10 @@ task packageVSD << {
   } else {
     println "Skipping VSD due to unwritable ${vsdDistDir}"
   }
+}
+
+task sparkPackage {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product

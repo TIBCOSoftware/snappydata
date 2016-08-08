@@ -18,8 +18,18 @@ package org.apache.spark.sql
 
 import java.sql.SQLException
 
+import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
+
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
@@ -43,17 +53,11 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -1258,6 +1262,9 @@ object SnappyContext extends Logging {
   }
 
 
+  val storeToBlockMap: TrieMap[String, BlockManagerId] =
+    TrieMap.empty[String, BlockManagerId]
+
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
     SparkContext.getOrCreate(INVALID_CONF)
@@ -1285,7 +1292,15 @@ object SnappyContext extends Logging {
     if (_anySNContext == null) {
       _anySNContext = snc
     }
+    initMemberBlockMap(sc)
     snc
+  }
+
+  private def initMemberBlockMap(sc: SparkContext): Unit = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache != null && Utils.isLoner(sc)) {
+      storeToBlockMap(cache.getMyId.toString) = SparkEnv.get.blockManager.blockManagerId
+    }
   }
 
   /**
