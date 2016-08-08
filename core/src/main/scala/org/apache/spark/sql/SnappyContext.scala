@@ -84,11 +84,6 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   // TODO: merge: Backward compatibility with tests. We should remove it
   val catalog = snappySession.sessionCatalog
 
-  // Backward compatibility with tests. We should remove it
-  def getSQLDialect(): ParserDialect = {
-    snappySession.snappyContextFunctions.getSQLDialect(snappySession)
-  }
-
   def clear(): Unit = {
     snappySession.clear()
   }
@@ -1057,11 +1052,5 @@ case class LocalMode(override val sc: SparkContext,
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
-class TableNotFoundException(message: String)
-    extends AnalysisException(message) with Serializable {
-
-  def this(message: String, cause: Throwable) = {
-    this(message)
-    initCause(cause)
-  }
-}
+class TableNotFoundException(message: String, cause: Option[Throwable] = None)
+    extends AnalysisException(message) with Serializable

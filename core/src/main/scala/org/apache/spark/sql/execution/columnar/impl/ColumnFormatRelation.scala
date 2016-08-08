@@ -36,7 +36,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappySession, DataFrame, Row, SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
@@ -298,7 +298,7 @@ class BaseColumnFormatRelation(
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
-        //sys.error(s"Table $table already exists.")
+        // sys.error(s"Table $table already exists.")
         return
       }
     } finally {
@@ -457,7 +457,7 @@ class ColumnFormatRelation(
 
     indexes.foreach(index => {
       val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val sncCatalog =snappySession.sessionState.catalog
+      val sncCatalog = snappySession.sessionState.catalog
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
         case LogicalRelation(r: DependentRelation, _, _) => r
       }
@@ -483,10 +483,10 @@ class ColumnFormatRelation(
     val indexTblName = snappySession.getIndexTable(indexIdent).toString()
     val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
     val tempOptions = caseInsensitiveMap.filterNot(pair => {
-      pair._1.equals(Utils.toLowerCase(StoreUtils.PARTITION_BY)) ||
-        pair._1.equals(Utils.toLowerCase(StoreUtils.COLOCATE_WITH)) ||
-        pair._1.equals(Utils.toLowerCase(JdbcExtendedUtils.DBTABLE_PROPERTY)) ||
-        pair._1.equals(Utils.toLowerCase(ExternalStoreUtils.INDEX_NAME))
+      pair._1.equalsIgnoreCase(StoreUtils.PARTITION_BY) ||
+        pair._1.equalsIgnoreCase(StoreUtils.COLOCATE_WITH) ||
+        pair._1.equalsIgnoreCase(JdbcExtendedUtils.DBTABLE_PROPERTY) ||
+        pair._1.equalsIgnoreCase(ExternalStoreUtils.INDEX_NAME)
     }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
       (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
       (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)

@@ -67,8 +67,9 @@ object Utils {
     }
   }
 
-  def analysisException(msg: String): AnalysisException =
-    new AnalysisException(msg)
+  def analysisException(msg: String,
+      cause: Option[Throwable] = None): AnalysisException =
+    new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
     val colT = toUpperCase(col.trim)
@@ -408,19 +409,19 @@ object Utils {
             if (catalog.compatibleSchema(tableSchema, s)) {
               (s, Some(tablePlan))
             } else if (asSelect) {
-              throw new DDLException(s"CREATE $tableType TABLE AS SELECT:" +
+              throw analysisException(s"CREATE $tableType TABLE AS SELECT:" +
                   " mismatch of schema with that of base table." +
                   "\n  Base table schema: " + tableSchema +
                   "\n  AS SELECT schema: " + s)
             } else {
-              throw new DDLException(s"CREATE $tableType TABLE:" +
+              throw analysisException(s"CREATE $tableType TABLE:" +
                   " mismatch of specified schema with that of base table." +
                   "\n  Base table schema: " + tableSchema +
                   "\n  Specified schema: " + s)
             }
           } catch {
             // continue with specified schema if base table fails to load
-            case e@(_: AnalysisException | _: DDLException) => (s, None)
+            case _: AnalysisException => (s, None)
           }
         case None => (s, None)
       }
@@ -433,14 +434,12 @@ object Utils {
               catalog.newQualifiedTableName(baseTable))
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
-            case e@(_: AnalysisException | _: DDLException) =>
-              val ae = analysisException(s"Base table $baseTable " +
-                  s"not found for $tableType TABLE $table")
-              ae.initCause(e)
-              throw ae
+            case ae: AnalysisException =>
+              throw analysisException(s"Base table $baseTable " +
+                  s"not found for $tableType TABLE $table", Some(ae))
           }
         case None =>
-          throw new DDLException(s"CREATE $tableType TABLE must provide " +
+          throw analysisException(s"CREATE $tableType TABLE must provide " +
               "either column definition or baseTable option.")
       }
     }

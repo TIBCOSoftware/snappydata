@@ -23,12 +23,13 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.{DataSource, CaseInsensitiveMap}
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappySession, AnalysisException, DataFrame, SQLContext, SaveMode}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappySession}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -148,7 +149,7 @@ object JdbcExtendedUtils extends Logging {
       dialect: JdbcDialect): Unit = {
     dialect match {
       case d: JdbcExtendedDialect => d.createSchema(schemaName, conn)
-      case _ => //ignore
+      case _ => // ignore
     }
   }
 
@@ -218,15 +219,17 @@ object JdbcExtendedUtils extends Logging {
       schemaString: String,
       provider: String,
       mode: SaveMode,
-      options: Map[String, String]): BaseRelation = {
+      options: Map[String, String],
+      data: Option[LogicalPlan] = None): BaseRelation = {
     val dataSource = DataSource(snappySession, className = provider)
     val clazz: Class[_] = dataSource.providingClass
     val relation = clazz.newInstance() match {
 
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
-        dataSource.createRelation(snappySession.snappyContext, mode, new CaseInsensitiveMap(
-          options + (SCHEMA_PROPERTY -> schemaString)), schemaString)
+        dataSource.createRelation(snappySession.snappyContext, mode,
+          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString)),
+          schemaString, data)
 
       case _ => throw new AnalysisException(
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")

@@ -41,8 +41,9 @@ object StoreStrategy extends Strategy {
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
       ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
-        SnappyContext.getProvider(provider, onlyBuiltIn = false),
-        partitionCols, mode, opts, query, isBuiltIn = false)) :: Nil
+        None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
+        temporary = false, partitionCols, mode, opts, query,
+        isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
       ExecutedCommandExec(create) :: Nil

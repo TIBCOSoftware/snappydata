@@ -57,8 +57,8 @@ case class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table).
-      getOrElse(super.sizeInBytes)
+  override def sizeInBytes: Long = StoreTableValueSizeProviderService
+      .getTableSize(table).getOrElse(super.sizeInBytes)
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 
@@ -94,23 +94,19 @@ case class JDBCMutableRelation(
         return tableSchema
       }
 
-      // We should not throw table already exists from here. This is expected as new relation
-      // objects are created on each invocation of DDL. We should silently ignore it. Or else we
-      // have to take care of all SaveMode in top level APIs, which will be cumbersome as we take
-      // actions based on dialects e.g. for SaveMode.Overwrite we truncate rather than dropping
-      // the table. ErrorIfExist should be checked from top level APIs like session.createTable,
-      // which we already do.
-
-
-       /*if (mode == SaveMode.ErrorIfExists && tableExists) {
-        sys.error(s"Table $table already exists.")
-      }*/
-
-
+      // We should not throw table already exists from here. This is expected
+      // as new relation objects are created on each invocation of DDL.
+      // We should silently ignore it. Or else we have to take care of all
+      // SaveMode in top level APIs, which will be cumbersome as we take
+      // actions based on dialects e.g. for SaveMode.Overwrite we truncate
+      // rather than dropping the table. ErrorIfExist should be checked from
+      // top level APIs like session.createTable, which we already do.
+      // if (mode == SaveMode.ErrorIfExists && tableExists) {
+      //  sys.error(s"Table $table already exists.")
+      // }
 
       if (mode == SaveMode.Overwrite && tableExists) {
         // truncate the table if possible
-        println("inside check")
         val truncate = dialect match {
           case d: JdbcExtendedDialect => d.truncateTable(table)
           case _ => s"TRUNCATE TABLE $table"
@@ -179,8 +175,13 @@ case class JDBCMutableRelation(
     JdbcExtendedUtils.saveTable(data, table, connProperties)
   }
 
-  // TODO: SW: should below all be executed from driver or some random executor?
-  // at least the insert can be split into batches and modelled as an RDD
+  // TODO: should below all be executed from driver or some random executor?
+  // At least the insert can be split into batches and modelled as an RDD.
+  // UPDATE: It seems that GemXD putAll should be overall better than
+  // ParallelCollectionRDD that has heavier messaging and less of safety
+  // for non-transactional operations.
+  // In future with multiple driver impl this should avoid bottleneck.
+  // For best efficiency this can avoid prepared statement rather use putAll.
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {

@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package org.apache.spark.sql.hive
 
 import java.util
@@ -17,7 +34,7 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.hive.client.HiveClient
 
 private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Configuration)
-      extends ExternalCatalog with Logging {
+    extends ExternalCatalog with Logging {
 
   import CatalogTypes.TablePartitionSpec
 
@@ -27,11 +44,11 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
     classOf[TException].getCanonicalName)
 
   /**
-   * Whether this is an exception thrown by the hive client that should be wrapped.
-   *
-   * Due to classloader isolation issues, pattern matching won't work here so we need
-   * to compare the canonical names of the exceptions, which we assume to be stable.
-   */
+    * Whether this is an exception thrown by the hive client that should be wrapped.
+    *
+    * Due to classloader isolation issues, pattern matching won't work here so we need
+    * to compare the canonical names of the exceptions, which we assume to be stable.
+    */
   private def isClientException(e: Throwable): Boolean = {
     var temp: Class[_] = e.getClass
     var found = false
@@ -43,9 +60,9 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   }
 
   /**
-   * Run some code involving `client` in a [[synchronized]] block and wrap certain
-   * exceptions thrown in the process in [[AnalysisException]].
-   */
+    * Run some code involving `client` in a [[synchronized]] block and wrap certain
+    * exceptions thrown in the process in [[AnalysisException]].
+    */
   private def withClient[T](body: => T): T = synchronized {
     try {
       body
@@ -65,7 +82,9 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   }
 
   private def requireTableExists(db: String, table: String): Unit = {
-    withClient { getTable(db, table) }
+    withClient {
+      getTable(db, table)
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -86,11 +105,11 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   }
 
   /**
-   * Alter a database whose name matches the one specified in `dbDefinition`,
-   * assuming the database exists.
-   *
-   * Note: As of now, this only supports altering database properties!
-   */
+    * Alter a database whose name matches the one specified in `dbDefinition`,
+    * assuming the database exists.
+    *
+    * Note: As of now, this only supports altering database properties!
+    */
   override def alterDatabase(dbDefinition: CatalogDatabase): Unit = withClient {
     val existingDb = getDatabase(dbDefinition.name)
     if (existingDb.properties == dbDefinition.properties) {
@@ -183,12 +202,12 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   }
 
   /**
-   * Alter a table whose name that matches the one specified in `tableDefinition`,
-   * assuming the table exists.
-   *
-   * Note: As of now, this only supports altering table properties, serde properties,
-   * and num buckets!
-   */
+    * Alter a table whose name that matches the one specified in `tableDefinition`,
+    * assuming the table exists.
+    *
+    * Note: As of now, this only supports altering table properties, serde properties,
+    * and num buckets!
+    */
   override def alterTable(db: String, tableDefinition: CatalogTable): Unit = withClient {
     requireDbMatches(db, tableDefinition)
     requireTableExists(db, tableDefinition.identifier.table)
@@ -302,8 +321,8 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   }
 
   /**
-   * Returns the partition names from hive metastore for a given table in a database.
-   */
+    * Returns the partition names from hive metastore for a given table in a database.
+    */
   override def listPartitions(
       db: String,
       table: String,
@@ -349,7 +368,7 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
 
 object SnappyExternalCatalog {
 
-  def newHiveClient(sparkContext:SparkContext): HiveClient = {
+  def newHiveClient(sparkContext: SparkContext): HiveClient = {
     HiveUtils.newClientForMetadata(sparkContext.conf, sparkContext.hadoopConfiguration)
   }
 }

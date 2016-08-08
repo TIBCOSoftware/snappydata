@@ -23,15 +23,14 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DDLException, AnalysisException, SQLContext}
+import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -101,7 +100,8 @@ object StoreUtils extends Logging {
 
   def getPartitionsPartitionedTable(sc: SparkContext,
       region: PartitionedRegion,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      blockMap: Map[InternalDistributedMember,
+          BlockManagerId]): Array[Partition] = {
 
     val numPartitions = region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
@@ -119,7 +119,8 @@ object StoreUtils extends Logging {
 
   def getPartitionsReplicatedTable(sc: SparkContext,
       region: CacheDistributionAdvisee,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      blockMap: Map[InternalDistributedMember,
+          BlockManagerId]): Array[Partition] = {
 
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
@@ -156,14 +157,16 @@ object StoreUtils extends Logging {
     StoreCallbacksImpl.stores.remove(table)
   }
 
-  def appendClause(sb: mutable.StringBuilder, getClause: () => String): Unit = {
+  def appendClause(sb: mutable.StringBuilder,
+      getClause: () => String): Unit = {
     val clause = getClause.apply()
     if (!clause.isEmpty) {
       sb.append(s"$clause ")
     }
   }
 
-  val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(StringType, BinaryType,
+    ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
       schema: StructType,
@@ -174,21 +177,21 @@ object StoreUtils extends Logging {
         v match {
           case PRIMARY_KEY => ""
           case _ =>
-            val normalizedSchema = context.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+            val normalizedSchema = context.sessionState.catalog
+                .asInstanceOf[SnappyStoreHiveCatalog]
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
             val normalizedCols = cols map { c =>
-                if(context.conf.caseSensitiveAnalysis){
-                  c
-                }else{
-                  if (Utils.hasLowerCase(c))
-                    Utils.toUpperCase(c)
-                  else
-                    c
-                }
+              if (context.conf.caseSensitiveAnalysis) {
+                c
+              } else {
+                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c)
+                else c
+              }
             }
-            val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields, normalizedCols)
+            val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
+              normalizedCols)
 
             val b = for (field <- prunedSchema.fields)
               yield !pkDisallowdTypes.contains(field.dataType)
@@ -218,10 +221,10 @@ object StoreUtils extends Logging {
               if (isRowTable) {
                 s"sparkhash $PRIMARY_KEY"
               } else {
-                throw new DDLException("Column table cannot be partitioned on" +
-                    " PRIMARY KEY as no primary key")
+                throw Utils.analysisException("Column table cannot be " +
+                    "partitioned on PRIMARY KEY as no primary key")
               }
-            case _ =>  s"sparkhash COLUMN($v)"
+            case _ => s"sparkhash COLUMN($v)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
@@ -230,29 +233,30 @@ object StoreUtils extends Logging {
       else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
-        case PRIMARY_KEY => throw new DDLException("Column table cannot be " +
-            "partitioned on PRIMARY KEY as no primary key")
+        case PRIMARY_KEY => throw Utils.analysisException("Column table " +
+            "cannot be partitioned on PRIMARY KEY as no primary key")
         case _ =>
       }
     }
 
     if (!isShadowTable) {
-      sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
-          .getOrElse(EMPTY_STRING))
+      sb.append(parameters.remove(COLOCATE_WITH).map(
+        v => s"$GEM_COLOCATE_WITH ($v) ").getOrElse(EMPTY_STRING))
     }
 
     parameters.remove(REPLICATE).foreach(v =>
       if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
-      else if (!parameters.contains(BUCKETS))
+      else if (!parameters.contains(BUCKETS)) {
         sb.append(GEM_BUCKETS).append(' ').append(
-          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
+          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
+      })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
-        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(RECOVERYDELAY).map(
+      v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
 
@@ -268,7 +272,7 @@ object StoreUtils extends Logging {
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
-          throw new DDLException(
+          throw Utils.analysisException(
             "Column table cannot take LRUCOUNT as eviction policy")
         } else if (v == NONE) {
           EMPTY_STRING
@@ -292,15 +296,15 @@ object StoreUtils extends Logging {
         sb.append(s"$GEM_PERSISTENT $v ")
       }
     }
-    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
-        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(SERVER_GROUPS).map(
+      v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
 
-
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
-        throw new DDLException("Expiry for Column table is not supported")
+        throw Utils.analysisException(
+          "Expiry for Column table is not supported")
       }
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     }).getOrElse(EMPTY_STRING))
@@ -308,7 +312,8 @@ object StoreUtils extends Logging {
     sb.toString()
   }
 
-  def getPartitioningColumn(parameters: mutable.Map[String, String]): Seq[String] = {
+  def getPartitioningColumn(
+      parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
     }).getOrElse(Seq.empty[String])
@@ -317,7 +322,8 @@ object StoreUtils extends Logging {
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
       if (!ddlOptions.contains(v.toString.toUpperCase)) {
-        throw new AnalysisException(s"Unknown options $v specified while creating table ")
+        throw new AnalysisException(
+          s"Unknown options $v specified while creating table")
       }
       true
     })
@@ -336,8 +342,9 @@ object StoreUtils extends Logging {
       result(i) = dataType match {
         case StringType => STRING_TYPE
         case IntegerType => INT_TYPE
-        case LongType => if (field.metadata.contains("binarylong"))
-          BINARY_LONG_TYPE else LONG_TYPE
+        case LongType =>
+          if (field.metadata.contains("binarylong")) BINARY_LONG_TYPE
+          else LONG_TYPE
         case ShortType => SHORT_TYPE
         case ByteType => BYTE_TYPE
         case BooleanType => BOOLEAN_TYPE

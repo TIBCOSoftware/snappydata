@@ -146,7 +146,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def initializeTable(tableName: String, caseSensitive: Boolean,
       conn: Connection): Unit = {
     val dotIndex = tableName.indexOf('.')
-    val (schema, table) = if(dotIndex > 0){
+    val (schema, table) = if (dotIndex > 0) {
       (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
     } else {
       (Constant.DEFAULT_SCHEMA, tableName)

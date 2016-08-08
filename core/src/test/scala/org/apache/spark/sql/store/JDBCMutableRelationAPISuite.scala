@@ -67,7 +67,7 @@ class JDBCMutableRelationAPISuite
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite)
         .options(props).saveAsTable("TEST_JDBC_TABLE_1")
@@ -86,16 +86,17 @@ class JDBCMutableRelationAPISuite
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_2")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
-    snc.createTable("TEST_JDBC_TABLE_2", "jdbc", schemaDDL, props,allowExisting = false)
+    snc.createTable("TEST_JDBC_TABLE_2", "jdbc", schemaDDL, props, allowExisting = false)
     dataDF.write.insertInto("TEST_JDBC_TABLE_2")
     val tableDF = snc.sql("select * from TEST_JDBC_TABLE_2")
     val count = tableDF.count()
     assert(count === data.length)
 
-    println(snc.update("TEST_JDBC_TABLE_2", "ITEMREF = 3" , Row(99) , "ITEMREF" ))
+    logInfo(snc.update("TEST_JDBC_TABLE_2", "ITEMREF = 3", Row(99),
+      "ITEMREF").toString)
 
     val cdf = snc.sql("Select * from TEST_JDBC_TABLE_2 where ITEMREF = 99")
     assert(cdf.count() === 3)

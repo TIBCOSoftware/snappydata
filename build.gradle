@@ -83,6 +83,8 @@ allprojects {
     sparkCSVVersion = '1.4.0'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.16.v20160414'
+    guavaVersion = '14.0.1'
+    derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.5.0'
     pulseVersion = '1.5.0'
@@ -212,7 +214,8 @@ subprojects {
     // spawn separate JVMs
     maxParallelForks = 1
     maxHeapSize '4g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -248,7 +251,8 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=384m', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=384m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -268,7 +272,10 @@ subprojects {
     minHeapSize '128m'
     maxHeapSize '1g'
 
-    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m', '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC', '-XX:CMSInitiatingOccupancyFraction=50', '-XX:+CMSClassUnloadingEnabled', '-ea']
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
+               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
+               '-XX:CMSInitiatingOccupancyFraction=50',
+               '-XX:+CMSClassUnloadingEnabled', '-ea']
 
     include '**/*DUnitTest.class'
     exclude '**/*Suite.class'
@@ -373,6 +380,28 @@ subprojects {
       }
     }
     */
+  }
+
+  // force versions for some dependencies that get pulled multiple times
+  configurations.all {
+    resolutionStrategy.force "com.google.guava:guava:${guavaVersion}",
+      "org.apache.derby:derby:${derbyVersion}",
+      "org.apache.hadoop:hadoop-annotations:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-auth:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-client:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-api:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-client:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {
@@ -951,6 +980,6 @@ distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }

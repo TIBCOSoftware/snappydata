@@ -18,7 +18,8 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{SortDirection, Attribute}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -250,5 +251,6 @@ trait ExternalSchemaRelationProvider {
       sqlContext: SQLContext,
       mode: SaveMode,
       parameters: Map[String, String],
-      schema: String): BaseRelation
+      schema: String,
+      data: Option[LogicalPlan]): BaseRelation
 }

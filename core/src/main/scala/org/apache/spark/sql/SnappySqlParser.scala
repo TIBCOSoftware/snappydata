@@ -16,23 +16,36 @@
  */
 package org.apache.spark.sql
 
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.parser.AbstractSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkSqlAstBuilder
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.types.DataType
 
-class SnappySqlParser(session: SnappySession,
-    parserDialect: ParserDialect) extends AbstractSqlParser {
+class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
-  val astBuilder = new SparkSqlAstBuilder(session.sessionState.conf)
+  protected def astBuilder = throw new UnsupportedOperationException(
+    "SnappyData parser does not use AST")
 
-  @transient
-  protected[sql] val sqlParser = new SparkSQLParser(parserDialect.parse)
+  @transient protected[sql] val sqlParser: SnappyParser =
+    new SnappyParser(session)
 
-  @transient
-  protected[sql] val ddlParser = new SnappyDDLParser(session, sqlParser.parse)
+  /** Creates/Resolves DataType for a given SQL string. */
+  override def parseDataType(sqlText: String): DataType = {
+    sqlParser.parse(sqlText, sqlParser.dataType.run())
+  }
+
+  /** Creates Expression for a given SQL string. */
+  override def parseExpression(sqlText: String): Expression = {
+    sqlParser.parse(sqlText, sqlParser.expression.run())
+  }
+
+  /** Creates TableIdentifier for a given SQL string. */
+  override def parseTableIdentifier(sqlText: String): TableIdentifier = {
+    sqlParser.parse(sqlText, sqlParser.tableIdentifier.run())
+  }
 
   override def parsePlan(sqlText: String): LogicalPlan = {
-    ddlParser.parse(sqlText, exceptionOnError = false)
+    sqlParser.parse(sqlText, sqlParser.sql.run())
   }
 }

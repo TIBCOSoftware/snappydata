@@ -16,29 +16,29 @@
  */
 package org.apache.spark.sql
 
-import java.sql.SQLException
-import java.util.regex.Pattern
-
 import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.SnappyParserConsts.{plusOrMinus, trueFn}
-import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedExtractValue, UnresolvedFunction, UnresolvedRelation, UnresolvedStar}
+import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count, HyperLogLogPlusPlus}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
+import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.command.RunnableCommand
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DataSource}
+import org.apache.spark.sql.execution.command._
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
 
@@ -54,75 +54,112 @@ class SnappyParser(session: SnappySession)
     _input = in
   }
 
-  final def ALL: Rule0 = rule { keyword(SnappyParserConsts.ALL) }
-  final def AND: Rule0 = rule { keyword(SnappyParserConsts.AND) }
-  final def APPROXIMATE: Rule0 = rule { keyword(SnappyParserConsts.APPROXIMATE) }
-  final def AS: Rule0 = rule { keyword(SnappyParserConsts.AS) }
-  final def ASC: Rule0 = rule { keyword(SnappyParserConsts.ASC) }
-  final def BETWEEN: Rule0 = rule { keyword(SnappyParserConsts.BETWEEN) }
-  final def BY: Rule0 = rule { keyword(SnappyParserConsts.BY) }
-  final def CASE: Rule0 = rule { keyword(SnappyParserConsts.CASE) }
-  final def CAST: Rule0 = rule { keyword(SnappyParserConsts.CAST) }
-  final def DELETE: Rule0 = rule { keyword(SnappyParserConsts.DELETE) }
-  final def DESC: Rule0 = rule { keyword(SnappyParserConsts.DESC) }
-  final def DISTINCT: Rule0 = rule { keyword(SnappyParserConsts.DISTINCT) }
-  final def ELSE: Rule0 = rule { keyword(SnappyParserConsts.ELSE) }
-  final def END: Rule0 = rule { keyword(SnappyParserConsts.END) }
-  final def EXCEPT: Rule0 = rule { keyword(SnappyParserConsts.EXCEPT) }
-  final def EXISTS: Rule0 = rule { keyword(SnappyParserConsts.EXISTS) }
-  final def FALSE: Rule0 = rule { keyword(SnappyParserConsts.FALSE) }
-  final def FROM: Rule0 = rule { keyword(SnappyParserConsts.FROM) }
-  final def FULL: Rule0 = rule { keyword(SnappyParserConsts.FULL) }
-  final def GROUP: Rule0 = rule { keyword(SnappyParserConsts.GROUP) }
-  final def HAVING: Rule0 = rule { keyword(SnappyParserConsts.HAVING) }
-  final def IN: Rule0 = rule { keyword(SnappyParserConsts.IN) }
-  final def INNER: Rule0 = rule { keyword(SnappyParserConsts.INNER) }
-  final def INSERT: Rule0 = rule { keyword(SnappyParserConsts.INSERT) }
-  final def INTERSECT: Rule0 = rule { keyword(SnappyParserConsts.INTERSECT) }
-  final def INTERVAL: Rule0 = rule { keyword(SnappyParserConsts.INTERVAL) }
-  final def INTO: Rule0 = rule { keyword(SnappyParserConsts.INTO) }
-  final def IS: Rule0 = rule { keyword(SnappyParserConsts.IS) }
-  final def JOIN: Rule0 = rule { keyword(SnappyParserConsts.JOIN) }
-  final def LEFT: Rule0 = rule { keyword(SnappyParserConsts.LEFT) }
-  final def LIKE: Rule0 = rule { keyword(SnappyParserConsts.LIKE) }
-  final def LIMIT: Rule0 = rule { keyword(SnappyParserConsts.LIMIT) }
-  final def NOT: Rule0 = rule { keyword(SnappyParserConsts.NOT) }
-  final def NULL: Rule0 = rule { keyword(SnappyParserConsts.NULL) }
-  final def ON: Rule0 = rule { keyword(SnappyParserConsts.ON) }
-  final def OR: Rule0 = rule { keyword(SnappyParserConsts.OR) }
-  final def ORDER: Rule0 = rule { keyword(SnappyParserConsts.ORDER) }
-  final def OUTER: Rule0 = rule { keyword(SnappyParserConsts.OUTER) }
-  final def OVERWRITE: Rule0 = rule { keyword(SnappyParserConsts.OVERWRITE) }
-  final def PUT: Rule0 = rule { keyword(SnappyParserConsts.PUT) }
-  final def REGEXP: Rule0 = rule { keyword(SnappyParserConsts.REGEXP) }
-  final def RIGHT: Rule0 = rule { keyword(SnappyParserConsts.RIGHT) }
-  final def RLIKE: Rule0 = rule { keyword(SnappyParserConsts.RLIKE) }
-  final def SELECT: Rule0 = rule { keyword(SnappyParserConsts.SELECT) }
-  final def SEMI: Rule0 = rule { keyword(SnappyParserConsts.SEMI) }
-  final def SORT: Rule0 = rule { keyword(SnappyParserConsts.SORT) }
-  final def TABLE: Rule0 = rule { keyword(SnappyParserConsts.TABLE) }
-  final def THEN: Rule0 = rule { keyword(SnappyParserConsts.THEN) }
-  final def TO: Rule0 = rule { keyword(SnappyParserConsts.TO) }
-  final def TRUE: Rule0 = rule { keyword(SnappyParserConsts.TRUE) }
-  final def UNION: Rule0 = rule { keyword(SnappyParserConsts.UNION) }
-  final def UPDATE: Rule0 = rule { keyword(SnappyParserConsts.UPDATE) }
-  final def WHEN: Rule0 = rule { keyword(SnappyParserConsts.WHEN) }
-  final def WHERE: Rule0 = rule { keyword(SnappyParserConsts.WHERE) }
-  final def WITH: Rule0 = rule { keyword(SnappyParserConsts.WITH) }
-  // interval units are not reserved (handled in SnappyParserConsts singleton)
-  final def DAY: Rule0 = rule { intervalUnit(SnappyParserConsts.DAY) }
-  final def HOUR: Rule0 = rule { intervalUnit(SnappyParserConsts.HOUR) }
-  final def MICROSECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.MICROSECOND) }
-  final def MILLISECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.MILLISECOND) }
-  final def MINUTE: Rule0 = rule { intervalUnit(SnappyParserConsts.MINUTE) }
-  final def MONTH: Rule0 = rule { intervalUnit(SnappyParserConsts.MONTH) }
-  final def SECOND: Rule0 = rule { intervalUnit(SnappyParserConsts.SECOND) }
-  final def WEEK: Rule0 = rule { intervalUnit(SnappyParserConsts.WEEK) }
-  final def YEAR: Rule0 = rule { intervalUnit(SnappyParserConsts.YEAR) }
+  final def ALL: Rule0 = rule { keyword(Consts.ALL) }
+  final def AND: Rule0 = rule { keyword(Consts.AND) }
+  final def AS: Rule0 = rule { keyword(Consts.AS) }
+  final def ASC: Rule0 = rule { keyword(Consts.ASC) }
+  final def BETWEEN: Rule0 = rule { keyword(Consts.BETWEEN) }
+  final def BY: Rule0 = rule { keyword(Consts.BY) }
+  final def CASE: Rule0 = rule { keyword(Consts.CASE) }
+  final def CAST: Rule0 = rule { keyword(Consts.CAST) }
+  final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
+  final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
+  final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
+  final def DESC: Rule0 = rule { keyword(Consts.DESC) }
+  final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
+  final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
+  final def DROP: Rule0 = rule { keyword(Consts.DROP) }
+  final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
+  final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXCEPT: Rule0 = rule { keyword(Consts.EXCEPT) }
+  final def EXISTS: Rule0 = rule { keyword(Consts.EXISTS) }
+  final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FALSE: Rule0 = rule { keyword(Consts.FALSE) }
+  final def FROM: Rule0 = rule { keyword(Consts.FROM) }
+  final def FULL: Rule0 = rule { keyword(Consts.FULL) }
+  final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
+  final def GROUP: Rule0 = rule { keyword(Consts.GROUP) }
+  final def HAVING: Rule0 = rule { keyword(Consts.HAVING) }
+  final def IF: Rule0 = rule { keyword(Consts.IF) }
+  final def IN: Rule0 = rule { keyword(Consts.IN) }
+  final def INNER: Rule0 = rule { keyword(Consts.INNER) }
+  final def INSERT: Rule0 = rule { keyword(Consts.INSERT) }
+  final def INTERSECT: Rule0 = rule { keyword(Consts.INTERSECT) }
+  final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def INTO: Rule0 = rule { keyword(Consts.INTO) }
+  final def IS: Rule0 = rule { keyword(Consts.IS) }
+  final def JOIN: Rule0 = rule { keyword(Consts.JOIN) }
+  final def LEFT: Rule0 = rule { keyword(Consts.LEFT) }
+  final def LIKE: Rule0 = rule { keyword(Consts.LIKE) }
+  final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
+  final def NOT: Rule0 = rule { keyword(Consts.NOT) }
+  final def NULL: Rule0 = rule { keyword(Consts.NULL) }
+  final def ON: Rule0 = rule { keyword(Consts.ON) }
+  final def OR: Rule0 = rule { keyword(Consts.OR) }
+  final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
+  final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
+  final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
+  final def PUT: Rule0 = rule { keyword(Consts.PUT) }
+  final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
+  final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
+  final def SELECT: Rule0 = rule { keyword(Consts.SELECT) }
+  final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
+  final def SET: Rule0 = rule { keyword(Consts.SET) }
+  final def SORT: Rule0 = rule { keyword(Consts.SORT) }
+  final def TABLE: Rule0 = rule { keyword(Consts.TABLE) }
+  final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
+  final def THEN: Rule0 = rule { keyword(Consts.THEN) }
+  final def TO: Rule0 = rule { keyword(Consts.TO) }
+  final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
+  final def UNION: Rule0 = rule { keyword(Consts.UNION) }
+  final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
+  final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
+  final def USING: Rule0 = rule { keyword(Consts.USING) }
+  final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
+  final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
+  final def WITH: Rule0 = rule { keyword(Consts.WITH) }
+  // interval units are not reserved (handled in Consts singleton)
+  final def DAY: Rule0 = rule { intervalUnit(Consts.DAY) }
+  final def HOUR: Rule0 = rule { intervalUnit(Consts.HOUR) }
+  final def MICROS: Rule0 = rule { intervalUnit("micro") }
+  final def MICROSECOND: Rule0 = rule { intervalUnit(Consts.MICROSECOND) }
+  final def MILLIS: Rule0 = rule { intervalUnit("milli") }
+  final def MILLISECOND: Rule0 = rule { intervalUnit(Consts.MILLISECOND) }
+  final def MINS: Rule0 = rule { intervalUnit("min") }
+  final def MINUTE: Rule0 = rule { intervalUnit(Consts.MINUTE) }
+  final def MONTH: Rule0 = rule { intervalUnit(Consts.MONTH) }
+  final def SECS: Rule0 = rule { intervalUnit("sec") }
+  final def SECOND: Rule0 = rule { intervalUnit(Consts.SECOND) }
+  final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
+  final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
   // Added for streaming window CQs
-  final def DURATION: Rule0 = rule { keyword(SnappyParserConsts.DURATION) }
-  final def SLIDE: Rule0 = rule { keyword(SnappyParserConsts.SLIDE) }
-  final def WINDOW: Rule0 = rule { keyword(SnappyParserConsts.WINDOW) }
+  final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
+  final def SLIDE: Rule0 = rule { keyword(Consts.SLIDE) }
+  final def WINDOW: Rule0 = rule { keyword(Consts.WINDOW) }
+  // DDL/misc commands (non-reserved)
+  final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
+  final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
+  final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
+  final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
+  final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
+  final def GLOBAL: Rule0 = rule { keyword(Consts.GLOBAL) }
+  final def HASH: Rule0 = rule { keyword(Consts.HASH) }
+  final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
+  final def INIT: Rule0 = rule { keyword(Consts.INIT) }
+  final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
+  final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
+  final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
+  final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
+  final def START: Rule0 = rule { keyword(Consts.START) }
+  final def STOP: Rule0 = rule { keyword(Consts.STOP) }
+  final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
+  final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
+  final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
+  final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
+  final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
@@ -185,7 +222,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ delimiter ~>
+    capture(plusOrMinus.? ~ Consts.numeric.+) ~ delimiter ~>
         ((s: String) => toNumericLiteral(s))
   }
 
@@ -197,8 +234,13 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
+  /** the string passed in *SHOULD* be lower case */
+  private def intervalUnit(k: String): Rule0 = rule {
+    atomic(ignoreCase(k) ~ Consts.plural.?) ~ delimiter
+  }
+
   private def intervalUnit(k: Keyword): Rule0 = rule {
-    atomic(ignoreCase(k.lower) ~ SnappyParserConsts.plural.?) ~ delimiter
+    atomic(ignoreCase(k.lower) ~ Consts.plural.?) ~ delimiter
   }
 
   protected def month: Rule1[Int] = rule {
@@ -210,21 +252,21 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def microsecond: Rule1[Long] = rule {
-    integral ~ MICROSECOND ~> ((num: String) => num.toLong)
+    integral ~ (MICROS | MICROSECOND) ~> ((num: String) => num.toLong)
   }
 
   protected def millisecond: Rule1[Long] = rule {
-    integral ~ MILLISECOND ~> ((num: String) =>
+    integral ~ (MILLIS | MILLISECOND) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_MILLI)
   }
 
   protected def second: Rule1[Long] = rule {
-    integral ~ SECOND ~> ((num: String) =>
+    integral ~ (SECS | SECOND) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_SECOND)
   }
 
   protected def minute: Rule1[Long] = rule {
-    integral ~ MINUTE ~> ((num: String) =>
+    integral ~ (MINS | MINUTE) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_MINUTE)
   }
 
@@ -248,7 +290,7 @@ class SnappyParser(session: SnappySession)
         stringLiteral ~ (
             YEAR ~ TO ~ MONTH ~> ((s: String) =>
               Literal(CalendarInterval.fromYearMonthString(s))) |
-            DAY ~ TO ~ SECOND ~> ((s: String) =>
+            DAY ~ TO ~ (SECS | SECOND) ~> ((s: String) =>
               Literal(CalendarInterval.fromDayTimeString(s))) |
             YEAR ~> ((s: String) =>
               Literal(CalendarInterval.fromSingleUnitString("year", s))) |
@@ -258,9 +300,9 @@ class SnappyParser(session: SnappySession)
               Literal(CalendarInterval.fromSingleUnitString("day", s))) |
             HOUR ~> ((s: String) =>
               Literal(CalendarInterval.fromSingleUnitString("hour", s))) |
-            MINUTE ~> ((s: String) =>
+            (MINS | MINUTE) ~> ((s: String) =>
               Literal(CalendarInterval.fromSingleUnitString("minute", s))) |
-            SECOND ~> ((s: String) =>
+            (SECS | SECOND) ~> ((s: String) =>
               Literal(CalendarInterval.fromSingleUnitString("second", s)))
         ) |
         year.? ~ month.? ~ week.? ~ day.? ~ hour.? ~ minute.? ~
@@ -295,7 +337,7 @@ class SnappyParser(session: SnappySession)
     )
   }
 
-  protected final def expression: Rule1[Expression] = rule {
+  final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
   }
@@ -306,7 +348,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def notExpression: Rule1[Expression] = rule {
-    (NOT ~> trueFn).? ~ comparisonExpression ~> ((not: Option[Boolean],
+    (NOT ~> falseFn).? ~ comparisonExpression ~> ((not: Option[Boolean],
         e: Expression) => if (not.isEmpty) e else Not(e))
   }
 
@@ -332,58 +374,33 @@ class SnappyParser(session: SnappySession)
         ) |
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
-        IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
-            ((e1: Expression, e2: Seq[Expression]) => In(e1, e2)) |
-        LIKE ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => Like(e1, e2)) |
         IS ~ (NOT ~> trueFn).? ~ NULL ~>
             ((e: Expression, not: Option[Boolean]) =>
               if (not.isEmpty) IsNull(e) else IsNotNull(e)) |
-        BETWEEN ~ termExpression ~ AND ~ termExpression ~>
-            ((e: Expression, el: Expression, eu: Expression) =>
-              And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
-        NOT ~ (
-            IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
-                ((e1: Expression, e2: Seq[Expression]) => Not(In(e1, e2))) |
-            LIKE ~ termExpression ~>
-                ((e1: Expression, e2: Expression) => Not(Like(e1, e2))) |
-            BETWEEN ~ termExpression ~ AND ~ termExpression ~>
-                ((e: Expression, el: Expression, eu: Expression) =>
-                  Not(And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))))
-        ) |
-        comparisonExpression1 |
+        invertibleExpression |
+        NOT ~ invertibleExpression ~> Not |
+        (RLIKE | REGEXP) ~ termExpression ~> RLike |
+        NOT ~ (RLIKE | REGEXP) ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => Not(RLike(e1, e2))) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
   }
 
-  protected def comparisonExpression1: Rule[Expression :: HNil,
-      Expression :: HNil] = rule {
-    (RLIKE | REGEXP) ~ termExpression ~>
-        ((e1: Expression, e2: Expression) => RLike(e1, e2))
+  /**
+    * Expressions which can be preceeded by a NOT. This assumes one expression
+    * already pushed on stack which it will pop and then push back the result
+    * Expression (hence the slightly odd looking type)
+    */
+  protected final def invertibleExpression: Rule[Expression::HNil,
+      Expression::HNil] = rule {
+    IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~> In |
+    LIKE ~ termExpression ~> Like |
+    BETWEEN ~ termExpression ~ AND ~ termExpression ~>
+        ((e: Expression, el: Expression, eu: Expression) =>
+          And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
+    IN ~ '(' ~ ws ~ query ~ ')' ~ ws ~> ((e1: Expression
+        , plan: LogicalPlan) => In(e1, Seq(ListQuery(plan))))
   }
-
-  /*
-  TODO: SW: Add support for IN and EXISTS
-  override protected def comparisonExpression1: Rule[Expression :: HNil,
-      Expression :: HNil] = rule {
-    super.comparisonExpression1 |
-    IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
-      InSubquery(e, subQuery, positive = true)) |
-    NOT ~ IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
-      InSubquery(e, subQuery, positive = false)) |
-    '=' ~ ws ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
-      InSubquery(e, subQuery, positive = true))
-  }
-
-  override protected def primary: Rule1[Expression] = rule {
-    super.primary |
-    EXISTS ~ query ~> ((subQuery: LogicalPlan) =>
-      Exists(subQuery, positive = true)) |
-    NOT ~ EXISTS ~ query ~> ((subQuery: LogicalPlan) =>
-      Exists(subQuery, positive = false))
-
-  }
-  */
 
   protected final def termExpression: Rule1[Expression] = rule {
     productExpression ~ (capture(plusOrMinus) ~ ws ~ productExpression ~>
@@ -398,8 +415,8 @@ class SnappyParser(session: SnappySession)
             case Concat(children) => Concat(children :+ e2)
             case _ => Concat(Seq(e1, e2))
           }) |
-        capture(SnappyParserConsts.arithmeticOperator) ~ ws ~
-            baseExpression ~> ((e1: Expression, op: String, e2: Expression) =>
+        capture(Consts.arithmeticOperator) ~ ws ~ baseExpression ~>
+            ((e1: Expression, op: String, e2: Expression) =>
           op.charAt(0) match {
             case '*' => Multiply(e1, e2)
             case '/' => Divide(e1, e2)
@@ -419,9 +436,9 @@ class SnappyParser(session: SnappySession)
 
   protected def durationUnit: Rule1[Duration] = rule {
     integral ~ (
-        MILLISECOND ~> ((s: String) => Milliseconds(s.toInt)) |
-        SECOND ~> ((s: String) => Seconds(s.toInt)) |
-        MINUTE ~> ((s: String) => Minutes(s.toInt))
+        (MILLIS | MILLISECOND) ~> ((s: String) => Milliseconds(s.toInt)) |
+        (SECS | SECOND) ~> ((s: String) => Seconds(s.toInt)) |
+        (MINS | MINUTE) ~> ((s: String) => Minutes(s.toInt))
     )
   }
 
@@ -455,10 +472,11 @@ class SnappyParser(session: SnappySession)
 
   protected final def joinType: Rule1[JoinType] = rule {
     INNER ~> (() => Inner) |
-    LEFT ~ SEMI ~> (() => LeftSemi) |
     LEFT ~ OUTER.? ~> (() => LeftOuter) |
+    LEFT ~ SEMI ~> (() => LeftSemi) |
     RIGHT ~ OUTER.? ~> (() => RightOuter) |
-    FULL ~ OUTER.? ~> (() => FullOuter)
+    FULL ~ OUTER.? ~> (() => FullOuter) |
+    LEFT.? ~ ANTI ~> (() => LeftAnti)
   }
 
   protected final def sortDirection: Rule1[SortDirection] = rule {
@@ -511,37 +529,16 @@ class SnappyParser(session: SnappySession)
         ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
           altPart.flatMap(e => Seq(e._1, e._2)) ++ elsePart)
   }
-  protected final def whenThenElse: Rule1[(Seq[(Expression, Expression)], Option[Expression])] = rule {
+
+  protected final def whenThenElse: Rule1[(Seq[(Expression, Expression)],
+      Option[Expression])] = rule {
     (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
         t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
-        ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
-          (altPart, elsePart))
+        ((altPart: Seq[(Expression, Expression)],
+            elsePart: Option[Expression]) => (altPart, elsePart))
   }
 
-
-
-  protected def specialFunction: Rule1[Expression] = rule {
-    CASE ~ (
-        whenThenElse ~> ((s: (Seq[(Expression, Expression)], Option[Expression])) =>
-          CaseWhen(s._1, s._2)) |
-        expression ~ keyWhenThenElse ~> ((expr: Expression, s: (Seq[(Expression)])) =>
-          CaseKeyWhen (expr, s))
-    ) |
-    APPROXIMATE ~ ('(' ~ ws ~ unsignedFloat ~ ')' ~ ws).? ~
-        identifier ~ '(' ~ ws ~ DISTINCT ~ expression ~ ')' ~ ws ~>
-        ((s: Option[String], udfName: String, exp: Expression) =>
-          if (udfName == "COUNT") {
-            AggregateExpression(
-              if (s.isEmpty) HyperLogLogPlusPlus(exp)
-              else HyperLogLogPlusPlus(exp, s.get.toDouble),
-              mode = Complete, isDistinct = false)
-          } else {
-            throw Utils.analysisException(
-              s"invalid function approximate $udfName")
-          })
-  }
-
-  protected def primary: Rule1[Expression] = rule {
+  protected final def primary: Rule1[Expression] = rule {
     identifier ~ (
         '(' ~ ws ~ (
             '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
@@ -555,7 +552,7 @@ class SnappyParser(session: SnappySession)
                 ((udfName: String, d: Option[Boolean], exprs: Seq[Expression]) =>
               if (d.isEmpty) {
                 UnresolvedFunction(udfName, exprs, isDistinct = false)
-              } else if (udfName == "COUNT") {
+              } else if (udfName.equalsIgnoreCase("count")) {
                 aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
               } else {
                 UnresolvedFunction(udfName, exprs, isDistinct = true)
@@ -572,9 +569,16 @@ class SnappyParser(session: SnappySession)
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal |
-    '(' ~ ws ~ expression ~ ')' ~ ws |
     cast |
-    specialFunction |
+    CASE ~ (
+        whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
+        expression ~ keyWhenThenElse ~> (CaseKeyWhen(_, _))
+    ) |
+    EXISTS ~ '(' ~ ws ~ query ~ ')' ~> (Exists(_)) |
+    '(' ~ ws ~ (
+        expression ~ ')' ~ ws |
+        query ~ ')' ~ ws ~> (ScalarSubquery(_))
+    ) |
     signedPrimary |
     '~' ~ ws ~ expression ~> BitwiseNot
   }
@@ -617,6 +621,7 @@ class SnappyParser(session: SnappySession)
   protected final def select1: Rule1[LogicalPlan] = rule {
     select | ('(' ~ ws ~ select ~ ')' ~ ws)
   }
+
   protected def query: Rule1[LogicalPlan] = rule {
     select1.named("select") ~ (
         UNION ~ (
@@ -632,19 +637,18 @@ class SnappyParser(session: SnappySession)
     ).*
   }
 
-  protected def insert: Rule1[LogicalPlan] = rule {
+  protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
-    TABLE.? ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
-        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
-        s, o, ifNotExists = false))
+    TABLE.? ~ relation ~ query ~> ((o: Boolean, r: LogicalPlan,
+        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
+        Option[String]], s, o, ifNotExists = false))
   }
 
-  protected def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relation ~ select ~> ((r: LogicalPlan,
-        s: LogicalPlan) => PutIntoTable(r, s))
+  protected final def put: Rule1[LogicalPlan] = rule {
+    PUT ~ INTO ~ TABLE.? ~ relation ~ query ~> PutIntoTable
   }
 
-  protected def withIdentifier: Rule1[LogicalPlan] = rule {
+  protected final def withIdentifier: Rule1[LogicalPlan] = rule {
     WITH ~ ((identifier ~ AS ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + (',' ~ ws)) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
@@ -657,312 +661,328 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | withIdentifier | dmlOperation
-  }
-}
+  // DDLs, SET, SHOW etc
 
-/**
- * Snappy dialect uses a much more optimized parser and adds SnappyParser
- * additions to the standard "sql" dialect.
- */
-private[sql] class SnappyParserDialect(session: SnappySession)
-    extends ParserDialect {
+  type TableEnd = (Option[String], Option[Map[String, String]],
+      Option[LogicalPlan])
 
-  @transient private[sql] val sqlParser = new SnappyParser(session)
+  protected def createTable: Rule1[LogicalPlan] = rule {
+    CREATE ~ (EXTERNAL ~> trueFn | TEMPORARY ~> falseFn).? ~ TABLE ~
+        (IF ~ NOT ~ EXISTS ~> trueFn).? ~ tableIdentifier ~ tableEnd ~> { (
+        tempOrExternal: Option[Boolean], ifNotExists: Option[Boolean],
+        tableIdent: TableIdentifier, schemaStr: StringBuilder,
+        remaining: TableEnd) =>
 
-  override def parse(sqlText: String): LogicalPlan = synchronized {
-    val sqlParser = this.sqlParser
-    sqlParser.input = sqlText
-    val plan = sqlParser.parse()
-    session.queryHints.clear()
-    if (sqlParser.queryHints.nonEmpty) {
-      session.queryHints ++= sqlParser.queryHints
-    }
-    plan
-  }
-}
+      val options = remaining._2.getOrElse(Map.empty[String, String])
+      val provider = remaining._1.getOrElse(SnappyContext.DEFAULT_SOURCE)
+      val allowExisting = ifNotExists.isDefined
+      val schemaString = schemaStr.toString().trim
 
-final class SnappyLexical(caseSensitive: Boolean) extends SqlLexical {
+      val hasExternalSchema = if (tempOrExternal.isDefined) false
+      else {
+        // check if provider class implements ExternalSchemaRelationProvider
+        try {
+          val clazz: Class[_] = DataSource(session, SnappyContext
+              .getProvider(provider, onlyBuiltIn = false)).providingClass
+          classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+        } catch {
+          case ce: ClassNotFoundException =>
+            throw Utils.analysisException(ce.toString)
+          case t: Throwable => throw t
+        }
+      }
+      val userSpecifiedSchema = if (hasExternalSchema) None
+      else synchronized {
+        // parse the schema string expecting Spark SQL format
+        val colParser = newInstance()
+        colParser.parseSQL(schemaString, colParser.tableColsOrNone.run())
+            .map(StructType(_))
+      }
+      val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
 
-  protected override def processIdent(name: String) = {
-    val token = normalizeKeyword(name)
-    if (reserved contains token) Keyword(token)
-    else if (caseSensitive) {
-      Identifier(name)
-    } else {
-      Identifier(Utils.toUpperCase(name))
-    }
-  }
-}
-
-/**
- * Snappy DDL extensions for streaming and sampling.
- */
-private[sql] class SnappyDDLParser(session: SnappySession,
-    parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
-
-  override val lexical = new SnappyLexical(session.sessionState.conf.caseSensitiveAnalysis)
-
-  override def parse(input: String): LogicalPlan = synchronized {
-    // Initialize the Keywords.
-    initLexical
-    phrase(start)(new lexical.Scanner(input)) match {
-      case Success(plan, _) => plan
-      case failureOrError =>
-        throw new SQLException(failureOrError.toString, "42X01")
-    }
-  }
-
-  override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
-
-    try {
-      parse(input)
-    } catch {
-      case ddlException: DDLException => throw ddlException
-      case t: SQLException if !exceptionOnError =>
-        parseQuery(input)
-    }
-  }
-
-  override protected lazy val ddl: Parser[LogicalPlan] =
-    createTable | describeTable | refreshTable | dropTable |
-        createStream  | streamContext | truncateTable | createIndex | dropIndex
-
-  protected val EXTERNAL = Keyword("EXTERNAL")
-  protected val STREAM = Keyword("STREAM")
-  protected val STREAMING = Keyword("STREAMING")
-  protected val CONTEXT = Keyword("CONTEXT")
-  protected val START = Keyword("START")
-  protected val STOP = Keyword("STOP")
-  protected val INIT = Keyword("INIT")
-  protected val DROP = Keyword("DROP")
-  protected val TRUNCATE = Keyword("TRUNCATE")
-  protected val INDEX = Keyword("INDEX")
-  protected val ON = Keyword("ON")
-  protected val GLOBAL = Keyword("GLOBAL")
-  protected val HASH = Keyword("HASH")
-  protected val UNIQUE = Keyword("UNIQUE")
-  protected val ASC = Keyword("ASC")
-  protected val DESC = Keyword("DESC")
-
-
-  protected override lazy val className: Parser[String] =
-    repsep(ident, ".") ^^ { case s =>
-      // A workaround to address lack of case information at this point.
-      // If value is all CAPS then convert to lowercase else preserve case.
-      if (s.exists(Utils.hasLowerCase)) s.mkString(".")
-      else s.map(Utils.toLowerCase).mkString(".")
-    }
-
-  private val DDLEnd = Pattern.compile(s"\\b${USING.str}\\s|" +
-      s"\\b${OPTIONS.str}\\s*\\(|\\b${AS.str}\\s|$$", Pattern.CASE_INSENSITIVE)
-
-  protected override lazy val createTable: Parser[LogicalPlan] =
-    (CREATE ~> (TEMPORARY | EXTERNAL).? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
-        tableIdentifier ~ externalTableInput ~ (USING ~> className).? ~
-        (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
-      case tempOrExternal ~ allowExisting ~ tableIdent ~ schemaString ~
-          providerName ~ opts ~ query =>
-
-        val options = opts.getOrElse(Map.empty[String, String])
-        val provider = providerName.getOrElse(SnappyContext.DEFAULT_SOURCE)
-        if (query.isDefined) {
-          if (schemaString.length > 0) {
-            throw new DDLException("CREATE TABLE AS SELECT statement " +
-                "does not allow column definitions.")
-          }
+      remaining._3 match {
+        case Some(queryPlan) =>
           // When IF NOT EXISTS clause appears in the query,
           // the save mode will be ignore.
-          val mode = if (allowExisting.isDefined) SaveMode.Ignore
+          val mode = if (allowExisting) SaveMode.Ignore
           else SaveMode.ErrorIfExists
-          val queryPlan = parseQuery(query.get)
-
           tempOrExternal match {
             case None =>
-              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
-                Array.empty[String], mode, options, queryPlan,
-                isBuiltIn = true)
-            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
-              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
-                Array.empty[String], mode, options, queryPlan,
-                isBuiltIn = false)
-            case Some(_) => throw new DDLException(
+              CreateMetastoreTableUsingSelect(tableIdent, None,
+                userSpecifiedSchema, schemaDDL, provider, temporary = false,
+                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+            case Some(true) =>
+              CreateMetastoreTableUsingSelect(tableIdent, None,
+                userSpecifiedSchema, schemaDDL, provider, temporary = false,
+                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+            case Some(false) if remaining._1.isEmpty && remaining._2.isEmpty =>
+              CreateMetastoreTableUsingSelect(tableIdent, None,
+                userSpecifiedSchema, schemaDDL, provider, temporary = true,
+                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+            case Some(_) => throw Utils.analysisException(
               "CREATE TEMPORARY TABLE ... USING ... does not allow AS query")
           }
-        } else {
-          val hasExternalSchema = if (tempOrExternal.isDefined) false
-          else {
-            // check if provider class implements ExternalSchemaRelationProvider
-            try {
-              val clazz: Class[_] = DataSource(session, SnappyContext
-                .getProvider(provider, onlyBuiltIn = false)).providingClass
-              classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
-            } catch {
-              case ce: ClassNotFoundException =>
-                throw new DDLException(ce.toString)
-              case t: Throwable => throw t
-            }
-          }
-          val userSpecifiedSchema = if (hasExternalSchema) None
-          else {
-            phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
-              case Success(columns, _) =>
-                columns.flatMap(fields => Some(StructType(fields)))
-              case failure =>
-                throw new DDLException(failure.toString)
-            }
-          }
-          val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
-
+        case None =>
           tempOrExternal match {
             case None =>
               CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
-                schemaDDL, provider, allowExisting.isDefined, options,
-                isBuiltIn = true)
-            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
+                schemaDDL, provider, allowExisting, options, isBuiltIn = true)
+            case Some(true) =>
               CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
-                schemaDDL, provider, allowExisting.isDefined, options,
-                isBuiltIn = false)
-            case Some(_) =>
+                schemaDDL, provider, allowExisting, options, isBuiltIn = false)
+            case Some(false) =>
               CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
                 temporary = true, options, Array.empty[String], None,
-                allowExisting.isDefined, managedIfNoPath = false)
+                allowExisting, managedIfNoPath = false)
           }
-        }
+      }
     }
-
-  // This is the same as tableIdentifier in SnappyParser.
-  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
-    (ident <~ ".").? ~ ident ^^ {
-      case maybeSchemaName ~ tableName =>
-        TableIdentifier(tableName, maybeSchemaName)
-    }
-
-  protected override lazy val primitiveType: Parser[DataType] =
-    "(?i)(?:string|clob)".r ^^^ StringType |
-    "(?i)(?:int|integer)".r ^^^ IntegerType |
-    "(?i)(?:bigint|long)".r ^^^ LongType |
-    fixedDecimalType |
-    "(?i)(?:decimal|numeric)".r ^^^ DecimalType.SYSTEM_DEFAULT |
-    "(?i)double".r ^^^ DoubleType |
-    "(?i)(?:float|real)".r ^^^ FloatType |
-    "(?i)(?:binary|blob)".r ^^^ BinaryType |
-    "(?i)date".r ^^^ DateType |
-    "(?i)timestamp".r ^^^ TimestampType |
-    "(?i)(?:smallint|short)".r ^^^ ShortType |
-    "(?i)(?:tinyint|byte)".r ^^^ ByteType |
-    "(?i)boolean".r ^^^ BooleanType |
-    varchar |
-    char
-
-  protected override lazy val fixedDecimalType: Parser[DataType] =
-    ("(?i)(?:decimal|numeric)".r ~> "(" ~> numericLit) ~ ("," ~> numericLit <~ ")") ^^ {
-      case precision ~ scale =>
-        DecimalType(precision.toInt, scale.toInt)
-    }
-
-  protected override lazy val char: Parser[DataType] =
-    "(?i)(?:character|char)".r ~> "(" ~> (numericLit <~ ")") ^^^ StringType
-
-  protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
-      tableIdentifier ~ (ON ~> tableIdentifier) ~
-      colWithDirection ~ (OPTIONS ~> options).? ^^ {
-      case indexType ~ indexName ~ tableName ~ cols ~ opts =>
-        val parameters = opts.getOrElse(Map.empty[String, String])
-        if (indexType.isDefined) {
-          val typeString = indexType match {
-            case Some("unique") =>
-              "unique"
-            case Some(x) if x.toString.equals("(global~hash)") =>
-              "global hash"
-          }
-          CreateIndex(indexName, tableName,
-            cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
-        } else {
-          CreateIndex(indexName, tableName, cols, parameters)
-        }
-
-    }
-
-  protected lazy val colWithDirection: Parser[Map[String, Option[SortDirection]]] =
-    ("(" ~> repsep(ident ~ direction.?, ",") <~ ")")  ^^ {
-    case exp => exp.map(pair => (pair._1, pair._2) ).toMap
   }
 
-  protected lazy val dropIndex: Parser[LogicalPlan] =
-    DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
-      case ifExists ~ indexName =>
-        DropIndex(indexName, ifExists.isDefined)
+  protected def tableEnd2: Rule1[TableEnd] = rule {
+    (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~ (AS ~ query).? ~ ws ~
+        &((';' ~ ws).* ~ EOI) ~> ((provider: Option[String],
+        options: Option[Map[String, String]],
+        asQuery: Option[LogicalPlan]) => (provider, options, asQuery))
+  }
+
+  protected def tableEnd1: Rule[StringBuilder :: HNil,
+      StringBuilder :: TableEnd :: HNil] = rule {
+    tableEnd2 ~> ((s: StringBuilder, end: TableEnd) => s :: end :: HNil) |
+    (capture(ANY ~ Consts.ddlEnd.*) ~> ((s: StringBuilder, n: String) =>
+      s.append(n))) ~ tableEnd1
+  }
+
+  protected def tableEnd: Rule2[StringBuilder, TableEnd] = rule {
+    (capture(Consts.ddlEnd.*) ~> ((s: String) =>
+      new StringBuilder().append(s))) ~ tableEnd1
+  }
+
+  protected def createIndex: Rule1[LogicalPlan] = rule {
+    (CREATE ~ (GLOBAL ~ HASH ~> falseFn | UNIQUE ~> trueFn).? ~ INDEX) ~
+        tableIdentifier ~ ON ~ tableIdentifier ~
+        colsWithDirection ~ (OPTIONS ~ options).? ~> {
+      (indexType: Option[Boolean], indexName: TableIdentifier,
+          tableName: TableIdentifier, cols: Map[String, Option[SortDirection]],
+          opts: Option[Map[String, String]]) =>
+        val parameters = opts.getOrElse(Map.empty[String, String])
+        val options = indexType match {
+          case Some(false) =>
+            parameters + (ExternalStoreUtils.INDEX_TYPE -> "unique")
+          case Some(true) =>
+            parameters + (ExternalStoreUtils.INDEX_TYPE -> "global hash")
+          case None => parameters
+        }
+        CreateIndex(indexName, tableName, cols, options)
     }
+  }
 
-  protected lazy val direction: Parser[SortDirection] =
-    ( ASC  ^^^ Ascending
-      | DESC ^^^ Descending
-    )
+  protected def colsWithDirection: Rule1[Map[String, Option[SortDirection]]] = rule {
+    '(' ~ ws ~ (identifier ~ sortDirection.? ~> ((id: String,
+        direction: Option[SortDirection]) => (id, direction))).*(',') ~ ws ~
+        ')' ~ ws ~> ((cols: Seq[(String, Option[SortDirection])]) => cols.toMap)
+  }
 
+  protected def dropIndex: Rule1[LogicalPlan] = rule {
+    DROP ~ INDEX ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
+        ((ifExists: Option[Boolean], indexName: TableIdentifier) =>
+          DropIndex(indexName, ifExists.isDefined))
+  }
 
-  protected lazy val dropTable: Parser[LogicalPlan] =
-    DROP ~> TABLE ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
-      case allowExisting ~ tableName =>
-        DropTable(tableName, allowExisting.isDefined)
-    }
+  protected def dropTable: Rule1[LogicalPlan] = rule {
+    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
+        ((allowExisting: Option[Boolean], tableIdent: TableIdentifier) =>
+          DropTable(tableIdent, allowExisting.isDefined))
+  }
 
-  protected lazy val truncateTable: Parser[LogicalPlan] =
-    TRUNCATE ~> TABLE ~> tableIdentifier ^^ {
-      case tableName => TruncateTable(tableName)
-    }
+  protected def truncateTable: Rule1[LogicalPlan] = rule {
+    TRUNCATE ~ TABLE ~ tableIdentifier ~> TruncateTable
+  }
 
-  protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~ (IF ~> NOT <~ EXISTS).? ~
-        tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
-      case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
-        val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
-        val provider = SnappyContext.getProvider(providerName,
-          onlyBuiltIn = false)
+  protected def createStream: Rule1[LogicalPlan] = rule {
+    CREATE ~ STREAM ~ TABLE ~ tableIdentifier ~ (IF ~ NOT ~ EXISTS ~>
+        trueFn).? ~ tableCols.? ~ USING ~ qualifiedName ~ OPTIONS ~ options ~> {
+      (streamIdent: TableIdentifier, ifNotExists: Option[Boolean],
+          cols: Option[Seq[StructField]], pname: String,
+          opts: Map[String, String]) =>
+        val specifiedSchema = cols.map(fields => StructType(fields))
+        val provider = SnappyContext.getProvider(pname, onlyBuiltIn = false)
         // check that the provider is a stream relation
         val clazz = DataSource(session, provider).providingClass
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
-          throw Utils.analysisException(s"CREATE STREAM provider $providerName" +
+          throw Utils.analysisException(s"CREATE STREAM provider $pname" +
               " does not implement StreamPlanProvider")
         }
         // provider has already been resolved, so isBuiltIn==false allows
         // for both builtin as well as external implementations
-        CreateMetastoreTableUsing(streamName, None, specifiedSchema, None,
-          provider, allowExisting.isDefined, opts, isBuiltIn = false)
+        CreateMetastoreTableUsing(streamIdent, None, specifiedSchema, None,
+          provider, ifNotExists.isDefined, opts, isBuiltIn = false)
     }
+  }
 
-  protected lazy val streamContext: Parser[LogicalPlan] =
-    (STREAMING ~>
-        (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
-      case action ~ batchInterval =>
-        if (batchInterval.isDefined) {
-          StreamOperationsLogicalPlan(action, Some(batchInterval.get.toInt))
-        } else {
-          StreamOperationsLogicalPlan(action, None)
+  protected def streamContext: Rule1[LogicalPlan] = rule {
+    STREAMING ~ (INIT ~> (() => 0) | START ~> (() => 1) | STOP ~> (() => 2)) ~
+        durationUnit ~ ws ~> SnappyStreamingActionsCommand
+  }
+
+  /*
+   * describe [extended] table avroTable
+   * This will display all columns of table `avroTable` includes column_name,
+   *   column_type,comment
+   */
+  protected def describeTable: Rule1[LogicalPlan] = rule {
+    DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
+        ((extended: Option[Boolean], tableIdent: TableIdentifier) =>
+          DescribeTableCommand(tableIdent, extended.isDefined,
+            isFormatted = false))
+  }
+
+  protected def refreshTable: Rule1[LogicalPlan] = rule {
+    REFRESH ~ TABLE ~ tableIdentifier ~> RefreshTable
+  }
+
+  protected def cache: Rule1[LogicalPlan] = rule {
+    CACHE ~ (LAZY ~> trueFn).? ~ TABLE ~ tableIdentifier ~
+        (AS ~ query).? ~> ((isLazy: Option[Boolean],
+        tableIdent: TableIdentifier, plan: Option[LogicalPlan]) =>
+      CacheTableCommand(tableIdent, plan, isLazy.isDefined))
+  }
+
+  protected def uncache: Rule1[LogicalPlan] = rule {
+    UNCACHE ~ TABLE ~ tableIdentifier ~> UncacheTableCommand |
+    CLEAR ~ CACHE ~> (() => ClearCacheCommand)
+  }
+
+  protected def set: Rule1[LogicalPlan] = rule {
+    SET ~ (
+        CURRENT.? ~ SCHEMA ~ '='.? ~ ws ~ identifier ~>
+            ((schemaName: String) => SetSchema(schemaName)) |
+        capture(ANY.*) ~> { (rest: String) =>
+          val separatorIndex = rest.indexOf('=')
+          if (separatorIndex >= 0) {
+            val key = rest.substring(0, separatorIndex).trim
+            val value = rest.substring(separatorIndex + 1).trim
+            SetCommand(Some(key -> Option(value)))
+          } else if (rest.nonEmpty) {
+            SetCommand(Some(rest.trim -> None))
+          } else {
+            SetCommand(None)
+          }
         }
-    }
+    )
+  }
 
-
-  protected lazy val externalTableInput: Parser[String] = new Parser[String] {
-    def apply(in: Input): ParseResult[String] = {
-      val source = in.source
-      val remaining = source.subSequence(in.offset, source.length).toString
-      val m = DDLEnd.matcher(remaining)
-      if (m.find) {
-        val index = m.start()
-        val externalTableDefinition = remaining.substring(0, index).trim
-        val others = remaining.substring(index)
-        val reader = new PackratReader(new lexical.Scanner(others))
-        Success(externalTableDefinition, reader)
-      } else {
-        Success(
-          in.source.subSequence(in.offset, in.source.length()).toString,
-          in.drop(in.source.length()))
+  // It can be the following patterns:
+  // SHOW FUNCTIONS;
+  // SHOW FUNCTIONS mydb.func1;
+  // SHOW FUNCTIONS func1;
+  // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
+  protected def show: Rule1[LogicalPlan] = rule {
+    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Option[String]) =>
+      ShowTablesCommand(ident, None)) |
+    SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+        (tableIdentifier | stringLiteral).? ~> { (id: Option[String],
+        nameOrPat: Option[Any]) =>
+      val (user, system) = id.map(_.toLowerCase) match {
+        case None | Some("all") => (true, true)
+        case Some("system") => (false, true)
+        case Some("user") => (true, false)
+        case Some(x) =>
+          throw Utils.analysisException(s"SHOW $x FUNCTIONS not supported")
+      }
+      nameOrPat match {
+        case Some(name: TableIdentifier) => ShowFunctionsCommand(
+          name.database, Some(name.table), user, system)
+        case Some(pat: String) => ShowFunctionsCommand(
+          None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
+        case None => ShowFunctionsCommand(None, None, user, system)
+        case _ => throw Utils.analysisException(
+          s"SHOW FUNCTIONS $nameOrPat unexpected")
       }
     }
   }
+
+  protected def desc: Rule1[LogicalPlan] = rule {
+    DESCRIBE ~ FUNCTION ~ (EXTENDED ~> trueFn).? ~
+        (identifier | stringLiteral) ~> ((extended: Option[Boolean],
+        functionName: String) => DescribeFunctionCommand(
+      FunctionIdentifier(functionName), extended.isDefined))
+  }
+
+  protected final def qualifiedName: Rule1[String] = rule {
+    capture((Consts.identifier | '.').*) ~ delimiter
+  }
+
+  protected def column: Rule1[StructField] = rule {
+    identifier ~ columnDataType ~ ((NOT ~> trueFn).? ~ NULL).? ~
+        (COMMENT ~ stringLiteral).? ~> { (columnName: String,
+        t: DataType, notNull: Option[Option[Boolean]], cm: Option[String]) =>
+      val builder = new MetadataBuilder()
+      val empty = t match {
+        case CharType(size, fixed) => builder.putString("size", size.toString)
+            .putString("fixed", fixed.toString)
+          false
+        case _ => true
+      }
+      val metadata = cm match {
+        case Some(comment) => builder.putString(
+          Consts.COMMENT.lower, comment).build()
+        case None => if (empty) Metadata.empty else builder.build()
+      }
+      StructField(columnName, t, notNull.isEmpty ||
+          notNull.get.isEmpty, metadata)
+    }
+  }
+
+  protected final def tableCols: Rule1[Seq[StructField]] = rule {
+    '(' ~ ws ~ (column + (',' ~ ws)) ~ ')' ~ ws
+  }
+
+  protected final def tableColsOrNone: Rule1[Option[Seq[StructField]]] = rule {
+    tableCols ~> (Some(_)) | ws ~> (() => None)
+  }
+
+  protected final def pair: Rule1[(String, String)] = rule {
+    qualifiedName ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
+  }
+
+  protected final def options: Rule1[Map[String, String]] = rule {
+    '(' ~ ws ~ (pair * (',' ~ ws)) ~ ')' ~ ws ~>
+        ((pairs: Seq[(String, String)]) => pairs.toMap)
+  }
+
+  protected def ddl: Rule1[LogicalPlan] = rule {
+    createTable | describeTable | refreshTable | dropTable | truncateTable |
+        createStream | streamContext |
+        createIndex | dropIndex
+  }
+
+  override protected def start: Rule1[LogicalPlan] = rule {
+    query.named("select") | insert | put | dmlOperation | withIdentifier |
+        ddl | set | cache | uncache | show | desc
+  }
+
+  def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
+    session.queryHints.clear()
+    parseSQL(sqlText, parseRule)
+  }
+
+  protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T = {
+    this.input = sqlText
+    val plan = parseRule match {
+      case Success(p) => p
+      case Failure(e: ParseError) =>
+        throw Utils.analysisException(formatError(e))
+      case Failure(e) =>
+        throw Utils.analysisException(e.toString, Some(e))
+    }
+    if (queryHints.nonEmpty) {
+      session.queryHints ++= queryHints
+    }
+    plan
+  }
+
+  protected def newInstance(): SnappyParser = new SnappyParser(session)
 }
 
 private[sql] case class CreateMetastoreTableUsing(
@@ -988,7 +1008,10 @@ private[sql] case class CreateMetastoreTableUsing(
 private[sql] case class CreateMetastoreTableUsingSelect(
     tableIdent: TableIdentifier,
     baseTable: Option[TableIdentifier],
+    userSpecifiedSchema: Option[StructType],
+    schemaDDL: Option[String],
     provider: String,
+    temporary: Boolean,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
@@ -998,9 +1021,18 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
-    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-      partitionColumns, mode, snc.addBaseTableOption(baseTable, options),
-      query, isBuiltIn)
+    if (temporary) {
+      // the equivalent of a registerTempTable of a DataFrame
+      if (tableIdent.database.isDefined) {
+        throw Utils.analysisException(
+          s"Temporary table '$tableIdent' should not have specified a database")
+      }
+      Dataset.ofRows(session, query).createTempView(tableIdent.table)
+    } else {
+      snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
+        userSpecifiedSchema, schemaDDL, partitionColumns, mode,
+        snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
+    }
     Seq.empty
   }
 }
@@ -1067,25 +1099,20 @@ case class DMLExternalTable(
   override def output: Seq[Attribute] = child.output
 }
 
-private[sql] case class StreamOperationsLogicalPlan(action: Int,
-    batchInterval: Option[Int])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
+private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
+    Seq.empty[Row]
+  }
 }
 
-
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Int])
-    extends RunnableCommand {
+    batchInterval: Duration) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
 
     def creatingFunc(): SnappyStreamingContext = {
-      new SnappyStreamingContext(session.sparkContext, Seconds(batchInterval.get))
+      new SnappyStreamingContext(session.sparkContext, batchInterval)
     }
 
     action match {
@@ -1106,9 +1133,10 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
       case 2 =>
         val ssc = SnappyStreamingContext.getActive()
         ssc match {
-          case Some(strCtx) => strCtx.stop(stopSparkContext = false, stopGracefully = true)
-          case None => //throw Utils.analysisException(
-            //"There is no running Streaming Context to be stopped")
+          case Some(strCtx) => strCtx.stop(stopSparkContext = false,
+            stopGracefully = true)
+          case None => // throw Utils.analysisException(
+          // "There is no running Streaming Context to be stopped")
         }
     }
     Seq.empty[Row]

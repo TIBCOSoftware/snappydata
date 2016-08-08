@@ -651,7 +651,8 @@ class SnappySession(@transient private val sc: SparkContext,
       schemaDDL: String,
       options: java.util.Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    createTable(tableName, provider, schemaDDL, options.asScala.toMap, allowExisting)
+    createTable(tableName, provider, schemaDDL, options.asScala.toMap,
+      allowExisting)
   }
 
   /**
@@ -717,6 +718,8 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
+      userSpecifiedSchema: Option[StructType],
+      schemaDDL: Option[String],
       partitionColumns: Array[String],
       mode: SaveMode,
       options: Map[String, String],
@@ -730,7 +733,8 @@ class SnappySession(@transient private val sc: SparkContext,
           throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
-        case SaveMode.Ignore => return sessionCatalog.lookupRelation(tableIdent, None)
+        case SaveMode.Ignore =>
+          return sessionCatalog.lookupRelation(tableIdent, None)
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -751,17 +755,49 @@ class SnappySession(@transient private val sc: SparkContext,
       options + (dbtableProp -> tableIdent.toString)
     }
 
-    // this gives the provider
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
+    val overwrite = mode == SaveMode.Overwrite
 
-    val relation = DataSource(
-      self,
-      partitionColumns = partitionColumns,
-      className = source,
-      options = params).write(mode, data)
+    val relation = schemaDDL match {
+      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+        cols, source, mode, params, Some(query))
 
-    if (sessionCatalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
+      case None =>
+        // add allowExisting in properties used by some implementations
+        val options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
+            (mode != SaveMode.ErrorIfExists).toString)
+        userSpecifiedSchema match {
+          case Some(_) =>
+            val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+            var success = false
+            val rel = DataSource(self,
+              userSpecifiedSchema = schema,
+              partitionColumns = partitionColumns,
+              className = source,
+              options = options).resolveRelation(true)
+            try {
+              rel match {
+                case i: InsertableRelation => i.insert(data, overwrite)
+                  success = true
+                case r => throw new AnalysisException(
+                  s"${r.getClass.getCanonicalName} does not allow inserts.")
+              }
+            } finally {
+              if (!success && rel.isInstanceOf[DestroyRelation]) {
+                rel.asInstanceOf[DestroyRelation].destroy(ifExists = false)
+              }
+            }
+            rel
+
+          case None => DataSource(self,
+            partitionColumns = partitionColumns,
+            className = source,
+            options = options).write(mode, data)
+        }
+    }
+
+    if (sessionCatalog.tableExists(tableIdent) && overwrite) {
       // uncache the previous results and don't register again
       cacheManager.uncacheQuery(data)
     } else {
@@ -777,9 +813,9 @@ class SnappySession(@transient private val sc: SparkContext,
     // TODO: SW: proper schema handling here and everywhere else in our query
     // processing rules as well as of Catalyst
     case Some(t: TableIdentifier) => options + (JdbcExtendedUtils
-        .BASETABLE_PROPERTY -> sessionCatalog.processTableIdentifier(t.table))
+        .BASETABLE_PROPERTY -> sessionCatalog.formatTableName(t.table))
     case Some(s: String) => options + (JdbcExtendedUtils
-        .BASETABLE_PROPERTY -> sessionCatalog.processTableIdentifier(s).toString)
+        .BASETABLE_PROPERTY -> sessionCatalog.formatTableName(s).toString)
     case _ => options
   }
 
@@ -817,7 +853,7 @@ class SnappySession(@transient private val sc: SparkContext,
           case NonFatal(e) =>
             if (ifExists) return
             else throw new TableNotFoundException(
-              s"Table '$tableIdent' not found", e)
+              s"Table '$tableIdent' not found", Some(e))
         }
     }
     // additional cleanup for external tables, if required
@@ -852,7 +888,6 @@ class SnappySession(@transient private val sc: SparkContext,
    * @param schemaName schema name which goes in the catalog
    */
   def setSchema(schemaName: String): Unit = {
-    // TODO: SW: schema should be session specific and not in catalog!
     sessionCatalog.setSchema(schemaName)
   }
 

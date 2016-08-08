@@ -18,23 +18,24 @@ package org.apache.spark.sql.streaming
 
 import scala.collection.mutable
 
-import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.{DDLException, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
 import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, StreamingContextState, Time}
-import org.apache.spark.util.Utils
+import org.apache.spark.{Logging, util}
 
 abstract class StreamBaseRelation(options: Map[String, String])
     extends ParentRelation with StreamPlan with TableScan
-    with DestroyRelation with Serializable with Logging {
+        with DestroyRelation with Serializable with Logging {
 
-  final def context = SnappyStreamingContext.getInstance().getOrElse(
-    throw new IllegalStateException("No initialized streaming context"))
+  final def context: SnappyStreamingContext =
+    SnappyStreamingContext.getInstance().getOrElse(
+      throw new IllegalStateException("No initialized streaming context"))
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 
@@ -53,13 +54,15 @@ abstract class StreamBaseRelation(options: Map[String, String])
     throw new UnsupportedOperationException(
       "Recovery of dependents' relation not possible")
   }
+
   val storageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
       .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
   val rowConverter = {
     try {
-      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("rowConverter"))
+      val clz = util.Utils.getContextOrSparkClassLoader.loadClass(
+        options("rowConverter"))
       clz.newInstance().asInstanceOf[StreamToRowsConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
@@ -106,7 +109,7 @@ abstract class StreamBaseRelation(options: Map[String, String])
   }
 
   def truncate(): Unit = {
-    throw new DDLException("Stream tables cannot be truncated")
+    throw Utils.analysisException("Stream tables cannot be truncated")
   }
 }
 
@@ -117,7 +120,7 @@ private object StreamBaseRelation extends Logging {
 
   private[this] val LOCK = new Object()
 
-  var validTime: Time = null
+  var validTime: Time = _
 
   def setValidTime(time: Time): Unit = {
     if (validTime == null) {

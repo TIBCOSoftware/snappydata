@@ -19,6 +19,7 @@ package org.apache.spark.sql.aqp
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution._
@@ -90,9 +91,8 @@ class SnappyContextFunctions {
       confidence: Double, behavior: String): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
-  def getSQLDialect(session: SnappySession): ParserDialect = {
-    new SnappyParserDialect(session)
-  }
+  def newSQLParser(snappySession: SnappySession): SnappySqlParser =
+    new SnappySqlParser(snappySession)
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start

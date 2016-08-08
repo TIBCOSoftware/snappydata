@@ -20,23 +20,24 @@ import java.util.Properties
 
 import scala.collection.mutable
 
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
-
+import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode}
 
 abstract class MutableRelationProvider
     extends ExternalSchemaRelationProvider
-    with SchemaRelationProvider
-    with RelationProvider
-    with CreatableRelationProvider {
+        with SchemaRelationProvider
+        with RelationProvider
+        with CreatableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String): JDBCMutableRelation = {
+      options: Map[String, String], schema: String,
+      data: Option[LogicalPlan]): JDBCMutableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val partitionColumn = parameters.remove("partitioncolumn")
@@ -65,11 +66,16 @@ abstract class MutableRelationProvider
     val parts = JDBCRelation.columnPartition(partitionInfo)
 
     var success = false
-    val relation = new JDBCMutableRelation(connProperties,
+    val relation = JDBCMutableRelation(connProperties,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+      data match {
+        case Some(plan) =>
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
+        case None =>
+      }
       success = true
       relation
     } finally {
@@ -81,7 +87,7 @@ abstract class MutableRelationProvider
   }
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
+      options: Map[String, String], schema: StructType): JDBCMutableRelation = {
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val dialect = JdbcDialects.get(url)
@@ -90,26 +96,26 @@ abstract class MutableRelationProvider
     val allowExisting = options.get(JdbcExtendedUtils
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    createRelation(sqlContext, mode, options, schemaString)
+    createRelation(sqlContext, mode, options, schemaString, None)
   }
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String]) = {
+      options: Map[String, String]): JDBCMutableRelation = {
 
     val allowExisting = options.get(JdbcExtendedUtils
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     // will work only if table is already existing
-    createRelation(sqlContext, mode, options, "")
+    createRelation(sqlContext, mode, options, "", None)
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], data: DataFrame) = {
+      options: Map[String, String], data: DataFrame): JDBCMutableRelation = {
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
-    val relation = createRelation(sqlContext, mode, options, schemaString)
+    val relation = createRelation(sqlContext, mode, options, schemaString, None)
     var success = false
     try {
       relation.insert(data)

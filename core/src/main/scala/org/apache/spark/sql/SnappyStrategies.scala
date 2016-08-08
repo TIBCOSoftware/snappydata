@@ -21,7 +21,6 @@ import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOper
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
@@ -54,21 +53,6 @@ private[sql] trait SnappyStrategies {
       /* case l@LogicalRelation(t: StreamPlan, _) =>
         PhysicalDStreamPlan(l.output, t.rowStream) :: Nil */
       case _ => Nil
-    }
-  }
-
-  /** Stream related strategies DDL stratgies */
-  case class StreamDDLStrategy(sampleStreamCase: PartialFunction[LogicalPlan,
-      Seq[SparkPlan]]) extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-
-      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case StreamOperationsLogicalPlan(action, batchInterval) =>
-          ExecutedCommandExec(
-            SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
-
-      }
-      x.orElse(sampleStreamCase)(plan)
     }
   }
 

@@ -21,7 +21,6 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -43,8 +42,8 @@ class SnappySessionState(snappySession: SnappySession)
   protected lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
 
-  override lazy val sqlParser: ParserInterface =
-    new SnappySqlParser(this.snappySession, contextFunctions.getSQLDialect(snappySession))
+  override lazy val sqlParser: SnappySqlParser =
+    contextFunctions.newSQLParser(this.snappySession)
 
   override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -78,7 +77,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case i @ PutIntoTable(u: UnresolvedRelation, _) =>
+      case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
     }
   }
@@ -86,8 +85,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog =
-    new SnappyStoreHiveCatalog(
+  override lazy val catalog = new SnappyStoreHiveCatalog(
       sharedState.externalCatalog,
       snappySession,
       functionResourceLoader,
@@ -111,22 +109,21 @@ class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case _ => Nil
   }
-  val sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case _ => Nil
-  }
 
-  // TODO temporary flag till we determine every thing works fine with the optimizations
+  // TODO temporary flag till we determine every thing works
+  // fine with the optimizations
   val storeOptimization = conf.getConfString(
     "snappy.store.optimization", "true").toBoolean
 
   val storeOptimizedRules: Seq[Strategy] = if (storeOptimization) {
     Seq(StoreDataSourceStrategy, LocalJoinStrategies)
   }
-  else { Nil }
+  else {
+    Nil
+  }
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
-      StreamDDLStrategy(sampleStreamCase),
       StoreStrategy, StreamQueryStrategy) ++
         storeOptimizedRules ++
         super.strategies
@@ -168,19 +165,19 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
 
     // other cases handled like in PreprocessTableInsertion
     case i@InsertIntoTable(table, partition, child, _, _)
-        if table.resolved && child.resolved =>
-      table match {
-        case relation: CatalogRelation =>
-          val metadata = relation.catalogTable
-          preprocess(i, metadata.identifier.quotedString, metadata.partitionColumnNames)
-        case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-          val tblName = identifier.map(_.quotedString).getOrElse("unknown")
-          preprocess(i, tblName, h.partitionSchema.map(_.name))
-        case LogicalRelation(_: InsertableRelation, _, identifier) =>
-          val tblName = identifier.map(_.quotedString).getOrElse("unknown")
-          preprocess(i, tblName, Nil)
-        case other => i
-      }
+      if table.resolved && child.resolved => table match {
+      case relation: CatalogRelation =>
+        val metadata = relation.catalogTable
+        preprocess(i, metadata.identifier.quotedString,
+          metadata.partitionColumnNames)
+      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
+        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        preprocess(i, tblName, h.partitionSchema.map(_.name))
+      case LogicalRelation(_: InsertableRelation, _, identifier) =>
+        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        preprocess(i, tblName, Nil)
+      case other => i
+    }
   }
 
   private def preprocess(
