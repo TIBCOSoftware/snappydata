@@ -52,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.5'
+  version = '0.5.2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -85,14 +85,14 @@ allprojects {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.6.1'
-    snappySparkVersion = '1.6.2-4'
+    snappySparkVersion = '1.6.2-6'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.4"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    snappyStoreVersion = '1.5.0'
+    snappyStoreVersion = '1.5.1-01'
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
@@ -488,7 +488,7 @@ task publishLocal {
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }

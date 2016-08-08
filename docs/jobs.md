@@ -311,14 +311,14 @@ SnappySQLJob trait extends the SparkJobBase trait. It provides users the singlet
 
 
 #### Submitting jobs
-Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.5.jar) and submitted to jobs server as shown below.
+Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.5.2.jar) and submitted to jobs server as shown below.
 
 ```
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.jar
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.2.jar
 ```
 The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.
 
@@ -360,7 +360,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.jar
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.2.jar
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
@@ -385,7 +385,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.jar \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.5.2.jar \
     --stream
 
 {

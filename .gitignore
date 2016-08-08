@@ -24,3 +24,6 @@ project/plugins/project/
 # Emacs files
 .#*
 *~
+
+# Boto lib
+cluster/ec2/lib

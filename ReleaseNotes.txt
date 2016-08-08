@@ -8,7 +8,11 @@
 ####################################################################################################
 
 
-  [SNAP-864] Script to launch SnappyData cluster on AWS
+Release 0.5.2
+
+  [SNAP-864] Script to launch SnappyData cluster on AWS.
+
+  Fix class loading issue when consumed as spark-packages.
 
 Release 0.5
 

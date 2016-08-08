@@ -19,7 +19,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData 0.5 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5/snappydata-0.5-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5/snappydata-0.5-bin.zip)
+* SnappyData 0.5.2 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5.2/snappydata-0.5.2-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5.2/snappydata-0.5.2-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -34,20 +34,20 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappy-core_2.10
-version: 0.5
+version: 0.5.2
 
 groupId: io.snappydata
 artifactId: snappy-cluster_2.10
-version: 0.5
+version: 0.5.2
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.5"`
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.5.2"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.5"`
+`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.5.2"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
@@ -57,8 +57,8 @@ If you are interested in working with the latest code or contributing to SnappyD
 Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
-###### 0.5 release branch with stability and other fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.5 --recursive
+###### 0.5.2 release branch with stability and other fixes ######
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.5.2 --recursive
 ```
 
 #### Building SnappyData from source
