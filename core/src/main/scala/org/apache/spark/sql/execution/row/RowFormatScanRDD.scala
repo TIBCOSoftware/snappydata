@@ -125,7 +125,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
         sb.append(" AND ")
       }
       sb.append(col).append(" IN (")
-      (1 until values.length).foreach(sb.append("?,"))
+      (1 until values.length).foreach(v => sb.append("?,"))
       sb.append("?)")
       args ++= values
     case And(left, right) =>
