@@ -306,13 +306,14 @@ class BaseColumnFormatRelation(
       "createExternalTableForCachedBatches: expected non-empty table name")
 
 
-    val (primarykey, partitionStrategy) = dialect match {
+    val (primarykey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId) ",
-            d.getPartitionByClause("partitionId"))
-      case _ => ("primary key (uuid)", "")
+            d.getPartitionByClause("partitionId"),
+            "  DISABLE CONCURRENCY CHECKS ")
+      case _ => ("primary key (uuid)", "" , "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
@@ -320,7 +321,8 @@ class BaseColumnFormatRelation(
         "not null, partitionId integer, numRows integer not null, stats blob, " +
         userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
+        s", $primarykey) $partitionStrategy $colocationClause " +
+        s" $concurrency $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
   }
 
@@ -334,7 +336,7 @@ class BaseColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
-        val sql = s"CREATE TABLE $tableName $schemaExtensions "
+        val sql = s"CREATE TABLE $tableName $schemaExtensions " + " DISABLE CONCURRENCY CHECKS "
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
