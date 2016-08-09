@@ -996,6 +996,10 @@ task packageVSD << {
   }
 }
 
+task sparkPackage {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
+}
+
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
 

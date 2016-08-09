@@ -44,6 +44,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.row.JDBCMutableRelation
@@ -200,6 +201,9 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
           "Unable to locate hive jars to connect to metastore. " +
               "Please set spark.sql.hive.metastore.jars.")
       }
+
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
 
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")

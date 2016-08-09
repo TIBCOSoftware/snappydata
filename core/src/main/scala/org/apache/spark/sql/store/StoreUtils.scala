@@ -20,10 +20,8 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -32,7 +30,7 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
+import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -46,6 +44,7 @@ object StoreUtils extends Logging {
   val MAXPARTSIZE = "MAXPARTSIZE"
   val EVICTION_BY = "EVICTION_BY"
   val PERSISTENT = "PERSISTENT"
+  val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
   val EXPIRE = "EXPIRE"
@@ -109,7 +108,7 @@ object StoreUtils extends Logging {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
         m => SnappyContext.storeToBlockMap.get(m.toString)
-      ).filter(m => m != None)
+      ).filter(_.isDefined)
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
@@ -143,7 +142,7 @@ object StoreUtils extends Logging {
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
-      numPartitions: Int, registerDestroy: Boolean = false): Unit = {
+      registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
       StoreCallbacksImpl.stores.remove(table)
@@ -175,14 +174,11 @@ object StoreUtils extends Logging {
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
             val normalizedCols = cols map { c =>
-                if(context.conf.caseSensitiveAnalysis){
-                  c
-                }else{
-                  if (Utils.hasLowerCase(c))
-                    Utils.toUpperCase(c)
-                  else
-                    c
-                }
+              if (context.conf.caseSensitiveAnalysis) {
+                c
+              } else {
+                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c) else c
+              }
             }
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields, normalizedCols)
 
@@ -215,14 +211,13 @@ object StoreUtils extends Logging {
                 s"sparkhash $PRIMARY_KEY"
               } else {
                 throw new DDLException("Column table cannot be partitioned on" +
-                    " PRIMARY KEY as no primary key")
+                  " PRIMARY KEY as no primary key")
               }
-            case _ =>  s"sparkhash COLUMN($v)"
+            case _ => s"sparkhash COLUMN($v)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
-      }
-      ).getOrElse(if (isRowTable) EMPTY_STRING
+      }).getOrElse(if (isRowTable) EMPTY_STRING
       else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
@@ -239,9 +234,8 @@ object StoreUtils extends Logging {
 
     parameters.remove(REPLICATE).foreach(v =>
       if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
-      else if (!parameters.contains(BUCKETS))
-        sb.append(GEM_BUCKETS).append(' ').append(
-          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
+      else if (!parameters.contains(BUCKETS)) sb.append(GEM_BUCKETS).append(' ')
+        .append(ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
 
@@ -279,20 +273,31 @@ object StoreUtils extends Logging {
       sb.append(s"$GEM_OVERFLOW ")
     }
 
+    var isPersistent = false
     parameters.remove(PERSISTENT).foreach { v =>
-      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
+      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("asynchronous")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
-      } else if (v.equalsIgnoreCase("sync")) {
+        isPersistent = true
+      } else if (v.equalsIgnoreCase("sync") ||
+          v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
-      } else if (!v.equalsIgnoreCase("false")) {
-        sb.append(s"$GEM_PERSISTENT $v ")
+        isPersistent = true
+      } else {
+        throw new DDLException(s"Invalid value for option $PERSISTENT = $v" +
+          s" (expected one of: async, sync, asynchronous, synchronous)")
       }
     }
-    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
-        .getOrElse(EMPTY_STRING))
-
+    parameters.remove(DISKSTORE).foreach { v =>
+      if (isPersistent) sb.append(s"'$v' ")
+      else throw new DDLException(
+        s"Option '$DISKSTORE' requires '$PERSISTENT' option")
+    }
+    sb.append(parameters.remove(SERVER_GROUPS)
+      .map(v => s"$GEM_SERVER_GROUPS ($v) ")
+      .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(OFFHEAP).map(v =>
+      if (v.equalsIgnoreCase("true")) s"$GEM_OFFHEAP " else EMPTY_STRING)
+      .getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
@@ -313,7 +318,8 @@ object StoreUtils extends Logging {
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
       if (!ddlOptions.contains(v.toString.toUpperCase)) {
-        throw new AnalysisException(s"Unknown options $v specified while creating table ")
+        throw new AnalysisException(
+          s"Unknown options $v specified while creating table ")
       }
       true
     })
@@ -332,8 +338,9 @@ object StoreUtils extends Logging {
       result(i) = dataType match {
         case StringType => STRING_TYPE
         case IntegerType => INT_TYPE
-        case LongType => if (field.metadata.contains("binarylong"))
-          BINARY_LONG_TYPE else LONG_TYPE
+        case LongType =>
+          if (field.metadata.contains("binarylong")) BINARY_LONG_TYPE
+          else LONG_TYPE
         case ShortType => SHORT_TYPE
         case ByteType => BYTE_TYPE
         case BooleanType => BOOLEAN_TYPE
