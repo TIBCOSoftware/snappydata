@@ -90,16 +90,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     }
   }
 
-  val stopNode = new SerializableRunnable() {
-    override def run(): Unit = {
-      val node = ServiceManager.currentFabricServiceInstance
-      if (node != null || node.status == FabricService.State.RUNNING) {
-        ServiceManager.currentFabricServiceInstance.stop(null)
-      }
-      assert(ServiceManager.currentFabricServiceInstance == null)
-    }
-  }
-
   override def beforeClass(): Unit = {
     super.beforeClass()
     val locNetPort = locatorNetPort

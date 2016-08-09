@@ -43,7 +43,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
     createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
     verifyTableData(snc , tableName)
-    vm2.invoke(stopNode)
+    vm2.invoke(this.getClass, "stopAny")
     vm2.invoke(startNode)
     dropTable(snc, tableName)
     createTable(snc, tableName , Map("BUCKETS" -> "1", "PERSISTENT" -> "sync"))
@@ -263,12 +263,13 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
+    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
   }
 
   def verifyTableData(snc: SnappyContext, tableName: String = tableName): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 0)
+    assert(r.length == 5)
   }
 
   def dropTable(snc: SnappyContext, tableName: String = tableName): Unit = {
