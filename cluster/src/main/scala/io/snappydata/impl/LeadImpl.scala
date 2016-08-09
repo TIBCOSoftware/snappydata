@@ -21,6 +21,7 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
@@ -123,6 +124,15 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         }
         conf.set(key, v)
       })
+
+      /**
+       * If kryoserializer is being used then register snappyclasses for kryoserializer.
+       * The snappyclasses will not get registered if user is creating its own spark context.
+       * In that case user has to specify the snappy kryo registrator externally
+       */
+      if (conf.contains("spark.serializer") && conf.get("spark.serializer").equals("org.apache.spark.serializer.KryoSerializer")) {
+        conf.set("spark.kryo.registrator", getSnappyKryoRegistrarClass())
+      }
 
       logInfo("About to initialize SparkContext with SparkConf=" + conf.toDebugString)
 
@@ -342,6 +352,18 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   override def stopAllNetworkServers(): Unit = {
     // nothing to do as none of the net servers are allowed to start.
   }
+
+
+  def getSnappyKryoRegistrarClass(): String = {
+
+    Try {
+      val miror = Class.forName("org.apache.spark.sql.execution.serializer.SnappyAQPKryoRegistrator")
+    } match {
+      case Success(v) => "org.apache.spark.sql.execution.serializer.SnappyAQPKryoRegistrator"
+      case Failure(_) => "io.snappydata.serializer.SnappyKryoRegistrator"
+    }
+  }
+
 }
 
 object LeadImpl {
