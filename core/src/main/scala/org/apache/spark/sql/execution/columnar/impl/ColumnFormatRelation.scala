@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -37,7 +36,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappyContext}
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -92,9 +90,7 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = {
-    region.getTotalNumberOfBuckets
-  }
+  override lazy val numPartitions: Int = region.getTotalNumberOfBuckets
 
   override def partitionColumns: Seq[String] = {
     partitioningColumns
@@ -261,7 +257,7 @@ class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
+      StoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         try {
