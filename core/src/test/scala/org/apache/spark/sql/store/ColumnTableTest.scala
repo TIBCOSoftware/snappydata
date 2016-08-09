@@ -106,37 +106,6 @@ class ColumnTableTest
     println("Successful")
   }
 
-
-  test("Test SNAP-947") {
-    val table = "APP.TEST_TABLE"
-
-    snc.sql (s"drop table if exists $table")
-
-    // check that default concurrency checks is set to false for column table.
-    snc.sql(s"create table $table (col1 int) using column" )
-
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
-
-    snc.dropTable(table)
-
-    // check that default concurrency checks setting is not modified.
-
-    snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
-
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
-
-    snc.dropTable(table)
-
-    snc.sql(s"create table $table (col1 int) using row " +
-        s"options(PERSISTENT 'SYNCHRONOUS' , PARTITION_BY 'COL1')" )
-
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
-
-    snc.dropTable(table)
-
-  }
-
-
   test("Test the creation of table using DataSource API") {
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
