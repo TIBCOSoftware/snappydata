@@ -65,13 +65,6 @@ public class SnappyTest implements Serializable {
     private static String SnappyShellPath = productBinDir + "snappy-shell";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
     private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-    private static String clusterLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "cluster" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-    private static String storeTestsSqlLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "store" + sep + "tests" + sep + "sql" + sep + "build-artifacts" + sep + "linux" + sep + "libs" + sep;
-    private static String storeTestsCoreLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "store" + sep + "tests" + sep + "core" + sep + "build-artifacts" + sep + "linux" + sep + "libs" + sep;
-    private static String sparkStreamingLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "spark" + sep + "streaming" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-    private static String sparkExamplesLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "spark" + sep + "examples" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-    private static String snappyExamplesLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "examples" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-    private static String aqpLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "aqp" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
     private static String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
     private static String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
@@ -176,13 +169,7 @@ public class SnappyTest implements Serializable {
         try {
             IOFileFilter filter = new WildcardFileFilter(jarName);
             List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
-            /*IOFileFilter fileFilter1 = FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("work", null));
-            FileFilter fileFilter = FileFilterUtils.and(fileFilter1, filter);
-            List<File> files = (List<File>) FileUtils.listFiles(baseDir, (IOFileFilter) fileFilter, TrueFileFilter.INSTANCE);*/
             Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
-            /*if (files.size() != 1) {
-                throw new IllegalStateException(String.format("Searching for a file '%s' did not result in the correct number of files! Found %d, expected %d", jarName, files.size(), 1));
-            }*/
             for (File file1 : files) {
                 if (!file1.getAbsolutePath().contains("/work/")) userAppJarPath = file1.getAbsolutePath();
             }
@@ -1600,8 +1587,8 @@ public class SnappyTest implements Serializable {
                     boolean found = false;
                     while (!found) {
                         Log.getLogWriter().info("swati - found " + found);
-//                        String searchString = "Done with loading data in all tables...";
-                        String searchString = "Done with running queries...";
+                        String searchString = "Done with loading data in all tables...";
+//                        String searchString = "Done with running queries...";
                         FileInputStream fis = new FileInputStream(logFile);
                         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
                         String line = null;
