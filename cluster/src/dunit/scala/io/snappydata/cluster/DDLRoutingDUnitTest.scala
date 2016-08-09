@@ -125,7 +125,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
 
     val s = conn.createStatement()
-    var options = "OPTIONS(PERSISTENT 'true', DISKSTORE 'd1')"
+    var options = "OPTIONS(PERSISTENT 'async', DISKSTORE 'd1')"
     try {
       s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
           s"USING column $options")
