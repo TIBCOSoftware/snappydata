@@ -21,7 +21,6 @@ import java.util.GregorianCalendar
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
@@ -37,7 +36,6 @@ import org.apache.spark.sql.execution.{CompactExecRowToMutableRow, ConnectionPoo
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
