@@ -574,7 +574,7 @@ class SnappyParser(session: SnappySession)
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
         expression ~ keyWhenThenElse ~> (CaseKeyWhen(_, _))
     ) |
-    EXISTS ~ '(' ~ ws ~ query ~ ')' ~> (Exists(_)) |
+    EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
     '(' ~ ws ~ (
         expression ~ ')' ~ ws |
         query ~ ')' ~ ws ~> (ScalarSubquery(_))
@@ -779,7 +779,7 @@ class SnappyParser(session: SnappySession)
 
   protected def colsWithDirection: Rule1[Map[String, Option[SortDirection]]] = rule {
     '(' ~ ws ~ (identifier ~ sortDirection.? ~> ((id: String,
-        direction: Option[SortDirection]) => (id, direction))).*(',') ~ ws ~
+        direction: Option[SortDirection]) => (id, direction))).*(',' ~ ws) ~ ws ~
         ')' ~ ws ~> ((cols: Seq[(String, Option[SortDirection])]) => cols.toMap)
   }
 

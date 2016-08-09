@@ -186,8 +186,7 @@ object StoreUtils extends Logging {
               if (context.conf.caseSensitiveAnalysis) {
                 c
               } else {
-                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c)
-                else c
+                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c) else c
               }
             }
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
