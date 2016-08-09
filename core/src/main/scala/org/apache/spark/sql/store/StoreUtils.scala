@@ -275,15 +275,16 @@ object StoreUtils extends Logging {
 
     var isPersistent = false
     parameters.remove(PERSISTENT).foreach { v =>
-      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
+      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("asynchronous")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
         isPersistent = true
-      } else if (v.equalsIgnoreCase("sync")) {
+      } else if (v.equalsIgnoreCase("sync") ||
+          v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
         isPersistent = true
-      } else if (!v.equalsIgnoreCase("false")) {
-        throw new DDLException(s"Invalid value for option '$PERSISTENT' = $v" +
-          s" (expected one of: async, sync, true, false)")
+      } else {
+        throw new DDLException(s"Invalid value for option $PERSISTENT = $v" +
+          s" (expected one of: async, sync, asynchronous, synchronous)")
       }
     }
     parameters.remove(DISKSTORE).foreach { v =>
@@ -317,7 +318,8 @@ object StoreUtils extends Logging {
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
       if (!ddlOptions.contains(v.toString.toUpperCase)) {
-        throw new AnalysisException(s"Unknown options $v specified while creating table ")
+        throw new AnalysisException(
+          s"Unknown options $v specified while creating table ")
       }
       true
     })
