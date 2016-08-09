@@ -27,7 +27,7 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
@@ -293,11 +293,15 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LeadImpl.clearInitializingSparkContext()
   }
 
+
+
   def getConfig(args: Array[String]): Config = {
 
     System.setProperty("config.trace", "loads")
-
+    val dynamicOverrides = new Properties()
+    overrideDefaultConf(dynamicOverrides)
     val notConfigurable = ConfigFactory.parseResources("jobserver-overrides.conf")
+      .withFallback(ConfigFactory.parseProperties(dynamicOverrides))
 
     val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
 
@@ -313,6 +317,24 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     finalConf
   }
 
+  //def overrideDefaultConf(p: Properties, getDefaultConfig: Option[(=> Config)] = None): Unit = {
+  def overrideDefaultConf(p: Properties): Unit = {
+    def overrideTempDir() = {
+      def replace(key: String, value: String, tempPath: String) = {
+      val newV = value.replace("/tmp", tempPath)
+        p.setProperty(key, newV)
+      }
+      val tempPath = GemFireStore.getBootedInstance.getDatabase.getTempDir.getAbsolutePath
+      val dynamicOverrides = ConfigFactory.parseResources("jobserver-defaults.conf")
+
+      var key = "spark.jobserver.filedao.rootdir"
+      replace(key, dynamicOverrides.getString(key), tempPath)
+      key = "spark.jobserver.datadao.rootdir"
+      replace(key, dynamicOverrides.getString(key), tempPath)
+    } // end of TempDir modification
+
+    overrideTempDir()
+  }
 
   def createActorSystem(conf: Config): ActorSystem = {
     ActorSystem("SnappyLeadJobServer", conf)
