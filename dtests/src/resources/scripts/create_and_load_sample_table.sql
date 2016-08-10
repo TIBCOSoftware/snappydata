@@ -7,7 +7,7 @@ CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE
     buckets '7',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
-    strataReservoirSize '50', PERSISTENT "")
+    strataReservoirSize '50', PERSISTENT "async")
   AS (
     SELECT Year_, Month_ , DayOfMonth,
       DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
