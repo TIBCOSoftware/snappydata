@@ -1549,7 +1549,7 @@ public class SnappyTest implements Serializable {
                 if (waitForJobCompletion) {
                     boolean found = false;
                     while (!found) {
-                        String searchString = "Done with loading data in all tables...";
+                        String searchString = SnappyPrms.getSearchStringForSparkJob();//"Done with loading data in all tables...";
                         FileInputStream fis = new FileInputStream(logFile);
                         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
                         String line = null;

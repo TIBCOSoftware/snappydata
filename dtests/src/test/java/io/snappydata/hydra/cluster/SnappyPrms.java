@@ -122,6 +122,11 @@ public class SnappyPrms extends BasePrms {
     public static Long logLevel;
 
     /**
+     * (String) String to be serached in the spark job output file in order to know the job completion status.
+     */
+    public static Long searchString;
+
+    /**
      * (String) userAppJar containing the user snappy job class. The wildcards in jar file name are supported in order to removes the hard coding of jar version.
      * e.g. user can specify the jar file name as "snappydata-store-scala-tests*tests.jar" instead of full jar name as "snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar".
      */
@@ -291,6 +296,11 @@ public class SnappyPrms extends BasePrms {
     public static String getLogLevel() {
         Long key = logLevel;
         return tab().stringAt(key, "config");
+    }
+
+    public static String getSearchStringForSparkJob() {
+        Long key = searchString;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
     }
 
     public static Vector getSQLScriptNames() {
