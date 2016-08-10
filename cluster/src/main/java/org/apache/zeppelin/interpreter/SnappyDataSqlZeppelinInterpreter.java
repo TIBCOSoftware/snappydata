@@ -12,6 +12,24 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+/*
+ * Changes for SnappyData data platform.
+ *
+ * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.zeppelin.interpreter;
 
 import java.sql.ResultSet;
@@ -20,6 +38,9 @@ import java.sql.Statement;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zeppelin.jdbc.JDBCInterpreter;
@@ -31,15 +52,12 @@ import static org.apache.commons.lang.StringUtils.containsIgnoreCase;
 /**
  * Snappydatasql interpreter used to connect snappydata cluster using jdbc for performing sql
  * queries
- * 
- * @author sachin
  *
  */
-public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
+public class SnappyDataSqlZeppelinInterpreter extends JDBCInterpreter {
+  public static final String SHOW_APPROX_RESULTS_FIRST = "show-approx-results-first";
   static volatile boolean firstTime = true;
-  private static BlockingQueue<InterpreterContextRunner> queue =
-      new ArrayBlockingQueue<InterpreterContextRunner>(1);
-  private Logger logger = LoggerFactory.getLogger(SnappydataSqlZeppelinInterpreter.class);
+  private Logger logger = LoggerFactory.getLogger(SnappyDataSqlZeppelinInterpreter.class);
   static final String DEFAULT_KEY = "default";
 
   private static final char WHITESPACE = ' ';
@@ -48,30 +66,12 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
   private static final String TABLE_MAGIC_TAG = "%table ";
   private static final String EXPLAIN_PREDICATE = "EXPLAIN ";
   private static final String UPDATE_COUNT_HEADER = "Update Count";
-
-
+  private static final ExecutorService exService = Executors.newSingleThreadExecutor();
   static final String EMPTY_COLUMN_VALUE = "";
 
 
-  public SnappydataSqlZeppelinInterpreter(Properties property) {
+  public SnappyDataSqlZeppelinInterpreter(Properties property) {
     super(property);
-
-    new Thread() {
-      public void run() {
-        while (true) {
-          InterpreterContextRunner runner;
-          try {
-            runner = queue.take();
-            Thread.sleep(400);
-            runner.run();
-          } catch (InterruptedException e) {
-            logger.error(
-                "Error while scheduling the approx query.Actual Exception " + e.getMessage());
-          }
-        }
-      };
-    }.start();
-
   }
 
   @Override
@@ -82,42 +82,68 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
       cmd = cmd.substring(propertyKey.length() + 2);
     }
     cmd = cmd.trim();
-    if (cmd.trim().startsWith("approxResultFirst=true")) {
-      cmd = cmd.replaceFirst("approxResultFirst=true", "");
 
 
+    if (cmd.startsWith(SHOW_APPROX_RESULTS_FIRST)) {
+      cmd = cmd.replaceFirst(SHOW_APPROX_RESULTS_FIRST, "");
+
+      /**
+       * As suggested by Jags and suyog
+       * This will allow user to execute multiple queries in same paragraph.
+       * But will return results of the last query.This is mainly done to
+       * allow user to set properties for JDBC connection
+       *
+       */
+      String queries[] = cmd.split(";");
+      for (int i = 0; i < queries.length - 1; i++) {
+        InterpreterResult result = executeSql(propertyKey, queries[i], contextInterpreter);
+        if (result.code().equals(InterpreterResult.Code.ERROR)) {
+          return result;
+        }
+      }
       if (firstTime) {
         firstTime = false;
 
         for (InterpreterContextRunner r : contextInterpreter.getRunners()) {
           if (id.equals(r.getParagraphId())) {
 
+            String query = queries[queries.length - 1]+" with error";
+            final InterpreterResult res = executeSql(propertyKey, query, contextInterpreter);
 
-            final InterpreterResult res = executeSql(propertyKey, cmd, contextInterpreter);
+            try{
+              /*Adding a delay of few milliseconds in order for zeppelin to render
+               the result.As this delay is after the query execution it will not
+               be considered in query time. This delay is basically the gap between
+               first query and spawning of the next query.
+              */
+              Thread.sleep(200);
+            } catch (InterruptedException interruptedException) {
 
-            queue.add(r);
+              //Ignore this exception as this should not harm the behaviour
+            }
 
+            exService.submit(new QueryExecutor(r));
             return res;
           }
         }
 
       } else {
         firstTime = true;
-        /*
-         * try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
-         */
-        String query = cmd.replaceAll("with error .*", "");
-        logger.info("Executing cmd " + query);
+        String query = queries[queries.length - 1];//.replaceAll("with error .*", "");
 
-        /*
-         * contextInterpreter.getAngularObjectRegistry().add("title", "Accurate result",
-         * contextInterpreter.getNoteId(), contextInterpreter.getParagraphId());
-         */
-        return executeSql(propertyKey, cmd, contextInterpreter);
+
+        return executeSql(propertyKey, query, contextInterpreter);
       }
       return null;
     } else {
-      return executeSql(propertyKey, cmd, contextInterpreter);
+      String queries[] = cmd.split(";");
+      for (int i = 0; i < queries.length - 1; i++) {
+        InterpreterResult result = executeSql(propertyKey, queries[i], contextInterpreter);
+        if (result.code().equals(InterpreterResult.Code.ERROR)) {
+          return result;
+        }
+      }
+      return executeSql(propertyKey, queries[queries.length - 1], contextInterpreter);
 
     }
 
@@ -126,6 +152,7 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
 
   /**
    * The content of this method are borrowed from JDBC interpreter of apache zeppelin
+   *
    * @param propertyKey
    * @param sql
    * @param interpreterContext
@@ -134,11 +161,12 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
   private InterpreterResult executeSql(String propertyKey, String sql,
       InterpreterContext interpreterContext) {
 
-    String userId = interpreterContext.getAuthenticationInfo().getUser();
+    String paragraphId = interpreterContext.getParagraphId();
 
     try {
 
-      Statement statement = getStatement(propertyKey, userId);
+      //Getting connection per user instead of per paragraph
+      Statement statement = getStatement(propertyKey, paragraphId);
 
       if (statement == null) {
         return new InterpreterResult(InterpreterResult.Code.ERROR, "Prefix not found.");
@@ -174,8 +202,11 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
           msg.append(NEWLINE);
 
           int displayRowCount = 0;
-          while (resultSet.next() && displayRowCount < getMaxResult()) {
-            for (int i = 1; i < md.getColumnCount() + 1; i++) {
+
+          int maxResult = getMaxResult();
+          int columnCount = md.getColumnCount();
+          while (resultSet.next() && displayRowCount < maxResult) {
+            for (int i = 1; i < columnCount + 1; i++) {
               Object resultObject;
               String resultValue;
               resultObject = resultSet.getObject(i);
@@ -185,7 +216,7 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
                 resultValue = resultSet.getString(i);
               }
               msg.append(replaceReservedChars(isTableType, resultValue));
-              if (i != md.getColumnCount()) {
+              if (i != columnCount) {
                 msg.append(TAB);
               }
             }
@@ -231,5 +262,21 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
       return EMPTY_COLUMN_VALUE;
     }
     return (!isTableResponseType) ? str : str.replace(TAB, WHITESPACE).replace(NEWLINE, WHITESPACE);
+  }
+
+
+  class QueryExecutor implements Callable<Integer> {
+
+    InterpreterContextRunner runner;
+    QueryExecutor(InterpreterContextRunner runner){
+      this.runner=runner;
+    }
+    @Override
+    public Integer call() throws Exception {
+
+      runner.run();
+
+      return 0;
+    }
   }
 }

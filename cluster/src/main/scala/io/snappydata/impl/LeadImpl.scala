@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
-import org.apache.zeppelin.interpreter.{ZeppelinIntpUtil, SnappyRemoteInterpreterServer}
+import org.apache.zeppelin.interpreter.{ZeppelinIntpUtil, SnappyInterpreterServer}
 import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
@@ -366,7 +366,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     //As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
     if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER, "true").equals("true")) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
-      val remoteInterpreterServer: SnappyRemoteInterpreterServer = new SnappyRemoteInterpreterServer(port)
+      val remoteInterpreterServer: SnappyInterpreterServer = new SnappyInterpreterServer(port)
       remoteInterpreterServer.start()
       logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
     }

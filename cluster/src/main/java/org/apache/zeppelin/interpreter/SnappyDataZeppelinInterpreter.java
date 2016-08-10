@@ -14,6 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Changes for SnappyData data platform.
+ *
+ * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 
 package org.apache.zeppelin.interpreter;
 
@@ -31,7 +49,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import scala.collection.convert.WrapAsJava;
+
 import scala.collection.Seq;
 import scala.collection.convert.WrapAsJava$;
 import org.apache.spark.SparkConf;
@@ -65,7 +83,6 @@ import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConversions;
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 import scala.reflect.io.AbstractFile;
@@ -81,8 +98,8 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
  * Most of the contents of this class is borrowed from Spark Interpreter in zeppelin
  * https://github.com/apache/zeppelin/blob/master/spark/src/main/java/org/apache/zeppelin/spark/SparkInterpreter.java
  */
-public class SnappydataZeppelinInterpreter extends Interpreter {
-  public static Logger logger = LoggerFactory.getLogger(SnappydataZeppelinInterpreter.class);
+public class SnappyDataZeppelinInterpreter extends Interpreter {
+  public static Logger logger = LoggerFactory.getLogger(SnappyDataZeppelinInterpreter.class);
 
   private ZeppelinContext z;
   private static SparkILoop interpreter;
@@ -103,12 +120,12 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
   private SparkVersion sparkVersion;
   private Settings settings = new Settings();
 
-  public SnappydataZeppelinInterpreter(Properties property) {
+  public SnappyDataZeppelinInterpreter(Properties property) {
     super(property);
 
   }
 
-  public SnappydataZeppelinInterpreter(Properties property, SparkContext sc) {
+  public SnappyDataZeppelinInterpreter(Properties property, SparkContext sc) {
     this(property);
 
     this.sc = sc;
@@ -668,7 +685,7 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
   @Override
   public Scheduler getScheduler() {
     return SchedulerFactory.singleton().createOrGetFIFOScheduler(
-        SnappydataZeppelinInterpreter.class.getName() + this.hashCode());
+        SnappyDataZeppelinInterpreter.class.getName() + this.hashCode());
   }
 
   public ZeppelinContext getZeppelinContext() {

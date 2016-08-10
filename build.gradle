@@ -505,7 +505,7 @@ task product {
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
-
+  dependsOn ":snappy-cluster_${scalaBinaryVersion}:generateSnappydataZeppelinInterpreterJar"
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
   }

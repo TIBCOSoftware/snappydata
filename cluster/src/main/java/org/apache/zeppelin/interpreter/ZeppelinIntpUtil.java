@@ -21,7 +21,7 @@ public class ZeppelinIntpUtil {
   public static Properties initializeZeppelinReplAndGetConfig() {
     Properties props=new Properties();
 
-    SnappydataZeppelinInterpreter snappyZeppelinIntp = new SnappydataZeppelinInterpreter(new Properties());
+    SnappyDataZeppelinInterpreter snappyZeppelinIntp = new SnappyDataZeppelinInterpreter(new Properties());
     SparkILoop interpreter  = snappyZeppelinIntp.getReplInterpreter();
     String classServerUri = null;
     try { // in case of spark 1.1x, spark 1.2x

@@ -2,7 +2,7 @@
   {
     "group": "snappydata",
     "name": "snappydata",
-    "className": "org.apache.zeppelin.interpreter.SnappydataZeppelinInterpreter",
+    "className": "org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter",
     "properties": {
       "zeppelin.spark.printREPLOutput": {
         "envName": null,
@@ -32,8 +32,8 @@
   },
   {
     "group": "snappydata",
-    "name": "snappydatasql",
-    "className": "org.apache.zeppelin.interpreter.SnappydataSqlZeppelinInterpreter",
+    "name": "sql",
+    "className": "org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter",
     "properties": {
       "default.url": {
         "envName": null,
@@ -64,7 +64,19 @@
         "propertyName": "common.max_count",
         "defaultValue": "1000",
         "description": "Max number of SQL result to display."
-      }
+      },
+      "zeppelin.jdbc.concurrent.max_connection": {
+      "envName": null,
+      "propertyName": "zeppelin.jdbc.concurrent.max_connection",
+      "defaultValue": "10",
+      "description": "Number of concurrent execution"
+     },
+     "zeppelin.jdbc.concurrent.use": {
+        "envName": null,
+        "propertyName": "zeppelin.jdbc.concurrent.use",
+        "defaultValue": "true",
+        "description": "Use parallel scheduler"
+     }
     }
   }
 ]
