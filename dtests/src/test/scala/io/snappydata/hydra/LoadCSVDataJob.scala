@@ -27,7 +27,8 @@ class LoadCSVDataJob extends SnappySQLJob {
   override def runJob(snContext: SnappyContext, jobConfig: Config): Any = {
 
     def createTable(tableName: String, mode: String): Unit = {
-      val path = s"/home/swati/SwatiData/dataGenerator/${tableName}.dat"
+      val dataLocation = jobConfig.getString("dataLocation")
+      val path = s"$dataLocation/${tableName}.dat"
       val colTblDataFrame = snContext.read
           .format("com.databricks.spark.csv") // CSV to DF package
           .option("header", "true") // Use first line of all files as header
@@ -42,8 +43,6 @@ class LoadCSVDataJob extends SnappySQLJob {
     val columnTableList: String = jobConfig.getString("columnTableList")
     val rowTableList: String = jobConfig.getString("rowTableList")
 
-    println("swati - columnTableList is " + columnTableList)
-    println("swati - rowTableList is " + rowTableList)
     val columnTables = Map(
       0 -> "MVP_HC__MEMBER",
       1 -> "MVP_HC__PROFESSIONALCLAIM",
