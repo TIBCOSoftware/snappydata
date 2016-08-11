@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -37,7 +36,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappyContext}
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -92,9 +90,7 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = {
-    region.getTotalNumberOfBuckets
-  }
+  override lazy val numPartitions: Int = region.getTotalNumberOfBuckets
 
   override def partitionColumns: Seq[String] = {
     partitioningColumns
@@ -261,7 +257,7 @@ class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
+      StoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         try {
@@ -310,13 +306,14 @@ class BaseColumnFormatRelation(
       "createExternalTableForCachedBatches: expected non-empty table name")
 
 
-    val (primarykey, partitionStrategy) = dialect match {
+    val (primarykey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId) ",
-            d.getPartitionByClause("partitionId"))
-      case _ => ("primary key (uuid)", "")
+            d.getPartitionByClause("partitionId"),
+            "  DISABLE CONCURRENCY CHECKS ")
+      case _ => ("primary key (uuid)", "" , "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
@@ -324,7 +321,8 @@ class BaseColumnFormatRelation(
         "not null, partitionId integer, numRows integer not null, stats blob, " +
         userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
+        s", $primarykey) $partitionStrategy $colocationClause " +
+        s" $concurrency $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
   }
 
@@ -338,7 +336,7 @@ class BaseColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
-        val sql = s"CREATE TABLE $tableName $schemaExtensions "
+        val sql = s"CREATE TABLE $tableName $schemaExtensions " + " DISABLE CONCURRENCY CHECKS "
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
