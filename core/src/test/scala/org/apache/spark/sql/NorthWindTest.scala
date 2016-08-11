@@ -109,7 +109,7 @@ class NorthWindTest
 
     val regions = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/regions.csv")
+      .load(getClass.getResource("/northwind/regions.csv").getPath)
     snc.sql("create table regions (" +
       "RegionID int, " +
       "RegionDescription string)")
@@ -118,7 +118,7 @@ class NorthWindTest
 
     val categories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/categories.csv")
+      .load(getClass.getResource("/northwind/categories.csv").getPath)
     snc.sql("create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
@@ -129,7 +129,7 @@ class NorthWindTest
 
     val shippers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/shippers.csv")
+      .load(getClass.getResource("/northwind/shippers.csv").getPath)
     snc.sql("create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
@@ -139,7 +139,7 @@ class NorthWindTest
 
     val employees = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employees.csv")
+      .load(getClass.getResource("/northwind/employees.csv").getPath)
     snc.sql("create table employees(" +
       "EmployeeID int, " +
       "LastName string, " +
@@ -164,7 +164,7 @@ class NorthWindTest
 
     val customers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/customers.csv")
+      .load(getClass.getResource("/northwind/customers.csv").getPath)
     snc.sql("create table customers(" +
       "CustomerID string, " +
       "CompanyName string, " +
@@ -183,7 +183,7 @@ class NorthWindTest
 
     val orders = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/orders.csv")
+      .load(getClass.getResource("/northwind/orders.csv").getPath)
     snc.sql("create table orders (" +
       "OrderID int, " +
       "CustomerID string, " +
@@ -205,7 +205,7 @@ class NorthWindTest
 
     val order_details = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/order-details.csv")
+      .load(getClass.getResource("/northwind/order-details.csv").getPath)
     snc.sql("create table order_details (" +
       "OrderID int, " +
       "ProductID int, " +
@@ -218,7 +218,7 @@ class NorthWindTest
 
     val products = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/products.csv")
+      .load(getClass.getResource("/northwind/products.csv").getPath)
     snc.sql("create table products(" +
       "ProductID int, " +
       "ProductName string, " +
@@ -236,7 +236,7 @@ class NorthWindTest
 
     val suppliers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/suppliers.csv")
+      .load(getClass.getResource("/northwind/suppliers.csv").getPath)
     snc.sql("create table suppliers(" +
       "SupplierID int, " +
       "CompanyName string, " +
@@ -256,7 +256,7 @@ class NorthWindTest
 
     val territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/territories.csv")
+      .load(getClass.getResource("/northwind/territories.csv").getPath)
     snc.sql("create table territories(" +
       "TerritoryID string , " +
       "TerritoryDescription string, " +
@@ -266,7 +266,7 @@ class NorthWindTest
 
     val employee_territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employee-territories.csv")
+      .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
     snc.sql("create table employee_territories(" +
       "EmployeeID int, " +
       "TerritoryID string) using row options(partition_by 'TerritoryID'," +
@@ -1039,7 +1039,7 @@ class NorthWindTest
 
     val regions = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/regions.csv")
+      .load(getClass.getResource("/northwind/regions.csv").getPath)
     snc.sql("create table regions (" +
       "RegionID int, " +
       "RegionDescription string)")
@@ -1048,7 +1048,7 @@ class NorthWindTest
 
     val categories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/categories.csv")
+      .load(getClass.getResource("/northwind/categories.csv").getPath)
     snc.sql("create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
@@ -1059,7 +1059,7 @@ class NorthWindTest
 
     val shippers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/shippers.csv")
+      .load(getClass.getResource("/northwind/shippers.csv").getPath)
     snc.sql("create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
@@ -1069,7 +1069,7 @@ class NorthWindTest
 
     val employees = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employees.csv")
+      .load(getClass.getResource("/northwind/employees.csv").getPath)
     snc.sql("create table employees(" +
       "EmployeeID int not null , " +
       "LastName string not null, " +
@@ -1094,7 +1094,7 @@ class NorthWindTest
 
     val customers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/customers.csv")
+      .load(getClass.getResource("/northwind/customers.csv").getPath)
     snc.sql("create table customers(" +
       "CustomerID string not null, " +
       "CompanyName string not null, " +
@@ -1112,7 +1112,7 @@ class NorthWindTest
 
     val orders = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/orders.csv")
+      .load(getClass.getResource("/northwind/orders.csv").getPath)
     snc.sql("create table orders (" +
       "OrderID int not null, " +
       "CustomerID string, " +
@@ -1133,7 +1133,7 @@ class NorthWindTest
 
     val order_details = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/order-details.csv")
+      .load(getClass.getResource("/northwind/order-details.csv").getPath)
     snc.sql("create table order_details (" +
       "OrderID int not null, " +
       "ProductID int not null, " +
@@ -1146,7 +1146,7 @@ class NorthWindTest
 
     val products = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/products.csv")
+      .load(getClass.getResource("/northwind/products.csv").getPath)
     snc.sql("create table products(" +
       "ProductID int not null, " +
       "ProductName string, " +
@@ -1163,7 +1163,7 @@ class NorthWindTest
 
     val suppliers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/suppliers.csv")
+      .load(getClass.getResource("/northwind/suppliers.csv").getPath)
     snc.sql("create table suppliers(" +
       "SupplierID int not null, " +
       "CompanyName string not null, " +
@@ -1182,7 +1182,7 @@ class NorthWindTest
 
     val territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/territories.csv")
+      .load(getClass.getResource("/northwind/territories.csv").getPath)
     snc.sql("create table territories(" +
       "TerritoryID string not null, " +
       "TerritoryDescription string not null, " +
@@ -1192,7 +1192,7 @@ class NorthWindTest
 
     val employee_territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employee-territories.csv")
+      .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
     snc.sql("create table employee_territories(" +
       "EmployeeID int not null, " +
       "TerritoryID int not null) using row options(partition_by 'EmployeeID', buckets '1') ")
@@ -1204,7 +1204,7 @@ class NorthWindTest
 
     val regions = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/regions.csv")
+      .load(getClass.getResource("/northwind/regions.csv").getPath)
     snc.sql("create table regions (" +
       "RegionID int, " +
       "RegionDescription string)")
@@ -1213,7 +1213,7 @@ class NorthWindTest
 
     val categories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/categories.csv")
+      .load(getClass.getResource("/northwind/categories.csv").getPath)
     snc.sql("create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
@@ -1224,7 +1224,7 @@ class NorthWindTest
 
     val shippers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/shippers.csv")
+      .load(getClass.getResource("/northwind/shippers.csv").getPath)
     snc.sql("create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
@@ -1234,7 +1234,7 @@ class NorthWindTest
 
     val employees = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employees.csv")
+      .load(getClass.getResource("/northwind/employees.csv").getPath)
     snc.sql("create table employees(" +
       "EmployeeID int, " +
       "LastName string, " +
@@ -1259,7 +1259,7 @@ class NorthWindTest
 
     val customers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/customers.csv")
+      .load(getClass.getResource("/northwind/customers.csv").getPath)
     snc.sql("create table customers(" +
       "CustomerID string, " +
       "CompanyName string, " +
@@ -1277,7 +1277,7 @@ class NorthWindTest
 
     val orders = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/orders.csv")
+      .load(getClass.getResource("/northwind/orders.csv").getPath)
     snc.sql("create table orders (" +
       "OrderID int, " +
       "CustomerID string, " +
@@ -1298,7 +1298,7 @@ class NorthWindTest
 
     val order_details = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/order-details.csv")
+      .load(getClass.getResource("/northwind/order-details.csv").getPath)
     snc.sql("create table order_details (" +
       "OrderID int, " +
       "ProductID int, " +
@@ -1311,7 +1311,7 @@ class NorthWindTest
 
     val products = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/products.csv")
+      .load(getClass.getResource("/northwind/products.csv").getPath)
     snc.sql("create table products(" +
       "ProductID int, " +
       "ProductName string, " +
@@ -1328,7 +1328,7 @@ class NorthWindTest
 
     val suppliers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/suppliers.csv")
+      .load(getClass.getResource("/northwind/suppliers.csv").getPath)
     snc.sql("create table suppliers(" +
       "SupplierID int, " +
       "CompanyName string, " +
@@ -1347,7 +1347,7 @@ class NorthWindTest
 
     val territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/territories.csv")
+      .load(getClass.getResource("/northwind/territories.csv").getPath)
     snc.sql("create table territories(" +
       "TerritoryID string , " +
       "TerritoryDescription string, " +
@@ -1357,7 +1357,7 @@ class NorthWindTest
 
     val employee_territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employee-territories.csv")
+      .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
     snc.sql("create table employee_territories(" +
       "EmployeeID int, " +
       "TerritoryID int) using row options(partition_by 'EmployeeID', buckets '1') ")
@@ -1624,7 +1624,7 @@ class NorthWindTest
 
     val regions = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/regions.csv")
+      .load(getClass.getResource("/northwind/regions.csv").getPath)
     snc.sql("create table regions (" +
       "RegionID int, " +
       "RegionDescription string)")
@@ -1633,7 +1633,7 @@ class NorthWindTest
 
     val categories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/categories.csv")
+      .load(getClass.getResource("/northwind/categories.csv").getPath)
     snc.sql("create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
@@ -1644,7 +1644,7 @@ class NorthWindTest
 
     val shippers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/shippers.csv")
+      .load(getClass.getResource("/northwind/shippers.csv").getPath)
     snc.sql("create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
@@ -1654,7 +1654,7 @@ class NorthWindTest
 
     val employees = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employees.csv")
+      .load(getClass.getResource("/northwind/employees.csv").getPath)
     snc.sql("create table employees(" +
       "EmployeeID int not null , " +
       "LastName string not null, " +
@@ -1679,7 +1679,7 @@ class NorthWindTest
 
     val customers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/customers.csv")
+      .load(getClass.getResource("/northwind/customers.csv").getPath)
     snc.sql("create table customers(" +
       "CustomerID string not null, " +
       "CompanyName string not null, " +
@@ -1697,7 +1697,7 @@ class NorthWindTest
 
     val orders = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/orders.csv")
+      .load(getClass.getResource("/northwind/orders.csv").getPath)
     snc.sql("create table orders (" +
       "OrderID int not null, " +
       "CustomerID string, " +
@@ -1718,7 +1718,7 @@ class NorthWindTest
 
     val order_details = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/order-details.csv")
+      .load(getClass.getResource("/northwind/order-details.csv").getPath)
     snc.sql("create table order_details (" +
       "OrderID int not null, " +
       "ProductID int not null, " +
@@ -1730,7 +1730,7 @@ class NorthWindTest
 
     val products = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/products.csv")
+      .load(getClass.getResource("/northwind/products.csv").getPath)
     snc.sql("create table products(" +
       "ProductID int not null, " +
       "ProductName string, " +
@@ -1748,7 +1748,7 @@ class NorthWindTest
 
     val suppliers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/suppliers.csv")
+      .load(getClass.getResource("/northwind/suppliers.csv").getPath)
     snc.sql("create table suppliers(" +
       "SupplierID int not null, " +
       "CompanyName string not null, " +
@@ -1768,7 +1768,7 @@ class NorthWindTest
 
     val territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/territories.csv")
+      .load(getClass.getResource("/northwind/territories.csv").getPath)
     snc.sql("create table territories(" +
       "TerritoryID string not null, " +
       "TerritoryDescription string not null, " +
@@ -1778,7 +1778,7 @@ class NorthWindTest
 
     val employee_territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .load("/home/ymahajan/git/northwind-mongo/employee-territories.csv")
+      .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
     snc.sql("create table employee_territories(" +
       "EmployeeID int not null, " +
       "TerritoryID int not null)")
