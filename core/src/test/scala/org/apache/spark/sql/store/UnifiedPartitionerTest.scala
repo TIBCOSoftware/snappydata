@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.store
 
 import java.math.{BigDecimal, BigInteger}
@@ -19,8 +35,8 @@ import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
- * This test checks the validity of various functionality when we use Spark's partitioner logic for underlying
- * GemXD storage.
+ * This test checks the validity of various functionality when we use Spark's
+ * partitioner logic for underlying GemXD storage.
  */
 class UnifiedPartitionerTest extends SnappyFunSuite
 with Logging
@@ -65,8 +81,6 @@ with BeforeAndAfterAll {
 
     def createRow(values: Any*): GenericInternalRow = {
       val newVals = values map { v => CatalystTypeConverters.convertToCatalyst(v)}
-/*      println(" new val = "+ newVals)
-      println("hashcode " + newVals.seq(0).getClass)*/
       new GenericInternalRow(newVals.toArray)
     }
 
@@ -133,7 +147,7 @@ with BeforeAndAfterAll {
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
-    //Test supplementary unicode chars
+    // Test supplementary unicode chars
     val txt = "功能 絶\uD84C\uDFB4顯示廣告"
     dvd = new SQLVarchar(txt);
     row = createRow(UTF8String.fromString(txt))
@@ -191,7 +205,8 @@ with BeforeAndAfterAll {
 
     dataDF.write.insertInto(ColumnTableName1)
 
-    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.OrderId=R.key1")
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN " +
+        "ColumnTable1Temp R ON P.OrderId=R.key1")
     assert(count.count() === 5)
   }
 
@@ -215,7 +230,8 @@ with BeforeAndAfterAll {
 
 
     dataDF.write.insertInto(ColumnTableName1)
-    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN " +
+        "ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
   }
 
@@ -236,9 +252,8 @@ with BeforeAndAfterAll {
 
 
     dataDF.write.insertInto(ColumnTableName1)
-    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
-    /*   val qe = new QueryExecution(snc, count.logicalPlan)
-       println(qe.executedPlan)*/
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN " +
+        "ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
   }
 
@@ -261,7 +276,8 @@ with BeforeAndAfterAll {
 
 
     dataDF.write.insertInto(ColumnTableName1)
-    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN " +
+        "ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
   }
 
@@ -292,7 +308,8 @@ with BeforeAndAfterAll {
 
 
     dataDF.write.insertInto(ColumnTableName2)
-    val count = snc.sql(s"select * from $ColumnTableName2 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
+    val count = snc.sql(s"select * from $ColumnTableName2 P JOIN " +
+        "ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
   }
 

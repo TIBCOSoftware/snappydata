@@ -188,7 +188,7 @@ trait SplitClusterDUnitTestObject {
 
     // remove below once SNAP-653 is fixed
     val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1", numPartitions,
+    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1",
       registerDestroy = true)
 
     // create a table in split mode

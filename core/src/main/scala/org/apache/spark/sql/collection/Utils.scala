@@ -19,6 +19,8 @@ package org.apache.spark.sql.collection
 import java.io.ObjectOutputStream
 import java.sql.DriverManager
 
+import org.apache.spark.storage.BlockManagerId
+
 import scala.collection.mutable
 import scala.collection.{Map => SMap}
 import scala.language.existentials
@@ -48,6 +50,7 @@ import org.apache.spark.storage.BlockManagerId
 object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
+  final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent = new NormalDistribution().
@@ -733,14 +736,10 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorLocalShellPartition(override val index: Int,
-    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString = s"ExecutorLocalShellPartition($index, $hostList"
-}
-
 class ExecutorMultiBucketLocalShellPartition(override val index: Int,
+                                             val buckets: mutable.HashSet[Int],
                                   val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString = s"ExecutorMultiBucketLocalShellPartition($index, $hostList"
+  override def toString = s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {
