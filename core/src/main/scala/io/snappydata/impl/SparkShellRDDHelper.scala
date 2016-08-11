@@ -18,10 +18,6 @@ package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
-
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.SocketCreator
@@ -30,15 +26,19 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
-
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.ExecutorLocalShellPartition
+import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.{ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 final class SparkShellRDDHelper {
 
@@ -66,7 +66,7 @@ final class SparkShellRDDHelper {
   }
 
   def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
-    val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
+    val urlsOfNetServerHost = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition].hostList
     useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
@@ -105,30 +105,64 @@ final class SparkShellRDDHelper {
 
 object SparkShellRDDHelper {
 
-  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
-    store.tryExecute(tableName, {
-      conn =>
-        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val bucketToServerList = getBucketToServerMapping(resolvedName)
-        val numPartitions = bucketToServerList.length
-        val partitions = new Array[Partition](numPartitions)
-      /*        val numCores = Runtime.getRuntime.availableProcessors()
-              val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-              val numPartitions = numServers * numCores
-              val numBuckets = bucketToServerList.length
-              val partitions = {
-                if (numBuckets < numPartitions) {
-                  new Array[Partition](numBuckets)
-                } else {
-                  new Array[Partition](numPartitions)
-                }
-              }
-       */
-        for (p <- 0 until numPartitions) {
-          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+  def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
+    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+    val bucketToServerList = getBucketToServerMapping(resolvedName)
+    val numBuckets = bucketToServerList.length
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
+      case pr: PartitionedRegion =>
+        val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
+          mutable.HashSet[Int]]()
+        var totalBuckets = new mutable.HashSet[Int]()
+        for (p <- 0 until numBuckets) {
+          val distMembers = pr.getRegionAdvisor.getBucketOwners(p).asScala
+          distMembers foreach (m => {
+            var bucketSet = new mutable.HashSet[Int]()
+            if (serverToBuckets contains m) {
+              bucketSet = serverToBuckets.get(m).get
+            }
+            bucketSet += p
+            totalBuckets += p
+            serverToBuckets put(m, bucketSet)
+          })
         }
+        val numCores = Runtime.getRuntime.availableProcessors()
+        val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+        val numPartitions = numServers * numCores
+        val partitions = {
+          if (numBuckets < numPartitions) {
+            new Array[Partition](numBuckets)
+          } else {
+            new Array[Partition](numPartitions)
+          }
+        }
+        var partCnt = 0;
+        serverToBuckets foreach (e => {
+          var numCoresPending = numCores
+          var localBuckets = e._2
+          assert(!localBuckets.isEmpty)
+          var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
+          assert(maxBucketsPerPart >= 1)
+          while (partCnt <= numPartitions && !localBuckets.isEmpty) {
+            var cntr = 0;
+            val bucketsPerPart = new mutable.HashSet[Int]()
+            maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
+            assert(maxBucketsPerPart >= 1)
+            while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
+              val buck = localBuckets.head
+              bucketsPerPart += buck
+              localBuckets = localBuckets - buck
+              totalBuckets = totalBuckets - buck
+              cntr += 1
+            }
+            partitions(partCnt) = new ExecutorMultiBucketLocalShellPartition(
+              partCnt, bucketsPerPart, bucketToServerList(bucketsPerPart.head))
+            partCnt += 1
+            numCoresPending -= 1
+          }
+        })
         partitions
-    })
+    }
   }
 
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =

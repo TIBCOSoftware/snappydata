@@ -23,23 +23,19 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.sources.ConnectionProperties
 
 trait ExternalStore extends Serializable {
 
   final val columnPrefix = "Col_"
 
-  def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
-      batchId: Option[UUID] = None): UUIDRegionKey
+  def storeCachedBatch(tableName: String, batch: CachedBatch,
+      partitionId: Int = -1, batchId: Option[UUID] = None): Unit
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String, onExecutor: Boolean): java.sql.Connection
-
-  def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
-      batchId: Option[UUID] = None): UUIDRegionKey
 
   def connProperties: ConnectionProperties
 

@@ -4,6 +4,8 @@ source PerfRun.conf
 #top master and slaves from master machines
 ssh $master sh $SnappyData/build-artifacts/scala-2.10/snappy/sbin/stop-all.sh
 
+rm -rf $SnappyData/build-artifacts/scala-2.10/snappy/conf/slaves
+
 #echo "*****************kill java on lead**********************"
 #ssh $client killall -9 java
 #echo "*****************kill java on locator**********************"

@@ -24,11 +24,10 @@ import scala.language.postfixOps
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.apache.calcite.DataContext.Variable
 
-import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -104,8 +103,10 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 }
 
-object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
-  def sc = ClusterManagerTestBase.sc
+object SplitSnappyClusterDUnitTest
+    extends SplitClusterDUnitTestObject with Logging {
+
+  def sc: SparkContext = ClusterManagerTestBase.sc
 
   override def createTablesAndInsertData(tableType: String): Unit = {
     val snc = SnappyContext(sc)
@@ -116,7 +117,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     createTableUsingDataSourceAPI(snc, "embeddedModeTable2", tableType)
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def createComplexTablesAndInsertData(
@@ -131,7 +132,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
       "column", props)
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
@@ -139,8 +140,8 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     // embeddedModeTable1 is dropped in split mode. recreate it
     val snc = SnappyContext(sc)
     // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1", numPartitions,
+    // val numPartitions = props.getOrElse("buckets", "113").toInt
+    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1",
       registerDestroy = true)
     if (isComplex) {
       createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
@@ -173,7 +174,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     selectFromTable(snc, "splitModeTable1", 1005)
     snc.dropTable("splitModeTable1", ifExists = true)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   def createRowTableForCollocatedJoin(): Unit = {
@@ -264,7 +265,6 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
-    println("Successful")
-
+    logInfo("Successful")
   }
 }

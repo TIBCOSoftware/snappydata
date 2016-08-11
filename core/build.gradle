@@ -20,6 +20,7 @@ dependencies {
   provided 'org.scala-lang:scala-reflect:' + scalaVersion
   provided 'org.scala-lang:scala-compiler:' + scalaVersion
 
+  compile group: 'com.esotericsoftware.kryo', name: 'kryo', version: '2.24.0'
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
   provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
@@ -53,7 +54,7 @@ dependencies {
   compile 'com.zaxxer:HikariCP:2.4.4'
   provided 'com.rabbitmq:amqp-client:3.5.7'
 
-  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.4.0') {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
@@ -151,5 +152,43 @@ shadowJar {
       "Version"           : version,
       "Vendor"            : "SnappyData, Inc."
     )
+  }
+}
+
+// write the POM for spark-package
+String sparkPackageName = "snappydata-${version}-s_${scalaBinaryVersion}"
+
+task sparkPackagePom(dependsOn: shadowJar) << {
+  file("${rootProject.buildDir}/distributions").mkdirs()
+  pom {
+    project {
+      groupId 'SnappyDataInc'
+      artifactId 'snappydata'
+      version "${version}-s_${scalaBinaryVersion}"
+      licenses {
+        license {
+          name 'The Apache Software License, Version 2.0'
+          url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          distribution 'repo'
+        }
+      }
+    }
+    whenConfigured { p -> p.dependencies.clear() }
+  }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
+  copy {
+    from "${buildDir}/libs"
+    into "${rootProject.buildDir}/distributions"
+    include "${shadowJar.archiveName}"
+    rename { filename -> "${sparkPackageName}.jar" }
+  }
+}
+task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
+  archiveName "${sparkPackageName}.zip"
+  destinationDir = file("${rootProject.buildDir}/distributions")
+  outputs.upToDateWhen { false }
+
+  from ("${rootProject.buildDir}/distributions") {
+    include "${sparkPackageName}.jar"
+    include "${sparkPackageName}.pom"
   }
 }

@@ -89,6 +89,9 @@ class StoreHashFunction extends CatalystHashFunction {
   }
 
   private def computeHashCode(data: Array[Char]): Int = {
+    if(data == null){
+      return 0
+    }
     var result = 1
     val end = data.length
     def addToHash(value: Int) {

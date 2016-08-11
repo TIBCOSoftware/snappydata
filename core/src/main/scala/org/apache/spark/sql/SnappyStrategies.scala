@@ -20,7 +20,7 @@ import org.apache.spark.sql.aqp.DefaultPlanner
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.streaming._
@@ -80,14 +80,33 @@ private[sql] trait SnappyStrategies {
       }
     }
 
-    object CanLocalJoin {
-      def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
-        case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
-          if (t.numPartitions == 1) Some(plan) else None
-        case _ => None
-      }
+  object CanLocalJoin {
+    def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
+      case PhysicalOperation(projects, filters,
+      l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+        if (t.numPartitions == 1) Some(plan) else None
+      case PhysicalOperation(projects, filters,
+      Join(left, right, _, _)) =>
+        val leftPlan = CanLocalJoin.unapply(left)
+        val rightPlan = CanLocalJoin.unapply(right)
+        // If join is a result of join of replicated tables, this
+        // join result should also be a local join with any other table
+        leftPlan match {
+          case Some(x) => rightPlan match {
+            case Some(x) => Some(plan)
+            case None => None
+          }
+          case None => None
+        }
+      case PhysicalOperation(_, _, node) if node.children.size == 1 =>
+        CanLocalJoin.unapply(node.children(0)) match {
+          case Some(x) => Some(plan)
+          case None => None
+        }
+
+      case x => None
     }
+  }
 
   private[this] def makeLocalHashJoin(
                                        leftKeys: Seq[Expression],

@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.{Collections, UUID}
 
-import scala.collection.JavaConversions
 import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.internal.cache.BucketRegion
@@ -45,7 +44,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val partioner = new StoreHashFunction
 
-
   var useCompression = false
   var cachedBatchSize = 0
 
@@ -67,7 +65,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
-      bucketID: Int): java.util.Set[Any] = {
+      bucketID: Int): java.util.Set[AnyRef] = {
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getQualifiedTableName)
@@ -104,15 +102,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
             container.getQualifiedTableName, schema,
             externalStore, cachedBatchSize, useCompression)
-          val keys = batchCreator.createAndStoreBatch(sc, row,
+          batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
-          JavaConversions.mutableSetAsJavaSet(keys)
-        }
-        finally {
+        } finally {
           lcc.setExecuteLocally(null, null, false, null)
         }
-      }
-      catch {
+      } catch {
         case e: Throwable => throw e
       } finally {
         if (contextSet) {
@@ -120,7 +115,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       }
     } else {
-      new java.util.HashSet()
+      java.util.Collections.emptySet[AnyRef]()
     }
   }
 

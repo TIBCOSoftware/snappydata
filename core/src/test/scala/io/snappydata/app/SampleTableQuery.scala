@@ -86,12 +86,11 @@ object SampleTableQuery  extends Serializable {
 
 
 
-      spc.createSampleTable("mainTable_sampled",
+      spc.createSampleTable("mainTable_sampled", Some("mainTable"),
         Map(
           "qcs" -> "l_quantity",
           "fraction" -> "0.01",
-          "strataReservoirSize" -> "50",
-          "baseTable" -> "mainTable"),
+          "strataReservoirSize" -> "50"),
           allowExisting = false)
 
       mainTable.write.insertInto("mainTable_sampled")

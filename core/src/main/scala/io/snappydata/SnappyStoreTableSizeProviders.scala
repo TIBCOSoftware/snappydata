@@ -20,7 +20,7 @@
 package io.snappydata
 
 import java.sql.Connection
-import java.util.ArrayList
+import java.util.{ArrayList, HashMap}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,15 +31,14 @@ import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.{RegionSizeCalculatorFunction, GfxdListResultCollector, GfxdMessage}
+import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage, RegionSizeCalculatorFunction}
 import io.snappydata.Constant._
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
-import java.util.HashMap
-import org.apache.spark.sql.collection.Utils
 
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
@@ -95,22 +94,35 @@ object StoreTableValueSizeProviderService extends Logging {
 
 object StoreTableSizeProvider {
 
-  private val memoryAnalyticsDefault = MemoryAnalytics(0, 0)
+  private val memoryAnalyticsDefault = MemoryAnalytics(0, 0, 1)
 
-  def getTableSizes: Seq[UIAnalytics] = {
+  def getTableSizes: (mutable.Set[UIAnalytics] , mutable.Set[UIAnalytics]) = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
     if (currentTableStats == null) {
-      return Seq.empty
+      return  (mutable.Set() , mutable.Set())
     }
-    currentTableStats.filter(entry => !isColumnTable(entry._1)).map(details => {
+    val columnSet = mutable.Set[UIAnalytics]()
+    val rowSet = mutable.Set[UIAnalytics]()
+
+    currentTableStats.filter(entry => !isColumnTable(entry._1)).foreach(details => {
       val maForRowBuffer = details._2
       val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
       val maForColumn = currentTableStats.
           getOrElse(columnTableName, memoryAnalyticsDefault)
-      val isColumnTable = currentTableStats.contains(columnTableName)
-      new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
-        maForColumn.totalSize, maForColumn.totalRows, isColumnTable)
-    }).toSeq
+      if ( currentTableStats.contains(columnTableName) ) {
+        columnSet += (
+            new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
+              maForColumn.totalSize, maForColumn.totalRows, true))
+      }
+      else {
+        rowSet += ( new UIAnalytics(details._1,
+          maForRowBuffer.totalSize/maForRowBuffer.numHosts,
+          maForRowBuffer.totalRows/maForRowBuffer.numHosts,
+          maForColumn.totalSize, maForColumn.totalRows, false))
+      }
+    })
+
+     (rowSet , columnSet)
   }
 
   private def getMemoryAnalyticsDetails(
@@ -118,7 +130,8 @@ object StoreTableSizeProvider {
     val currentTableStats = mutable.Map[String, MemoryAnalytics]()
     val stmt = "select TABLE_NAME," +
         " SUM(TOTAL_SIZE) ," +
-        " SUM(NUM_ROWS) " +
+        " SUM(NUM_ROWS), " +
+        " COUNT(HOST) " +
         " from SYS.MEMORYANALYTICS " +
         "WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
     val rs = conn.prepareStatement(stmt).executeQuery()
@@ -126,7 +139,8 @@ object StoreTableSizeProvider {
       val name = rs.getString(1)
       val totalSize = convertToBytes(rs.getString(2))
       val totalRows = rs.getString(3).toLong
-      currentTableStats.put(name, MemoryAnalytics(totalSize , totalRows))
+      val numHosts = rs.getLong(4)
+      currentTableStats.put(name, MemoryAnalytics(totalSize , totalRows, numHosts))
     }
     currentTableStats
   }
@@ -173,6 +187,7 @@ object StoreTableSizeProvider {
   }
 }
 
-case class MemoryAnalytics(totalSize: Long, totalRows: Long)
+case class MemoryAnalytics(totalSize: Long, totalRows: Long, numHosts: Long)
+
 case class UIAnalytics(tableName: String, rowBufferSize: Long, rowBufferCount: Long,
-    columnBufferSize: Long, columnBufferCount: Long , isColumnTable: Boolean)
+    columnBufferSize: Long, columnBufferCount: Long, isColumnTable: Boolean)
