@@ -23,6 +23,7 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
@@ -138,9 +139,18 @@ class RowFormatRelation(
    */
   override lazy val numPartitions: Int = {
     region match {
-      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-      case _ => 1
+      case pr: PartitionedRegion =>
+        getNumPartitions
+      case _ =>
+        1
     }
+  }
+
+  def getNumPartitions : Int = {
+    val numCores = Runtime.getRuntime.availableProcessors()
+    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+    val numPartitions = numServers * numCores
+     numPartitions
   }
 
   override def partitionColumns: Seq[String] = {
