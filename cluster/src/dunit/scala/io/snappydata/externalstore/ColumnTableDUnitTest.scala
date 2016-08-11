@@ -44,7 +44,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
     verifyTableData(snc , tableName)
     vm2.invoke(this.getClass, "stopAny")
-    vm2.invoke(startNode)
+    val args = Array(ClusterManagerTestBase.locPort , bootProps).asInstanceOf[Array[AnyRef]]
+    vm2.invoke(classOf[ClusterManagerTestBase] , "startSnappyServer" , args)
     dropTable(snc, tableName)
     createTable(snc, tableName , Map("BUCKETS" -> "1", "PERSISTENT" -> "sync"))
     verifyTableData(snc, tableName)
