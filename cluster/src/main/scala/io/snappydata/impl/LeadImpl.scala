@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
+import org.apache.thrift.transport.TTransportException
 import org.apache.zeppelin.interpreter.{ZeppelinIntpUtil, SnappyInterpreterServer}
 import spark.jobserver.JobServer
 
@@ -86,6 +87,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def directApiInvoked: Boolean = _directApiInvoked
 
+  private var remoteInterpreterServer: SnappyInterpreterServer = _;
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
@@ -210,6 +212,16 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       sparkContext.stop()
       sparkContext = null
     }
+    try {
+
+      if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
+        remoteInterpreterServer.shutdown(true)
+      }
+
+    } finally {
+      //Do nothing
+    }
+
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
@@ -218,6 +230,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     if(sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
     sparkContext = null
+
+    if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
+      remoteInterpreterServer.shutdown(true)
+    }
     super.stop(shutdownCredentials)
   }
 
@@ -366,9 +382,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     //As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
     if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER, "true").equals("true")) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
-      val remoteInterpreterServer: SnappyInterpreterServer = new SnappyInterpreterServer(port)
-      remoteInterpreterServer.start()
-      logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
+      try {
+        remoteInterpreterServer = new SnappyInterpreterServer(port)
+        remoteInterpreterServer.start()
+        logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
+      } catch {
+        case tTransportException: TTransportException =>
+          logWarning("Error while starting zeppelin interpreter.Actual exception : " + tTransportException.getMessage)
+      }
     }
   }
 }

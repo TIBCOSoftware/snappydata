@@ -92,6 +92,7 @@ import scala.tools.nsc.interpreter.Completion.ScalaCompleter;
 import scala.tools.nsc.settings.MutableSettings;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
+import org.apache.zeppelin.interpreter.Interpreter.FormType;
 
 
 /**
@@ -673,6 +674,10 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
   }
 
+  /**
+   *
+   * @return
+   */
   @Override
   public FormType getFormType() {
     return FormType.NATIVE;

@@ -19,18 +19,41 @@ package org.apache.zeppelin.interpreter;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class SnappyInterpreterServer extends RemoteInterpreterServer {
+  public static Logger logger = LoggerFactory.getLogger(SnappyInterpreterServer.class);
+
   public SnappyInterpreterServer(int port) throws TTransportException {
     super(port);
+    logger.info("Initializing SnappyInterpreter Server");
   }
 
-  //Overriding the RemoteInterpreterServer's Shutdown method to avoid shutdown of the Leadnode and RemoteInterpreter by zeppelin server
+  /**
+   *Overriding the RemoteInterpreterServer's Shutdown method to avoid shutdown of the
+   * Leadnode and RemoteInterpreter by zeppelin server
+   */
+
   @Override
   public void shutdown() throws TException {
 
+  }
+
+  /**
+   * This method is called from th Lead shutdown to clean stop the interpreter
+   *
+   * @param forceFully
+   * @throws TException
+   */
+  public void shutdown(boolean forceFully) throws TException {
+    long startTime=System.currentTimeMillis();
+    if (forceFully) {
+      super.shutdown();
+      logger.info("Shutting down SnappyInterpreterServer");
+    }
   }
 }
