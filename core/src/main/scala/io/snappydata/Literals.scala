@@ -70,6 +70,11 @@ object Constant {
 
   // Internal Column table store suffix
   final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+
+  //Property to Specify whether zeppelin interpreter should be started with leadnode
+  val ENABLE_ZEPPELIN_INTERPRETER="zeppelin.interpreter.enable"
+  //Property to Specify the port on which zeppelin interpreter should be started
+  val ZEPPELIN_INTERPRETER_PORT="zeppelin.interpreter.port"
 }
 
 /**

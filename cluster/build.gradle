@@ -15,6 +15,9 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-interpreter', version: '0.6.0'
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-spark', version: '0.6.0'
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-jdbc', version: '0.6.0'
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
@@ -203,3 +206,41 @@ shadowJar {
     )
   }
 }
+
+
+task generateSnappydataZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
+
+  //from sourceSets.main.output.classesDir
+  //from sourceSets.main.output.resourcesDir
+  //from sourceSets.main.resources.srcDirs
+ // from 'src/main/resources/snappydata'
+  zip64 = true
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from sourceSets.main.output.classesDir
+  jar.includeEmptyDirs = false
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from {
+    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  }
+  from('src/main/resources/snappydata'){
+    include 'interpreter-setting.json'
+    include 'ansi.sql.keywords'
+  }
+  jar.includeEmptyDirs = false
+
+  include 'org/apache/zeppelin/spark/**'
+  include 'org/apache/zeppelin/jdbc/**'
+  include 'org/apache/zeppelin/scheduler/**'
+  include 'org/apache/zeppelin/interpreter/**'
+  include 'com/google/**'
+  include 'org/slf4j/**'
+  include 'jline/console/**'
+  include 'jline/internal/**'
+  include 'jline/**'
+  include 'org/apache/commons/lang/**'
+
+  include 'org/apache/zeppelin/interpreter/**'
+ // exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
+  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
+}
+
