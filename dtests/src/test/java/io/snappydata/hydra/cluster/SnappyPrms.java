@@ -97,9 +97,9 @@ public class SnappyPrms extends BasePrms {
     public static Long isStopMode;
 
     /**
-     * (boolean) - whether to wait for sparkJobCompletion before stopping the Spark Master in test.
+     * (boolean) - whether to wait for sparkJobCompletion before scheduling next task in hydra.
      */
-    public static Long waitForJobCompletion;
+    public static Long waitForSparkJobCompletion;
 
     /**
      * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
@@ -288,6 +288,12 @@ public class SnappyPrms extends BasePrms {
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
     }
 
+    public static boolean waitForSparkJobCompletion() {
+        Long key = waitForSparkJobCompletion;
+        return tasktab().booleanAt(key, tab().booleanAt(key, false));
+    }
+
+
     public static boolean getTimeStatistics() {
         Long key = enableTimeStatistics;
         return tasktab().booleanAt(key, tab().booleanAt(key, true));
@@ -300,7 +306,7 @@ public class SnappyPrms extends BasePrms {
 
     public static String getSearchStringForSparkJob() {
         Long key = searchString;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
     public static Vector getSQLScriptNames() {

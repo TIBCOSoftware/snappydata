@@ -75,7 +75,7 @@ object AirlineDataQueriesJob extends SnappySQLJob {
     var query1ExecutionCount, query2ExecutionCount, query3ExecutionCount, query4ExecutionCount, query5ExecutionCount = 0
     var totalTimeQuery1, totalTimeQuery2, totalTimeQuery3, totalTimeQuery4, totalTimeQuery5: Long = 0
     val startTime = System.currentTimeMillis
-    val EndTime: Long = startTime + 100000
+    val EndTime: Long = startTime + 600000
 
     while (EndTime > System.currentTimeMillis()) {
       //    while (startTime < EndTime) {

@@ -82,7 +82,6 @@ public class SnappyTest implements Serializable {
     public static boolean isRestarted = false;
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
-    public static boolean waitForJobCompletion = TestConfig.tab().booleanAt(SnappyPrms.waitForJobCompletion, false);  //default to false
     private static String primaryLocator = null;
     private static String leadHost = null;
     public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -1232,6 +1231,7 @@ public class SnappyTest implements Serializable {
         Process p = null;
         try {
             pb.redirectErrorStream(true);
+            pb.redirectError(ProcessBuilder.Redirect.PIPE);
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             p = pb.start();
             assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
@@ -1546,20 +1546,16 @@ public class SnappyTest implements Serializable {
                 logFile = new File(dest);
                 pb = new ProcessBuilder("/bin/bash", "-c", command);
                 snappyTest.executeProcess(pb, logFile);
-                if (waitForJobCompletion) {
-                    boolean found = false;
-                    while (!found) {
-                        String searchString = SnappyPrms.getSearchStringForSparkJob();//"Done with loading data in all tables...";
-                        FileInputStream fis = new FileInputStream(logFile);
-                        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-                        String line = null;
-                        while ((line = br.readLine()) != null && !found) {
-                            if (line.toLowerCase().contains(searchString.toLowerCase())) {
-                                found = true;
-                            }
-                        }
-                        br.close();
-                    }
+                if (SnappyPrms.waitForSparkJobCompletion()) {
+                    String searchString = SnappyPrms.getSearchStringForSparkJob();
+                    if (searchString == null)
+                        throw new TestException("search String to look for in spark job output parameter is missing for spark job.");
+                    String expression = "cat " + logFile + " | grep -e Exception -e '" + searchString + "' | grep -v java.net.BindException" + " | wc -l)\"";
+                    String searchCommand = "while [ \"$(" + expression + " -le  0 ] ; do sleep 1 ; done";
+                    pb = new ProcessBuilder("/bin/bash", "-c", searchCommand);
+                    Log.getLogWriter().info("spark job " + userJob + " starts at: " + System.currentTimeMillis());
+                    executeProcess(pb, logFile);
+                    Log.getLogWriter().info("spark job  " + userJob + " finishes at:  " + System.currentTimeMillis());
                 }
             }
         } catch (IOException e) {
@@ -1776,6 +1772,7 @@ public class SnappyTest implements Serializable {
                 file.createNewFile();
             } else if (file.exists()) {
                 if (isStopMode) return;
+                file.setWritable(true);
                 file.delete();
                 file.createNewFile();
             }
