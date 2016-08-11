@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
+import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
@@ -161,6 +161,16 @@ object SparkShellRDDHelper {
             numCoresPending -= 1
           }
         })
+        partitions
+      case pr: DistributedRegion =>
+        val numPartitions = bucketToServerList.length
+        val partitions = new Array[Partition](numPartitions)
+        for (p <- 0 until numPartitions) {
+          partitions(p) = new ExecutorMultiBucketLocalShellPartition(
+            p,
+            mutable.HashSet.empty,
+            bucketToServerList(p))
+        }
         partitions
     }
   }

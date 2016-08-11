@@ -183,6 +183,7 @@ object StoreUtils extends Logging {
     }
     val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
+    // partitions.foreach(println)
     partitions
   }
 
