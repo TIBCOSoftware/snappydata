@@ -1549,7 +1549,7 @@ public class SnappyTest implements Serializable {
                 if (SnappyPrms.waitForSparkJobCompletion()) {
                     String searchString = SnappyPrms.getSearchStringForSparkJob();
                     if (searchString == null)
-                        throw new TestException("search String to look for in spark job output parameter is missing for spark job.");
+                        throw new TestException("Search String notifying completion of spark job is missing for job : " + userJob);
                     String expression = "cat " + logFile + " | grep -e Exception -e '" + searchString + "' | grep -v java.net.BindException" + " | wc -l)\"";
                     String searchCommand = "while [ \"$(" + expression + " -le  0 ] ; do sleep 1 ; done";
                     pb = new ProcessBuilder("/bin/bash", "-c", searchCommand);
