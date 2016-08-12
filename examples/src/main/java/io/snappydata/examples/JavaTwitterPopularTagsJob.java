@@ -3,16 +3,15 @@ package io.snappydata.examples;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.HashMap;
 import com.typesafe.config.Config;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.JSparkJobValid;
-import org.apache.spark.sql.JSparkJobValidation;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SnappyJobValid;
+import org.apache.spark.sql.SnappyJobValidation;
 import org.apache.spark.sql.streaming.SchemaDStream;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -42,7 +41,7 @@ import static org.apache.spark.sql.types.DataTypes.createStructField;
 
 public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
   @Override
-  public Object runJavaJob(JavaSnappyStreamingContext snsc, Config jobConfig) {
+  public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {
 
     String currentDirectory = null;
     String outFileName = String.format(
@@ -185,7 +184,7 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
     } finally {
       snsc.stop(false, true);
     }
-    return "See "+ currentDirectory +"/" + outFileName;
+    return "See " + currentDirectory + "/" + outFileName;
   }
 
   private void printResult(List<Row> result, PrintWriter pw) {
@@ -195,7 +194,7 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
   }
 
   @Override
-  public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig) {
-    return new JSparkJobValid();
+  public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig) {
+    return new SnappyJobValid();
   }
 }

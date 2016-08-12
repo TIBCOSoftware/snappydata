@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-
+import java.util.HashMap;
 import com.typesafe.config.Config;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.StructField;
@@ -17,7 +16,7 @@ import org.apache.spark.sql.types.StructType;
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
  */
-public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
+public class JavaCreateAndLoadAirlineDataJob extends SnappySQLJob {
 
   private String airlinefilePath = null;
   private String airlinereftablefilePath = null;
@@ -27,7 +26,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
   private static final String stagingAirline = "STAGING_AIRLINE";
 
   @Override
-  public Object runJavaJob(SnappyContext snc, Config jobConfig) {
+  public Object runSnappyJob(SnappyContext snc, Config jobConfig) {
     try (PrintWriter pw = new PrintWriter("JavaCreateAndLoadAirlineDataJob.out")) {
       String currentDirectory = new File(".").getCanonicalPath();
       // Drop tables if already exists
@@ -94,7 +93,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
   }
 
   @Override
-  public JSparkJobValidation isValidJob(SnappyContext snc, Config config) {
+  public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {
 
     if (config.hasPath("airline_file")) {
       airlinefilePath = config.getString("airline_file");
@@ -103,7 +102,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
     }
 
     if (!(new File(airlinefilePath)).exists()) {
-      return new JSparkJobInvalid("Incorrect airline path. " +
+      return new SnappyJobInvalid("Incorrect airline path. " +
           "Specify airline_file property in APP_PROPS");
     }
 
@@ -113,11 +112,11 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
       airlinereftablefilePath = "../../quickstart/data/airportcodeParquetData";
     }
     if (!(new File(airlinereftablefilePath)).exists()) {
-      return new JSparkJobInvalid("Incorrect airline ref path. " +
+      return new SnappyJobInvalid("Incorrect airline ref path. " +
           "Specify airlineref_file property in APP_PROPS");
     }
 
-    return new JSparkJobValid();
+    return new SnappyJobValid();
   }
 
   private static StructType replaceReservedWords(StructType airlineSchema) {
