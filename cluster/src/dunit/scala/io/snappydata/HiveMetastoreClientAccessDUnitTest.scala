@@ -46,7 +46,7 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
   def _testOne(): Unit = {
     val serverNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-    val locStr = "localhost[" + locatorPort + ']'
+    val locStr = "localhost[" + ClusterManagerTestBase.locatorPort + ']'
     vm2.invoke(this.getClass, "startDriverApp",
       Array(locStr.asInstanceOf[AnyRef]))
 
