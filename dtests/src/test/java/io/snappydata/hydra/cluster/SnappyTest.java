@@ -1189,24 +1189,31 @@ public class SnappyTest implements Serializable {
      * Executes user SQL scripts.
      */
     public static void HydraTask_executeSQLScripts() {
-        Vector scriptNames, paramList = null;
+        Vector scriptNames, dataLocationList = null, persistenceModeList = null;
         File log = null, logFile = null;
         scriptNames = SnappyPrms.getSQLScriptNames();
         if (scriptNames == null) {
             String s = "No Script names provided for executing in the Hydra TASK";
             throw new TestException(s);
         }
-        paramList = SnappyPrms.getSQLScriptParams();
-        if (paramList.size() != scriptNames.size()) {
-            Log.getLogWriter().info("Adding \" \" parameter in the paramList for the scripts for which no parameter is specified.");
-            while (paramList.size() != scriptNames.size())
-                paramList.add(" ");
-        }
         try {
+            dataLocationList = SnappyPrms.getDataLocationList();
+            persistenceModeList = SnappyPrms.getPersistenceModeList();
+            if (dataLocationList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the dataLocationList for the scripts for which no dataLocation is specified.");
+                while (dataLocationList.size() != scriptNames.size())
+                    dataLocationList.add(" ");
+            }
+            if (persistenceModeList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \"async\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
+                while (persistenceModeList.size() != scriptNames.size())
+                    persistenceModeList.add("async");
+            }
             for (int i = 0; i < scriptNames.size(); i++) {
                 String userScript = (String) scriptNames.elementAt(i);
-                String param = (String) paramList.elementAt(i);
-                String path = snappyTest.getDataLocation(param);
+                String location = (String) dataLocationList.elementAt(i);
+                String persistenceMode = (String) persistenceModeList.elementAt(i);
+                String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult.log";
@@ -1219,7 +1226,7 @@ public class SnappyTest implements Serializable {
                 String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
                 String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
                 //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:dataLocation=" + dataLocation, "-param:persistenceMode=" + persistenceMode, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -2330,13 +2337,6 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
-        }
-    }
-
-    private void dumpHeap() {
-        int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.heapDumpExecuted);
-        if (num == 1) {
-            log().severe(ProcessMgr.fgexec("sh snappyeapdumprun.sh", 600));
         }
     }
 
