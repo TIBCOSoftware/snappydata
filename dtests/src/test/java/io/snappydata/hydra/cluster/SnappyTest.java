@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 import sql.SQLBB;
@@ -373,11 +374,7 @@ public class SnappyTest implements Serializable {
         if (locatorHostPortList.size() == 0) {
             return "";
         }
-        StringBuilder builder = new StringBuilder();
-        for (String entry : locatorHostPortList) {
-            builder.append(entry).append(",");
-        }
-        locatorsList = builder.substring(0, builder.lastIndexOf(","));
+        locatorsList = StringUtils.join(locatorHostPortList, ",");
         return locatorsList;
     }
 
@@ -385,7 +382,6 @@ public class SnappyTest implements Serializable {
      * Write the configuration data required to start the snappy locator/s in locators file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLocatorConfigData() {
-//        snappyTest.writeConfigData("locators", "locatorLogDir");
         snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
         if (isLongRunningTest) writeLocatorConnectionInfo();
     }
