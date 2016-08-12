@@ -22,8 +22,7 @@ import scala.util.Random
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.cluster.ClusterManagerTestBase._
-import io.snappydata.test.dunit.SerializableCallable
+import io.snappydata.test.dunit.{SerializableRunnable, SerializableCallable}
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
@@ -51,9 +50,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val props = bootProps
     val port = currenyLocatorPort
-    val args = Array(port , props).asInstanceOf[Array[AnyRef]]
 
-    vm2.invoke(classOf[ClusterManagerTestBase] , "startSnappyServer" , args)
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm2.invoke(restartServer)
 
     verifyTableData(snc , tableName)
     dropTable(snc, tableName)
