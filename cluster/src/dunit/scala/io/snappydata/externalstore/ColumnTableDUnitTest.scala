@@ -22,7 +22,7 @@ import scala.util.Random
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.SerializableCallable
+import io.snappydata.test.dunit.{SerializableRunnable, SerializableCallable}
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
@@ -33,6 +33,7 @@ import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
  */
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  val currenyLocatorPort = ClusterManagerTestBase.locPort
 
   def testTableCreation(): Unit = {
     startSparkJob()
@@ -41,14 +42,23 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testTableCreationWithHA(): Unit = {
     val tableName = "TestTable"
     val snc = SnappyContext(sc)
+
     createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
     verifyTableData(snc , tableName)
-    vm2.invoke(this.getClass, "stopAny")
-    vm2.invoke(startNode)
+
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
+    val props = bootProps
+    val port = currenyLocatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm2.invoke(restartServer)
+
+    verifyTableData(snc , tableName)
     dropTable(snc, tableName)
-    createTable(snc, tableName , Map("BUCKETS" -> "1", "PERSISTENT" -> "sync"))
-    verifyTableData(snc, tableName)
-    dropTable(snc , tableName)
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
