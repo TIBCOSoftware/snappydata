@@ -303,14 +303,15 @@ public class SnappyPrms extends BasePrms {
     }
 
 
-    public static boolean getTimeStatistics() {
-        Long key = enableTimeStatistics;
-        return tasktab().booleanAt(key, tab().booleanAt(key, true));
+    public static String getTimeStatistics() {
+        boolean enableTimeStats = tasktab().booleanAt(enableTimeStatistics, tab().booleanAt(enableTimeStatistics, true));
+        String timeStatistics = " -enable-time-statistics=" + enableTimeStats + " -statistic-archive-file=";
+        return  timeStatistics;
     }
 
     public static String getLogLevel() {
-        Long key = logLevel;
-        return tab().stringAt(key, "config");
+        String snappyLogLevel = " -log-level=" + tab().stringAt(logLevel, "config");
+        return snappyLogLevel;
     }
 
     public static String getSearchStringForSparkJob() {
