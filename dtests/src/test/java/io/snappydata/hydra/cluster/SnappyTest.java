@@ -258,15 +258,13 @@ public class SnappyTest implements Serializable {
         String locatorsList = null;
         String dirPath = snappyTest.getLogDir();
         String nodeLogDir = null;
-        String timeStatistics = " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=";
-        String logLevel = " -log-level=" + SnappyPrms.getLogLevel();
         String hostnameForPrimaryLocator = null;
         switch (snappyNode) {
             case LOCATOR:
                 int locPort;
                 do locPort = PortHelper.getRandomPort();
-                while (locPort < 0 && locPort > 65535);
-                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + locPortString + locPort + timeStatistics + "snappylocator.gfs" + logLevel;
+                while (locPort < 0 || locPort > 65535);
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + locPortString + locPort + SnappyPrms.getTimeStatistics() + "snappylocator.gfs" + SnappyPrms.getLogLevel();
                 SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(port));
                 SnappyBB.getBB().getSharedMap().put("locatorMcastPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(locPort));
@@ -284,14 +282,14 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + timeStatistics + "snappyserver.gfs" + logLevel;
+                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyserver.gfs" + SnappyPrms.getLogLevel();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case LEAD:
                 locatorsList = getLocatorsList("locators");
                 nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
-                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + timeStatistics + "snappyleader.gfs" + logLevel;
+                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyleader.gfs" + SnappyPrms.getLogLevel();
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
