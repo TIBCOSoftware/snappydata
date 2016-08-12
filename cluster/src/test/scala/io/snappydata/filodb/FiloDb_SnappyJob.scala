@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.filodb
 
 import scala.concurrent.duration.Duration
@@ -6,13 +23,10 @@ import scala.util.Random
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.typesafe.config.Config
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{DataFrame, SaveMode, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, DataFrame, SaveMode, SnappyContext, SnappySQLJob}
 
-/**
- * Created by kishor on 30/3/16.
- */
+
 object FiloDb_SnappyJob extends SnappySQLJob {
 
   var nycTaxiDataPath: String = _
@@ -20,7 +34,7 @@ object FiloDb_SnappyJob extends SnappySQLJob {
 
   val cachedDF = new collection.mutable.HashMap[String, DataFrame]
 
-  override def runJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
     val taxiCsvFile: String = nycTaxiDataPath
     val numRuns = 50 // Make this higher when doing performance profiling
 
@@ -43,7 +57,8 @@ object FiloDb_SnappyJob extends SnappySQLJob {
     // trip info for a single driver within a given time range
     val singleDriverQueries = (1 to 20).map { i =>
       val medallion = medallions(Random.nextInt(medallions.size))
-      s"SELECT avg(trip_distance), avg(passenger_count) from nyctaxi where medallion = '$medallion'" +
+      s"SELECT avg(trip_distance), avg(passenger_count) " +
+          s"from nyctaxi where medallion = '$medallion'" +
           s" AND pickup_datetime > '2013-01-15T00Z' AND pickup_datetime < '2013-01-22T00Z'"
     }
 
@@ -59,7 +74,7 @@ object FiloDb_SnappyJob extends SnappySQLJob {
 
     csvDF.printSchema()
 
-    val p1 = Map(("PARTITION_BY" -> "medallion") /*,("BUCKETS"-> "5")*/)
+    val p1 = Map(("PARTITION_BY" -> "medallion") /* ,("BUCKETS"-> "5") */)
     sc.createTable("NYCTAXI", "column", csvDF.schema, p1)
     csvDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("NYCTAXI")
     puts("Ingestion done.")
@@ -81,7 +96,8 @@ object FiloDb_SnappyJob extends SnappySQLJob {
 
     def runQueries(queries: Array[String], numQueries: Int = 1000): Unit = {
       val startMillis = System.currentTimeMillis
-      val futures = (0 until numQueries).map(i => getCachedDF(queries(Random.nextInt(queries.size))).rdd.collectAsync)
+      val futures = (0 until numQueries).map(
+        i => getCachedDF(queries(Random.nextInt(queries.size))).rdd.collectAsync)
       val fut = Future.sequence(futures.asInstanceOf[Seq[Future[Array[_]]]])
       Await.result(fut, Duration.Inf)
       val endMillis = System.currentTimeMillis
@@ -101,21 +117,21 @@ object FiloDb_SnappyJob extends SnappySQLJob {
   }
 
 
-  override def validate(sc: SnappyContext, config: Config): SparkJobValidation = {
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
     nycTaxiDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")
     } else {
       "/QASNAPPY/TPCH/DATA/1"
     }
 
-    var sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
+    val sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
       config.getString("sparkSqlProps")
     }
     else " "
 
     sqlSparkProperties = sqlSparkProps.split(" ")
 
-    SparkJobValid
+    SnappyJobValid()
   }
 
   def puts(s: String): Unit = {

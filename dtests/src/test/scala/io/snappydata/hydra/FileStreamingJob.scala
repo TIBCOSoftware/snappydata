@@ -19,11 +19,12 @@ package io.snappydata.hydra
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SaveMode
+
 import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{SnappyJobValid, SaveMode, SnappyJobValidation}
+import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 /**
  * Created by swati on 7/4/16.
@@ -31,7 +32,7 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 object FileStreamingJob extends SnappyStreamingJob {
 
-  override def runJob(snsc: C, jobConfig: Config): Any = {
+  override def runSnappyJob(snsc: SnappyStreamingContext, jobConfig: Config): Any = {
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
@@ -48,19 +49,19 @@ object FileStreamingJob extends SnappyStreamingJob {
     pw.println("##### Running example with stored tweet data #####")
 
     snsc.sql("CREATE STREAM TABLE hashtagtable (hashtag STRING) USING file_stream " +
-      "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
-      "directory '" + dataDir + "/copiedtwitterdata')")
+        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
+        "directory '" + dataDir + "/copiedtwitterdata')")
 
     snsc.sql("CREATE STREAM TABLE retweettable (retweetId LONG, retweetCnt INT, " +
-      "retweetTxt STRING) USING file_stream " +
-      "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
-      "directory '" + dataDir + "/copiedtwitterdata')")
+        "retweetTxt STRING) USING file_stream " +
+        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
+        "directory '" + dataDir + "/copiedtwitterdata')")
 
     // Register continuous queries on the tables and specify window clauses
     val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM retweettable " +
-      "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
+        "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
 
     val tableName = "retweetStore"
 
@@ -70,7 +71,7 @@ object FileStreamingJob extends SnappyStreamingJob {
     // When a tweet is retweeted multiple times, the previous entry of the tweet
     // is over written by the new retweet count.
     snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId BIGINT, " +
-      s"retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()")
+        s"retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()")
 
     var totalSize: Long = 0;
     // Save data in snappy store
@@ -95,15 +96,16 @@ object FileStreamingJob extends SnappyStreamingJob {
         // Query the snappystore Row table to find out the top retweets
         pw.println("\n Top 10 popular tweets - Query Row table \n")
         snsc.snappyContext.sql(s"SELECT retweetId AS RetweetId, " +
-          s"retweetCnt AS RetweetsCount, retweetTxt AS Text FROM ${tableName}" +
-          s" ORDER BY RetweetsCount DESC LIMIT 10")
-          .collect.foreach(row => {
+            s"retweetCnt AS RetweetsCount, retweetTxt AS Text FROM ${tableName}" +
+            s" ORDER BY RetweetsCount DESC LIMIT 10")
+            .collect.foreach(row => {
           pw.println(row.toString())
         })
         pw.println("\n#######################################################")
-        pw.println("\n Select count(*) query to get incremented counter as the time progresses  - Query Row table \n")
+        pw.println("\n Select count(*) query to get incremented counter as " +
+            "the time progresses  - Query Row table \n")
         snsc.snappyContext.sql(s"SELECT count(*) FROM ${tableName}")
-          .collect.foreach(row => {
+            .collect.foreach(row => {
           pw.println(row.toString())
         })
         Thread.sleep(2000)
@@ -118,8 +120,7 @@ object FileStreamingJob extends SnappyStreamingJob {
 
   }
 
-  override def validate(snsc: C, config: Config): SparkJobValidation = {
-    SparkJobValid
-  }
+  override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation =
+    SnappyJobValid()
 }
 
