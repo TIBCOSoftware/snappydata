@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
@@ -19,158 +18,236 @@
 package org.apache.spark.sql.store
 
 import com.pivotal.gemfirexd.internal.iapi.types._
+import com.pivotal.gemfirexd.internal.shared.common.ResolverUtils
 
-import org.apache.spark.sql.CatalystHashFunction
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types.Decimal
-import scala.util.control.Breaks._
-
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
+import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 /**
  * A partitioner that helps store to collocate data with Spark's
- * partitions. Each store layer hash computation invokes this to get their bucket information.
+ * partitions. Each store layer hash computation invokes this to
+ * get their bucket information.
  */
-class StoreHashFunction extends CatalystHashFunction {
+final class StoreHashFunction {
 
-  val seed = 42
-  val hasher = new Murmur3_x86_32(seed)
+  def computeColumnHash(key: Any, seed: Int): Int = {
+    key match {
+      case null => seed
+      // Custom type checks for Store
+      case char: SQLChar =>
+        computeStringHash(char.getCharArray(true), seed)
+      case i: SQLInteger => Murmur3_x86_32.hashInt(i.getInt, seed)
+      case l: SQLLongint => Murmur3_x86_32.hashLong(l.getLong, seed)
+      case d: SQLDouble => Murmur3_x86_32.hashLong(
+        java.lang.Double.doubleToLongBits(d.getDouble), seed)
+      case b: SQLBoolean => Murmur3_x86_32.hashInt(
+        if (b.getBoolean) 1 else 0, seed)
+      case b: SQLTinyint => Murmur3_x86_32.hashInt(b.getByte, seed)
+      case s: SQLSmallint => Murmur3_x86_32.hashInt(s.getShort, seed)
+      case f: SQLReal => Murmur3_x86_32.hashInt(
+        java.lang.Float.floatToIntBits(f.getFloat), seed)
+      case d: SQLDecimal =>
+        // This is a suboptimal code and new to create an Object for
+        // hash computation. TODO SNAP-711
+        val bytes = d.getBigDecimal.unscaledValue().toByteArray
+        Murmur3_x86_32.hashUnsafeBytes(bytes, Platform.BYTE_ARRAY_OFFSET,
+          bytes.length, seed)
+      case ts: SQLTimestamp =>
+        val tsVal = ts.getEpochTime(null) * 1000L +
+            (ts.getNanos.toLong / 1000L)
+        Murmur3_x86_32.hashLong(tsVal, seed)
+      case date: SQLDate =>
+        val days = DateTimeUtils.millisToDays(date.getTimeInMillis(null))
+        Murmur3_x86_32.hashInt(days, seed)
+      case b: SQLBit =>
+        val a = b.getBytes
+        Murmur3_x86_32.hashUnsafeBytes(a, Platform.BYTE_ARRAY_OFFSET,
+          a.length, seed)
 
-  override def computeHash(key: Any,  numPartitions : Int): Int = {
-    val update: Int =
-      if (key == null) {
-        0
-      } else {
-        key match {
-          case b: Boolean => if (b) hasher.hashInt(1) else hasher.hashInt(0)
-          case b: Byte => b.toInt
-          case s: Short => s.toInt
-          case i: Int => new Murmur3_x86_32(42).hashInt(i)
-          case l: Long => (l ^ (l >>> 32)).toInt
-          case f: Float => java.lang.Float.floatToIntBits(f)
-          case d: Double =>
-            val b = java.lang.Double.doubleToLongBits(d)
-            (b ^ (b >>> 32)).toInt
-          case a: Array[Byte] => java.util.Arrays.hashCode(a)
-          case string: java.lang.String => computeHashCode(string)
-          case timeStamp : java.sql.Timestamp => computeHashCode(timeStamp, numPartitions)
-          case date : java.util.Date => computeHashCode(date, numPartitions)
-          //Custom type checks for Store
-          case boolean: SQLBoolean => computeHashCode(boolean, numPartitions)
-          case sqlDate: SQLDate => computeHashCode(sqlDate, numPartitions)
-          case sqlBit: SQLBit => {
-            val bytes = sqlBit.getBytes()
-            if(bytes == null ) 0 else java.util.Arrays.hashCode(bytes)
-          }
-          case sqlLong : SQLLongint => computeHashCode(sqlLong, numPartitions)
-          case sqlReal: SQLReal => computeHashCode(sqlReal, numPartitions)
-          case clob: SQLClob => computeHashCode(clob.getCharArray(true))
-          case varchar: SQLVarchar => computeHashCode(varchar.getCharArray(true))
-          case time: SQLTimestamp => computeHashCode(time, numPartitions)
-          case decimal: SQLDecimal => computeHashCode(decimal, numPartitions)
-          case sqlInteger :SQLInteger => computeHashCode(sqlInteger, numPartitions)
-          case other => other.hashCode()
-        }
-      }
-    update
+      // raw object types
+      case s: String =>
+        val len = s.length
+        val internalChars = ResolverUtils.getInternalCharsOnly(s, len)
+        if (internalChars != null) computeStringHash(internalChars, seed)
+        else computeStringHash(ResolverUtils.getChars(s, len), seed)
+      case i: Int => Murmur3_x86_32.hashInt(i, seed)
+      case l: Long => Murmur3_x86_32.hashLong(l, seed)
+      case d: Double =>
+        Murmur3_x86_32.hashLong(java.lang.Double.doubleToLongBits(d), seed)
+      case b: Boolean => Murmur3_x86_32.hashInt(if (b) 1 else 0, seed)
+      case b: Byte => Murmur3_x86_32.hashInt(b, seed)
+      case s: Short => Murmur3_x86_32.hashInt(s, seed)
+      case f: Float =>
+        Murmur3_x86_32.hashInt(java.lang.Float.floatToIntBits(f), seed)
+      case d: Decimal =>
+        // This is a suboptimal code and new to create an Object for
+        // hash computation. TODO SNAP-711
+        val bytes = d.toJavaBigDecimal.unscaledValue().toByteArray
+        Murmur3_x86_32.hashUnsafeBytes(bytes, Platform.BYTE_ARRAY_OFFSET,
+          bytes.length, seed)
+      case ts: java.sql.Timestamp =>
+        val tsVal = DateTimeUtils.fromJavaTimestamp(ts)
+        Murmur3_x86_32.hashLong(tsVal, seed)
+      case date: java.util.Date =>
+        val days = DateTimeUtils.millisToDays(date.getTime)
+        Murmur3_x86_32.hashInt(days, seed)
+      case a: Array[Byte] => Murmur3_x86_32.hashUnsafeBytes(a,
+        Platform.BYTE_ARRAY_OFFSET, a.length, seed)
+      case c: CalendarInterval => Murmur3_x86_32.hashInt(c.months,
+        Murmur3_x86_32.hashLong(c.microseconds, seed))
+      case s: UTF8String => Murmur3_x86_32.hashUnsafeBytes(s.getBaseObject,
+        s.getBaseOffset, s.numBytes(), seed)
+
+      case _ => throw new IllegalStateException("Unknown object of class " +
+          s"${key.getClass.getCanonicalName}: $key")
+    }
   }
 
-  private def pmod(a: Int, n: Int): Int = { //We should push this logic to store layer
-    val r = a % n
-    if (r < 0) r + n else a
-  }
-
-
-  private def computeHashCode(sqlInteger: SQLInteger, numPartitions : Int): Int = {
-    pmod(hasher.hashInt(sqlInteger.getInt), numPartitions)
-  }
-
-  private def computeHashCode(sd: SQLDate, numPartitions : Int): Int = {
-    pmod(hasher.hashInt(DateTimeUtils.millisToDays(sd.getTimeInMillis(null))), numPartitions)
-  }
-
-  private def computeHashCode(boolean: SQLBoolean, numPartitions : Int): Int = {
-    val hasIntVal = if (boolean.getBoolean) hasher.hashInt(1) else hasher.hashInt(0)
-    pmod(hasIntVal, numPartitions)
-  }
-
-  private def computeHashCode(sqlReal: SQLReal, numPartitions : Int): Int = {
-    pmod(hasher.hashInt(java.lang.Float.floatToIntBits(sqlReal.getFloat)), numPartitions)
-  }
-
-  private def computeHashCode(longInt: SQLLongint, numPartitions : Int): Int = {
-    pmod(hasher.hashLong(longInt.getLong), numPartitions)
-  }
-
-/*  private def computeHashCode(sqlBit: SQLBit, numPartitions : Int): Int = {
-    val bytes = sqlBit.getBytes()
-    var result = seed
-    bytes.map( b => )
-    if(bytes == null ) 0 else java.util.Arrays.hashCode(bytes)
-  }*/
-
-  // This is a suboptimal code and neew to create an Object for hash computation. TODO SNAP-711
-  private def computeHashCode(decimal: SQLDecimal, numPartitions : Int): Int = {
-    val javaBigDecimal = decimal.getObject()
-    if (javaBigDecimal == null) 0 else computeHash(Decimal(javaBigDecimal.asInstanceOf[java.math
-    .BigDecimal]), numPartitions)
+  def computeHash(key: Any, numPartitions: Int): Int = {
+    val hash = computeColumnHash(key, 42) % numPartitions
+    if (hash >= 0) hash else hash + numPartitions
   }
 
   /**
-   * Returns the number of micros since epoch from java.sql.Timestamp.
-   * Same code as CatalystConverter for timestamp .
+   * This hashcode implementation matches that of Spark's hashcode
+   * implementation for rows (HashExpression.eval).
    */
-  private def computeHashCode(time: SQLTimestamp, numPartitions : Int): Int = {
-    val ht = time.getEpochTime(null) * 1000L + (time.getNanos().toLong / 1000)
-    computeHash(ht, numPartitions)
+  def computeHash(objs: scala.Array[Object], numPartitions: Int): Int = {
+    var result: Int = 42
+    var i = 0
+    val len = objs.length
+    while (i < len) {
+      result = computeColumnHash(objs(i), result)
+      i += 1
+    }
+    val hash = result % numPartitions
+    if (hash >= 0) hash else hash + numPartitions
   }
 
-  private def computeHashCode(data: Array[Char]): Int = {
-    if(data == null){
-      return 0
-    }
-    var result = 1
-    val end = data.length
-    def addToHash(value: Int) {
-      result = 31 * result + value.toByte
+  private def computeStringHash(data: Array[Char], seed: Int): Int = {
+    if (data == null) {
+      return seed
     }
 
+    var currentInt = 0
+    var shift = 0
+    var result = seed
+
+    def addToHash(c: Int) {
+      if (shift < 32) {
+        currentInt |= (c << shift)
+        shift += 8
+      } else {
+        result = mixH1(result, mixK1(currentInt))
+        currentInt = c
+        shift = 8
+      }
+    }
+
+    val end = data.length
+    var bytesLen = 0
     var index = 0
-    while (index <= end - 1) {
-      {
-        val c: Char = data(index)
-        if (c < 0x80) {
-          addToHash(c)
-        } else if (c < 0x800) {
+    while (index < end) {
+      val c = data(index)
+      if (c < 0x80) {
+        if (shift < 32) {
+          currentInt |= (c << shift)
+          shift += 8
+        } else {
+          result = mixH1(result, mixK1(currentInt))
+          currentInt = c
+          shift = 8
+        }
+        bytesLen += 1
+      } else if (c < 0x800) {
+        if (shift < 24) {
+          currentInt |= (((c >> 6) | 0xc0) << shift)
+          shift += 8
+          currentInt |= (((c & 0x3f) | 0x80) << shift)
+          shift += 8
+        } else {
           addToHash((c >> 6) | 0xc0)
           addToHash((c & 0x3f) | 0x80)
-        } else if (Character.isSurrogate(c)) {
-          val high: Char = c
-          val low: Char = if (index + 1 != end) data(index + 1) else 0
-          if (!Character.isSurrogatePair(high, low)) {
-            throw new RuntimeException("The supplementary unicode is not in proper format")
-          }
-          // A valid surrogate pair. Get the supplementary code
+        }
+        bytesLen += 2
+      } else if (Character.isSurrogate(c)) {
+        index += 1
+        val low: Char = if (index != end) data(index) else 0
+        if (!Character.isSurrogatePair(c, low)) {
+          throw new IllegalStateException(
+            "The supplementary unicode is not in proper format")
+        }
+        // A valid surrogate pair. Get the supplementary code
 
-          index = index + 1
-
-          val sch = Character.toCodePoint(high, low)
-          //4 Byte Int
+        val sch = Character.toCodePoint(c, low)
+        // 4 Byte Int
+        if (shift == 32) {
+          result = mixH1(result, mixK1(currentInt))
+          currentInt = (sch >> 18) | 0xf0
+          currentInt |= ((((sch >> 12) & 0x3f) | 0x80) << 8)
+          currentInt |= ((((sch >> 6) & 0x3f) | 0x80) << 16)
+          currentInt |= (((sch & 0x3f) | 0x80) << 24)
+        } else {
           addToHash((sch >> 18) | 0xf0)
           addToHash(((sch >> 12) & 0x3f) | 0x80)
           addToHash(((sch >> 6) & 0x3f) | 0x80)
           addToHash((sch & 0x3f) | 0x80)
         }
-        else {
-          //3 Byte Int
-          addToHash((c >> 12) | 0xe0)
-          addToHash(((c >> 6) & 0x3f) | 0x80)
-          addToHash((c & 0x3f) | 0x80)
-        }
-        index = index + 1
+        bytesLen += 4
+      } else {
+        // 3 Byte Int
+        addToHash((c >> 12) | 0xe0)
+        addToHash(((c >> 6) & 0x3f) | 0x80)
+        addToHash((c & 0x3f) | 0x80)
+        bytesLen += 3
+      }
+      index += 1
+    }
+
+    if (shift == 32) {
+      result = mixH1(result, mixK1(currentInt))
+    } else {
+      // mix each of the bytes
+      var shift2 = 0
+      while (shift2 < shift) {
+        val k1 = (currentInt >>> shift2).toByte
+        result = mixH1(result, mixK1(k1))
+        shift2 += 8
       }
     }
 
-    return result
+    fmix(result, bytesLen)
+  }
+
+  private def mixK1(v: Int): Int = {
+    var k1 = v
+    k1 *= 0xcc9e2d51
+    k1 = Integer.rotateLeft(k1, 15)
+    k1 *= 0x1b873593
+    k1
+  }
+
+  private def mixH1(v1: Int, v2: Int): Int = {
+    var h1 = v1
+    var k1 = v2
+    h1 ^= k1
+    h1 = Integer.rotateLeft(h1, 13)
+    h1 = h1 * 5 + 0xe6546b64
+    h1
+  }
+
+  // Finalization mix - force all bits of a hash block to avalanche
+  private def fmix(v: Int, length: Int): Int = {
+    var h1 = v
+    h1 ^= length
+    h1 ^= h1 >>> 16
+    h1 *= 0x85ebca6b
+    h1 ^= h1 >>> 13
+    h1 *= 0xc2b2ae35
+    h1 ^= h1 >>> 16
+    h1
   }
 }

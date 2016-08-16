@@ -36,9 +36,8 @@ with BeforeAndAfter {
     snc.dropTable("ColumnTable2", true)
   }
 
-  ignore("test the shadow table creation") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
+  test("test the shadow table creation") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
     val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
         "USING column " +
         "options " +
@@ -57,7 +56,7 @@ with BeforeAndAfter {
     dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test the shadow table creation heavy insert") {

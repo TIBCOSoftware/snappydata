@@ -39,6 +39,8 @@ abstract class StreamBaseRelation(options: Map[String, String])
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 
+  var tableExists: Boolean = _
+
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
     DependencyCatalog.addDependent(tableName, dependent.name)

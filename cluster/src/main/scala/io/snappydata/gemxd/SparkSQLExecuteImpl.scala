@@ -22,6 +22,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.gemstone.gnu.trove.TIntObjectHashMap
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -43,6 +44,7 @@ import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
@@ -68,7 +70,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val querySchema = df.schema
 
-  private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
+  private[this] val resultsRdd = df.queryExecution.toRdd
 
   // check for query hint to serialize complex types as CLOBs
   private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
@@ -102,7 +104,11 @@ class SparkSQLExecuteImpl(val sql: String,
       for (p <- partitionBlockIds if p != null) {
         logTrace("Sending data for partition id = " + p)
         val partitionData: ByteBuffer = bm.getLocalBytes(p) match {
-          case Some(block) => block.toByteBuffer
+          case Some(block) => try {
+            block.toByteBuffer
+          } finally {
+            bm.releaseLock(p)
+          }
           case None => throw new GemFireXDRuntimeException(
             s"SparkSQLExecuteImpl: packRows() block $p not found")
         }
@@ -245,22 +251,22 @@ object SparkSQLExecuteImpl {
 
   def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
       numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolder: BufferHolder): Unit = {
+      bufferHolders: TIntObjectHashMap): Unit = {
     var groupNum: Int = 0
     // using the gemfirexd way of sending results where in the number of
     // columns in each row is divided into sets of 8 columns. Per eight column group a
     // byte will be sent to indicate which all column in that group has a
     // non-null value.
     while (groupNum < numEightColGroups) {
-      writeAGroup(groupNum, 8, row, schema, hdos, bufferHolder)
+      writeAGroup(groupNum, 8, row, schema, hdos, bufferHolders)
       groupNum += 1
     }
-    writeAGroup(groupNum, numPartCols, row, schema, hdos, bufferHolder)
+    writeAGroup(groupNum, numPartCols, row, schema, hdos, bufferHolders)
   }
 
   private def writeAGroup(groupNum: Int, numColsInGrp: Int, row: InternalRow,
       schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolder: BufferHolder): Unit = {
+      bufferHolders: TIntObjectHashMap): Unit = {
     var activeByteForGroup: Byte = 0x00
     var colIndex: Int = 0
     var index: Int = 0
@@ -277,7 +283,7 @@ object SparkSQLExecuteImpl {
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
-        writeColDataInOptimizedWay(row, colIndex, schema, hdos, bufferHolder)
+        writeColDataInOptimizedWay(row, colIndex, schema, hdos, bufferHolders)
       }
       index += 1
     }
@@ -285,7 +291,7 @@ object SparkSQLExecuteImpl {
 
   private def writeColDataInOptimizedWay(row: InternalRow, colIndex: Int,
       schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolder: BufferHolder): Unit = {
+      bufferHolders: TIntObjectHashMap): Unit = {
     schema(colIndex).dataType match {
       case StringType =>
         val utf8String = row.getUTF8String(colIndex)
@@ -316,24 +322,22 @@ object SparkSQLExecuteImpl {
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
       case BinaryType => DataSerializer.writeByteArray(
         row.getBinary(colIndex), hdos)
-      case a: ArrayType if bufferHolder != null =>
+      case a: ArrayType if bufferHolders != null =>
+        val buffer = bufferHolders.get(0).asInstanceOf[BufferHolder]
+        buffer.cursor = Platform.BYTE_ARRAY_OFFSET
         val serializer = CodeGeneration.getComplexTypeSerializer(a)
-        serializer.serialize(row.getArray(colIndex), bufferHolder)
-        DataSerializer.writeByteArray(bufferHolder.buffer,
-          bufferHolder.totalSize(), hdos)
-        bufferHolder.reset()
-      case m: MapType if bufferHolder != null =>
+        serializer.serialize(row.getArray(colIndex), buffer, hdos)
+      case m: MapType if bufferHolders != null =>
+        val buffer = bufferHolders.get(0).asInstanceOf[BufferHolder]
+        buffer.cursor = Platform.BYTE_ARRAY_OFFSET
         val serializer = CodeGeneration.getComplexTypeSerializer(m)
-        serializer.serialize(row.getMap(colIndex), bufferHolder)
-        DataSerializer.writeByteArray(bufferHolder.buffer,
-          bufferHolder.totalSize(), hdos)
-        bufferHolder.reset()
-      case s: StructType if bufferHolder != null =>
+        serializer.serialize(row.getMap(colIndex), buffer, hdos)
+      case s: StructType if bufferHolders != null =>
+        val nFields = s.length
+        val buffer = bufferHolders.get(nFields).asInstanceOf[BufferHolder]
+        buffer.cursor = Platform.BYTE_ARRAY_OFFSET
         val serializer = CodeGeneration.getComplexTypeSerializer(s)
-        serializer.serialize(row.getStruct(colIndex, s.length), bufferHolder)
-        DataSerializer.writeByteArray(bufferHolder.buffer,
-          bufferHolder.totalSize(), hdos)
-        bufferHolder.reset()
+        serializer.serialize(row.getStruct(colIndex, nFields), buffer, hdos)
       case other =>
         val col = row.get(colIndex, other)
         if (col ne null) {
@@ -454,14 +458,36 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
       }
     }
     val dos = new GfxdHeapDataOutputStream(
-      Misc.getMemStore.thresholdListener(), sql, true, null)
-    val bufferHolder = if (serializeComplexType) new BufferHolder(new UnsafeRow()) else null
+      Misc.getMemStore.thresholdListener(), sql, false, null)
+    var bufferHolders: TIntObjectHashMap = null
+    if (serializeComplexType) {
+      // need to create separate BufferHolders for each of the Structs
+      // having different sizes
+      schema.foreach(_.dataType match {
+        case _: ArrayType | _: MapType =>
+          if (bufferHolders == null) {
+            bufferHolders = new TIntObjectHashMap(3)
+          }
+          if (bufferHolders.isEmpty || !bufferHolders.containsKey(0)) {
+            bufferHolders.put(0, new BufferHolder(new UnsafeRow()))
+          }
+        case s: StructType =>
+          val nFields = s.length
+          if (bufferHolders == null) {
+            bufferHolders = new TIntObjectHashMap(3)
+          }
+          if (bufferHolders.isEmpty || !bufferHolders.containsKey(nFields)) {
+            bufferHolders.put(nFields, new BufferHolder(new UnsafeRow(nFields)))
+          }
+        case _ =>
+      })
+    }
     itr.foreach { row =>
       if (numCols == -1) {
         evalNumColumnGroups(row)
       }
       SparkSQLExecuteImpl.writeRow(row, numCols, numEightColGroups,
-        numPartCols, schema, dos, bufferHolder)
+        numPartCols, schema, dos, bufferHolders)
     }
     dos.toByteArray
   }

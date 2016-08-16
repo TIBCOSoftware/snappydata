@@ -18,27 +18,29 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2 => JVoidFunction2}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.collection.WrappedInternalRow
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext, Time}
 
 /**
-  * A SQL based DStream with support for schema/Product
-  * This class offers the ability to manipulate SQL query on DStreams
-  * It is similar to SchemaRDD, which offers the similar functions
-  * Internally, RDD of each batch duration is treated as a small
-  * table and CQs are evaluated on those small tables
-  * Some of the abstraction and code is borrowed from the project:
-  * https://github.com/Intel-bigdata/spark-streamingsql
-  * @param snsc
-  * @param queryExecution
-  *
-  */
+ * A SQL based DStream with support for schema/Product
+ * This class offers the ability to manipulate SQL query on DStreams
+ * It is similar to SchemaRDD, which offers the similar functions
+ * Internally, RDD of each batch duration is treated as a small
+ * table and CQs are evaluated on those small tables
+ * Some of the abstraction and code is borrowed from the project:
+ * https://github.com/Intel-bigdata/spark-streamingsql
+ *
+ * @param snsc
+ * @param queryExecution
+ *
+ */
 final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     @transient val queryExecution: QueryExecution)
     extends DStream[Row](snsc) {
@@ -51,17 +53,17 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     this(ssc, ssc.snappySession.sessionState.executePlan(logicalPlan))
 
   /**
-    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-    */
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
   def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
     foreachDataFrame(foreachFunc, needsConversion = true)
   }
 
   /**
-    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-    */
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
   def foreachDataFrame(foreachFunc: DataFrame => Unit, needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row]) => {
       foreachFunc(snappySession.createDataFrame(rdd, this.schema, needsConversion))
@@ -105,18 +107,18 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
 
   /**
-    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-    */
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
   def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
     foreachDataFrame(foreachFunc, needsConversion = true)
   }
 
   /**
-    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-    */
-  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit, needsConversion : Boolean): Unit = {
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit, needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
       foreachFunc(snappySession.createDataFrame(rdd, this.schema, needsConversion), time)
     }
@@ -136,9 +138,10 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   override def cache(): SchemaDStream = persist()
 
   /**
-    * Enable periodic checkpointing of RDDs of this SchemaDStream
-    * @param interval Time interval after which generated RDD will be checkpointed
-    */
+   * Enable periodic checkpointing of RDDs of this SchemaDStream
+   *
+   * @param interval Time interval after which generated RDD will be checkpointed
+   */
   override def checkpoint(interval: Duration): SchemaDStream = {
     super.checkpoint(interval)
     this
@@ -150,9 +153,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   /**
-    * Return a new SchemaDStream with an increased or decreased level of parallelism.
-    * Each RDD in the returned SchemaDStream has exactly numPartitions partitions.
-    */
+   * Return a new SchemaDStream with an increased or decreased level of parallelism.
+   * Each RDD in the returned SchemaDStream has exactly numPartitions partitions.
+   */
   override def repartition(numPartitions: Int): SchemaDStream = {
     snsc.createSchemaDStream(transform(_.repartition(numPartitions)), schema)
   }
@@ -165,7 +168,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   /** Returns the schema of this SchemaDStream (represented by
-    * a [[StructType]]). */
+   * a [[StructType]]). */
   def schema: StructType = queryExecution.analyzed.schema
 
   /** List of parent DStreams on which this DStream depends on */
@@ -187,8 +190,11 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
     StreamBaseRelation.setValidTime(validTime)
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
-    Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
+    val schema = this.schema
+    Some(queryExecution.executedPlan.execute().mapPartitionsInternal { itr =>
+      val wrappedRow = new WrappedInternalRow(schema)
+      itr.map(row => wrappedRow.internalRow = row)
+    })
   }
 
   @transient private lazy val parentStreams = {
@@ -201,8 +207,8 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   /**
-    * Returns all column names as an array.
-    */
+   * Returns all column names as an array.
+   */
   def columns: Array[String] = schema.fields.map(_.name)
 
   def printSchema(): Unit = {

@@ -163,7 +163,7 @@ object JavaSnappyStreamingContext {
    */
   @Experimental
   def getActive(): Optional[JavaSnappyStreamingContext] = {
-    jcontextOptionToOptional(SnappyStreamingContext.getActive())
+    jcontextOptionToOptional(SnappyStreamingContext.getActive)
   }
 
   /**

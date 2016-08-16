@@ -24,8 +24,8 @@ import scala.language.postfixOps
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.apache.calcite.DataContext.Variable
 
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -74,38 +74,31 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
-
-  override def testColumnTableCreation(): Unit = {
-    // skip the non-skewed test since it is already run in Spark+Snappy mode
-    doTestColumnTableCreation(skewServerDistribution = true)
-  }
-
-  override def testRowTableCreation(): Unit = {
-    doTestRowTableCreation(skewServerDistribution = true)
-  }
-
-  override def testComplexTypesForColumnTables_SNAP643(): Unit = {
-    doTestComplexTypesForColumnTables_SNAP643(skewServerDistribution = true)
-  }
-
+  // skip the non-skewed tests since it is already run in Spark+Snappy mode
+  override protected def skewNetworkServers: Boolean = true
 
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
     startNetworkServers(3)
     testObject.createRowTableForCollocatedJoin()
-    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+ "PR_TABLE1" :+
-        "PR_TABLE2")
+    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
+        "PR_TABLE1" :+ "PR_TABLE2")
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
     startNetworkServers(3)
     testObject.createColumnTableForCollocatedJoin()
-    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+ "PR_TABLE3" :+
-        "PR_TABLE4")
+    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
+        "PR_TABLE3" :+ "PR_TABLE4")
   }
 }
 
 object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
-  def sc = ClusterManagerTestBase.sc
+
+  def sc: SparkContext = {
+    val context = ClusterManagerTestBase.sc
+    context.getConf.set(SQLConf.COLUMN_BATCH_SIZE.key, batchSize.toString)
+    context
+  }
 
   override def createTablesAndInsertData(tableType: String): Unit = {
     val snc = SnappyContext(sc)
@@ -116,7 +109,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     createTableUsingDataSourceAPI(snc, "embeddedModeTable2", tableType)
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def createComplexTablesAndInsertData(
@@ -131,7 +124,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
       "column", props)
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
@@ -163,17 +156,18 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     snc.dropTable("splitModeTable1", ifExists = true)
 
     // recreate the dropped table
+    var expected = Seq.empty[ComplexData]
     if (isComplex) {
-      createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
+      expected = createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)
     } else {
       createTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)
     }
-    selectFromTable(snc, "splitModeTable1", 1005)
+    selectFromTable(snc, "splitModeTable1", 1005, expected)
     snc.dropTable("splitModeTable1", ifExists = true)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   def createRowTableForCollocatedJoin(): Unit = {
@@ -243,8 +237,8 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
 
-  def checkCollocatedJoins(locatorPort: Int, prop: Properties, locatorProp: String, table1:
-  String, table2: String): Unit = {
+  def checkCollocatedJoins(locatorPort: Int, prop: Properties,
+      locatorProp: String, table1: String, table2: String): Unit = {
     // Test setting locators property via environment variable.
     // Also enables checking for "spark." or "snappydata." prefix in key.
     System.setProperty(locatorProp, s"localhost:$locatorPort")
@@ -255,7 +249,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
-        .set("spark.sql.autoBroadcastJoinThreshold" , "-1")
+        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
 
 
     val sc = SparkContext.getOrCreate(conf)
@@ -264,7 +258,6 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
-    println("Successful")
-
+    logInfo("Successful")
   }
 }

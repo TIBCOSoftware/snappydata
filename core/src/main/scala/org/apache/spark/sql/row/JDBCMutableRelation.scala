@@ -70,6 +70,8 @@ case class JDBCMutableRelation(
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     connProperties.url, table, connProperties.connProps)
 
+  var tableExists: Boolean = _
+
   final lazy val schemaFields = Utils.schemaFields(schema)
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
@@ -82,7 +84,7 @@ case class JDBCMutableRelation(
     var conn: Connection = null
     try {
       conn = connFactory()
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       val tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
@@ -172,7 +174,7 @@ case class JDBCMutableRelation(
   }
 
   def insert(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, connProperties)
+    JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
   }
 
   // TODO: should below all be executed from driver or some random executor?

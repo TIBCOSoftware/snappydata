@@ -34,8 +34,10 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
@@ -79,10 +81,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     this(new SnappySession(sc, None))
   }
 
-  override def newSession(): SnappyContext = snappySession.newSession().snappyContext
+  override def newSession(): SnappyContext =
+    snappySession.newSession().snappyContext
 
-  // TODO: merge: Backward compatibility with tests. We should remove it
-  val catalog = snappySession.sessionCatalog
+  override def sessionState: SnappySessionState = snappySession.sessionState
 
   def clear(): Unit = {
     snappySession.clear()
@@ -782,7 +784,7 @@ object SnappyContext extends Logging {
 
   val DEFAULT_SOURCE = ROW_SOURCE
 
-  private val builtinSources = Map(
+  private val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
@@ -796,7 +798,7 @@ object SnappyContext extends Logging {
     "raw_socket_stream" -> classOf[RawSocketStreamSource].getCanonicalName,
     "text_socket_stream" -> classOf[TextSocketStreamSource].getCanonicalName,
     "rabbitmq_stream" -> classOf[RabbitMQStreamSource].getCanonicalName
-  )
+  ))
 
   private[this] val INVALID_CONF = new SparkConf(loadDefaults = false) {
     override def getOption(key: String): Option[String] =
@@ -999,14 +1001,16 @@ object SnappyContext extends Logging {
 
   /**
    * Checks if the passed provider is recognized
+   *
    * @param providerName
    * @param onlyBuiltIn
    * @return
    */
-  def getProvider(providerName: String, onlyBuiltIn: Boolean): String =
+  def getProvider(providerName: String, onlyBuiltIn: Boolean): String = {
     builtinSources.getOrElse(providerName,
       if (onlyBuiltIn) throw new AnalysisException(
         s"Failed to find a builtin provider $providerName") else providerName)
+  }
 }
 
 // end of SnappyContext

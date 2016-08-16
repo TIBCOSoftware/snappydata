@@ -166,7 +166,8 @@ class RowFormatRelation(
    * @return number of rows upserted
    */
   def put(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, connProperties, upsert = true)
+    JdbcExtendedUtils.saveTable(data, table, schema,
+      connProperties, upsert = true)
   }
 
   /**
@@ -276,7 +277,7 @@ final class DefaultSource extends MutableRelationProvider {
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }

@@ -16,17 +16,15 @@
  */
 package org.apache.spark.sql
 
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
-
-import org.parboiled2._
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
+import org.parboiled2._
+
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -48,7 +46,8 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
         ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
-        commentBody | commentBody
+        commentBody |
+    commentBody
   }
 
   protected final def lineCommentOrHint: Rule0 = rule {
@@ -65,11 +64,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     quiet(
       SnappyParserConsts.whitespace |
       '-' ~ '-' ~ lineCommentOrHint |
-      '/' ~ (
-          '/' ~ lineCommentOrHint |
-          '*' ~ (commentBodyOrHint | fail("unclosed comment"))
-      ) |
-      '#' ~ lineCommentOrHint
+      '/' ~ '*' ~ (commentBodyOrHint | fail("unclosed comment"))
     ).*
   }
 
@@ -91,8 +86,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    '\'' ~ capture((SnappyParserConsts.singleQuotedString | "''").*) ~ '\'' ~
-        ws ~> ((s: String) =>
+    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
       if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
   }
 
@@ -122,13 +116,12 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
       test(!SnappyParserConsts.keywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
-    atomic('"' ~ capture((SnappyParserConsts.doubleQuotedString | "\"\"").+) ~
-        '"') ~ ws ~> { (s: String) =>
+    atomic('"' ~ capture((noneOf("\"") | "\"\"").+) ~ '"') ~
+        ws ~> { (s: String) =>
       val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     } |
-    atomic('`' ~ capture((SnappyParserConsts.backQuotedString | "``").+) ~
-        '`') ~ ws ~> { (s: String) =>
+    atomic('`' ~ capture((noneOf("`") | "``").+) ~ '`') ~ ws ~> { (s: String) =>
       val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     }
@@ -258,20 +251,14 @@ object SnappyParserConsts {
   final val lineCommentEnd = "\n\r\f" + EOI
   final val lineHintEnd = ")\n\r\f" + EOI
   final val hintValueEnd = ")*" + EOI
-  final val singleQuotedString: CharPredicate = CharPredicate('\'').negated
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++
       CharPredicate('_')
-  final val doubleQuotedString: CharPredicate = CharPredicate('"').negated
-  final val backQuotedString: CharPredicate = CharPredicate('`').negated
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
   final val arithmeticOperator = CharPredicate('*', '/', '%', '&', '|', '^')
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.') ++ exponent
   final val plural: CharPredicate = CharPredicate('s', 'S')
-  // start characters for USING, OPTIONS, AS at end of DDL specification
-  final val ddlEnd: CharPredicate = CharPredicate('u', 'U', 'o', 'O',
-    'a', 'A').negated
 
   final val trueFn: () => Boolean = () => true
 

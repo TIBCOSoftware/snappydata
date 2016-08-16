@@ -20,7 +20,7 @@ import java.sql.DriverManager
 
 import scala.util.{Failure, Success, Try}
 
-import com.gemstone.gemfire.cache.EvictionAlgorithm
+import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
@@ -33,7 +33,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkSqlParser
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
 /**
   * Tests for column tables in GFXD.
@@ -133,7 +133,6 @@ class ColumnTableTest
       case _: TableNotFoundException => // expected
         assert(result.collect().length === count)
     }
-    snc.sql("set spark.sql.caseSensitive = false")
 
     count
   }
@@ -156,23 +155,28 @@ class ColumnTableTest
     val size = dataDF.count().toInt
     var count = 0
 
-    // CURRENT SCHEMA = name
-    count = checkSetSchema("set current schema = %s", schema, table,
-      dataDF, count, size)
+    try {
+      // CURRENT SCHEMA = name
+      count = checkSetSchema("set current schema = %s", schema, table,
+        dataDF, count, size)
 
-    // SCHEMA = name
-    count = checkSetSchema("set schema = %s", schema, table,
-      dataDF, count, size)
+      // SCHEMA = name
+      count = checkSetSchema("set schema = %s", schema, table,
+        dataDF, count, size)
 
-    // CURRENT SCHEMA name
-    count = checkSetSchema("set current schema %s", schema, table,
-      dataDF, count, size)
+      // CURRENT SCHEMA name
+      count = checkSetSchema("set current schema %s", schema, table,
+        dataDF, count, size)
 
-    // SCHEMA name
-    count = checkSetSchema("set schema %s", schema, table,
-      dataDF, count, size)
+      // SCHEMA name
+      count = checkSetSchema("set schema %s", schema, table,
+        dataDF, count, size)
 
-    snc.sql(s"drop table $table")
+      snc.sql(s"drop table $table")
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+    }
 
     logInfo("Successful")
   }
@@ -194,7 +198,7 @@ class ColumnTableTest
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
     logInfo("Successful")
   }
 
@@ -210,11 +214,11 @@ class ColumnTableTest
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // check that table is created with default schema APP
-    val result2 = snc.sql("SELECT * FROM " + s"APP.$tableName")
-    assert(result2.collect().length == 5)
+    val result2 = snc.sql(s"SELECT * FROM APP.$tableName")
+    assert(result2.collect().length === 5)
 
     logInfo("Successful")
   }
@@ -237,7 +241,7 @@ class ColumnTableTest
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // Ignore if table is present
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300),
@@ -247,19 +251,20 @@ class ColumnTableTest
     dataDF.write.mode(SaveMode.Ignore).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // Append if table is present
     dataDF.write.insertInto(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 11)
+    assert(r.length === 11)
 
     // Overwrite if table is present
-    dataDF.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
+    dataDF.write.format("column").options(props).mode(SaveMode.Overwrite)
+        .saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 6)
+    assert(r.length === 6)
 
     logInfo("Successful")
   }
@@ -271,7 +276,7 @@ class ColumnTableTest
         " USING column " + options)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
     logInfo("Successful")
   }
 
@@ -281,7 +286,7 @@ class ColumnTableTest
         " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
     logInfo("Successful")
   }
 
@@ -308,11 +313,11 @@ class ColumnTableTest
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // check that default schema is added to the table
     val result2 = snc.sql(s"SELECT * FROM APP.$tableName")
-    assert(result2.collect().length == 5)
+    assert(result2.collect().length === 5)
 
     logInfo("Successful")
   }
@@ -334,7 +339,7 @@ class ColumnTableTest
         .saveAsTable(tableName)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
     logInfo("Successful")
   }
 
@@ -353,12 +358,12 @@ class ColumnTableTest
     )
     var result = snc.sql("SELECT * FROM " + tableName2)
     var r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     dataDF.write.insertInto(tableName2)
     result = snc.sql("SELECT * FROM " + tableName2)
     r = result.collect
-    assert(r.length == 10)
+    assert(r.length === 10)
 
     snc.dropTable(tableName2)
     logInfo("Successful")
@@ -376,7 +381,7 @@ class ColumnTableTest
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
 
     dataDF.write.insertInto(tableName)
 
@@ -385,7 +390,7 @@ class ColumnTableTest
 
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
 
     logInfo("Successful")
   }
@@ -516,6 +521,29 @@ class ColumnTableTest
         .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
         EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+  }
+
+  test("Test PR with EVICTION BY OVERFLOW") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200'," +
+        "OVERFLOW 'true')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
@@ -763,7 +791,7 @@ class ColumnTableTest
       var start: Double = 0.0
       var end: Double = 0.0
       var elapsed: Double = 0.0
-      val warmupRuns = 2000
+      val warmupRuns = 10000
       val timedRuns = 5000
       val parser = new SparkSqlParser(snc.conf)
       println(s"Warmup runs for SparkSQL parser ...")
@@ -785,7 +813,7 @@ class ColumnTableTest
       println()
 
       println(s"Warmup runs for Snappy parser ...")
-      val sqlParser = snc.snappySession.sessionState.sqlParser
+      val sqlParser = snc.sessionState.sqlParser
       for (i <- 0 until warmupRuns) {
         plan2 = sqlParser.parsePlan(sqlText)
       }
@@ -812,6 +840,23 @@ class ColumnTableTest
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by GemXD parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+      println()
+
+      println(s"Warmup runs for Spark parser ...")
+      val sparkSession = new SparkSession(sc)
+      val sparkParser = sparkSession.sessionState.sqlParser
+      for (i <- 0 until warmupRuns) {
+        plan2 = sparkParser.parsePlan(sqlText)
+      }
+      println(s"Done with warmup runs")
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        plan2 = sparkParser.parsePlan(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by Spark parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
       println()
 

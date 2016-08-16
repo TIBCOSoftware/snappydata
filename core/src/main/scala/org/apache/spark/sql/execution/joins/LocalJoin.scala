@@ -66,14 +66,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
+    /*
     val (numBuildRows, numStreamedRows) = buildSide match {
       case BuildLeft => (longMetric("numLeftRows"), longMetric("numRightRows"))
       case BuildRight => (longMetric("numRightRows"), longMetric("numLeftRows"))
     }
+    */
     val numOutputRows = longMetric("numOutputRows")
-    val context = TaskContext.get()
-    def hashedRelationIter(buildIter: Iterator[InternalRow]): HashedRelation = {
-      HashedRelation(buildIter, buildKeys, taskMemoryManager = context.taskMemoryManager())
+    def hashedRelationIter(buildIter: Iterator[InternalRow],
+        context: TaskContext): HashedRelation = {
+      HashedRelation(buildIter, buildKeys,
+        taskMemoryManager = context.taskMemoryManager())
     }
 
     val buildRDD = buildPlan.execute()
@@ -109,8 +112,8 @@ private[spark] class HashRelationRDD(
     sc: SparkContext,
     var buildRDD: RDD[InternalRow],
     val maxPartitions: Int,
-    var f: (Iterator[InternalRow]) => HashedRelation
-    ) extends RDD[HashedRelation](sc, Seq(new OneToOneDependency(buildRDD))) {
+    var f: (Iterator[InternalRow], TaskContext) => HashedRelation
+) extends RDD[HashedRelation](sc, Seq(new OneToOneDependency(buildRDD))) {
 
   override def compute(s: Partition,
       context: TaskContext): Iterator[HashedRelation] = {
@@ -124,7 +127,7 @@ private[spark] class HashRelationRDD(
           SparkEnv.get.blockManager.getSingle(blockId) match {
             case Some(x) => x.asInstanceOf[HashedRelation]
             case None =>
-              val hashedRelation = f(buildRDD.iterator(s, context))
+              val hashedRelation = f(buildRDD.iterator(s, context), context)
               SparkEnv.get.blockManager.putSingle(blockId, hashedRelation,
                 StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
 

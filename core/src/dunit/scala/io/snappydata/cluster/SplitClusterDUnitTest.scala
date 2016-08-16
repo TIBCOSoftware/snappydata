@@ -33,6 +33,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host,
 import org.junit.Assert
 
 import org.apache.spark.sql.types.Decimal
+import org.apache.spark.util.collection.OpenHashSet
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -61,8 +62,8 @@ class SplitClusterDUnitTest(s: String)
     vm3 = host.getVM(3)
   }
 
-  override def startArgs = Array(SplitClusterDUnitTest.locatorPort,
-    bootProps).asInstanceOf[Array[AnyRef]]
+  override def startArgs: Array[AnyRef] = Array(
+    SplitClusterDUnitTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -77,7 +78,7 @@ class SplitClusterDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
-    println(s"Starting snappy cluster in $snappyProductDir/work")
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
@@ -87,11 +88,13 @@ class SplitClusterDUnitTest(s: String)
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1",
+    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1 " +
+        s"-J-Dspark.sql.inMemoryColumnarStorage.batchSize=$batchSize",
       s"$confDir/leads")
-    writeToFile(s"""localhost  -locators=localhost[$port] -client-port=$netPort2
-                   |localhost  -locators=localhost[$port] -client-port=$netPort3
-                   |""".stripMargin, s"$confDir/servers")
+    writeToFile(
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort2
+          |localhost  -locators=localhost[$port] -client-port=$netPort3
+          |""".stripMargin, s"$confDir/servers")
     (snappyProductDir + "/sbin/snappy-start-all.sh").!!
 
     vm3.invoke(getClass, "startSparkCluster", productDir)
@@ -101,7 +104,7 @@ class SplitClusterDUnitTest(s: String)
     super.afterClass()
     vm3.invoke(getClass, "stopSparkCluster", productDir)
 
-    println(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
@@ -144,7 +147,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     stmt.close()
     conn.close()
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def createComplexTablesAndInsertData(
@@ -160,7 +163,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     stmt.close()
     conn.close()
-    println("Successful")
+    logInfo("Successful")
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
@@ -183,11 +186,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       selectFromTableUsingJDBC("embeddedModeTable1", 1005, stmt)
     }
 
-    stmt.execute("drop table if exists embeddedModeTable1")
-
-    // embeddedModeTable2 still exists drop it
-    stmt.execute("drop table if exists embeddedModeTable2")
-
     // read data from splitModeTable1
     if (isComplex) {
       selectFromComplexTypeTableUsingJDBC("splitModeTable1", 1005, stmt)
@@ -206,11 +204,14 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       createTableUsingJDBC("splitModeTable1", tableType, conn, stmt, props)
       selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
     }
+
+    stmt.execute("drop table if exists embeddedModeTable1")
+    stmt.execute("drop table if exists embeddedModeTable2")
     stmt.execute("drop table if exists splitModeTable1")
 
     stmt.close()
     conn.close()
-    println("Successful")
+    logInfo("Successful")
   }
 
   private def getPropertiesAsSQLString(props: Map[String, String]): String =
@@ -225,18 +226,20 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   def createTableUsingJDBC(tableName: String, tableType: String,
       conn: Connection, stmt: Statement,
       propsMap: Map[String, String] = props): Unit = {
-    val data = ArrayBuffer(Data(1, "2", 3), Data(7, "8", 9), Data(9, "2", 3),
-      Data(4, "2", 3), Data(5, "6", 7))
+    val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
+      Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
+      Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
     for (i <- 1 to 1000) {
       data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
-        Random.nextInt())
+        Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
     }
 
     stmt.execute(s"drop table if exists $tableName")
 
-    stmt.execute(s"""
+    stmt.execute(
+      s"""
         CREATE TABLE $tableName (
-          col1 Int, col2 String, col3 Int
+          col1 Int, col2 String, col3 Decimal
         ) USING $tableType${getPropertiesAsSQLString(propsMap)}""")
 
     val pstmt = conn.prepareStatement(
@@ -244,7 +247,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     for (d <- data) {
       pstmt.setInt(1, d.col1)
       pstmt.setString(2, d.col2)
-      pstmt.setInt(3, d.col3)
+      pstmt.setBigDecimal(3, d.col3.toJavaBigDecimal)
       pstmt.addBatch()
     }
     pstmt.executeBatch()
@@ -252,44 +255,60 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   def createComplexTableUsingJDBC(tableName: String, conn: Connection,
-      stmt: Statement, propsMap: Map[String, String] = props): Unit = {
+      stmt: Statement, propsMap: Map[String, String] = props): ArrayBuffer[
+      ComplexData] = {
+    val keys = new OpenHashSet[Int](1005)
     val dec1 = Array(Decimal("4.92"), Decimal("51.98"))
     val dec2 = Array(Decimal("95.27"), Decimal("17.25"), Decimal("7583.2956"))
     val time = System.currentTimeMillis()
     val ts = Array(new Timestamp(time), new Timestamp(time + 123456L),
       new Timestamp(0L), new Timestamp(time - 12246L), new Timestamp(-1L))
     val m1 = Map(
-      ts(0) -> Data(3, "8", 1),
-      ts(1) -> Data(5, "3", 0),
-      ts(2) -> Data(8, "2", 1))
+      ts(0) -> Data(3, "8", Decimal("1.8")),
+      ts(1) -> Data(5, "3", Decimal(".5")),
+      ts(2) -> Data(8, "2", Decimal("2.1")))
     val m2 = Map(
-      ts(3) -> Data(8, "3", 1),
-      ts(0) -> Data(7, "5", 7),
-      ts(4) -> Data(4, "8", 9))
+      ts(3) -> Data(8, "3", Decimal("1.3")),
+      ts(0) -> Data(7, "5", Decimal("7.6")),
+      ts(4) -> Data(4, "8", Decimal("8.9")))
     val data = ArrayBuffer[ComplexData]()
-    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", 3), dec1(0), ts(0))
-    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", 9), dec2(0), ts(1))
-    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", 7), dec1(1), ts(2))
-    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", 4), dec2(1), ts(3))
-    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", 1), dec2(2), ts(4))
+    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", Decimal("3.8")),
+      dec1(0), ts(0))
+    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", Decimal("9")),
+      dec2(0), ts(1))
+    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", Decimal("7.3")),
+      dec1(1), ts(2))
+    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", Decimal("4.3")),
+      dec2(1), ts(3))
+    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", Decimal("1.0")),
+      dec2(2), ts(4))
     for (i <- 1 to 1000) {
-      val rnd = Random.nextLong()
-      val rnd1 = rnd.asInstanceOf[Int]
+      var rnd: Long = 0L
+      var rnd1 = 0
+      do {
+        rnd = Random.nextLong()
+        rnd1 = rnd.asInstanceOf[Int]
+      } while (keys.contains(rnd1))
+      keys.add(rnd1)
       val rnd2 = (rnd >>> 32).asInstanceOf[Int]
+      val drnd = Random.nextInt(65536)
+      val drnd1 = drnd & 0xff
+      val drnd2 = (drnd >>> 8) & 0xff
       val dec = if ((rnd1 % 2) == 0) dec1 else dec2
       val map = if ((rnd2 % 2) == 0) m1 else m2
-      data += ComplexData(rnd1, dec, rnd2.toString,
-        map, Random.nextDouble(), Data(rnd1, Integer.toString(rnd2), rnd1),
-        dec(1), ts(math.abs(rnd1) % 5))
+      data += ComplexData(rnd1, dec, rnd2.toString, map, Random.nextDouble(),
+        Data(rnd1, Integer.toString(rnd2), Decimal(drnd1.toString + '.' +
+            drnd2.toString)), dec(1), ts(math.abs(rnd1) % 5))
     }
-    stmt.execute(s"""
+    stmt.execute(
+      s"""
         CREATE TABLE $tableName (
           col1 Int,
           col2 Array<Decimal>,
           col3 String,
-          col4 Map<Timestamp, Struct<col1: Int, col2: String, col3: Int>>,
+          col4 Map<Timestamp, Struct<col1: Int, col2: String, col3: Decimal(10,5)>>,
           col5 Double,
-          col6 Struct<col1: Int, col2: String, col3: Int>,
+          col6 Struct<col1: Int, col2: String, col3: Decimal(10,5)>,
           col7 Decimal,
           col8 Timestamp
         ) USING column${getPropertiesAsSQLString(propsMap)}""")
@@ -329,17 +348,19 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     }
     pstmt.executeBatch()
     pstmt.close()
+
+    data
   }
 
   private def checkSerializationMetadata(ts: Array[Timestamp],
       dec1: Array[Decimal], m2: Map[Timestamp, Data],
       serializers: Array[ComplexTypeSerializer]): Unit = {
     val m3 = Map(
-      ts(3) -> Data3(8, 3, 1),
-      ts(0) -> Data3(7, 5, 7),
-      ts(4) -> Data3(4, 8, 9))
-    val data2 = ComplexData2(1, dec1, "3", m3, 7.56, Data(2, "8", 3),
-      dec1(0), ts(0))
+      ts(3) -> Data3(8, 3, Decimal("8.1")),
+      ts(0) -> Data3(7, 5, Decimal("5.7")),
+      ts(4) -> Data3(4, 8, Decimal("9.4")))
+    val data2 = ComplexData2(1, dec1, "3", m3, 7.56,
+      Data(2, "8", Decimal("23.82")), dec1(0), ts(0))
     val data3 = ComplexData3(1, dec1, "3", m2, 7.56, Data2(2, "8", "3"),
       dec1(0), ts(0))
 
@@ -415,9 +436,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     // ClassCastException in generated code
     try {
       serializers(2).serialize(data3.col6)
-      Assert.fail("Expected a ClassCastException")
+      Assert.fail("Expected an IllegalArgumentException")
     } catch {
-      case _: ClassCastException => // expected
+      case _: IllegalArgumentException => // expected
     }
     // ... but same should fail properly with validateAll
     try {
@@ -444,9 +465,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     serializers(2).serialize(data2.col6)
     try {
       serializers(2).serialize(data3.col6)
-      Assert.fail("Expected a ClassCastException")
+      Assert.fail("Expected an IllegalArgumentException")
     } catch {
-      case _: ClassCastException => // expected
+      case _: IllegalArgumentException => // expected
     }
   }
 
@@ -490,11 +511,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
       numResults match {
         case 0 =>
-          println(s"Row1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
+          logInfo(s"Row1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
         case 1 =>
-          println(s"Row2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
+          logInfo(s"Row2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
         case 2 =>
-          println(s"Row3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
+          logInfo(s"Row3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
         case _ =>
       }
       numResults += 1
@@ -511,7 +532,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     checkComplexTypesAsClob(rs, expectedLength)
   }
 
-  private def checkComplexTypesAsClob(rs: ResultSet, expectedLength: Int): Unit = {
+  private def checkComplexTypesAsClob(rs: ResultSet,
+      expectedLength: Int): Unit = {
     var numResults = 0
     while (rs.next()) {
       // check access to complex types in different ways
@@ -529,11 +551,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
       numResults match {
         case 0 =>
-          println(s"CRow1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
+          logInfo(s"CRow1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
         case 1 =>
-          println(s"CRow2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
+          logInfo(s"CRow2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
         case 2 =>
-          println(s"CRow3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
+          logInfo(s"CRow3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
         case _ =>
       }
 
@@ -545,11 +567,13 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 }
 
 case class Data2(col1: Int, col2: String, col3: String)
-case class Data3(col1: Int, col2: Int, col3: Int)
+
+case class Data3(col1: Int, col2: Int, col3: Decimal)
 
 case class ComplexData2(col1: Int, col2: Array[Decimal], col3: String,
     col4: Map[Timestamp, Data3], col5: Double, col6: Data, col7: Decimal,
     col8: Timestamp)
+
 case class ComplexData3(col1: Int, col2: Array[Decimal], col3: String,
     col4: Map[Timestamp, Data], col5: Double, col6: Data2, col7: Decimal,
     col8: Timestamp)

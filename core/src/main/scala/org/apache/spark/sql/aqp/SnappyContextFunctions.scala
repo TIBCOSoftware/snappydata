@@ -49,7 +49,7 @@ class SnappyContextFunctions {
 
   def createTopK(session: SnappySession, tableName: String,
       keyColumnName: String, schema: StructType,
-      topkOptions: Map[String, String], ifExists: Boolean): Unit =
+      topkOptions: Map[String, String], ifExists: Boolean): Boolean =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def dropTopK(session: SnappySession, topKName: String): Unit =

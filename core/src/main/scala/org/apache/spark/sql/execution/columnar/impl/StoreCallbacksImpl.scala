@@ -127,18 +127,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
-    partioner.hashValue(dvd, numPartitions)
+    partioner.computeHash(dvd, numPartitions)
   }
 
-  override def getHashCodeSnappy(dvds: scala.Array[Object], numPartitions: Int): Int = {
-    partioner.hashValue(dvds, numPartitions)
+  override def getHashCodeSnappy(dvds: scala.Array[Object],
+      numPartitions: Int): Int = {
+    partioner.computeHash(dvds, numPartitions)
   }
 
   override def haveRegisteredExternalStore(tableName: String): Boolean = {
-    // TODO -  remove below that deals with default schema and all
+    // TODO: SW: remove below that deals with default schema and all
     stores.contains(tableName)
   }
-
 }
 
 trait StoreCallback extends Serializable {

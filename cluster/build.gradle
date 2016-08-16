@@ -1,11 +1,27 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir 'src/main/java'
-sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
-                                  'src/dunit/java', 'src/dunit/scala' ]
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = [ ]
 
@@ -69,15 +85,15 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
   doLast {
 
     def props = [
-      "Product-Name"      : productName,
-      "Product-Version"   : version,
-      "Build-Id"          : System.env.USER + ' ' + buildNumber,
-      "Build-Date"        : buildDate,
-      "Build-Platform"    : osName.getName() + osVersion + osArch,
-      "Build-Java-Version": jdkVersion,
-      "Source-Date"       : sourceDate,
-      "Source-Revision"   : commitId,
-      "Source-Repository" : gitBranch,
+      'Product-Name'      : productName,
+      'Product-Version'   : version,
+      'Build-Id'          : System.env.USER + ' ' + buildNumber,
+      'Build-Date'        : buildDate,
+      'Build-Platform'    : osName.getName() + osVersion + osArch,
+      'Build-Java-Version': jdkVersion,
+      'Source-Date'       : sourceDate,
+      'Source-Revision'   : commitId,
+      'Source-Repository' : gitBranch,
     ]
 
    writeProperties(propertiesDir, 'SnappyDataVersion.properties',
@@ -162,3 +178,5 @@ scalaTest {
   }
 }
 check.dependsOn test, scalaTest, dunitTest
+
+archivesBaseName = 'snappydata-cluster'

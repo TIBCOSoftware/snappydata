@@ -71,14 +71,14 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
   }
 
   test("test the shadow table with NOT NULL Column") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-    intercept[AnalysisException] {
-      snc.sql(s"CREATE TABLE $tableName(Key1 INT NOT NULL ,Value STRING) " +
-          "USING column " +
-          "options " +
-          "(" +
-          "BUCKETS '100')").collect()
-    }
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    snc.sql(s"CREATE TABLE $tableName(Key1 INT NOT NULL ,Value STRING) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "BUCKETS '100')").collect()
+    snc.sql(s"DROP TABLE $tableName")
+
     logInfo("Success")
   }
 
@@ -130,7 +130,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     //      snc.sql("insert into COLUMNTABLE3 VALUES(5,11)")
 
     val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 3)
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies
@@ -173,7 +173,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     //      snc.sql("insert into COLUMNTABLE3 VALUES(4,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(5,11)")
     val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 5)
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies
@@ -217,7 +217,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     snc.sql("insert into COLUMNTABLE7 VALUES(5,11)")
 
     val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 5)
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies

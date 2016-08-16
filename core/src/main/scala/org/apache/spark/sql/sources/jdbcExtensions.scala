@@ -120,8 +120,8 @@ object JdbcExtendedUtils extends Logging {
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })
-      val nullable = if (field.nullable) "" else "NOT NULL"
-      sb.append(s", ${field.name} $typeString $nullable")
+      sb.append(s", ${field.name} $typeString")
+      if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
   }
@@ -282,7 +282,7 @@ object JdbcExtendedUtils extends Logging {
       getConnection: () => Connection,
       table: String,
       iterator: Iterator[InternalRow],
-      rddSchema: StructType,
+      tableSchema: StructType,
       dialect: JdbcDialect,
       batchSize: Int,
       upsert: Boolean): Unit = {
@@ -290,10 +290,10 @@ object JdbcExtendedUtils extends Logging {
       val conn = getConnection()
       var committed = false
       try {
-        val stmt = insertStatement(conn, table, rddSchema, upsert)
+        val stmt = insertStatement(conn, table, tableSchema, upsert)
         try {
           CodeGeneration.executeUpdate(table, stmt, iterator,
-            multipleRows = true, batchSize, rddSchema.fields, dialect)
+            multipleRows = true, batchSize, tableSchema.fields, dialect)
         } finally {
           stmt.close()
         }
@@ -326,15 +326,15 @@ object JdbcExtendedUtils extends Logging {
   def saveTable(
       df: DataFrame,
       table: String,
+      tableSchema: StructType,
       connProperties: ConnectionProperties,
       upsert: Boolean = false): Unit = {
-    val rddSchema = df.schema
     val getConnection: () => Connection = ExternalStoreUtils.getConnector(
       table, connProperties, forExecutor = true)
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
     df.queryExecution.toRdd.foreachPartition { iterator =>
-      savePartition(getConnection, table, iterator, rddSchema,
+      savePartition(getConnection, table, iterator, tableSchema,
         connProperties.dialect, batchSize, upsert)
     }
   }

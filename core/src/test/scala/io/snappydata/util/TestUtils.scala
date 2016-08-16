@@ -22,8 +22,11 @@ import _root_.com.gemstone.gemfire.cache.Region
 import _root_.com.gemstone.gemfire.internal.cache.PartitionedRegion
 import _root_.com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.hive.ExternalTableType
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
 object TestUtils {
 
@@ -35,14 +38,16 @@ object TestUtils {
       try {
         // drop all the stream tables that can have dependents at the end
         // also drop parents in colocated chain last (assuming chain length = 1)
-        val streams = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Stream))
-        val samples = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Sample))
-        // Sample tables need to be dropped first as they depend on Base tables for datasource resolution
+        val ss = snc.sessionState
+        val streams = ss.catalog.getDataSourceTables(Seq(ExternalTableType.Stream))
+        val samples = ss.catalog.getDataSourceTables(Seq(ExternalTableType.Sample))
+        // Sample tables need to be dropped first as they depend on Base tables
+        // for datasource resolution.
         // Temp fix. We need to add parent child relationship between them
         samples.foreach(s => snc.dropTable(s.toString(), ifExists = true))
 
         val parents = mutable.HashSet[String]()
-        val allTables = snc.catalog.getTables(None)
+        val allTables = ss.catalog.getTables(None)
         val allRegions = mutable.HashSet[String]()
         val allTablesWithRegions = allTables.map { t =>
           val table = t._1
@@ -89,5 +94,27 @@ object TestUtils {
     } catch {
       case e: Exception => false
     }
+  }
+
+  def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
+      convertToScalaRow: Boolean): GenericRow = {
+    val ncols = columnIndices.length
+    val newRow = new Array[Any](ncols)
+    var index = 0
+    if (convertToScalaRow) {
+      while (index < ncols) {
+        val colIndex = columnIndices(index)
+        newRow(index) = CatalystTypeConverters.convertToScala(row(colIndex),
+          schema(colIndex).dataType)
+        index += 1
+      }
+    }
+    else {
+      while (index < ncols) {
+        newRow(index) = row(columnIndices(index))
+        index += 1
+      }
+    }
+    new GenericRow(newRow)
   }
 }

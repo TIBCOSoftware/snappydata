@@ -55,10 +55,6 @@ object Utils {
       inverseCumulativeProbability(0.975)
   final val Z95Squared = Z95Percent * Z95Percent
 
-  implicit class StringExtensions(val s: String) extends AnyVal {
-    def normalize: String = toLowerCase(s)
-  }
-
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
     while (index < endP1) {
@@ -135,28 +131,6 @@ object Utils {
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
       module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
-  }
-
-  def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
-      convertToScalaRow: Boolean): GenericRow = {
-    val ncols = columnIndices.length
-    val newRow = new Array[Any](ncols)
-    var index = 0
-    if (convertToScalaRow) {
-      while (index < ncols) {
-        val colIndex = columnIndices(index)
-        newRow(index) = CatalystTypeConverters.convertToScala(row(colIndex),
-          schema(colIndex).dataType)
-        index += 1
-      }
-    }
-    else {
-      while (index < ncols) {
-        newRow(index) = row(columnIndices(index))
-        index += 1
-      }
-    }
-    new GenericRow(newRow)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,

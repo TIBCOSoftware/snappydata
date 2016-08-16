@@ -20,7 +20,6 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{RefData, TestData2}
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
@@ -31,19 +30,11 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    this.stopAll()
   }
 
   override def afterAll(): Unit = {
+    snc.conf.clear()
     super.afterAll()
-    this.stopAll()
-  }
-
-  protected override def newSparkConf(
-      addOn: (SparkConf) => SparkConf): SparkConf = {
-    val conf = super.newSparkConf(addOn)
-    conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
-    conf
   }
 
   val props = Map.empty[String, String]
@@ -51,6 +42,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   test("Replicated table join with PR Table") {
 
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
+    snc.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
     val refDf = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
 

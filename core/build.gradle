@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 plugins {
   id 'com.github.johnrengelman.shadow' version '1.2.3'
   id 'de.undercouch.download' version '3.1.1'
@@ -7,7 +24,7 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
-sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
                                   'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
@@ -100,8 +117,9 @@ scalaTest {
 task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
   outputs.files "${sparkProductDir}.tgz"
 
-  src "https://www.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
+  src "http://redrockdigimark.com/apachemirror/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
   dest sparkDistDir
+  onlyIfNewer true
 
   doFirst {
     mkdir(sparkDistDir)
@@ -134,6 +152,7 @@ test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 check.dependsOn test, scalaTest, dunitTest
 
+archivesBaseName = 'snappydata-core'
 shadowJar {
   zip64 = true
 
@@ -141,17 +160,17 @@ shadowJar {
   exclude 'log4j.properties'
 
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = "SnappyData Build Team"
+    createdBy = 'SnappyData Build Team'
   } else {
-    createdBy = System.getProperty("user.name")
+    createdBy = System.getProperty('user.name')
   }
   manifest {
     attributes(
-      "Manifest-Version"  : "1.0",
-      "Created-By"        : createdBy,
-      "Title"             : "snappydata-core_${scalaBinaryVersion}",
-      "Version"           : version,
-      "Vendor"            : "SnappyData, Inc."
+      'Manifest-Version'  : '1.0',
+      'Created-By'        : createdBy,
+      'Title'             : "snappydata-core_${scalaBinaryVersion}",
+      'Version'           : version,
+      'Vendor'            : 'SnappyData, Inc.'
     )
   }
 }

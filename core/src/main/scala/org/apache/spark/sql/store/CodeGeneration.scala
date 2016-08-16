@@ -22,16 +22,19 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 
+import com.gemstone.gemfire.internal.InternalDataSerializer
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, BufferHolder, GenerateUnsafeProjection}
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodegenContext, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.collection.{Utils, WrappedRow}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
@@ -50,7 +53,7 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
    */
-  private[this] val cache = CacheBuilder.newBuilder().maximumSize(200).build(
+  private[this] val cache = CacheBuilder.newBuilder().maximumSize(100).build(
     new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey) = {
         val start = System.nanoTime()
@@ -91,7 +94,7 @@ object CodeGeneration extends Logging {
   private[this] def getComplexTypeCodeMethod(methodName: String): Method = {
     val method = allMethods.find(_.getName.endsWith(methodName))
         .getOrElse(sys.error(s"Failed to find method $methodName in " +
-            s"GenerateUnsafeProjection (methods=${allMethods.toSeq})"))
+            s"GenerateUnsafeProjection (methods=$allMethods)"))
     method.setAccessible(true)
     method
   }
@@ -101,8 +104,7 @@ object CodeGeneration extends Logging {
     method.invoke(GenerateUnsafeProjection, typeArgs: _*).asInstanceOf[String]
 
   private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
-      dialect: JdbcDialect, ctx: CodegenContext,
-      buffHolderVar: String): (String, String) = {
+      dialect: JdbcDialect, ctx: CodegenContext): (String, String) = {
     val nonNullCode: String = dataType match {
       case IntegerType =>
         s"stmt.setInt(${col + 1}, row.getInt($col));"
@@ -131,39 +133,56 @@ object CodeGeneration extends Logging {
       case d: DecimalType => s"""
         stmt.setBigDecimal(${col + 1},
           row.getDecimal($col, ${d.precision}, ${d.scale}).toJavaBigDecimal());"""
-      case a: ArrayType => s"""
+      case a: ArrayType => val buffVar = getBufferHolderVar(col)
+        // below is added only once while same buffer is used for all rows
+        // so it has to be reset everytime in code that sets $.cursor below
+        ctx.addMutableState(classOf[BufferHolder].getName, buffVar,
+          s"$buffVar = new BufferHolder(new UnsafeRow());"); s"""
         final ArrayData arr = row.getArray($col);
-        if ($buffHolderVar == null) {
-          $buffHolderVar = new BufferHolder();
+        if (arr instanceof UnsafeArrayData) {
+          final UnsafeArrayData unsafeArray = (UnsafeArrayData)arr;
+          final byte[] bytes = new byte[unsafeArray.getSizeInBytes()];
+          unsafeArray.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+          stmt.setBytes(${col + 1}, bytes);
         } else {
-          $buffHolderVar.reset();
-        }
-        ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
-          a.elementType, buffHolderVar)}
-        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
-            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
-      case m: MapType => s"""
+          $buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
+          ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
+            a.elementType, buffVar)}
+          stmt.setBytes(${col + 1}, Arrays.copyOf(
+              $buffVar.buffer, $buffVar.totalSize()));
+        }"""
+      case m: MapType => val buffVar = getBufferHolderVar(col)
+        ctx.addMutableState(classOf[BufferHolder].getName, buffVar,
+          s"$buffVar = new BufferHolder(new UnsafeRow());"); s"""
         final MapData map = row.getMap($col);
-        if ($buffHolderVar == null) {
-          $buffHolderVar = new BufferHolder();
+        if (map instanceof UnsafeMapData) {
+          final UnsafeMapData unsafeMap = (UnsafeMapData)map;
+          final byte[] bytes = new byte[unsafeMap.getSizeInBytes()];
+          unsafeMap.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+          stmt.setBytes(${col + 1}, bytes);
         } else {
-          $buffHolderVar.reset();
-        }
-        ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
-          m.keyType, m.valueType, buffHolderVar)}
-        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
-           $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
-      case s: StructType => s"""
+          $buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
+          ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
+            m.keyType, m.valueType, buffVar)}
+          stmt.setBytes(${col + 1}, Arrays.copyOf(
+             $buffVar.buffer, $buffVar.totalSize()));
+        }"""
+      case s: StructType => val buffVar = getBufferHolderVar(col)
+        ctx.addMutableState(classOf[BufferHolder].getName, buffVar,
+          s"$buffVar = new BufferHolder(new UnsafeRow(${s.length}));"); s"""
         final InternalRow struct = row.getStruct($col, ${s.length});
-        if ($buffHolderVar == null) {
-          $buffHolderVar = new BufferHolder();
+        if (struct instanceof UnsafeRow) {
+          final UnsafeRow unsafeRow = (UnsafeRow)struct;
+          final byte[] bytes = new byte[unsafeRow.getSizeInBytes()];
+          unsafeRow.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+          stmt.setBytes(${col + 1}, bytes);
         } else {
-          $buffHolderVar.reset();
-        }
-        ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
-          s.fields.map(_.dataType).toSeq, buffHolderVar)}
-        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
-            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
+          $buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
+          ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
+            s.fields.map(_.dataType).toSeq, buffVar)}
+          stmt.setBytes(${col + 1}, Arrays.copyOf(
+              $buffVar.buffer, $buffVar.totalSize()));
+        }"""
       case _ =>
         s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
     }
@@ -171,17 +190,16 @@ object CodeGeneration extends Logging {
         s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
   }
 
+  private[this] def getBufferHolderVar(numFields: Int): String =
+    "bufferHolderForComplexType_" + numFields
+
   private[this] def compilePreparedUpdate(table: String,
       schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
     val ctx = new CodegenContext
-    val bufferHolderVar = ctx.freshName("bufferHolder")
-    val bufferHolderClass = classOf[BufferHolder].getName
-    ctx.addMutableState(bufferHolderClass, bufferHolderVar,
-      s"$bufferHolderVar = null;")
     val sb = new StringBuilder()
     schema.indices.foreach { col =>
       val (nonNullCode, nullCode) = getColumnSetterFragment(col,
-        schema(col).dataType, dialect, ctx, bufferHolderVar)
+        schema(col).dataType, dialect, ctx)
       sb.append(s"""
         if (!row.isNullAt($col)) {
           $nonNullCode
@@ -192,11 +210,12 @@ object CodeGeneration extends Logging {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(Array(bufferHolderClass,
+    evaluator.setDefaultImports(Array(
       DateTimeUtils.getClass.getName.replace("$", ""),
       classOf[Platform].getName,
       classOf[InternalRow].getName,
       classOf[UnsafeRow].getName,
+      classOf[BufferHolder].getName,
       classOf[UTF8String].getName,
       classOf[Decimal].getName,
       classOf[CalendarInterval].getName,
@@ -204,6 +223,7 @@ object CodeGeneration extends Logging {
       classOf[UnsafeArrayData].getName,
       classOf[MapData].getName,
       classOf[UnsafeMapData].getName,
+      classOf[java.util.Arrays].getName,
       classOf[MutableRow].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
@@ -212,13 +232,11 @@ object CodeGeneration extends Logging {
     val expression = s"""
       ${varDeclarations.mkString(separator)}
       int rowCount = 0;
-      int totalRowCount = 0;
       int result = 0;
       while (rows.hasNext()) {
         InternalRow row = (InternalRow)rows.next();
         ${sb.toString()}
         rowCount++;
-        totalRowCount++;
         if (multipleRows) {
           stmt.addBatch();
           if ((rowCount % batchSize) == 0) {
@@ -236,7 +254,7 @@ object CodeGeneration extends Logging {
       }
       return result;"""
 
-    // logInfo(s"DEBUG: For table=table generated code=$expression")
+    // logInfo(s"DEBUG: For table=$table generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[GeneratedStatement],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
         "dialect")).asInstanceOf[GeneratedStatement]
@@ -247,22 +265,89 @@ object CodeGeneration extends Logging {
     val ctx = new CodegenContext
     val inputVar = "value"
     val bufferHolderVar = "bufferHolder"
+    val dosVar = "dos"
     val typeConversion = dataType match {
       case a: ArrayType => s"""
         final ArrayData arr = (ArrayData)$inputVar;
-        ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
-          a.elementType, bufferHolderVar)}
-      """
+        if (arr instanceof UnsafeArrayData) {
+          final UnsafeArrayData unsafeArray = (UnsafeArrayData)arr;
+          final int size = unsafeArray.getSizeInBytes();
+          if ($dosVar != null) {
+            InternalDataSerializer.writeArrayLength(size, $dosVar);
+            $dosVar.copyMemory(unsafeArray.getBaseObject(),
+              unsafeArray.getBaseOffset(), size);
+            return null;
+          } else {
+            final byte[] bytes = new byte[size];
+            unsafeArray.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+            return bytes;
+          }
+        } else {
+          ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
+            a.elementType, bufferHolderVar)}
+          if ($dosVar != null) {
+            InternalDataSerializer.writeByteArray($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize(), $dosVar);
+            return null;
+          } else {
+            return Arrays.copyOf($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize());
+          }
+        }"""
       case m: MapType => s"""
         final MapData map = (MapData)$inputVar;
-        ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
-          m.keyType, m.valueType, bufferHolderVar)}
-      """
+        if (map instanceof UnsafeMapData) {
+          final UnsafeMapData unsafeMap = (UnsafeMapData)map;
+          final int size = unsafeMap.getSizeInBytes();
+          if ($dosVar != null) {
+            InternalDataSerializer.writeArrayLength(size, $dosVar);
+            $dosVar.copyMemory(unsafeMap.getBaseObject(),
+              unsafeMap.getBaseOffset(), size);
+            return null;
+          } else {
+            final byte[] bytes = new byte[size];
+            unsafeMap.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+            return bytes;
+          }
+        } else {
+          ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
+            m.keyType, m.valueType, bufferHolderVar)}
+          if ($dosVar != null) {
+            InternalDataSerializer.writeByteArray($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize(), $dosVar);
+            return null;
+          } else {
+            return Arrays.copyOf($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize());
+          }
+        }"""
       case s: StructType => s"""
         final InternalRow struct = (InternalRow)$inputVar;
-        ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
-          s.fields.map(_.dataType).toSeq, bufferHolderVar)}
-      """
+        if (struct instanceof UnsafeRow) {
+          final UnsafeRow unsafeRow = (UnsafeRow)struct;
+          final int size = unsafeRow.getSizeInBytes();
+          if ($dosVar != null) {
+            InternalDataSerializer.writeArrayLength(size, $dosVar);
+            $dosVar.copyMemory(unsafeRow.getBaseObject(),
+              unsafeRow.getBaseOffset(), size);
+            return null;
+          } else {
+            final byte[] bytes = new byte[size];
+            unsafeRow.writeToMemory(bytes, Platform.BYTE_ARRAY_OFFSET);
+            return bytes;
+          }
+        } else {
+          ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
+            s.fields.map(_.dataType).toSeq, bufferHolderVar)}
+          if ($dosVar != null) {
+            InternalDataSerializer.writeByteArray($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize(), $dosVar);
+            return null;
+          } else {
+            return Arrays.copyOf($bufferHolderVar.buffer,
+              $bufferHolderVar.totalSize());
+          }
+        }"""
       case _ => throw Utils.analysisException(
         s"complex type conversion: unexpected type $dataType")
     }
@@ -280,6 +365,8 @@ object CodeGeneration extends Logging {
       classOf[UnsafeArrayData].getName,
       classOf[MapData].getName,
       classOf[UnsafeMapData].getName,
+      classOf[java.util.Arrays].getName,
+      classOf[InternalDataSerializer].getName,
       classOf[MutableRow].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
@@ -291,7 +378,8 @@ object CodeGeneration extends Logging {
 
     // logInfo(s"DEBUG: For type=$dataType generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[SerializeComplexType],
-      Array(inputVar, bufferHolderVar)).asInstanceOf[SerializeComplexType]
+      Array(inputVar, bufferHolderVar, dosVar))
+        .asInstanceOf[SerializeComplexType]
   }
 
   private[this] def executeUpdate(name: String, stmt: PreparedStatement,
@@ -314,13 +402,12 @@ object CodeGeneration extends Logging {
     val iterator = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
-      private val internalRow = new WrappedRow(schema)
+      private val encoder = RowEncoder(StructType(schema))
 
       override def hasNext: Boolean = baseIterator.hasNext
 
       override def next(): InternalRow = {
-        internalRow.row = baseIterator.next()
-        internalRow
+        encoder.toRow(baseIterator.next())
       }
 
       override def remove(): Unit =
@@ -332,11 +419,9 @@ object CodeGeneration extends Logging {
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
-    val internalRow = new WrappedRow(schema)
-    internalRow.row = row
-    executeUpdate(name, stmt, Collections.singleton(
-      internalRow.asInstanceOf[InternalRow]).iterator(), multipleRows = false,
-      0, schema, dialect)
+    val encoder = RowEncoder(StructType(schema))
+    executeUpdate(name, stmt, Collections.singleton(encoder.toRow(row))
+        .iterator(), multipleRows = false, 0, schema, dialect)
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
@@ -359,7 +444,10 @@ trait GeneratedStatement {
 }
 
 trait SerializeComplexType {
-  def serialize(value: Any, bufferHolder: BufferHolder): Unit
+
+  @throws[java.io.IOException]
+  def serialize(value: Any, bufferHolder: BufferHolder,
+      dos: GfxdHeapDataOutputStream): Array[Byte]
 }
 
 private final class ExecuteKey(val name: String,

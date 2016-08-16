@@ -175,6 +175,11 @@ trait DeletableRelation {
 trait DestroyRelation {
 
   /**
+   * Return true if table already existed when the relation object was created.
+   */
+  def tableExists: Boolean
+
+  /**
    * Truncate the table represented by this relation.
    */
   def truncate(): Unit
@@ -196,7 +201,8 @@ trait IndexableRelation {
     *                     direction of sorting. Direction can be specified as None.
     * @param options Options for indexes. For e.g.
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or
+    *                ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,

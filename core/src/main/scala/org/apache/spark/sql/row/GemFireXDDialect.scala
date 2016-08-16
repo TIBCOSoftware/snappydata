@@ -23,7 +23,6 @@ import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
@@ -39,10 +38,10 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
   JdbcDialects.registerDialect(GemFireXDDialect)
 
   def canHandle(url: String): Boolean =
-      (url.startsWith("jdbc:gemfirexd:") ||
-      url.startsWith("jdbc:snappydata:")) &&
-      !url.startsWith("jdbc:gemfirexd://") &&
-      !url.startsWith("jdbc:snappydata://")
+    (url.startsWith("jdbc:gemfirexd:") ||
+        url.startsWith("jdbc:snappydata:")) &&
+        !url.startsWith("jdbc:gemfirexd://") &&
+        !url.startsWith("jdbc:snappydata://")
 
   override def addExtraDriverProperties(isLoner: Boolean,
       props: Properties): Unit = {
@@ -50,8 +49,6 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
       props.setProperty("host-data", "false")
     }
   }
-
-  override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
 
 /**
@@ -65,10 +62,8 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
   def canHandle(url: String): Boolean =
-      url.startsWith("jdbc:gemfirexd://") ||
-      url.startsWith("jdbc:snappydata://")
-
-  override def getPartitionByClause(col : String): String = s"partition by column($col)"
+    url.startsWith("jdbc:gemfirexd://") ||
+        url.startsWith("jdbc:snappydata://")
 }
 
 abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
@@ -79,25 +74,24 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     GemFireXDClientDialect.getClass
   }
 
-  protected val bitTypeName = "bit".normalize
-  protected val floatTypeName = "float".normalize
-  protected val realTypeName = "real".normalize
-  protected val varcharTypeName = "varchar".normalize
-
   override def getCatalystType(sqlType: Int, typeName: String,
-                      size: Int, md: MetadataBuilder): Option[DataType] = {
-    if (sqlType == Types.FLOAT && typeName.normalize.equals(floatTypeName)) {
+      size: Int, md: MetadataBuilder): Option[DataType] = {
+    if (sqlType == Types.FLOAT && typeName.equalsIgnoreCase("float")) {
       Some(DoubleType)
-    } else if (sqlType == Types.REAL &&
-      typeName.normalize.equals(realTypeName)) {
+    } else if (sqlType == Types.REAL && typeName.equalsIgnoreCase("real")) {
       Some(FloatType)
-    } else if (sqlType == Types.BIT && size > 1 &&
-      typeName.normalize.equals(bitTypeName)) {
-      Some(BinaryType)
-    } else if (sqlType == Types.VARCHAR && size > 1 &&
-        typeName.normalize.equals(varcharTypeName)) {
-      md.putLong("maxlength", size)
+    } else if (sqlType == Types.VARCHAR && size > 0 &&
+        typeName.equalsIgnoreCase("varchar")) {
+      md.putLong("size", size)
       Some(StringType)
+    } else if (sqlType == Types.CHAR && size > 0 &&
+        typeName.equalsIgnoreCase("char")) {
+      md.putLong("size", size)
+      md.putBoolean("fixed", value = true)
+      Some(StringType)
+    } else if (sqlType == Types.BIT && size > 1 &&
+        typeName.equalsIgnoreCase("bit")) {
+      Some(BinaryType)
     } else None
   }
 
@@ -119,15 +113,25 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
    * Look SPARK-10101 issue for similar problem. If the PR raised is
    * ever merged we can remove this method here.
    */
-  override def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = dt match {
+  override def getJDBCType(dt: DataType,
+      md: Metadata): Option[JdbcType] = dt match {
     case StringType =>
-      if (md.contains("maxlength")) {
-        Some(JdbcType(s"VARCHAR(${md.getLong("maxlength")})",
-          java.sql.Types.VARCHAR))
+      if (md.contains("size")) {
+        if (md.contains("fixed") && md.getBoolean("fixed")) {
+          Some(JdbcType(s"CHAR(${md.getLong("size")})",
+            java.sql.Types.CHAR))
+        } else {
+          Some(JdbcType(s"VARCHAR(${md.getLong("size")})",
+            java.sql.Types.VARCHAR))
+        }
       } else {
         Some(JdbcType("CLOB", java.sql.Types.CLOB))
       }
     case _ => getJDBCType(dt)
+  }
+
+  override def getTableExistsQuery(table: String): String = {
+    s"SELECT 1 FROM $table FETCH FIRST ROW ONLY"
   }
 
   override def createSchema(schemaName: String, conn: Connection): Unit = {
@@ -164,4 +168,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
         s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
     }
   }
+
+  override def getPartitionByClause(col: String): String =
+    s"partition by column($col)"
 }

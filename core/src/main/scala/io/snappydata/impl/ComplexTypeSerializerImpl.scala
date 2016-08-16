@@ -76,9 +76,10 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
   private[this] lazy val serializer = CodeGeneration
       .getComplexTypeSerializer(dataType)
 
-  val unsafeRow = new UnsafeRow(1) // As we will be serializing only one field
-
-  private[this] lazy val bufferHolder = new BufferHolder(unsafeRow)
+  private[this] lazy val bufferHolder = struct match {
+    case None => new BufferHolder(new UnsafeRow())
+    case Some(s) => new BufferHolder(new UnsafeRow(s.length))
+  }
 
   private[this] lazy val validatingConverter = ValidatingConverter(dataType,
     table, column)
@@ -88,10 +89,8 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
   @volatile private[this] var validated = false
 
   private[this] def toBytes(v: Any): Array[Byte] = {
-    serializer.serialize(v, bufferHolder)
-    val b = util.Arrays.copyOf(bufferHolder.buffer, bufferHolder.totalSize())
-    bufferHolder.reset()
-    b
+    bufferHolder.cursor = Platform.BYTE_ARRAY_OFFSET
+    serializer.serialize(v, bufferHolder, null)
   }
 
   override def serialize(v: Any, validateAll: Boolean): Array[Byte] = {
@@ -127,8 +126,8 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
         scalaConverter(map).asInstanceOf[Map[_, _]].asJava
       }
     case Some(s) =>
-      val row = new UnsafeRow
-      row.pointTo(bytes, length)
+      val row = new UnsafeRow(s.length)
+      row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
       scalaConverter(row) match {
         case g: GenericRow =>
           java.util.Arrays.asList(Utils.getGenericRowValues(g): _*)

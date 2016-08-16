@@ -31,10 +31,13 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.execution.LogicalRDD
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
@@ -103,10 +106,20 @@ class SnappySession(@transient private val sc: SparkContext,
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
-   * A wrapped version of this session in the form of a [[SQLContext]], for backward compatibility.
+   * A wrapped version of this session in the form of a [[SQLContext]],
+   * for backward compatibility.
    */
   @transient
   private[spark] val snappyContext: SnappyContext = new SnappyContext(this)
+
+  /**
+   * A wrapped version of this session in the form of a [[SQLContext]],
+   * for backward compatibility.
+   *
+   * @since 2.0.0
+   */
+  @transient
+  override val sqlContext: SnappyContext = snappyContext
 
   /**
    * Start a new session with isolated SQL configurations, temporary tables, registered
@@ -222,6 +235,30 @@ class SnappySession(@transient private val sc: SparkContext,
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
       }
     }
+  }
+
+
+  /**
+   * Creates a [[DataFrame]] from an RDD[Row]. User can specify whether
+   * the input rows should be converted to Catalyst rows.
+   */
+  override private[sql] def createDataFrame(
+      rowRDD: RDD[Row],
+      schema: StructType,
+      needsConversion: Boolean) = {
+    // TODO: use MutableProjection when rowRDD is another DataFrame and the applied
+    // schema differs from the existing schema on any field data type.
+    val catalystRows = if (needsConversion) {
+      val encoder = RowEncoder(schema)
+      rowRDD.map {
+        case r: WrappedInternalRow => r.internalRow
+        case r => encoder.toRow(r)
+      }
+    } else {
+      rowRDD.map(r => InternalRow.fromSeq(r.toSeq))
+    }
+    val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
+    Dataset.ofRows(self, logicalPlan)
   }
 
 
@@ -688,6 +725,7 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+    var relationSchema: Option[StructType] = None
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
 
@@ -697,17 +735,19 @@ class SnappySession(@transient private val sc: SparkContext,
 
       case None =>
         // add allowExisting in properties used by some implementations
-        DataSource(
+        val r = DataSource(
           self,
           userSpecifiedSchema = schema,
           className = source,
           options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
+        relationSchema = Some(r.schema)
+        r
     }
 
     val plan = LogicalRelation(relation)
-    sessionCatalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
-      source, params, relation)
+    sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
+      Array.empty[String], source, params, relation)
     snappyContextFunctions.postRelationCreation(relation, this)
     plan
   }
@@ -726,8 +766,24 @@ class SnappySession(@transient private val sc: SparkContext,
       query: LogicalPlan,
       isBuiltIn: Boolean): LogicalPlan = {
 
-    var data = Dataset.ofRows(this, query)
-    if (sessionCatalog.tableExists(tableIdent)) {
+    // add tableName in properties if not already present
+    // add allowExisting in properties used by some implementations
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
+      dbtableProp))) {
+      options
+    }
+    else {
+      options + (dbtableProp -> tableIdent.toString)
+    } + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
+        (mode != SaveMode.ErrorIfExists).toString)
+
+    val source = if (isBuiltIn) SnappyContext.getProvider(provider,
+      onlyBuiltIn = true)
+    else provider
+    val overwrite = mode == SaveMode.Overwrite
+
+    val insertRelation = if (sessionCatalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(s"Table $tableIdent already exists. " +
@@ -736,75 +792,60 @@ class SnappySession(@transient private val sc: SparkContext,
         case SaveMode.Ignore =>
           return sessionCatalog.lookupRelation(tableIdent, None)
         case _ =>
-          // existing table schema could have nullable columns
-          val schema = data.schema
-          if (schema.exists(!_.nullable)) {
-            data = internalCreateDataFrame(data.queryExecution.toRdd,
-              schema.asNullable)
+          val schema = query.schema
+          // Check if the specified data source match the data source
+          // of the existing table.
+          EliminateSubqueryAliases(
+            sessionState.catalog.lookupRelation(tableIdent)) match {
+            case l@LogicalRelation(ir: InsertableRelation, _, _) =>
+              if (schema.size != l.schema.size) {
+                throw new AnalysisException(
+                  s"The column number of the existing schema[${l.schema}] " +
+                      s"doesn't match the data schema[$schema]'s")
+              }
+              Some(ir)
+
+            case o => throw new AnalysisException(
+              s"Saving data in ${o.toString} is not supported.")
           }
       }
-    }
+    } else None
 
-    // add tableName in properties if not already present
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
-      dbtableProp))) {
-      options
-    }
-    else {
-      options + (dbtableProp -> tableIdent.toString)
-    }
-
-    val source = if (isBuiltIn) SnappyContext.getProvider(provider,
-      onlyBuiltIn = true) else provider
-    val overwrite = mode == SaveMode.Overwrite
-
-    val relation = schemaDDL match {
-      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params, Some(query))
+    val (relation, schema) = schemaDDL match {
+      case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
+        cols, source, mode, params, Some(query)), None)
 
       case None =>
-        // add allowExisting in properties used by some implementations
-        val options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
-            (mode != SaveMode.ErrorIfExists).toString)
-        userSpecifiedSchema match {
-          case Some(_) =>
-            val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+        val data = Dataset.ofRows(this, query)
+        insertRelation match {
+          case Some(ir) =>
             var success = false
-            val rel = DataSource(self,
-              userSpecifiedSchema = schema,
-              partitionColumns = partitionColumns,
-              className = source,
-              options = options).resolveRelation(true)
             try {
-              rel match {
-                case i: InsertableRelation => i.insert(data, overwrite)
-                  success = true
-                case r => throw new AnalysisException(
-                  s"${r.getClass.getCanonicalName} does not allow inserts.")
-              }
+              ir.insert(data, overwrite)
+              success = true
+              (ir, Some(ir.schema))
             } finally {
-              if (!success && rel.isInstanceOf[DestroyRelation]) {
-                rel.asInstanceOf[DestroyRelation].destroy(ifExists = false)
+              if (!success) ir match {
+                case dr: DestroyRelation =>
+                  if (!dr.tableExists) dr.destroy(ifExists = false)
+                case _ =>
               }
             }
-            rel
-
-          case None => DataSource(self,
-            partitionColumns = partitionColumns,
-            className = source,
-            options = options).write(mode, data)
+          case None =>
+            val r = DataSource(self,
+              partitionColumns = partitionColumns,
+              className = source,
+              options = params).write(mode, data)
+            (r, Some(r.schema))
         }
     }
 
-    if (sessionCatalog.tableExists(tableIdent) && overwrite) {
-      // uncache the previous results and don't register again
-      cacheManager.uncacheQuery(data)
-    } else {
-      sessionCatalog.registerDataSourceTable(tableIdent, Some(data.schema),
+    // need to register if not existing in catalog
+    if (insertRelation.isEmpty || overwrite) {
+      sessionCatalog.registerDataSourceTable(tableIdent, schema,
         partitionColumns, source, params, relation)
+      snappyContextFunctions.postRelationCreation(relation, this)
     }
-    snappyContextFunctions.postRelationCreation(relation, this)
     LogicalRelation(relation)
   }
 
@@ -1185,12 +1226,12 @@ class SnappySession(@transient private val sc: SparkContext,
    *
    * @param tableName  table name
    * @param filterExpr SQL WHERE criteria to select rows that will be updated
-   * @return  number of rows deleted
+   * @return number of rows deleted
    */
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(d: DeletableRelation, _ , _) => d.delete(filterExpr)
+      case LogicalRelation(d: DeletableRelation, _, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }

@@ -118,7 +118,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
     val sqlContext = relation.relation.sqlContext
 
     val joinedCols = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sparkSession.sessionState.analyzer.resolver)
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse {
       throw new AnalysisException(
         s"""Cannot resolve column name "$colName" among (${relation.output})""")

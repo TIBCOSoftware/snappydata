@@ -45,11 +45,6 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val conf: SQLConf = new SQLConf {
-    override def caseSensitiveAnalysis: Boolean =
-      getConf(SQLConf.CASE_SENSITIVE, false)
-  }
-
   override lazy val analyzer: Analyzer = {
     new Analyzer(catalog, conf) {
       override val extendedResolutionRules =

@@ -34,7 +34,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
-import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
@@ -166,41 +165,48 @@ class SnappyParser(session: SnappySession)
     // follow the behavior in MS SQL Server
     // https://msdn.microsoft.com/en-us/library/ms179899.aspx
     if (scientific) {
-      Literal(s.toDouble)
+      Literal(s.toDouble, DoubleType)
     } else {
-      Literal(new java.math.BigDecimal(s, BigDecimal.defaultMathContext))
+      val decimal = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
+      // try to use SYSTEM_DEFAULT instead of creating new DecimalType which
+      // is expensive (due to typeTag etc resolved by reflection in AtomicType)
+      val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+      if (decimal.precision <= sysDefaultType.precision &&
+        decimal.scale <= sysDefaultType.scale) {
+        Literal(Decimal(decimal), sysDefaultType)
+      } else {
+        Literal(decimal)
+      }
     }
   }
 
   private def toNumericLiteral(s: String): Literal = {
     // quick pass through the string to check for floats
-    var decimal = false
+    var noDecimalPoint = true
     var index = 0
     val len = s.length
+    // use double if ending with 'D'
+    if (s.charAt(len - 1) == 'D') {
+      return Literal(s.toDouble, DoubleType)
+    }
     while (index < len) {
       val c = s.charAt(index)
-      if (!decimal) {
-        if (c == '.') {
-          decimal = true
-        } else if (c == 'e' || c == 'E') {
-          return toDecimalOrDoubleLiteral(s, scientific = true)
-        }
+      if (noDecimalPoint && c == '.') {
+        noDecimalPoint = false
       } else if (c == 'e' || c == 'E') {
         return toDecimalOrDoubleLiteral(s, scientific = true)
       }
       index += 1
     }
-    if (decimal) {
-      toDecimalOrDoubleLiteral(s, scientific = false)
-    } else {
+    if (noDecimalPoint) {
       // case of integral value
       // most cases should be handled by Long, so try that first
       try {
         val longValue = java.lang.Long.parseLong(s)
         if (longValue >= Int.MinValue && longValue <= Int.MaxValue) {
-          Literal(longValue.toInt)
+          Literal(longValue.toInt, IntegerType)
         } else {
-          Literal(longValue)
+          Literal(longValue, LongType)
         }
       } catch {
         case nfe: NumberFormatException =>
@@ -208,11 +214,17 @@ class SnappyParser(session: SnappySession)
           if (decimal.isValidInt) {
             Literal(decimal.toIntExact)
           } else if (decimal.isValidLong) {
-            Literal(decimal.toLongExact)
+            Literal(decimal.toLongExact, LongType)
           } else {
-            Literal(decimal)
+            val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+            if (decimal.precision <= sysDefaultType.precision &&
+              decimal.scale <= sysDefaultType.scale) {
+              Literal(decimal, sysDefaultType)
+            } else Literal(decimal)
           }
       }
+    } else {
+      toDecimalOrDoubleLiteral(s, scientific = false)
     }
   }
 
@@ -222,7 +234,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric.+) ~ delimiter ~>
+    capture(plusOrMinus.? ~ Consts.numeric.+ ~ 'D'.?) ~ delimiter ~>
         ((s: String) => toNumericLiteral(s))
   }
 
@@ -243,44 +255,44 @@ class SnappyParser(session: SnappySession)
     atomic(ignoreCase(k.lower) ~ Consts.plural.?) ~ delimiter
   }
 
-  protected def month: Rule1[Int] = rule {
+  protected final def month: Rule1[Int] = rule {
     integral ~ MONTH ~> ((num: String) => num.toInt)
   }
 
-  protected def year: Rule1[Int] = rule {
+  protected final def year: Rule1[Int] = rule {
     integral ~ YEAR ~> ((num: String) => num.toInt * 12)
   }
 
-  protected def microsecond: Rule1[Long] = rule {
+  protected final def microsecond: Rule1[Long] = rule {
     integral ~ (MICROS | MICROSECOND) ~> ((num: String) => num.toLong)
   }
 
-  protected def millisecond: Rule1[Long] = rule {
+  protected final def millisecond: Rule1[Long] = rule {
     integral ~ (MILLIS | MILLISECOND) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_MILLI)
   }
 
-  protected def second: Rule1[Long] = rule {
+  protected final def second: Rule1[Long] = rule {
     integral ~ (SECS | SECOND) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_SECOND)
   }
 
-  protected def minute: Rule1[Long] = rule {
+  protected final def minute: Rule1[Long] = rule {
     integral ~ (MINS | MINUTE) ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_MINUTE)
   }
 
-  protected def hour: Rule1[Long] = rule {
+  protected final def hour: Rule1[Long] = rule {
     integral ~ HOUR ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_HOUR)
   }
 
-  protected def day: Rule1[Long] = rule {
+  protected final def day: Rule1[Long] = rule {
     integral ~ DAY ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_DAY)
   }
 
-  protected def week: Rule1[Long] = rule {
+  protected final def week: Rule1[Long] = rule {
     integral ~ WEEK ~> ((num: String) =>
       num.toLong * CalendarInterval.MICROS_PER_WEEK)
   }
@@ -374,10 +386,10 @@ class SnappyParser(session: SnappySession)
         ) |
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
+        invertibleExpression |
         IS ~ (NOT ~> trueFn).? ~ NULL ~>
             ((e: Expression, not: Option[Boolean]) =>
               if (not.isEmpty) IsNull(e) else IsNotNull(e)) |
-        invertibleExpression |
         NOT ~ invertibleExpression ~> Not |
         (RLIKE | REGEXP) ~ termExpression ~> RLike |
         NOT ~ (RLIKE | REGEXP) ~ termExpression ~>
@@ -434,7 +446,7 @@ class SnappyParser(session: SnappySession)
     ).*
   }
 
-  protected def durationUnit: Rule1[Duration] = rule {
+  protected final def durationUnit: Rule1[Duration] = rule {
     integral ~ (
         (MILLIS | MILLISECOND) ~> ((s: String) => Milliseconds(s.toInt)) |
         (SECS | SECOND) ~> ((s: String) => Seconds(s.toInt)) |
@@ -442,7 +454,7 @@ class SnappyParser(session: SnappySession)
     )
   }
 
-  protected def windowOptions: Rule1[(Duration, Option[Duration])] = rule {
+  protected final def windowOptions: Rule1[(Duration, Option[Duration])] = rule {
     WINDOW ~ '(' ~ ws ~ DURATION ~ durationUnit ~ (',' ~ ws ~
         SLIDE ~ durationUnit).? ~ ')' ~ ws ~>
         ((d: Duration, s: Option[Duration]) => (d, s))
@@ -472,11 +484,14 @@ class SnappyParser(session: SnappySession)
 
   protected final def joinType: Rule1[JoinType] = rule {
     INNER ~> (() => Inner) |
-    LEFT ~ OUTER.? ~> (() => LeftOuter) |
-    LEFT ~ SEMI ~> (() => LeftSemi) |
+    LEFT ~ (
+        SEMI ~> (() => LeftSemi) |
+        ANTI ~> (() => LeftAnti) |
+        OUTER.? ~> (() => LeftOuter)
+    ) |
     RIGHT ~ OUTER.? ~> (() => RightOuter) |
     FULL ~ OUTER.? ~> (() => FullOuter) |
-    LEFT.? ~ ANTI ~> (() => LeftAnti)
+    ANTI ~> (() => LeftAnti)
   }
 
   protected final def sortDirection: Rule1[SortDirection] = rule {
@@ -543,8 +558,8 @@ class SnappyParser(session: SnappySession)
         '(' ~ ws ~ (
             '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
               if (udfName == "COUNT") {
-                AggregateExpression(Count(Literal(1)), mode = Complete,
-                  isDistinct = false)
+                AggregateExpression(Count(Literal(1, IntegerType)),
+                  mode = Complete, isDistinct = false)
               } else {
                 throw Utils.analysisException(s"invalid expression $udfName(*)")
               }) |
@@ -698,7 +713,9 @@ class SnappyParser(session: SnappySession)
         colParser.parseSQL(schemaString, colParser.tableColsOrNone.run())
             .map(StructType(_))
       }
-      val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
+      val schemaDDL = if (hasExternalSchema && schemaString.length > 0) {
+        Some(schemaString)
+      } else None
 
       remaining._3 match {
         case Some(queryPlan) =>
@@ -739,22 +756,27 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected def tableEnd2: Rule1[TableEnd] = rule {
-    (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~ (AS ~ query).? ~ ws ~
-        &((';' ~ ws).* ~ EOI) ~> ((provider: Option[String],
+  protected final def beforeDDLEnd: Rule0 = rule {
+    noneOf("uUoOaA-/")
+  }
+
+  protected final def ddlEnd: Rule1[TableEnd] = rule {
+    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~ (AS ~ query).? ~
+        ws ~ &((';' ~ ws).* ~ EOI) ~> ((provider: Option[String],
         options: Option[Map[String, String]],
         asQuery: Option[LogicalPlan]) => (provider, options, asQuery))
   }
 
-  protected def tableEnd1: Rule[StringBuilder :: HNil,
+  protected final def tableEnd1: Rule[StringBuilder :: HNil,
       StringBuilder :: TableEnd :: HNil] = rule {
-    tableEnd2 ~> ((s: StringBuilder, end: TableEnd) => s :: end :: HNil) |
-    (capture(ANY ~ Consts.ddlEnd.*) ~> ((s: StringBuilder, n: String) =>
+    ddlEnd.asInstanceOf[Rule[StringBuilder :: HNil,
+        StringBuilder :: TableEnd :: HNil]] |
+    (capture(ANY ~ beforeDDLEnd.*) ~> ((s: StringBuilder, n: String) =>
       s.append(n))) ~ tableEnd1
   }
 
-  protected def tableEnd: Rule2[StringBuilder, TableEnd] = rule {
-    (capture(Consts.ddlEnd.*) ~> ((s: String) =>
+  protected final def tableEnd: Rule2[StringBuilder, TableEnd] = rule {
+    (capture(beforeDDLEnd.*) ~> ((s: String) =>
       new StringBuilder().append(s))) ~ tableEnd1
   }
 
@@ -777,7 +799,8 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected def colsWithDirection: Rule1[Map[String, Option[SortDirection]]] = rule {
+  protected final def colsWithDirection: Rule1[Map[String,
+    Option[SortDirection]]] = rule {
     '(' ~ ws ~ (identifier ~ sortDirection.? ~> ((id: String,
         direction: Option[SortDirection]) => (id, direction))).*(',' ~ ws) ~ ws ~
         ')' ~ ws ~> ((cols: Seq[(String, Option[SortDirection])]) => cols.toMap)
@@ -821,8 +844,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def streamContext: Rule1[LogicalPlan] = rule {
-    STREAMING ~ (INIT ~> (() => 0) | START ~> (() => 1) | STOP ~> (() => 2)) ~
-        durationUnit ~ ws ~> SnappyStreamingActionsCommand
+    STREAMING ~ (
+      INIT ~ durationUnit ~> ((batchInterval: Duration) =>
+        SnappyStreamingActionsCommand(0, Some(batchInterval))) |
+      START ~> (() => SnappyStreamingActionsCommand(1, None)) |
+      STOP ~> (() => SnappyStreamingActionsCommand(2, None))
+    )
   }
 
   /*
@@ -918,18 +945,18 @@ class SnappyParser(session: SnappySession)
         (COMMENT ~ stringLiteral).? ~> { (columnName: String,
         t: DataType, notNull: Option[Option[Boolean]], cm: Option[String]) =>
       val builder = new MetadataBuilder()
-      val empty = t match {
-        case CharType(size, fixed) => builder.putString("size", size.toString)
-            .putString("fixed", fixed.toString)
-          false
-        case _ => true
+      val (dataType, empty) = t match {
+        case CharType(size, fixed) =>
+          builder.putLong("size", size).putBoolean("fixed", fixed)
+          (StringType, false)
+        case _ => (t, true)
       }
       val metadata = cm match {
         case Some(comment) => builder.putString(
           Consts.COMMENT.lower, comment).build()
         case None => if (empty) Metadata.empty else builder.build()
       }
-      StructField(columnName, t, notNull.isEmpty ||
+      StructField(columnName, dataType, notNull.isEmpty ||
           notNull.get.isEmpty, metadata)
     }
   }
@@ -939,7 +966,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def tableColsOrNone: Rule1[Option[Seq[StructField]]] = rule {
-    tableCols ~> (Some(_)) | ws ~> (() => None)
+    (tableCols ~> (Some(_)) | ws ~> (() => None)) ~ EOI
   }
 
   protected final def pair: Rule1[(String, String)] = rule {
@@ -998,7 +1025,7 @@ private[sql] case class CreateMetastoreTableUsing(
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    snc.createTable(snc.sessionState.catalog
         .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
       schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
     Seq.empty
@@ -1020,7 +1047,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val catalog = snc.sessionState.catalog
     if (temporary) {
       // the equivalent of a registerTempTable of a DataFrame
       if (tableIdent.database.isDefined) {
@@ -1043,7 +1070,7 @@ private[sql] case class DropTable(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val catalog = snc.sessionState.catalog
     snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists)
     Seq.empty
   }
@@ -1054,7 +1081,7 @@ private[sql] case class TruncateTable(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val catalog = snc.sessionState.catalog
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent))
     Seq.empty
   }
@@ -1067,7 +1094,7 @@ private[sql] case class CreateIndex(indexName: TableIdentifier,
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val catalog = snc.sessionState.catalog
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.createIndex(indexIdent, tableIdent, indexColumns, options)
@@ -1081,7 +1108,7 @@ private[sql] case class DropIndex(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
+    val catalog = snc.sessionState.catalog
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.dropIndex(indexIdent, ifExists)
     Seq.empty
@@ -1107,12 +1134,13 @@ private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {
 }
 
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Duration) extends RunnableCommand {
+    batchInterval: Option[Duration]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
 
     def creatingFunc(): SnappyStreamingContext = {
-      new SnappyStreamingContext(session.sparkContext, batchInterval)
+      // batchInterval will always be defined when action == 0
+      new SnappyStreamingContext(session.sparkContext, batchInterval.get)
     }
 
     action match {
@@ -1131,7 +1159,7 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
             "Streaming Context has not been initialized")
         }
       case 2 =>
-        val ssc = SnappyStreamingContext.getActive()
+        val ssc = SnappyStreamingContext.getActive
         ssc match {
           case Some(strCtx) => strCtx.stop(stopSparkContext = false,
             stopGracefully = true)

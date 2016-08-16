@@ -46,7 +46,7 @@ case class JDBCAppendableRelation(
     table: String,
     provider: String,
     mode: SaveMode,
-    userSchema: StructType,
+    override val schema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)
@@ -59,7 +59,10 @@ case class JDBCAppendableRelation(
   with Serializable {
 
   self =>
+
   override val needConversion: Boolean = false
+
+  var tableExists: Boolean = _
 
   protected final val connProperties = externalStore.connProperties
 
@@ -75,7 +78,7 @@ case class JDBCAppendableRelation(
 
   protected final def dialect = connProperties.dialect
 
-  val schemaFields = Utils.schemaFields(userSchema)
+  val schemaFields = Utils.schemaFields(schema)
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)
@@ -99,8 +102,6 @@ case class JDBCAppendableRelation(
       lock.unlock()
     }
   }
-
-  override def schema: StructType = userSchema
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
@@ -150,8 +151,6 @@ case class JDBCAppendableRelation(
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
       overwrite: Boolean): Unit = {
 
-    assert(df.schema.equals(schema))
-
     // We need to truncate the table
     if (overwrite) {
       truncate()
@@ -191,7 +190,7 @@ case class JDBCAppendableRelation(
   def createTable(mode: SaveMode): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
@@ -226,9 +225,9 @@ case class JDBCAppendableRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
-        "stats blob, " + userSchema.fields.map(structField => externalStore.columnPrefix +
-        structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy",
+        "stats blob, " + schema.fields.map(structField =>
+        externalStore.columnPrefix + structField.name + " blob")
+        .mkString(", ") + s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
   }
 
@@ -341,7 +340,7 @@ class ColumnarRelationProvider
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -369,7 +368,7 @@ class ColumnarRelationProvider
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }
