@@ -102,7 +102,6 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
       conn => {
         val resolvedName = ExternalStoreUtils.lookupName(tableName,
           conn.getSchema)
-        val par = split.index
         val ps1 = conn.prepareStatement(
           "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
         ps1.setString(1, resolvedName)
@@ -182,15 +181,22 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     val conn: Connection = helper.getConnection(
       connProperties, thePart)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+
     // TODO: this will fail if no network server is available unless SNAP-365 is
     // fixed with the approach of having an iterator that can fetch from remote
-    val ps = conn.prepareStatement(
-      "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
-    ps.setString(1, resolvedName)
-    ps.setString(2, "" + thePart.index)
-    ps.executeUpdate()
-    ps.close()
-
+    if(isPartitioned) {
+      val ps = conn.prepareStatement(
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+      ps.setString(1, resolvedName)
+      val partition = thePart.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
+      var bucketString = ""
+      partition.buckets.foreach(bucket => {
+        bucketString = bucketString + bucket + ","
+      })
+      ps.setString(2, bucketString.substring(0, bucketString.length - 1))
+      ps.executeUpdate()
+      ps.close()
+    }
     val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
 
     val args = filterWhereArgs

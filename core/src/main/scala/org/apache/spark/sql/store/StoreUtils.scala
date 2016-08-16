@@ -32,8 +32,8 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.collection.generic.Growable
+import scala.collection.mutable
 
 
 object StoreUtils extends Logging {
@@ -117,16 +117,14 @@ object StoreUtils extends Logging {
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember, mutable.HashSet[Int]]()
     var totalBuckets = new mutable.HashSet[Int]()
     for (p <- 0 until numBuckets) {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-      distMembers foreach (m => {
-        var bucketSet = new mutable.HashSet[Int]()
-        if (serverToBuckets contains m) {
-          bucketSet = serverToBuckets.get(m).get
-        }
-        bucketSet += p
-        totalBuckets += p
-        serverToBuckets put(m, bucketSet)
-      })
+      val owner = region.getBucketPrimary(p)
+      val bucketSet = {
+        if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
+        else new mutable.HashSet[Int]()
+      }
+      bucketSet += p
+      totalBuckets += p
+      serverToBuckets put(owner, bucketSet)
     }
     val numCores = Runtime.getRuntime.availableProcessors()
     val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
@@ -142,29 +140,28 @@ object StoreUtils extends Logging {
     serverToBuckets foreach (e => {
       var numCoresPending = numCores
       var localBuckets = e._2
-      assert(!localBuckets.isEmpty)
       var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
       assert(maxBucketsPerPart >= 1)
-      while (partCnt <= numPartitions && !localBuckets.isEmpty) {
-        var cntr = 0;
-        val bucketsPerPart = new mutable.HashSet[Int]()
-        maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
-        assert(maxBucketsPerPart >= 1)
-        while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
-          val buck = localBuckets.head
-          bucketsPerPart += buck
-          localBuckets = localBuckets - buck
-          totalBuckets = totalBuckets - buck
-          cntr += 1
+        while (partCnt <= numPartitions && !localBuckets.isEmpty) {
+          var cntr = 0;
+          val bucketsPerPart = new mutable.HashSet[Int]()
+          maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
+          assert(maxBucketsPerPart >= 1)
+          while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
+            val buck = localBuckets.head
+            bucketsPerPart += buck
+            localBuckets = localBuckets - buck
+            totalBuckets = totalBuckets - buck
+            cntr += 1
+          }
+          val perfNodes = new mutable.HashSet[BlockManagerId]()
+          perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
+          val prefNodeSeq = perfNodes.toSeq
+          partitions(partCnt) = new MultiBucketExecutorPartition(
+            partCnt, bucketsPerPart, prefNodeSeq)
+          partCnt += 1
+          numCoresPending -= 1
         }
-        val perfNodes = new mutable.HashSet[BlockManagerId]()
-        perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
-        val prefNodeSeq = perfNodes.toSeq
-        partitions(partCnt) = new MultiBucketExecutorPartition(
-          partCnt, bucketsPerPart, prefNodeSeq)
-        partCnt += 1
-        numCoresPending -= 1
-      }
     })
     assert(totalBuckets.isEmpty)
     partitions
@@ -183,7 +180,6 @@ object StoreUtils extends Logging {
     }
     val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
-    // partitions.foreach(println)
     partitions
   }
 

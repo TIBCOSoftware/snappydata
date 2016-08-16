@@ -55,11 +55,16 @@ final class SparkShellRDDHelper {
       split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-    val par = "" + split.index
-    val statement = conn.createStatement()
 
+    val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
+    var bucketString = ""
+    partition.buckets.foreach( bucket => {
+      bucketString = bucketString + bucket + ","
+    })
+    val buckets = bucketString.substring(0, bucketString.length-1)
+    val statement = conn.createStatement()
     if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$par')")
+      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
 
     val rs = statement.executeQuery(query)
     (statement, rs)
@@ -115,16 +120,14 @@ object SparkShellRDDHelper {
           mutable.HashSet[Int]]()
         var totalBuckets = new mutable.HashSet[Int]()
         for (p <- 0 until numBuckets) {
-          val distMembers = pr.getRegionAdvisor.getBucketOwners(p).asScala
-          distMembers foreach (m => {
-            var bucketSet = new mutable.HashSet[Int]()
-            if (serverToBuckets contains m) {
-              bucketSet = serverToBuckets.get(m).get
-            }
-            bucketSet += p
-            totalBuckets += p
-            serverToBuckets put(m, bucketSet)
-          })
+          val owner = pr.getBucketPrimary(p)
+          val bucketSet = {
+            if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
+            else new mutable.HashSet[Int]()
+          }
+          bucketSet += p
+          totalBuckets += p
+          serverToBuckets put(owner, bucketSet)
         }
         val numCores = Runtime.getRuntime.availableProcessors()
         val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
