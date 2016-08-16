@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -67,7 +66,6 @@ class BaseColumnFormatRelation(
     ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
     _context: SQLContext)
     extends JDBCAppendableRelation(
@@ -93,9 +91,7 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = {
-    region.getTotalNumberOfBuckets
-  }
+  override lazy val numPartitions: Int = region.getTotalNumberOfBuckets
 
   override def partitionColumns: Seq[String] = {
     partitioningColumns
@@ -132,8 +128,7 @@ class BaseColumnFormatRelation(
           requiredColumns,
           connProperties,
           filters,
-          Array.empty[Partition],
-          blockMap
+          Array.empty[Partition]
         ).asInstanceOf[RDD[Row]]
 
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
@@ -263,7 +258,7 @@ class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
+      StoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         try {
@@ -313,13 +308,14 @@ class BaseColumnFormatRelation(
       "createExternalTableForCachedBatches: expected non-empty table name")
 
 
-    val (primarykey, partitionStrategy) = dialect match {
+    val (primarykey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId) ",
-            d.getPartitionByClause("partitionId"))
-      case _ => ("primary key (uuid)", "")
+            d.getPartitionByClause("partitionId"),
+            "  DISABLE CONCURRENCY CHECKS ")
+      case _ => ("primary key (uuid)", "" , "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
@@ -328,7 +324,8 @@ class BaseColumnFormatRelation(
         schema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(", ") +
         s", $primarykey) $partitionStrategy $colocationClause " +
-        ddlExtensionForShadowTable, tableName, dropIfExists = false)
+        s" $concurrency $ddlExtensionForShadowTable",
+        tableName, dropIfExists = false)
   }
 
   // TODO: Suranjan make sure that this table doesn't evict to disk by
@@ -342,7 +339,8 @@ class BaseColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
-        val sql = s"CREATE TABLE $tableName $schemaExtensions"
+        val sql =
+          s"CREATE TABLE $tableName $schemaExtensions DISABLE CONCURRENCY CHECKS"
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -389,10 +387,10 @@ class BaseColumnFormatRelation(
 
   override def flushRowBuffer(): Unit = {
     // force flush all the buckets into the column store
-    Utils.mapExecutors(sqlContext, () => {
+    (Utils.mapExecutors(sqlContext, () => {
       ColumnFormatRelation.flushLocalBuckets(resolvedName)
       Iterator.empty
-    })
+    })).count()
     ColumnFormatRelation.flushLocalBuckets(resolvedName)
   }
 
@@ -407,7 +405,6 @@ class ColumnFormatRelation(
     ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
     _context: SQLContext)
   extends BaseColumnFormatRelation(
@@ -419,7 +416,6 @@ class ColumnFormatRelation(
     ddlExtensionForShadowTable,
     _origOptions,
     _externalStore,
-    blockMap,
     partitioningColumns,
     _context)
   with ParentRelation {
@@ -542,7 +538,6 @@ class IndexColumnFormatRelation(
     _ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    _blockMap: Map[InternalDistributedMember, BlockManagerId],
     _partitioningColumns: Seq[String],
     _context: SQLContext,
     baseTableName: String)
@@ -555,7 +550,6 @@ class IndexColumnFormatRelation(
     _ddlExtensionForShadowTable,
     _origOptions,
     _externalStore,
-    _blockMap,
     _partitioningColumns,
     _context)
   with DependentRelation {
@@ -618,10 +612,10 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val blockMap = connProperties.dialect match {
+    connProperties.dialect match {
       case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
         Some(schema), partitions, connProperties)
-      case _ => Map.empty[InternalDistributedMember, BlockManagerId]
+      case _ =>
     }
     val schemaString = JdbcExtendedUtils.schemaString(schema,
       connProperties.dialect)
@@ -634,7 +628,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     }
 
     val externalStore = new JDBCSourceAsColumnarStore(connProperties,
-      partitions, blockMap)
+      partitions)
 
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table,
       schema, externalStore)
@@ -652,7 +646,6 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        blockMap,
         partitioningColumn,
         sqlContext,
         baseTable)
@@ -665,7 +658,6 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        blockMap,
         partitioningColumn,
         sqlContext)
     }

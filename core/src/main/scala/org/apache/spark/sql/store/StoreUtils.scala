@@ -20,7 +20,6 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -30,8 +29,7 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -45,6 +43,7 @@ object StoreUtils extends Logging {
   val MAXPARTSIZE = "MAXPARTSIZE"
   val EVICTION_BY = "EVICTION_BY"
   val PERSISTENT = "PERSISTENT"
+  val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
   val EXPIRE = "EXPIRE"
@@ -99,9 +98,7 @@ object StoreUtils extends Logging {
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
   def getPartitionsPartitionedTable(sc: SparkContext,
-      region: PartitionedRegion,
-      blockMap: Map[InternalDistributedMember,
-          BlockManagerId]): Array[Partition] = {
+      region: PartitionedRegion): Array[Partition] = {
 
     val numPartitions = region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
@@ -109,8 +106,8 @@ object StoreUtils extends Logging {
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
-        m => blockMap.get(m)
-      )
+        m => SnappyContext.storeToBlockMap.get(m.toString)
+      ).filter(_.isDefined)
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
@@ -118,9 +115,7 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsReplicatedTable(sc: SparkContext,
-      region: CacheDistributionAdvisee,
-      blockMap: Map[InternalDistributedMember,
-          BlockManagerId]): Array[Partition] = {
+      region: CacheDistributionAdvisee): Array[Partition] = {
 
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
@@ -130,7 +125,7 @@ object StoreUtils extends Logging {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
@@ -139,16 +134,14 @@ object StoreUtils extends Logging {
       table: String,
       schema: Option[StructType],
       partitions: Int,
-      connProperties: ConnectionProperties): Map[InternalDistributedMember,
-      BlockManagerId] = {
+      connProperties: ConnectionProperties): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    val blockMap = new StoreInitRDD(sqlContext, table,
-      schema, partitions, connProperties).collect()
-    blockMap.toMap
+    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
+        .collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
-      numPartitions: Int, registerDestroy: Boolean = false): Unit = {
+      registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
       StoreCallbacksImpl.stores.remove(table)
@@ -227,8 +220,7 @@ object StoreUtils extends Logging {
           }
         }
         s"$GEM_PARTITION_BY $parClause "
-      }
-      ).getOrElse(if (isRowTable) EMPTY_STRING
+      }).getOrElse(if (isRowTable) EMPTY_STRING
       else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
@@ -286,19 +278,32 @@ object StoreUtils extends Logging {
       sb.append(s"$GEM_OVERFLOW ")
     }
 
+    var isPersistent = false
     parameters.remove(PERSISTENT).foreach { v =>
-      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
+      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("asynchronous")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
-      } else if (v.equalsIgnoreCase("sync")) {
+        isPersistent = true
+      } else if (v.equalsIgnoreCase("sync") ||
+          v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
-      } else if (!v.equalsIgnoreCase("false")) {
-        sb.append(s"$GEM_PERSISTENT $v ")
+        isPersistent = true
+      } else {
+        throw Utils.analysisException(s"Invalid value for option " +
+            s"$PERSISTENT = $v (expected one of: async, sync, " +
+            s"asynchronous, synchronous)")
       }
     }
-    sb.append(parameters.remove(SERVER_GROUPS).map(
-      v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
-        .getOrElse(EMPTY_STRING))
+    parameters.remove(DISKSTORE).foreach { v =>
+      if (isPersistent) sb.append(s"'$v' ")
+      else throw Utils.analysisException(
+        s"Option '$DISKSTORE' requires '$PERSISTENT' option")
+    }
+    sb.append(parameters.remove(SERVER_GROUPS)
+      .map(v => s"$GEM_SERVER_GROUPS ($v) ")
+      .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(OFFHEAP).map(v =>
+      if (v.equalsIgnoreCase("true")) s"$GEM_OFFHEAP " else EMPTY_STRING)
+      .getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
@@ -322,7 +327,7 @@ object StoreUtils extends Logging {
     parameters.keys.forall(v => {
       if (!ddlOptions.contains(v.toString.toUpperCase)) {
         throw new AnalysisException(
-          s"Unknown options $v specified while creating table")
+          s"Unknown options $v specified while creating table ")
       }
       true
     })

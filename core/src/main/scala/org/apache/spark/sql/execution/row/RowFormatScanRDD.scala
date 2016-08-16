@@ -21,7 +21,6 @@ import java.util.GregorianCalendar
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
@@ -37,7 +36,6 @@ import org.apache.spark.sql.execution.{CompactExecRowToMutableRow, ConnectionPoo
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
@@ -56,9 +54,7 @@ class RowFormatScanRDD(_sc: SparkContext,
     columns: Array[String],
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
+    partitions: Array[Partition] = Array.empty[Partition])
     extends JDBCRDD(_sc, getConnection, schema, tableName, columns,
       filters, partitions, connProperties.url,
       connProperties.executorConnProps) {
@@ -127,7 +123,7 @@ class RowFormatScanRDD(_sc: SparkContext,
         sb.append(" AND ")
       }
       sb.append(col).append(" IN (")
-      (1 until values.length).foreach(sb.append("?,"))
+      (1 until values.length).foreach(v => sb.append("?,"))
       sb.append("?)")
       args ++= values
     case And(left, right) =>
@@ -240,9 +236,9 @@ class RowFormatScanRDD(_sc: SparkContext,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          StoreUtils.getPartitionsPartitionedTable(sparkContext, pr, blockMap)
+          StoreUtils.getPartitionsPartitionedTable(sparkContext, pr)
         case dr =>
-          StoreUtils.getPartitionsReplicatedTable(sparkContext, dr, blockMap)
+          StoreUtils.getPartitionsReplicatedTable(sparkContext, dr)
       }
     } finally {
       conn.close()

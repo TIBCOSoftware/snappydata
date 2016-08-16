@@ -34,7 +34,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SnappyClusterManager.init(this)
 
-  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = null
+  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = _
 
   override def createTaskScheduler(sc: SparkContext, masterURL: String): TaskScheduler = {
     // If there is an application that is trying to join snappy
@@ -71,6 +71,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   override def createSchedulerBackend(sc: SparkContext, masterURL: String,
       scheduler: TaskScheduler): SchedulerBackend = {
+    sc.addSparkListener(new BlockManagerIdListener)
     schedulerBackend = new SnappyCoarseGrainedSchedulerBackend(
       scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
 
@@ -95,7 +96,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
 object SnappyClusterManager {
 
-  private[this] var _cm: SnappyEmbeddedModeClusterManager = null
+  private[this] var _cm: SnappyEmbeddedModeClusterManager = _
 
   def init(mgr: SnappyEmbeddedModeClusterManager): Unit = {
     _cm = mgr

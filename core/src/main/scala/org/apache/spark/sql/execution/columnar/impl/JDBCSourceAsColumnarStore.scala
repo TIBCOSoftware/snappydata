@@ -39,9 +39,7 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
  * Column Store implementation for GemFireXD.
  */
 final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
-    _numPartitions: Int,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
+    _numPartitions: Int)
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -132,7 +130,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
         conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
       StoreUtils.getPartitionsPartitionedTable(sparkContext,
-        region.asInstanceOf[PartitionedRegion], store.blockMap)
+        region.asInstanceOf[PartitionedRegion])
     })
   }
 }
@@ -171,11 +169,9 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
     columns: Array[String],
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
+    partitions: Array[Partition] = Array.empty[Partition])
     extends RowFormatScanRDD(_sc, getConnection, schema, tableName,
-      isPartitioned, columns, connProperties, filters, partitions, blockMap) {
+      isPartitioned, columns, connProperties, filters, partitions) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {

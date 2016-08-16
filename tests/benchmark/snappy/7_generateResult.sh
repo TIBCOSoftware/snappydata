@@ -10,11 +10,11 @@ latestProp=$directory/latestProp.props
 
 cd $SnappyData
 echo snappyData = $(git rev-parse HEAD)_$(git log -1 --format=%cd) > $latestProp
-cd snappy-spark
+cd spark
 echo snappy-spark = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
-cd ../snappy-store
+cd ../store
 echo snappy-store = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
-#cd ../snappy-aqp
+#cd ../aqp
 #echo snappy-aqp = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
 cd ../spark-jobserver
 echo spark-jobserver = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp

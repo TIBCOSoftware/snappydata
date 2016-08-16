@@ -58,7 +58,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.6-1'
+  version = '0.6-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -103,7 +103,7 @@ allprojects {
     guavaVersion = '14.0.1'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.0'
+    snappyStoreVersion = '1.5.1-SNAPSHOT'
     pulseVersion = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -543,6 +543,7 @@ task product(type: Zip) {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
+  dependsOn ":snappy-cluster_${scalaBinaryVersion}:generateSnappydataZeppelinInterpreterJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
 
@@ -684,6 +685,15 @@ task product(type: Zip) {
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
+    }
+    copy {
+      from("${clusterProject.projectDir}/ec2")
+      into "${snappyProductDir}/ec2"
+      exclude "deploy/home/ec2-user/snappydata/servers"
+      exclude "deploy/home/ec2-user/snappydata/leads"
+      exclude "deploy/home/ec2-user/snappydata/locators"
+      exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
+      exclude "lib"
     }
   }
 }
@@ -906,9 +916,11 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  /* (TODO: will be enabled once AQP is fixed after Spark 2.0 merge)
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
+  */
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
@@ -987,6 +999,10 @@ task packageVSD << {
   } else {
     println "Skipping VSD due to unwritable ${vsdDistDir}"
   }
+}
+
+task sparkPackage {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product

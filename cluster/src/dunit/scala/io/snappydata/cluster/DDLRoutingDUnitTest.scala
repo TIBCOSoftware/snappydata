@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
@@ -120,11 +120,48 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     Snap319(conn)
   }
 
-  def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
+  def testHang_SNAP_961(): Unit = {
+    val tableName: String = "TEST.ColumnTableQR"
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val s = conn.createStatement()
+    var options = "OPTIONS(PERSISTENT 'async', DISKSTORE 'd1')"
+    try {
+      s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
+          s"USING column $options")
+    } catch {
+      case sqle: SQLException => if (sqle.getSQLState != "38000" ||
+          !sqle.getMessage.contains("Disk store D1 not found")) throw sqle
+    }
+
+    // should succeed after creating diskstore
+    s.execute("CREATE DISKSTORE d1")
+    s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
+        s"USING column $options")
+
+    dropTableXD(conn, tableName)
+
+    // check offheap
+    options = "OPTIONS(OFFHEAP 'true')"
+    try {
+      s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
+          s"USING column $options")
+    } catch {
+      case sqle: SQLException => if (sqle.getSQLState != "38000" ||
+          !sqle.getMessage.contains("No off-heap memory")) throw sqle
+    }
+
+    s.execute("DROP DISKSTORE d1")
+  }
+
+  def createTableXD(conn: Connection, tableName: String,
+      usingStr: String): Unit = {
     val s = conn.createStatement()
     val options = ""
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, " +
-        "Col3 STRING) USING " + usingStr + " " + options)
+    s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING) " +
+        s"USING $usingStr $options")
   }
 
   def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
@@ -166,14 +203,12 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           "Col3 INT) " + (if (doFail) "fail" orElse "") + " USING " +
           usingStr + " " + options)
       // println("Successfully Created ColumnTable = " + tableName)
-    }
-    catch {
+    } catch {
       case e: Exception => getLogWriter.error("create: Caught exception " +
           e.getMessage + " for ColumnTable = " + tableName, e)
       // println("Exception stack. create. ex=" + e.getMessage + " ,stack=" +
       //   ExceptionUtils.getFullStackTrace(e))
     }
-    // println("Created ColumnTable = " + tableName)
   }
 
   def tableMetadataAssertColumnTable(schemaName: String,
@@ -217,7 +252,6 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       val s = conn.createStatement()
       s.execute("CREATE EXTERNAL TABLE airlineRef_temp(Code VARCHAR(25), " +
           "Description VARCHAR(25)) USING parquet OPTIONS()")
-      // println("Successfully Created ColumnTable = " + tableName)
     } catch {
       case e: java.sql.SQLException =>
       // println("Exception stack. create. ex=" + e.getMessage +

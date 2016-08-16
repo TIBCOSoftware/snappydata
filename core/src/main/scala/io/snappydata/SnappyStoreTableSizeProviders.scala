@@ -93,7 +93,7 @@ object StoreTableValueSizeProviderService extends Logging {
 
 object StoreTableSizeProvider {
 
-  private val memoryAnalyticsDefault = MemoryAnalytics(0, 0)
+  private val memoryAnalyticsDefault = MemoryAnalytics(0, 0, 1)
 
   def getTableSizes: (mutable.Set[UIAnalytics], mutable.Set[UIAnalytics]) = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
@@ -114,9 +114,10 @@ object StoreTableSizeProvider {
           maForColumn.totalRows, isColumnTable = true)
       }
       else {
-        rowSet += UIAnalytics(details._1, maForRowBuffer.totalSize,
-          maForRowBuffer.totalRows, maForColumn.totalSize,
-          maForColumn.totalRows, isColumnTable = false)
+        rowSet += ( new UIAnalytics(details._1,
+          maForRowBuffer.totalSize/maForRowBuffer.numHosts,
+          maForRowBuffer.totalRows/maForRowBuffer.numHosts,
+          maForColumn.totalSize, maForColumn.totalRows, isColumnTable = false))
       }
     })
 
@@ -128,7 +129,8 @@ object StoreTableSizeProvider {
     val currentTableStats = mutable.Map[String, MemoryAnalytics]()
     val stmt = "select TABLE_NAME," +
         " SUM(TOTAL_SIZE) ," +
-        " SUM(NUM_ROWS) " +
+        " SUM(NUM_ROWS), " +
+        " COUNT(HOST) " +
         " from SYS.MEMORYANALYTICS " +
         "WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
     val rs = conn.prepareStatement(stmt).executeQuery()
@@ -136,7 +138,8 @@ object StoreTableSizeProvider {
       val name = rs.getString(1)
       val totalSize = convertToBytes(rs.getString(2))
       val totalRows = rs.getString(3).toLong
-      currentTableStats.put(name, MemoryAnalytics(totalSize, totalRows))
+      val numHosts = rs.getLong(4)
+      currentTableStats.put(name, MemoryAnalytics(totalSize, totalRows, numHosts))
     }
     currentTableStats
   }
@@ -177,7 +180,7 @@ object StoreTableSizeProvider {
   }
 }
 
-case class MemoryAnalytics(totalSize: Long, totalRows: Long)
+case class MemoryAnalytics(totalSize: Long, totalRows: Long, numHosts: Long)
 
 case class UIAnalytics(tableName: String, rowBufferSize: Long, rowBufferCount: Long,
     columnBufferSize: Long, columnBufferCount: Long, isColumnTable: Boolean)

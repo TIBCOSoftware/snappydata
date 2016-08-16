@@ -17,9 +17,11 @@
 package org.apache.spark.sql
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
@@ -41,9 +43,9 @@ import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, SparkContext, SparkException}
+import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkException}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -764,8 +766,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     snappySession.queryApproxTSTopK(topK, startTime, endTime, k)
 
   def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T =
-    snappySession.handleErrorLimitExceeded(fn, rowRDD, df, lp)
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T =
+    snappySession.handleErrorLimitExceeded(fn, rowRDD, df, lp, fn2)
 }
 
 
@@ -805,6 +807,8 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
+  val storeToBlockMap: TrieMap[String, BlockManagerId] =
+    TrieMap.empty[String, BlockManagerId]
 
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
@@ -819,7 +823,16 @@ object SnappyContext extends Logging {
     if (_anySNContext == null) {
       _anySNContext = snc
     }
+    initMemberBlockMap(sc)
     snc
+  }
+
+  private def initMemberBlockMap(sc: SparkContext): Unit = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache != null && Utils.isLoner(sc)) {
+      storeToBlockMap(cache.getMyId.toString) =
+          SparkEnv.get.blockManager.blockManagerId
+    }
   }
 
   /**

@@ -200,7 +200,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     // remove below once SNAP-653 is fixed
     val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1", numPartitions,
+    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1",
       registerDestroy = true)
 
     var expected = Seq.empty[ComplexData]

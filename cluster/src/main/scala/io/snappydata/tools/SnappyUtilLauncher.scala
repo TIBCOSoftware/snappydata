@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
 import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdAgentLauncher, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
-import io.snappydata.gemxd.SnappySystemAdmin
+import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
 
 /**
  * Launcher class encompassing snappy processes command lines.
@@ -37,6 +37,8 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
   GfxdUtilLauncher.snappyStore = true
 
   import SnappyUtilLauncher._
+
+  SnappyDataVersion.loadProperties
 
   protected override def getTypes(): java.util.Map[String, CommandEntry] = {
     val types = super.getTypes()

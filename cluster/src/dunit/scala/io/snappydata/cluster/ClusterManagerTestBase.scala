@@ -63,8 +63,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     vm3 = host.getVM(3)
   }
 
-  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
-
   protected final def startArgs =
     Array(locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
@@ -77,9 +75,9 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    val locPort = locatorPort
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
+    val locPort = ClusterManagerTestBase.locPort
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
         val loc: Locator = ServiceManager.getLocatorInstance
@@ -111,6 +109,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     }
+
     vm0.invoke(startNode)
     vm1.invoke(startNode)
     vm2.invoke(startNode)
@@ -172,6 +171,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
  */
 object ClusterManagerTestBase {
   val logger = LoggerFactory.getLogger(getClass)
+  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
+  final val locPort: Int = locatorPort
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */

@@ -28,7 +28,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.{SaveMode, SnappyContext}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -92,7 +92,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 }
 
-object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
+object SplitSnappyClusterDUnitTest
+    extends SplitClusterDUnitTestObject with Logging {
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
@@ -132,8 +133,8 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     // embeddedModeTable1 is dropped in split mode. recreate it
     val snc = SnappyContext(sc)
     // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1", numPartitions,
+    // val numPartitions = props.getOrElse("buckets", "113").toInt
+    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1",
       registerDestroy = true)
     if (isComplex) {
       createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
