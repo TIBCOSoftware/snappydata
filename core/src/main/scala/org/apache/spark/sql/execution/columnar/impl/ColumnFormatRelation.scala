@@ -383,10 +383,10 @@ class BaseColumnFormatRelation(
 
   override def flushRowBuffer(): Unit = {
     // force flush all the buckets into the column store
-    Utils.mapExecutors(sqlContext, () => {
+    (Utils.mapExecutors(sqlContext, () => {
       ColumnFormatRelation.flushLocalBuckets(resolvedName)
       Iterator.empty
-    })
+    })).count()
     ColumnFormatRelation.flushLocalBuckets(resolvedName)
   }
 
