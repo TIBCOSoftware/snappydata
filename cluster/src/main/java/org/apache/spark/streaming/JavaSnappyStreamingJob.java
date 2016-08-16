@@ -18,28 +18,29 @@ package org.apache.spark.streaming;
 
 
 import com.typesafe.config.Config;
-import org.apache.spark.sql.JSparkJobValidation;
-import org.apache.spark.sql.JavaJobValidate;
-import org.apache.spark.sql.streaming.SnappyStreamingJob;
+import org.apache.spark.sql.SnappyJobValidate;
+import org.apache.spark.sql.SnappyJobValidation;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
+
+import spark.jobserver.SparkJobBase;
 import spark.jobserver.SparkJobValidation;
+import org.apache.spark.util.Utils;
 
-public abstract class JavaSnappyStreamingJob implements SnappyStreamingJob {
+public abstract class JavaSnappyStreamingJob implements SparkJobBase {
 
-  abstract public  Object runJavaJob(JavaSnappyStreamingContext snc, Config jobConfig);
+  abstract public Object runSnappyJob(JavaSnappyStreamingContext snc, Config jobConfig);
 
-  abstract public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc,
+  abstract public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc,
       Config jobConfig);
 
   @Override
-  public Object runJob(Object sc, Config jobConfig) {
-    return runJavaJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), jobConfig);
+  final public SparkJobValidation validate(Object sc, Config config) {
+    return SnappyJobValidate.validate(isValidJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), config));
   }
 
   @Override
-  public SparkJobValidation validate(Object sc, Config config) {
-    JSparkJobValidation  status =
-        isValidJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), config);
-    return JavaJobValidate.validate(status);
+  final public Object runJob(Object sc, Config jobConfig) {
+    return runSnappyJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), jobConfig);
   }
+
 }
