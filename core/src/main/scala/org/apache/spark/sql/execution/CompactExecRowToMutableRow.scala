@@ -211,9 +211,8 @@ trait CompactExecRowToMutableRow extends ResultWasNull {
           val v = execRow.getAsBytes(pos, this)
           if (v != null) {
             val s = schema.fields(i).dataType.asInstanceOf[StructType]
-            val row = new UnsafeRow
-            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET,
-              s.fields.length, v.length)
+            val row = new UnsafeRow(s.fields.length)
+            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
             mutableRow.update(i, row)
           } else {
             mutableRow.setNullAt(i)

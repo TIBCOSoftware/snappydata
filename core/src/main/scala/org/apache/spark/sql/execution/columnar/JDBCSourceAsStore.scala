@@ -44,6 +44,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
 
+
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch] = {
@@ -109,7 +110,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")
       insertStrings.put(tableName, s)
     }
-    insertStrings.get(tableName).get
+    insertStrings(tableName)
   }
 
   protected val insertStmntLock = new ReentrantLock()
@@ -197,7 +198,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
   }
 }
 
-class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
+class ExternalStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
     numPartitions: Int,
     store: JDBCSourceAsStore)

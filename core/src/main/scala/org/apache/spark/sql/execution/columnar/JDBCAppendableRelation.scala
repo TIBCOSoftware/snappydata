@@ -25,7 +25,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.datasources.ResolvedDataSource
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -45,7 +45,7 @@ case class JDBCAppendableRelation(
     table: String,
     provider: String,
     mode: SaveMode,
-    userSchema: StructType,
+    override val schema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)
@@ -58,7 +58,10 @@ case class JDBCAppendableRelation(
   with Serializable {
 
   self =>
+
   override val needConversion: Boolean = false
+
+  var tableExists: Boolean = _
 
   protected final val connProperties = externalStore.connProperties
 
@@ -74,7 +77,7 @@ case class JDBCAppendableRelation(
 
   protected final def dialect = connProperties.dialect
 
-  val schemaFields = Utils.schemaFields(userSchema)
+  val schemaFields = Utils.schemaFields(schema)
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)
@@ -98,8 +101,6 @@ case class JDBCAppendableRelation(
       lock.unlock()
     }
   }
-
-  override def schema: StructType = userSchema
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
@@ -149,8 +150,6 @@ case class JDBCAppendableRelation(
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
       overwrite: Boolean): Unit = {
 
-    assert(df.schema.equals(schema))
-
     // We need to truncate the table
     if (overwrite) {
       truncate()
@@ -190,7 +189,7 @@ case class JDBCAppendableRelation(
   def createTable(mode: SaveMode): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
@@ -199,10 +198,8 @@ case class JDBCAppendableRelation(
               sqlContext.conf.caseSensitiveAnalysis, conn)
           case _ => // do nothing
         }
-        return
       }
-
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
+      else if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")
       }
     } finally {
@@ -227,9 +224,9 @@ case class JDBCAppendableRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
-        "stats blob, " + userSchema.fields.map(structField => externalStore.columnPrefix +
-        structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy",
+        "stats blob, " + schema.fields.map(structField =>
+        externalStore.columnPrefix + structField.name + " blob")
+        .mkString(", ") + s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
   }
 
@@ -342,7 +339,7 @@ class ColumnarRelationProvider
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -370,7 +367,7 @@ class ColumnarRelationProvider
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -383,8 +380,10 @@ class ColumnarRelationProvider
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
-      case d: GemFireXDBaseDialect => ResolvedDataSource.
-          lookupDataSource(classOf[impl.DefaultSource].getCanonicalName)
+      case d: GemFireXDBaseDialect =>
+        DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
+            .getCanonicalName).providingClass
+
       case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
     }
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]

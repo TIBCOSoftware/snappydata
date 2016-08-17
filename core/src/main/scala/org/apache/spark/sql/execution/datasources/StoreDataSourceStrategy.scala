@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.datasources
 
-import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
@@ -32,11 +31,11 @@ import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
  * partitions of the datasource.
  */
-private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
+private[sql] object StoreDataSourceStrategy extends Strategy{
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-    l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
       pruneFilterProject(
         l,
         projects,
@@ -104,7 +103,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
     val sqlContext = relation.relation.sqlContext
 
     val joinedCols = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.analyzer.resolver).getOrElse {
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse {
       throw new AnalysisException(
         s"""Cannot resolve column name "$colName" among (${relation.output})""")
     })
@@ -127,7 +127,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         joinedCols,
         scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
-      filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
+      filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
       // Don't request columns that are only referenced by pushed filters.
       val requestedColumns =
@@ -139,8 +139,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         joinedCols,
         scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
-      execution.Project(
-        projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))
+      execution.ProjectExec(projects,
+        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }
   }
 }

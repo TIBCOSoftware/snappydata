@@ -23,9 +23,9 @@ import spark.jobserver.SparkJobValidation;
  * This class acts as a helper class to implement Java jobs in Spark job server with
  * SnappyContext implicitly provided.
  */
-public abstract class JavaSnappySQLJob  implements SnappySQLJob {
+public abstract class JavaSnappySQLJob implements SnappySQLJob {
 
-  abstract public  Object runJavaJob(SnappyContext snc, Config jobConfig);
+  abstract public Object runJavaJob(SnappyContext snc, Config jobConfig);
 
   abstract public JSparkJobValidation isValidJob(SnappyContext snc, Config jobConfig);
 
@@ -36,7 +36,7 @@ public abstract class JavaSnappySQLJob  implements SnappySQLJob {
 
   @Override
   public SparkJobValidation validate(Object sc, Config config) {
-    JSparkJobValidation  status = isValidJob((SnappyContext)sc, config);
+    JSparkJobValidation status = isValidJob((SnappyContext)sc, config);
     return JavaJobValidate.validate(status);
   }
 }

@@ -47,7 +47,7 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
  * Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
  * as JDBCRDD has a lot of methods as private.
  */
-class RowFormatScanRDD(@transient sc: SparkContext,
+class RowFormatScanRDD(_sc: SparkContext,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
@@ -56,7 +56,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends JDBCRDD(sc, getConnection, schema, tableName, columns,
+    extends JDBCRDD(_sc, getConnection, schema, tableName, columns,
       filters, partitions, connProperties.url,
       connProperties.executorConnProps) {
 
@@ -237,9 +237,9 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          StoreUtils.getPartitionsPartitionedTable(sc, pr)
+          StoreUtils.getPartitionsPartitionedTable(sparkContext, pr)
         case dr =>
-          StoreUtils.getPartitionsReplicatedTable(sc, dr)
+          StoreUtils.getPartitionsReplicatedTable(sparkContext, dr)
       }
     } finally {
       conn.close()
@@ -402,9 +402,8 @@ final class InternalRowIteratorOnRS(conn: Connection,
           val v = rs.getBytes(pos)
           if (v != null) {
             val s = schema.fields(i).dataType.asInstanceOf[StructType]
-            val row = new UnsafeRow
-            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET,
-              s.fields.length, v.length)
+            val row = new UnsafeRow(s.fields.length)
+            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
             mutableRow.update(i, row)
           } else {
             mutableRow.setNullAt(i)

@@ -40,8 +40,6 @@ class StreamingSuite
 
   def framework: String = this.getClass.getSimpleName
 
-  def master: String = "local[2]"
-
   def batchDuration: Duration = Seconds(1)
 
   def creatingFunc(): SnappyStreamingContext = {
@@ -51,7 +49,7 @@ class StreamingSuite
   }
 
   before {
-    SnappyStreamingContext.getActive().foreach {
+    SnappyStreamingContext.getActive.foreach {
       _.stop(stopSparkContext = false, stopGracefully = true)
     }
     ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
@@ -59,7 +57,7 @@ class StreamingSuite
 
   after {
     baseCleanup()
-    SnappyStreamingContext.getActive().foreach {
+    SnappyStreamingContext.getActive.foreach {
       _.stop(stopSparkContext = false, stopGracefully = true)
     }
   }
@@ -155,7 +153,7 @@ class StreamingSuite
       ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count()
     }
     // try drop from another streaming context
-    SnappyStreamingContext.getActive().foreach {
+    SnappyStreamingContext.getActive.foreach {
       _.stop(stopSparkContext = false, stopGracefully = true)
     }
     ssnc = new SnappyStreamingContext(snc.sparkContext, batchDuration)
@@ -304,17 +302,17 @@ class StreamingSuite
     ssnc.snappyContext.createTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
-    resultStream.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemxdColumnTable")
-    })
+    resultStream.foreachDataFrame { df =>
+      df.write.format("column").mode(SaveMode.Append)
+          .options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
+    }
 
     val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
-    df.registerTempTable("tweetTable")
+    df.createOrReplaceTempView("tweetTable")
 
-    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
-        "(duration 4 seconds, slide 4 seconds) " +
+    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 " +
+        "window (duration 4 seconds, slide 4 seconds) " +
         "t1 JOIN tweetTable t2 ON t1.id = t2.id")
     resultSet.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])

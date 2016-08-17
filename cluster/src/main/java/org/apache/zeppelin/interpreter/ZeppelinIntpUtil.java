@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
-import org.apache.spark.HttpServer;
 import org.apache.spark.repl.SparkILoop;
 
 /**
@@ -21,13 +20,18 @@ public class ZeppelinIntpUtil {
   public static Properties initializeZeppelinReplAndGetConfig() {
     Properties props=new Properties();
 
-    SnappyDataZeppelinInterpreter snappyZeppelinIntp = new SnappyDataZeppelinInterpreter(new Properties());
+    SnappyDataZeppelinInterpreter snappyZeppelinIntp =
+        new SnappyDataZeppelinInterpreter(new Properties());
     SparkILoop interpreter  = snappyZeppelinIntp.getReplInterpreter();
     String classServerUri = null;
     try { // in case of spark 1.1x, spark 1.2x
       Method classServer = interpreter.intp().getClass().getMethod("classServer");
+      Object httpServer = classServer.invoke(interpreter.intp());
+      // TODO: SW: this is now gone
+      /*
       HttpServer httpServer = (HttpServer) classServer.invoke(interpreter.intp());
       classServerUri = httpServer.uri();
+      */
     } catch (NoSuchMethodException | SecurityException | IllegalAccessException
         | IllegalArgumentException | InvocationTargetException e) {
       // continue
@@ -45,12 +49,11 @@ public class ZeppelinIntpUtil {
        // logger.warn(String.format("Spark method classServerUri not available due to: [%s]",
          //   e.getMessage()));
       }
-      props.put("spark.repl.class.uri", classServerUri);
-
+      if (classServerUri != null) {
+        props.put("spark.repl.class.uri", classServerUri);
+      }
     }
 
-
     return props;
-
   }
 }

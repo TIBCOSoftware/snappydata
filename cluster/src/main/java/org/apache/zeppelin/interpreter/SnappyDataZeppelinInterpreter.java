@@ -55,10 +55,7 @@ import scala.collection.convert.WrapAsJava$;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkEnv;
-import org.apache.spark.repl.SparkCommandLine;
 import org.apache.spark.repl.SparkILoop;
-import org.apache.spark.repl.SparkIMain;
-import org.apache.spark.repl.SparkJLineCompletion;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.DAGScheduler;
 import org.apache.spark.scheduler.Pool;
@@ -102,6 +99,44 @@ import org.apache.zeppelin.interpreter.Interpreter.FormType;
 public class SnappyDataZeppelinInterpreter extends Interpreter {
   public static Logger logger = LoggerFactory.getLogger(SnappyDataZeppelinInterpreter.class);
 
+  public SnappyDataZeppelinInterpreter(Properties property) {
+    super(property);
+  }
+
+  @Override
+  public void open() {
+  }
+
+  @Override
+  public void close() {
+  }
+
+  @Override
+  public InterpreterResult interpret(String s, InterpreterContext interpreterContext) {
+    return null;
+  }
+
+  @Override
+  public void cancel(InterpreterContext interpreterContext) {
+  }
+
+  @Override
+  public FormType getFormType() {
+    return null;
+  }
+
+  @Override
+  public int getProgress(InterpreterContext interpreterContext) {
+    return 0;
+  }
+
+  public SparkILoop getReplInterpreter() {
+    return null;
+  }
+
+  // TODO: SW: entire class needs rework
+
+  /*
   private ZeppelinContext z;
   private static SparkILoop interpreter;
   private static SparkIMain intp;
@@ -427,7 +462,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
   /**
    * Interpret a single line.
-   */
+   *
   @Override
   public InterpreterResult interpret(String line, InterpreterContext context) {
     if (sparkVersion.isUnsupportedVersion()) {
@@ -486,7 +521,9 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
         } else if (!inComment && nextLine.startsWith("/*")) {
           inComment = true;
           continuation = true;
-        } else if (inComment && nextLine.lastIndexOf("*/") >= 0) {
+*/
+        //} else if (inComment && nextLine.lastIndexOf("*/") >= 0) {
+/*
           inComment = false;
           continuation = true;
         } else if (nextLine.length() > 1
@@ -668,7 +705,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
   /*
   Override and keep close method empty to avoid closing spark context
-   */
+   *
   @Override
   public void close() {
 
@@ -677,7 +714,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
   /**
    *
    * @return
-   */
+   *
   @Override
   public FormType getFormType() {
     return FormType.NATIVE;
@@ -778,7 +815,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
 
     synchronized (sharedInterpreterLock) {
-      /* create scala repl */
+      /* create scala repl *
       this.interpreter = new SparkILoop(null, new PrintWriter(out));
       interpreter.settings_$eq(settings);
 
@@ -810,7 +847,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
   /**
    * This method is introduced for snappydata
-   */
+   *
   public SparkILoop getReplInterpreter() {
     if (interpreter != null) {
       return interpreter;
@@ -819,4 +856,5 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
       return interpreter;
     }
   }
+  */
 }

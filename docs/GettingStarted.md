@@ -371,7 +371,7 @@ The commands below consume tweets, then they filter out just the hashtags and th
 ```sql
 --- Inits the Streaming Context with the batch interval of 2 seconds.
 --- i.e. the stream is processed once every 2 seconds.
-snappy> STREAMING INIT 2;
+snappy> STREAMING INIT 2 SECS;
 --- Create a stream table just containing the hashtags.
 --- /tmp/copiedtwitterdata is the directory that Streaming will use to find and read new text files.
 --- We use quickstart/scripts/simulateTwitterStream script in below example to simulate a twitter stream by

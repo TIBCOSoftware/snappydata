@@ -20,6 +20,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import scala.actors.Futures._
 
+
 object SparkSQLMultiThreadingTest extends App {
 
   // Use DebugUtils from the SnappyUtils project later. Not sure how to get SBT
@@ -216,6 +217,9 @@ object SparkSQLMultiThreadingTest extends App {
 	  var start: Long = 0
 	  var end: Long = 0
 	  var results: DataFrame = null
+
+    val sparkSession = sqlContext.sparkSession
+    import sparkSession.implicits._
 	
 	  for (i <- 0 to 3) {
 	

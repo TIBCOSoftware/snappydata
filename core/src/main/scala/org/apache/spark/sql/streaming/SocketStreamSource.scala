@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql.streaming
 
+import scala.reflect.ClassTag
+
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
-import scala.reflect.ClassTag
 
 final class SocketStreamSource extends StreamPlanProvider {
   override def createRelation(sqlContext: SQLContext,
@@ -44,11 +46,10 @@ final class SocketStreamRelation(
   val T = options.get("T").get
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+    val encoder = RowEncoder(schema)
     val t: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(T))
-       context.socketStream[Any](hostname, port, getStreamConverter.convert,
-       storageLevel)(t).flatMap(rowConverter.toRows)
-          .map(converter(_).asInstanceOf[InternalRow])
+    context.socketStream[Any](hostname, port, getStreamConverter().convert,
+      storageLevel)(t).flatMap(rowConverter.toRows).map(encoder.toRow)
   }
 
   private def getStreamConverter() : StreamConverter = {

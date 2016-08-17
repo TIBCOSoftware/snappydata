@@ -252,7 +252,7 @@ object ClusterManagerTestBase {
     // cleanup metastore
     cleanupTestData(null, null)
     val sparkContext = SnappyContext.globalSparkContext
-    if(sparkContext != null) sparkContext.stop()
+    if (sparkContext != null) sparkContext.stop()
   }
 
   def stopNetworkServers(): Unit = {

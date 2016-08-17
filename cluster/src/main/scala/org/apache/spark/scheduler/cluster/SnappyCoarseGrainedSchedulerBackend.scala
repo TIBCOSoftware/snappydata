@@ -16,17 +16,15 @@
  */
 package org.apache.spark.scheduler.cluster
 
-import java.util
-
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
-import org.apache.spark.rpc.{RpcAddress, RpcEnv}
-import org.apache.spark.scheduler.{SparkListenerBlockManagerRemoved, SparkListener, SparkListenerBlockManagerAdded, TaskSchedulerImpl}
+import org.apache.spark.internal.Logging
+import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, TaskSchedulerImpl}
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{Logging, SparkEnv}
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
@@ -34,8 +32,8 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
 
   val membershipListener = new MembershipListener {
-    override def quorumLost(failures: util.Set[InternalDistributedMember],
-        remaining: util.List[InternalDistributedMember]): Unit = {}
+    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
+        remaining: java.util.List[InternalDistributedMember]): Unit = {}
 
     override def memberJoined(id: InternalDistributedMember): Unit = {}
 
@@ -49,6 +47,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
 
   /**
    * Overriding the spark app id function to provide a snappy specific app id.
+   *
    * @return An application ID
    */
   override def applicationId(): String = snappyAppId
@@ -60,9 +59,10 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   override def start() {
 
     super.start()
-    _driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
-      RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
-      CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+    _driverUrl = RpcEndpointAddress(
+      scheduler.sc.conf.get("spark.driver.host"),
+      scheduler.sc.conf.get("spark.driver.port").toInt,
+      CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
     GemFireXDUtils.getGfxdAdvisor.getDistributionManager
         .addMembershipListener(membershipListener)
     logInfo(s"started with driverUrl $driverUrl")
@@ -92,13 +92,14 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
 
 class BlockManagerIdListener extends SparkListener with Logging {
 
-  override def onBlockManagerAdded(blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {
+  override def onBlockManagerAdded(
+      blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {
     SnappyContext.storeToBlockMap(blockManagerAdded.blockManagerId.executorId) =
         blockManagerAdded.blockManagerId
   }
 
-  override def onBlockManagerRemoved(blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = {
+  override def onBlockManagerRemoved(
+      blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = {
     SnappyContext.storeToBlockMap -= blockManagerRemoved.blockManagerId.executorId
   }
-
 }

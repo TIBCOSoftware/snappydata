@@ -35,7 +35,8 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -84,8 +85,8 @@ class BaseColumnFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
-  val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
-    resolvedName, userSchema)
+  lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
+    resolvedName, schema)
 
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
@@ -177,7 +178,7 @@ class BaseColumnFormatRelation(
     if (mode == SaveMode.Overwrite) {
       truncate()
     }
-    JdbcExtendedUtils.saveTable(data, table, connProperties)
+    JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
   }
 
   /**
@@ -200,7 +201,7 @@ class BaseColumnFormatRelation(
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
       val result = CodeGeneration.executeUpdate(table, stmt,
-        rows, numRows > 1, batchSize, userSchema.fields, dialect)
+        rows, numRows > 1, batchSize, schema.fields, dialect)
       stmt.close()
       result
     } finally {
@@ -224,7 +225,7 @@ class BaseColumnFormatRelation(
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
-          rows, multipleRows = true, batchSize, userSchema.fields, dialect)
+          rows, multipleRows = true, batchSize, schema.fields, dialect)
         stmt.close()
         result
       } finally {
@@ -276,7 +277,7 @@ class BaseColumnFormatRelation(
   override def createTable(mode: SaveMode): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
@@ -292,7 +293,8 @@ class BaseColumnFormatRelation(
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
-        sys.error(s"Table $table already exists.")
+        // sys.error(s"Table $table already exists.")
+        return
       }
     } finally {
       conn.close()
@@ -319,8 +321,8 @@ class BaseColumnFormatRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer, numRows integer not null, stats blob, " +
-        userSchema.fields.map(structField => externalStore.columnPrefix +
-        structField.name + " blob").mkString(" ", ",", " ") +
+        schema.fields.map(structField => externalStore.columnPrefix +
+        structField.name + " blob").mkString(", ") +
         s", $primarykey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
@@ -328,7 +330,8 @@ class BaseColumnFormatRelation(
 
   // TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
-  def createActualTable(tableName: String, externalStore: ExternalStore): Unit = {
+  private def createActualTable(tableName: String,
+      externalStore: ExternalStore): Unit = {
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
@@ -336,7 +339,8 @@ class BaseColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
-        val sql = s"CREATE TABLE $tableName $schemaExtensions " + " DISABLE CONCURRENCY CHECKS "
+        val sql =
+          s"CREATE TABLE $tableName $schemaExtensions DISABLE CONCURRENCY CHECKS"
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -347,13 +351,13 @@ class BaseColumnFormatRelation(
         createExternalTableForCachedBatches(ColumnFormatRelation.
             cachedBatchTableName(table), externalStore)
       }
-    }
-    catch {
+    } catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
           throw new java.sql.SQLException(s"${sqle.getMessage}\n" +
               "Ensure that the 'driver' option is set appropriately and " +
-              "the driver jars available (--jars option in spark-submit).", sqle.getSQLState)
+              "the driver jars available (--jars option in spark-submit).",
+            sqle.getSQLState)
         } else {
           throw sqle
         }
@@ -429,10 +433,10 @@ class ColumnFormatRelation(
   override def dropIndex(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
-    val snc = _context.asInstanceOf[SnappyContext]
-    snc.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    snappySession.sessionState.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
     // Remove the actual index
-    snc.dropTable(indexIdent, ifExists)
+    snappySession.dropTable(indexIdent, ifExists)
   }
 
   override def getDependents(
@@ -449,9 +453,10 @@ class ColumnFormatRelation(
     }
 
     indexes.foreach(index => {
-      val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
+      val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val sncCatalog = snappySession.sessionState.catalog
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
-        case LogicalRelation(r: DependentRelation, _) => r
+        case LogicalRelation(r: DependentRelation, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
@@ -471,14 +476,14 @@ class ColumnFormatRelation(
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val snc = _context.asInstanceOf[SnappyContext]
-    val indexTblName = snc.getIndexTable(indexIdent).toString()
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val indexTblName = snappySession.getIndexTable(indexIdent).toString()
     val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
     val tempOptions = caseInsensitiveMap.filterNot(pair => {
-      pair._1.equals(Utils.toLowerCase(StoreUtils.PARTITION_BY)) ||
-        pair._1.equals(Utils.toLowerCase(StoreUtils.COLOCATE_WITH)) ||
-        pair._1.equals(Utils.toLowerCase(JdbcExtendedUtils.DBTABLE_PROPERTY)) ||
-        pair._1.equals(Utils.toLowerCase(ExternalStoreUtils.INDEX_NAME))
+      pair._1.equalsIgnoreCase(StoreUtils.PARTITION_BY) ||
+        pair._1.equalsIgnoreCase(StoreUtils.COLOCATE_WITH) ||
+        pair._1.equalsIgnoreCase(JdbcExtendedUtils.DBTABLE_PROPERTY) ||
+        pair._1.equalsIgnoreCase(ExternalStoreUtils.INDEX_NAME)
     }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
       (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
       (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
@@ -487,7 +492,7 @@ class ColumnFormatRelation(
       case Some(value) => tempOptions + (StoreUtils.COLOCATE_WITH -> value)
       case _ => tempOptions
     }
-    snc.createTable(
+    snappySession.createTable(
       indexTblName,
       "column",
       tableRelation.schema,
@@ -499,7 +504,7 @@ class ColumnFormatRelation(
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
     createIndexTable(indexIdent, tableIdent, this, indexColumns, options)
     // Main table is updated to store the index information in it. We could have instead used
     // createIndex method of HiveClient to do this. But, there were two main issues:
@@ -510,11 +515,11 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snc.catalog.alterTableToAddIndexProp(
-        tableIdent, snc.getIndexTable(indexIdent))
+      snappySession.sessionState.catalog.alterTableToAddIndexProp(
+        tableIdent, snappySession.getIndexTable(indexIdent))
     } catch {
       case e: Throwable =>
-        snc.dropTable(indexIdent, ifExists = false)
+        snappySession.dropTable(indexIdent, ifExists = false)
         throw e
     }
   }
@@ -662,7 +667,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }

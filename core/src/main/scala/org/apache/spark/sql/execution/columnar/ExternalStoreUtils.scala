@@ -111,12 +111,12 @@ object ExternalStoreUtils {
 
     override def iterator: Iterator[(String, T)] = baseMap.iterator
 
-    override def +=(kv: (String, T)) = {
+    override def +=(kv: (String, T)): this.type = {
       baseMap += kv.copy(_1 = kv._1.toLowerCase)
       this
     }
 
-    override def -=(key: String) = {
+    override def -=(key: String): this.type = {
       baseMap -= key.toLowerCase
       this
     }
@@ -132,17 +132,19 @@ object ExternalStoreUtils {
     table
   }
 
-  def removeSamplingOptions(parameters: mutable.Map[String, String]): Map[String, String] = {
+  def removeSamplingOptions(
+      parameters: mutable.Map[String, String]): Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
-      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval", "aqp.debug.byPassSampleOperator")
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn",
+      "timeInterval", "aqp.debug.byPassSampleOperator")
 
     val optMap = new mutable.HashMap[String, String]
 
     optSequence.map(key => {
       val value = parameters.remove(key)
       value match {
-        case Some(v) => optMap += ((key.normalize, v))
+        case Some(v) => optMap += (Utils.toLowerCase(key) -> v)
         case None => // Do nothing
       }
     })
@@ -248,7 +250,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getConnectionType(dialect: JdbcDialect) = {
+  def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
     dialect match {
       case GemFireXDDialect => ConnectionType.Embedded
       case GemFireXDClientDialect => ConnectionType.Net
@@ -256,7 +258,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getJDBCType(dialect: JdbcDialect, dataType: DataType) = {
+  def getJDBCType(dialect: JdbcDialect, dataType: DataType): Int = {
     dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
       dataType match {
         case IntegerType => java.sql.Types.INTEGER
@@ -318,10 +320,10 @@ object ExternalStoreUtils {
       else handledFilter(right, indexedCols)
     // ORList optimization requires all columns to have indexes
     // which is ensured by the condition below
-    case Or(left, right) =>
-      if ((handledFilter(left, indexedCols) eq SOME_TRUE) &&
-          (handledFilter(right, indexedCols) eq SOME_TRUE)) SOME_TRUE
-      else SOME_FALSE
+    case Or(left, right) => if ((handledFilter(left, indexedCols) eq
+        SOME_TRUE) && (handledFilter(right, indexedCols) eq SOME_TRUE)) {
+      SOME_TRUE
+    } else SOME_FALSE
     case _ => SOME_FALSE
   }
 
@@ -333,8 +335,7 @@ object ExternalStoreUtils {
    * Prune all but the specified columns from the specified Catalyst schema.
    *
    * @param fieldMap - The Catalyst column name to metadata of the master table
-   * @param columns - The list of desired columns
-   *
+   * @param columns  - The list of desired columns
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: Map[String, StructField],
@@ -348,7 +349,7 @@ object ExternalStoreUtils {
   }
 
   def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema : StructType): (Seq[Int], Seq[DataType]) = {
+      schema: StructType): (Seq[Int], Seq[DataType]) = {
 
     if (requestedSchema.isEmpty) {
 
@@ -366,7 +367,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getInsertString(table: String, userSchema: StructType) = {
+  def getInsertString(table: String, userSchema: StructType): String = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
@@ -375,7 +376,7 @@ object ExternalStoreUtils {
     sb.append("?)").toString()
   }
 
-  def getPutString(table: String, userSchema: StructType) = {
+  def getPutString(table: String, userSchema: StructType): String = {
     val sb = new mutable.StringBuilder("PUT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
@@ -384,7 +385,8 @@ object ExternalStoreUtils {
     sb.append("?)").toString()
   }
 
-  def getInsertStringWithColumnName(table: String, rddSchema: StructType) = {
+  def getInsertStringWithColumnName(table: String,
+      rddSchema: StructType): String = {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>

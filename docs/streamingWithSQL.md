@@ -71,7 +71,7 @@ SnappyData supports creation of stream tables from Twitter, Kafka, Files, Socket
     DROP TABLE [IF EXISTS] table_name
 
     // Initialize StreamingContext
-    STREAMING INIT <batchIntervalSeconds> 
+    STREAMING INIT <batchInterval> [SECS|SECOND|MILLIS|MILLISECOND|MINS|MINUTE]
 
     // Start streaming
     STREAMING START
@@ -108,7 +108,7 @@ Start a SnappyData cluster and connect through snappy-shell :
     snappy> connect client 'localhost:1527';
 
     // Initialize streaming with batchInterval of 2 seconds
-    snappy> streaming init 2;
+    snappy> streaming init 2secs;
 
     // Create a stream table
     snappy> create stream table streamTable (id long, text string, fullName string, country string,
