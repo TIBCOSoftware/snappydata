@@ -106,11 +106,6 @@ public class SnappyPrms extends BasePrms {
     public static Long isStopMode;
 
     /**
-     * (boolean) - whether to wait for sparkJobCompletion before scheduling next task in hydra.
-     */
-    public static Long waitForSparkJobCompletion;
-
-    /**
      * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
      */
     public static Long tableDefaultPartitioned;
@@ -129,11 +124,6 @@ public class SnappyPrms extends BasePrms {
      * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
      */
     public static Long logLevel;
-
-    /**
-     * (String) String to be serached in the spark job output file in order to know the job completion status.
-     */
-    public static Long searchString;
 
     /**
      * (String) userAppJar containing the user snappy job class. The wildcards in jar file name are supported in order to removes the hard coding of jar version.
@@ -297,26 +287,15 @@ public class SnappyPrms extends BasePrms {
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
     }
 
-    public static boolean waitForSparkJobCompletion() {
-        Long key = waitForSparkJobCompletion;
-        return tasktab().booleanAt(key, tab().booleanAt(key, false));
-    }
-
-
     public static String getTimeStatistics() {
         boolean enableTimeStats = tasktab().booleanAt(enableTimeStatistics, tab().booleanAt(enableTimeStatistics, true));
         String timeStatistics = " -enable-time-statistics=" + enableTimeStats + " -statistic-archive-file=";
-        return  timeStatistics;
+        return timeStatistics;
     }
 
     public static String getLogLevel() {
         String snappyLogLevel = " -log-level=" + tab().stringAt(logLevel, "config");
         return snappyLogLevel;
-    }
-
-    public static String getSearchStringForSparkJob() {
-        Long key = searchString;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
     public static Vector getSQLScriptNames() {
