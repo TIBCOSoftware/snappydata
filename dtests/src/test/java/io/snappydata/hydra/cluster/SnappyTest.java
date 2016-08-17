@@ -1541,23 +1541,19 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " + snappyTest.getUserAppJarLocation(userAppJar);
+                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " + " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " --driver-class-path " + snappyTest.getUserAppJarLocation(userAppJar) + " " + snappyTest.getUserAppJarLocation(userAppJar);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
                 pb = new ProcessBuilder("/bin/bash", "-c", command);
                 snappyTest.executeProcess(pb, logFile);
-                if (SnappyPrms.waitForSparkJobCompletion()) {
-                    String searchString = SnappyPrms.getSearchStringForSparkJob();
-                    if (searchString == null)
-                        throw new TestException("Search String notifying completion of spark job is missing for job : " + userJob);
-                    String expression = "cat " + logFile + " | grep -e Exception -e '" + searchString + "' | grep -v java.net.BindException" + " | wc -l)\"";
-                    String searchCommand = "while [ \"$(" + expression + " -le  0 ] ; do sleep 1 ; done";
-                    pb = new ProcessBuilder("/bin/bash", "-c", searchCommand);
-                    Log.getLogWriter().info("spark job " + userJob + " starts at: " + System.currentTimeMillis());
-                    executeProcess(pb, logFile);
-                    Log.getLogWriter().info("spark job  " + userJob + " finishes at:  " + System.currentTimeMillis());
-                }
+                String searchString = "Spark ApplicationEnd: ";
+                String expression = "cat " + logFile + " | grep -e Exception -e '" + searchString + "' | grep -v java.net.BindException" + " | wc -l)\"";
+                String searchCommand = "while [ \"$(" + expression + " -le  0 ] ; do sleep 1 ; done";
+                pb = new ProcessBuilder("/bin/bash", "-c", searchCommand);
+                Log.getLogWriter().info("spark job " + userJob + " starts at: " + System.currentTimeMillis());
+                executeProcess(pb, logFile);
+                Log.getLogWriter().info("spark job " + userJob + " finishes at:  " + System.currentTimeMillis());
             }
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
