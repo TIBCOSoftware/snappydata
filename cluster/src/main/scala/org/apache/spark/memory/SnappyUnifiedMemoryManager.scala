@@ -34,15 +34,15 @@ import org.apache.spark.storage.{BlockStatus, BlockId}
   * If the critical and eviction events are not set, it asks the UnifiedMemoryManager
   * to allocate the space.
   * @param conf
-  * @param maxMemory
+  * @param maxHeapMemory
   * @param numCores
   */
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
-    override val maxMemory: Long,
+    override val maxHeapMemory: Long,
     numCores: Int) extends UnifiedMemoryManager(conf,
-  maxMemory,
-  (maxMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
+  maxHeapMemory,
+  (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
   numCores) {
 
   def this(conf: SparkConf, numCores: Int) = {
@@ -59,13 +59,20 @@ class SnappyUnifiedMemoryManager private[memory](
    * only fail if criticalUp is still true after evictBlocksToFreeSpace
    */
   private def freeMemory(blockId: Option[BlockId], numBytes: Long,
-      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)], storageMemory: Boolean): Boolean = {
+    memoryMode: MemoryMode, storageMemory: Boolean): Boolean = {
     val freeMemory = Runtime.getRuntime.freeMemory()
     if (freeMemory < numBytes) {
-      val blocksEvicted = storageMemoryPool.memoryStore.evictBlocksToFreeSpace(blockId,
-        numBytes - freeMemory, evictedBlocks)
+      val storageMemoryPool = memoryMode match {
+        case MemoryMode.ON_HEAP =>
+          onHeapStorageMemoryPool
+        case MemoryMode.OFF_HEAP =>
+          offHeapStorageMemoryPool
+      }
+      val requestedSpace = numBytes - freeMemory
+      val spaceFreed = storageMemoryPool.memoryStore.evictBlocksToFreeSpace(blockId,
+        requestedSpace, memoryMode)
       if (storageMemory) {
-        blocksEvicted || !listener.isEviction
+        (spaceFreed >= requestedSpace) || !listener.isEviction
       } else {
         !listener.isCritical
       }
@@ -82,7 +89,7 @@ class SnappyUnifiedMemoryManager private[memory](
       val evictedBlocks = new ArrayBuffer[(BlockId, BlockStatus)]
       // If free memory not available, let Spark
       // take a corrective action
-      if (!freeMemory(None, numBytes, evictedBlocks, false)) {
+      if (!freeMemory(None, numBytes, memoryMode, false)) {
         return 0
       }
     }
@@ -92,15 +99,15 @@ class SnappyUnifiedMemoryManager private[memory](
   override def acquireStorageMemory(
       blockId: BlockId,
       numBytes: Long,
-      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Boolean = synchronized {
+      memoryMode: MemoryMode): Boolean = synchronized {
     if (listener.isEviction || listener.isCritical) {
       // If free memory not available, let Spark
       // take a corrective action
-      if (!freeMemory(Some(blockId), numBytes, evictedBlocks, true)){
+      if (!freeMemory(Some(blockId), numBytes, memoryMode, true)){
         return false
       }
     }
-    super.acquireStorageMemory(blockId, numBytes, evictedBlocks)
+    super.acquireStorageMemory(blockId, numBytes, memoryMode)
   }
 }
 
@@ -116,16 +123,26 @@ private object SnappyUnifiedMemoryManager {
     val systemMemory = conf.getLong("spark.testing.memory", Runtime.getRuntime.maxMemory)
     val reservedMemory = conf.getLong("spark.testing.reservedMemory",
       if (conf.contains("spark.testing")) 0 else RESERVED_SYSTEM_MEMORY_BYTES)
-    val minSystemMemory = reservedMemory * 1.5
+    val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
-          s"be at least $minSystemMemory. Please use a larger heap size.")
+        s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
+        s"option or spark.driver.memory in Spark configuration.")
+    }
+    // SPARK-12759 Check executor memory to fail fast if memory is insufficient
+    if (conf.contains("spark.executor.memory")) {
+      val executorMemory = conf.getSizeAsBytes("spark.executor.memory")
+      if (executorMemory < minSystemMemory) {
+        throw new IllegalArgumentException(s"Executor memory $executorMemory must be at least " +
+          s"$minSystemMemory. Please increase executor memory using the " +
+          s"--executor-memory option or spark.executor.memory in Spark configuration.")
+      }
     }
     val usableMemory = systemMemory - reservedMemory
     // GemFireXD is required to be already booted before constructing
     // snappy memory manager
     var evictFraction: Double = GemFireCacheImpl.getExisting.getResourceManager
-        .getEvictionHeapPercentage/100
+      .getEvictionHeapPercentage/100
     if (evictFraction <= 0.0) {
       evictFraction = 0.75
     }

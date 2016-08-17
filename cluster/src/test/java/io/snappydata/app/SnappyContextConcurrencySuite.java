@@ -14,7 +14,7 @@ import io.snappydata.SnappyFunSuite;
 import io.snappydata.test.dunit.DistributedTestBase;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Test;
 
@@ -90,12 +90,12 @@ class SnappyQueryJob implements Callable<String>, Serializable {
         dummyList.add(object);
       }
 
-      DataFrame tempdf = sqlContext.emptyDataFrame();
+      Dataset<Row> tempdf = sqlContext.emptyDataFrame();
       tempdf.registerTempTable(tempTableName);
 
       JavaSparkContext javaSparkContext = new JavaSparkContext(sqlContext.sparkContext());
       JavaRDD<DummyBeanClass> rdd = javaSparkContext.parallelize(dummyList);
-      DataFrame df = sqlContext.createDataFrame(rdd, DummyBeanClass.class);
+      Dataset<Row> df = sqlContext.createDataFrame(rdd, DummyBeanClass.class);
       df.write().format("column").saveAsTable(tblName);
       String _query = String.format("select count(*) from %s", tblName);
 
@@ -161,4 +161,3 @@ class SnappyQueryJob implements Callable<String>, Serializable {
     }
   }
 }
-

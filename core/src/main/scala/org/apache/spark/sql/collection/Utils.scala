@@ -17,10 +17,10 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.nio.ByteBuffer
 import java.sql.DriverManager
 
-import scala.collection.mutable
-import scala.collection.{Map => SMap}
+import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -31,19 +31,19 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
-import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.scheduler.local.LocalSchedulerBackend
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.{QueryExecution, SQLExecution}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.util.io.ChunkedByteBuffer
 
 object Utils {
 
@@ -55,11 +55,7 @@ object Utils {
       inverseCumulativeProbability(0.975)
   final val Z95Squared = Z95Percent * Z95Percent
 
-  implicit class StringExtensions(val s: String) extends AnyVal {
-    def normalize = toLowerCase(s)
-  }
-
-  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
+  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
     while (index < endP1) {
       a(index) = v
@@ -67,8 +63,9 @@ object Utils {
     }
   }
 
-  def analysisException(msg: String): AnalysisException =
-    new AnalysisException(msg)
+  def analysisException(msg: String,
+      cause: Option[Throwable] = None): AnalysisException =
+    new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
     val colT = toUpperCase(col.trim)
@@ -79,20 +76,6 @@ object Utils {
       throw analysisException(
         s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
-    }
-  }
-
-  def getFields(cols: Array[String], schema: StructType,
-      module: String) = {
-    cols.map { col =>
-      val colT = toUpperCase(col.trim)
-      schema.fields.collectFirst {
-        case field if colT == toUpperCase(field.name) => field
-      }.getOrElse {
-        throw analysisException(
-          s"""$module: Cannot resolve column name "$col" among
-            (${cols.mkString(", ")})""")
-      }
     }
   }
 
@@ -107,13 +90,13 @@ object Utils {
     if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
   }
 
-  def getHostExecutorId(blockId: BlockManagerId) =
+  def getHostExecutorId(blockId: BlockManagerId): String =
     TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
   def classForName(className: String): Class[_] =
     org.apache.spark.util.Utils.classForName(className)
 
-  def ERROR_NO_QCS(module: String) = s"$module: QCS is empty"
+  def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
   def qcsOf(qa: Array[String], cols: Array[String],
       module: String): (Array[Int], Array[String]) = {
@@ -148,28 +131,6 @@ object Utils {
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
       module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
-  }
-
-  def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
-      convertToScalaRow: Boolean): GenericRow = {
-    val ncols = columnIndices.length
-    val newRow = new Array[Any](ncols)
-    var index = 0
-    if (convertToScalaRow) {
-      while (index < ncols) {
-        val colIndex = columnIndices(index)
-        newRow(index) = CatalystTypeConverters.convertToScala(row(colIndex),
-          schema(colIndex).dataType)
-        index += 1
-      }
-    }
-    else {
-      while (index < ncols) {
-        newRow(index) = row(columnIndices(index))
-        index += 1
-      }
-    }
-    new GenericRow(newRow)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
@@ -254,10 +215,10 @@ object Utils {
   final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
-   * Parse the given time interval value as long milliseconds.
-   *
-   * @see timeIntervalSpec for the allowed string specification
-   */
+    * Parse the given time interval value as long milliseconds.
+    *
+    * @see timeIntervalSpec for the allowed string specification
+    */
   def parseTimeInterval(optV: Any, module: String): Long = {
     optV match {
       case tii: Int => tii.toLong
@@ -327,10 +288,10 @@ object Utils {
       case DateType => classOf[Int]
       case TimestampType => classOf[Long]
       case d: DecimalType => classOf[Decimal]
-      //case "binary" => org.apache.spark.sql.types.BinaryType
-      //case "raw" => org.apache.spark.sql.types.BinaryType
-      //case "logical" => org.apache.spark.sql.types.BooleanType
-      //case "boolean" => org.apache.spark.sql.types.BooleanType
+      // case "binary" => org.apache.spark.sql.types.BinaryType
+      // case "raw" => org.apache.spark.sql.types.BinaryType
+      // case "logical" => org.apache.spark.sql.types.BooleanType
+      // case "boolean" => org.apache.spark.sql.types.BooleanType
       case _ => throw new IllegalArgumentException(s"Invalid type $dataType")
     }
   }
@@ -348,7 +309,7 @@ object Utils {
   }
 
   final def isLoner(sc: SparkContext): Boolean =
-    sc.schedulerBackend.isInstanceOf[LocalBackend]
+    sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
   def toLowerCase(k: String): String = {
     var index = 0
@@ -403,9 +364,9 @@ object Utils {
   }
 
   /**
-   * Get the result schema given an optional explicit schema and base table.
-   * In case both are specified, then check compatibility between the two.
-   */
+    * Get the result schema given an optional explicit schema and base table.
+    * In case both are specified, then check compatibility between the two.
+    */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
       baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
       asSelect: Boolean, table: String,
@@ -422,19 +383,19 @@ object Utils {
             if (catalog.compatibleSchema(tableSchema, s)) {
               (s, Some(tablePlan))
             } else if (asSelect) {
-              throw new DDLException(s"CREATE $tableType TABLE AS SELECT:" +
+              throw analysisException(s"CREATE $tableType TABLE AS SELECT:" +
                   " mismatch of schema with that of base table." +
                   "\n  Base table schema: " + tableSchema +
                   "\n  AS SELECT schema: " + s)
             } else {
-              throw new DDLException(s"CREATE $tableType TABLE:" +
+              throw analysisException(s"CREATE $tableType TABLE:" +
                   " mismatch of specified schema with that of base table." +
                   "\n  Base table schema: " + tableSchema +
                   "\n  Specified schema: " + s)
             }
           } catch {
             // continue with specified schema if base table fails to load
-            case e@(_: AnalysisException | _: DDLException) => (s, None)
+            case _: AnalysisException => (s, None)
           }
         case None => (s, None)
       }
@@ -447,14 +408,12 @@ object Utils {
               catalog.newQualifiedTableName(baseTable))
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
-            case e@(_: AnalysisException | _: DDLException) =>
-              val ae = analysisException(s"Base table $baseTable " +
-                  s"not found for $tableType TABLE $table")
-              ae.initCause(e)
-              throw ae
+            case ae: AnalysisException =>
+              throw analysisException(s"Base table $baseTable " +
+                  s"not found for $tableType TABLE $table", Some(ae))
           }
         case None =>
-          throw new DDLException(s"CREATE $tableType TABLE must provide " +
+          throw analysisException(s"CREATE $tableType TABLE must provide " +
               "either column definition or baseTable option.")
       }
     }
@@ -551,8 +510,8 @@ object Utils {
   }
 
   /**
-   * Register given driver class with Spark's loader.
-   */
+    * Register given driver class with Spark's loader.
+    */
   def registerDriver(driver: String): Unit = {
     try {
       DriverRegistry.register(driver)
@@ -563,17 +522,17 @@ object Utils {
   }
 
   /**
-   * Register driver for given JDBC URL and return the driver class name.
-   */
+    * Register driver for given JDBC URL and return the driver class name.
+    */
   def registerDriverUrl(url: String): String = {
     val driver = getDriverClassName(url)
     registerDriver(driver)
     driver
   }
 
-  def withNewExecutionId[T](ctx: SQLContext,
+  def withNewExecutionId[T](session: SparkSession,
       queryExecution: QueryExecution)(body: => T): T = {
-    SQLExecution.withNewExecutionId(ctx, queryExecution)(body)
+    SQLExecution.withNewExecutionId(session, queryExecution)(body)
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -616,10 +575,12 @@ object Utils {
     CatalystTypeConverters.createToCatalystConverter(dataType)
 
   def getGenericRowValues(row: GenericRow): Array[Any] = row.values
+
+  def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
+    new ChunkedByteBuffer(chunks)
 }
 
-class ExecutorLocalRDD[T: ClassTag](
-    @transient private[this] val _sc: SparkContext,
+class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
     extends RDD[T](_sc, Nil) {
 
@@ -656,7 +617,7 @@ class ExecutorLocalRDD[T: ClassTag](
   }
 }
 
-class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
+class FixedPartitionRDD[T: ClassTag](_sc: SparkContext,
     f: (TaskContext, Partition) => Iterator[T], numPartitions: Int,
     override val partitioner: Option[Partitioner])
     extends RDD[T](_sc, Nil) {
@@ -681,58 +642,62 @@ class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
 
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
 
-  override def toString = s"ExecutorLocalPartition($index, $blockId)"
+  override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
 class MultiExecutorLocalPartition(override val index: Int,
     val blockIds: Seq[BlockManagerId]) extends Partition {
 
-  def hostExecutorIds = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+  def hostExecutorIds: Seq[String] = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
 
-  override def toString = s"MultiExecutorLocalPartition($index, $blockIds)"
+  override def toString: String = s"MultiExecutorLocalPartition($index, $blockIds)"
 }
 
 
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
     @transient splitIndex: Int,
-    var split: Partition
-    ) extends Serializable {
+    var split: Partition) extends Serializable {
 
   @throws[java.io.IOException]
-  private def writeObject(oos: ObjectOutputStream): Unit = org.apache.spark.util.Utils.tryOrIOException {
-    // Update the reference to parent split at the time of task serialization
-    split = rdd.partitions(splitIndex)
-    oos.defaultWriteObject()
-  }
+  private def writeObject(oos: ObjectOutputStream): Unit =
+    org.apache.spark.util.Utils.tryOrIOException {
+      // Update the reference to parent split at the time of task serialization
+      split = rdd.partitions(splitIndex)
+      oos.defaultWriteObject()
+    }
 }
 
 /**
- * Stores information about the narrow dependencies used by a StoreRDD.
- *
- * @param narrowDep maps to the dependencies variable in the parent RDD: for each one to one
- *                   dependency in dependencies, narrowDeps has a NarrowExecutorLocalSplitDep (describing
- *                   the partition for that dependency) at the corresponding index. The size of
- *                   narrowDeps should always be equal to the number of parents.
- */
+  * Stores information about the narrow dependencies used by a StoreRDD.
+  *
+  * @param narrowDep maps to the dependencies variable in the parent RDD:
+  *                  for each one to one dependency in dependencies,
+  *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
+  *                  the partition for that dependency) at the corresponding
+  *                  index. The size of narrowDeps should always be equal to
+  *                  the number of parents.
+  */
 private[spark] class CoGroupExecutorLocalPartition(
-    idx: Int, val blockId: BlockManagerId, val narrowDep: Option[NarrowExecutorLocalSplitDep])
+    idx: Int, val blockId: BlockManagerId,
+    val narrowDep: Option[NarrowExecutorLocalSplitDep])
     extends Partition with Serializable {
 
   override val index: Int = idx
 
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
 
-  override def toString = s"CoGroupExecutorLocalPartition($index, $blockId)"
+  override def toString: String =
+    s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
 }
 
 class ExecutorLocalShellPartition(override val index: Int,
     val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString = s"ExecutorLocalShellPartition($index, $hostList"
+  override def toString: String = s"ExecutorLocalShellPartition($index, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {

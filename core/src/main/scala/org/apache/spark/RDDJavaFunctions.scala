@@ -53,7 +53,7 @@ class RDDJavaFunctions[U](val javaRDD: JavaRDD[U]) {
   def mapPartitionsPreserve[R](f: FlatMapFunction[java.util.Iterator[U], R],
       preservesPartitioning: Boolean): JavaRDD[R] = {
     def fn: (Iterator[U]) => Iterator[R] = {
-      (x: Iterator[U]) => f.call(x.asJava).iterator().asScala
+      (x: Iterator[U]) => f.call(x.asJava).asScala
     }
     JavaRDD.fromRDD(
       new RDDExtensions(javaRDD.rdd)(fakeClassTag[U])
@@ -76,7 +76,7 @@ class RDDJavaFunctions[U](val javaRDD: JavaRDD[U]) {
       preservesPartitioning: Boolean = false): JavaRDD[R] = {
 
     def fn: (Int, Iterator[U]) => Iterator[R] = {
-      (x: Int, y: Iterator[U]) => f.call(x, y.asJava).iterator().asScala
+      (x: Int, y: Iterator[U]) => f.call(x, y.asJava).asScala
     }
     JavaRDD.fromRDD(
       new RDDExtensions(javaRDD.rdd)(fakeClassTag[U])

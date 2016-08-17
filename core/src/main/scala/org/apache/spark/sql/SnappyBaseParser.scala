@@ -16,24 +16,22 @@
  */
 package org.apache.spark.sql
 
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.{Failure, Success}
-
-import org.parboiled2._
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
+import org.parboiled2._
+
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */
-abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
+abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
-  val caseSensitive = context.conf.caseSensitiveAnalysis
+  val caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints = new mutable.HashMap[String, String]
 
@@ -48,7 +46,8 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
         ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
-        commentBody | commentBody
+        commentBody |
+    commentBody
   }
 
   protected final def lineCommentOrHint: Rule0 = rule {
@@ -65,11 +64,7 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
     quiet(
       SnappyParserConsts.whitespace |
       '-' ~ '-' ~ lineCommentOrHint |
-      '/' ~ (
-          '/' ~ lineCommentOrHint |
-          '*' ~ (commentBodyOrHint | fail("unclosed comment"))
-      ) |
-      '#' ~ lineCommentOrHint
+      '/' ~ '*' ~ (commentBodyOrHint | fail("unclosed comment"))
     ).*
   }
 
@@ -91,11 +86,8 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    (('\'' ~ capture((SnappyParserConsts.singleQuotedString | "''").*) ~ '\'') ~>
-        ((s: String) => if (s.indexOf("''") >= 0) s.replace("''", "'") else s) |
-    ('"' ~ capture((SnappyParserConsts.doubleQuotedString | "\"\"").*) ~ '"') ~>
-        ((s: String) => if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"")
-        else s)) ~ ws
+    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
+      if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
   }
 
   final def keyword(k: Keyword): Rule0 = rule {
@@ -107,24 +99,12 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
    * apart from the name so as to appear properly in error messages related
    * to incorrect DataType definition.
    */
-  final def dataType(t: Keyword): Rule0 = rule {
+  protected final def newDataType(t: Keyword): Rule0 = rule {
     atomic(ignoreCase(t.lower)) ~ delimiter
   }
 
-  protected final def sql: Rule1[LogicalPlan] = rule {
+  final def sql: Rule1[LogicalPlan] = rule {
     ws ~ start ~ (';' ~ ws).* ~ EOI
-  }
-
-  def parse(): LogicalPlan = {
-    sql.run() match {
-      case Success(plan) => plan
-      case Failure(e: ParseError) =>
-        throw Utils.analysisException(formatError(e))
-      case Failure(e) =>
-        val ae = Utils.analysisException(e.toString)
-        ae.initCause(e)
-        throw ae
-    }
   }
 
   protected def start: Rule1[LogicalPlan]
@@ -132,42 +112,51 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
   protected final def identifier: Rule1[String] = rule {
     atomic(capture(CharPredicate.Alpha ~ SnappyParserConsts.identifier.*)) ~
         delimiter ~> { (s: String) =>
-        val ucase = Utils.toUpperCase(s)
-        test(!SnappyParserConsts.keywords.contains(ucase)) ~
-            push(if (caseSensitive) s else ucase) } |
-    atomic('`' ~ capture(SnappyParserConsts.quotedIdentifier.+) ~ '`') ~ ws
+      val ucase = Utils.toUpperCase(s)
+      test(!SnappyParserConsts.keywords.contains(ucase)) ~
+          push(if (caseSensitive) s else ucase)
+    } |
+    atomic('"' ~ capture((noneOf("\"") | "\"\"").+) ~ '"') ~
+        ws ~> { (s: String) =>
+      val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
+      if (caseSensitive) id else Utils.toUpperCase(id)
+    } |
+    atomic('`' ~ capture((noneOf("`") | "``").+) ~ '`') ~ ws ~> { (s: String) =>
+      val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
+      if (caseSensitive) id else Utils.toUpperCase(id)
+    }
   }
 
   // DataTypes
   // It is not useful to see long list of "expected ARRAY or BIGINT or ..."
   // for parse errors, so not making these separate rules and instead naming
   // the common rule as "datatype" which is otherwise identical to "keyword"
-  final def ARRAY = dataType(SnappyParserConsts.ARRAY)
-  final def BIGINT = dataType(SnappyParserConsts.BIGINT)
-  final def BINARY = dataType(SnappyParserConsts.BINARY)
-  final def BLOB = dataType(SnappyParserConsts.BLOB)
-  final def BOOLEAN = dataType(SnappyParserConsts.BOOLEAN)
-  final def BYTE = dataType(SnappyParserConsts.BYTE)
-  final def CHAR = dataType(SnappyParserConsts.CHAR)
-  final def CLOB = dataType(SnappyParserConsts.CLOB)
-  final def DATE = dataType(SnappyParserConsts.DATE)
-  final def DECIMAL = dataType(SnappyParserConsts.DECIMAL)
-  final def DOUBLE = dataType(SnappyParserConsts.DOUBLE)
-  final def FLOAT = dataType(SnappyParserConsts.FLOAT)
-  final def INT = dataType(SnappyParserConsts.INT)
-  final def INTEGER = dataType(SnappyParserConsts.INTEGER)
-  final def LONG = dataType(SnappyParserConsts.LONG)
-  final def MAP = dataType(SnappyParserConsts.MAP)
-  final def NUMERIC = dataType(SnappyParserConsts.NUMERIC)
-  final def REAL = dataType(SnappyParserConsts.REAL)
-  final def SHORT = dataType(SnappyParserConsts.SHORT)
-  final def SMALLINT = dataType(SnappyParserConsts.SMALLINT)
-  final def STRING = dataType(SnappyParserConsts.STRING)
-  final def STRUCT = dataType(SnappyParserConsts.STRUCT)
-  final def TIMESTAMP = dataType(SnappyParserConsts.TIMESTAMP)
-  final def TINYINT = dataType(SnappyParserConsts.TINYINT)
-  final def VARBINARY = dataType(SnappyParserConsts.VARBINARY)
-  final def VARCHAR = dataType(SnappyParserConsts.VARCHAR)
+  final def ARRAY: Rule0 = newDataType(SnappyParserConsts.ARRAY)
+  final def BIGINT: Rule0 = newDataType(SnappyParserConsts.BIGINT)
+  final def BINARY: Rule0 = newDataType(SnappyParserConsts.BINARY)
+  final def BLOB: Rule0 = newDataType(SnappyParserConsts.BLOB)
+  final def BOOLEAN: Rule0 = newDataType(SnappyParserConsts.BOOLEAN)
+  final def BYTE: Rule0 = newDataType(SnappyParserConsts.BYTE)
+  final def CHAR: Rule0 = newDataType(SnappyParserConsts.CHAR)
+  final def CLOB: Rule0 = newDataType(SnappyParserConsts.CLOB)
+  final def DATE: Rule0 = newDataType(SnappyParserConsts.DATE)
+  final def DECIMAL: Rule0 = newDataType(SnappyParserConsts.DECIMAL)
+  final def DOUBLE: Rule0 = newDataType(SnappyParserConsts.DOUBLE)
+  final def FLOAT: Rule0 = newDataType(SnappyParserConsts.FLOAT)
+  final def INT: Rule0 = newDataType(SnappyParserConsts.INT)
+  final def INTEGER: Rule0 = newDataType(SnappyParserConsts.INTEGER)
+  final def LONG: Rule0 = newDataType(SnappyParserConsts.LONG)
+  final def MAP: Rule0 = newDataType(SnappyParserConsts.MAP)
+  final def NUMERIC: Rule0 = newDataType(SnappyParserConsts.NUMERIC)
+  final def REAL: Rule0 = newDataType(SnappyParserConsts.REAL)
+  final def SHORT: Rule0 = newDataType(SnappyParserConsts.SHORT)
+  final def SMALLINT: Rule0 = newDataType(SnappyParserConsts.SMALLINT)
+  final def STRING: Rule0 = newDataType(SnappyParserConsts.STRING)
+  final def STRUCT: Rule0 = newDataType(SnappyParserConsts.STRUCT)
+  final def TIMESTAMP: Rule0 = newDataType(SnappyParserConsts.TIMESTAMP)
+  final def TINYINT: Rule0 = newDataType(SnappyParserConsts.TINYINT)
+  final def VARBINARY: Rule0 = newDataType(SnappyParserConsts.VARBINARY)
+  final def VARCHAR: Rule0 = newDataType(SnappyParserConsts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
     (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ ',' ~ ws ~ digits ~ ')' ~ ws ~>
@@ -187,8 +176,6 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
     NUMERIC ~> (() => DecimalType.SYSTEM_DEFAULT) |
     DATE ~> (() => DateType) |
     TIMESTAMP ~> (() => TimestampType) |
-    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => StringType) |
-    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => StringType) |
     FLOAT ~> (() => FloatType) |
     REAL ~> (() => FloatType) |
     BOOLEAN ~> (() => BooleanType) |
@@ -202,23 +189,28 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
     BYTE ~> (() => ByteType)
   }
 
-  protected final def dataType: Rule1[DataType] = rule {
-    primitiveType | arrayType | mapType | structType
+  protected final def charType: Rule1[DataType] = rule {
+    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => StringType) |
+    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => StringType)
+  }
+
+  final def dataType: Rule1[DataType] = rule {
+    charType | primitiveType | arrayType | mapType | structType
   }
 
   protected final def arrayType: Rule1[DataType] = rule {
     ARRAY ~ '<' ~ ws ~ dataType ~ '>' ~ ws ~>
-        ((tpe: DataType) => ArrayType(tpe))
+        ((t: DataType) => ArrayType(t))
   }
 
   protected final def mapType: Rule1[DataType] = rule {
     MAP ~ '<' ~ ws ~ dataType ~ ',' ~ ws ~ dataType ~ '>' ~ ws ~>
-        ((tpe1: DataType, tpe2: DataType) => MapType(tpe1, tpe2))
+        ((t1: DataType, t2: DataType) => MapType(t1, t2))
   }
 
   protected final def structField: Rule1[StructField] = rule {
-    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, tpe: DataType) =>
-      StructField(name, tpe, nullable = true))
+    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) =>
+      StructField(name, t, nullable = true))
   }
 
   protected final def structType: Rule1[DataType] = rule {
@@ -226,15 +218,22 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
         ((fields: Seq[StructField]) => StructType(fields.toArray))
   }
 
-  protected final def tableIdentifier: Rule1[TableIdentifier] = rule {
+  protected final def columnCharType: Rule1[DataType] = rule {
+    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
+      CharType(d.toInt, isFixedLength = false)) |
+    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
+      CharType(d.toInt, isFixedLength = true))
+  }
+
+  final def columnDataType: Rule1[DataType] = rule {
+    columnCharType | primitiveType | arrayType | mapType | structType
+  }
+
+  final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schemaOpt: Option[String],
         table: String) => TableIdentifier(table, schemaOpt))
   }
-
-  /** Returns the rest of the input string that are not parsed yet */
-  protected final def restInput: String =
-    input.sliceString(cursor, input.length)
 }
 
 final class Keyword(s: String) {
@@ -252,12 +251,8 @@ object SnappyParserConsts {
   final val lineCommentEnd = "\n\r\f" + EOI
   final val lineHintEnd = ")\n\r\f" + EOI
   final val hintValueEnd = ")*" + EOI
-  final val singleQuotedString: CharPredicate = CharPredicate('\'').negated
-  final val doubleQuotedString: CharPredicate = CharPredicate('"').negated
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++
       CharPredicate('_')
-  final val quotedIdentifier: CharPredicate = CharPredicate(
-    '`', '\n', '\r', '\f').negated
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
   final val arithmeticOperator = CharPredicate('*', '/', '%', '&', '|', '^')
   final val exponent: CharPredicate = CharPredicate('e', 'E')
@@ -266,6 +261,8 @@ object SnappyParserConsts {
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val trueFn: () => Boolean = () => true
+
+  final val falseFn: () => Boolean = () => false
 
   final val keywords: mutable.Set[String] = mutable.Set[String]()
 
@@ -277,25 +274,31 @@ object SnappyParserConsts {
 
   final val ALL = keyword("all")
   final val AND = keyword("and")
-  final val APPROXIMATE = keyword("approximate")
   final val AS = keyword("as")
   final val ASC = keyword("asc")
   final val BETWEEN = keyword("between")
   final val BY = keyword("by")
   final val CASE = keyword("case")
   final val CAST = keyword("cast")
+  final val CREATE = keyword("create")
+  final val CURRENT = keyword("current")
   final val DELETE = keyword("delete")
   final val DESC = keyword("desc")
+  final val DESCRIBE = keyword("describe")
   final val DISTINCT = keyword("distinct")
+  final val DROP = keyword("drop")
   final val ELSE = keyword("else")
   final val END = keyword("end")
   final val EXCEPT = keyword("except")
   final val EXISTS = keyword("exists")
+  final val EXTERNAL = keyword("external")
   final val FALSE = keyword("false")
   final val FROM = keyword("from")
   final val FULL = keyword("full")
+  final val FUNCTION = keyword("function")
   final val GROUP = keyword("group")
   final val HAVING = keyword("having")
+  final val IF = keyword("if")
   final val IN = keyword("in")
   final val INNER = keyword("inner")
   final val INSERT = keyword("insert")
@@ -319,14 +322,19 @@ object SnappyParserConsts {
   final val REGEXP = keyword("regexp")
   final val RIGHT = keyword("right")
   final val RLIKE = keyword("rlike")
+  final val SCHEMA = keyword("schema")
   final val SELECT = keyword("select")
   final val SEMI = keyword("semi")
+  final val SET = keyword("set")
   final val TABLE = keyword("table")
+  final val TEMPORARY = keyword("temporary")
   final val THEN = keyword("then")
   final val TO = keyword("to")
   final val TRUE = keyword("true")
   final val UNION = keyword("union")
+  final val UNIQUE = keyword("unique")
   final val UPDATE = keyword("update")
+  final val USING = keyword("using")
   final val WHEN = keyword("when")
   final val WHERE = keyword("where")
   final val WITH = keyword("with")
@@ -374,4 +382,27 @@ object SnappyParserConsts {
   final val TINYINT = new Keyword("tinyint")
   final val VARBINARY = new Keyword("varbinary")
   final val VARCHAR = new Keyword("varchar")
+
+  // misc non-reserved keywords
+  final val ANTI = new Keyword("anti")
+  final val CACHE = new Keyword("cache")
+  final val CLEAR = new Keyword("clear")
+  final val COMMENT = new Keyword("comment")
+  final val EXTENDED = new Keyword("extended")
+  final val FUNCTIONS = new Keyword("functions")
+  final val GLOBAL = new Keyword("global")
+  final val HASH = new Keyword("hash")
+  final val INDEX = new Keyword("index")
+  final val INIT = new Keyword("init")
+  final val LAZY = new Keyword("lazy")
+  final val OPTIONS = new Keyword("options")
+  final val REFRESH = new Keyword("refresh")
+  final val SHOW = new Keyword("show")
+  final val START = new Keyword("start")
+  final val STOP = new Keyword("stop")
+  final val STREAM = new Keyword("stream")
+  final val STREAMING = new Keyword("streaming")
+  final val TABLES = new Keyword("tables")
+  final val TRUNCATE = new Keyword("truncate")
+  final val UNCACHE = new Keyword("uncache")
 }

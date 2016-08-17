@@ -51,7 +51,7 @@ object ExecutorInitiator extends Logging {
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
-    private var driverDM: InternalDistributedMember = null
+    private var driverDM: InternalDistributedMember = _
     @volatile var stopTask = false
     private var retryTask: Boolean = false
     private val lock = new Object()
@@ -181,22 +181,13 @@ object ExecutorInitiator extends Logging {
                     env = SparkCallbacks.createExecutorEnv(driverConf,
                       memberId, executorHost, port, cores, isLocal = false)
 
-                    // SparkEnv will set spark.executor.port if the
-                    // rpc env is listening for incoming connections
-                    // (e.g., if it's using akka). Otherwise, the
-                    // executor is running in client mode only, and
-                    // does not accept incoming connections.
-                    val sparkHostPort = env.conf.getOption("spark.executor.port").map { port =>
-                      executorHost + ":" + port
-                    }.orNull
-
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
 
                     val rpcenv = SparkCallbacks.getRpcEnv(env)
 
                     val executor = new SnappyCoarseGrainedExecutorBackend(
-                      rpcenv, url, memberId, sparkHostPort,
+                      rpcenv, url, memberId, executorHost,
                       cores, userClassPath, env)
 
                     rpcenv.setupEndpoint("Executor", executor)

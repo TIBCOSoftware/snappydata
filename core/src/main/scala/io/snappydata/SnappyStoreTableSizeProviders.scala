@@ -20,7 +20,6 @@
 package io.snappydata
 
 import java.sql.Connection
-import java.util.{ArrayList, HashMap}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -43,13 +42,13 @@ import org.apache.spark.{Logging, SparkContext}
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
-  private var timer: SystemTimer = null
 
   def start(sc: SparkContext): Unit = {
     val delay =
       sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
           .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
-    Misc.getGemFireCache.getCCPTimer().schedule(calculateTableSizeTask(sc), delay, delay)
+    Misc.getGemFireCache.getCCPTimer.schedule(calculateTableSizeTask(sc),
+      delay, delay)
   }
 
   def calculateTableSizeTask(sc: SparkContext): SystemTimer.SystemTimerTask = {
@@ -58,11 +57,11 @@ object StoreTableValueSizeProviderService extends Logging {
         val currentTableSizeInfo = mutable.HashMap[String, Long]()
 
         val result =
-          FunctionService.onMembers(GfxdMessage.getAllDataStores())
+          FunctionService.onMembers(GfxdMessage.getAllDataStores)
               .withCollector(new GfxdListResultCollector())
               .execute(RegionSizeCalculatorFunction.ID).getResult()
 
-        result.asInstanceOf[ArrayList[HashMap[String, Long]]]
+        result.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, Long]]]
             .asScala.foreach(_.asScala.foreach(row => {
           currentTableSizeInfo += (row._1 ->
               currentTableSizeInfo.get(row._1).map(value => value + row._2).getOrElse(row._2))
@@ -96,10 +95,10 @@ object StoreTableSizeProvider {
 
   private val memoryAnalyticsDefault = MemoryAnalytics(0, 0, 1)
 
-  def getTableSizes: (mutable.Set[UIAnalytics] , mutable.Set[UIAnalytics]) = {
+  def getTableSizes: (mutable.Set[UIAnalytics], mutable.Set[UIAnalytics]) = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
     if (currentTableStats == null) {
-      return  (mutable.Set() , mutable.Set())
+      return (mutable.Set(), mutable.Set())
     }
     val columnSet = mutable.Set[UIAnalytics]()
     val rowSet = mutable.Set[UIAnalytics]()
@@ -109,20 +108,20 @@ object StoreTableSizeProvider {
       val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
       val maForColumn = currentTableStats.
           getOrElse(columnTableName, memoryAnalyticsDefault)
-      if ( currentTableStats.contains(columnTableName) ) {
-        columnSet += (
-            new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
-              maForColumn.totalSize, maForColumn.totalRows, true))
+      if (currentTableStats.contains(columnTableName)) {
+        columnSet += UIAnalytics(details._1, maForRowBuffer.totalSize,
+          maForRowBuffer.totalRows, maForColumn.totalSize,
+          maForColumn.totalRows, isColumnTable = true)
       }
       else {
         rowSet += ( new UIAnalytics(details._1,
           maForRowBuffer.totalSize/maForRowBuffer.numHosts,
           maForRowBuffer.totalRows/maForRowBuffer.numHosts,
-          maForColumn.totalSize, maForColumn.totalRows, false))
+          maForColumn.totalSize, maForColumn.totalRows, isColumnTable = false))
       }
     })
 
-     (rowSet , columnSet)
+    (rowSet, columnSet)
   }
 
   private def getMemoryAnalyticsDetails(
@@ -140,7 +139,7 @@ object StoreTableSizeProvider {
       val totalSize = convertToBytes(rs.getString(2))
       val totalRows = rs.getString(3).toLong
       val numHosts = rs.getLong(4)
-      currentTableStats.put(name, MemoryAnalytics(totalSize , totalRows, numHosts))
+      currentTableStats.put(name, MemoryAnalytics(totalSize, totalRows, numHosts))
     }
     currentTableStats
   }
@@ -149,25 +148,19 @@ object StoreTableSizeProvider {
     if (value == null) 0 else (value.toDouble * 1024).toLong
   }
 
-
-  private def getRowBufferName(columnStoreName: String): String = {
-    columnStoreName.replace(SHADOW_TABLE_SUFFIX, "").
-        replace(INTERNAL_SCHEMA_NAME, "").
-        replaceFirst(".", "").
-        replaceFirst("__", ".")
-  }
-
   private def isColumnTable(tablename: String): Boolean =
-    tablename.startsWith(INTERNAL_SCHEMA_NAME) && tablename.endsWith(SHADOW_TABLE_SUFFIX)
+    tablename.startsWith(INTERNAL_SCHEMA_NAME) &&
+        tablename.endsWith(SHADOW_TABLE_SUFFIX)
 
 
   final def tryExecute[T: ClassTag](f: Connection => T,
       closeOnSuccess: Boolean = true): T = {
 
-    val connProperties = ExternalStoreUtils.validateAndGetAllProps(SnappyContext.globalSparkContext
-      , mutable.Map.empty[String, String])
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      SnappyContext.globalSparkContext, mutable.Map.empty[String, String])
     val getConnection: () => Connection =
-      ExternalStoreUtils.getConnector("SYS.MEMORYANALYTICS", connProperties, false)
+      ExternalStoreUtils.getConnector("SYS.MEMORYANALYTICS", connProperties,
+        forExecutor = false)
 
     val conn: Connection = getConnection()
 
