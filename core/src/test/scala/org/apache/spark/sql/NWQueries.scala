@@ -325,9 +325,12 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/employees.csv").getPath)
   val employees_table = "create table employees(" +
-    "EmployeeID int not null , " +
-    "LastName string not null, " +
-    "FirstName string not null, " +
+//    "EmployeeID int not null , " +
+//    "LastName string not null, " +
+//    "FirstName string not null, " +
+    "EmployeeID int, " +
+    "LastName string,  " +
+    "FirstName string, " +
     "Title string, " +
     "TitleOfCourtesy string, " +
     "BirthDate timestamp, " +
@@ -348,8 +351,10 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/customers.csv").getPath)
   val customers_table = "create table customers(" +
-    "CustomerID string not null, " +
-    "CompanyName string not null, " +
+//    "CustomerID string not null, " +
+//    "CompanyName string not null, " +
+    "CustomerID string, " +
+    "CompanyName string, " +
     "ContactName string, " +
     "ContactTitle string, " +
     "Address string, " +
@@ -364,7 +369,8 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/orders.csv").getPath)
   val orders_table = "create table orders (" +
-    "OrderID int not null, " +
+    //"OrderID int not null, " +
+    "OrderID int, " +
     "CustomerID string, " +
     "EmployeeID int, " +
     "OrderDate timestamp, " +
@@ -383,20 +389,28 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/order-details.csv").getPath)
   val order_details_table = "create table order_details (" +
-    "OrderID int not null, " +
-    "ProductID int not null, " +
-    "UnitPrice double not null, " +
-    "Quantity smallint not null, " +
-    "Discount double not null)"
+//    "OrderID int not null, " +
+//    "ProductID int not null, " +
+//    "UnitPrice double not null, " +
+//    "Quantity smallint not null, " +
+//    "Discount double not null)"
+    "OrderID int, " +
+    "ProductID int, " +
+    "UnitPrice double, " +
+    "Quantity smallint, " +
+    "Discount double)"
 
   val products = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/products.csv").getPath)
   val products_table = "create table products(" +
-    "ProductID int not null, " +
+    //"ProductID int not null, " +
+    "ProductID int, " +
     "ProductName string, " +
-    "SupplierID int not null, " +
-    "CategoryID int not null," +
+//    "SupplierID int not null, " +
+//    "CategoryID int not null," +
+    "SupplierID int, " +
+    "CategoryID int," +
     "QuantityPerUnit string, " +
     "UnitPrice double, " +
     "UnitsInStock smallint, " +
@@ -408,8 +422,10 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/suppliers.csv").getPath)
   val suppliers_table = "create table suppliers(" +
-    "SupplierID int not null, " +
-    "CompanyName string not null, " +
+//    "SupplierID int not null, " +
+//    "CompanyName string not null, " +
+    "SupplierID int, " +
+    "CompanyName string, " +
     "ContactName string, " +
     "ContactTitle string, " +
     "Address string, " +
@@ -425,14 +441,20 @@ object NWQueries extends SnappyFunSuite{
     .option("header", "true")
     .load(getClass.getResource("/northwind/territories.csv").getPath)
   val territories_table = "create table territories(" +
-    "TerritoryID string not null, " +
-    "TerritoryDescription string not null, " +
-    "RegionID string not null)"
+//    "TerritoryID string not null, " +
+//    "TerritoryDescription string not null, " +
+//    "RegionID string not null)"
+    "TerritoryID string, " +
+    "TerritoryDescription string, " +
+    "RegionID string)"
 
   val employee_territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
   val employee_territories_table = "create table employee_territories(" +
-    "EmployeeID int not null, " +
-    "TerritoryID int not null)"
+//    "EmployeeID int not null, " +
+//    "TerritoryID int not null)"
+    "EmployeeID int, " +
+    //"TerritoryID int)"
+    "TerritoryID string)"
 }
