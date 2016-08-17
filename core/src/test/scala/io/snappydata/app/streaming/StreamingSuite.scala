@@ -302,17 +302,17 @@ class StreamingSuite
     ssnc.snappyContext.createTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
-    resultStream.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemxdColumnTable")
-    })
+    resultStream.foreachDataFrame { df =>
+      df.write.format("column").mode(SaveMode.Append)
+          .options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
+    }
 
     val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.createOrReplaceTempView("tweetTable")
 
-    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
-        "(duration 4 seconds, slide 4 seconds) " +
+    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 " +
+        "window (duration 4 seconds, slide 4 seconds) " +
         "t1 JOIN tweetTable t2 ON t1.id = t2.id")
     resultSet.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
