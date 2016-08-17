@@ -45,8 +45,6 @@ private[sql] case class PartitionedPhysicalRDD(
     }
   }
 
-  override def outputsUnsafeRows: Boolean = true
-
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
     if (numPartitions == 1) SinglePartition
