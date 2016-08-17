@@ -33,7 +33,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
-import org.apache.zeppelin.interpreter.{ZeppelinIntpUtil, SnappyInterpreterServer}
+import org.apache.zeppelin.interpreter.{SnappyInterpreterServer, ZeppelinIntpUtil}
 import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
@@ -87,7 +87,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def directApiInvoked: Boolean = _directApiInvoked
 
-  private var remoteInterpreterServer: SnappyInterpreterServer = _;
+  private var remoteInterpreterServer: SnappyInterpreterServer = _
+
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
@@ -128,11 +129,13 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       })
 
 
-      if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER, "true").equals("true")) {
+      if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
+        "false").equalsIgnoreCase("true")) {
         /**
          * This will initialize the zeppelin repl interpreter.
-         * This should be done before spark context is created as zeppelin interpreter will set some properties for
-         * classloader for repl which needs to be specified while creating sparkcontext in lead
+         * This should be done before spark context is created as zeppelin
+         * interpreter will set some properties for classloader for repl
+         * which needs to be specified while creating sparkcontext in lead
          */
         val props: Properties = ZeppelinIntpUtil.initializeZeppelinReplAndGetConfig()
         props.asScala.foreach(kv => conf.set(kv._1, kv._2))
@@ -191,7 +194,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
                 "Standing by as secondary.")
             primaryLeaderLock.lockInterruptibly()
 
-            //TODO: check cancelInProgress and other shutdown possibilities.
+            // TODO: check cancelInProgress and other shutdown possibilities.
 
             logInfo("Resuming startup sequence from STANDBY ...")
             serverstatus = State.STARTING
@@ -212,16 +215,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       sparkContext.stop()
       sparkContext = null
     }
-    try {
-
-      if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
-        remoteInterpreterServer.shutdown(true)
-      }
-
-    } finally {
-      //Do nothing
+    if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
+      remoteInterpreterServer.shutdown(true)
     }
-
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
@@ -379,8 +375,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
    * @param bootProperties
    */
   private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {
-    //As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
-    if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER, "true").equals("true")) {
+    // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
+    // [sumedh] Our startup times are already very high and we are looking to
+    // cut that down and not increase further with these external utilities.
+    if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
+      "false").equalsIgnoreCase("true")) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
       try {
         remoteInterpreterServer = new SnappyInterpreterServer(port)
@@ -388,7 +387,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
       } catch {
         case tTransportException: TTransportException =>
-          logWarning("Error while starting zeppelin interpreter.Actual exception : " + tTransportException.getMessage)
+          logWarning("Error while starting zeppelin interpreter.Actual exception : " +
+              tTransportException.getMessage)
       }
     }
   }
@@ -435,8 +435,4 @@ object LeadImpl {
   def clearInitializingSparkContext(): Unit = {
     startingContext.set(null)
   }
-
-
-
-
 }

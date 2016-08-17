@@ -26,18 +26,23 @@ import org.apache.spark.unsafe.types.UTF8String
  * Wraps an `InternalRow` to expose a `Row`
  */
 final class WrappedInternalRow(override val schema: StructType,
-    val converters: Array[Any => Any]) extends Row {
+    columnConverters: Option[Array[Any => Any]] = None) extends Row {
+
+  @transient private lazy val converters = columnConverters.getOrElse(
+    schema.fields.map(f => Utils.createScalaConverter(f.dataType)))
 
   private var _internalRow: InternalRow = _
-  private val cache = new Array[Any](schema.length)
+  @transient private lazy val cache = new Array[Any](schema.length)
 
-  def this(schema: StructType) = this(schema, schema.fields.map { f =>
-    Utils.createScalaConverter(f.dataType)
-  })
+  def this(internalRow: InternalRow, schema: StructType,
+      columnConverters: Option[Array[Any => Any]]) = {
+    this(schema, columnConverters)
+    _internalRow = internalRow
+  }
 
-  def internalRow = _internalRow
+  def internalRow: InternalRow = _internalRow
 
-  def internalRow_=(row: InternalRow): Unit = {
+  def internalRow_=(row: InternalRow): WrappedInternalRow = {
     if (_internalRow ne null) {
       val len = cache.length
       var i = 0
@@ -49,27 +54,29 @@ final class WrappedInternalRow(override val schema: StructType,
       }
     }
     _internalRow = row
+    this
   }
 
   override def length: Int = schema.length
 
   override def isNullAt(ordinal: Int): Boolean = _internalRow.isNullAt(ordinal)
 
-  override def getBoolean(ordinal: Int) = _internalRow.getBoolean(ordinal)
+  override def getBoolean(ordinal: Int): Boolean =
+    _internalRow.getBoolean(ordinal)
 
-  override def getByte(ordinal: Int) = _internalRow.getByte(ordinal)
+  override def getByte(ordinal: Int): Byte = _internalRow.getByte(ordinal)
 
-  override def getShort(ordinal: Int) = _internalRow.getShort(ordinal)
+  override def getShort(ordinal: Int): Short = _internalRow.getShort(ordinal)
 
-  override def getInt(ordinal: Int) = _internalRow.getInt(ordinal)
+  override def getInt(ordinal: Int): Int = _internalRow.getInt(ordinal)
 
-  override def getLong(ordinal: Int) = _internalRow.getLong(ordinal)
+  override def getLong(ordinal: Int): Long = _internalRow.getLong(ordinal)
 
-  override def getFloat(ordinal: Int) = _internalRow.getFloat(ordinal)
+  override def getFloat(ordinal: Int): Float = _internalRow.getFloat(ordinal)
 
-  override def getDouble(ordinal: Int) = _internalRow.getDouble(ordinal)
+  override def getDouble(ordinal: Int): Double = _internalRow.getDouble(ordinal)
 
-  override def getString(ordinal: Int) = {
+  override def getString(ordinal: Int): String = {
     val v = cache(ordinal)
     if (v == null) {
       val s = _internalRow.getUTF8String(ordinal).toString
@@ -91,7 +98,7 @@ final class WrappedInternalRow(override val schema: StructType,
     }
   }
 
-  override def get(ordinal: Int) = {
+  override def get(ordinal: Int): Any = {
     val v = cache(ordinal)
     if (v == null) {
       val s = converters(ordinal)(_internalRow.get(ordinal,
@@ -103,8 +110,8 @@ final class WrappedInternalRow(override val schema: StructType,
     }
   }
 
-  override def copy() = {
-    val row = new WrappedInternalRow(schema, converters)
+  override def copy(): WrappedInternalRow = {
+    val row = new WrappedInternalRow(schema, Some(converters))
     row._internalRow = _internalRow
     row
   }

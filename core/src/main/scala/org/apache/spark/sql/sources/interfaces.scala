@@ -18,7 +18,8 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{SortDirection, Attribute}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -174,6 +175,11 @@ trait DeletableRelation {
 trait DestroyRelation {
 
   /**
+   * Return true if table already existed when the relation object was created.
+   */
+  def tableExists: Boolean
+
+  /**
    * Truncate the table represented by this relation.
    */
   def truncate(): Unit
@@ -195,7 +201,8 @@ trait IndexableRelation {
     *                     direction of sorting. Direction can be specified as None.
     * @param options Options for indexes. For e.g.
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or
+    *                ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,
@@ -250,5 +257,6 @@ trait ExternalSchemaRelationProvider {
       sqlContext: SQLContext,
       mode: SaveMode,
       parameters: Map[String, String],
-      schema: String): BaseRelation
+      schema: String,
+      data: Option[LogicalPlan]): BaseRelation
 }

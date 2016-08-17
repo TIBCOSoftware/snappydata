@@ -40,8 +40,8 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
     s.execute("streaming stop")
-    s.execute("streaming init 2")
-    s.execute("streaming init 4")
+    s.execute("streaming init 2secs")
+    s.execute("streaming init 4secs")
     s.execute("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +

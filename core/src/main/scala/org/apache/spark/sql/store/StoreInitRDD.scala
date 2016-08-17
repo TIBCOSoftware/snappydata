@@ -33,7 +33,7 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
 /**
  * This RDD registers a store for each table being created.
  */
-class StoreInitRDD(@transient sqlContext: SQLContext,
+class StoreInitRDD(@transient private val sqlContext: SQLContext,
     table: String,
     userSchema: Option[StructType],
     partitions: Int,
@@ -51,8 +51,9 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
       context: TaskContext): Iterator[(InternalDistributedMember,
       BlockManagerId)] = {
 
-    //TODO:Suranjan Hackish as we have to register this store at each executor, for storing the cachedbatch
-    // We are creating JDBCSourceAsColumnarStore without blockMap as storing at each executor
+    // TODO:Suranjan Hackish as we have to register this store at each
+    // executor, for storing the CachedBatch we are creating
+    // JDBCSourceAsColumnarStore without blockMap as storing at each executor
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
@@ -92,4 +93,3 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
 }
-
