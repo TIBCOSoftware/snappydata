@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.sources.{PrunedUnsafeFilteredScan, PrunedFilteredScan, Filter}
 import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
 
 /**
@@ -36,30 +36,15 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+    l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
       pruneFilterProject(
         l,
         projects,
         filters,
         t.numPartitions,
         t.partitionColumns,
-        (a, f) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray, f))) :: Nil
-
+        (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case _ => Nil
-  }
-
-  /**
-   * Convert RDD of Row into RDD of InternalRow with objects in catalyst types
-   */
-  private[this] def toCatalystRDD(
-      relation: LogicalRelation,
-      output: Seq[Attribute],
-      rdd: RDD[Row]): RDD[InternalRow] = {
-    if (relation.relation.needConversion) {
-      execution.RDDConversions.rowToRowRdd(rdd, output.map(_.dataType))
-    } else {
-      rdd.asInstanceOf[RDD[InternalRow]]
-    }
   }
 
   // Based on Public API.
