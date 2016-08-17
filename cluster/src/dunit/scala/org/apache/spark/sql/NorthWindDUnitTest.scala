@@ -16,43 +16,36 @@
  */
 package org.apache.spark.sql
 
-import io.snappydata.SnappyFunSuite
-import org.apache.spark.Logging
+import io.snappydata.cluster.ClusterManagerTestBase
 import org.apache.spark.sql.execution.aggregate.{SortBasedAggregate, TungstenAggregate}
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.{LocalTableScan, PartitionedPhysicalRDD, Project, Sort}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-class NorthWindTest
-  extends SnappyFunSuite
-  with Logging
-  with BeforeAndAfter
-  with BeforeAndAfterAll {
+class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  after {
-    dropTables(snc)
-  }
-
-  test("Test replicated row tables queries") {
+  def testReplicatedTableQueries(): Unit = {
+    val snc = SnappyContext(sc)
     createAndLoadReplicatedTables(snc)
     validateReplicatedTableQueries(snc)
   }
 
-  test("Test partitioned row tables queries") {
+  def testPartitionedRowTableQueries(): Unit = {
+    val snc = SnappyContext(sc)
     createAndLoadPartitionedTables(snc)
     validatePartitionedRowTableQueries(snc)
   }
 
-  test("Test column tables queries") {
+  def testPartitionedColumnTableQueries(): Unit = {
+    val snc = SnappyContext(sc)
     createAndLoadColumnTables(snc)
     validatePartitionedColumnTableQueries(snc)
   }
 
-  test("Test colocated tables queries") {
+  def testColocatedTableQueries(): Unit = {
+    val snc = SnappyContext(sc)
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
   }
-
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int,
                          numPartitions: Int, c: Class[_]): Any = {
     val df = snc.sql(sqlString)
@@ -530,5 +523,4 @@ class NorthWindTest
     snc.sql("drop table if exists suppliers")
     snc.sql("drop table if exists territories")
   }
-
 }

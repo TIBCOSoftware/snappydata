@@ -349,8 +349,6 @@ class BaseColumnFormatRelation(
         val sql = s"CREATE TABLE $tableName $schemaExtensions " + " DISABLE CONCURRENCY CHECKS "
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
-        println(s"Applying DDL (url=${connProperties.url}; " +
-          s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,

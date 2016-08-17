@@ -155,7 +155,9 @@ object StoreUtils extends Logging {
             cntr += 1
           }
           val perfNodes = new mutable.HashSet[BlockManagerId]()
-          perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
+          if (SnappyContext.storeToBlockMap.get(e._1.toString).isDefined) {
+            perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
+          }
           val prefNodeSeq = perfNodes.toSeq
           partitions(partCnt) = new MultiBucketExecutorPartition(
             partCnt, bucketsPerPart, prefNodeSeq)
