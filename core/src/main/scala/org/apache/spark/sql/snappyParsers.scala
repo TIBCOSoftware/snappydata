@@ -133,6 +133,11 @@ class SnappyParser(session: SnappySession)
   final def SECOND: Rule0 = rule { intervalUnit(Consts.SECOND) }
   final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
+  //cube, rollup, grouping sets
+  final def CUBE = rule { keyword(Consts.CUBE) }
+  final def ROLLUP = rule { keyword(Consts.ROLLUP) }
+  final def GROUPING = rule { keyword(Consts.GROUPING) }
+  final def SETS = rule { keyword(Consts.SETS) }
   // Added for streaming window CQs
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
   final def SLIDE: Rule0 = rule { keyword(Consts.SLIDE) }
@@ -460,6 +465,42 @@ class SnappyParser(session: SnappySession)
         ((d: Duration, s: Option[Duration]) => (d, s))
   }
 
+  private def extractGroupingSet(
+    child: LogicalPlan,
+    aggregations: Seq[NamedExpression],
+    groupByExprs: Seq[Expression],
+    groupingSets: Seq[Seq[Expression]]): GroupingSets = {
+    val keyMap = groupByExprs.zipWithIndex.toMap
+    val bitmasks: Seq[Int] = groupingSets.map(set => set.foldLeft(0)((bitmap, col) => {
+      require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
+      bitmap | 1 << keyMap(col)
+      }))
+    GroupingSets(bitmasks, groupByExprs, child, aggregations)
+  }
+
+  protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression + (',' ~ ws)) ~ ws ~ ')'  ~>  ((gs: Seq[Expression]) => gs) |
+    (expression + (',' ~ ws))  ~>  ((gs: Seq[Expression]) => gs) |
+    '(' ~ ws ~ ')'  ~>  (() => (Seq[Expression]()))
+  }
+
+  protected final def cubeRollUpGroupingSet: Rule1[(Seq[Seq[Expression]], Option[String])] = rule {
+    CUBE ~> (() => (Seq(Seq[Expression]()), Option("CUBE"))) |
+    ROLLUP ~> (() => (Seq(Seq[Expression]()),Option("ROLLUP"))) |
+    GROUPING ~ SETS ~ ('(' ~ ws ~ (groupingSetExpr ~ ws).+(',' ~ ws) ~ ws ~ ')' ~ ws)  ~> 
+      ((gs: Seq[Seq[Expression]]) => (gs, Option("GROUPINGSETS")))
+  }
+
+  protected final def groupBy: Rule1[(Seq[Expression], Seq[Seq[Expression]],  Option[String])] = rule {
+    GROUP ~ BY ~ (expression + (',' ~ ws)) ~
+    (WITH ~ cubeRollUpGroupingSet).? ~>
+      ((groupingExpr: Seq[Expression], crgs: Option[(Seq[Seq[Expression]], Option[String])]) =>
+       { val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), Option("")) // if cube, rollup, GrSet is not used
+       val cubeRollupGrSetExprs = crgs.getOrElse(emptyCubeRollupGrSet)
+       (groupingExpr, cubeRollupGrSetExprs._1, cubeRollupGrSetExprs._2 )
+       })
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
         ((tableIdent: TableIdentifier,
@@ -613,17 +654,28 @@ class SnappyParser(session: SnappySession)
     (projection + (',' ~ ws)) ~
     (FROM ~ relations).? ~
     (WHERE ~ expression).? ~
-    (GROUP ~ BY ~ (expression + (',' ~ ws))).? ~
+    groupBy.? ~
     (HAVING ~ expression).? ~
     sortType.? ~
     (LIMIT ~ expression).? ~> { (d: Option[Boolean], p: Seq[Expression],
         f: Option[LogicalPlan], w: Option[Expression],
-        g: Option[Seq[Expression]], h: Option[Expression],
+        g: Option[(Seq[Expression], Seq[Seq[Expression]], Option[String])], h: Option[Expression],
         s: Option[LogicalPlan => LogicalPlan], l: Option[Expression]) =>
       val base = f.getOrElse(OneRowRelation)
       val withFilter = w.map(Filter(_, base)).getOrElse(base)
-      val withProjection = g.map(Aggregate(_, p.map(UnresolvedAlias(_, None)),
-        withFilter)).getOrElse(Project(p.map(UnresolvedAlias(_, None)), withFilter))
+      val withProjection = g.map(x => {
+        x._3.get match {
+          // group by cols with rollup
+          case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), p.map(UnresolvedAlias(_, None)), withFilter)
+          // group by cols with cube
+          case "CUBE" => Aggregate(Seq(Cube(x._1)), p.map(UnresolvedAlias(_, None)), withFilter)
+          // group by cols with grouping sets()()
+          case "GROUPINGSETS" => extractGroupingSet(withFilter, p.map(UnresolvedAlias(_, None)), x._1, x._2)
+          // just "group by cols"
+          case _ => Aggregate(x._1, p.map(UnresolvedAlias(_, None)), withFilter)
+        }
+      }
+      ).getOrElse(Project(p.map(UnresolvedAlias(_, None)), withFilter))
       val withDistinct =
         if (d.isEmpty) withProjection else Distinct(withProjection)
       val withHaving = h.map(Filter(_, withDistinct)).getOrElse(withDistinct)
