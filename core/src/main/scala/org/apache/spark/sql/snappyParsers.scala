@@ -27,8 +27,8 @@ import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.parser.ParserUtils
+import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -60,66 +60,108 @@ class SnappyParser(session: SnappySession)
   final def BETWEEN: Rule0 = rule { keyword(Consts.BETWEEN) }
   final def BY: Rule0 = rule { keyword(Consts.BY) }
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
-  final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
   final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
-  final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
-  final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXCEPT: Rule0 = rule { keyword(Consts.EXCEPT) }
   final def EXISTS: Rule0 = rule { keyword(Consts.EXISTS) }
-  final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
   final def FALSE: Rule0 = rule { keyword(Consts.FALSE) }
   final def FROM: Rule0 = rule { keyword(Consts.FROM) }
-  final def FULL: Rule0 = rule { keyword(Consts.FULL) }
-  final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def GROUP: Rule0 = rule { keyword(Consts.GROUP) }
   final def HAVING: Rule0 = rule { keyword(Consts.HAVING) }
-  final def IF: Rule0 = rule { keyword(Consts.IF) }
   final def IN: Rule0 = rule { keyword(Consts.IN) }
   final def INNER: Rule0 = rule { keyword(Consts.INNER) }
   final def INSERT: Rule0 = rule { keyword(Consts.INSERT) }
   final def INTERSECT: Rule0 = rule { keyword(Consts.INTERSECT) }
-  final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
   final def INTO: Rule0 = rule { keyword(Consts.INTO) }
   final def IS: Rule0 = rule { keyword(Consts.IS) }
   final def JOIN: Rule0 = rule { keyword(Consts.JOIN) }
   final def LEFT: Rule0 = rule { keyword(Consts.LEFT) }
   final def LIKE: Rule0 = rule { keyword(Consts.LIKE) }
-  final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def NOT: Rule0 = rule { keyword(Consts.NOT) }
   final def NULL: Rule0 = rule { keyword(Consts.NULL) }
   final def ON: Rule0 = rule { keyword(Consts.ON) }
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
-  final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
-  final def PUT: Rule0 = rule { keyword(Consts.PUT) }
-  final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
-  final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
   final def SELECT: Rule0 = rule { keyword(Consts.SELECT) }
-  final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SET: Rule0 = rule { keyword(Consts.SET) }
-  final def SORT: Rule0 = rule { keyword(Consts.SORT) }
   final def TABLE: Rule0 = rule { keyword(Consts.TABLE) }
-  final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
   final def UNION: Rule0 = rule { keyword(Consts.UNION) }
   final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
   final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
-  final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
-  // interval units are not reserved (handled in Consts singleton)
+
+  // non-reserved keywords
+  final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
+  final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CAST: Rule0 = rule { keyword(Consts.CAST) }
+  final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
+  final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
+  final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
+  final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
+  final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
+  final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
+  final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FULL: Rule0 = rule { keyword(Consts.FULL) }
+  final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
+  final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
+  final def GLOBAL: Rule0 = rule { keyword(Consts.GLOBAL) }
+  final def HASH: Rule0 = rule { keyword(Consts.HASH) }
+  final def IF: Rule0 = rule { keyword(Consts.IF) }
+  final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
+  final def INIT: Rule0 = rule { keyword(Consts.INIT) }
+  final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
+  final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
+  final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
+  final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
+  final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
+  final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
+  final def PUT: Rule0 = rule { keyword(Consts.PUT) }
+  final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
+  final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
+  final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
+  final def SORT: Rule0 = rule { keyword(Consts.SORT) }
+  final def START: Rule0 = rule { keyword(Consts.START) }
+  final def STOP: Rule0 = rule { keyword(Consts.STOP) }
+  final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
+  final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
+  final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
+  final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
+  final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
+  final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def USING: Rule0 = rule { keyword(Consts.USING) }
+
+  // Window analytical functions (non-reserved)
+  final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
+  final def FOLLOWING: Rule0 = rule { keyword(Consts.FOLLOWING) }
+  final def OVER: Rule0 = rule { keyword(Consts.OVER) }
+  final def PRECEDING: Rule0 = rule { keyword(Consts.PRECEDING) }
+  final def RANGE: Rule0 = rule { keyword(Consts.RANGE) }
+  final def ROW: Rule0 = rule { keyword(Consts.ROW) }
+  final def ROWS: Rule0 = rule { keyword(Consts.ROWS) }
+  final def SLIDE: Rule0 = rule { keyword(Consts.SLIDE) }
+  final def UNBOUNDED: Rule0 = rule { keyword(Consts.UNBOUNDED) }
+  final def WINDOW: Rule0 = rule { keyword(Consts.WINDOW) }
+
+  // interval units (non-reserved)
   final def DAY: Rule0 = rule { intervalUnit(Consts.DAY) }
   final def HOUR: Rule0 = rule { intervalUnit(Consts.HOUR) }
   final def MICROS: Rule0 = rule { intervalUnit("micro") }
@@ -133,32 +175,6 @@ class SnappyParser(session: SnappySession)
   final def SECOND: Rule0 = rule { intervalUnit(Consts.SECOND) }
   final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
-  // Added for streaming window CQs
-  final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
-  final def SLIDE: Rule0 = rule { keyword(Consts.SLIDE) }
-  final def WINDOW: Rule0 = rule { keyword(Consts.WINDOW) }
-  // DDL/misc commands (non-reserved)
-  final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
-  final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
-  final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
-  final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
-  final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
-  final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
-  final def GLOBAL: Rule0 = rule { keyword(Consts.GLOBAL) }
-  final def HASH: Rule0 = rule { keyword(Consts.HASH) }
-  final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
-  final def INIT: Rule0 = rule { keyword(Consts.INIT) }
-  final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
-  final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
-  final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
-  final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
-  final def START: Rule0 = rule { keyword(Consts.START) }
-  final def STOP: Rule0 = rule { keyword(Consts.STOP) }
-  final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
-  final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
-  final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
-  final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
-  final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
@@ -342,7 +358,7 @@ class SnappyParser(session: SnappySession)
     ) ~ ws
   }
 
-  protected final def projection: Rule1[Expression] = rule {
+  protected final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
         AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
@@ -454,14 +470,15 @@ class SnappyParser(session: SnappySession)
     )
   }
 
-  protected final def windowOptions: Rule1[(Duration, Option[Duration])] = rule {
+  protected final def streamWindowOptions: Rule1[(Duration,
+      Option[Duration])] = rule {
     WINDOW ~ '(' ~ ws ~ DURATION ~ durationUnit ~ (',' ~ ws ~
         SLIDE ~ durationUnit).? ~ ')' ~ ws ~>
         ((d: Duration, s: Option[Duration]) => (d, s))
   }
 
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
-    tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
+    tableIdentifier ~ streamWindowOptions.? ~ (AS.? ~ identifier).? ~>
         ((tableIdent: TableIdentifier,
             window: Option[(Duration, Option[Duration])],
             alias: Option[String]) => window match {
@@ -469,7 +486,7 @@ class SnappyParser(session: SnappySession)
           case Some(win) => WindowLogicalPlan(win._1, win._2,
             UnresolvedRelation(tableIdent, alias))
         }) |
-    '(' ~ ws ~ start ~ ')' ~ ws ~ windowOptions.? ~ AS.? ~ identifier ~>
+    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~ AS.? ~ identifier ~>
         ((child: LogicalPlan, window: Option[(Duration, Option[Duration])],
             alias: String) => window match {
           case None => SubqueryAlias(alias, child)
@@ -478,8 +495,19 @@ class SnappyParser(session: SnappySession)
         })
   }
 
-  protected final def joinConditions: Rule1[Expression] = rule {
-    ON ~ expression
+  protected final def join: Rule1[(Option[JoinType], LogicalPlan,
+      Option[Expression])] = rule {
+    joinType.? ~ JOIN ~ relationFactor ~ (
+        ON ~ expression ~> ((t: Option[JoinType], r: LogicalPlan,
+            j: Expression) => (t, r, Some(j))) |
+        USING ~ '(' ~ ws ~ (identifier + (',' ~ ws)) ~ ')' ~ ws ~>
+            ((t: Option[JoinType], r: LogicalPlan, ids: Seq[String]) =>
+              (Some(UsingJoin(t.getOrElse(Inner),
+                ids.map(UnresolvedAttribute.quoted))), r, None)) |
+        MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
+    ) |
+    NATURAL ~ joinType.? ~ JOIN ~ relationFactor ~> ((t: Option[JoinType],
+        r: LogicalPlan) => (Some(NaturalJoin(t.getOrElse(Inner))), r, None))
   }
 
   protected final def joinType: Rule1[JoinType] = rule {
@@ -500,28 +528,92 @@ class SnappyParser(session: SnappySession)
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
     ((expression ~ sortDirection.? ~> ((e: Expression,
-        d: Option[SortDirection]) => (e, d))) + (',' ~ ws)) ~>
+        d: Option[SortDirection]) => e -> d)) + (',' ~ ws)) ~>
         ((exps: Seq[(Expression, Option[SortDirection])]) =>
           exps.map(pair => SortOrder(pair._1, pair._2.getOrElse(Ascending))))
   }
 
-  protected final def sortType: Rule1[LogicalPlan => LogicalPlan] = rule {
-    ORDER ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
+  protected final def queryOrganization: Rule1[LogicalPlan =>
+      LogicalPlan] = rule {
+    (ORDER ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
       (l: LogicalPlan) => Sort(o, global = true, l)) |
-    SORT ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
-      (l: LogicalPlan) => Sort(o, global = false, l))
+    SORT ~ BY ~ ordering ~ distributeBy.? ~> ((o: Seq[SortOrder],
+        d: Option[LogicalPlan => LogicalPlan]) => (l: LogicalPlan) =>
+      Sort(o, global = false, d.map(_ (l)).getOrElse(l))) |
+    distributeBy |
+    CLUSTER ~ BY ~ (expression + (',' ~ ws)) ~> ((e: Seq[Expression]) =>
+      (l: LogicalPlan) => Sort(e.map(SortOrder(_, Ascending)), global = false,
+        RepartitionByExpression(e, l)))).? ~
+    (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
+        ((id: String, w: WindowSpec) => id -> w)) + (',' ~ ws))).? ~
+    (LIMIT ~ expression).? ~> { (o: Option[LogicalPlan => LogicalPlan],
+        w: Option[Seq[(String, WindowSpec)]],
+        e: Option[Expression]) => (l: LogicalPlan) =>
+      val withOrder = o.map(_ (l)).getOrElse(l)
+      val withWindow = w.map { ws =>
+        val baseWindowMap = ws.toMap
+        val windowMapView = baseWindowMap.mapValues {
+          case WindowSpecReference(name) =>
+            baseWindowMap.get(name) match {
+              case Some(spec: WindowSpecDefinition) => spec
+              case Some(ref) => throw Utils.analysisException(
+                s"Window reference '$name' is not a window specification")
+              case None => throw Utils.analysisException(
+                s"Cannot resolve window reference '$name'")
+            }
+          case spec: WindowSpecDefinition => spec
+        }
+
+        // Note that mapValues creates a view, so force materialization.
+        WithWindowDefinition(windowMapView.map(identity), withOrder)
+      }.getOrElse(withOrder)
+      e.map(Limit(_, withWindow)).getOrElse(withWindow)
+    }
+  }
+
+  protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
+    DISTRIBUTE ~ BY ~ (expression + (',' ~ ws)) ~> ((e: Seq[Expression]) =>
+      (l: LogicalPlan) => RepartitionByExpression(e, l))
+  }
+
+  protected final def windowSpec: Rule1[WindowSpec] = rule {
+    '(' ~ ws ~ ((PARTITION | DISTRIBUTE | CLUSTER) ~ BY ~ (expression +
+        (',' ~ ws))).? ~ (ORDER | SORT) ~ BY ~ ordering ~ windowFrame.? ~ ')' ~
+        ws ~> ((p: Option[Seq[Expression]], o: Seq[SortOrder],
+        w: Option[SpecifiedWindowFrame]) => WindowSpecDefinition(
+      p.getOrElse(Seq.empty), o, w.getOrElse(UnspecifiedFrame))) |
+    identifier ~> WindowSpecReference
+  }
+
+  protected final def windowFrame: Rule1[SpecifiedWindowFrame] = rule {
+    (RANGE ~> (() => RangeFrame) | ROWS ~> (() => RowFrame)) ~ (
+        BETWEEN ~ frameBound ~ AND ~ frameBound ~> ((t: FrameType,
+            s: FrameBoundary, e: FrameBoundary) => SpecifiedWindowFrame(t, s, e)) |
+        frameBound ~> ((t: FrameType, s: FrameBoundary) =>
+          SpecifiedWindowFrame(t, s, CurrentRow))
+    )
+  }
+
+  protected final def frameBound: Rule1[FrameBoundary] = rule {
+    UNBOUNDED ~ (
+        PRECEDING ~> (() => UnboundedPreceding) |
+        FOLLOWING ~> (() => UnboundedFollowing)
+    ) |
+    CURRENT ~ ROW ~> (() => CurrentRow) |
+    integral ~ (
+        PRECEDING ~> ((num: String) => ValuePreceding(num.toInt)) |
+        FOLLOWING ~> ((num: String) => ValueFollowing(num.toInt))
+    )
   }
 
   protected final def relation: Rule1[LogicalPlan] = rule {
     relationFactor ~ (
-        (joinType.? ~ JOIN ~ relationFactor ~
-            joinConditions.? ~> ((t: Option[JoinType], r: LogicalPlan,
-            j: Option[Expression]) => (t, r, j))).+ ~> ((r1: LogicalPlan,
+        join.+ ~> ((r1: LogicalPlan,
             joins: Seq[(Option[JoinType], LogicalPlan, Option[Expression])]) =>
           joins.foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
             Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
           }) |
-        MATCH.asInstanceOf[Rule[LogicalPlan::HNil, LogicalPlan::HNil]]
+        MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
     )
   }
 
@@ -531,11 +623,6 @@ class SnappyParser(session: SnappySession)
       else joins.tail.foldLeft(joins.head) {
         case (lhs, rel) => Join(lhs, rel, Inner, None)
       })
-  }
-
-  protected final def cast: Rule1[Expression] = rule {
-    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~>
-        ((exp: Expression, t: DataType) => Cast(exp, t))
   }
 
   protected final def keyWhenThenElse: Rule1[Seq[Expression]] = rule {
@@ -557,26 +644,34 @@ class SnappyParser(session: SnappySession)
     identifier ~ (
         '(' ~ ws ~ (
             '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
-              if (udfName == "COUNT") {
+              if (udfName.equalsIgnoreCase("COUNT")) {
                 AggregateExpression(Count(Literal(1, IntegerType)),
                   mode = Complete, isDistinct = false)
               } else {
                 throw Utils.analysisException(s"invalid expression $udfName(*)")
               }) |
-            (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~>
-                ((udfName: String, d: Option[Boolean], exprs: Seq[Expression]) =>
-              if (d.isEmpty) {
+            (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~
+                (OVER ~ windowSpec).? ~> { (udfName: String, d: Option[Boolean],
+                exprs: Seq[Expression], w: Option[WindowSpec]) =>
+              val function = if (d.isEmpty) {
                 UnresolvedFunction(udfName, exprs, isDistinct = false)
-              } else if (udfName.equalsIgnoreCase("count")) {
+              } else if (udfName.equalsIgnoreCase("COUNT")) {
                 aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
               } else {
                 UnresolvedFunction(udfName, exprs, isDistinct = true)
-              })
+              }
+              w match {
+                case None => function
+                case Some(spec: WindowSpecDefinition) =>
+                  WindowExpression(function, spec)
+                case Some(ref: WindowSpecReference) =>
+                  UnresolvedWindowExpression(function, ref)
+              }
+            }
         ) |
         '.' ~ ws ~ (
-            identifier ~ ('.' ~ ws ~ identifier).* ~>
-                ((i1: String, i2: String, rest: Seq[String]) =>
-                  UnresolvedAttribute(Seq(i1, i2) ++ rest)) |
+            identifier.+('.' ~ ws) ~> ((i1: String, rest: Seq[String]) =>
+              UnresolvedAttribute(i1 +: rest)) |
             (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~>
                 ((i1: String, target: Seq[String]) =>
                   UnresolvedStar(Option(i1 +: target)))
@@ -584,12 +679,14 @@ class SnappyParser(session: SnappySession)
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal |
-    cast |
+    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
         expression ~ keyWhenThenElse ~> (CaseKeyWhen(_, _))
     ) |
     EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
+    CURRENT_DATE ~> CurrentDate |
+    CURRENT_TIMESTAMP ~> CurrentTimestamp |
     '(' ~ ws ~ (
         expression ~ ')' ~ ws |
         query ~ ')' ~ ws ~> (ScalarSubquery(_))
@@ -610,16 +707,15 @@ class SnappyParser(session: SnappySession)
 
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
-    (projection + (',' ~ ws)) ~
+    (namedExpression + (',' ~ ws)) ~
     (FROM ~ relations).? ~
     (WHERE ~ expression).? ~
     (GROUP ~ BY ~ (expression + (',' ~ ws))).? ~
     (HAVING ~ expression).? ~
-    sortType.? ~
-    (LIMIT ~ expression).? ~> { (d: Option[Boolean], p: Seq[Expression],
+    queryOrganization ~> { (d: Option[Boolean], p: Seq[Expression],
         f: Option[LogicalPlan], w: Option[Expression],
         g: Option[Seq[Expression]], h: Option[Expression],
-        s: Option[LogicalPlan => LogicalPlan], l: Option[Expression]) =>
+        q: LogicalPlan => LogicalPlan) =>
       val base = f.getOrElse(OneRowRelation)
       val withFilter = w.map(Filter(_, base)).getOrElse(base)
       val withProjection = g.map(Aggregate(_, p.map(UnresolvedAlias(_, None)),
@@ -627,9 +723,7 @@ class SnappyParser(session: SnappySession)
       val withDistinct =
         if (d.isEmpty) withProjection else Distinct(withProjection)
       val withHaving = h.map(Filter(_, withDistinct)).getOrElse(withDistinct)
-      val withOrder = s.map(_ (withHaving)).getOrElse(withHaving)
-      val withLimit = l.map(Limit(_, withOrder)).getOrElse(withOrder)
-      withLimit
+      q(withHaving)
     }
   }
 
@@ -663,8 +757,8 @@ class SnappyParser(session: SnappySession)
     PUT ~ INTO ~ TABLE.? ~ relation ~ query ~> PutIntoTable
   }
 
-  protected final def withIdentifier: Rule1[LogicalPlan] = rule {
-    WITH ~ ((identifier ~ AS ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
+  protected final def ctes: Rule1[LogicalPlan] = rule {
+    WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + (',' ~ ws)) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
         With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2))).toMap))
@@ -985,7 +1079,7 @@ class SnappyParser(session: SnappySession)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | withIdentifier |
+    query.named("select") | insert | put | dmlOperation | ctes |
         ddl | set | cache | uncache | show | desc
   }
 
