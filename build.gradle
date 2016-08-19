@@ -434,6 +434,13 @@ subprojects {
       scopes.PROVIDED.plus += [ configurations.provided ]
     }
   }
+  eclipse {
+    classpath {
+      defaultOutputDir = file('build-artifacts/eclipse')
+      downloadSources = true
+      plusConfigurations += [ configurations.provided ]
+    }
+  }
 
   sourceSets {
     main.compileClasspath += configurations.provided
