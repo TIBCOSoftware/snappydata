@@ -16,15 +16,15 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.mutable
+
+import org.parboiled2._
+
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.parboiled2._
-
-import scala.collection.mutable
-import scala.language.implicitConversions
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -45,7 +45,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (SnappyParserConsts.whitespace.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
         commentBody |
     commentBody
   }
@@ -54,7 +54,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
         noneOf(SnappyParserConsts.lineCommentEnd).* |
     noneOf(SnappyParserConsts.lineCommentEnd).*
   }
@@ -74,15 +74,15 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def digits: Rule1[String] = rule {
-    capture(CharPredicate.Digit.+) ~ ws
+    capture(CharPredicate.Digit. +) ~ ws
   }
 
   protected final def integral: Rule1[String] = rule {
-    capture(plusOrMinus.? ~ CharPredicate.Digit.+) ~ ws
+    capture(plusOrMinus.? ~ CharPredicate.Digit. +) ~ ws
   }
 
   protected final def scientificNotation: Rule0 = rule {
-    SnappyParserConsts.exponent ~ plusOrMinus.? ~ CharPredicate.Digit.+
+    SnappyParserConsts.exponent ~ plusOrMinus.? ~ CharPredicate.Digit. +
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
@@ -116,12 +116,12 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
       test(!SnappyParserConsts.keywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
-    atomic('"' ~ capture((noneOf("\"") | "\"\"").+) ~ '"') ~
+    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~
         ws ~> { (s: String) =>
       val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     } |
-    atomic('`' ~ capture((noneOf("`") | "``").+) ~ '`') ~ ws ~> { (s: String) =>
+    atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     }
@@ -215,7 +215,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def structType: Rule1[DataType] = rule {
     STRUCT ~ '<' ~ ws ~ (structField * (',' ~ ws)) ~ '>' ~ ws ~>
-        ((fields: Seq[StructField]) => StructType(fields.toArray))
+        ((f: Any) => StructType(f.asInstanceOf[Seq[StructField]].toArray))
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
@@ -231,8 +231,8 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schemaOpt: Option[String],
-        table: String) => TableIdentifier(table, schemaOpt))
+    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, table: String) =>
+      TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 }
 
