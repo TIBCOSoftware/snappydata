@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.datasources
 
-import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
@@ -32,11 +31,11 @@ import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
  * partitions of the datasource.
  */
-private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
+private[sql] object StoreDataSourceStrategy extends Strategy{
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
       pruneFilterProject(
         l,
         projects,
@@ -94,22 +93,33 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-    val filterCondition = filterPredicates.reduceLeftOption(expressions.And)
-
 
     val candidatePredicates = filterPredicates.map { _ transform {
       case a: AttributeReference => relation.attributeMap(a) // Match original case of attributes.
     }}
 
-
     val (unhandledPredicates, pushedFilters) =
       selectFilters(relation.relation, candidatePredicates)
+
+    // A set of column attributes that are only referenced by pushed down filters.  We can eliminate
+    // them from requested columns.
+    val handledSet = {
+      val handledPredicates = filterPredicates.filterNot(unhandledPredicates.contains)
+      val unhandledSet = AttributeSet(unhandledPredicates.flatMap(_.references))
+      AttributeSet(handledPredicates.flatMap(_.references)) --
+          (projectSet ++ unhandledSet).map(relation.attributeMap)
+    }
+
+    // Combines all Catalyst filter `Expression`s that are either not convertible to data source
+    // `Filter`s or cannot be handled by `relation`.
+    val filterCondition = unhandledPredicates.reduceLeftOption(expressions.And)
 
     // Get the partition column attribute INFO from relation schema
     val sqlContext = relation.relation.sqlContext
 
     val joinedCols = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.analyzer.resolver).getOrElse {
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse {
       throw new AnalysisException(
         s"""Cannot resolve column name "$colName" among (${relation.output})""")
     })
@@ -123,16 +133,20 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       val requestedColumns =
         projects.asInstanceOf[Seq[Attribute]] // Safe due to if above.
           .map(relation.attributeMap) // Match original case of attributes.
+          // Don't request columns that are only referenced by pushed filters.
+          .filterNot(handledSet.contains)
 
       val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
         projects.map(_.toAttribute),
         numPartition,
         joinedCols,
-        scanBuilder(requestedColumns,candidatePredicates, pushedFilters),
+        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
-      filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
+      filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
-      val requestedColumns = (projectSet ++ filterSet).map(relation.attributeMap).toSeq
+      // Don't request columns that are only referenced by pushed filters.
+      val requestedColumns =
+        (projectSet ++ filterSet -- handledSet).map(relation.attributeMap).toSeq
 
       val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
         requestedColumns,
@@ -140,8 +154,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         joinedCols,
         scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
-      execution.Project(projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))
+      execution.ProjectExec(projects,
+        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }
   }
-
 }

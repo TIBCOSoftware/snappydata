@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
@@ -35,11 +35,13 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
     with BeforeAndAfterAll
+    with Serializable
     with Logging {
+
+  InitializeRun.setUp()
 
   protected var testName: String = _
   protected val dirList = ArrayBuffer[String]()
-
 
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
@@ -66,7 +68,7 @@ abstract class SnappyFunSuite
     new SparkContext(newSparkConf(addOn))
   }
 
-  private var cachedContext : SnappyContext = null
+  @transient private var cachedContext : SnappyContext = _
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
@@ -159,7 +161,7 @@ abstract class SnappyFunSuite
 
   def stopAll(): Unit = {
     val sparkContext = SnappyContext.globalSparkContext
-    println(" Stopping spark context = " + sparkContext)
+    logInfo("Stopping spark context = " + sparkContext)
     if(sparkContext != null) sparkContext.stop()
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
     cachedContext = null

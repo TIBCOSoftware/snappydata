@@ -16,13 +16,11 @@
  */
 package org.apache.spark.sql.streaming
 
-import java.beans.{BeanInfo, Introspector}
-
 import scala.reflect.runtime.universe.TypeTag
 
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, AttributeReference}
-import org.apache.spark.sql.catalyst.{JavaTypeInference, CatalystTypeConverters, InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.RDDConversions
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.{InternalRow, JavaTypeInference}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.SchemaRelationProvider
@@ -31,12 +29,11 @@ import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.util.Utils
 
 object StreamSqlHelper {
 
   def registerRelationDestroy(): Unit = {
-     SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
   def clearStreams(): Unit = {
@@ -53,30 +50,10 @@ object StreamSqlHelper {
     }
   }
 
-  /**
-   * Converts an iterator of Java Beans to InternalRow using the provided
-   * bean info & schema. This is not related to the singleton, but is a static
-   * method for internal use.
-   */
-  private def beansToRows(data: Iterator[_], beanInfo: BeanInfo, attrs: Seq[AttributeReference]):
-  Iterator[InternalRow] = {
-    val extractors =
-      beanInfo.getPropertyDescriptors.filterNot(_.getName == "class").map(_.getReadMethod)
-    val methodsToConverts = extractors.zip(attrs).map { case (e, attr) =>
-      (e, CatalystTypeConverters.createToCatalystConverter(attr.dataType))
-    }
-    data.map{ element =>
-      new GenericInternalRow(
-        methodsToConverts.map { case (e, convert) => convert(e.invoke(element)) }.toArray[Any]
-      ): InternalRow
-    }
-  }
-
-
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
-    val catalog = ssc.snappyContext.catalog
+    val catalog = ssc.snappySession.sessionState.catalog
     catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(sr: StreamPlan, _) => new SchemaDStream(ssc,
+      case LogicalRelation(sr: StreamPlan, _, _) => new SchemaDStream(ssc,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))
       case _ =>
         throw new AnalysisException(s"Table $tableName not a stream table")
@@ -88,33 +65,27 @@ object StreamSqlHelper {
    */
   def createSchemaDStream[A <: Product : TypeTag](ssc: SnappyStreamingContext,
       stream: DStream[A]): SchemaDStream = {
-    val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
-    (rdd, schema.map(_.dataType)))
-    val logicalPlan = LogicalDStreamPlan(schema.toAttributes, rowStream)(ssc)
+    val encoder = ExpressionEncoder[A]()
+    val schema = encoder.schema
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
+      stream.map(encoder.toRow))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
   def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: DStream[Row],
       schema: StructType): SchemaDStream = {
-    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+    val encoder = RowEncoder(schema)
     val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      rowStream.map(converter(_).asInstanceOf[InternalRow]))(ssc)
+      rowStream.map(encoder.toRow))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
-
-  def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: JavaDStream[_], beanClass: Class[_]): SchemaDStream = {
-    val attributeSeq: Seq[AttributeReference] = getSchema(beanClass)
-    val className = beanClass.getName
-    val internalRowStream = rowStream.dstream.mapPartitions { iter =>
-      // BeanInfo is not serializable so we must rediscover it remotely for each partition.
-      val localBeanInfo = Introspector.getBeanInfo(Utils.classForName(className))
-      beansToRows(iter, localBeanInfo, attributeSeq)
-    }
-
-    val logicalPlan = LogicalDStreamPlan(attributeSeq,
-      internalRowStream)(ssc)
+  def createSchemaDStream(ssc: SnappyStreamingContext,
+      rowStream: JavaDStream[_], beanClass: Class[_]): SchemaDStream = {
+    val encoder = ExpressionEncoder.javaBean(beanClass.asInstanceOf[Class[Any]])
+    val schema = encoder.schema
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
+      rowStream.dstream.map(encoder.toRow))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 }

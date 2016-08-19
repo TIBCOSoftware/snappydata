@@ -2,22 +2,22 @@ package io.snappydata.examples;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.typesafe.config.Config;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.JSparkJobValid;
 import org.apache.spark.sql.JSparkJobValidation;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.streaming.SchemaDStream;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.JavaSnappyStreamingJob;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
-import org.apache.spark.streaming.api.java.JavaDStream;
 
 import static org.apache.spark.sql.types.DataTypes.StringType;
 import static org.apache.spark.sql.types.DataTypes.createStructField;
@@ -44,24 +44,20 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
   @Override
   public Object runJavaJob(JavaSnappyStreamingContext snsc, Config jobConfig) {
 
-    JavaDStream stream = null;
-    PrintWriter pw = null;
     String currentDirectory = null;
-    boolean success = false;
-    String outFileName = null;
+    String outFileName = String.format(
+        "JavaTwitterPopularTagsJob-%d.out", System.currentTimeMillis());
 
-    try {
+    try (PrintWriter pw = new PrintWriter(outFileName)) {
       currentDirectory = new java.io.File(".").getCanonicalPath();
-      outFileName = String.format("JavaTwitterPopularTagsJob-%d.out", System.currentTimeMillis());
-      pw = new PrintWriter(outFileName);
 
       StructType schema = new StructType(new StructField[]{
           createStructField("hashtag", StringType, false)
       });
 
-      snsc.snappyContext().sql("DROP TABLE IF EXISTS topktable");
-      snsc.snappyContext().sql("DROP TABLE IF EXISTS hashtagtable");
-      snsc.snappyContext().sql("DROP TABLE IF EXISTS retweettable");
+      snsc.snappySession().sql("DROP TABLE IF EXISTS topktable");
+      snsc.snappySession().sql("DROP TABLE IF EXISTS hashtagtable");
+      snsc.snappySession().sql("DROP TABLE IF EXISTS retweettable");
 
 
       if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
@@ -81,8 +77,8 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
             String.format("accessToken '%s',", accessToken) +
             String.format("accessTokenSecret '%s',", accessTokenSecret) +
             String.format("rowConverter '%s'", "org.apache.spark.sql.streaming.TweetToHashtagRow")
-                +")"
-            );
+            + ")"
+        );
 
         snsc.sql("CREATE STREAM TABLE retweettable (retweetId LONG, retweetCnt INT, " +
             "retweetTxt STRING) USING twitter_stream OPTIONS (" +
@@ -91,8 +87,8 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
             String.format("accessToken '%s',", accessToken) +
             String.format("accessTokenSecret '%s',", accessTokenSecret) +
             String.format("rowConverter '%s'", "org.apache.spark.sql.streaming.TweetToRetweetRow")
-                +")"
-          );
+            + ")"
+        );
 
       } else {
         // Create file stream table
@@ -113,37 +109,35 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
       SchemaDStream retweetStream = snsc.registerCQ("SELECT * FROM retweettable " +
           "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)");
 
-      Map topKOption = new HashMap();
-      topKOption.put("epoch", new Long(System.currentTimeMillis()).toString());
+      Map<String, String> topKOption = new HashMap<>();
+      topKOption.put("epoch", Long.toString(System.currentTimeMillis()));
       topKOption.put("timeInterval", "2000ms");
       topKOption.put("size", "10");
-      topKOption.put("basetable", "hashtagtable");
 
 
       // Create TopK table on the base stream table which is hashtagtable
       // TopK object is automatically populated from the stream table
-      snsc.snappyContext().createApproxTSTopK("topktable", "hashtag",
-          schema, topKOption, false);
+      snsc.snappySession().createApproxTSTopK("topktable", "hashtagtable",
+          "hashtag", schema, topKOption, false);
 
       final String tableName = "retweetStore";
 
-      snsc.snappyContext().dropTable(tableName, true);
+      snsc.snappySession().dropTable(tableName, true);
 
       // Create row table to insert retweets based on retweetId as Primary key
       // When a tweet is retweeted multiple times, the previous entry of the tweet
       // is over written by the new retweet count.
-      snsc.snappyContext().sql(String.format("CREATE TABLE %s (retweetId BIGINT PRIMARY KEY, " +
-          "retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()",tableName));
+      snsc.snappySession().sql(String.format("CREATE TABLE %s (retweetId BIGINT PRIMARY KEY, " +
+          "retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()", tableName));
 
       // Save data in snappy store
-      retweetStream.foreachDataFrame(new VoidFunction<DataFrame>() {
+      retweetStream.foreachDataFrame(new VoidFunction<Dataset<Row>>() {
         @Override
-        public void call(DataFrame df) {
-          df.write().mode(SaveMode.Append).saveAsTable(tableName);
+        public void call(Dataset<Row> df) {
+          df.write().insertInto(tableName);
         }
       });
       snsc.start();
-
 
       int runTime;
 
@@ -160,43 +154,41 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
         pw.println("\n******** Top 10 hash tags of last two seconds *******\n");
 
         // Query the topk structure for the popular hashtags of last two seconds
-        Row[] result = snsc.snappyContext().queryApproxTSTopK("topktable",
+        List<Row> result = snsc.snappySession().queryApproxTSTopK("topktable",
             System.currentTimeMillis() - 2000, System.currentTimeMillis())
-            .collect();
+            .collectAsList();
 
         printResult(result, pw);
 
       }
 
       // Query the topk structure for the popular hashtags of until now
-      Row[] result = snsc.sql("SELECT * FROM topktable").collect();
+      List<Row> result = snsc.sql("SELECT * FROM topktable").collectAsList();
       printResult(result, pw);
 
       // Query the snappystore Row table to find out the top retweets
       pw.println("\n####### Top 10 popular tweets - Query Row table #######\n");
-      result = snsc.snappyContext().sql("SELECT retweetId AS RetweetId, " +
+      result = snsc.snappySession().sql("SELECT retweetId AS RetweetId, " +
           "retweetCnt AS RetweetsCount, retweetTxt AS Text FROM " + tableName +
           " ORDER BY RetweetsCount DESC LIMIT 10")
-          .collect();
+          .collectAsList();
 
       printResult(result, pw);
 
       pw.println("\n#######################################################");
-
-     success = true;
-    } catch (IOException e) {
-      //pw.close();
-    } catch (InterruptedException e) {
-      //pw.close();
+    } catch (IOException | InterruptedException e) {
+      StringWriter sw = new StringWriter();
+      PrintWriter spw = new PrintWriter(sw);
+      spw.println("ERROR: failed with " + e);
+      e.printStackTrace(spw);
+      return spw.toString();
     } finally {
-      pw.close();
-
       snsc.stop(false, true);
     }
     return "See "+ currentDirectory +"/" + outFileName;
   }
 
-  private void printResult(Row[] result, PrintWriter pw) {
+  private void printResult(List<Row> result, PrintWriter pw) {
     for (Row row : result) {
       pw.println(row.toString());
     }

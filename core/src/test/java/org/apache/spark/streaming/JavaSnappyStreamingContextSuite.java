@@ -34,7 +34,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.streaming.SchemaDStream;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -119,9 +120,9 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
 
     SchemaDStream st = snsc.createSchemaDStream(stream, Message.class);
 
-    st.foreachDataFrame(new VoidFunction<DataFrame>() {
+    st.foreachDataFrame(new VoidFunction<Dataset<Row>>() {
       @Override
-      public void call(DataFrame rdd) {
+      public void call(Dataset<Row> rdd) {
         rdd.count();
       }
     });

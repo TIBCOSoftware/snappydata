@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.{Collections, UUID}
 
-import scala.collection.JavaConversions
 import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.internal.cache.BucketRegion
@@ -45,7 +44,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val partioner = new StoreHashFunction
 
-
   var useCompression = false
   var cachedBatchSize = 0
 
@@ -67,7 +65,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
-      bucketID: Int): java.util.Set[Any] = {
+      bucketID: Int): java.util.Set[AnyRef] = {
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getQualifiedTableName)
@@ -104,15 +102,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
             container.getQualifiedTableName, schema,
             externalStore, cachedBatchSize, useCompression)
-          val keys = batchCreator.createAndStoreBatch(sc, row,
+          batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
-          JavaConversions.mutableSetAsJavaSet(keys)
-        }
-        finally {
+        } finally {
           lcc.setExecuteLocally(null, null, false, null)
         }
-      }
-      catch {
+      } catch {
         case e: Throwable => throw e
       } finally {
         if (contextSet) {
@@ -120,7 +115,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       }
     } else {
-      new java.util.HashSet()
+      java.util.Collections.emptySet[AnyRef]()
     }
   }
 
@@ -131,19 +126,20 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     schemas
   }
 
-  override def getHashCodeSnappy(dvd: scala.Any): Int = {
-    partioner.hashValue(dvd)
+  override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
+    partioner.computeHash(dvd, numPartitions)
   }
 
-  override def getHashCodeSnappy(dvds: scala.Array[Object]): Int = {
-    partioner.hashValue(dvds)
+  override def getHashCodeSnappy(dvds: scala.Array[Object],
+      numPartitions: Int): Int = {
+    partioner.computeHash(dvds, numPartitions)
   }
 
   override def haveRegisteredExternalStore(tableName: String): Boolean = {
-    // TODO -  remove below that deals with default schema and all
+    // TODO: SW: remove below that deals with default schema and all
     stores.contains(tableName)
   }
-
+  
   override def cachedBatchTableName(table: String): String = {
     ColumnFormatRelation.cachedBatchTableName(table)
   }
@@ -151,7 +147,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def snappyInternalSchemaName(): String = {
     io.snappydata.Constant.INTERNAL_SCHEMA_NAME
   }
-
 }
 
 trait StoreCallback extends Serializable {

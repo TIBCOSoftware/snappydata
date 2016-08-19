@@ -16,17 +16,21 @@
  */
 package org.apache.spark.sql.execution.row
 
-import com.gemstone.gemfire.cache.Region
+import scala.collection.mutable
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Descending, Ascending, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
@@ -44,12 +48,11 @@ class RowFormatRelation(
     _connProperties: ConnectionProperties,
     _table: String,
     _provider: String,
-    preservepartitions: Boolean,
+    preservePartitions: Boolean,
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
     _origOptions: Map[String, String],
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     _context: SQLContext)
     extends JDBCMutableRelation(_connProperties,
       _table,
@@ -64,28 +67,64 @@ class RowFormatRelation(
 
   override def toString: String = s"RowFormatRelation[$table]"
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  protected val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
+  private[this] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
+    tableSchema)
+
+  @transient private[this] lazy val region: LocalRegion =
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
+
+  private[this] lazy val indexedColumns: mutable.HashSet[String] = {
+    val cols = new mutable.HashSet[String]()
+    val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
+    if (im != null && im.getIndexConglomerateDescriptors != null) {
+      val baseColumns = im.getContainer.getTableDescriptor.getColumnNamesArray
+      val itr = im.getIndexConglomerateDescriptors.iterator()
+      while (itr.hasNext) {
+        // first column of index has to be present in filter to be usable
+        val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
+        cols += baseColumns(indexCols(0))
+      }
+    }
+    cols
+  }
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+    filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
+
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+    val handledFilters = filters.filter(ExternalStoreUtils
+        .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+    val isPartitioned = region.getPartitionAttributes != null
     connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
-          table,
+          resolvedName,
+          isPartitioned,
           requiredColumns,
           connProperties,
-          filters,
-          parts,
-          blockMap
+          handledFilters,
+          parts
         ).asInstanceOf[RDD[Row]]
 
       case _ =>
-        super.buildScan(requiredColumns, filters)
+        new SparkShellRowRDD(
+          sqlContext.sparkContext,
+          executorConnector,
+          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
+          resolvedName,
+          isPartitioned,
+          requiredColumns,
+          connProperties,
+          handledFilters
+        ).asInstanceOf[RDD[Row]]
     }
   }
 
@@ -99,8 +138,6 @@ class RowFormatRelation(
    *
    */
   override lazy val numPartitions: Int = {
-    val resolvedName = StoreUtils.lookupName(table, tableSchema)
-    val region: Region[_, _] = Misc.getRegionForTable(resolvedName, true)
     region match {
       case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
       case _ => 1
@@ -108,9 +145,7 @@ class RowFormatRelation(
   }
 
   override def partitionColumns: Seq[String] = {
-    val resolvedName = StoreUtils.lookupName(table, tableSchema)
-    val region: Region[_, _] = Misc.getRegionForTable(resolvedName, true)
-    val partitionColumn = region match {
+    region match {
       case pr: PartitionedRegion =>
         val resolver = pr.getPartitionResolver
             .asInstanceOf[GfxdPartitionByExpressionResolver]
@@ -118,7 +153,6 @@ class RowFormatRelation(
         parColumn.toSeq
       case _ => Seq.empty[String]
     }
-    partitionColumn
   }
 
   /**
@@ -130,7 +164,8 @@ class RowFormatRelation(
    * @return number of rows upserted
    */
   def put(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, connProperties, upsert = true)
+    JdbcExtendedUtils.saveTable(data, table, schema,
+      connProperties, upsert = true)
   }
 
   /**
@@ -186,14 +221,15 @@ class RowFormatRelation(
       case Some(x) => x
       case None => ""
     }
-    return s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
+    s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
   }
 }
 
 final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String): RowFormatRelation = {
+      options: Map[String, String], schema: String,
+      data: Option[LogicalPlan]): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
@@ -211,12 +247,11 @@ final class DefaultSource extends MutableRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val blockMap =
-      connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          None, partitions, connProperties)
-        case _ => Map.empty[InternalDistributedMember, BlockManagerId]
-      }
+    connProperties.dialect match {
+      case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+        None, partitions, connProperties)
+      case _ =>
+    }
 
     var success = false
     val relation = new RowFormatRelation(connProperties,
@@ -227,14 +262,18 @@ final class DefaultSource extends MutableRelationProvider {
       schemaExtension,
       Array[Partition](JDBCPartition(null, 0)),
       options,
-      blockMap,
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+      data match {
+        case Some(plan) =>
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
+        case None =>
+      }
       success = true
       relation
     } finally {
-      if (!success) {
+      if (!success && !relation.tableExists) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }

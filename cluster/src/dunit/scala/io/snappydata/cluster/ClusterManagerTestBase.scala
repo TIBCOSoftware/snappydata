@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.cluster
 
 import java.io.File
@@ -29,7 +45,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
   // Easier to switch ON traces. thats why added this.
-  // bootProps.setProperty("gemfirexd.debug.true", "QueryDistribution,TraceExecution,TraceActivation")
+  // bootProps.setProperty("gemfirexd.debug.true",
+  //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
   var host: Host = _
@@ -46,8 +63,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     vm3 = host.getVM(3)
   }
 
-  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
-
   protected final def startArgs =
     Array(locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
@@ -60,9 +75,9 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    val locPort = locatorPort
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
+    val locPort = ClusterManagerTestBase.locPort
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
         val loc: Locator = ServiceManager.getLocatorInstance
@@ -94,6 +109,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     }
+
     vm0.invoke(startNode)
     vm1.invoke(startNode)
     vm2.invoke(startNode)
@@ -155,6 +171,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
  */
 object ClusterManagerTestBase {
   val logger = LoggerFactory.getLogger(getClass)
+  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
+  final val locPort: Int = locatorPort
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */
@@ -234,7 +252,7 @@ object ClusterManagerTestBase {
     // cleanup metastore
     cleanupTestData(null, null)
     val sparkContext = SnappyContext.globalSparkContext
-    if(sparkContext != null) sparkContext.stop()
+    if (sparkContext != null) sparkContext.stop()
   }
 
   def stopNetworkServers(): Unit = {

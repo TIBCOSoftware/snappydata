@@ -6,7 +6,8 @@ import java.util.Map;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.types.StructField;
@@ -42,7 +43,7 @@ public class JavaAirlineDataJob {
 
     Map<String, String> options = new HashMap<>();
     options.put("path", airlinefilePath);
-    DataFrame airlineDF = snc.createExternalTable(stagingAirline, "parquet", options);
+    Dataset<Row> airlineDF = snc.createExternalTable(stagingAirline, "parquet", options);
 
     StructType updatedSchema = replaceReservedWords(airlineDF.schema());
 
@@ -56,7 +57,7 @@ public class JavaAirlineDataJob {
     System.out.println("Created and imported data in $colTable table.");
 
     // Create a DF from the airline ref data file
-    DataFrame airlinerefDF = snc.read().load(airlinereftablefilePath);
+    Dataset<Row> airlinerefDF = snc.read().load(airlinereftablefilePath);
 
     // Create a table in snappy store
     snc.createTable(rowTable, "row",
@@ -73,13 +74,12 @@ public class JavaAirlineDataJob {
     options.put("qcs", "UniqueCarrier, Year_, Month_");
     options.put("fraction", "0.03");
     options.put("strataReservoirSize", "50");
-    options.put("basetable", "Airline");
 
-    snc.createSampleTable(sampleTable, options, false);
+    snc.createSampleTable(sampleTable, "Airline", options, false);
 
 
     // Initiate the sampling from base table to sample table.
-    snc.table(colTable).write().mode(SaveMode.Append).saveAsTable(sampleTable);
+    snc.table(colTable).write().insertInto(sampleTable);
 
     System.out.println(String.format("Created and imported data in %s table.", sampleTable));
 

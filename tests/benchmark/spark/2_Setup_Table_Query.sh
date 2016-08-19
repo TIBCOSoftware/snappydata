@@ -13,7 +13,7 @@ echo "******************Created conf/slaves******************"
 ssh $master sh $SnappyData/build-artifacts/scala-2.10/snappy/sbin/start-all.sh
 
 #Execute Spark App
-sh $SnappyData/build-artifacts/scala-2.10/snappy/bin/spark-submit --master spark://$master:7077 $sparkProperties --class io.snappydata.benchmark.snappy.TPCH_Spark $TPCHJar $dataDir $queries $queryPlan
+sh $SnappyData/build-artifacts/scala-2.10/snappy/bin/spark-submit --master spark://$master:7077 $sparkProperties --class io.snappydata.benchmark.snappy.TPCH_Spark $TPCHJar $dataDir $queries $ResultCollection $WarmupRuns $AverageRuns $sparkSqlProperties
 
 
 

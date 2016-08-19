@@ -20,6 +20,7 @@ import java.sql.DriverManager
 
 import scala.util.{Failure, Success, Try}
 
+import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
@@ -30,18 +31,18 @@ import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.SqlParser
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.{AnalysisException, SaveMode}
+import org.apache.spark.sql.execution.SparkSqlParser
+import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
 /**
- * Tests for column tables in GFXD.
- */
+  * Tests for column tables in GFXD.
+  */
 class ColumnTableTest
     extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+        with Logging
+        with BeforeAndAfter
+        with BeforeAndAfterAll {
 
   after {
     snc.dropTable(tableName, ifExists = true)
@@ -67,34 +68,129 @@ class ColumnTableTest
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
 
+  private def checkSetSchema(pattern: String, schemaName: String,
+      tableName: String, df: DataFrame, startCount: Int, size: Int): Int = {
+
+    var count = startCount
+    var result = snc.sql(s"SELECT * FROM $schemaName.$tableName")
+    assert(result.collect().length === count)
+
+    snc.sql(String.format(pattern, schemaName))
+    df.write.insertInto(tableName)
+    count += size
+
+    result = snc.sql(s"SELECT * FROM $schemaName.$tableName")
+    assert(result.collect().length === count)
+
+    result = snc.sql(s"SELECT * FROM $tableName")
+    assert(result.collect().length === count)
+
+    snc.sql(String.format(pattern, "app"))
+    try {
+      df.write.insertInto(tableName)
+      fail("expected TableNotFoundException")
+    } catch {
+      case _: TableNotFoundException => // expected
+        assert(result.collect().length === count)
+    }
+    // check that write using qualified name should work
+    df.write.insertInto(s"$schemaName.$tableName")
+    count += size
+    assert(result.collect().length === count)
+
+    result = snc.sql(s"SELECT 1 FROM $schemaName.$tableName")
+    assert(result.count() === count)
+
+    val tempView = s"TABLE_VIEW_$tableName"
+    df.createOrReplaceTempView(tempView)
+
+    // check failure with quoted schema but case as passed
+    snc.sql("set spark.sql.caseSensitive = true")
+    snc.sql(String.format(pattern, "`" + schemaName + "`"))
+    try {
+      snc.sql(s"insert into $tableName select * from $tempView")
+      // TODO: SW: correct case-sensitivity
+      // fail("expected TableNotFoundException")
+      count += size
+    } catch {
+      case _: TableNotFoundException => // expected
+        assert(result.collect().length === count)
+    }
+    // check the same with quoted schema with upper case as stored
+    snc.sql(String.format(pattern, "`" + schemaName.toUpperCase + "`"))
+    snc.sql(s"insert into $tableName select * from $tempView")
+    count += size
+
+    result = snc.sql(s"SELECT * FROM `${tableName.toUpperCase}`")
+    assert(result.collect().length === count)
+
+    // finally check quoted table too but incorrect case
+    try {
+      result = snc.sql(s"SELECT * FROM `$tableName`")
+      // TODO: SW: fix case-sensitivity
+      // fail("expected TableNotFoundException")
+    } catch {
+      case _: TableNotFoundException => // expected
+        assert(result.collect().length === count)
+    }
+
+    count
+  }
+
   test("Test the creation/dropping of column table using Schema") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.sql("Create Table test.MY_TABLE (a INT, b INT, c INT) using column options()")
+    val schema = "test"
+    val table = "MY_TABLE"
 
+    snc.sql(s"Drop Table if exists $schema.$table")
+    snc.sql(s"Create Table $schema.$table (a INT, b INT, c INT) " +
+        "using column options()")
 
-    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable("test.MY_TABLE")
-    var result = snc.sql("SELECT * FROM test.MY_TABLE" )
-    var r = result.collect
-    println(r.length)
+    // try different variant of set schema
+    val size = dataDF.count().toInt
+    var count = 0
 
-    snc.sql("drop table test.MY_TABLE" )
+    try {
+      // CURRENT SCHEMA = name
+      count = checkSetSchema("set current schema = %s", schema, table,
+        dataDF, count, size)
 
-    println("Successful")
+      // SCHEMA = name
+      count = checkSetSchema("set schema = %s", schema, table,
+        dataDF, count, size)
+
+      // CURRENT SCHEMA name
+      count = checkSetSchema("set current schema %s", schema, table,
+        dataDF, count, size)
+
+      // SCHEMA name
+      count = checkSetSchema("set schema %s", schema, table,
+        dataDF, count, size)
+
+      snc.sql(s"drop table $table")
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+    }
+
+    logInfo("Successful")
   }
 
 
   test("Test the creation/dropping of table using Snappy API") {
-    //shouldn't be able to create without schema
+    // shouldn't be able to create without schema
     intercept[AnalysisException] {
       snc.createTable(tableName, "column", props, allowExisting = false)
     }
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, "column", dataDF.schema, props)
@@ -102,146 +198,189 @@ class ColumnTableTest
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
-    println("Successful")
+    assert(r.length === 0)
+    logInfo("Successful")
   }
+
+
+  test("Test SNAP-947") {
+    val table = "APP.TEST_TABLE"
+
+    snc.sql (s"drop table if exists $table")
+
+    // check that default concurrency checks is set to false for column table.
+    snc.sql(s"create table $table (col1 int) using column" )
+
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+
+    snc.dropTable(table)
+
+    // check that default concurrency checks setting is not modified.
+
+    snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
+
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+
+    snc.dropTable(table)
+
+    snc.sql(s"create table $table (col1 int) using row " +
+        s"options(PERSISTENT 'SYNCHRONOUS' , PARTITION_BY 'COL1')" )
+
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
+
+    snc.dropTable(table)
+
+  }
+
 
   test("Test the creation of table using DataSource API") {
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props)
+        .saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // check that table is created with default schema APP
-    val result2 = snc.sql("SELECT * FROM " + s"APP.$tableName")
-    assert (result2.collect().length == 5)
+    val result2 = snc.sql(s"SELECT * FROM APP.$tableName")
+    assert(result2.collect().length === 5)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
-  test("Test table creation using Snappy API and then append/ignore/overwrite DF using DataSource API") {
-    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+  test("Test table creation using Snappy API, then append/ignore/overwrite " +
+      "DF using DataSource API") {
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    var rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, "column", dataDF.schema, props)
 
     intercept[AnalysisException] {
-      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
+      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props)
+          .saveAsTable(tableName)
     }
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props)
+        .saveAsTable(tableName)
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // Ignore if table is present
-    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
-    rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300),
+      Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
+    rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
+    dataDF.write.mode(SaveMode.Ignore).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // Append if table is present
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 11)
+    assert(r.length === 11)
 
     // Overwrite if table is present
-    dataDF.write.format("column").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").options(props).mode(SaveMode.Overwrite)
+        .saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 6)
+    assert(r.length === 6)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
 
   test("Test the creation/dropping of table using SQL") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
-    )
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
+        " USING column " + options)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
-    println("Successful")
+    assert(r.length === 0)
+    logInfo("Successful")
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        optionsWithURL
-    )
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
+        " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 0)
-    println("Successful")
+    assert(r.length === 0)
+    logInfo("Successful")
   }
 
-  test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
+  test("Test the creation using SQL and insert a DF in " +
+      "append/overwrite/errorifexists mode") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options)
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
+        " USING column " + options)
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").mode(SaveMode.Ignore).options(props)
+        .saveAsTable(tableName)
 
     intercept[AnalysisException] {
-      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
+      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props)
+          .saveAsTable(tableName)
     }
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
     // check that default schema is added to the table
     val result2 = snc.sql(s"SELECT * FROM APP.$tableName")
-    assert(result2.collect().length == 5)
+    assert(result2.collect().length === 5)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using SQL and SnappyContext ") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
-    )
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
+        " USING column " + options)
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
       snc.createTable(tableName, "column", dataDF.schema, props)
     }
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props)
+        .saveAsTable(tableName)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
-    assert(r.length == 5)
-    println("Successful")
+    assert(r.length === 5)
+    logInfo("Successful")
   }
 
   test("Test the creation of table using CREATE TABLE AS STATEMENT ") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     val tableName2 = "CoulmnTable2"
     snc.sql("DROP TABLE IF EXISTS CoulmnTable2")
@@ -250,53 +389,55 @@ class ColumnTableTest
     )
     var result = snc.sql("SELECT * FROM " + tableName2)
     var r = result.collect
-    assert(r.length == 5)
+    assert(r.length === 5)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName2)
+    dataDF.write.insertInto(tableName2)
     result = snc.sql("SELECT * FROM " + tableName2)
     r = result.collect
-    assert(r.length == 10)
+    assert(r.length === 10)
 
     snc.dropTable(tableName2)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the truncate syntax SQL and SnappyContext") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     snc.truncateTable(tableName)
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     // truncating the table with default schema
     snc.sql("TRUNCATE TABLE " + s"APP.$tableName")
 
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
-    assert(r.length == 0)
+    assert(r.length === 0)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SnappyContext and SQL ") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
-    snc.dropTable(s"APP.$tableName", true)
+    snc.dropTable(s"APP.$tableName", ifExists = true)
 
     intercept[AnalysisException] {
-      snc.dropTable(tableName, false)
+      snc.dropTable(tableName, ifExists = false)
     }
 
     intercept[AnalysisException] {
@@ -305,29 +446,30 @@ class ColumnTableTest
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SQL and SnappyContext ") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
     intercept[AnalysisException] {
-      snc.dropTable(tableName, false)
+      snc.dropTable(tableName, ifExists = false)
     }
 
     intercept[AnalysisException] {
       snc.sql("DROP TABLE " + tableName)
     }
 
-    snc.dropTable(tableName, true)
+    snc.dropTable(tableName, ifExists = true)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test PR with REDUNDANCY") {
@@ -339,7 +481,8 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE1", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE1", true)
+        .asInstanceOf[PartitionedRegion]
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy === 2)
@@ -354,7 +497,8 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "BUCKETS '213')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE2", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE2", true)
+        .asInstanceOf[PartitionedRegion]
 
     val numPartitions = region.getTotalNumberOfBuckets
     assert(numPartitions === 213)
@@ -371,7 +515,8 @@ class ColumnTableTest
         "BUCKETS '213'," +
         "RECOVERYDELAY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE4", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE4", true)
+        .asInstanceOf[PartitionedRegion]
 
     val rDelay = region.getPartitionAttributes.getRecoveryDelay
     assert(rDelay === 2)
@@ -386,7 +531,8 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "MAXPARTSIZE '200')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE5", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE5", true)
+        .asInstanceOf[PartitionedRegion]
 
     val rMaxMem = region.getPartitionAttributes.getLocalMaxMemory
     assert(rMaxMem === 200)
@@ -402,10 +548,38 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "EVICTION_BY 'LRUMEMSIZE 200')")
 
-    Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
-   test("Test PR with Colocation") {
+  test("Test PR with EVICTION BY OVERFLOW") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200'," +
+        "OVERFLOW 'true')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+  }
+
+  test("Test PR with Colocation") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE20(OrderId INT ,ItemId INT) " +
@@ -415,7 +589,7 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "EVICTION_BY 'LRUMEMSIZE 200')")
 
-    //snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+    // snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE21(OrderId INT ,ItemId INT) " +
         "USING column " +
         "options " +
@@ -424,10 +598,11 @@ class ColumnTableTest
         "COLOCATE_WITH 'COLUMN_TEST_TABLE20')")
 
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true)
+        .asInstanceOf[PartitionedRegion]
     assert(region.colocatedByList.size() == 2)
-     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
-     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
   }
 
   test("Test PR with PERSISTENT") {
@@ -439,7 +614,8 @@ class ColumnTableTest
         "PARTITION_BY 'OrderId'," +
         "PERSISTENT 'ASYNCHRONOUS')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE7", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE7", true)
+        .asInstanceOf[PartitionedRegion]
     assert(region.getDiskStore != null)
     assert(!region.getAttributes.isDiskSynchronous)
   }
@@ -453,7 +629,8 @@ class ColumnTableTest
         "(" +
         "PERSISTENT 'ASYNCHRONOUS')")
 
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE8", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE8", true)
+        .asInstanceOf[PartitionedRegion]
     assert(region.getDiskStore != null)
     assert(!region.getAttributes.isDiskSynchronous)
   }
@@ -472,7 +649,7 @@ class ColumnTableTest
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE9")
+    dataDF.write.insertInto("COLUMN_TEST_TABLE9")
     val count = snc.sql("select * from COLUMN_TEST_TABLE9").count()
     assert(count === 1000)
   }
@@ -488,7 +665,8 @@ class ColumnTableTest
         "USING column options()")
 
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE10")
+    dataDF.write.format("column").mode(SaveMode.Append).options(props)
+        .saveAsTable("COLUMN_TEST_TABLE10")
 
     val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
     assert(count === 1000)
@@ -503,24 +681,25 @@ class ColumnTableTest
         "(" +
         "PARTITIONBY 'OrderId'," +
         "PERSISTENT 'ASYNCHRONOUS')")) match {
-      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Success(df) => throw new AssertionError(
+        "Should not have succedded with incorrect options")
       case Failure(error) => // Do nothing
     }
-
   }
 
   test("Test DataSource API  with fully qualified table name") {
     val tableName = "test.table1"
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 5)
     snc.truncateTable(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 0)
     snc.dropTable(tableName)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test SQL API with fully qualified table name") {
@@ -536,49 +715,50 @@ class ColumnTableTest
     snc.sql(s"DROP TABLE $tableName")
   }
 
-  test ("Test Row buffer eviction with fully qualified table name") {
-     testRowBufferEviction("test.testTableWithSchema")
+  test("Test Row buffer eviction with fully qualified table name") {
+    testRowBufferEviction("test.testTableWithSchema")
   }
 
-  test ("Test Row buffer eviction with table name without schema") {
+  test("Test Row buffer eviction with table name without schema") {
     testRowBufferEviction("testTableWithoutSchema")
   }
 
-
-  private def testRowBufferEviction(tableName:String): Unit = {
-    val props = Map(("BUCKETS" -> "1"))
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+  private def testRowBufferEviction(tableName: String): Unit = {
+    val props = Map("BUCKETS" -> "1")
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 5)
 
     val conn = DriverManager.getConnection("jdbc:snappydata:;query-routing=false")
-    val rs = conn.createStatement().executeQuery("select count (*) from " + tableName)
+    val rs = conn.createStatement().executeQuery("select count (*) from " +
+        tableName)
     if (rs.next()) {
-      //The row buffer should not have more than 2 rows as the batch size is 3
+      // The row buffer should not have more than 2 rows as the batch size is 3
       assert(rs.getInt(1) <= 2)
     }
 
     rs.close()
     conn.close()
-
   }
 
   test("Test PR with EXPIRY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
-    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE27(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE27(" +
+        "OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
         "EXPIRE '200')")) match {
-      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Success(df) => throw new AssertionError(
+        "Should not have succedded with incorrect options")
       case Failure(error) => // Do nothing
     }
-
   }
 
   test("compare parser performance") {
@@ -632,6 +812,7 @@ class ColumnTableTest
         .asInstanceOf[EmbedConnection]
     conn.setupContextStack(true)
     val cc = conn.getLanguageConnection.pushCompilerContext()
+    // scalastyle:off println
     try {
 
       val pi = new ParserImpl(cc)
@@ -641,17 +822,17 @@ class ColumnTableTest
       var start: Double = 0.0
       var end: Double = 0.0
       var elapsed: Double = 0.0
-      val warmupRuns = 2000
+      val warmupRuns = 10000
       val timedRuns = 5000
-
+      val parser = new SparkSqlParser(snc.conf)
       println(s"Warmup runs for SparkSQL parser ...")
       for (i <- 0 until 20) {
-        plan1 = SqlParser.parse(sqlText)
+        plan1 = parser.parsePlan(sqlText)
       }
       println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until 30) {
-        plan1 = SqlParser.parse(sqlText)
+        plan1 = parser.parsePlan(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0
@@ -663,13 +844,14 @@ class ColumnTableTest
       println()
 
       println(s"Warmup runs for Snappy parser ...")
+      val sqlParser = snc.sessionState.sqlParser
       for (i <- 0 until warmupRuns) {
-        plan2 = snc.getSQLDialect().parse(sqlText)
+        plan2 = sqlParser.parsePlan(sqlText)
       }
       println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
-        plan2 = snc.getSQLDialect().parse(sqlText)
+        plan2 = sqlParser.parsePlan(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0
@@ -692,6 +874,23 @@ class ColumnTableTest
           s"average=${elapsed / timedRuns}ms")
       println()
 
+      println(s"Warmup runs for Spark parser ...")
+      val sparkSession = new SparkSession(sc)
+      val sparkParser = sparkSession.sessionState.sqlParser
+      for (i <- 0 until warmupRuns) {
+        plan2 = sparkParser.parsePlan(sqlText)
+      }
+      println(s"Done with warmup runs")
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        plan2 = sparkParser.parsePlan(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by Spark parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+      println()
+
       println(s"Warmup runs for Hive parser ...")
       for (i <- 0 until warmupRuns) {
         pd.parse(sqlText)
@@ -711,5 +910,6 @@ class ColumnTableTest
       conn.restoreContextStack()
       conn.close()
     }
+    // scalastyle:on println
   }
 }

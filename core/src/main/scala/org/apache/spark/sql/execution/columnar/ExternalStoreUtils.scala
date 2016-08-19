@@ -16,12 +16,10 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
 import io.snappydata.util.ServiceUtils
@@ -29,7 +27,6 @@ import io.snappydata.util.ServiceUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
@@ -37,7 +34,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 
@@ -53,6 +50,12 @@ object ExternalStoreUtils {
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
 
+
+  def lookupName(tableName: String, schema: String): String = {
+    if (tableName.indexOf('.') <= 0) {
+      schema + '.' + tableName
+    } else tableName
+  }
 
   private def addProperty(props: Map[String, String], key: String,
       default: String): Map[String, String] = {
@@ -108,12 +111,12 @@ object ExternalStoreUtils {
 
     override def iterator: Iterator[(String, T)] = baseMap.iterator
 
-    override def +=(kv: (String, T)) = {
+    override def +=(kv: (String, T)): this.type = {
       baseMap += kv.copy(_1 = kv._1.toLowerCase)
       this
     }
 
-    override def -=(key: String) = {
+    override def -=(key: String): this.type = {
       baseMap -= key.toLowerCase
       this
     }
@@ -129,17 +132,19 @@ object ExternalStoreUtils {
     table
   }
 
-  def removeSamplingOptions(parameters: mutable.Map[String, String]): Map[String, String] = {
+  def removeSamplingOptions(
+      parameters: mutable.Map[String, String]): Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
-      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval", "aqp.debug.byPassSampleOperator")
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn",
+      "timeInterval", "aqp.debug.byPassSampleOperator")
 
     val optMap = new mutable.HashMap[String, String]
 
     optSequence.map(key => {
       val value = parameters.remove(key)
       value match {
-        case Some(v) => optMap += ((key.normalize, v))
+        case Some(v) => optMap += (Utils.toLowerCase(key) -> v)
         case None => // Do nothing
       }
     })
@@ -152,7 +157,7 @@ object ExternalStoreUtils {
         // Already connected to SnappyData in embedded mode.
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case SplitClusterMode(_, _) =>
-        ServiceUtils.getLocatorJDBCURL(sc) + "/route-query=false"
+        ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
@@ -212,6 +217,8 @@ object ExternalStoreUtils {
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
+    connProps.setProperty("driver", driver)
+    executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
@@ -243,7 +250,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getConnectionType(dialect: JdbcDialect) = {
+  def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
     dialect match {
       case GemFireXDDialect => ConnectionType.Embedded
       case GemFireXDClientDialect => ConnectionType.Net
@@ -251,7 +258,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getJDBCType(dialect: JdbcDialect, dataType: DataType) = {
+  def getJDBCType(dialect: JdbcDialect, dataType: DataType): Int = {
     dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
       dataType match {
         case IntegerType => java.sql.Types.INTEGER
@@ -273,13 +280,62 @@ object ExternalStoreUtils {
       })
   }
 
+  // This should match JDBCRDD.compileFilter for best performance
+  def unhandledFilter(f: Filter): Boolean = f match {
+    case EqualTo(col, value) => false
+    case LessThan(col, value) => false
+    case GreaterThan(col, value) => false
+    case LessThanOrEqual(col, value) => false
+    case GreaterThanOrEqual(col, value) => false
+    case _ => true
+  }
+
+  val SOME_TRUE = Some(true)
+  val SOME_FALSE = Some(false)
+
+  private def checkIndexedColumn(col: String,
+      indexedCols: scala.collection.Set[String]): Option[Boolean] =
+    if (indexedCols.contains(col)) SOME_TRUE else None
+
+  // below should exactly match RowFormatScanRDD.compileFilter
+  def handledFilter(f: Filter,
+      indexedCols: scala.collection.Set[String]): Option[Boolean] = f match {
+    // only pushdown filters if there is an index on the column;
+    // keeping a bit conservative and not pushing other filters because
+    // Spark execution engine is much faster at filter apply (though
+    //   its possible that not all indexed columns will be used for
+    //   index lookup still push down all to keep things simple)
+    case EqualTo(col, value) => checkIndexedColumn(col, indexedCols)
+    case LessThan(col, value) => checkIndexedColumn(col, indexedCols)
+    case GreaterThan(col, value) => checkIndexedColumn(col, indexedCols)
+    case LessThanOrEqual(col, value) => checkIndexedColumn(col, indexedCols)
+    case GreaterThanOrEqual(col, value) => checkIndexedColumn(col, indexedCols)
+    case StringStartsWith(col, value) => checkIndexedColumn(col, indexedCols)
+    case In(col, values) => checkIndexedColumn(col, indexedCols)
+    // At least one column should be indexed for the AND condition to be
+    // evaluated efficiently
+    case And(left, right) =>
+      val v = handledFilter(left, indexedCols)
+      if (v ne None) v
+      else handledFilter(right, indexedCols)
+    // ORList optimization requires all columns to have indexes
+    // which is ensured by the condition below
+    case Or(left, right) => if ((handledFilter(left, indexedCols) eq
+        SOME_TRUE) && (handledFilter(right, indexedCols) eq SOME_TRUE)) {
+      SOME_TRUE
+    } else SOME_FALSE
+    case _ => SOME_FALSE
+  }
+
+  def unhandledFilter(f: Filter,
+      indexedCols: scala.collection.Set[String]): Boolean =
+    handledFilter(f, indexedCols) ne SOME_TRUE
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
    *
    * @param fieldMap - The Catalyst column name to metadata of the master table
-   * @param columns - The list of desired columns
-   *
+   * @param columns  - The list of desired columns
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: Map[String, StructField],
@@ -293,7 +349,7 @@ object ExternalStoreUtils {
   }
 
   def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema : StructType): (Seq[Int], Seq[DataType]) = {
+      schema: StructType): (Seq[Int], Seq[DataType]) = {
 
     if (requestedSchema.isEmpty) {
 
@@ -311,7 +367,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getInsertString(table: String, userSchema: StructType) = {
+  def getInsertString(table: String, userSchema: StructType): String = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
@@ -320,7 +376,7 @@ object ExternalStoreUtils {
     sb.append("?)").toString()
   }
 
-  def getPutString(table: String, userSchema: StructType) = {
+  def getPutString(table: String, userSchema: StructType): String = {
     val sb = new mutable.StringBuilder("PUT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
@@ -329,7 +385,8 @@ object ExternalStoreUtils {
     sb.append("?)").toString()
   }
 
-  def getInsertStringWithColumnName(table: String, rddSchema: StructType) = {
+  def getInsertStringWithColumnName(table: String,
+      rddSchema: StructType): String = {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>
@@ -408,7 +465,7 @@ object ExternalStoreUtils {
   final def cachedBatchesToRows(
       cachedBatches: Iterator[CachedBatch],
       requestedColumns: Array[String],
-      schema: StructType): Iterator[InternalRow] = {
+      schema: StructType, forScan: Boolean): Iterator[InternalRow] = {
     // check and compare with InMemoryColumnarTableScan
     val numColumns = requestedColumns.length
     val columnIndices = new Array[Int](numColumns)
@@ -425,39 +482,6 @@ object ExternalStoreUtils {
     val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
     columnarIterator.initialize(cachedBatches, columnDataTypes, columnIndices)
     columnarIterator
-
-  }
-
-  final def cachedBatchesToRows(
-      cachedBatches: Iterator[CachedBatch],
-      requestedColumnIndices: IndexedSeq[Int],
-      requestedColumnDataTypes: IndexedSeq[DataType],
-      schema: StructType): Iterator[InternalRow] = {
-    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-    val rows = cachedBatches.flatMap { cachedBatch =>
-      // Build column accessors
-      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
-        case (schemaIndex, bufferIndex) =>
-          ColumnAccessor(schema.fields(schemaIndex).dataType,
-            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
-      }
-      // Extract rows via column accessors
-      new Iterator[InternalRow] {
-        private[this] val rowLen = nextRow.numFields
-
-        override def next(): InternalRow = {
-          var i = 0
-          while (i < rowLen) {
-            columnAccessors(i).extractTo(nextRow, i)
-            i += 1
-          }
-          if (requestedColumnIndices.isEmpty) InternalRow.empty else nextRow
-        }
-
-        override def hasNext: Boolean = columnAccessors.head.hasNext
-      }
-    }
-    rows
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
@@ -492,10 +516,9 @@ private[sql] class ArrayBufferForRows(externalStore: ExternalStore,
     bufferSize: Int) {
   var holder = getCachedBatchHolder
 
-  def getCachedBatchHolder: CachedBatchHolder[Unit] =
-    new CachedBatchHolder[Unit](columnBuilders, 0,
-      Int.MaxValue, schema, new ArrayBuffer[InternalRow](1),
-      (u: Unit, c: CachedBatch) =>
+  def getCachedBatchHolder: CachedBatchHolder =
+    new CachedBatchHolder(columnBuilders, 0,
+      Int.MaxValue, schema, (c: CachedBatch) =>
         externalStore.storeCachedBatch(colTableName, c))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {
@@ -506,7 +529,7 @@ private[sql] class ArrayBufferForRows(externalStore: ExternalStore,
         attribute.name, useCompression)
   }.toArray
 
-  def appendRow_(row: InternalRow, flush: Boolean): Unit = holder.appendRow((), row)
+  def appendRow_(row: InternalRow, flush: Boolean): Unit = holder.appendRow(row)
 
   def endRows(u: Unit): Unit = {
     holder.forceEndOfBatch()

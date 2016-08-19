@@ -18,77 +18,94 @@ package org.apache.spark.sql.aqp
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.DDLParser
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.execution.exchange.EnsureRequirements
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 
-trait SnappyContextFunctions {
+class SnappyContextFunctions {
 
-  def clear(): Unit
+  def clear(): Unit = {}
 
-  def registerAQPErrorFunctions(context: SnappyContext)
+  def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit = {}
 
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit
+  def getAQPRuleExecutor(session: SnappySession): RuleExecutor[SparkPlan] =
+    new RuleExecutor[SparkPlan] {
+      val batches = Seq(
+        Batch("Add exchange", Once, EnsureRequirements(session.sessionState.conf))
+        // Batch("Add row converters", Once, EnsureRowFormats)
+        // @TODO check why not needed, may
+        // be because everything is expected in terms of unsafe row now
+      )
+    }
 
-  protected[sql] def executePlan(context: SnappyContext,
-      plan: LogicalPlan): QueryExecution
+  def registerAQPErrorFunctions(session: SnappySession) {}
 
-  def getAQPRuleExecutor(context: SQLContext): RuleExecutor[SparkPlan]
+  def createTopK(session: SnappySession, tableName: String,
+      keyColumnName: String, schema: StructType,
+      topkOptions: Map[String, String], ifExists: Boolean): Boolean =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def createTopK(context: SnappyContext, topKName: String,
-      keyColumnName: String, inputDataSchema: StructType,
-      topkOptions: Map[String, String], ifExists: Boolean): Unit
+  def dropTopK(session: SnappySession, topKName: String): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def dropTopK(context: SnappyContext, topKName: String): Unit
+  def insertIntoTopK(session: SnappySession, rows: RDD[Row],
+      topKName: QualifiedTableName, time: Long): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def insertIntoTopK(context: SnappyContext, rows: RDD[Row],
-      topKName: QualifiedTableName, time: Long): Unit
+  def queryTopK(session: SnappySession, topKName: String,
+      startTime: String, endTime: String, k: Int): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopK(context: SnappyContext, topKName: String,
-      startTime: String = null, endTime: String = null,
-      k: Int = -1): DataFrame
+  def queryTopK(session: SnappySession, topK: String,
+      startTime: Long, endTime: Long, k: Int): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopK(context: SnappyContext, topK: String,
-      startTime: Long, endTime: Long, k: Int): DataFrame
+  def queryTopKRDD(session: SnappySession, topK: String,
+      startTime: String,
+      endTime: String, schema: StructType): RDD[InternalRow] =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopKRDD(context: SnappyContext, topK: String,
-      startTime: String, endTime: String, schema: StructType): RDD[InternalRow]
+  protected[sql] def collectSamples(session: SnappySession, rows: RDD[Row],
+      aqpTables: Seq[String], time: Long): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
-      aqpTables: Seq[String], time: Long): Unit
+  def createSampleDataFrameContract(session: SnappySession, df: DataFrame,
+      logicalPlan: LogicalPlan): SampleDataFrameContract =
+    throw new UnsupportedOperationException("missing aqp jar")
+
+  def convertToStratifiedSample(options: Map[String, Any], session: SnappySession,
+      logicalPlan: LogicalPlan): LogicalPlan =
+    throw new UnsupportedOperationException("missing aqp jar")
+
+  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean =
+    throw new UnsupportedOperationException("missing aqp jar")
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double, behavior: String): DataFrame
+      confidence: Double, behavior: String): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def createSampleDataFrameContract(context: SnappyContext,
-      df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
+  def newSQLParser(snappySession: SnappySession): SnappySqlParser =
+    new SnappySqlParser(snappySession)
 
-  def convertToStratifiedSample(options: Map[String, Any],
-      snc: SnappyContext, logicalPlan: LogicalPlan): LogicalPlan
+  def aqpTablePopulator(session: SnappySession): Unit = {
+    // register blank tasks for the stream tables so that the streams start
+    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
+      ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
+  }
 
-  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean
-
-  def getPlanner(context: SnappyContext): SparkPlanner
-
-  def getSQLDialect(context: SnappyContext): ParserDialect
-
-  def aqpTablePopulator(context: SnappyContext): Unit
-
-  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog
-
-  def getSnappyDDLParser(context: SnappyContext,
-      planGenerator: String => LogicalPlan): DDLParser
-
-  def createAnalyzer(context: SnappyContext): Analyzer
+  def executePlan(session: SnappySession,
+      plan: LogicalPlan): QueryExecution = new QueryExecution(session, plan)
 
   def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan,
+      fn2: => Int): T = fn(rowRDD, df)
 
-  def sql[T](fn: => T): T
+  def sql[T](fn: => T): T = fn
 }

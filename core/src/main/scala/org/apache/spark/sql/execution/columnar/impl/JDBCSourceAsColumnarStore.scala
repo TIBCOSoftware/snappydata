@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.UUID
 
 import scala.reflect.ClassTag
 
@@ -28,24 +27,19 @@ import io.snappydata.impl.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.execution.columnar.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore}
+import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{ConnectionProperties}
-
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.store.{StoreUtils}
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
  * Column Store implementation for GemFireXD.
  */
 final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
-    _numPartitions: Int,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
+    _numPartitions: Int)
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -67,49 +61,49 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     }
   }
 
-  override def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
-      batchId: Option[UUID] = None): UUIDRegionKey = {
+  override protected def getPartitionID(tableName: String,
+      partitionId: Int = -1): Int = {
     val connection = getConnection(tableName, onExecutor = true)
     try {
-      val uuid = connectionType match {
+      connectionType match {
         case ConnectionType.Embedded =>
-          val resolvedName = StoreUtils.lookupName(tableName,
+          val resolvedName = ExternalStoreUtils.lookupName(tableName,
             connection.getSchema)
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
-              if (bucketId == -1) {
+              if (partitionId == -1) {
                 val primaryBucketIds = pr.getDataStore.
                     getAllLocalPrimaryBucketIdArray
-                genUUIDRegionKey(primaryBucketIds.getQuick(
-                  rand.nextInt(primaryBucketIds.size())),
-                  batchId.getOrElse(UUID.randomUUID))
+                // TODO: do load-balancing among partitions instead
+                // of random selection
+                primaryBucketIds.getQuick(
+                  rand.nextInt(primaryBucketIds.size()))
+              } else {
+                partitionId
               }
-              else {
-                genUUIDRegionKey(bucketId, batchId.getOrElse(UUID.randomUUID))
-              }
-            case _ =>
-              genUUIDRegionKey()
+            case _ => partitionId
           }
-        case _ => genUUIDRegionKey(rand.nextInt(_numPartitions))
+        // TODO: SW: for split mode, get connection to one of the
+        // local servers and a bucket ID for only one of those
+        case _ => rand.nextInt(_numPartitions)
       }
-      uuid
     } finally {
       connection.close()
     }
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
-    tableName: String,
-    requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
-    extends RDD[CachedBatch](_sc, Nil) with Logging {
+class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
+    tableName: String, requiredColumns: Array[String],
+    store: JDBCSourceAsColumnarStore) extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName,
       conn => {
-        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+        val resolvedName = ExternalStoreUtils.lookupName(tableName,
+          conn.getSchema)
         val par = split.index
         val ps1 = conn.prepareStatement(
           "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
@@ -132,13 +126,16 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
   override protected def getPartitions: Array[Partition] = {
     store.tryExecute(tableName, conn => {
-      StoreUtils.getPartitionsPartitionedTable(_sc, tableName,
-        conn.getSchema, store.blockMap)
+      val resolvedName = ExternalStoreUtils.lookupName(tableName,
+        conn.getSchema)
+      val region = Misc.getRegionForTable(resolvedName, true)
+      StoreUtils.getPartitionsPartitionedTable(sparkContext,
+        region.asInstanceOf[PartitionedRegion])
     })
   }
 }
 
-class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
+class SparkShellCachedBatchRDD[T: ClassTag](_sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
     connProperties: ConnectionProperties,
     store: ExternalStore)
@@ -148,52 +145,53 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
       context: TaskContext): Iterator[CachedBatch] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
-    val query: String = helper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
-      requiredColumns, split.index)
+    val query: String = helper.getSQLStatement(ExternalStoreUtils.lookupName(
+      tableName, conn.getSchema), requiredColumns, split.index)
     val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorLocalShellPartition]
-        .hostList.map(_._1.asInstanceOf[String]).toSeq
+        .hostList.map(_._1.asInstanceOf[String])
   }
 
   override def getPartitions: Array[Partition] = {
-    SparkShellRDDHelper.getPartitions(tableName, store)
+    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
   }
 }
 
-class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
+class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
+    isPartitioned: Boolean,
     columns: Array[String],
     connProperties: ConnectionProperties,
-    store: ExternalStore,
     filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId])
-    extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns,
-      connProperties, filters, partitions, blockMap) {
+    partitions: Array[Partition] = Array.empty[Partition])
+    extends RowFormatScanRDD(_sc, getConnection, schema, tableName,
+      isPartitioned, columns, connProperties, filters, partitions) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(
       connProperties, thePart)
-    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-    // TODO: this will fail if no network server is available unless SNAP-365 is
-    // fixed with the approach of having an iterator that can fetch from remote
-    val ps = conn.prepareStatement(
-      "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
-    ps.setString(1, resolvedName)
-    ps.setInt(2, thePart.index)
-    ps.executeUpdate()
-    ps.close()
 
-    val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
+    if (isPartitioned) {
+      val ps = conn.prepareStatement(
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+      try {
+        ps.setString(1, tableName)
+        ps.setInt(2, thePart.index)
+        ps.executeUpdate()
+      } finally {
+        ps.close()
+      }
+    }
+
+    val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
@@ -210,11 +208,16 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorLocalShellPartition]
-        .hostList.map(_._1.asInstanceOf[String]).toSeq
+        .hostList.map(_._1.asInstanceOf[String])
   }
 
   override def getPartitions: Array[Partition] = {
-    SparkShellRDDHelper.getPartitions(tableName, store)
+    val conn = getConnection()
+    try {
+      SparkShellRDDHelper.getPartitions(tableName, conn)
+    } finally {
+      conn.close()
+    }
   }
 
   def getSQLStatement(resolvedTableName: String,

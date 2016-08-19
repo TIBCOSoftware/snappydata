@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.{StoreTableValueSizeProviderService}
+import io.snappydata.StoreTableValueSizeProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -37,14 +37,14 @@ import org.apache.spark.{Logging, Partition}
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-class JDBCMutableRelation(
-    val connProperties: ConnectionProperties,
-    val table: String,
-    val provider: String,
+case class JDBCMutableRelation(
+    connProperties: ConnectionProperties,
+    table: String,
+    provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
-    val parts: Array[Partition],
-    val origOptions: Map[String, String],
+    parts: Array[Partition],
+    origOptions: Map[String, String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
@@ -57,8 +57,8 @@ class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table).
-      getOrElse(super.sizeInBytes)
+  override def sizeInBytes: Long = StoreTableValueSizeProviderService
+      .getTableSize(table).getOrElse(super.sizeInBytes)
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 
@@ -70,7 +70,12 @@ class JDBCMutableRelation(
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     connProperties.url, table, connProperties.connProps)
 
+  var tableExists: Boolean = _
+
   final lazy val schemaFields = Utils.schemaFields(schema)
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+    filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
@@ -79,7 +84,7 @@ class JDBCMutableRelation(
     var conn: Connection = null
     try {
       conn = connFactory()
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       val tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
@@ -91,9 +96,16 @@ class JDBCMutableRelation(
         return tableSchema
       }
 
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
-        sys.error(s"Table $table already exists.")
-      }
+      // We should not throw table already exists from here. This is expected
+      // as new relation objects are created on each invocation of DDL.
+      // We should silently ignore it. Or else we have to take care of all
+      // SaveMode in top level APIs, which will be cumbersome as we take
+      // actions based on dialects e.g. for SaveMode.Overwrite we truncate
+      // rather than dropping the table. ErrorIfExist should be checked from
+      // top level APIs like session.createTable, which we already do.
+      // if (mode == SaveMode.ErrorIfExists && tableExists) {
+      //  sys.error(s"Table $table already exists.")
+      // }
 
       if (mode == SaveMode.Overwrite && tableExists) {
         // truncate the table if possible
@@ -144,7 +156,7 @@ class JDBCMutableRelation(
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
-      filters,
+      filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
       connProperties.executorConnProps).asInstanceOf[RDD[Row]]
@@ -162,11 +174,16 @@ class JDBCMutableRelation(
   }
 
   def insert(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, connProperties)
+    JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
   }
 
-  // TODO: SW: should below all be executed from driver or some random executor?
-  // at least the insert can be split into batches and modelled as an RDD
+  // TODO: should below all be executed from driver or some random executor?
+  // At least the insert can be split into batches and modelled as an RDD.
+  // UPDATE: It seems that GemXD putAll should be overall better than
+  // ParallelCollectionRDD that has heavier messaging and less of safety
+  // for non-transactional operations.
+  // In future with multiple driver impl this should avoid bottleneck.
+  // For best efficiency this can avoid prepared statement rather use putAll.
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {

@@ -25,7 +25,8 @@ import java.util.Map;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SnappyContext;
 import org.junit.Before;
@@ -52,11 +53,11 @@ public class JavaCreateIndexTestSuite implements Serializable {
     }
 
     JavaRDD<DummyBeanClass> rdd = context.parallelize(dummyList);
-    DataFrame df = snc.createDataFrame(rdd, DummyBeanClass.class);
+    Dataset<Row> df = snc.createDataFrame(rdd, DummyBeanClass.class);
     Map<String, String> properties = new HashMap<>();
 
     properties.put("PARTITION_BY", "col2");
-    DataFrame tableDf = snc.createTable("table2", "row", df.schema(), properties, true);
+    Dataset<Row> tableDf = snc.createTable("table2", "row", df.schema(), properties, true);
     tableDf.write().format("column").mode(SaveMode.Append).saveAsTable("table1");
   }
 

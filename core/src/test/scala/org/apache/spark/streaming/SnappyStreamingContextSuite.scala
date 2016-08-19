@@ -64,7 +64,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
   }
 
   after {
-    val activeSsc = SnappyStreamingContext.getActive()
+    val activeSsc = SnappyStreamingContext.getActive
     activeSsc match {
       case Some(x) => x.stop(stopSparkContext = true, stopGracefully = true)
       case None => //
@@ -83,7 +83,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
     input.foreachRDD { rdd => rdd.count }
     snsc.start()
 
-    assert(SnappyStreamingContext.getActive() != null)
+    assert(SnappyStreamingContext.getActive != null)
   }
 
   test("test getOrCreate") {
@@ -160,7 +160,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
 
     // Call ssc.stop after a body of code
     def testGetActiveOrCreate(body: => Unit): Unit = {
-      require(SnappyStreamingContext.getActive().isEmpty) // no active context
+      require(SnappyStreamingContext.getActive.isEmpty) // no active context
       newContextCreated = false
       try {
         body

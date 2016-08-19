@@ -9,9 +9,6 @@ import org.apache.spark.sql.{Row, DataFrame, SQLContext}
  */
 object TPCH_Snappy {
 
-  //   var queryFileStream: FileOutputStream = _
-  //   var queryPrintStream:PrintStream = _
-
   var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
   var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
   var planFileStream: FileOutputStream = null
@@ -28,11 +25,11 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy:Boolean, itr : Int, useIndex: Boolean): Unit = {
-    //val snappyContext = SnappyContext.getOrCreate(sc)
+      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer): Unit = {
     println(s"KBKBKB In execute $queryNumber")
      var queryFileStream: FileOutputStream = new FileOutputStream(new File(s"$queryNumber.out"))
      var queryPrintStream:PrintStream = new PrintStream(queryFileStream)
+
 
      val resultFormat = queryNumber match {
        case "q" => getResultString()
@@ -68,8 +65,11 @@ object TPCH_Snappy {
      try {
        println(s"Started executing $queryNumber")
        if (isResultCollection) {
+         if (planFileStream == null) {
+           planFileStream = new FileOutputStream(new File(s"Plan.out"))
+           planprintStream = new PrintStream(planFileStream)
+         }
          val cnts = queryExecution(queryNumber, sqlContext, isSnappy, useIndex, true)
-         //val cnts = snappyContext.sql(query).collect()
          println(s"$queryNumber : ${cnts.length}")
 
          for (s <- cnts) {
@@ -81,7 +81,7 @@ object TPCH_Snappy {
        } else {
          var totalTimeForLast5Iterations: Long = 0
          queryPrintStream.println(queryNumber)
-         for (i <- 1 to 3) {
+         for (i <- 1 to (warmup + runsForAverage)) {
            val startTime = System.currentTimeMillis()
            val cnts = queryExecution(queryNumber, sqlContext, isSnappy, useIndex)
            for (s <- cnts) {
@@ -90,13 +90,13 @@ object TPCH_Snappy {
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
            queryPrintStream.println(s"$iterationTime")
-           if (i > 1) {
+           if (i > warmup) {
              totalTimeForLast5Iterations += iterationTime
            }
 
          }
-         queryPrintStream.println(s"${totalTimeForLast5Iterations / 2}")
-         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
+         queryPrintStream.println(s"${totalTimeForLast5Iterations / runsForAverage}")
+         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / runsForAverage}")
        }
        println(s"Finished executing $queryNumber")
      } catch {
@@ -108,29 +108,16 @@ object TPCH_Snappy {
      } finally {
          queryPrintStream.close()
          queryFileStream.close()
-//       if(isResultCollection) {
-//         queryPrintStream.close()
-//         queryFileStream.close()
-//         TPCH_Snappy_Query.avgPrintStream.close()
-//         TPCH_Snappy_Query.avgFileStream.close()
-//       }
      }
    }
 
-  def printPlan(genPlan : Boolean, df: DataFrame, query: String): Unit = {
-    if (genPlan) {
-      planprintStream.println(query)
-      planprintStream.println(df.queryExecution.executedPlan)
-    }
+  def printPlan(df: DataFrame, query: String): Unit = {
+    planprintStream.println(query)
+    planprintStream.println(df.queryExecution.executedPlan)
   }
+
   def queryExecution(queryNumber:String, sqlContext: SQLContext, isSnappy:Boolean, useIndex: Boolean, genPlan: Boolean = false) :
   scala.Array[org.apache.spark.sql.Row]  = {
-    //val snappyContext  = SnappyContext.getOrCreate(sc)
-    if (planFileStream == null && genPlan) {
-      planFileStream = new FileOutputStream(new File(s"Plan.out"))
-      planprintStream = new PrintStream(planFileStream)
-    }
-
     val cnts : scala.Array[org.apache.spark.sql.Row] = queryNumber match {
       case "q1s" => {
         val df = sqlContext.sql(getSampledQuery1())
@@ -157,7 +144,9 @@ object TPCH_Snappy {
       case "q1" => {
         val df = sqlContext.sql(getQuery1())
         val res = df.collect()
-        printPlan(genPlan, df, "Q1")
+        if(genPlan) {
+          printPlan(df, "Q1")
+        }
         res
       }
       case "q2" => {
@@ -165,80 +154,100 @@ object TPCH_Snappy {
         result.registerTempTable("ViewQ2")
         val df = sqlContext.sql(getQuery2(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q2")
+        if(genPlan) {
+          printPlan(df, "Q2")
+        }
         res
       }
       case "q3" => {
         val df = sqlContext.sql(getQuery3())
         val res = df.collect()
-        printPlan(genPlan, df, "Q3")
+        if(genPlan) {
+          printPlan(df, "Q3")
+        }
         res
       }
       case "q4" => {
         val df = sqlContext.sql(getQuery4())
         val res = df.collect()
-        printPlan(genPlan, df, "Q4")
+        if(genPlan) {
+          printPlan(df, "Q4")
+        }
         res
       }
       case "q5" => {
         val df = sqlContext.sql(getQuery5(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q5")
+        if(genPlan) {
+          printPlan(df, "Q5")
+        }
         res
       }
       case "q6" => {
         val df = sqlContext.sql(getQuery6())
         val res = df.collect()
-        printPlan(genPlan, df, "Q6")
+        if(genPlan) {
+          printPlan(df, "Q6")
+        }
         res
       }
       case "q7" => {
         val df = sqlContext.sql(getQuery7(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q7")
+        if(genPlan) {
+          printPlan(df, "Q7")
+        }
         res
       }
       case "q8" => {
         val df = sqlContext.sql(getQuery8(isSnappy, useIndex))
         val res = df.collect()
-        printPlan(genPlan, df, "Q8")
+        if(genPlan) {
+          printPlan(df, "Q8")
+        }
         res
       }
       case "q9" => {
         val df = sqlContext.sql(getQuery9(isSnappy, useIndex))
         val res = df.collect()
-        printPlan(genPlan, df, "Q9")
+        if(genPlan) {
+          printPlan(df, "Q9")
+        }
         res
       }
       case "q10" => {
 
         val df = sqlContext.sql(getQuery10(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q10")
+        if(genPlan) {
+          printPlan(df, "Q10")
+        }
         res
       }
       case "q11" => {
         val result = sqlContext.sql(getTempQuery11(isSnappy))
-        val res: Array[Row] = null
-        result.registerTempTable("ViewQ11")
-        // assert(res.length == 1)
+        val res: Array[Row] = result.collect()
         var df : DataFrame = null
-        var res1 = res
+        var res1 : Array[Row] = null
         if(isSnappy) {
           //sqlContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
-          df = sqlContext.sql(getQuery11(null, isSnappy))
+          df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy))
           res1 = df.collect()
         }else{
           df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy))
           res1 = df.collect()
         }
-        printPlan(genPlan, df, "Q11")
+        if(genPlan) {
+          printPlan(df, "Q11")
+        }
         res1
       }
       case "q12" => {
         val df = sqlContext.sql(getQuery12())
         val res = df.collect()
-        printPlan(genPlan, df, "Q12")
+        if(genPlan) {
+          printPlan(df, "Q12")
+        }
         res
       }
       case "q13" => {
@@ -246,13 +255,17 @@ object TPCH_Snappy {
         result.registerTempTable("ViewQ13")
         val df = sqlContext.sql(getQuery13())
         val res = df.collect()
-        printPlan(genPlan, df, "Q13")
+        if(genPlan) {
+          printPlan(df, "Q13")
+        }
         res
       }
       case "q14" => {
         val df = sqlContext.sql(getQuery14(isSnappy, useIndex))
         val res = df.collect()
-        printPlan(genPlan, df, "Q14")
+        if(genPlan) {
+          printPlan(df, "Q14")
+        }
         res
       }
       case "q15" => {
@@ -264,13 +277,17 @@ object TPCH_Snappy {
 
         val df = sqlContext.sql(getQuery15(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q15")
+        if(genPlan) {
+          printPlan(df, "Q15")
+        }
         res
       }
       case "q16" => {
         val df = sqlContext.sql(getQuery16(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q16")
+        if(genPlan) {
+          printPlan(df, "Q16")
+        }
         res
       }
       case "q17" => {
@@ -279,19 +296,25 @@ object TPCH_Snappy {
 
         val df = sqlContext.sql(getQuery17(isSnappy, useIndex))
         val res = df.collect()
-        printPlan(genPlan, df, "Q17")
+        if(genPlan) {
+          printPlan(df, "Q17")
+        }
         res
       }
       case "q18" => {
         val df = sqlContext.sql(getQuery18())
         val res = df.collect()
-        printPlan(genPlan, df, "Q18")
+        if(genPlan) {
+          printPlan(df, "Q18")
+        }
         res
       }
       case "q19" => {
         val df = sqlContext.sql(getQuery19(isSnappy, useIndex))
         val res = df.collect()
-        printPlan(genPlan, df, "Q19")
+        if(genPlan) {
+          printPlan(df, "Q19")
+        }
         res
       }
       case "q20" => {
@@ -299,13 +322,17 @@ object TPCH_Snappy {
         result.registerTempTable("ViewQ20")
         val df = sqlContext.sql(getQuery20(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q20")
+        if(genPlan) {
+          printPlan(df, "Q20")
+        }
         res
       }
       case "q21" => {
         val df = sqlContext.sql(getQuery21(isSnappy))
         val res = df.collect()
-        printPlan(genPlan, df, "Q21")
+        if(genPlan) {
+          printPlan(df, "Q21")
+        }
         res
       }
       case "q22" => {
@@ -322,132 +349,13 @@ object TPCH_Snappy {
           df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
           res1 = df.collect()
         }
-        printPlan(genPlan, df, "Q22")
+        if(genPlan) {
+          printPlan(df, "Q22")
+        }
         res1
       }
     }
     cnts
-  }
-
-
-  def queryPlan(sqlContext: SQLContext, isSnappy: Boolean, useIndex: Boolean): Unit = {
-
-    println("*********************q1 plan***********************")
-    sqlContext.sql(getQuery1()).explain()
-
-    println("*********************Temp q2 plan*********************")
-    sqlContext.sql(getTempQuery2(isSnappy)).explain()
-
-    var result = sqlContext.sql(getTempQuery2(isSnappy))
-    result.registerTempTable("ViewQ2")
-
-    println("*********************q2 plan*********************")
-    sqlContext.sql(getQuery2(isSnappy)).explain()
-
-    println("*********************q3 plan*********************")
-    sqlContext.sql(getQuery3()).explain()
-
-    println("*********************q4 plan*********************")
-    sqlContext.sql(getQuery4()).explain()
-
-    println("*********************q5 plan*********************")
-    sqlContext.sql(getQuery5(isSnappy)).explain()
-
-    println("*********************q6 plan*********************")
-    sqlContext.sql(getQuery6()).explain()
-
-    println("*********************q7 plan*********************")
-    sqlContext.sql(getQuery7(isSnappy)).explain()
-
-    println("*********************q8 plan*********************")
-    sqlContext.sql(getQuery8(isSnappy, useIndex)).explain()
-
-    println("*********************q9 plan*********************")
-    sqlContext.sql(getQuery9(isSnappy, useIndex)).explain()
-
-    println("*********************q10 plan*********************")
-    sqlContext.sql(getQuery10(isSnappy)).explain()
-
-    println("*********************Temp q11 plan*********************")
-    sqlContext.sql(getTempQuery11(isSnappy)).explain()
-
-    result = sqlContext.sql(getTempQuery11(isSnappy))
-    var res = result.collect()
-    assert(res.length == 1)
-    if (isSnappy) {
-      println("*********************q11 plan*********************")
-      sqlContext.sql(getQuery11(res(0).getDecimal(0).toString, isSnappy)).explain()
-    } else {
-      println("*********************q11 plan*********************")
-      sqlContext.sql(getQuery11(res(0).getDouble(0).toString, isSnappy)).explain()
-    }
-
-    println("*********************q12 plan*********************")
-    sqlContext.sql(getQuery12()).explain()
-
-    println("*********************Temp q13 plan*********************")
-    sqlContext.sql(getTempQuery13(useIndex)).explain()
-    result = sqlContext.sql(getTempQuery13(useIndex))
-    result.registerTempTable("ViewQ13")
-    println("*********************q13 plan*********************")
-    sqlContext.sql(getQuery13()).explain()
-
-    println("*********************q14 plan*********************")
-    sqlContext.sql(getQuery14(isSnappy, useIndex)).explain()
-
-    println("*********************Temp1 q15 plan*********************")
-    sqlContext.sql(getTempQuery15_1()).explain()
-    result = sqlContext.sql(getTempQuery15_1())
-    result.registerTempTable("revenue")
-    println("*********************Temp2 q15 plan*********************")
-    sqlContext.sql(getTempQuery15_2()).explain()
-    result = sqlContext.sql(getTempQuery15_2())
-    result.registerTempTable("ViewQ15")
-    println("*********************q15 plan*********************")
-    sqlContext.sql(getQuery15(isSnappy)).explain()
-
-
-    println("*********************q16 plan*********************")
-    sqlContext.sql(getQuery16(isSnappy)).explain()
-
-    println("*********************Temp q17 plan*********************")
-    sqlContext.sql(getTempQuery17(useIndex)).explain()
-    result = sqlContext.sql(getTempQuery17(useIndex))
-    result.registerTempTable("ViewQ17")
-    println("*********************q17 plan*********************")
-    sqlContext.sql(getQuery17(isSnappy, useIndex)).explain()
-
-    println("*********************q18 plan*********************")
-    sqlContext.sql(getQuery18()).explain()
-
-    //println("*********************q19 plan*********************")
-    //sqlContext.sql(getQuery19(isSnappy)).explain()
-
-    println("*********************Temp q20 plan*********************")
-    sqlContext.sql(getTempQuery20(useIndex)).explain()
-    result = sqlContext.sql(getTempQuery20(useIndex))
-    result.registerTempTable("ViewQ20")
-    println("*********************q20 plan*********************")
-    sqlContext.sql(getQuery20(isSnappy)).explain()
-
-    //    println("*********************q21 plan*********************")
-    //    sqlContext.sql(getQuery21(isSnappy)).explain()
-
-    println("*********************Temp q22 plan*********************")
-    sqlContext.sql(getTempQuery22(useIndex)).explain()
-    result = sqlContext.sql(getTempQuery22(useIndex))
-    res = result.collect()
-    assert(res.length == 1)
-    if (isSnappy) {
-      println("*********************q22 plan*********************")
-      sqlContext.sql(getQuery22(res(0).getDecimal(0).toString, useIndex)).explain()
-      sqlContext.sql(getQuery22(res(0).getDecimal(0).toString, useIndex)).collect()
-    } else {
-      println("*********************q22 plan*********************")
-      sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex)).explain()
-      sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex)).collect()
-    }
-
   }
 
 
@@ -640,7 +548,6 @@ object TPCH_Snappy {
   }
 
   def getSampledQuery10_1(): String = {
-    //1.    DATE = 1993-10-01.
     "select" +
         "         C_CUSTKEY," +
         "         C_NAME," +
@@ -705,24 +612,23 @@ object TPCH_Snappy {
   }
 
   def getTempQuery2(isSnappy:Boolean):String = {
-    if(isSnappy) {
-      " select" +
-          "     min(PS_SUPPLYCOST) as V_SUPPLYCOST, PS_PARTKEY as V_PARTKEY" +
-          " from" +
-          "     PARTSUPP,SUPPLIER,NATION, REGION" +
-          " where" +
-          "     S_SUPPKEY = PS_SUPPKEY" +
-          "     and S_NATIONKEY = N_NATIONKEY" +
-          "     and N_REGIONKEY = R_REGIONKEY" +
-          "     and upper(trim(R_NAME)) = 'ASIA'" +
-          " group by" +
-          "     PS_PARTKEY"
-    }else{
+//    if(isSnappy) {
+//      " select" +
+//          "     min(PS_SUPPLYCOST) as V_SUPPLYCOST, PS_PARTKEY as V_PARTKEY" +
+//          " from" +
+//          "     PARTSUPP,SUPPLIER,NATION, REGION" +
+//          " where" +
+//          "     S_SUPPKEY = PS_SUPPKEY" +
+//          "     and S_NATIONKEY = N_NATIONKEY" +
+//          "     and N_REGIONKEY = R_REGIONKEY" +
+//          "     and upper(trim(R_NAME)) = 'ASIA'" +
+//          " group by" +
+//          "     PS_PARTKEY"
+//    }else{
       " select" +
           "     min(ps_supplycost) as v_supplycost, ps_partkey as v_partkey" +
           " from" +
-          "     NATION, REGION," +
-          "     PARTSUPP, SUPPLIER" +
+          "     PARTSUPP,SUPPLIER,NATION, REGION" +
           " where" +
           "     s_suppkey = ps_suppkey" +
           "     and s_nationkey = n_nationkey" +
@@ -730,46 +636,43 @@ object TPCH_Snappy {
           "     and upper(trim(r_name)) = 'ASIA'" +
           " group by" +
           "     ps_partkey"
-    }
+//    }
   }
 
   def getQuery2(isSnappy:Boolean): String = {
-    //    1. SIZE = 15;
-    //    2. TYPE = BRASS;
-    //    3. REGION = EUROPE
-    if(isSnappy) {
-      " select" +
-          "     S_ACCTBAL," +
-          "     S_NAME," +
-          "     N_NAME," +
-          "     P_PARTKEY," +
-          "     P_MFGR," +
-          "     S_ADDRESS," +
-          "     S_PHONE," +
-          "     S_COMMENT" +
-          " from" +
-          "     PART," +
-          "     PARTSUPP," +
-          "     SUPPLIER," +
-          "     NATION," +
-          "     REGION," +
-          "     ViewQ2" +
-          " where" +
-          "     P_PARTKEY = PS_PARTKEY" +
-          "     and S_SUPPKEY = PS_SUPPKEY" +
-          "     and P_SIZE = 24" +
-          "     and P_TYPE like '%STEEL'" +
-          "     and S_NATIONKEY = N_NATIONKEY" +
-          "     and N_REGIONKEY = R_REGIONKEY" +
-          "     and trim(upper(R_NAME)) = 'ASIA'" +
-          "     and P_PARTKEY = V_PARTKEY" +
-          "     and PS_SUPPLYCOST =  V_SUPPLYCOST" +
-          " order by" +
-          "     S_ACCTBAL desc," +
-          "     N_NAME," +
-          "     S_NAME," +
-          "     P_PARTKEY"
-    }else{
+//    if(isSnappy) {
+//      " select" +
+//          "     S_ACCTBAL," +
+//          "     S_NAME," +
+//          "     N_NAME," +
+//          "     P_PARTKEY," +
+//          "     P_MFGR," +
+//          "     S_ADDRESS," +
+//          "     S_PHONE," +
+//          "     S_COMMENT" +
+//          " from" +
+//          "     PART," +
+//          "     PARTSUPP," +
+//          "     SUPPLIER," +
+//          "     NATION," +
+//          "     REGION," +
+//          "     ViewQ2" +
+//          " where" +
+//          "     P_PARTKEY = PS_PARTKEY" +
+//          "     and S_SUPPKEY = PS_SUPPKEY" +
+//          "     and P_SIZE = 24" +
+//          "     and P_TYPE like '%STEEL'" +
+//          "     and S_NATIONKEY = N_NATIONKEY" +
+//          "     and N_REGIONKEY = R_REGIONKEY" +
+//          "     and trim(upper(R_NAME)) = 'ASIA'" +
+//          "     and P_PARTKEY = V_PARTKEY" +
+//          "     and PS_SUPPLYCOST =  V_SUPPLYCOST" +
+//          " order by" +
+//          "     S_ACCTBAL desc," +
+//          "     N_NAME," +
+//          "     S_NAME," +
+//          "     P_PARTKEY"
+//    }else{
       " select" +
           "     s_acctbal," +
           "     s_name," +
@@ -801,25 +704,19 @@ object TPCH_Snappy {
           "     n_name," +
           "     s_name," +
           "     p_partkey"
-    }
+    //}
   }
   def getResultString2():String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
   def getQuery3(): String = {
-    //    1. SEGMENT = BUILDING;
-    //    2. DATE = 1995-03-15.
     " select" +
         "     l_orderkey," +
         "     sum(l_extendedprice*(1-l_discount)) as revenue," +
         "     o_orderdate," +
         "     o_shippriority" +
         " from" +
-        //         "     CUSTOMER," +
-        //         "     ORDERS," +
-        //         "     LINEITEM" +
-        //Order Changed
         "    ORDERS," +
         "    LINEITEM," +
         "    CUSTOMER "+
@@ -850,8 +747,6 @@ object TPCH_Snappy {
         "     ORDERS" +
         " where" +
         "     o_orderdate >= add_months('1993-07-01',0)" +
-        //" and o_orderdate < '1993-07-01' + interval '3' month" +
-        //"     and o_orderdate < DATE_ADD('1993-07-01',90)" +
         "     and o_orderdate < add_months('1993-07-01',3)" +
         "     and exists (" +
         "         select" +
@@ -875,49 +770,49 @@ object TPCH_Snappy {
   def getQuery5(isSnappy:Boolean): String = {
     //1. REGION = ASIA;
     //2. DATE = 1994-01-01.
-    if(isSnappy) {
+//    if(isSnappy) {
+//      " select" +
+//          "        N_NAME," +
+//          "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
+//          " from" +
+//          //           "        CUSTOMER," +
+//          //           "        ORDERS," +
+//          //           "        LINEITEM," +
+//          //           "        SUPPLIER," +
+//          //           "        NATION," +
+//          //           "        REGION" +
+//          "        ORDERS," +
+//          "        LINEITEM," +
+//          "        SUPPLIER," +
+//          "        NATION," +
+//          "        REGION," +
+//          "        CUSTOMER" +
+//          " where" +
+//          "        C_CUSTKEY = o_custkey" +
+//          "        and l_orderkey = o_orderkey" +
+//          "        and l_suppkey = S_SUPPKEY" +
+//          "        and C_NATIONKEY = S_NATIONKEY" +
+//          "        and S_NATIONKEY = N_NATIONKEY" +
+//          "        and N_REGIONKEY = R_REGIONKEY" +
+//          "        and trim(upper(R_NAME)) = 'ASIA'" +
+//          "        and o_orderdate >= add_months('1994-01-01',0)" +
+//          //"        and o_orderdate < date '[DATE]' + interval '1' year" +
+//          "        and o_orderdate < add_months('1994-01-01', 12)" +
+//          " group by" +
+//          "        N_NAME" +
+//          " order by" +
+//          "        revenue desc"
+//    }else{
       " select" +
-          "        N_NAME," +
+          "        n_name," +
           "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
           " from" +
-          //           "        CUSTOMER," +
-          //           "        ORDERS," +
-          //           "        LINEITEM," +
-          //           "        SUPPLIER," +
-          //           "        NATION," +
-          //           "        REGION" +
           "        ORDERS," +
           "        LINEITEM," +
           "        SUPPLIER," +
           "        NATION," +
           "        REGION," +
           "        CUSTOMER" +
-          " where" +
-          "        C_CUSTKEY = o_custkey" +
-          "        and l_orderkey = o_orderkey" +
-          "        and l_suppkey = S_SUPPKEY" +
-          "        and C_NATIONKEY = S_NATIONKEY" +
-          "        and S_NATIONKEY = N_NATIONKEY" +
-          "        and N_REGIONKEY = R_REGIONKEY" +
-          "        and trim(upper(R_NAME)) = 'ASIA'" +
-          "        and o_orderdate >= add_months('1994-01-01',0)" +
-          //"        and o_orderdate < date '[DATE]' + interval '1' year" +
-          "        and o_orderdate < add_months('1994-01-01', 12)" +
-          " group by" +
-          "        N_NAME" +
-          " order by" +
-          "        revenue desc"
-    }else{
-      " select" +
-          "        n_name," +
-          "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
-          " from" +
-          "        CUSTOMER," +
-          "        ORDERS," +
-          "        LINEITEM," +
-          "        SUPPLIER," +
-          "        NATION," +
-          "        REGION" +
           " where" +
           "        C_CUSTKEY = o_custkey" +
           "        and l_orderkey = o_orderkey" +
@@ -933,7 +828,7 @@ object TPCH_Snappy {
           "        n_name" +
           " order by" +
           "        revenue desc"
-    }
+    //}
   }
 
   def getResultString5():String = {
@@ -962,47 +857,47 @@ object TPCH_Snappy {
   def getQuery7(isSnappy:Boolean): String = {
     //    1. NATION1 = FRANCE;
     //    2. NATION2 = GERMANY.
-    if (isSnappy) {
-      "select" +
-          "         supp_nation," +
-          "         cust_nation," +
-          "         l_year, " +
-          "         sum(volume) as revenue" +
-          " from (" +
-          "         select" +
-          "                 n1.N_NAME as supp_nation," +
-          "                 n2.N_NAME as cust_nation," +
-          //        "                 extract m(year from l_shipdate) as l_year," +
-          "                 year(l_shipdate) as l_year," +
-          "                 l_extendedprice * (1 - l_discount) as volume" +
-          "         from" +
-          "                 SUPPLIER," +
-          "                 LINEITEM," +
-          "                 ORDERS," +
-          "                 CUSTOMER," +
-          "                 NATION n1," +
-          "                 NATION n2" +
-          "         where" +
-          "                 S_SUPPKEY = l_suppkey" +
-          "                 and o_orderkey = l_orderkey" +
-          "                 and C_CUSTKEY = o_custkey" +
-          "                 and S_NATIONKEY = n1.N_NATIONKEY" +
-          "                 and C_NATIONKEY = n2.N_NATIONKEY" +
-          "                 and (" +
-          "                         (trim(upper(n1.N_NAME)) = 'FRANCE' and trim(upper(n2.N_NAME)) = 'GERMANY')" +
-          "                      or (trim(upper(n1.N_NAME)) = 'GERMANY' and trim(upper(n2.N_NAME)) = 'FRANCE')" +
-          "                 )" +
-          "                 and l_shipdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
-          "         ) as shipping" +
-          " group by" +
-          "         supp_nation," +
-          "         cust_nation," +
-          "         l_year" +
-          " order by" +
-          "         supp_nation," +
-          "         cust_nation," +
-          "         l_year"
-    } else {
+//    if (isSnappy) {
+//      "select" +
+//          "         supp_nation," +
+//          "         cust_nation," +
+//          "         l_year, " +
+//          "         sum(volume) as revenue" +
+//          " from (" +
+//          "         select" +
+//          "                 n1.N_NAME as supp_nation," +
+//          "                 n2.N_NAME as cust_nation," +
+//          //        "                 extract m(year from l_shipdate) as l_year," +
+//          "                 year(l_shipdate) as l_year," +
+//          "                 l_extendedprice * (1 - l_discount) as volume" +
+//          "         from" +
+//          "                 SUPPLIER," +
+//          "                 LINEITEM," +
+//          "                 ORDERS," +
+//          "                 CUSTOMER," +
+//          "                 NATION n1," +
+//          "                 NATION n2" +
+//          "         where" +
+//          "                 S_SUPPKEY = l_suppkey" +
+//          "                 and o_orderkey = l_orderkey" +
+//          "                 and C_CUSTKEY = o_custkey" +
+//          "                 and S_NATIONKEY = n1.N_NATIONKEY" +
+//          "                 and C_NATIONKEY = n2.N_NATIONKEY" +
+//          "                 and (" +
+//          "                         (trim(upper(n1.N_NAME)) = 'FRANCE' and trim(upper(n2.N_NAME)) = 'GERMANY')" +
+//          "                      or (trim(upper(n1.N_NAME)) = 'GERMANY' and trim(upper(n2.N_NAME)) = 'FRANCE')" +
+//          "                 )" +
+//          "                 and l_shipdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
+//          "         ) as shipping" +
+//          " group by" +
+//          "         supp_nation," +
+//          "         cust_nation," +
+//          "         l_year" +
+//          " order by" +
+//          "         supp_nation," +
+//          "         cust_nation," +
+//          "         l_year"
+//    } else {
       "select" +
           "         supp_nation," +
           "         cust_nation," +
@@ -1042,7 +937,7 @@ object TPCH_Snappy {
           "         supp_nation," +
           "         cust_nation," +
           "         l_year"
-    }
+    //}
   }
 
   def getResultString7():String = {
@@ -1053,8 +948,94 @@ object TPCH_Snappy {
     //    1. NATION = BRAZIL;
     //    2. REGION = AMERICA;
     //    3. TYPE = ECONOMY ANODIZED STEEL.
-    if (isSnappy) {
-      if (!useIndex) {
+//    if (isSnappy) {
+//      if (!useIndex) {
+//        "select" +
+//            "         o_year," +
+//            "         sum(case" +
+//            "                 when trim(upper(nation)) = 'BRAZIL'" +
+//            "                 then volume" +
+//            "                 else 0" +
+//            "                 end) / sum(volume) as mkt_share" +
+//            "         from (" +
+//            "                 select" +
+//            "                         year(o_orderdate) as o_year," +
+//            "                         l_extendedprice * (1-l_discount) as volume," +
+//            "                         n2.N_NAME as nation" +
+//            "                 from" +
+//            //           "                         PART," +
+//            //           "                         SUPPLIER," +
+//            //           "                         LINEITEM," +
+//            //           "                         ORDERS," +
+//            //           "                         CUSTOMER," +
+//            //           "                         NATION n1," +
+//            //           "                         NATION n2," +
+//            //           "                         REGION" +
+//            "                         LINEITEM," +
+//            "                         ORDERS," +
+//            "                         CUSTOMER," +
+//            "                         SUPPLIER," +
+//            "                         NATION n1," +
+//            "                         REGION," +
+//            "                         NATION n2," +
+//            "                         PART" +
+//            "                 where" +
+//            "                         P_PARTKEY = l_partkey" +
+//            "                         and S_SUPPKEY = l_suppkey" +
+//            "                         and l_orderkey = o_orderkey" +
+//            "                         and o_custkey = C_CUSTKEY" +
+//            "                         and C_NATIONKEY = n1.N_NATIONKEY" +
+//            "                         and n1.N_REGIONKEY = R_REGIONKEY" +
+//            "                         and trim(upper(R_NAME)) = 'AMERICA'" +
+//            "                         and S_NATIONKEY = n2.N_NATIONKEY" +
+//            "                         and o_orderdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
+//            "                         and trim(upper(P_TYPE)) = 'ECONOMY ANODIZED STEEL'" +
+//            "         ) as all_nations" +
+//            " group by" +
+//            "         o_year" +
+//            " order by" +
+//            "         o_year"
+//      } else {
+//        "select" +
+//            "         o_year," +
+//            "         sum(case" +
+//            "                 when trim(upper(nation)) = 'BRAZIL'" +
+//            "                 then volume" +
+//            "                 else 0" +
+//            "                 end) / sum(volume) as mkt_share" +
+//            "         from (" +
+//            "                 select" +
+//            "                         year(o_orderdate) as o_year," +
+//            "                         l_extendedprice * (1-l_discount) as volume," +
+//            "                         n2.N_NAME as nation" +
+//            "                 from" +
+//            "                         PART," +
+//            "                         LINEITEM_PART," +
+//            "                         SUPPLIER," +
+//            "                         ORDERS," +
+//            "                         CUSTOMER," +
+//            "                         NATION n1," +
+//            "                         NATION n2," +
+//            "                         REGION" +
+//            "                 where" +
+//            "                         P_PARTKEY = l_partkey" +
+//            "                         and S_SUPPKEY = l_suppkey" +
+//            "                         and l_orderkey = o_orderkey" +
+//            "                         and o_custkey = C_CUSTKEY" +
+//            "                         and C_NATIONKEY = n1.N_NATIONKEY" +
+//            "                         and n1.N_REGIONKEY = R_REGIONKEY" +
+//            "                         and trim(upper(R_NAME)) = 'AMERICA'" +
+//            "                         and S_NATIONKEY = n2.N_NATIONKEY" +
+//            "                         and o_orderdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
+//            "                         and trim(upper(P_TYPE)) = 'ECONOMY ANODIZED STEEL'" +
+//            "         ) as all_nations" +
+//            " group by" +
+//            "         o_year" +
+//            " order by" +
+//            "         o_year"
+//      }
+//    } else {
+      if(!useIndex) {
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -1066,16 +1047,8 @@ object TPCH_Snappy {
             "                 select" +
             "                         year(o_orderdate) as o_year," +
             "                         l_extendedprice * (1-l_discount) as volume," +
-            "                         n2.N_NAME as nation" +
+            "                         n2.n_name as nation" +
             "                 from" +
-            //           "                         PART," +
-            //           "                         SUPPLIER," +
-            //           "                         LINEITEM," +
-            //           "                         ORDERS," +
-            //           "                         CUSTOMER," +
-            //           "                         NATION n1," +
-            //           "                         NATION n2," +
-            //           "                         REGION" +
             "                         LINEITEM," +
             "                         ORDERS," +
             "                         CUSTOMER," +
@@ -1085,22 +1058,22 @@ object TPCH_Snappy {
             "                         NATION n2," +
             "                         PART" +
             "                 where" +
-            "                         P_PARTKEY = l_partkey" +
-            "                         and S_SUPPKEY = l_suppkey" +
+            "                         p_partkey = l_partkey" +
+            "                         and s_suppkey = l_suppkey" +
             "                         and l_orderkey = o_orderkey" +
             "                         and o_custkey = C_CUSTKEY" +
-            "                         and C_NATIONKEY = n1.N_NATIONKEY" +
-            "                         and n1.N_REGIONKEY = R_REGIONKEY" +
-            "                         and trim(upper(R_NAME)) = 'AMERICA'" +
-            "                         and S_NATIONKEY = n2.N_NATIONKEY" +
+            "                         and C_NATIONKEY = n1.n_nationkey" +
+            "                         and n1.n_regionkey = r_regionkey" +
+            "                         and trim(upper(r_name)) = 'AMERICA'" +
+            "                         and s_nationkey = n2.n_nationkey" +
             "                         and o_orderdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
-            "                         and trim(upper(P_TYPE)) = 'ECONOMY ANODIZED STEEL'" +
+            "                         and trim(upper(p_type)) = 'ECONOMY ANODIZED STEEL'" +
             "         ) as all_nations" +
             " group by" +
             "         o_year" +
             " order by" +
             "         o_year"
-      } else {
+      }else{
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -1112,7 +1085,7 @@ object TPCH_Snappy {
             "                 select" +
             "                         year(o_orderdate) as o_year," +
             "                         l_extendedprice * (1-l_discount) as volume," +
-            "                         n2.N_NAME as nation" +
+            "                         n2.n_name as nation" +
             "                 from" +
             "                         PART," +
             "                         LINEITEM_PART," +
@@ -1123,61 +1096,23 @@ object TPCH_Snappy {
             "                         NATION n2," +
             "                         REGION" +
             "                 where" +
-            "                         P_PARTKEY = l_partkey" +
-            "                         and S_SUPPKEY = l_suppkey" +
+            "                         p_partkey = l_partkey" +
+            "                         and s_suppkey = l_suppkey" +
             "                         and l_orderkey = o_orderkey" +
             "                         and o_custkey = C_CUSTKEY" +
-            "                         and C_NATIONKEY = n1.N_NATIONKEY" +
-            "                         and n1.N_REGIONKEY = R_REGIONKEY" +
-            "                         and trim(upper(R_NAME)) = 'AMERICA'" +
-            "                         and S_NATIONKEY = n2.N_NATIONKEY" +
+            "                         and C_NATIONKEY = n1.n_nationkey" +
+            "                         and n1.n_regionkey = r_regionkey" +
+            "                         and trim(upper(r_name)) = 'AMERICA'" +
+            "                         and s_nationkey = n2.n_nationkey" +
             "                         and o_orderdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
-            "                         and trim(upper(P_TYPE)) = 'ECONOMY ANODIZED STEEL'" +
+            "                         and trim(upper(p_type)) = 'ECONOMY ANODIZED STEEL'" +
             "         ) as all_nations" +
             " group by" +
             "         o_year" +
             " order by" +
             "         o_year"
       }
-    } else {
-      "select" +
-          "         o_year," +
-          "         sum(case" +
-          "                 when trim(upper(nation)) = 'BRAZIL'" +
-          "                 then volume" +
-          "                 else 0" +
-          "                 end) / sum(volume) as mkt_share" +
-          "         from (" +
-          "                 select" +
-          "                         year(o_orderdate) as o_year," +
-          "                         l_extendedprice * (1-l_discount) as volume," +
-          "                         n2.n_name as nation" +
-          "                 from" +
-          "                         PART," +
-          "                         SUPPLIER," +
-          "                         LINEITEM," +
-          "                         ORDERS," +
-          "                         CUSTOMER," +
-          "                         NATION n1," +
-          "                         NATION n2," +
-          "                         REGION" +
-          "                 where" +
-          "                         p_partkey = l_partkey" +
-          "                         and s_suppkey = l_suppkey" +
-          "                         and l_orderkey = o_orderkey" +
-          "                         and o_custkey = C_CUSTKEY" +
-          "                         and C_NATIONKEY = n1.n_nationkey" +
-          "                         and n1.n_regionkey = r_regionkey" +
-          "                         and trim(upper(r_name)) = 'AMERICA'" +
-          "                         and s_nationkey = n2.n_nationkey" +
-          "                         and o_orderdate between add_months('1995-01-01',0) and add_months('1996-12-31',0)" +
-          "                         and trim(upper(p_type)) = 'ECONOMY ANODIZED STEEL'" +
-          "         ) as all_nations" +
-          " group by" +
-          "         o_year" +
-          " order by" +
-          "         o_year"
-    }
+    //}
   }
 
   def getResultString8():String = {
@@ -1186,7 +1121,79 @@ object TPCH_Snappy {
 
   def getQuery9(isSnappy:Boolean, useIndex: Boolean): String = {
     //1. COLOR = green.
-    if(isSnappy) {
+//    if(isSnappy) {
+//      if (!useIndex) {
+//        "select" +
+//            "         nation," +
+//            "         o_year," +
+//            "         sum(amount) as sum_profit" +
+//            " from (" +
+//            "         select" +
+//            "                 N_NAME as nation," +
+//            "                 year(o_orderdate) as o_year," +
+//            "                 l_extendedprice * (1 - l_discount) - PS_SUPPLYCOST * l_quantity as amount" +
+//            "         from" +
+//            //           "                 PART," +
+//            //           "                 SUPPLIER," +
+//            //           "                 LINEITEM," +
+//            //           "                 PARTSUPP," +
+//            //           "                 ORDERS," +
+//            //           "                 NATION" +
+//            "                 LINEITEM," +
+//            "                 ORDERS," +
+//            "                 SUPPLIER," +
+//            "                 NATION," +
+//            "                 PART," +
+//            "                 PARTSUPP" +
+//            "         where" +
+//            "                 S_SUPPKEY = l_suppkey" +
+//            "                 and PS_SUPPKEY = l_suppkey" +
+//            "                 and PS_PARTKEY = l_partkey" +
+//            "                 and P_PARTKEY = l_partkey" +
+//            "                 and o_orderkey = l_orderkey" +
+//            "                 and S_NATIONKEY = N_NATIONKEY" +
+//            "                 and P_NAME like '%green%'" +
+//            "         ) as profit" +
+//            " group by" +
+//            "         nation," +
+//            "         o_year" +
+//            " order by" +
+//            "         nation," +
+//            "         o_year desc"
+//      } else {
+//        "select" +
+//            "         nation," +
+//            "         o_year," +
+//            "         sum(amount) as sum_profit" +
+//            " from (" +
+//            "         select" +
+//            "                 N_NAME as nation," +
+//            "                 year(o_orderdate) as o_year," +
+//            "                 l_extendedprice * (1 - l_discount) - PS_SUPPLYCOST * l_quantity as amount" +
+//            "         from" +
+//            "                 PART," +
+//            "                 LINEITEM_PART," +
+//            "                 PARTSUPP," +
+//            "                 SUPPLIER," +
+//            "                 ORDERS," +
+//            "                 NATION" +
+//            "         where" +
+//            "                 S_SUPPKEY = l_suppkey" +
+//            "                 and PS_SUPPKEY = l_suppkey" +
+//            "                 and PS_PARTKEY = l_partkey" +
+//            "                 and P_PARTKEY = l_partkey" +
+//            "                 and o_orderkey = l_orderkey" +
+//            "                 and S_NATIONKEY = N_NATIONKEY" +
+//            "                 and P_NAME like '%green%'" +
+//            "         ) as profit" +
+//            " group by" +
+//            "         nation," +
+//            "         o_year" +
+//            " order by" +
+//            "         nation," +
+//            "         o_year desc"
+//      }
+//    }else{
       if (!useIndex) {
         "select" +
             "         nation," +
@@ -1194,16 +1201,10 @@ object TPCH_Snappy {
             "         sum(amount) as sum_profit" +
             " from (" +
             "         select" +
-            "                 N_NAME as nation," +
+            "                 n_name as nation," +
             "                 year(o_orderdate) as o_year," +
-            "                 l_extendedprice * (1 - l_discount) - PS_SUPPLYCOST * l_quantity as amount" +
+            "                 l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount" +
             "         from" +
-            //           "                 PART," +
-            //           "                 SUPPLIER," +
-            //           "                 LINEITEM," +
-            //           "                 PARTSUPP," +
-            //           "                 ORDERS," +
-            //           "                 NATION" +
             "                 LINEITEM," +
             "                 ORDERS," +
             "                 SUPPLIER," +
@@ -1211,13 +1212,13 @@ object TPCH_Snappy {
             "                 PART," +
             "                 PARTSUPP" +
             "         where" +
-            "                 S_SUPPKEY = l_suppkey" +
-            "                 and PS_SUPPKEY = l_suppkey" +
-            "                 and PS_PARTKEY = l_partkey" +
-            "                 and P_PARTKEY = l_partkey" +
+            "                 s_suppkey = l_suppkey" +
+            "                 and ps_suppkey = l_suppkey" +
+            "                 and ps_partkey = l_partkey" +
+            "                 and p_partkey = l_partkey" +
             "                 and o_orderkey = l_orderkey" +
-            "                 and S_NATIONKEY = N_NATIONKEY" +
-            "                 and P_NAME like '%green%'" +
+            "                 and s_nationkey = n_nationkey" +
+            "                 and p_name like '%green%'" +
             "         ) as profit" +
             " group by" +
             "         nation," +
@@ -1225,16 +1226,16 @@ object TPCH_Snappy {
             " order by" +
             "         nation," +
             "         o_year desc"
-      } else {
+      }else{
         "select" +
             "         nation," +
             "         o_year," +
             "         sum(amount) as sum_profit" +
             " from (" +
             "         select" +
-            "                 N_NAME as nation," +
+            "                 n_name as nation," +
             "                 year(o_orderdate) as o_year," +
-            "                 l_extendedprice * (1 - l_discount) - PS_SUPPLYCOST * l_quantity as amount" +
+            "                 l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount" +
             "         from" +
             "                 PART," +
             "                 LINEITEM_PART," +
@@ -1243,13 +1244,13 @@ object TPCH_Snappy {
             "                 ORDERS," +
             "                 NATION" +
             "         where" +
-            "                 S_SUPPKEY = l_suppkey" +
-            "                 and PS_SUPPKEY = l_suppkey" +
-            "                 and PS_PARTKEY = l_partkey" +
-            "                 and P_PARTKEY = l_partkey" +
+            "                 s_suppkey = l_suppkey" +
+            "                 and ps_suppkey = l_suppkey" +
+            "                 and ps_partkey = l_partkey" +
+            "                 and p_partkey = l_partkey" +
             "                 and o_orderkey = l_orderkey" +
-            "                 and S_NATIONKEY = N_NATIONKEY" +
-            "                 and P_NAME like '%green%'" +
+            "                 and s_nationkey = n_nationkey" +
+            "                 and p_name like '%green%'" +
             "         ) as profit" +
             " group by" +
             "         nation," +
@@ -1257,40 +1258,9 @@ object TPCH_Snappy {
             " order by" +
             "         nation," +
             "         o_year desc"
+
       }
-    }else{
-      "select" +
-          "         nation," +
-          "         o_year," +
-          "         sum(amount) as sum_profit" +
-          " from (" +
-          "         select" +
-          "                 n_name as nation," +
-          "                 year(o_orderdate) as o_year," +
-          "                 l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount" +
-          "         from" +
-          "                 PART," +
-          "                 SUPPLIER," +
-          "                 LINEITEM," +
-          "                 PARTSUPP," +
-          "                 ORDERS," +
-          "                 NATION" +
-          "         where" +
-          "                 s_suppkey = l_suppkey" +
-          "                 and ps_suppkey = l_suppkey" +
-          "                 and ps_partkey = l_partkey" +
-          "                 and p_partkey = l_partkey" +
-          "                 and o_orderkey = l_orderkey" +
-          "                 and s_nationkey = n_nationkey" +
-          "                 and p_name like '%green%'" +
-          "         ) as profit" +
-          " group by" +
-          "         nation," +
-          "         o_year" +
-          " order by" +
-          "         nation," +
-          "         o_year desc"
-    }
+   // }
   }
 
   def getResultString9():String = {
@@ -1298,43 +1268,43 @@ object TPCH_Snappy {
   }
   def getQuery10(isSappy:Boolean): String = {
     //1.    DATE = 1993-10-01.
-    if(isSappy) {
-      "select" +
-          "         C_CUSTKEY," +
-          "         C_NAME," +
-          "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
-          "         C_ACCTBAL," +
-          "         N_NAME," +
-          "         C_ADDRESS," +
-          "         C_PHONE," +
-          "         C_COMMENT" +
-          " from" +
-          //           "         CUSTOMER," +
-          //           "         ORDERS," +
-          //           "         LINEITEM," +
-          //           "         NATION" +
-          "         ORDERS," +
-          "         LINEITEM," +
-          "         CUSTOMER," +
-          "         NATION" +
-          " where" +
-          "         C_CUSTKEY = o_custkey" +
-          "         and l_orderkey = o_orderkey" +
-          "         and o_orderdate >= add_months('1993-10-01',0)" +
-          "         and o_orderdate < add_months('1993-10-01', 3)" +
-          "         and l_returnflag = 'R'" +
-          "         and C_NATIONKEY = N_NATIONKEY" +
-          " group by" +
-          "         C_CUSTKEY," +
-          "         C_NAME," +
-          "         C_ACCTBAL," +
-          "         C_PHONE," +
-          "         N_NAME," +
-          "         C_ADDRESS," +
-          "         C_COMMENT" +
-          " order by" +
-          "         revenue desc"
-    }else{
+//    if(isSappy) {
+//      "select" +
+//          "         C_CUSTKEY," +
+//          "         C_NAME," +
+//          "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+//          "         C_ACCTBAL," +
+//          "         N_NAME," +
+//          "         C_ADDRESS," +
+//          "         C_PHONE," +
+//          "         C_COMMENT" +
+//          " from" +
+//          //           "         CUSTOMER," +
+//          //           "         ORDERS," +
+//          //           "         LINEITEM," +
+//          //           "         NATION" +
+//          "         ORDERS," +
+//          "         LINEITEM," +
+//          "         CUSTOMER," +
+//          "         NATION" +
+//          " where" +
+//          "         C_CUSTKEY = o_custkey" +
+//          "         and l_orderkey = o_orderkey" +
+//          "         and o_orderdate >= add_months('1993-10-01',0)" +
+//          "         and o_orderdate < add_months('1993-10-01', 3)" +
+//          "         and l_returnflag = 'R'" +
+//          "         and C_NATIONKEY = N_NATIONKEY" +
+//          " group by" +
+//          "         C_CUSTKEY," +
+//          "         C_NAME," +
+//          "         C_ACCTBAL," +
+//          "         C_PHONE," +
+//          "         N_NAME," +
+//          "         C_ADDRESS," +
+//          "         C_COMMENT" +
+//          " order by" +
+//          "         revenue desc"
+//    }else{
       "select" +
           "         C_CUSTKEY," +
           "         C_NAME," +
@@ -1345,9 +1315,9 @@ object TPCH_Snappy {
           "         C_PHONE," +
           "         C_COMMENT" +
           " from" +
-          "         CUSTOMER," +
           "         ORDERS," +
           "         LINEITEM," +
+          "         CUSTOMER," +
           "         NATION" +
           " where" +
           "         C_CUSTKEY = o_custkey" +
@@ -1366,7 +1336,7 @@ object TPCH_Snappy {
           "         C_COMMENT" +
           " order by" +
           "         revenue desc"
-    }
+   // }
   }
 
   def getResultString10():String = {
@@ -1374,18 +1344,18 @@ object TPCH_Snappy {
   }
 
   def getTempQuery11(isSnappy:Boolean):String = {
-    if(isSnappy) {
-      " select" +
-          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
-          " from" +
-          "         PARTSUPP," +
-          "         SUPPLIER," +
-          "         NATION" +
-          " where" +
-          "         PS_SUPPKEY = S_SUPPKEY" +
-          "         and S_NATIONKEY = N_NATIONKEY" +
-          "         and trim(upper(N_NAME)) = 'GERMANY'"
-    }else{
+//    if(isSnappy) {
+//      " select" +
+//          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
+//          " from" +
+//          "         PARTSUPP," +
+//          "         SUPPLIER," +
+//          "         NATION" +
+//          " where" +
+//          "         PS_SUPPKEY = S_SUPPKEY" +
+//          "         and S_NATIONKEY = N_NATIONKEY" +
+//          "         and trim(upper(N_NAME)) = 'GERMANY'"
+//    }else{
       " select" +
           "         sum(ps_supplycost * ps_availqty) * 0.0001" +
           " from" +
@@ -1396,31 +1366,31 @@ object TPCH_Snappy {
           "         ps_suppkey = s_suppkey" +
           "         and s_nationkey = n_nationkey" +
           "         and trim(upper(n_name)) = 'GERMANY'"
-    }
+   // }
   }
 
   def getQuery11(value : Any, isSnappy:Boolean): String = {
     //    1. NATION = GERMANY;
     //    2. FRACTION = 0.0001.
-    if(isSnappy) {
-      " select" +
-          "         PS_PARTKEY," +
-          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) as value" +
-          " from" +
-          "         PARTSUPP," +
-          "         SUPPLIER," +
-          "         NATION" +
-          " where" +
-          "         PS_SUPPKEY = S_SUPPKEY" +
-          "         and S_NATIONKEY = N_NATIONKEY" +
-          "         and trim(upper(N_NAME)) = 'GERMANY'" +
-          " group by" +
-          "         PS_PARTKEY having" +
-          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > " +
-          value +
-          " order by" +
-          "         value desc"
-    }else{
+//    if(isSnappy) {
+//      " select" +
+//          "         PS_PARTKEY," +
+//          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) as value" +
+//          " from" +
+//          "         PARTSUPP," +
+//          "         SUPPLIER," +
+//          "         NATION" +
+//          " where" +
+//          "         PS_SUPPKEY = S_SUPPKEY" +
+//          "         and S_NATIONKEY = N_NATIONKEY" +
+//          "         and trim(upper(N_NAME)) = 'GERMANY'" +
+//          " group by" +
+//          "         PS_PARTKEY having" +
+//          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > " +
+//          value +
+//          " order by" +
+//          "         value desc"
+//    }else{
       " select" +
           "         ps_partkey," +
           "         sum(ps_supplycost * ps_availqty) as value" +
@@ -1438,7 +1408,7 @@ object TPCH_Snappy {
           value +
           " order by" +
           "         value desc"
-    }
+  //  }
   }
 
   def getResultString11():String = {
@@ -1529,11 +1499,43 @@ object TPCH_Snappy {
   }
   def getQuery14(isSnappy:Boolean, useIndex: Boolean): String = {
     //1.DATE = 1995-09-01.
-    if (isSnappy) {
+//    if (isSnappy) {
+//      if (!useIndex) {
+//        "select" +
+//            "         100.00 * sum(case" +
+//            "                 when P_TYPE like 'PROMO%'" +
+//            "                 then l_extendedprice*(1-l_discount)" +
+//            "                 else 0" +
+//            "                 end" +
+//            "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+//            " from" +
+//            "         LINEITEM," +
+//            "         PART" +
+//            " where" +
+//            "         l_partkey = P_PARTKEY" +
+//            "         and l_shipdate >= add_months('1995-09-01',0)" +
+//            "         and l_shipdate < add_months ('1995-09-01', 1)"
+//      } else {
+//        "select" +
+//            "         100.00 * sum(case" +
+//            "                 when P_TYPE like 'PROMO%'" +
+//            "                 then l_extendedprice*(1-l_discount)" +
+//            "                 else 0" +
+//            "                 end" +
+//            "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+//            " from" +
+//            "         LINEITEM_PART," +
+//            "         PART" +
+//            " where" +
+//            "         l_partkey = P_PARTKEY" +
+//            "         and l_shipdate >= add_months('1995-09-01',0)" +
+//            "         and l_shipdate < add_months ('1995-09-01', 1)"
+//      }
+//    } else {
       if (!useIndex) {
         "select" +
             "         100.00 * sum(case" +
-            "                 when P_TYPE like 'PROMO%'" +
+            "                 when p_type like 'PROMO%'" +
             "                 then l_extendedprice*(1-l_discount)" +
             "                 else 0" +
             "                 end" +
@@ -1542,41 +1544,26 @@ object TPCH_Snappy {
             "         LINEITEM," +
             "         PART" +
             " where" +
-            "         l_partkey = P_PARTKEY" +
+            "         l_partkey = p_partkey" +
             "         and l_shipdate >= add_months('1995-09-01',0)" +
             "         and l_shipdate < add_months ('1995-09-01', 1)"
-      } else {
+      }else{
         "select" +
             "         100.00 * sum(case" +
-            "                 when P_TYPE like 'PROMO%'" +
+            "                 when p_type like 'PROMO%'" +
             "                 then l_extendedprice*(1-l_discount)" +
             "                 else 0" +
             "                 end" +
             "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
             " from" +
-            "         LINEITEM_PART," +
+            "         LINEITEM," +
             "         PART" +
             " where" +
-            "         l_partkey = P_PARTKEY" +
+            "         l_partkey = p_partkey" +
             "         and l_shipdate >= add_months('1995-09-01',0)" +
             "         and l_shipdate < add_months ('1995-09-01', 1)"
       }
-    } else {
-      "select" +
-          "         100.00 * sum(case" +
-          "                 when p_type like 'PROMO%'" +
-          "                 then l_extendedprice*(1-l_discount)" +
-          "                 else 0" +
-          "                 end" +
-          "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
-          " from" +
-          "         LINEITEM," +
-          "         PART" +
-          " where" +
-          "         l_partkey = p_partkey" +
-          "         and l_shipdate >= add_months('1995-09-01',0)" +
-          "         and l_shipdate < add_months ('1995-09-01', 1)"
-    }
+    //}
   }
 
   def getResultString14():String = {
@@ -1604,40 +1591,22 @@ object TPCH_Snappy {
   }
 
   def getQuery15(isSNappy:Boolean): String = {
-    if (isSNappy) {
-      "select       " +
-          "         S_SUPPKEY," +
-          "         S_NAME," +
-          "         S_ADDRESS," +
-          "         S_PHONE," +
-          "         total_revenue" +
-          " from" +
-          "         supplier, revenue, ViewQ15 " +
-          " where" +
-          "         S_SUPPKEY = supplier_no" +
-          "         and total_revenue = max_revenue " +
-          " order by" +
-          "        S_SUPPKEY"
-
-      //       "select       " +
-      //           "         S_SUPPKEY," +
-      //           "         S_NAME," +
-      //           "         S_ADDRESS," +
-      //           "         S_PHONE," +
-      //           "         total_revenue" +
-      //           " from" +
-      //           "         supplier, revenue" +
-      //           " where" +
-      //           "         S_SUPPKEY = supplier_no" +
-      //           "         and total_revenue in (" +
-      //           "                       select" +
-      //           "                             max_revenue" +
-      //           "                       from" +
-      //           "                             ViewQ15" +
-      //           "   ) " +
-      //           " order by" +
-      //           "        S_SUPPKEY"
-    } else {
+//    if (isSNappy) {
+//      "select       " +
+//          "         S_SUPPKEY," +
+//          "         S_NAME," +
+//          "         S_ADDRESS," +
+//          "         S_PHONE," +
+//          "         total_revenue" +
+//          " from" +
+//          "         supplier, revenue, ViewQ15 " +
+//          " where" +
+//          "         S_SUPPKEY = supplier_no" +
+//          "         and total_revenue = max_revenue " +
+//          " order by" +
+//          "        S_SUPPKEY"
+//
+//    } else {
       "select       " +
           "         s_suppkey," +
           "         s_name," +
@@ -1645,7 +1614,7 @@ object TPCH_Snappy {
           "         s_phone," +
           "         total_revenue" +
           " from" +
-          "         SUPPLIER, revenue" +
+          "         SUPPLIER, revenue, ViewQ15 " +
           " where" +
           "         s_suppkey = supplier_no" +
           "         and total_revenue = (" +
@@ -1656,7 +1625,7 @@ object TPCH_Snappy {
           "   ) " +
           " order by" +
           "        s_suppkey"
-    }
+    //}
   }
 
   def getResultString15():String = {
@@ -1674,38 +1643,38 @@ object TPCH_Snappy {
     //    8. SIZE6 = 3
     //    9. SIZE7 = 36
     //    10. SIZE8 = 9.
-    if (isSnappy) {
-      "select" +
-          "         P_BRAND," +
-          "         P_TYPE," +
-          "         P_SIZE," +
-          "         count(distinct PS_SUPPKEY) as supplier_cnt" +
-          " from" +
-          "         PARTSUPP," +
-          "         PART" +
-          " where" +
-          "         P_PARTKEY = PS_PARTKEY" +
-          "         and P_BRAND <> 'Brand#45'" +
-          "         and P_TYPE not like 'MEDIUM POLISHED%'" +
-          "         and P_SIZE in (49, 14, 23, 45, 19, 3, 36, 9)" +
-          "         and PS_SUPPKEY not in (" +
-          "                 select" +
-          "                         S_SUPPKEY" +
-          "                 from" +
-          "                         SUPPLIER" +
-          "                 where" +
-          "                         S_COMMENT like '%Customer%Complaints%'" +
-          "         )" +
-          " group by" +
-          "         P_BRAND," +
-          "         P_TYPE," +
-          "         P_SIZE" +
-          " order by" +
-          "         supplier_cnt desc," +
-          "         P_BRAND," +
-          "         P_TYPE," +
-          "         P_SIZE"
-    } else {
+//    if (isSnappy) {
+//      "select" +
+//          "         P_BRAND," +
+//          "         P_TYPE," +
+//          "         P_SIZE," +
+//          "         count(distinct PS_SUPPKEY) as supplier_cnt" +
+//          " from" +
+//          "         PARTSUPP," +
+//          "         PART" +
+//          " where" +
+//          "         P_PARTKEY = PS_PARTKEY" +
+//          "         and P_BRAND <> 'Brand#45'" +
+//          "         and P_TYPE not like 'MEDIUM POLISHED%'" +
+//          "         and P_SIZE in (49, 14, 23, 45, 19, 3, 36, 9)" +
+//          "         and PS_SUPPKEY not in (" +
+//          "                 select" +
+//          "                         S_SUPPKEY" +
+//          "                 from" +
+//          "                         SUPPLIER" +
+//          "                 where" +
+//          "                         S_COMMENT like '%Customer%Complaints%'" +
+//          "         )" +
+//          " group by" +
+//          "         P_BRAND," +
+//          "         P_TYPE," +
+//          "         P_SIZE" +
+//          " order by" +
+//          "         supplier_cnt desc," +
+//          "         P_BRAND," +
+//          "         P_TYPE," +
+//          "         P_SIZE"
+//    } else {
       "select" +
           "         p_brand," +
           "         p_type," +
@@ -1736,7 +1705,7 @@ object TPCH_Snappy {
           "         p_brand," +
           "         p_type," +
           "         p_size"
-    }
+    //}
   }
 
   def getResultString16():String = {
@@ -1766,7 +1735,35 @@ object TPCH_Snappy {
   def getQuery17(isSnappy:Boolean, useIndex: Boolean): String = {
     //    1. BRAND = Brand#23;
     //    2. CONTAINER = MED BOX.
-    if (isSnappy) {
+//    if (isSnappy) {
+//      if (!useIndex) {
+//        "select" +
+//            "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+//            " from" +
+//            "         LINEITEM," +
+//            "         PART," +
+//            "         ViewQ17" +
+//            " where" +
+//            "         P_PARTKEY = l_partkey" +
+//            "         and trim(P_BRAND) = 'Brand#23'" +
+//            "         and trim(upper(P_CONTAINER)) = 'MED BOX'" +
+//            "         and l_quantity < v_quantity" +
+//            "         and v_partkey = P_PARTKEY"
+//      } else {
+//        "select" +
+//            "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+//            " from" +
+//            "         LINEITEM_PART," +
+//            "         PART," +
+//            "         ViewQ17" +
+//            " where" +
+//            "         P_PARTKEY = l_partkey" +
+//            "         and trim(P_BRAND) = 'Brand#23'" +
+//            "         and trim(upper(P_CONTAINER)) = 'MED BOX'" +
+//            "         and l_quantity < v_quantity" +
+//            "         and v_partkey = P_PARTKEY"
+//      }
+//    } else {
       if (!useIndex) {
         "select" +
             "         sum(l_extendedprice) / 7.0 as avg_yearly" +
@@ -1775,12 +1772,12 @@ object TPCH_Snappy {
             "         PART," +
             "         ViewQ17" +
             " where" +
-            "         P_PARTKEY = l_partkey" +
-            "         and trim(P_BRAND) = 'Brand#23'" +
-            "         and trim(upper(P_CONTAINER)) = 'MED BOX'" +
+            "         p_partkey = l_partkey" +
+            "         and trim(p_brand) = 'Brand#23'" +
+            "         and trim(upper(p_container)) = 'MED BOX'" +
             "         and l_quantity < v_quantity" +
-            "         and v_partkey = P_PARTKEY"
-      } else {
+            "         and v_partkey = p_partkey"
+      }else{
         "select" +
             "         sum(l_extendedprice) / 7.0 as avg_yearly" +
             " from" +
@@ -1788,26 +1785,13 @@ object TPCH_Snappy {
             "         PART," +
             "         ViewQ17" +
             " where" +
-            "         P_PARTKEY = l_partkey" +
-            "         and trim(P_BRAND) = 'Brand#23'" +
-            "         and trim(upper(P_CONTAINER)) = 'MED BOX'" +
+            "         p_partkey = l_partkey" +
+            "         and trim(p_brand) = 'Brand#23'" +
+            "         and trim(upper(p_container)) = 'MED BOX'" +
             "         and l_quantity < v_quantity" +
-            "         and v_partkey = P_PARTKEY"
+            "         and v_partkey = p_partkey"
       }
-    } else {
-      "select" +
-          "         sum(l_extendedprice) / 7.0 as avg_yearly" +
-          " from" +
-          "         LINEITEM," +
-          "         PART," +
-          "         ViewQ17" +
-          " where" +
-          "         p_partkey = l_partkey" +
-          "         and trim(p_brand) = 'Brand#23'" +
-          "         and trim(upper(p_container)) = 'MED BOX'" +
-          "         and l_quantity < v_quantity" +
-          "         and v_partkey = p_partkey"
-    }
+    //}
   }
 
   def getResultString17():String = {
@@ -1860,7 +1844,81 @@ object TPCH_Snappy {
     //    4. BRAND1 = Brand#12.
     //    5. BRAND2 = Brand#23.
     //    6. BRAND3 = Brand#34.
-    if(isSnappy) {
+//    if(isSnappy) {
+//      if (!useIndex) {
+//        "select" +
+//            "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
+//            " from" +
+//            "         LINEITEM," +
+//            "         PART" +
+//            " where" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#12\"" +
+//            "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
+//            "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
+//            "                 and P_SIZE between 1 and 5" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )" +
+//            "         or" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#23\"" +
+//            "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
+//            "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
+//            "                 and P_SIZE between 1 and 10" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )" +
+//            "         or" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#34\"" +
+//            "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
+//            "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
+//            "                 and P_SIZE between 1 and 15" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )"
+//      } else {
+//        "select" +
+//            "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
+//            " from" +
+//            "         LINEITEM_PART," +
+//            "         PART" +
+//            " where" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#12\"" +
+//            "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
+//            "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
+//            "                 and P_SIZE between 1 and 5" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )" +
+//            "         or" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#23\"" +
+//            "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
+//            "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
+//            "                 and P_SIZE between 1 and 10" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )" +
+//            "         or" +
+//            "         (" +
+//            "                 P_PARTKEY = l_partkey" +
+//            "                 and P_BRAND = \"Brand#34\"" +
+//            "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
+//            "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
+//            "                 and P_SIZE between 1 and 15" +
+//            "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+//            "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
+//            "         )"
+//      }
+//    }else{
       if (!useIndex) {
         "select" +
             "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
@@ -1869,35 +1927,35 @@ object TPCH_Snappy {
             "         PART" +
             " where" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#12\"" +
-            "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#12\"" +
+            "                 and p_container in (\"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
             "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
-            "                 and P_SIZE between 1 and 5" +
+            "                 and p_size between 1 and 5" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )" +
             "         or" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#23\"" +
-            "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#23\"" +
+            "                 and p_container in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
             "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
-            "                 and P_SIZE between 1 and 10" +
+            "                 and p_size between 1 and 10" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )" +
             "         or" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#34\"" +
-            "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#34\"" +
+            "                 and p_container in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
             "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
-            "                 and P_SIZE between 1 and 15" +
+            "                 and p_size between 1 and 15" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )"
-      } else {
+      }else{
         "select" +
             "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
             " from" +
@@ -1905,72 +1963,36 @@ object TPCH_Snappy {
             "         PART" +
             " where" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#12\"" +
-            "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#12\"" +
+            "                 and p_container in (\"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
             "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
-            "                 and P_SIZE between 1 and 5" +
+            "                 and p_size between 1 and 5" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )" +
             "         or" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#23\"" +
-            "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#23\"" +
+            "                 and p_container in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
             "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
-            "                 and P_SIZE between 1 and 10" +
+            "                 and p_size between 1 and 10" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )" +
             "         or" +
             "         (" +
-            "                 P_PARTKEY = l_partkey" +
-            "                 and P_BRAND = \"Brand#34\"" +
-            "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
+            "                 p_partkey = l_partkey" +
+            "                 and p_brand = \"Brand#34\"" +
+            "                 and p_container in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
             "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
-            "                 and P_SIZE between 1 and 15" +
+            "                 and p_size between 1 and 15" +
             "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
             "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
             "         )"
       }
-    }else{
-      "select" +
-          "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
-          " from" +
-          "         LINEITEM," +
-          "         PART" +
-          " where" +
-          "         (" +
-          "                 p_partkey = l_partkey" +
-          "                 and p_brand = \"Brand#12\"" +
-          "                 and p_container in (\"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
-          "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
-          "                 and p_size between 1 and 5" +
-          "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
-          "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
-          "         )" +
-          "         or" +
-          "         (" +
-          "                 p_partkey = l_partkey" +
-          "                 and p_brand = \"Brand#23\"" +
-          "                 and p_container in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
-          "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
-          "                 and p_size between 1 and 10" +
-          "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
-          "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
-          "         )" +
-          "         or" +
-          "         (" +
-          "                 p_partkey = l_partkey" +
-          "                 and p_brand = ‘Brand#34’" +
-          "                 and p_container in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
-          "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
-          "                 and p_size between 1 and 15" +
-          "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
-          "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
-          "         )"
-    }
+   // }
   }
 
   def getResultString19():String = {
@@ -2009,36 +2031,36 @@ object TPCH_Snappy {
     //    1. COLOR = forest.
     //    2. DATE = 1994-01-01.
     //    3. NATION = CANADA.
-    if (isSnappy) {
-      "select" +
-          "         S_NAME," +
-          "         S_ADDRESS" +
-          " from" +
-          "         SUPPLIER, NATION" +
-          " where" +
-          "         S_SUPPKEY in (" +
-          "                 select" +
-          "                         PS_SUPPKEY" +
-          "                 from" +
-          "                         PARTSUPP, ViewQ20" +
-          "                 where" +
-          "                         PS_PARTKEY in (" +
-          "                                 select" +
-          "                                         P_PARTKEY" +
-          "                                 from" +
-          "                                         PART" +
-          "                                 where" +
-          "                                         P_NAME like 'forest%'" +
-          "                         )" +
-          "                         and PS_AVAILQTY > v_quantity" +
-          "                         and v_partkey = PS_PARTKEY" +
-          "                         and v_suppkey = PS_SUPPKEY" +
-          "         )" +
-          "         and S_NATIONKEY = N_NATIONKEY" +
-          "         and trim(upper(N_NAME)) = 'CANADA'" +
-          " order by" +
-          "         S_NAME"
-    } else {
+//    if (isSnappy) {
+//      "select" +
+//          "         S_NAME," +
+//          "         S_ADDRESS" +
+//          " from" +
+//          "         SUPPLIER, NATION" +
+//          " where" +
+//          "         S_SUPPKEY in (" +
+//          "                 select" +
+//          "                         PS_SUPPKEY" +
+//          "                 from" +
+//          "                         PARTSUPP, ViewQ20" +
+//          "                 where" +
+//          "                         PS_PARTKEY in (" +
+//          "                                 select" +
+//          "                                         P_PARTKEY" +
+//          "                                 from" +
+//          "                                         PART" +
+//          "                                 where" +
+//          "                                         P_NAME like 'forest%'" +
+//          "                         )" +
+//          "                         and PS_AVAILQTY > v_quantity" +
+//          "                         and v_partkey = PS_PARTKEY" +
+//          "                         and v_suppkey = PS_SUPPKEY" +
+//          "         )" +
+//          "         and S_NATIONKEY = N_NATIONKEY" +
+//          "         and trim(upper(N_NAME)) = 'CANADA'" +
+//          " order by" +
+//          "         S_NAME"
+//    } else {
       "select" +
           "         s_name," +
           "         s_address" +
@@ -2067,7 +2089,7 @@ object TPCH_Snappy {
           "         and trim(upper(n_name)) = 'CANADA'" +
           " order by" +
           "         s_name"
-    }
+    //}
   }
 
   def getResultString20():String = {
@@ -2076,47 +2098,47 @@ object TPCH_Snappy {
 
   def getQuery21(isSnappy:Boolean): String = {
     //NATION = SAUDI ARABIA.
-    if(isSnappy) {
-      "select" +
-          "         S_NAME," +
-          "         count(*) as numwait" +
-          " from" +
-          "         SUPPLIER," +
-          "         LINEITEM l1," +
-          "         ORDERS," +
-          "         NATION" +
-          " where" +
-          "         S_SUPPKEY = l1.l_suppkey" +
-          "         and o_orderkey = l1.l_orderkey" +
-          "         and o_orderstatus = \"F\"" +
-          "         and l1.l_receiptdate > l1.l_commitdate" +
-          "         and exists (" +
-          "                 select" +
-          "                         *" +
-          "                 from" +
-          "                         LINEITEM l2" +
-          "                 where" +
-          "                         l2.l_orderkey = l1.l_orderkey" +
-          "                         and l2.l_suppkey <> l1.l_suppkey" +
-          "         )" +
-          "         and not exists (" +
-          "                 select" +
-          "                         *" +
-          "                 from" +
-          "                         LINEITEM l3" +
-          "                 where" +
-          "                         l3.l_orderkey = l1.l_orderkey" +
-          "                         and l3.l_suppkey <> l1.l_suppkey" +
-          "                         and l3.l_receiptdate > l3.l_commitdate" +
-          "         )" +
-          "         and S_NATIONKEY = N_NATIONKEY" +
-          "         and N_NAME = \"SAUDI ARABIA\"" +
-          " group by" +
-          "         S_NAME" +
-          " order by" +
-          "         numwait desc," +
-          "         S_NAME"
-    }else{
+//    if(isSnappy) {
+//      "select" +
+//          "         S_NAME," +
+//          "         count(*) as numwait" +
+//          " from" +
+//          "         SUPPLIER," +
+//          "         LINEITEM l1," +
+//          "         ORDERS," +
+//          "         NATION" +
+//          " where" +
+//          "         S_SUPPKEY = l1.l_suppkey" +
+//          "         and o_orderkey = l1.l_orderkey" +
+//          "         and o_orderstatus = \"F\"" +
+//          "         and l1.l_receiptdate > l1.l_commitdate" +
+//          "         and exists (" +
+//          "                 select" +
+//          "                         *" +
+//          "                 from" +
+//          "                         LINEITEM l2" +
+//          "                 where" +
+//          "                         l2.l_orderkey = l1.l_orderkey" +
+//          "                         and l2.l_suppkey <> l1.l_suppkey" +
+//          "         )" +
+//          "         and not exists (" +
+//          "                 select" +
+//          "                         *" +
+//          "                 from" +
+//          "                         LINEITEM l3" +
+//          "                 where" +
+//          "                         l3.l_orderkey = l1.l_orderkey" +
+//          "                         and l3.l_suppkey <> l1.l_suppkey" +
+//          "                         and l3.l_receiptdate > l3.l_commitdate" +
+//          "         )" +
+//          "         and S_NATIONKEY = N_NATIONKEY" +
+//          "         and N_NAME = \"SAUDI ARABIA\"" +
+//          " group by" +
+//          "         S_NAME" +
+//          " order by" +
+//          "         numwait desc," +
+//          "         S_NAME"
+//    }else{
       "select" +
           "         s_name," +
           "         count(*) as numwait" +
@@ -2156,7 +2178,7 @@ object TPCH_Snappy {
           " order by" +
           "         numwait desc," +
           "         s_name"
-    }
+    //}
   }
 
   def getResultString21():String = {
