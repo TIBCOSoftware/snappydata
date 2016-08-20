@@ -12,13 +12,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created by sachin on 18/6/16.
  *
  */
 public class ZeppelinIntpUtil {
 
   public static Logger logger = LoggerFactory.getLogger(ZeppelinIntpUtil.class);
   private static File tempDir;
+
   /**
    * This method should be called before spark context is created as zeppelin interpreter will set some properties
    * related to classloader for repl which needs to be specified while creating sparkcontext in lead
@@ -26,7 +26,7 @@ public class ZeppelinIntpUtil {
    * @return
    */
   public static Properties initializeZeppelinReplAndGetConfig() {
-    Properties props=new Properties();
+    Properties props = new Properties();
 
     /**
      * Spark 2.0 REPL is based on scala REPL so http class server is replaced
@@ -80,7 +80,7 @@ public class ZeppelinIntpUtil {
     return null;
   }
 
-  public static File getTempDir(){
+  public static File getTempDir() {
 
     if (null == tempDir) {
       initializeZeppelinReplAndGetConfig();

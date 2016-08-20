@@ -48,6 +48,7 @@ import java.net.URLClassLoader;
 import java.util.*;
 import java.util.List;
 import java.util.Map;
+
 import com.google.common.base.Joiner;
 
 import org.apache.hadoop.security.UserGroupInformation;
@@ -102,6 +103,7 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
 
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.scheduler.Scheduler;
+import org.apache.zeppelin.interpreter.Interpreter.FormType;
 
 /**
  * Most of the contents of this class is borrowed from Spark Interpreter in zeppelin
