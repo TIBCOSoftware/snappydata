@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.benchmark.snappy
 
 import scala.collection.JavaConverters._
@@ -6,12 +23,9 @@ import scala.language.implicitConversions
 import com.typesafe.config.Config
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobInvalid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
-  * Created by kishor on 28/1/16.
-  */
 object TPCH_Snappy_Query extends SnappySQLJob{
 
   var sqlSparkProperties: Array[String] = _
@@ -23,7 +37,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
   var runsForAverage: Integer = _
 
 
-   override def runJob(snc: C, jobConfig: Config): Any = {
+   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
      jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
        val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
@@ -89,7 +103,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
     runJob(snc, null)
   }
 
-   override def validate(sc: C, config: Config): SparkJobValidation = {
+   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
      var sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
        config.getString("sparkSqlProps")
@@ -101,7 +115,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
      var tempqueries = if (config.hasPath("queries")) {
        config.getString("queries")
      } else {
-       return new SparkJobInvalid("Specify Query number to be executed")
+       return new SnappyJobInvalid("Specify Query number to be executed")
      }
 
      println(s"tempqueries : $tempqueries")
@@ -110,25 +124,25 @@ object TPCH_Snappy_Query extends SnappySQLJob{
      useIndex = if (config.hasPath("useIndex")) {
        config.getBoolean("useIndex")
      } else {
-       return new SparkJobInvalid("Specify whether to use Index")
+       return new SnappyJobInvalid("Specify whether to use Index")
      }
 
      isResultCollection = if (config.hasPath("resultCollection")) {
        config.getBoolean("resultCollection")
      } else {
-       return new SparkJobInvalid("Specify whether to to collect results")
+       return new SnappyJobInvalid("Specify whether to to collect results")
      }
 
      warmUp = if (config.hasPath("warmUpIterations")) {
        config.getInt("warmUpIterations")
      } else {
-       return new SparkJobInvalid("Specify number of warmup iterations ")
+       return new SnappyJobInvalid("Specify number of warmup iterations ")
      }
      runsForAverage = if (config.hasPath("actualRuns")) {
        config.getInt("actualRuns")
      } else {
-       return new SparkJobInvalid("Specify number of  iterations of which average result is calculated")
+       return new SnappyJobInvalid("Specify number of  iterations of which average result is calculated")
      }
-     SparkJobValid
+     new SnappyJobValid()
    }
  }
