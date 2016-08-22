@@ -80,10 +80,10 @@ object ServiceUtils {
     ServerManager.getServerInstance.stop(null)
   }
 
-  def getAllLocators(sc: SparkContext): collection.Map[DistributedMember, String] = {
+  def getAllLocators(sc: SparkContext): scala.collection.Map[DistributedMember, String] = {
     val advisor = GemFireXDUtils.getGfxdAdvisor
     val locators = advisor.adviseLocators(null)
-    val locatorServers = collection.mutable.HashMap[DistributedMember , String]()
+    val locatorServers = scala.collection.mutable.HashMap[DistributedMember , String]()
     locators.asScala.foreach(locator =>
       locatorServers.put(locator, advisor.getDRDAServers(locator)))
     locatorServers
