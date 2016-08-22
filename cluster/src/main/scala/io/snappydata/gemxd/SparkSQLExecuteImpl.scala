@@ -46,6 +46,7 @@ import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.util.SnappyUtils
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -57,6 +58,11 @@ class SparkSQLExecuteImpl(val sql: String,
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
+
+  if (Thread.currentThread().getContextClassLoader != null) {
+    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
+    Thread.currentThread().setContextClassLoader(loader)
+  }
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
@@ -245,6 +251,9 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
     }
   }
+
+  def getContextOrCurrentClassLoader: ClassLoader =
+    Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
 }
 
 object SparkSQLExecuteImpl {
