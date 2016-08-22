@@ -37,8 +37,6 @@ trait CompactExecRowToMutableRow extends ResultWasNull {
 
   protected final var wasNull: Boolean = _
 
-  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
-
   protected final lazy val defaultCal = new GregorianCalendar()
 
   protected final val dataTypes: ArrayBuffer[DataType] =
@@ -223,6 +221,6 @@ trait CompactExecRowToMutableRow extends ResultWasNull {
       }
       i = i + 1
     }
-    unsafeproj.apply(mutableRow)
+    mutableRow
   }
 }

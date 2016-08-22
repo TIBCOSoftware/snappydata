@@ -150,7 +150,7 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-                               filters: Array[Filter]): RDD[InternalRow] = {
+    filters: Array[Filter]): RDD[InternalRow] = {
     new JDBCRDD(
       sqlContext.sparkContext,
       executorConnector,

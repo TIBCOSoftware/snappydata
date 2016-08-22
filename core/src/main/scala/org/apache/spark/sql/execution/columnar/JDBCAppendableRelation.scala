@@ -105,7 +105,7 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-                         filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): RDD[InternalRow] = {
     scanTable(table, requiredColumns, filters)
   }
 

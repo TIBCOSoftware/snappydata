@@ -38,12 +38,7 @@ private[sql] case class PartitionedPhysicalRDD(
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
 
-  protected override def doExecute(): RDD[InternalRow] = {
-    rdd.mapPartitionsInternal { iter =>
-      val proj = UnsafeProjection.create(schema)
-      iter.map(proj)
-    }
-  }
+  protected override def doExecute(): RDD[InternalRow] = rdd
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {

@@ -424,12 +424,14 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
     extends ResultSetIterator[InternalRow](conn, stmt, ers, context)
     with CompactExecRowToMutableRow {
 
+  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
+
   private[this] val mutableRow = new SpecificMutableRow(dataTypes)
 
   override def next(): InternalRow = {
     val result = createInternalRow(
       ers.currentRow.asInstanceOf[AbstractCompactExecRow], mutableRow)
     moveNext()
-    result
+    unsafeproj.apply(result)
   }
 }
