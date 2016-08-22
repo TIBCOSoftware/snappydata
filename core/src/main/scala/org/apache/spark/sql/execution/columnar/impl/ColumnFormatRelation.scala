@@ -106,7 +106,7 @@ class BaseColumnFormatRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-                               filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): RDD[InternalRow] = {
     val colRdd = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
