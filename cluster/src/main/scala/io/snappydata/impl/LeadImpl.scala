@@ -183,6 +183,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
             logInfo("Primary lead lock acquired.")
           // let go.
           case false =>
+            if (!_directApiInvoked) {
+              throw new SQLException("Primary Lead node (Spark Driver) is already running in the system. " +
+                  "You may use split cluster mode to connect to SnappyData cluster.")
+            }
             serverstatus = State.STANDBY
             val callback = notifyStatusChange
             if (callback != null) {

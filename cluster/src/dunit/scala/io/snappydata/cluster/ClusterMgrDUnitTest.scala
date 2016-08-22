@@ -16,10 +16,14 @@
  */
 package io.snappydata.cluster
 
+import java.net.InetAddress
+import java.sql.SQLException
+
 import scala.math._
 import scala.util.Random
 
 import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
@@ -45,6 +49,14 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm3.invoke(getClass, "startSparkJob")
     vm3.invoke(getClass, "startGemJob")
     vm3.invoke(getClass, "stopSpark")
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+  }
+
+  def testSnap684(): Unit = {
+    startSparkJob()
+    startGemJob()
+    vm3.invoke(getClass, "stopAny")
+    vm3.invoke(getClass, "startExternalSparkApp", ClusterManagerTestBase.locatorPort)
   }
 }
 
@@ -99,5 +111,34 @@ object ClusterMgrDUnitTest {
     assert(returnedRows.toSet == expected)
 
     snContext.sql("drop table if exists airline")
+  }
+
+  def startExternalSparkApp(locatorPort: Int): Unit = {
+//    println("locatorPort =" + locatorPort)
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf: SparkConf = new SparkConf()
+        .setMaster(s"snappydata://$hostName:$locatorPort")
+        .setAppName("externalApp").set("spark.testing.reservedMemory", "0")
+
+    try {
+      val sc2 = new SparkContext(conf)
+    } catch {
+      case e: org.apache.spark.SparkException =>
+        var cause: Throwable = e.getCause
+        while (cause != null && !cause.isInstanceOf[SQLException]) {
+          cause = cause.getCause
+        }
+        if (cause == null) {
+          throw e
+        }
+        // SQLException: check the message is expected
+        if (!cause.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
+            "already running in the system")) {
+          throw e
+        } // else ok
+    }
+//    println("SparkContext CREATED, about to create SnappyContext.")
+//    val snc2 = SnappyContext(sc2)
+//    println("SnappyContext CREATED successfully = " + snc2)
   }
 }
