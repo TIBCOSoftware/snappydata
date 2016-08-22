@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.collection.ToolsCallbackInit
-import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
+import org.apache.spark.sql.sources.{PrunedUnsafeFilteredScan, BaseRelation}
 import org.apache.spark.sql.types.StructType
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -38,12 +38,7 @@ private[sql] case class PartitionedPhysicalRDD(
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
 
-  protected override def doExecute(): RDD[InternalRow] = {
-    rdd.mapPartitionsInternal { iter =>
-      val proj = UnsafeProjection.create(schema)
-      iter.map(proj)
-    }
-  }
+  protected override def doExecute(): RDD[InternalRow] = rdd
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
@@ -75,7 +70,7 @@ private[sql] object PartitionedPhysicalRDD {
   }
 }
 
-trait PartitionedDataSourceScan extends PrunedFilteredScan {
+trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def numPartitions: Int
 
