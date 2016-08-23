@@ -32,6 +32,7 @@ source ec2-variables.sh
 echo "$LOCATORS" > locator_list
 echo "$LEADS" > lead_list
 echo "$SERVERS" > server_list
+echo "$ZEPPELIN_HOST" > zeppelin_server
 
 if [[ -e snappy-env.sh ]]; then
   mv snappy-env.sh "${SNAPPY_HOME_DIR}/conf/"
@@ -84,6 +85,21 @@ for node in ${SERVERS}; do
 done
 
 # Launch the SnappyData cluster
+sh "${SNAPPY_HOME_DIR}/sbin/snappy-stop-all.sh"
 sh "${SNAPPY_HOME_DIR}/sbin/snappy-start-all.sh"
+
+# Launch zeppelin, if configured.
+if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
+  if [[ "${ZEPPELIN_MODE}" = "NON-EMBEDDED" ]]; then
+    sh copy-dir.sh "${SNAPPY_HOME_DIR}" zeppelin_server
+  fi
+  for server in "$ZEPPELIN_HOST"; do
+    scp -q ec2-variables.sh "${server}:~/snappydata/"
+    scp -q zeppelin-setup.sh "${server}:~/snappydata/"
+    scp -q fetch-distribution.sh "${server}:~/snappydata/"
+    # scp snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar "${server}:~/snappydata/"
+  done
+  ssh "$ZEPPELIN_HOST" -t -t "sh ${DIR}/zeppelin-setup.sh"
+fi
 
 popd > /dev/null

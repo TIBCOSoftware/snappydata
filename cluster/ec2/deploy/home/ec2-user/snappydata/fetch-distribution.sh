@@ -24,7 +24,7 @@ extract() {
   if [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
     # Download and extract the distribution tar
     echo "Downloading ${URL}..."
-    wget "${URL}"
+    wget -q "${URL}"
     tar -xf "${TAR_NAME}"
 
     rm -f README.md "${TAR_NAME}" releases
@@ -44,7 +44,10 @@ getLatestUrl() {
 SNAPPY_HOME_DIR="snappydata-${SNAPPYDATA_VERSION}-bin"
 SNAPPY_HOME_DIR_NO_BIN="snappydata-${SNAPPYDATA_VERSION}"
 
-if [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
+if [[ "${SNAPPYDATA_VERSION}" = "CUSTOM" ]]; then
+  URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/snappydata-0.5.2-SNAPSHOT-bin.tar.gz"
+  extract
+elif [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
   getLatestUrl
   extract
 elif [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then

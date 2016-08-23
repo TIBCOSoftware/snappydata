@@ -138,6 +138,7 @@ import boto
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType, EBSBlockDeviceType
 from boto import ec2
 
+import webbrowser
 
 class UsageError(Exception):
     pass
@@ -149,7 +150,7 @@ def parse_args():
         prog="snappy-ec2",
         version="%prog {v}".format(v=SNAPPY_EC2_VERSION),
         usage="%prog [options] <action> <cluster_name>\n\n"
-        + "<action> can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-stores")
+        + "<action> can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster")
 
     parser.add_option(
         "-s", "--stores", type="int", default=1,
@@ -194,6 +195,10 @@ def parse_args():
     parser.add_option(
         "-v", "--snappydata-version", default=DEFAULT_SNAPPY_VERSION,
         help="Version of SnappyData to use: 'X.Y.Z' (default: %default)")
+    parser.add_option(
+        "--with-zeppelin", default="embedded",
+        help="Launch Apache Zeppelin server with the cluster." + 
+             " Use 'embedded' to launch it on lead node and 'non-embedded' to launch it on a separate instance.")
     parser.add_option(
         "--deploy-root-dir",
         default=None,
@@ -435,12 +440,16 @@ def launch_cluster(conn, opts, cluster_name):
     locator_group = get_or_make_group(conn, cluster_name + "-locator", opts.vpc_id)
     lead_group = get_or_make_group(conn, cluster_name + "-lead", opts.vpc_id)
     store_group = get_or_make_group(conn, cluster_name + "-stores", opts.vpc_id)
+    if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+        zeppelin_group = get_or_make_group(conn, cluster_name + "-zeppelin", opts.vpc_id)
     authorized_address = opts.authorized_address
     if locator_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             locator_group.authorize(src_group=locator_group)
             locator_group.authorize(src_group=lead_group)
             locator_group.authorize(src_group=store_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                locator_group.authorize(src_group=zeppelin_group)
         else:
             locator_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
                                    src_group=locator_group)
@@ -460,6 +469,13 @@ def launch_cluster(conn, opts, cluster_name):
                                    src_group=store_group)
             locator_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
                                    src_group=store_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                locator_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=zeppelin_group)
+                locator_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
+                locator_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
         locator_group.authorize('tcp', 22, 22, authorized_address)
         locator_group.authorize('tcp', 8080, 8081, authorized_address)
         locator_group.authorize('tcp', 18080, 18080, authorized_address)
@@ -489,6 +505,8 @@ def launch_cluster(conn, opts, cluster_name):
             lead_group.authorize(src_group=lead_group)
             lead_group.authorize(src_group=locator_group)
             lead_group.authorize(src_group=store_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                lead_group.authorize(src_group=zeppelin_group)
         else:
             lead_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
                                    src_group=lead_group)
@@ -508,6 +526,13 @@ def launch_cluster(conn, opts, cluster_name):
                                    src_group=store_group)
             lead_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
                                    src_group=store_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                lead_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=zeppelin_group)
+                lead_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
+                lead_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
         lead_group.authorize('tcp', 22, 22, authorized_address)
         lead_group.authorize('tcp', 8080, 8081, authorized_address)
         lead_group.authorize('tcp', 18080, 18080, authorized_address)
@@ -536,6 +561,8 @@ def launch_cluster(conn, opts, cluster_name):
             store_group.authorize(src_group=locator_group)
             store_group.authorize(src_group=store_group)
             store_group.authorize(src_group=lead_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                store_group.authorize(src_group=zeppelin_group)
         else:
             store_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
                                   src_group=locator_group)
@@ -555,6 +582,13 @@ def launch_cluster(conn, opts, cluster_name):
                                   src_group=lead_group)
             store_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
                                   src_group=lead_group)
+            if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+                store_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                      src_group=zeppelin_group)
+                store_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                      src_group=zeppelin_group)
+                store_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                      src_group=zeppelin_group)
         store_group.authorize('tcp', 22, 22, authorized_address)
         store_group.authorize('tcp', 8080, 8081, authorized_address)
         store_group.authorize('tcp', 50060, 50060, authorized_address)
@@ -565,14 +599,51 @@ def launch_cluster(conn, opts, cluster_name):
         store_group.authorize('tcp', 1527, 1527, authorized_address)
         for port in server_ports:
             store_group.authorize('tcp', int(port), int(port), authorized_address)
+    if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+        if zeppelin_group.rules == []:  # Group was just now created
+            if opts.vpc_id is None:
+                zeppelin_group.authorize(src_group=locator_group)
+                zeppelin_group.authorize(src_group=lead_group)
+                zeppelin_group.authorize(src_group=store_group)
+                zeppelin_group.authorize(src_group=zeppelin_group)
+            else:
+                zeppelin_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=zeppelin_group)
+                zeppelin_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
+                zeppelin_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=zeppelin_group)
+                zeppelin_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=locator_group)
+                zeppelin_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=locator_group)
+                zeppelin_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=locator_group)
+                zeppelin_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=lead_group)
+                zeppelin_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=lead_group)
+                zeppelin_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=lead_group)
+                zeppelin_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1,
+                                       src_group=store_group)
+                zeppelin_group.authorize(ip_protocol='tcp', from_port=0, to_port=65535,
+                                       src_group=store_group)
+                zeppelin_group.authorize(ip_protocol='udp', from_port=0, to_port=65535,
+                                       src_group=store_group)
+            zeppelin_group.authorize('tcp', 22, 22, authorized_address)
+            zeppelin_group.authorize('tcp', 8080, 8080, authorized_address)
 
     # Check if instances are already running in our groups
-    existing_locators, existing_leads, existing_stores = get_existing_cluster(conn,
+    existing_locators, existing_leads, existing_stores, existing_zeppelin = get_existing_cluster(conn,
                                                              opts, cluster_name,
                                                              die_on_error=False)
-    if existing_leads or existing_stores or (existing_locators and not opts.use_existing_locator):
-        print("ERROR: There are already instances running in group %s, %s or %s" %
-              (locator_group.name, lead_group.name, store_group.name), file=stderr)
+    if existing_leads or existing_stores or existing_zeppelin or (existing_locators and not opts.use_existing_locator):
+        zp_name = ""
+        if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+            zp_name = zeppelin_group.name
+        print("ERROR: There are already instances running in group %s, %s, %s or %s" %
+              (locator_group.name, lead_group.name, zp_name, store_group.name), file=stderr)
         sys.exit(1)
 
     # Figure out the AMI
@@ -668,9 +739,9 @@ def launch_cluster(conn, opts, cluster_name):
             print("Canceling spot instance requests")
             conn.cancel_spot_instance_requests(my_req_ids)
             # Log a warning if any of these requests actually launched instances:
-            (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
+            (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(
                 conn, opts, cluster_name, die_on_error=False)
-            running = len(locator_nodes) + len(server_nodes)
+            running = len(locator_nodes) + len(server_nodes) + len(lead_nodes) + len(zeppelin_nodes)
             if running:
                 print(("WARNING: %d instances are still running" % running), file=stderr)
             sys.exit(0)
@@ -770,6 +841,27 @@ def launch_cluster(conn, opts, cluster_name):
               r=lead_res.id))
         i += 1
 
+    zeppelin_nodes = []
+    if opts.with_zeppelin is not None and opts.with_zeppelin == "non-embedded":
+         # Launch zeppelin server
+         zeppelin_res = image.run(
+             key_name=opts.key_pair,
+             security_group_ids=[zeppelin_group.id] + additional_group_ids,
+             instance_type=opts.instance_type,
+             placement=[opts.zone],
+             min_count=1,
+             max_count=1,
+             block_device_map=block_map,
+             subnet_id=opts.subnet_id,
+             placement_group=opts.placement_group,
+             user_data=user_data_content,
+             instance_initiated_shutdown_behavior=opts.instance_initiated_shutdown_behavior,
+             instance_profile_name=opts.instance_profile_name)
+         zeppelin_nodes += zeppelin_res.instances
+         print("Launched zeppelin server in {z}, regid = {r}".format(
+               z=opts.zone,
+               r=zeppelin_res.id))
+
     # This wait time corresponds to SPARK-4983
     print("Waiting for AWS to propagate instance metadata...")
     time.sleep(15)
@@ -796,8 +888,13 @@ def launch_cluster(conn, opts, cluster_name):
             dict(additional_tags, Name='{cn}-store-{iid}'.format(cn=cluster_name, iid=store.id))
         )
 
+    for zp in zeppelin_nodes:
+        zp.add_tags(
+            dict(additional_tags, Name='{cn}-zeppelin-{iid}'.format(cn=cluster_name, iid=zp.id))
+        )
+
     # Return all the instances
-    return (locator_nodes, lead_nodes, server_nodes)
+    return (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes)
 
 
 def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
@@ -823,27 +920,29 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
     locator_instances = get_instances([cluster_name + "-locator"])
     lead_instances = get_instances([cluster_name + "-lead"])
     store_instances = get_instances([cluster_name + "-stores"])
+    zeppelin_instances = get_instances([cluster_name + "-zeppelin"])
 
-    if any((locator_instances, lead_instances, store_instances)):
-        print("Found {l} locator{plural_l}, {m} lead{plural_m}, {s} store{plural_s}.".format(
+    if any((locator_instances, lead_instances, store_instances, zeppelin_instances)):
+        print("Found {l} locator{plural_l}, {m} lead{plural_m}, {s} store{plural_s}, {z} zeppelin instance.".format(
               l=len(locator_instances),
               plural_l=('' if len(locator_instances) == 1 else 's'),
               m=len(lead_instances),
               plural_m=('' if len(lead_instances) == 1 else 's'),
               s=len(store_instances),
-              plural_s=('' if len(store_instances) == 1 else 's')))
+              plural_s=('' if len(store_instances) == 1 else 's'),
+              z=len(zeppelin_instances)))
 
     if not locator_instances and die_on_error:
         print("ERROR: Could not find a locator for cluster {c} in region {r}.".format(
               c=cluster_name, r=opts.region), file=sys.stderr)
         sys.exit(1)
 
-    return (locator_instances, lead_instances, store_instances)
+    return (locator_instances, lead_instances, store_instances, zeppelin_instances)
 
 
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
-def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ssh_key):
+def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes, opts, deploy_ssh_key):
     locator = get_dns_name(locator_nodes[0], opts.private_ips)
     # Read the UI port from conf/leads, if available.
     read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-spark.ui.port='])
@@ -873,6 +972,11 @@ def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ss
             store_address = get_dns_name(store, opts.private_ips)
             print(store_address)
             ssh_write(store_address, opts, ['tar', 'x'], dot_ssh_tar)
+        for zp in zeppelin_nodes:
+            print("Transferring cluster's SSH key to zeppelin server...")
+            zeppelin_address = get_dns_name(zp, opts.private_ips)
+            print(zeppelin_address)
+            ssh_write(zeppelin_address, opts, ['tar', 'x'], dot_ssh_tar)
 
     # TODO Download aws-setup.sh, etc from public repo instead of pushing them from this machine.
 
@@ -883,7 +987,8 @@ def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ss
         opts=opts,
         locator_nodes=locator_nodes,
         lead_nodes=lead_nodes,
-        server_nodes=server_nodes
+        server_nodes=server_nodes,
+        zeppelin_nodes=zeppelin_nodes
     )
 
     if opts.deploy_root_dir is not None:
@@ -1080,7 +1185,7 @@ def get_num_disks(instance_type):
 # script to be run on that instance to copy them to other nodes.
 #
 # root_dir should be an absolute path to the directory with the files we want to deploy.
-def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
+def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes):
     active_locator = get_dns_name(locator_nodes[0], opts.private_ips)
 
     num_disks = get_num_disks(opts.instance_type)
@@ -1098,10 +1203,23 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
     locator_addresses = [get_dns_name(i, opts.private_ips) for i in locator_nodes]
     lead_addresses = [get_dns_name(i, opts.private_ips) for i in lead_nodes]
     server_addresses = [get_dns_name(i, opts.private_ips) for i in server_nodes]
+
+    zp_mode = "EMBEDDED"
+    zeppelin_address = "zeppelin_server"
+    if opts.with_zeppelin is not None:
+        if opts.with_zeppelin == "non-embedded":
+            zp_mode = "NON-EMBEDDED"
+            zeppelin_addresses = [get_dns_name(i, opts.private_ips) for i in zeppelin_nodes]
+            zeppelin_address = zeppelin_addresses[0]
+        else: 
+            zeppelin_address = lead_addresses[0]
+
+    print("zp addr %s" % zeppelin_address)
     template_vars = {
         "locator_list": '\n'.join(locator_addresses),
         "lead_list": '\n'.join(lead_addresses),
-        "server_list": '\n'.join(server_addresses)
+        "server_list": '\n'.join(server_addresses),
+        "zeppelin_server": zeppelin_address
     }
 
     # if opts.copy_aws_credentials:
@@ -1136,9 +1254,10 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
                             for idx in range(len(server_nodes)):
                                 text = text.replace("{{SERVER_" + str(idx) + "}}", server_addresses[idx])
                             text = text.replace("{{snappydata_version}}", opts.snappydata_version)
+                            text = text.replace("EMBEDDED", zp_mode)
                             dest.write(text)
                             dest.close()
-    # rsync the whole directory over to the master machine
+    # rsync the whole directory over to the locator instance
     command = [
         'rsync', '-rv',
         '-e', stringify_command(ssh_command(opts)),
@@ -1363,43 +1482,56 @@ def real_main():
         if opts.locators <= 0 or opts.stores <= 0 or opts.leads <= 0:
             print("ERROR: You have to start at least one instance of locator, lead and store each.", file=sys.stderr)
             sys.exit(1)
+        zeppelin_nodes = []
         if opts.resume:
-            (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
+            (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(conn, opts, cluster_name)
         else:
-            (locator_nodes, lead_nodes, server_nodes) = launch_cluster(conn, opts, cluster_name)
+            (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = launch_cluster(conn, opts, cluster_name)
         wait_for_cluster_state(
             conn=conn,
             opts=opts,
-            cluster_instances=(locator_nodes + lead_nodes + server_nodes),
+            cluster_instances=(locator_nodes + lead_nodes + server_nodes + zeppelin_nodes),
             cluster_state='ssh-ready'
         )
-        setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, True)
+        setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes, opts, True)
         lead = get_dns_name(lead_nodes[0], opts.private_ips)
         if SNAPPYDATA_UI_PORT == "":
             SNAPPYDATA_UI_PORT = '4040'
-        print("SnappyData Unified cluster started at http://%s:%s" % (lead, SNAPPYDATA_UI_PORT))
+        url = "http://%s:%s" % (lead, SNAPPYDATA_UI_PORT)
+        print("SnappyData Unified cluster started at %s" % url)
+        if opts.with_zeppelin is not None:
+            if len(zeppelin_nodes) == 1:
+                zp = get_dns_name(zeppelin_nodes[0], opts.private_ips)
+            else:
+                zp = lead
+            url = "http://%s:8080" % zp
+            print("Apache Zeppelin server started at http://%s:8080" % zp)
+            webbrowser.open(url, new=2)
 
     elif action == "destroy":
-        (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
+        (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(
             conn, opts, cluster_name, die_on_error=False)
 
-        if any(locator_nodes + lead_nodes + server_nodes):
+        if any(locator_nodes + lead_nodes + server_nodes + zeppelin_nodes):
             print("The following instances will be terminated:")
-            for inst in locator_nodes + lead_nodes + server_nodes:
+            for inst in locator_nodes + lead_nodes + server_nodes + zeppelin_nodes:
                 print("> %s" % get_dns_name(inst, opts.private_ips))
             print("ALL DATA ON ALL NODES WILL BE LOST!!")
 
         msg = "Are you sure you want to destroy the cluster {c}? (y/N) ".format(c=cluster_name)
         response = raw_input(msg)
         if response == "y":
-            print("Terminating locator...")
+            print("Terminating locator instance(s)...")
             for inst in locator_nodes:
                 inst.terminate()
-            print("Terminating lead...")
+            print("Terminating lead instance(s)...")
             for inst in lead_nodes:
                 inst.terminate()
-            print("Terminating stores...")
+            print("Terminating store instance(s)...")
             for inst in server_nodes:
+                inst.terminate()
+            for inst in zeppelin_nodes:
+                print("Terminating Apache Zeppelin instance...")
                 inst.terminate()
 
             # Delete security groups as well
@@ -1408,7 +1540,7 @@ def real_main():
                 wait_for_cluster_state(
                     conn=conn,
                     opts=opts,
-                    cluster_instances=(locator_nodes + lead_nodes + server_nodes),
+                    cluster_instances=(locator_nodes + lead_nodes + server_nodes + zeppelin_nodes),
                     cluster_state='terminated'
                 )
                 print("Deleting security groups (this will take some time)...")
@@ -1452,7 +1584,7 @@ def real_main():
                     print("Try re-running in a few minutes.")
 
     elif action == "login":
-        (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(conn, opts, cluster_name)
         if not lead_nodes[0].public_dns_name and not opts.private_ips:
             print("Lead has no public DNS name.  Maybe you meant to specify --private-ips?")
         else:
@@ -1464,26 +1596,34 @@ def real_main():
             subprocess.check_call(
                 ssh_command(opts) + proxy_opt + ['-t', '-t', "%s@%s" % (opts.user, lead)])
 
-    elif action == "reboot-stores":
+    elif action == "reboot-cluster":
         response = raw_input(
             "Are you sure you want to reboot the cluster " +
-            cluster_name + " stores?\n" +
-            "Reboot cluster stores " + cluster_name + " (y/N): ")
+            cluster_name + "?\n" +
+            "Reboot cluster " + cluster_name + " (y/N): ")
         if response == "y":
-            (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
+            (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(
                 conn, opts, cluster_name, die_on_error=False)
-            print("Rebooting stores...")
-            for inst in server_nodes:
+            shutdown_snappy_cluster(get_dns_name(locator_nodes[0], opts.private_ips), opts)
+            print("Rebooting cluster instances...")
+            cluster_instances=(locator_nodes + lead_nodes + server_nodes + zeppelin_nodes)
+            for inst in cluster_instances:
                 if inst.state not in ["shutting-down", "terminated"]:
-                    print("Rebooting " + inst.id)
+                    print("  Rebooting " + inst.id)
                     inst.reboot()
-            # TODO launch snappydata server processes also.
             # Wait for ssh-ready
-            # execute snappy-server start
+            wait_for_cluster_state(
+                conn=conn,
+                opts=opts,
+                cluster_instances=cluster_instances,
+                cluster_state='ssh-ready'
+            )
+            # setup_snappy_cluster(get_dns_name(locator_nodes[0], opts.private_ips), opts)
+            setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes, opts, False)
 
     # TODO
     elif action == "get-locator":
-        (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(conn, opts, cluster_name)
         if not locator_nodes[0].public_dns_name and not opts.private_ips:
             print("Locator has no public DNS name.  Maybe you meant to specify --private-ips?")
         else:
@@ -1491,7 +1631,7 @@ def real_main():
 
     # TODO Get the active lead
     elif action == "get-lead":
-        (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(conn, opts, cluster_name)
         if not lead_nodes[0].public_dns_name and not opts.private_ips:
             print("Lead has no public DNS name.  Maybe you meant to specify --private-ips?")
         else:
@@ -1506,7 +1646,7 @@ def real_main():
             "All data on spot-instance stores will be lost.\n" +
             "Stop cluster " + cluster_name + " (y/N): ")
         if response == "y":
-            (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
+            (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(
                 conn, opts, cluster_name, die_on_error=False)
             print("Stopping the snappydata processes...")
             shutdown_snappy_cluster(get_dns_name(locator_nodes[0], opts.private_ips), opts)
@@ -1522,13 +1662,17 @@ def real_main():
             for inst in lead_nodes:
                 if inst.state not in ["shutting-down", "terminated"]:
                     inst.stop()
-            print("Stopping locator instance...")
+            print("Stopping locator instance(s)...")
             for inst in locator_nodes:
+                if inst.state not in ["shutting-down", "terminated"]:
+                    inst.stop()
+            for inst in zeppelin_nodes:
+                print("Stopping Apache Zeppelin instance...")
                 if inst.state not in ["shutting-down", "terminated"]:
                     inst.stop()
 
     elif action == "start":
-        (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(conn, opts, cluster_name)
         print("Starting locator instance...")
         for inst in locator_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
@@ -1541,16 +1685,22 @@ def real_main():
         for inst in server_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
                 inst.start()
+        all_instances=(locator_nodes + lead_nodes + server_nodes)
+        if opts.with_zeppelin is not None:
+            all_instances=(all_instances + zeppelin_nodes)
+            for inst in zeppelin_nodes:
+                print("Starting Apache Zeppelin instance...")
+                if inst.state not in ["shutting-down", "terminated"]:
+                    inst.start()
         wait_for_cluster_state(
             conn=conn,
             opts=opts,
-            cluster_instances=(locator_nodes + lead_nodes + server_nodes),
+            cluster_instances=all_instances,
             cluster_state='ssh-ready'
         )
 
         # Determine types of running instances
         existing_locator_type = locator_nodes[0].instance_type
-        existing_lead_type = lead_nodes[0].instance_type
         existing_store_type = server_nodes[0].instance_type
         # Setting opts.locator_instance_type to the empty string indicates we
         # have the same instance type for the locator and the stores
@@ -1559,7 +1709,7 @@ def real_main():
         opts.locator_instance_type = existing_locator_type
         opts.instance_type = existing_store_type
 
-        setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, False)
+        setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes, opts, False)
 
     else:
         print("Invalid action: %s" % action, file=stderr)

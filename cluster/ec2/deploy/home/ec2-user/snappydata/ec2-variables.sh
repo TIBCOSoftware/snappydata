@@ -23,4 +23,6 @@
 export LOCATORS="{{locator_list}}"
 export LEADS="{{lead_list}}"
 export SERVERS="{{server_list}}"
+export ZEPPELIN_HOST="{{zeppelin_server}}"
+export ZEPPELIN_MODE="EMBEDDED"
 export SNAPPYDATA_VERSION="{{snappydata_version}}"
