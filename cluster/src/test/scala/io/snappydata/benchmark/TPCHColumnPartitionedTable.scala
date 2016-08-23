@@ -305,7 +305,8 @@ object TPCHColumnPartitionedTable  {
       }
     }
   }
-  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
+
+  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
@@ -442,9 +443,8 @@ object TPCHColumnPartitionedTable  {
     val orderData = sc.textFile(s"$path/nation.tbl")
     val nationreadings = orderData.map(s => s.split('|')).map(s => parseNationRow(s))
     val nationdf = sqlContext.createDataFrame(nationreadings)
-    println("KBKBKBKB: Buckets : " + 3)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "N_NATIONKEY"),("BUCKETS"-> "3"))
+      val p1 = Map(("PARTITION_BY"-> "N_NATIONKEY"),("BUCKETS"-> buckets))
       //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
@@ -483,9 +483,8 @@ object TPCHColumnPartitionedTable  {
     val orderData = sc.textFile(s"$path/region.tbl")
     val regionreadings = orderData.map(s => s.split('|')).map(s => parseRegionRow(s))
     val regiondf = sqlContext.createDataFrame(regionreadings)
-    println("KBKBKBKB: Buckets : " + 3)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "R_REGIONKEY"),("BUCKETS"-> "3"))
+      val p1 = Map(("PARTITION_BY"-> "R_REGIONKEY"),("BUCKETS"-> buckets))
       //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
@@ -520,9 +519,8 @@ object TPCHColumnPartitionedTable  {
     val orderData = sc.textFile(s"$path/supplier.tbl")
     val suppreadings = orderData.map(s => s.split('|')).map(s => parseSUPPLIERRow(s))
     val suppdf = sqlContext.createDataFrame(suppreadings)
-    println("KBKBKBKB: Buckets : " + 3)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "S_SUPPKEY"),("BUCKETS"-> "3"))
+      val p1 = Map(("PARTITION_BY"-> "S_SUPPKEY"),("BUCKETS"-> buckets))
       //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
