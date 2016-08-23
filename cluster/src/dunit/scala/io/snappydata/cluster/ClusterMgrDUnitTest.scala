@@ -114,7 +114,7 @@ object ClusterMgrDUnitTest {
   }
 
   def startExternalSparkApp(locatorPort: Int): Unit = {
-//    println("locatorPort =" + locatorPort)
+    //    println("locatorPort =" + locatorPort)
     val hostName = InetAddress.getLocalHost.getHostName
     val conf: SparkConf = new SparkConf()
         .setMaster(s"snappydata://$hostName:$locatorPort")
@@ -124,21 +124,10 @@ object ClusterMgrDUnitTest {
       val sc2 = new SparkContext(conf)
     } catch {
       case e: org.apache.spark.SparkException =>
-        var cause: Throwable = e.getCause
-        while (cause != null && !cause.isInstanceOf[SQLException]) {
-          cause = cause.getCause
-        }
-        if (cause == null) {
-          throw e
-        }
-        // SQLException: check the message is expected
-        if (!cause.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
+        if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
             "already running in the system")) {
           throw e
         } // else ok
     }
-//    println("SparkContext CREATED, about to create SnappyContext.")
-//    val snc2 = SnappyContext(sc2)
-//    println("SnappyContext CREATED successfully = " + snc2)
   }
 }

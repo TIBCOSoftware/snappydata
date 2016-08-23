@@ -38,7 +38,7 @@ import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkException, Logging, SparkConf, SparkContext}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 
@@ -184,7 +184,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           // let go.
           case false =>
             if (!_directApiInvoked) {
-              throw new SQLException("Primary Lead node (Spark Driver) is already running in the system. " +
+              throw new SparkException("Primary Lead node (Spark Driver) is already running in the system. " +
                   "You may use split cluster mode to connect to SnappyData cluster.")
             }
             serverstatus = State.STANDBY
