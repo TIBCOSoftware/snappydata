@@ -52,7 +52,7 @@ object TPCHReplicatedTable {
       snappyContext.sql(
         """CREATE TABLE REGION (
             R_REGIONKEY INTEGER NOT NULL PRIMARY KEY,
-            R_NAME CHAR(25) NOT NULL,
+            R_NAME VARCHAR(25) NOT NULL,
             R_COMMENT VARCHAR(152)
          ) """ + usingOptionString
       )
@@ -80,7 +80,7 @@ object TPCHReplicatedTable {
       snappyContext.sql(
         """CREATE TABLE NATION (
             N_NATIONKEY INTEGER NOT NULL PRIMARY KEY,
-            N_NAME CHAR(25) NOT NULL,
+            N_NAME VARCHAR(25) NOT NULL,
             N_REGIONKEY INTEGER NOT NULL REFERENCES REGION(R_REGIONKEY),
             N_COMMENT VARCHAR(152)
          ) """ + usingOptionString
@@ -109,10 +109,10 @@ object TPCHReplicatedTable {
       snappyContext.sql(
         """CREATE TABLE SUPPLIER (
             S_SUPPKEY INTEGER NOT NULL PRIMARY KEY,
-            S_NAME CHAR(25) NOT NULL,
+            S_NAME VARCHAR(25) NOT NULL,
             S_ADDRESS VARCHAR(40) NOT NULL,
             S_NATIONKEY INTEGER NOT NULL,
-            S_PHONE CHAR(15) NOT NULL,
+            S_PHONE VARCHAR(15) NOT NULL,
             S_ACCTBAL DECIMAL(15,2) NOT NULL,
             S_COMMENT VARCHAR(101) NOT NULL
          ) """ + usingOptionString

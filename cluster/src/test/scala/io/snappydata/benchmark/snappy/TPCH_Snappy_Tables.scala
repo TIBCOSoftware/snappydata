@@ -20,9 +20,8 @@ import java.io.File
 
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
-import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobInvalid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
@@ -31,7 +30,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
    var buckets_Cust_Part_PartSupp: String = _
    var buckets_Nation_Region_Supp: String = _
    var useIndex: Boolean = _
-   var nation_Region_Supp_col = false
+   var nation_Region_Supp_col: Boolean =  _
 
    override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
      val props : Map[String, String] = null
