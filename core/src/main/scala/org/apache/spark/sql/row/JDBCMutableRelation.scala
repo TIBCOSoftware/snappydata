@@ -231,11 +231,10 @@ case class JDBCMutableRelation(
     var index = 0
     // not using loop over index below because incoming Seq[...]
     // may not have efficient index lookup
-    updateColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
-        col, throw new AnalysisException(
+    updateColumns.foreach { c =>
+      setFields(index) = schemaFields.getOrElse(c, throw new AnalysisException(
           "JDBCUpdatableRelation: Cannot resolve column name " +
-              s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
+              s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,

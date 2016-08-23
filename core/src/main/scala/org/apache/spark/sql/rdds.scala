@@ -24,13 +24,16 @@ import org.apache.spark.{Partition, TaskContext}
 
 
 private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
-    prev: RDD[T], f: (TaskContext, Int, Iterator[T]) => Iterator[U],
+    prev: RDD[T], f: (TaskContext, Partition, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false)
-    extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
+    extends MapPartitionsRDD[U, T](prev, null, preservesPartitioning) {
 
   // TODO [sumedh] why doesn't the standard MapPartitionsRDD do this???
-  override def getPreferredLocations(split: Partition) =
-    firstParent[T].preferredLocations(split)
+  override def getPreferredLocations(
+      split: Partition): Seq[String] = firstParent[T].preferredLocations(split)
+
+  override def compute(split: Partition, context: TaskContext): Iterator[U] =
+    f(context, split, firstParent[T].iterator(split, context))
 }
 
 class DummyRDD(sqlContext: SQLContext)
