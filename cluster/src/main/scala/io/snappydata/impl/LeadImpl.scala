@@ -156,6 +156,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   }
 
+  @throws[SparkException]
   private[snappydata] def internalStart(sc: SparkContext): Unit = {
 
     val conf = sc.getConf // this will get you a cloned copy
@@ -346,25 +347,25 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     ActorSystem("SnappyLeadJobServer", conf)
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startNetworkServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Network server cannot be started on lead node.")
+    throw new SparkException("Network server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startThriftServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Thrift server cannot be started on lead node.")
+    throw new SparkException("Thrift server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startDRDAServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("DRDA server cannot be started on lead node.")
+    throw new SparkException("DRDA server cannot be started on lead node.")
   }
 
   override def stopAllNetworkServers(): Unit = {
