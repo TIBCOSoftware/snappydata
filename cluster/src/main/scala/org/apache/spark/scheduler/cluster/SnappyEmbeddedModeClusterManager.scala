@@ -34,9 +34,9 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SnappyClusterManager.init(this)
 
-  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = null
+  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = _
 
-  def createTaskScheduler(sc: SparkContext): TaskScheduler = {
+  override def createTaskScheduler(sc: SparkContext, masterURL: String): TaskScheduler = {
     // If there is an application that is trying to join snappy
     // as lead in embedded mode, we need the locator to connect
     // to the snappy distributed system and hence the locator is
@@ -66,10 +66,10 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     new SnappyTaskSchedulerImpl(sc)
   }
 
-  def canCreate(masterURL: String): Boolean =
+  override def canCreate(masterURL: String): Boolean =
     masterURL.startsWith("snappydata")
 
-  def createSchedulerBackend(sc: SparkContext,
+  override def createSchedulerBackend(sc: SparkContext, masterURL: String,
       scheduler: TaskScheduler): SchedulerBackend = {
     sc.addSparkListener(new BlockManagerIdListener)
     schedulerBackend = new SnappyCoarseGrainedSchedulerBackend(
@@ -96,7 +96,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
 object SnappyClusterManager {
 
-  private[this] var _cm: SnappyEmbeddedModeClusterManager = null
+  private[this] var _cm: SnappyEmbeddedModeClusterManager = _
 
   def init(mgr: SnappyEmbeddedModeClusterManager): Unit = {
     _cm = mgr

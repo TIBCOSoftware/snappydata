@@ -23,7 +23,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
-import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
@@ -205,14 +204,16 @@ object StoreUtils extends Logging {
     StoreCallbacksImpl.stores.remove(table)
   }
 
-  def appendClause(sb: mutable.StringBuilder, getClause: () => String): Unit = {
+  def appendClause(sb: mutable.StringBuilder,
+      getClause: () => String): Unit = {
     val clause = getClause.apply()
     if (!clause.isEmpty) {
       sb.append(s"$clause ")
     }
   }
 
-  val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(StringType, BinaryType,
+    ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
                           schema: StructType,
@@ -223,8 +224,9 @@ object StoreUtils extends Logging {
         v match {
           case PRIMARY_KEY => ""
           case _ =>
-            val normalizedSchema = context.catalog.asInstanceOf[SnappyStoreHiveCatalog]
-              .normalizeSchema(schema)
+            val normalizedSchema = context.sessionState.catalog
+                .asInstanceOf[SnappyStoreHiveCatalog]
+                .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
             val normalizedCols = cols map { c =>
@@ -234,7 +236,8 @@ object StoreUtils extends Logging {
                 if (Utils.hasLowerCase(c)) Utils.toUpperCase(c) else c
               }
             }
-            val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields, normalizedCols)
+            val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
+              normalizedCols)
 
             val b = for (field <- prunedSchema.fields)
               yield !pkDisallowdTypes.contains(field.dataType)
@@ -264,8 +267,8 @@ object StoreUtils extends Logging {
               if (isRowTable) {
                 s"sparkhash $PRIMARY_KEY"
               } else {
-                throw new DDLException("Column table cannot be partitioned on" +
-                  " PRIMARY KEY as no primary key")
+                throw Utils.analysisException("Column table cannot be " +
+                    "partitioned on PRIMARY KEY as no primary key")
               }
             case _ => s"sparkhash COLUMN($v)"
           }
@@ -275,28 +278,29 @@ object StoreUtils extends Logging {
       else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
-        case PRIMARY_KEY => throw new DDLException("Column table cannot be " +
-          "partitioned on PRIMARY KEY as no primary key")
+        case PRIMARY_KEY => throw Utils.analysisException("Column table " +
+            "cannot be partitioned on PRIMARY KEY as no primary key")
         case _ =>
       }
     }
 
     if (!isShadowTable) {
-      sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
-        .getOrElse(EMPTY_STRING))
+      sb.append(parameters.remove(COLOCATE_WITH).map(
+        v => s"$GEM_COLOCATE_WITH ($v) ").getOrElse(EMPTY_STRING))
     }
 
     parameters.remove(REPLICATE).foreach(v =>
       if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
-      else if (!parameters.contains(BUCKETS)) sb.append(GEM_BUCKETS).append(' ')
-        .append(ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
+      else if (!parameters.contains(BUCKETS)) {
+        sb.append(GEM_BUCKETS).append(' ').append(
+          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
+      })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
       .getOrElse(EMPTY_STRING))
-
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
-      .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
-      .getOrElse(EMPTY_STRING))
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(RECOVERYDELAY).map(
+      v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
       .getOrElse(EMPTY_STRING))
 
@@ -312,7 +316,7 @@ object StoreUtils extends Logging {
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
-          throw new DDLException(
+          throw Utils.analysisException(
             "Column table cannot take LRUCOUNT as eviction policy")
         } else if (v == NONE) {
           EMPTY_STRING
@@ -337,13 +341,14 @@ object StoreUtils extends Logging {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
         isPersistent = true
       } else {
-        throw new DDLException(s"Invalid value for option $PERSISTENT = $v" +
-          s" (expected one of: async, sync, asynchronous, synchronous)")
+        throw Utils.analysisException(s"Invalid value for option " +
+            s"$PERSISTENT = $v (expected one of: async, sync, " +
+            s"asynchronous, synchronous)")
       }
     }
     parameters.remove(DISKSTORE).foreach { v =>
       if (isPersistent) sb.append(s"'$v' ")
-      else throw new DDLException(
+      else throw Utils.analysisException(
         s"Option '$DISKSTORE' requires '$PERSISTENT' option")
     }
     sb.append(parameters.remove(SERVER_GROUPS)
@@ -355,7 +360,8 @@ object StoreUtils extends Logging {
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
-        throw new DDLException("Expiry for Column table is not supported")
+        throw Utils.analysisException(
+          "Expiry for Column table is not supported")
       }
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     }).getOrElse(EMPTY_STRING))
@@ -363,7 +369,8 @@ object StoreUtils extends Logging {
     sb.toString()
   }
 
-  def getPartitioningColumn(parameters: mutable.Map[String, String]): Seq[String] = {
+  def getPartitioningColumn(
+      parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
     }).getOrElse(Seq.empty[String])

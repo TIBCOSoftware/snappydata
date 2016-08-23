@@ -29,7 +29,7 @@ case class WindowPhysicalPlan(
     windowDuration: Duration,
     slide: Option[Duration],
     child: SparkPlan)
-    extends execution.UnaryNode with StreamPlan {
+    extends execution.UnaryExecNode with StreamPlan {
 
   override def doExecute(): RDD[InternalRow] = {
     assert(validTime != null)

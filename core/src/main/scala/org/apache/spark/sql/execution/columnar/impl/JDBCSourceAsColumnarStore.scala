@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -91,10 +91,9 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
-    tableName: String,
-    requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
-    extends RDD[CachedBatch](_sc, Nil) with Logging {
+class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
+    tableName: String, requiredColumns: Array[String],
+    store: JDBCSourceAsColumnarStore) extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
@@ -131,13 +130,13 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
       val resolvedName = ExternalStoreUtils.lookupName(tableName,
         conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
-      StoreUtils.getPartitionsPartitionedTable(_sc,
+      StoreUtils.getPartitionsPartitionedTable(sparkContext,
         region.asInstanceOf[PartitionedRegion])
     })
   }
 }
 
-class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
+class SparkShellCachedBatchRDD[T: ClassTag](_sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
     connProperties: ConnectionProperties,
     store: ExternalStore)
@@ -163,7 +162,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 }
 
-class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
+class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
@@ -172,7 +171,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends RowFormatScanRDD(sc, getConnection, schema, tableName,
+    extends RowFormatScanRDD(_sc, getConnection, schema, tableName,
       isPartitioned, columns, connProperties, filters, partitions) {
 
   override def computeResultSet(

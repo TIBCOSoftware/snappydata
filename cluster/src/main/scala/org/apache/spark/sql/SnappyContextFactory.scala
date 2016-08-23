@@ -19,29 +19,29 @@ package org.apache.spark.sql
 import com.typesafe.config.Config
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
-import spark.jobserver.{SparkJobValid, SparkJobInvalid, SparkJobValidation, SparkJob, ContextLike, SparkJobBase}
+import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.api.java.JavaSparkContext
-import org.apache.spark.streaming.api.java.JavaDStream
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.SparkConf
 
 trait SnappySQLJob extends SparkJobBase {
   type C = SnappyContext
 }
 
-object JavaJobValidate{
-  def validate(status :JSparkJobValidation) : SparkJobValidation ={
+object JavaJobValidate {
+  def validate(status: JSparkJobValidation): SparkJobValidation = {
     status match {
-      case j : JSparkJobValid => SparkJobValid
-      case j : JSparkJobInvalid => SparkJobInvalid(j.reason)
+      case j: JSparkJobValid => SparkJobValid
+      case j: JSparkJobInvalid => SparkJobInvalid(j.reason)
       case _ => SparkJobInvalid("isValid method is not correct")
     }
   }
 }
-trait JSparkJobValidation
-case class JSparkJobValid extends JSparkJobValidation
-case class JSparkJobInvalid(reason : String) extends JSparkJobValidation
 
+trait JSparkJobValidation
+
+final class JSparkJobValid extends JSparkJobValidation
+
+case class JSparkJobInvalid(reason: String) extends JSparkJobValidation
 
 class SnappyContextFactory extends SparkContextFactory {
 
@@ -58,12 +58,11 @@ object SnappyContextFactory {
     SnappyContext(LeadImpl.getInitializingSparkContext)
 
   protected def newSession(): SnappyContext with ContextLike =
-    new SnappyContext(snappyContextLike.sparkContext,
-      snappyContextLike.listener,
-      false) with ContextLike {
-    override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
-    override def stop(): Unit = {
-      // not stopping anything here because SQLContext doesn't have one.
+    new SnappyContext(snappyContextLike.snappySession) with ContextLike {
+      override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
+
+      override def stop(): Unit = {
+        // not stopping anything here because SQLContext doesn't have one.
+      }
     }
-  }
 }

@@ -27,7 +27,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -54,7 +54,9 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappyContext = SnappyContext(sc_)
+  val snappySession = new SnappySession(sc, None)
+
+  val snappyContext = snappySession.snappyContext
 
   SnappyStreamingContext.setInstanceContext(self)
 
@@ -68,7 +70,8 @@ class SnappyStreamingContext protected[spark](
   }
 
   /**
-   * Create a SnappyStreamingContext by providing the configuration necessary for a new SparkContext.
+   * Create a SnappyStreamingContext by providing the configuration necessary
+   * for a new SparkContext.
    * @param conf a org.apache.spark.SparkConf object specifying Spark parameters
    * @param batchDuration the time interval at which streaming data will be divided into batches
    */
@@ -114,7 +117,7 @@ class SnappyStreamingContext protected[spark](
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
       // register population of AQP tables from stream tables
-      snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
+      snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
     }
     super.start()
     SnappyStreamingContext.setActiveContext(self)
@@ -127,26 +130,27 @@ class SnappyStreamingContext protected[spark](
       SnappyStreamingContext.setActiveContext(null)
       SnappyStreamingContext.setInstanceContext(null)
     } finally {
-      snappyContext.clearCache()
-      snappyContext.clear()
-      StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
+      // snappySession.clearCache()
+      snappySession.clear()
+      StreamSqlHelper.registerRelationDestroy() // Not sure why we need this @TODO
       StreamSqlHelper.clearStreams()
-
     }
   }
 
   def sql(sqlText: String): DataFrame = {
-    snappyContext.sql(sqlText)
+    snappySession.sql(sqlText)
   }
 
   /**
    * Registers and executes given SQL query and
    * returns [[SchemaDStream]] to consume the results
-   * @param queryStr
-   * @return
+   *
+   * @param queryStr the query to register
    */
   def registerCQ(queryStr: String): SchemaDStream = {
-    val plan = sql(queryStr).queryExecution.optimizedPlan
+    val plan = sql(queryStr).queryExecution
+    // force optimization right away
+    assert(plan.optimizedPlan != null)
     val dStream = new SchemaDStream(self, plan)
     // register a dummy task so that the DStream gets started
     // TODO: need to remove once we add proper registration of registerCQ
@@ -222,7 +226,7 @@ object SnappyStreamingContext extends Logging {
    * Get the currently active context, if there is one. Active means started but not stopped.
    */
   @Experimental
-  def getActive(): Option[SnappyStreamingContext] = {
+  def getActive: Option[SnappyStreamingContext] = {
     ACTIVATION_LOCK.synchronized {
       Option(activeContext.get())
     }
@@ -237,7 +241,7 @@ object SnappyStreamingContext extends Logging {
   @Experimental
   def getActiveOrCreate(creatingFunc: () => SnappyStreamingContext): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
-      getActive().getOrElse { creatingFunc() }
+      getActive.getOrElse { creatingFunc() }
     }
   }
 
@@ -265,14 +269,15 @@ object SnappyStreamingContext extends Logging {
       createOnError: Boolean = false
       ): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
-      getActive().getOrElse { getOrCreate(checkpointPath, creatingFunc, hadoopConf, createOnError) }
+      getActive.getOrElse { getOrCreate(checkpointPath, creatingFunc, hadoopConf, createOnError) }
     }
   }
 
   /**
-   * Either recreate a SnappyStreamingContext from checkpoint data or create a new SnappyStreamingContext.
-   * If checkpoint data exists in the provided `checkpointPath`, then SnappyStreamingContext will be
-   * recreated from the checkpoint data. If the data does not exist, then the StreamingContext
+   * Either recreate a SnappyStreamingContext from checkpoint data or create a
+   * new SnappyStreamingContext. If checkpoint data exists in the provided
+   * `checkpointPath`, then SnappyStreamingContext will be recreated from the
+   * checkpoint data. If the data does not exist, then the StreamingContext
    * will be created by called the provided `creatingFunc`.
    *
    * @param checkpointPath Checkpoint directory used in an earlier StreamingContext program
@@ -304,7 +309,8 @@ private class SnappyStreamingContextPythonHelper {
    */
   def tryRecoverFromCheckpoint(checkpointPath: String): Option[SnappyStreamingContext] = {
     val checkpointOption = CheckpointReader.read(
-      checkpointPath, new SparkConf(), SparkHadoopUtil.get.conf, false)
+      checkpointPath, new SparkConf(), SparkHadoopUtil.get.conf,
+      ignoreReadError = false)
     checkpointOption.map(new SnappyStreamingContext(null, _, null))
   }
 }

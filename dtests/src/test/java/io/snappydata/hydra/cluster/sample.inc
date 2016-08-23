@@ -76,7 +76,7 @@ INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
 
 INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
            io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = create_and_load_column_table.sql create_and_load_sample_table.sql create_and_load_row_table.sql olap_queries.sql
-           io.snappydata.hydra.cluster.SnappyPrms-sqlScriptParams = airlineParquetData " " airportcodeParquetData
+           io.snappydata.hydra.cluster.SnappyPrms-dataLocation = airlineParquetData " " airportcodeParquetData
            threadGroups = snappyThreads
            ;
 

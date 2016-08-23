@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRowWithSchema, GenericRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.store.CodeGeneration
@@ -76,7 +76,10 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
   private[this] lazy val serializer = CodeGeneration
       .getComplexTypeSerializer(dataType)
 
-  private[this] lazy val bufferHolder = new BufferHolder()
+  private[this] lazy val bufferHolder = struct match {
+    case None => new BufferHolder(new UnsafeRow())
+    case Some(s) => new BufferHolder(new UnsafeRow(s.length))
+  }
 
   private[this] lazy val validatingConverter = ValidatingConverter(dataType,
     table, column)
@@ -86,10 +89,8 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
   @volatile private[this] var validated = false
 
   private[this] def toBytes(v: Any): Array[Byte] = {
-    serializer.serialize(v, bufferHolder)
-    val b = util.Arrays.copyOf(bufferHolder.buffer, bufferHolder.totalSize())
-    bufferHolder.reset()
-    b
+    bufferHolder.cursor = Platform.BYTE_ARRAY_OFFSET
+    serializer.serialize(v, bufferHolder, null)
   }
 
   override def serialize(v: Any, validateAll: Boolean): Array[Byte] = {
@@ -125,8 +126,8 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
         scalaConverter(map).asInstanceOf[Map[_, _]].asJava
       }
     case Some(s) =>
-      val row = new UnsafeRow
-      row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, s.length, length)
+      val row = new UnsafeRow(s.length)
+      row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
       scalaConverter(row) match {
         case g: GenericRow =>
           java.util.Arrays.asList(Utils.getGenericRowValues(g): _*)
@@ -372,4 +373,14 @@ final class GenericValidatingConverter(dataType: DataType,
             .mkString(", ")}")
     }
   }
+}
+
+// Adding this class to make it work with complex type serializer. //TDOD Check with Sumedh
+class GenericInternalRowWithSchema(values: Array[Any], val schema: StructType)
+    extends GenericInternalRow(values) {
+
+  /** No-arg constructor for serialization. */
+  protected def this() = this(null, null)
+
+  def fieldIndex(name: String): Int = schema.fieldIndex(name)
 }
