@@ -18,10 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.mutable
-
 import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
-
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -37,6 +34,8 @@ import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 
+import scala.collection.mutable
+
 
 /**
  * A LogicalPlan implementation for an external column table whose contents
@@ -51,7 +50,7 @@ case class JDBCAppendableRelation(
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)
   extends BaseRelation
-  with PrunedFilteredScan
+  with PrunedUnsafeFilteredScan
   with InsertableRelation
   with DestroyRelation
   with IndexableRelation
@@ -105,13 +104,13 @@ case class JDBCAppendableRelation(
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
-  override def buildScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+  override def buildUnsafeScan(requiredColumns: Array[String],
+      filters: Array[Filter]): RDD[InternalRow] = {
     scanTable(table, requiredColumns, filters)
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+      filters: Array[Filter]): RDD[InternalRow] = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -137,7 +136,7 @@ case class JDBCAppendableRelation(
 
       ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
         requestedColumns, schema, forScan = true)
-    }.asInstanceOf[RDD[Row]]
+    }
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {

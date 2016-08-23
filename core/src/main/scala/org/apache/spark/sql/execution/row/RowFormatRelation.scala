@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.row
 
+import org.apache.spark.sql.catalyst.InternalRow
+
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -96,8 +98,8 @@ class RowFormatRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
-  override def buildScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+  override def buildUnsafeScan(requiredColumns: Array[String],
+    filters: Array[Filter]): RDD[InternalRow] = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
@@ -113,7 +115,7 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           parts
-        ).asInstanceOf[RDD[Row]]
+        )
 
       case _ =>
         new SparkShellRowRDD(
@@ -125,7 +127,7 @@ class RowFormatRelation(
           requiredColumns,
           connProperties,
           handledFilters
-        ).asInstanceOf[RDD[Row]]
+        )
     }
   }
 
