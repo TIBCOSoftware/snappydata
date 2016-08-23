@@ -440,7 +440,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  ${keyEv.code}
        |  // Check if the key has nulls.
        |  if (!($anyNull)) {
-       |    // Check if the HashedRelation exists.
+       |    // find matches from HashedRelation
        |    UnsafeRow $matched = (UnsafeRow)$relationTerm
        |      .getValue(${keyEv.value});
        |    if ($matched != null) {
@@ -455,7 +455,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  ${keyEv.code}
        |  // Check if the key has nulls.
        |  if (!($anyNull)) {
-       |    // Check if the HashedRelation exists.
+       |    // find matches from HashedRelation
        |    $iteratorCls $matches = ($iteratorCls)$relationTerm
        |      .get(${keyEv.value});
        |    if ($matches != null) {
