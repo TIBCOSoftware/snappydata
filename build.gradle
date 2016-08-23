@@ -525,7 +525,7 @@ subprojects {
 }
 
 task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'gemfirexd' }.collect {
       it.getTasksByName('install', false).collect { it.path }
@@ -533,7 +533,7 @@ task publishLocal {
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }

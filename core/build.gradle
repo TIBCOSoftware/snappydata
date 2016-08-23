@@ -152,7 +152,7 @@ test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 check.dependsOn test, scalaTest, dunitTest
 
-archivesBaseName = 'snappydata-core'
+archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
   zip64 = true
 
