@@ -16,15 +16,15 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.mutable
+
+import org.parboiled2._
+
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.parboiled2._
-
-import scala.collection.mutable
-import scala.language.implicitConversions
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -45,7 +45,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (SnappyParserConsts.whitespace.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
         commentBody |
     commentBody
   }
@@ -54,7 +54,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
         noneOf(SnappyParserConsts.lineCommentEnd).* |
     noneOf(SnappyParserConsts.lineCommentEnd).*
   }
@@ -74,15 +74,15 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def digits: Rule1[String] = rule {
-    capture(CharPredicate.Digit.+) ~ ws
+    capture(CharPredicate.Digit. +) ~ ws
   }
 
   protected final def integral: Rule1[String] = rule {
-    capture(plusOrMinus.? ~ CharPredicate.Digit.+) ~ ws
+    capture(plusOrMinus.? ~ CharPredicate.Digit. +) ~ ws
   }
 
   protected final def scientificNotation: Rule0 = rule {
-    SnappyParserConsts.exponent ~ plusOrMinus.? ~ CharPredicate.Digit.+
+    SnappyParserConsts.exponent ~ plusOrMinus.? ~ CharPredicate.Digit. +
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
@@ -116,12 +116,12 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
       test(!SnappyParserConsts.keywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
-    atomic('"' ~ capture((noneOf("\"") | "\"\"").+) ~ '"') ~
+    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~
         ws ~> { (s: String) =>
       val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     } |
-    atomic('`' ~ capture((noneOf("`") | "``").+) ~ '`') ~ ws ~> { (s: String) =>
+    atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
       if (caseSensitive) id else Utils.toUpperCase(id)
     }
@@ -215,7 +215,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def structType: Rule1[DataType] = rule {
     STRUCT ~ '<' ~ ws ~ (structField * (',' ~ ws)) ~ '>' ~ ws ~>
-        ((fields: Seq[StructField]) => StructType(fields.toArray))
+        ((f: Any) => StructType(f.asInstanceOf[Seq[StructField]].toArray))
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
@@ -231,8 +231,8 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schemaOpt: Option[String],
-        table: String) => TableIdentifier(table, schemaOpt))
+    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, table: String) =>
+      TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 }
 
@@ -272,6 +272,7 @@ object SnappyParserConsts {
     k
   }
 
+  // reserved keywords
   final val ALL = keyword("all")
   final val AND = keyword("and")
   final val AS = keyword("as")
@@ -279,65 +280,106 @@ object SnappyParserConsts {
   final val BETWEEN = keyword("between")
   final val BY = keyword("by")
   final val CASE = keyword("case")
-  final val CAST = keyword("cast")
   final val CREATE = keyword("create")
   final val CURRENT = keyword("current")
   final val DELETE = keyword("delete")
   final val DESC = keyword("desc")
-  final val DESCRIBE = keyword("describe")
   final val DISTINCT = keyword("distinct")
   final val DROP = keyword("drop")
   final val ELSE = keyword("else")
-  final val END = keyword("end")
   final val EXCEPT = keyword("except")
   final val EXISTS = keyword("exists")
-  final val EXTERNAL = keyword("external")
   final val FALSE = keyword("false")
   final val FROM = keyword("from")
-  final val FULL = keyword("full")
-  final val FUNCTION = keyword("function")
   final val GROUP = keyword("group")
   final val HAVING = keyword("having")
-  final val IF = keyword("if")
   final val IN = keyword("in")
   final val INNER = keyword("inner")
   final val INSERT = keyword("insert")
   final val INTERSECT = keyword("intersect")
-  final val INTERVAL = keyword("interval")
   final val INTO = keyword("into")
   final val IS = keyword("is")
   final val JOIN = keyword("join")
   final val LEFT = keyword("left")
   final val LIKE = keyword("like")
-  final val LIMIT = keyword("limit")
   final val NOT = keyword("not")
   final val NULL = keyword("null")
   final val ON = keyword("on")
   final val OR = keyword("or")
   final val ORDER = keyword("order")
-  final val PUT = keyword("put")
-  final val SORT = keyword("sort")
   final val OUTER = keyword("outer")
-  final val OVERWRITE = keyword("overwrite")
-  final val REGEXP = keyword("regexp")
   final val RIGHT = keyword("right")
-  final val RLIKE = keyword("rlike")
   final val SCHEMA = keyword("schema")
   final val SELECT = keyword("select")
-  final val SEMI = keyword("semi")
   final val SET = keyword("set")
   final val TABLE = keyword("table")
-  final val TEMPORARY = keyword("temporary")
   final val THEN = keyword("then")
   final val TO = keyword("to")
   final val TRUE = keyword("true")
   final val UNION = keyword("union")
   final val UNIQUE = keyword("unique")
   final val UPDATE = keyword("update")
-  final val USING = keyword("using")
   final val WHEN = keyword("when")
   final val WHERE = keyword("where")
   final val WITH = keyword("with")
+
+  // non-reserved keywords
+  final val ANTI = new Keyword("anti")
+  final val CACHE = new Keyword("cache")
+  final val CAST = new Keyword("cast")
+  final val CLEAR = new Keyword("clear")
+  final val CLUSTER = new Keyword("cluster")
+  final val COMMENT = new Keyword("comment")
+  final val CURRENT_DATE = new Keyword("current_date")
+  final val CURRENT_TIMESTAMP = new Keyword("current_timestamp")
+  final val DESCRIBE = new Keyword("describe")
+  final val DISTRIBUTE = new Keyword("distribute")
+  final val END = new Keyword("end")
+  final val EXTENDED = new Keyword("extended")
+  final val EXTERNAL = new Keyword("external")
+  final val FULL = new Keyword("full")
+  final val FUNCTION = new Keyword("function")
+  final val FUNCTIONS = new Keyword("functions")
+  final val GLOBAL = new Keyword("global")
+  final val HASH = new Keyword("hash")
+  final val IF = new Keyword("if")
+  final val INDEX = new Keyword("index")
+  final val INIT = new Keyword("init")
+  final val INTERVAL = new Keyword("interval")
+  final val LAZY = new Keyword("lazy")
+  final val LIMIT = new Keyword("limit")
+  final val NATURAL = new Keyword("natural")
+  final val OPTIONS = new Keyword("options")
+  final val OVERWRITE = new Keyword("overwrite")
+  final val PARTITION = new Keyword("partition")
+  final val PUT = new Keyword("put")
+  final val REFRESH = new Keyword("refresh")
+  final val REGEXP = new Keyword("regexp")
+  final val RLIKE = new Keyword("rlike")
+  final val SEMI = new Keyword("semi")
+  final val SHOW = new Keyword("show")
+  final val SORT = new Keyword("sort")
+  final val START = new Keyword("start")
+  final val STOP = new Keyword("stop")
+  final val STREAM = new Keyword("stream")
+  final val STREAMING = new Keyword("streaming")
+  final val TABLES = new Keyword("tables")
+  final val TEMPORARY = new Keyword("temporary")
+  final val TRUNCATE = new Keyword("truncate")
+  final val UNCACHE = new Keyword("uncache")
+  final val USING = new Keyword("using")
+
+  // Window analytical functions are non-reserved
+  final val DURATION = new Keyword("duration")
+  final val FOLLOWING = new Keyword("following")
+  final val OVER = new Keyword("over")
+  final val PRECEDING = new Keyword("preceding")
+  final val RANGE = new Keyword("range")
+  final val ROW = new Keyword("row")
+  final val ROWS = new Keyword("rows")
+  final val SLIDE = new Keyword("slide")
+  final val UNBOUNDED = new Keyword("unbounded")
+  final val WINDOW = new Keyword("window")
 
   // interval units are not reserved
   final val DAY = new Keyword("day")
@@ -355,11 +397,6 @@ object SnappyParserConsts {
   final val ROLLUP = new Keyword("rollup")
   final val GROUPING = new Keyword("grouping")
   final val SETS = new Keyword("sets")
-
-  // Added for streaming window CQs
-  final val DURATION = keyword("duration")
-  final val SLIDE = keyword("slide")
-  final val WINDOW = keyword("window")
 
   // datatypes are not reserved
   final val ARRAY = new Keyword("array")
@@ -388,27 +425,4 @@ object SnappyParserConsts {
   final val TINYINT = new Keyword("tinyint")
   final val VARBINARY = new Keyword("varbinary")
   final val VARCHAR = new Keyword("varchar")
-
-  // misc non-reserved keywords
-  final val ANTI = new Keyword("anti")
-  final val CACHE = new Keyword("cache")
-  final val CLEAR = new Keyword("clear")
-  final val COMMENT = new Keyword("comment")
-  final val EXTENDED = new Keyword("extended")
-  final val FUNCTIONS = new Keyword("functions")
-  final val GLOBAL = new Keyword("global")
-  final val HASH = new Keyword("hash")
-  final val INDEX = new Keyword("index")
-  final val INIT = new Keyword("init")
-  final val LAZY = new Keyword("lazy")
-  final val OPTIONS = new Keyword("options")
-  final val REFRESH = new Keyword("refresh")
-  final val SHOW = new Keyword("show")
-  final val START = new Keyword("start")
-  final val STOP = new Keyword("stop")
-  final val STREAM = new Keyword("stream")
-  final val STREAMING = new Keyword("streaming")
-  final val TABLES = new Keyword("tables")
-  final val TRUNCATE = new Keyword("truncate")
-  final val UNCACHE = new Keyword("uncache")
 }

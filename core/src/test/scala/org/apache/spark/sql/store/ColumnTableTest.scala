@@ -32,7 +32,6 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkSqlParser
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
 /**
@@ -806,8 +805,7 @@ class ColumnTableTest
         "         L_YEAR"
 
     // warmup runs
-    var plan1: LogicalPlan = null
-    var plan2: LogicalPlan = null
+    var plan: LogicalPlan = null
     val conn = DriverManager.getConnection("jdbc:snappydata:")
         .asInstanceOf[EmbedConnection]
     conn.setupContextStack(true)
@@ -822,36 +820,22 @@ class ColumnTableTest
       var start: Double = 0.0
       var end: Double = 0.0
       var elapsed: Double = 0.0
-      val warmupRuns = 10000
+      val warmupRuns = 20000
       val timedRuns = 5000
-      val parser = new SparkSqlParser(snc.conf)
-      println(s"Warmup runs for SparkSQL parser ...")
-      for (i <- 0 until 20) {
-        plan1 = parser.parsePlan(sqlText)
-      }
-      println(s"Done with warmup runs")
-      start = System.nanoTime()
-      for (i <- 0 until 30) {
-        plan1 = parser.parsePlan(sqlText)
-      }
-      end = System.nanoTime()
-      elapsed = (end - start) / 1000000.0
-      println(s"Time taken by SparkSQL parser for 30 runs = ${elapsed}ms " +
-          s"average=${elapsed / 30}ms")
-      println()
 
+      println()
       println(s"===============  Comparing $timedRuns runs  ===============")
       println()
 
       println(s"Warmup runs for Snappy parser ...")
       val sqlParser = snc.sessionState.sqlParser
       for (i <- 0 until warmupRuns) {
-        plan2 = sqlParser.parsePlan(sqlText)
+        plan = sqlParser.parsePlan(sqlText)
       }
       println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
-        plan2 = sqlParser.parsePlan(sqlText)
+        plan = sqlParser.parsePlan(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0
@@ -878,12 +862,12 @@ class ColumnTableTest
       val sparkSession = new SparkSession(sc)
       val sparkParser = sparkSession.sessionState.sqlParser
       for (i <- 0 until warmupRuns) {
-        plan2 = sparkParser.parsePlan(sqlText)
+        plan = sparkParser.parsePlan(sqlText)
       }
       println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
-        plan2 = sparkParser.parsePlan(sqlText)
+        plan = sparkParser.parsePlan(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0

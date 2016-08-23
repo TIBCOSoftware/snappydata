@@ -250,21 +250,21 @@ To create a job that can be submitted through the job server, the job must imple
 ```scala
 class SnappySampleJob implements SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
-  def runJob(sc: SnappyContext, jobConfig: Config): Any
+  def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def validate(sc: SnappyContext, config: Config): SparkJobValidation
+  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
 }
 ```
 
 ###### Java
 ```java
-class SnappySampleJob extends JavaSnappySQLJob {
+class SnappySampleJob extends SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
-  public Object runJavaJob(SnappyContext snc, Config jobConfig) {//Implementation}
+  public Object runSnappyJob(SnappyContext snc, Config jobConfig) {//Implementation}
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  public JSparkJobValidation isValidJob(SnappyContext snc, Config config) {//validate}
+  public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {//validate}
 }
 
 ```
@@ -273,10 +273,10 @@ class SnappySampleJob extends JavaSnappySQLJob {
 ```scala
 class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
-  def runJob(sc: SnappyStreamingContext, jobConfig: Config): Any
+  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def validate(sc: SnappyContext, config: Config): SparkJobValidation
+  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
 }
 ```
 
@@ -284,24 +284,22 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
 ```java
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
-  public Object runJavaJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
+  public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig)
+  public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig)
   {//validate}
 }
 ```
 
 > The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
-• ```runJob```/```runJavaJob``` contains the implementation of the Job.
+• ```runSnappyJob``` contains the implementation of the Job.
 The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
 
-• ```validate```/```isValidJob``` allows for an initial validation of the context and any provided configuration.
- If the context and configuration are OK to run the job, returning spark.jobserver.SparkJobValid
- (org.apache.spark.sql.JSparkJobValid for Java)
-  will let the job execute, otherwise returning spark.jobserver.SparkJobInvalid(reason)
-  (org.apache.spark.sql.JSparkJobInvalid for Java) prevents
+• ```isValidJob``` allows for an initial validation of the context and any provided configuration.
+ If the context and configuration are OK to run the job, returning spark.jobserver.SnappyJobValid
+  will let the job execute, otherwise returning spark.jobserver.SnappyJobInvalid(reason) prevents
    the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.
 
 See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) for Spark and spark streaming jobs. 

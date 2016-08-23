@@ -11,7 +11,8 @@ class CubeRollupGroupingSetsTest extends SnappyFunSuite with BeforeAndAfterAll {
   private var testData: DataFrame = _
 
   override def beforeAll() {
-    val data = Seq(Seq(1, 2005, 12000), Seq(1, 2006, 18000), Seq(1, 2007, 25000), Seq(2, 2005, 15000), Seq(2, 2006, 6000), Seq(2, 2007, 25000))
+    val data = Seq(Seq(1, 2005, 12000), Seq(1, 2006, 18000), Seq(1, 2007, 25000),
+      Seq(2, 2005, 15000), Seq(2, 2006, 6000), Seq(2, 2007, 25000))
     val testRDD = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     testData = snc.createDataFrame(testRDD)
     snc.sql("Create table mytable (col1 INT, col2 INT, col3 INT)")
