@@ -16,22 +16,24 @@
  */
 package org.apache.spark.sql.execution.datasources
 
+import scala.collection.mutable
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
-import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
+import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
+import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
  * partitions of the datasource.
  */
-private[sql] object StoreDataSourceStrategy extends Strategy{
+private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
@@ -42,23 +44,17 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
         filters,
         t.numPartitions,
         t.partitionColumns,
-        (a, f) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray, f))) :: Nil
-
+        (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
+    case PhysicalOperation(projects, filters,
+    l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _)) =>
+      pruneFilterProject(
+        l,
+        projects,
+        filters,
+        0,
+        Seq.empty[String],
+        (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case _ => Nil
-  }
-
-  /**
-   * Convert RDD of Row into RDD of InternalRow with objects in catalyst types
-   */
-  private[this] def toCatalystRDD(
-      relation: LogicalRelation,
-      output: Seq[Attribute],
-      rdd: RDD[Row]): RDD[InternalRow] = {
-    if (relation.relation.needConversion) {
-      execution.RDDConversions.rowToRowRdd(rdd, output.map(_.dataType))
-    } else {
-      rdd.asInstanceOf[RDD[InternalRow]]
-    }
   }
 
   // Based on Public API.
@@ -78,8 +74,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
       (requestedColumns, _, pushedFilters) => {
         scanBuilder(requestedColumns, pushedFilters.toArray)
       })
-
-
   }
 
   // Based on Catalyst expressions.
@@ -94,9 +88,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
     val projectSet = AttributeSet(projects.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
 
-    val candidatePredicates = filterPredicates.map { _ transform {
-      case a: AttributeReference => relation.attributeMap(a) // Match original case of attributes.
-    }}
+    val candidatePredicates = filterPredicates.map {
+      _ transform {
+        case a: AttributeReference =>
+          relation.attributeMap(a) // Match original case of attributes.
+      }
+    }
 
     val (unhandledPredicates, pushedFilters) =
       selectFilters(relation.relation, candidatePredicates)
@@ -119,10 +116,18 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
 
     val joinedCols = partitionColumns.map(colName =>
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
-          .getOrElse {
-      throw new AnalysisException(
-        s"""Cannot resolve column name "$colName" among (${relation.output})""")
-    })
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    val metadata: Map[String, String] = if (numPartition > 0) {
+      Map.empty[String, String]
+    } else {
+      val pairs = mutable.ArrayBuffer.empty[(String, String)]
+      if (pushedFilters.nonEmpty) {
+        pairs += (DataSourceScanExec.PUSHED_FILTERS ->
+            pushedFilters.mkString("[", ", ", "]"))
+      }
+      pairs.toMap
+    }
 
     if (projects.map(_.toAttribute) == projects &&
         projectSet.size == projects.size &&
@@ -131,29 +136,43 @@ private[sql] object StoreDataSourceStrategy extends Strategy{
       // when the columns of this projection are enough to evaluate all filter conditions,
       // just do a scan followed by a filter, with no extra project.
       val requestedColumns =
-        projects.asInstanceOf[Seq[Attribute]] // Safe due to if above.
+      projects.asInstanceOf[Seq[Attribute]] // Safe due to if above.
           .map(relation.attributeMap) // Match original case of attributes.
           // Don't request columns that are only referenced by pushed filters.
           .filterNot(handledSet.contains)
 
-      val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
-        projects.map(_.toAttribute),
-        numPartition,
-        joinedCols,
-        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-        relation.relation)
+      val scan = if (numPartition > 0) {
+        execution.PartitionedPhysicalRDD.createFromDataSource(
+          projects.map(_.toAttribute),
+          numPartition,
+          joinedCols,
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation)
+      } else {
+        execution.DataSourceScanExec.create(
+          projects.map(_.toAttribute),
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation, metadata, relation.metastoreTableIdentifier)
+      }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
       // Don't request columns that are only referenced by pushed filters.
-      val requestedColumns =
-        (projectSet ++ filterSet -- handledSet).map(relation.attributeMap).toSeq
+      val requestedColumns = (projectSet ++ filterSet -- handledSet).map(
+        relation.attributeMap).toSeq
 
-      val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
-        requestedColumns,
-        numPartition,
-        joinedCols,
-        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-        relation.relation)
+      val scan = if (numPartition > 0) {
+        execution.PartitionedPhysicalRDD.createFromDataSource(
+          requestedColumns,
+          numPartition,
+          joinedCols,
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation)
+      } else {
+        execution.DataSourceScanExec.create(
+          requestedColumns,
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation, metadata, relation.metastoreTableIdentifier)
+      }
       execution.ProjectExec(projects,
         filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }

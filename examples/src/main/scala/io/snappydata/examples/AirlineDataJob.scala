@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.examples
 
 import java.io.PrintWriter
@@ -5,10 +22,9 @@ import java.io.PrintWriter
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SnappyContext, DataFrame, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Fetches already created tables. Airline table is already persisted in
@@ -19,7 +35,7 @@ import org.apache.spark.sql.{SnappyContext, DataFrame, SnappySQLJob}
  */
 object AirlineDataJob extends SnappySQLJob {
 
-  override def runJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"
@@ -112,7 +128,5 @@ object AirlineDataJob extends SnappySQLJob {
     // scalastyle:on println
   }
 
-  override def validate(sc: C, config: Config): SparkJobValidation = {
-    SparkJobValid
-  }
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
