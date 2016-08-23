@@ -37,32 +37,40 @@ package org.apache.zeppelin.interpreter;
 
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import scala.collection.Seq;
-import scala.collection.convert.WrapAsJava$;
+import com.google.common.base.Joiner;
+
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkEnv;
+
+import org.apache.spark.SecurityManager;
 import org.apache.spark.repl.SparkILoop;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.DAGScheduler;
 import org.apache.spark.scheduler.Pool;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SnappyContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.ui.jobs.JobProgressListener;
+import org.apache.zeppelin.interpreter.Interpreter;
+import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.interpreter.InterpreterException;
+import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.InterpreterUtils;
+import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
@@ -72,25 +80,30 @@ import org.apache.zeppelin.spark.ZeppelinContext;
 import org.apache.zeppelin.spark.dep.SparkDependencyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Console;
+
+import scala.*;
 import scala.Enumeration.Value;
-import scala.None;
-import scala.Some;
-import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConversions;
 import scala.collection.JavaConverters;
+import scala.collection.Seq;
+import scala.collection.convert.WrapAsJava$;
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 import scala.reflect.io.AbstractFile;
+import scala.tools.nsc.Global;
 import scala.tools.nsc.Settings;
 import scala.tools.nsc.interpreter.Completion.Candidates;
 import scala.tools.nsc.interpreter.Completion.ScalaCompleter;
+import scala.tools.nsc.interpreter.IMain;
+import scala.tools.nsc.interpreter.Results;
 import scala.tools.nsc.settings.MutableSettings;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
-import org.apache.zeppelin.interpreter.Interpreter.FormType;
 
+import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.scheduler.Scheduler;
+import org.apache.zeppelin.interpreter.Interpreter.FormType;
 
 /**
  * Most of the contents of this class is borrowed from Spark Interpreter in zeppelin
@@ -98,67 +111,36 @@ import org.apache.zeppelin.interpreter.Interpreter.FormType;
  */
 public class SnappyDataZeppelinInterpreter extends Interpreter {
   public static Logger logger = LoggerFactory.getLogger(SnappyDataZeppelinInterpreter.class);
-
-  public SnappyDataZeppelinInterpreter(Properties property) {
-    super(property);
-  }
-
-  @Override
-  public void open() {
-  }
-
-  @Override
-  public void close() {
-  }
-
-  @Override
-  public InterpreterResult interpret(String s, InterpreterContext interpreterContext) {
-    return null;
-  }
-
-  @Override
-  public void cancel(InterpreterContext interpreterContext) {
-  }
-
-  @Override
-  public FormType getFormType() {
-    return null;
-  }
-
-  @Override
-  public int getProgress(InterpreterContext interpreterContext) {
-    return 0;
-  }
-
-  public SparkILoop getReplInterpreter() {
-    return null;
-  }
-
-  // TODO: SW: entire class needs rework
-
-  /*
   private ZeppelinContext z;
-  private static SparkILoop interpreter;
-  private static SparkIMain intp;
+  private SparkILoop interpreter;
+  /**
+   * intp - scala.tools.nsc.interpreter.IMain; (scala 2.11)
+   */
+  private Object intp;
+  private SparkConf conf;
   private static SparkContext sc;
-  private static SQLContext sqlc;
+  private static SnappyContext snc;
   private static SparkEnv env;
+  private static SparkSession sparkSession;    // spark 2.x
   private static JobProgressListener sparkListener;
-  private static AbstractFile classOutputDir;
   private static Integer sharedInterpreterLock = new Integer(0);
-  private static AtomicInteger numReferenceOfSparkContext = new AtomicInteger(0);
 
-  private static SparkOutputStream out;
+
+  private SparkOutputStream out;
   private SparkDependencyResolver dep;
-  private SparkJLineCompletion completor;
 
+  /**
+   * completer - org.apache.spark.repl.SparkJLineCompletion (scala 2.10)
+   */
+  private Object completer = null;
   private Map<String, Object> binder;
   private SparkVersion sparkVersion;
-  private Settings settings = new Settings();
+  private File outputDir;          // class outputdir for scala 2.11
+
 
   public SnappyDataZeppelinInterpreter(Properties property) {
     super(property);
-
+    out = new SparkOutputStream(logger);
   }
 
   public SnappyDataZeppelinInterpreter(Properties property, SparkContext sc) {
@@ -225,22 +207,32 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return pl;
   }
 
-  private boolean useHiveContext() {
-    return Boolean.parseBoolean(getProperty("zeppelin.spark.useHiveContext"));
+  private boolean importImplicit() {
+    return java.lang.Boolean.parseBoolean(getProperty("zeppelin.spark.importImplicit"));
   }
 
-  public SQLContext getSQLContext() {
-    if (SnappyContext.globalSparkContext() != null) {
-      return new SnappyContext(SnappyContext.globalSparkContext());
-    }else{
-      return new SnappyContext(sc);
+  public SparkSession getSparkSession() {
+    synchronized (sharedInterpreterLock) {
+      if (sparkSession == null) {
+        sparkSession = createSparkSession();
+      }
+      return sparkSession;
+    }
+  }
+
+  public SnappyContext getSnappyContext() {
+    synchronized (sharedInterpreterLock) {
+      SnappyContext snc = new SnappyContext(getSparkContext());
+      return snc;
     }
   }
 
 
   public SparkDependencyResolver getDependencyResolver() {
     if (dep == null) {
-      dep = new SparkDependencyResolver(intp,
+      dep = new SparkDependencyResolver(
+          (Global)ZeppelinIntpUtil.invokeMethod(intp, "global"),
+          (ClassLoader)ZeppelinIntpUtil.invokeMethod(ZeppelinIntpUtil.invokeMethod(intp, "classLoader"), "getParent"),
           sc,
           getProperty("zeppelin.dep.localrepo"),
           getProperty("zeppelin.dep.additionalRemoteRepository"));
@@ -248,66 +240,241 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return dep;
   }
 
-  public SparkContext createSparkContext() {
-    logger.info("------ Create new SparkContext {} -------", getProperty("master"));
 
-    if (null != interpreter && null != SnappyContext.globalSparkContext()) {
-      return SnappyContext.globalSparkContext();
-    }else{
-      Properties props=ZeppelinIntpUtil.initializeZeppelinReplAndGetConfig();
+  /**
+   * Spark 2.x
+   * Create SparkSession
+   */
+  public SparkSession createSparkSession() {
+    logger.info("------ Create new SparkSession {} -------", getProperty("master"));
 
-      String[] jars = SparkILoop.getAddedJars();
-      SparkConf conf =
-          new SparkConf()
-              .setMaster(getProperty("master"))
-              .setAppName(getProperty("spark.app.name"));
+    if (null != SnappyContext.globalSparkContext()) {
+      SparkSession.Builder sessionBuilder = SparkSession.builder().sparkContext(SnappyContext.globalSparkContext());
+      SparkSession session = sessionBuilder.getOrCreate();
+      return session;
+    } else {
+      //This is needed is user is using Snappydata interpreter without installing cluster
+      String execUri = System.getenv("SPARK_EXECUTOR_URI");
+      conf.setAppName(getProperty("spark.app.name"));
+
+      conf.set("spark.repl.class.outputDir", outputDir.getAbsolutePath());
+
+      if (execUri != null) {
+        conf.set("spark.executor.uri", execUri);
+      }
+
+      if (System.getenv("SPARK_HOME") != null) {
+        conf.setSparkHome(System.getenv("SPARK_HOME"));
+      }
+
       conf.set("spark.scheduler.mode", "FAIR");
+      conf.setMaster(getProperty("master"));
 
-      if (jars.length > 0) {
-        conf.setJars(jars);
+      Properties intpProperty = getProperty();
+
+      for (Object k : intpProperty.keySet()) {
+        String key = (String)k;
+        String val = toString(intpProperty.get(key));
+        if (!key.startsWith("spark.") || !val.trim().isEmpty()) {
+          logger.debug(String.format("SparkConf: key = [%s], value = [%s]", key, val));
+          conf.set(key, val);
+        }
       }
-      for(Map.Entry entry:props.entrySet()){
-        conf.set(entry.getKey().toString(),entry.getValue().toString());
-      }
-      return new SparkContext(conf);
+
+      //Class SparkSession = ZeppelinIntpUtil.findClass("org.apache.spark.sql.SparkSession");
+      SparkSession.Builder builder = SparkSession.builder();
+      builder.config(conf);
+
+      sparkSession = builder.getOrCreate();
+
+      return sparkSession;
+
     }
+
   }
+
+  public SparkContext createSparkContext() {
+    return sparkSession.sparkContext();
+
+  }
+
 
   static final String toString(Object o) {
     return (o instanceof String) ? (String)o : "";
   }
 
-  private boolean useSparkSubmit() {
-    return null != System.getenv("SPARK_SUBMIT");
-  }
-
-  public static String getSystemDefault(
-      String envName,
-      String propertyName,
-      String defaultValue) {
-
-    if (envName != null && !envName.isEmpty()) {
-      String envValue = System.getenv().get(envName);
-      if (envValue != null) {
-        return envValue;
-      }
-    }
-
-    if (propertyName != null && !propertyName.isEmpty()) {
-      String propValue = System.getProperty(propertyName);
-      if (propValue != null) {
-        return propValue;
-      }
-    }
-    return defaultValue;
-  }
 
   @Override
   public void open() {
 
-    synchronized (sharedInterpreterLock) {
-      sc = getSparkContext();
+    // set properties and do login before creating any spark stuff for secured cluster
+    if (getProperty("master").equals("yarn-client")) {
+      System.setProperty("SPARK_YARN_MODE", "true");
+    }
+    if (getProperty().containsKey("spark.yarn.keytab") &&
+        getProperty().containsKey("spark.yarn.principal")) {
+      try {
+        String keytab = getProperty().getProperty("spark.yarn.keytab");
+        String principal = getProperty().getProperty("spark.yarn.principal");
+        UserGroupInformation.loginUserFromKeytab(principal, keytab);
+      } catch (IOException e) {
+        throw new RuntimeException("Can not pass kerberos authentication", e);
+      }
+    }
 
+    conf = new SparkConf();
+    URL[] urls = getClassloaderUrls();
+
+    // Very nice discussion about how scala compiler handle classpath
+    // https://groups.google.com/forum/#!topic/scala-user/MlVwo2xCCI0
+
+    /*
+     * > val env = new nsc.Settings(errLogger) > env.usejavacp.value = true > val p = new
+     * Interpreter(env) > p.setContextClassLoader > Alternatively you can set the class path through
+     * nsc.Settings.classpath.
+     *
+     * >> val settings = new Settings() >> settings.usejavacp.value = true >>
+     * settings.classpath.value += File.pathSeparator + >> System.getProperty("java.class.path") >>
+     * val in = new Interpreter(settings) { >> override protected def parentClassLoader =
+     * getClass.getClassLoader >> } >> in.setContextClassLoader()
+     */
+    Settings settings = new Settings();
+
+    // process args
+    String args = getProperty("args");
+    if (args == null) {
+      args = "";
+    }
+
+    String[] argsArray = args.split(" ");
+    LinkedList<String> argList = new LinkedList<String>();
+    for (String arg : argsArray) {
+      argList.add(arg);
+    }
+
+    String sparkReplClassDir = getProperty("spark.repl.classdir");
+    if (sparkReplClassDir == null) {
+      sparkReplClassDir = System.getProperty("spark.repl.classdir");
+    }
+    if (sparkReplClassDir == null) {
+      sparkReplClassDir = System.getProperty("java.io.tmpdir");
+    }
+
+    outputDir = createTempDir(sparkReplClassDir);
+
+    argList.add("-Yrepl-class-based");
+    argList.add("-Yrepl-outdir");
+    argList.add(outputDir.getAbsolutePath());
+
+
+    scala.collection.immutable.List<String> list =
+        JavaConversions.asScalaBuffer(argList).toList();
+
+    settings.processArguments(list, true);
+
+
+    // set classpath for scala compiler
+    PathSetting pathSettings = settings.classpath();
+    String classpath = "";
+    List<File> paths = currentClassPath();
+    for (File f : paths) {
+      if (classpath.length() > 0) {
+        classpath += File.pathSeparator;
+      }
+      classpath += f.getAbsolutePath();
+    }
+
+    if (urls != null) {
+      for (URL u : urls) {
+        if (classpath.length() > 0) {
+          classpath += File.pathSeparator;
+        }
+        classpath += u.getFile();
+      }
+    }
+
+    // add dependency from local repo
+    String localRepo = getProperty("zeppelin.interpreter.localRepo");
+    if (localRepo != null) {
+      File localRepoDir = new File(localRepo);
+      if (localRepoDir.exists()) {
+        File[] files = localRepoDir.listFiles();
+        if (files != null) {
+          for (File f : files) {
+            if (classpath.length() > 0) {
+              classpath += File.pathSeparator;
+            }
+            classpath += f.getAbsolutePath();
+          }
+        }
+      }
+    }
+
+    pathSettings.v_$eq(classpath);
+    settings.scala$tools$nsc$settings$ScalaSettings$_setter_$classpath_$eq(pathSettings);
+
+
+    // set classloader for scala compiler
+    settings.explicitParentLoader_$eq(new Some<ClassLoader>(Thread.currentThread()
+        .getContextClassLoader()));
+    BooleanSetting b = (BooleanSetting)settings.usejavacp();
+    b.v_$eq(true);
+    settings.scala$tools$nsc$settings$StandardScalaSettings$_setter_$usejavacp_$eq(b);
+
+    /* Required for scoped mode.
+     * In scoped mode multiple scala compiler (repl) generates class in the same directory.
+     * Class names is not randomly generated and look like '$line12.$read$$iw$$iw'
+     * Therefore it's possible to generated class conflict(overwrite) with other repl generated
+     * class.
+     *
+     * To prevent generated class name conflict,
+     * change prefix of generated class name from each scala compiler (repl) instance.
+     *
+     * In Spark 2.x, REPL generated wrapper class name should compatible with the pattern
+     * ^(\$line(?:\d+)\.\$read)(?:\$\$iw)+$
+     */
+    System.setProperty("scala.repl.name.line", "$line" + this.hashCode());
+
+    // To prevent 'File name too long' error on some file system.
+    MutableSettings.IntSetting numClassFileSetting = settings.maxClassfileName();
+    numClassFileSetting.v_$eq(128);
+    settings.scala$tools$nsc$settings$ScalaSettings$_setter_$maxClassfileName_$eq(
+        numClassFileSetting);
+
+    synchronized (sharedInterpreterLock) {
+      /* create scala repl */
+
+      this.interpreter = new SparkILoop((java.io.BufferedReader)null, new PrintWriter(out));
+
+      interpreter.settings_$eq(settings);
+
+      interpreter.createInterpreter();
+
+      intp = ZeppelinIntpUtil.invokeMethod(interpreter, "intp");
+      ZeppelinIntpUtil.invokeMethod(intp, "setContextClassLoader");
+      ZeppelinIntpUtil.invokeMethod(intp, "initializeSynchronous");
+
+
+      if (ZeppelinIntpUtil.findClass("org.apache.spark.repl.SparkJLineCompletion", true) != null) {
+        completer = ZeppelinIntpUtil.instantiateClass(
+            "org.apache.spark.repl.SparkJLineCompletion",
+            new Class[]{ZeppelinIntpUtil.findClass("org.apache.spark.repl.SparkIMain")},
+            new Object[]{intp});
+      } else if (ZeppelinIntpUtil.findClass(
+          "scala.tools.nsc.interpreter.PresentationCompilerCompleter", true) != null) {
+        completer = ZeppelinIntpUtil.instantiateClass(
+            "scala.tools.nsc.interpreter.PresentationCompilerCompleter",
+            new Class[]{IMain.class},
+            new Object[]{intp});
+      } else if (ZeppelinIntpUtil.findClass(
+          "scala.tools.nsc.interpreter.JLineCompletion", true) != null) {
+        completer = ZeppelinIntpUtil.instantiateClass(
+            "scala.tools.nsc.interpreter.JLineCompletion",
+            new Class[]{IMain.class},
+            new Object[]{intp});
+      }
+      sparkSession = getSparkSession();
+      sc = getSparkContext();
       if (sc.getPoolForName("fair").isEmpty()) {
         Value schedulingMode = org.apache.spark.scheduler.SchedulingMode.FAIR();
         int minimumShare = 0;
@@ -318,39 +485,87 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
       sparkVersion = SparkVersion.fromVersionString(sc.version());
 
-      sqlc = getSQLContext();
+      snc = getSnappyContext();
 
       dep = getDependencyResolver();
 
-      z = new ZeppelinContext(sc, sqlc, null, dep,
+      z = new ZeppelinContext(sc, snc, null, dep,
           Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
 
-      intp.interpret("@transient var _binder = new java.util.HashMap[String, Object]()");
-      binder = (Map<String, Object>)getValue("_binder");
+      interpret("@transient val _binder = new java.util.HashMap[String, Object]()");
+      Map<String, Object> binder;
+
+      binder = (Map<String, Object>)getLastObject();
       binder.put("sc", sc);
-      binder.put("snc", sqlc);
+      binder.put("snc", snc);
       binder.put("z", z);
 
-      intp.interpret("@transient val z = "
-          + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.spark.ZeppelinContext]");
-      intp.interpret("@transient val sc = "
-          + "_binder.get(\"sc\").asInstanceOf[org.apache.spark.SparkContext]");
-      intp.interpret("@transient val snc = "
-          + "_binder.get(\"snc\").asInstanceOf[org.apache.spark.sql.SnappyContext]");
-      intp.interpret("@transient val sqlContext = "
-          + "_binder.get(\"snc\").asInstanceOf[org.apache.spark.sql.SnappyContext]");
-      intp.interpret("import org.apache.spark.SparkContext._");
-      intp.interpret("import org.apache.spark.sql.SnappyContext._");
-      if (sparkVersion.oldSqlContextImplicits()) {
-        intp.interpret("import sqlContext._");
-      } else {
-        intp.interpret("import sqlContext.implicits._");
-        intp.interpret("import sqlContext.sql");
-        intp.interpret("import org.apache.spark.sql.functions._");
-      }
+      binder.put("spark", sparkSession);
 
+
+      interpret("@transient val z = "
+          + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.spark.ZeppelinContext]");
+      interpret("@transient val sc = "
+          + "_binder.get(\"sc\").asInstanceOf[org.apache.spark.SparkContext]");
+      // Injecting SnappyContext in repl
+      interpret("@transient val snc = "
+          + "_binder.get(\"snc\").asInstanceOf[org.apache.spark.sql.SnappyContext]");
+      interpret("@transient val snappyContext = "
+          + "_binder.get(\"snc\").asInstanceOf[org.apache.spark.sql.SnappyContext]");
+
+      interpret("@transient val spark = "
+          + "_binder.get(\"spark\").asInstanceOf[org.apache.spark.sql.SparkSession]");
+
+      interpret("import org.apache.spark.SparkContext._");
+      interpret("import org.apache.spark.sql.SnappyContext._");
+      interpret("import org.apache.spark.sql.{Row, SaveMode, SnappyContext}");
+      if (importImplicit()) {
+        interpret("import spark.implicits._");
+        interpret("import spark.sql");
+        interpret("import org.apache.spark.sql.functions._");
+
+      }
     }
 
+    /* Temporary disabling DisplayUtils. see https://issues.apache.org/jira/browse/ZEPPELIN-127
+     *
+    // Utility functions for display
+    intp.interpret("import org.apache.zeppelin.spark.utils.DisplayUtils._");
+
+    // Scala implicit value for spark.maxResult
+    intp.interpret("import org.apache.zeppelin.spark.utils.SparkMaxResult");
+    intp.interpret("implicit val sparkMaxResult = new SparkMaxResult(" +
+            Integer.parseInt(getProperty("zeppelin.spark.maxResult")) + ")");
+     */
+
+
+    // add jar from local repo
+    if (localRepo != null) {
+      File localRepoDir = new File(localRepo);
+      if (localRepoDir.exists()) {
+        File[] files = localRepoDir.listFiles();
+        if (files != null) {
+          for (File f : files) {
+            if (f.getName().toLowerCase().endsWith(".jar")) {
+              sc.addJar(f.getAbsolutePath());
+              logger.info("sc.addJar(" + f.getAbsolutePath() + ")");
+            } else {
+              sc.addFile(f.getAbsolutePath());
+              logger.info("sc.addFile(" + f.getAbsolutePath() + ")");
+            }
+          }
+        }
+      }
+    }
+
+  }
+
+  private Results.Result interpret(String line) {
+    return (Results.Result)ZeppelinIntpUtil.invokeMethod(
+        intp,
+        "interpret",
+        new Class[]{String.class},
+        new Object[]{line});
   }
 
   private List<File> currentClassPath() {
@@ -382,9 +597,13 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return paths;
   }
 
-
   @Override
   public List<InterpreterCompletion> completion(String buf, int cursor) {
+    if (completer == null) {
+      logger.warn("Can't find completer");
+      return new LinkedList<InterpreterCompletion>();
+    }
+
     if (buf.length() < cursor) {
       cursor = buf.length();
     }
@@ -393,7 +612,8 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
       completionText = "";
       cursor = completionText.length();
     }
-    ScalaCompleter c = completor.completer();
+
+    ScalaCompleter c = (ScalaCompleter)ZeppelinIntpUtil.invokeMethod(completer, "completer");
     Candidates ret = c.complete(completionText, cursor);
 
     List<String> candidates = WrapAsJava$.MODULE$.seqAsJavaList(ret.candidates());
@@ -405,7 +625,6 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
     return completions;
   }
-
 
   private String getCompletionTargetString(String text, int cursor) {
     String[] completionSeqCharaters = {" ", "\n", "\t"};
@@ -445,15 +664,15 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return resultCompletionText;
   }
 
-  public Object getValue(String name) {
-    Object ret = intp.valueOfTerm(name);
-    if (ret instanceof None) {
+
+  public Object getLastObject() {
+    IMain.Request r = (IMain.Request)ZeppelinIntpUtil.invokeMethod(intp, "lastRequest");
+    if (r == null || r.lineRep() == null) {
       return null;
-    } else if (ret instanceof Some) {
-      return ((Some)ret).get();
-    } else {
-      return ret;
     }
+    Object obj = r.lineRep().call("$result",
+        JavaConversions.asScalaBuffer(new LinkedList<Object>()));
+    return obj;
   }
 
   String getJobGroup(InterpreterContext context) {
@@ -462,7 +681,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
   /**
    * Interpret a single line.
-   *
+   */
   @Override
   public InterpreterResult interpret(String line, InterpreterContext context) {
     if (sparkVersion.isUnsupportedVersion()) {
@@ -487,8 +706,6 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     }
   }
 
-
-  //This method has snappydata related changes
   public InterpreterResult interpretInput(String[] lines, InterpreterContext context) {
     SparkEnv.set(env);
 
@@ -521,9 +738,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
         } else if (!inComment && nextLine.startsWith("/*")) {
           inComment = true;
           continuation = true;
-*/
-        //} else if (inComment && nextLine.lastIndexOf("*/") >= 0) {
-/*
+        } else if (inComment && nextLine.lastIndexOf("*/") >= 0) {
           inComment = false;
           continuation = true;
         } else if (nextLine.length() > 1
@@ -542,7 +757,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
 
       scala.tools.nsc.interpreter.Results.Result res = null;
       try {
-        res = intp.interpret(incomplete + s);
+        res = interpret(incomplete + s);
       } catch (Exception e) {
         sc.clearJobGroup();
         out.setInterpreterOutput(null);
@@ -563,6 +778,13 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
       }
     }
 
+    // make sure code does not finish with comment
+    if (r == Code.INCOMPLETE) {
+      scala.tools.nsc.interpreter.Results.Result res = null;
+      res = interpret(incomplete + "\nprint(\"\")");
+      r = getResultCode(res);
+    }
+
     if (r == Code.INCOMPLETE) {
       sc.clearJobGroup();
       out.setInterpreterOutput(null);
@@ -573,7 +795,6 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
       return new InterpreterResult(Code.SUCCESS);
     }
   }
-
 
   @Override
   public void cancel(InterpreterContext context) {
@@ -624,6 +845,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return completedTasks * 100 / totalTasks;
   }
 
+
   private int[] getProgressFromStage_1_0x(JobProgressListener sparkListener, Object stage)
       throws IllegalAccessException, IllegalArgumentException,
       InvocationTargetException, NoSuchMethodException, SecurityException {
@@ -669,7 +891,7 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
           this.getClass().forName("org.apache.spark.ui.jobs.UIData$StageUIData");
 
       Method numCompletedTasks = stageUIDataClass.getMethod("numCompleteTasks");
-      Set<Tuple2<Object, Object>> keys =
+      java.util.Set<Tuple2<Object, Object>> keys =
           JavaConverters.setAsJavaSetConverter(stageIdData.keySet()).asJava();
       for (Tuple2<Object, Object> k : keys) {
         if (id == (int)k._1()) {
@@ -703,18 +925,11 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     }
   }
 
-  /*
-  Override and keep close method empty to avoid closing spark context
-   *
   @Override
   public void close() {
-
+    ZeppelinIntpUtil.invokeMethod(intp, "close");
   }
 
-  /**
-   *
-   * @return
-   *
   @Override
   public FormType getFormType() {
     return FormType.NATIVE;
@@ -734,127 +949,10 @@ public class SnappyDataZeppelinInterpreter extends Interpreter {
     return z;
   }
 
-  public SparkVersion getSparkVersion() {
-    return sparkVersion;
+
+  private File createTempDir(String dir) {
+    return ZeppelinIntpUtil.getTempDir();
   }
 
-  //This method has snappydata related changes
-  private void initializeReplInterpreter() {
-    out = new SparkOutputStream();
-    URL[] urls = getClassloaderUrls();
 
-    Settings settings = new Settings();
-    if (getProperty("args") != null) {
-      String[] argsArray = getProperty("args").split(" ");
-      LinkedList<String> argList = new LinkedList<String>();
-      for (String arg : argsArray) {
-        argList.add(arg);
-      }
-
-      SparkCommandLine command =
-          new SparkCommandLine(JavaConversions.asScalaBuffer(
-              argList).toList());
-      settings = command.settings();
-    }
-
-    // set classpath for scala compiler
-    PathSetting pathSettings = settings.classpath();
-    String classpath = "";
-    List<File> paths = currentClassPath();
-    for (File f : paths) {
-      if (classpath.length() > 0) {
-        classpath += File.pathSeparator;
-      }
-      classpath += f.getAbsolutePath();
-    }
-
-    if (urls != null) {
-      for (URL u : urls) {
-        if (classpath.length() > 0) {
-          classpath += File.pathSeparator;
-        }
-        classpath += u.getFile();
-      }
-    }
-
-    // add dependency from local repo
-    String localRepo = getProperty("zeppelin.interpreter.localRepo");
-    if (localRepo != null) {
-      File localRepoDir = new File(localRepo);
-      if (localRepoDir.exists()) {
-        File[] files = localRepoDir.listFiles();
-        if (files != null) {
-          for (File f : files) {
-            if (classpath.length() > 0) {
-              classpath += File.pathSeparator;
-            }
-            classpath += f.getAbsolutePath();
-          }
-        }
-      }
-    }
-
-    pathSettings.v_$eq(classpath);
-    settings.scala$tools$nsc$settings$ScalaSettings$_setter_$classpath_$eq(pathSettings);
-
-
-    // set classloader for scala compiler
-    settings.explicitParentLoader_$eq(new Some<ClassLoader>(Thread.currentThread()
-        .getContextClassLoader()));
-    BooleanSetting b = (BooleanSetting)settings.usejavacp();
-    b.v_$eq(true);
-    settings.scala$tools$nsc$settings$StandardScalaSettings$_setter_$usejavacp_$eq(b);
-
-    System.setProperty("scala.repl.name.line", "line" + this.hashCode() + "$");
-
-    // To prevent 'File name too long' error on some file system.
-    MutableSettings.IntSetting numClassFileSetting = settings.maxClassfileName();
-    numClassFileSetting.v_$eq(128);
-    settings.scala$tools$nsc$settings$ScalaSettings$_setter_$maxClassfileName_$eq(
-        numClassFileSetting);
-
-
-    synchronized (sharedInterpreterLock) {
-      /* create scala repl *
-      this.interpreter = new SparkILoop(null, new PrintWriter(out));
-      interpreter.settings_$eq(settings);
-
-      interpreter.createInterpreter();
-
-      intp = interpreter.intp();
-      intp.setContextClassLoader();
-      intp.initializeSynchronous();
-
-      if (classOutputDir == null) {
-        classOutputDir = settings.outputDirs().getSingleOutput().get();
-      } else {
-        // change SparkIMain class output dir
-        settings.outputDirs().setSingleOutput(classOutputDir);
-        ClassLoader cl = intp.classLoader();
-
-        try {
-          Field rootField = cl.getClass().getSuperclass().getDeclaredField("root");
-          rootField.setAccessible(true);
-          rootField.set(cl, classOutputDir);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-          logger.error(e.getMessage(), e);
-        }
-      }
-
-      completor = new SparkJLineCompletion(intp);
-    }
-  }
-
-  /**
-   * This method is introduced for snappydata
-   *
-  public SparkILoop getReplInterpreter() {
-    if (interpreter != null) {
-      return interpreter;
-    } else {
-      initializeReplInterpreter();
-      return interpreter;
-    }
-  }
-  */
 }
