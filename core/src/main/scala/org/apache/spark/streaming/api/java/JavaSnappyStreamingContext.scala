@@ -23,17 +23,16 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkConf
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaSparkContext
-import org.apache.spark.api.java.function.{Function => JFunction, Function0 => JFunction0, Function2 => JFunction2}
+import org.apache.spark.api.java.function.{Function0 => JFunction0}
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.{SnappyContext, DataFrame}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{Dataset, Row, SnappySession}
 import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, SnappyStreamingContext, StreamingContext}
 
 class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext)
     extends JavaStreamingContext(snsc) {
 
-  def snappyContext = snsc.snappyContext
+  def snappySession: SnappySession = snsc.snappySession
 
   /**
    * Create a JavaSnappyStreamingContext using an existing SparkContext.
@@ -108,7 +107,7 @@ class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext)
     snsc.stop(stopSparkContext, stopGracefully)
   }
 
-  def sql(sqlText: String): DataFrame = snsc.sql(sqlText)
+  def sql(sqlText: String): Dataset[Row] = snsc.sql(sqlText)
 
   /**
    * Registers and executes given SQL query and
@@ -164,7 +163,7 @@ object JavaSnappyStreamingContext {
    */
   @Experimental
   def getActive(): Optional[JavaSnappyStreamingContext] = {
-    jcontextOptionToOptional(SnappyStreamingContext.getActive())
+    jcontextOptionToOptional(SnappyStreamingContext.getActive)
   }
 
   /**

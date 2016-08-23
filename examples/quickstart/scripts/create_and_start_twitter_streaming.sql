@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS topktable ;
 DROP TABLE IF EXISTS hashtagtable ;
 DROP TABLE IF EXISTS retweettable ;
 
-STREAMING INIT 2;
+STREAMING INIT 2secs;
 -- Provide twitter credentials (consumerKey,consumerSecret,accessToken,accessTokenSecret)
 -- in create stream table hashtagtable and retweettable.
 

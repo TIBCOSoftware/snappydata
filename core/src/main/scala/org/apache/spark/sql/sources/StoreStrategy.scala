@@ -19,44 +19,44 @@ package org.apache.spark.sql.sources
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
-import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 import org.apache.spark.sql.types.DataType
 
 /**
  * Support for DML and other operations on external tables.
- *
- * @author rishim
  */
 object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-    false, opts, allowExisting, _) =>
-      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
+        false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
+      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
-          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
+          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = true)) :: Nil
 
-    case CreateTableUsingAsSelect(tableIdent, provider, false,
-    partitionCols, mode, opts, query) =>
+    case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
+        bucketSpec, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
-      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
-        SnappyContext.getProvider(provider, onlyBuiltIn = false),
-        partitionCols, mode, opts, query, isBuiltIn = false)) :: Nil
+      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
+        None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
+        temporary = false, partitionCols, mode, opts, query,
+        isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
-      ExecutedCommand(create) :: Nil
+      ExecutedCommandExec(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommand(createSelect) :: Nil
+      ExecutedCommandExec(createSelect) :: Nil
     case drop: DropTable =>
-      ExecutedCommand(drop) :: Nil
+      ExecutedCommandExec(drop) :: Nil
 
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _), query) =>
-      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
+    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
+      ExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
 
     case _ => Nil
   }
@@ -66,7 +66,7 @@ private[sql] case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
     command: String) extends RunnableCommand {
 
-  def run(sqlContext: SQLContext): Seq[Row] = {
+  override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
       case relation: RowPutRelation => relation.executeUpdate(command)
@@ -76,7 +76,7 @@ private[sql] case class ExternalTableDMLCmd(
           "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
           " but found " + other)
     }
-    Seq.empty
+    Seq.empty[Row]
   }
 }
 
@@ -106,15 +106,16 @@ private[sql] case class PutIntoDataSource(
     query: LogicalPlan)
     extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val data = DataFrame(sqlContext, query)
+  override def run(session : SparkSession): Seq[Row] = {
+    val snappySession = session.asInstanceOf[SnappySession]
+    val data = Dataset.ofRows(snappySession, query)
     // Apply the schema of the existing table to the new data.
-    val df = sqlContext.internalCreateDataFrame(data.queryExecution.toRdd,
+    val df = snappySession.internalCreateDataFrame(data.queryExecution.toRdd,
       logicalRelation.schema)
     relation.put(df)
 
     // Invalidate the cache.
-    sqlContext.cacheManager.invalidateCache(logicalRelation)
+    snappySession.cacheManager.invalidateCache(logicalRelation)
 
     Seq.empty[Row]
   }

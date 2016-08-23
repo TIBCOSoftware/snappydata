@@ -20,11 +20,13 @@ import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.streaming.twitter.TwitterUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.twitter.TwitterUtils
+
 
 final class TwitterStreamSource extends StreamPlanProvider {
 
@@ -65,9 +67,8 @@ final class TwitterStreamRelation(
   }
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+    val encoder = RowEncoder(schema)
     TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-      filters, storageLevel).flatMap(rowConverter.toRows)
-        .map(converter(_).asInstanceOf[InternalRow])
+      filters, storageLevel).flatMap(rowConverter.toRows).map(encoder.toRow)
   }
 }

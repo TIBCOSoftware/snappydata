@@ -36,7 +36,7 @@ case class LogicalDStreamPlan(output: Seq[Attribute],
       stream)(streamingSnappy).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(streamingSnappy.snappyContext.conf.defaultSizeInBytes)
+    sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
   )
 
   def children: immutable.Nil.type = Nil
