@@ -638,8 +638,8 @@ class SnappyParser(session: SnappySession)
       }
       ).getOrElse(Project(expressions, withFilter))
       val withDistinct = d.asInstanceOf[Option[Boolean]] match {
-        case None => withProjection.asInstanceOf[UnaryNode]
-        case Some(_) => Distinct(withProjection.asInstanceOf[UnaryNode])
+        case None => withProjection
+        case Some(_) => Distinct(withProjection)
       }
       val withHaving = h.asInstanceOf[Option[Expression]]
           .map(Filter(_, withDistinct)).getOrElse(withDistinct)
