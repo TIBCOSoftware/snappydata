@@ -38,7 +38,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -108,15 +107,15 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+      filters: Array[Filter]): RDD[InternalRow] = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
       requiredColumns, filters)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
-  override def buildScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+  override def buildUnsafeScan(requiredColumns: Array[String],
+      filters: Array[Filter]): RDD[InternalRow] = {
     val colRdd = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
@@ -139,7 +138,7 @@ class BaseColumnFormatRelation(
           connProperties,
           filters,
           Array.empty[Partition]
-        ).asInstanceOf[RDD[Row]]
+        )
 
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
           leftItr ++ rightItr
@@ -155,7 +154,8 @@ class BaseColumnFormatRelation(
           requiredColumns,
           connProperties,
           filters
-        ).asInstanceOf[RDD[Row]]
+        )
+
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
           leftItr ++ rightItr
         }
