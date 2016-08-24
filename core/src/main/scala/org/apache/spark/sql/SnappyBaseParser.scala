@@ -392,6 +392,12 @@ object SnappyParserConsts {
   final val WEEK = new Keyword("week")
   final val YEAR = new Keyword("year")
 
+  // cube, rollup, grouping sets are not reserved
+  final val CUBE = new Keyword("cube")
+  final val ROLLUP = new Keyword("rollup")
+  final val GROUPING = new Keyword("grouping")
+  final val SETS = new Keyword("sets")
+
   // datatypes are not reserved
   final val ARRAY = new Keyword("array")
   final val BIGINT = new Keyword("bigint")
