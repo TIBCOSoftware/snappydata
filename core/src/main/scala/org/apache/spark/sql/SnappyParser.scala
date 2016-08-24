@@ -348,7 +348,7 @@ class SnappyParser(session: SnappySession)
       (d, s.asInstanceOf[Option[Duration]]))
   }
 
-  private final def extractGroupingSet(
+  protected final def extractGroupingSet(
       child: LogicalPlan,
       aggregations: Seq[NamedExpression],
       groupByExprs: Seq[Expression],
@@ -364,26 +364,26 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
-    '(' ~ ws ~ (expression + (',' ~ ws)) ~ ')' ~ ws ~>  ((gs: Seq[Expression]) => gs) |
-        (expression + (',' ~ ws))  ~>  ((gs: Seq[Expression]) => gs) |
+    '(' ~ ws ~ (expression + (',' ~ ws)) ~ ')' ~ ws |
+        (expression + (',' ~ ws)) |
         '(' ~ ws ~ ')'  ~>  (() => (Seq[Expression]()))
   }
 
-  protected final def cubeRollUpGroupingSet: Rule1[(Seq[Seq[Expression]], Option[String])] = rule {
+  protected final def cubeRollUpGroupingSet: Rule1[(Seq[Seq[Expression]], String)] = rule {
     WITH ~ (
-        CUBE ~> (() => (Seq(Seq[Expression]()), Option("CUBE"))) |
-        ROLLUP ~> (() => (Seq(Seq[Expression]()),Option("ROLLUP")))
+        CUBE ~> (() => (Seq(Seq[Expression]()), "CUBE")) |
+        ROLLUP ~> (() => (Seq(Seq[Expression]()), "ROLLUP"))
         ) |
     GROUPING ~ SETS ~ ('(' ~ ws ~ (groupingSetExpr + (',' ~ ws)) ~ ')' ~ ws)  ~>
-        ((gs: Seq[Seq[Expression]]) => (gs, Option("GROUPINGSETS")))
+        ((gs: Seq[Seq[Expression]]) => (gs, "GROUPINGSETS"))
   }
 
-  protected final def groupBy: Rule1[(Seq[Expression], Seq[Seq[Expression]],  Option[String])] = rule {
+  protected final def groupBy: Rule1[(Seq[Expression], Seq[Seq[Expression]],  String)] = rule {
     GROUP ~ BY ~ (expression + (',' ~ ws)) ~
         (cubeRollUpGroupingSet).? ~>
         ((groupingExpr: Any, crgs: Any) =>
-        { val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), Option("")) // if cube, rollup, GrSet is not used
-          val cubeRollupGrSetExprs = crgs.asInstanceOf[Option[(Seq[Seq[Expression]], Option[String])]].
+        { val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), "") // if cube, rollup, GrSet is not used
+          val cubeRollupGrSetExprs = crgs.asInstanceOf[Option[(Seq[Seq[Expression]], String)]].
               getOrElse(emptyCubeRollupGrSet)
           (groupingExpr.asInstanceOf[Seq[Expression]], cubeRollupGrSetExprs._1, cubeRollupGrSetExprs._2 )
         })
@@ -628,9 +628,9 @@ class SnappyParser(session: SnappySession)
           .getOrElse(base)
       val expressions = p.asInstanceOf[Seq[Expression]]
           .map(UnresolvedAlias(_, None))
-      val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], Option[String])]]
+      val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
       val withProjection = gr.map(x => {
-        x._3.get match {
+        x._3 match {
           // group by cols with rollup
           case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter)
           // group by cols with cube
