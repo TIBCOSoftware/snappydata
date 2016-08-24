@@ -21,6 +21,8 @@ import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.hadoop.fs.FileSystem
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -208,6 +210,14 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   // for the time being it will avoid ThreadLocal access to set SessionState.
   // protected val internalHiveclient = this.client.client
 
+  private def addFileSchemeToHivePaths(metadataConf : HiveConf) : HiveConf = {
+    var scratchDir = metadataConf.get(
+      HiveConf.ConfVars.SCRATCHDIR.varname)
+    scratchDir = new java.io.File(scratchDir).getCanonicalPath
+    metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, scratchDir)
+    metadataConf
+  }
+
   private def newClient(): HiveClient = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
@@ -223,6 +233,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
     }
     logInfo("Default warehouse location is " + warehouse)
+    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
@@ -249,7 +260,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
 
-    val allConfig = metadataConf.asScala.map(e =>
+    val fileSchemeChangedConf = addFileSchemeToHivePaths(metadataConf)
+    val allConfig = fileSchemeChangedConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
 
     val hiveMetastoreJars = this.hiveMetastoreJars()
