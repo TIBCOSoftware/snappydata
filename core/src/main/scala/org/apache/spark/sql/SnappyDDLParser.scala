@@ -163,10 +163,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
 
   //cube, rollup, grouping sets
-  final def CUBE = rule { keyword(Consts.CUBE) }
-  final def ROLLUP = rule { keyword(Consts.ROLLUP) }
-  final def GROUPING = rule { keyword(Consts.GROUPING) }
-  final def SETS = rule { keyword(Consts.SETS) }
+  final def CUBE: Rule0 = rule { keyword(Consts.CUBE) }
+  final def ROLLUP: Rule0 = rule { keyword(Consts.ROLLUP) }
+  final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
+  final def SETS: Rule0 = rule { keyword(Consts.SETS) }
 
   // DDLs, SET, SHOW etc
 
