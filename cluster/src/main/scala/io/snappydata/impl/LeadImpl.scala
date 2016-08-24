@@ -38,7 +38,7 @@ import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkException, Logging, SparkConf, SparkContext}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 
@@ -156,6 +156,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   }
 
+  @throws[SparkException]
   private[snappydata] def internalStart(sc: SparkContext): Unit = {
 
     val conf = sc.getConf // this will get you a cloned copy
@@ -183,6 +184,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
             logInfo("Primary lead lock acquired.")
           // let go.
           case false =>
+            if (!_directApiInvoked) {
+              throw new SparkException("Primary Lead node (Spark Driver) is already running in the system. " +
+                  "You may use split cluster mode to connect to SnappyData cluster.")
+            }
             serverstatus = State.STANDBY
             val callback = notifyStatusChange
             if (callback != null) {
@@ -342,25 +347,25 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     ActorSystem("SnappyLeadJobServer", conf)
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startNetworkServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Network server cannot be started on lead node.")
+    throw new SparkException("Network server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startThriftServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Thrift server cannot be started on lead node.")
+    throw new SparkException("Thrift server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startDRDAServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("DRDA server cannot be started on lead node.")
+    throw new SparkException("DRDA server cannot be started on lead node.")
   }
 
   override def stopAllNetworkServers(): Unit = {

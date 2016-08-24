@@ -20,9 +20,8 @@ import java.io.File
 
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
-import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.SnappySQLJob
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
@@ -31,9 +30,9 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
    var buckets_Cust_Part_PartSupp: String = _
    var buckets_Nation_Region_Supp: String = _
    var useIndex: Boolean = _
-   var nation_Region_Supp_col = false
+   var nation_Region_Supp_col: Boolean =  _
 
-   override def runJob(snc: C, jobConfig: Config): Any = {
+   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
      val props : Map[String, String] = null
      val isSnappy = true
 
@@ -63,7 +62,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
      }
    }
 
-   override def validate(sc: C, config: Config): SparkJobValidation = {
+   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
      tpchDataPath = if (config.hasPath("dataLocation")) {
        config.getString("dataLocation")
@@ -97,15 +96,15 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
      }
 
      if (!(new File(tpchDataPath)).exists()) {
-       return new SparkJobInvalid("Incorrect tpch data path. " +
+       return new SnappyJobInvalid("Incorrect tpch data path. " +
            "Specify correct location")
      }
 
      useIndex = if (config.hasPath("useIndex")) {
        config.getBoolean("useIndex")
      } else {
-       return new SparkJobInvalid("Specify whether to use Index")
+       return new SnappyJobInvalid("Specify whether to use Index")
      }
-     SparkJobValid
+     SnappyJobValid()
    }
  }

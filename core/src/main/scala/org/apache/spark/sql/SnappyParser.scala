@@ -348,6 +348,47 @@ class SnappyParser(session: SnappySession)
       (d, s.asInstanceOf[Option[Duration]]))
   }
 
+  protected final def extractGroupingSet(
+      child: LogicalPlan,
+      aggregations: Seq[NamedExpression],
+      groupByExprs: Seq[Expression],
+      groupingSets: Seq[Seq[Expression]]): GroupingSets = {
+    val keyMap = groupByExprs.zipWithIndex.toMap
+    val numExpressions = keyMap.size
+    val mask = (1 << numExpressions) - 1
+    val bitmasks: Seq[Int] = groupingSets.map(set => set.foldLeft(mask)((bitmap, col) => {
+      require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
+      bitmap & ~(1 << (numExpressions - 1 - keyMap(col)))
+    }))
+    GroupingSets(bitmasks, groupByExprs, child, aggregations)
+  }
+
+  protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression + (',' ~ ws)) ~ ')' ~ ws |
+        (expression + (',' ~ ws)) |
+        '(' ~ ws ~ ')'  ~>  (() => (Seq[Expression]()))
+  }
+
+  protected final def cubeRollUpGroupingSet: Rule1[(Seq[Seq[Expression]], String)] = rule {
+    WITH ~ (
+        CUBE ~> (() => (Seq(Seq[Expression]()), "CUBE")) |
+        ROLLUP ~> (() => (Seq(Seq[Expression]()), "ROLLUP"))
+        ) |
+    GROUPING ~ SETS ~ ('(' ~ ws ~ (groupingSetExpr + (',' ~ ws)) ~ ')' ~ ws)  ~>
+        ((gs: Seq[Seq[Expression]]) => (gs, "GROUPINGSETS"))
+  }
+
+  protected final def groupBy: Rule1[(Seq[Expression], Seq[Seq[Expression]],  String)] = rule {
+    GROUP ~ BY ~ (expression + (',' ~ ws)) ~
+        (cubeRollUpGroupingSet).? ~>
+        ((groupingExpr: Any, crgs: Any) =>
+        { val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), "") // if cube, rollup, GrSet is not used
+          val cubeRollupGrSetExprs = crgs.asInstanceOf[Option[(Seq[Seq[Expression]], String)]].
+              getOrElse(emptyCubeRollupGrSet)
+          (groupingExpr.asInstanceOf[Seq[Expression]], cubeRollupGrSetExprs._1, cubeRollupGrSetExprs._2 )
+        })
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ streamWindowOptions.? ~ (AS.? ~ identifier).? ~>
         ((tableIdent: TableIdentifier,
@@ -578,7 +619,7 @@ class SnappyParser(session: SnappySession)
     (namedExpression + (',' ~ ws)) ~
     (FROM ~ relations).? ~
     (WHERE ~ expression).? ~
-    (GROUP ~ BY ~ (expression + (',' ~ ws))).? ~
+    groupBy.? ~
     (HAVING ~ expression).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
@@ -587,9 +628,20 @@ class SnappyParser(session: SnappySession)
           .getOrElse(base)
       val expressions = p.asInstanceOf[Seq[Expression]]
           .map(UnresolvedAlias(_, None))
-      val withProjection = g.asInstanceOf[Option[Seq[Expression]]]
-          .map(Aggregate(_, expressions, withFilter))
-          .getOrElse(Project(expressions, withFilter))
+      val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
+      val withProjection = gr.map(x => {
+        x._3 match {
+          // group by cols with rollup
+          case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter)
+          // group by cols with cube
+          case "CUBE" => Aggregate(Seq(Cube(x._1)), expressions, withFilter)
+          // group by cols with grouping sets()()
+          case "GROUPINGSETS" => extractGroupingSet(withFilter, expressions, x._1, x._2)
+          // just "group by cols"
+          case _ => Aggregate(x._1, expressions, withFilter)
+        }
+      }
+      ).getOrElse(Project(expressions, withFilter))
       val withDistinct = d.asInstanceOf[Option[Boolean]] match {
         case None => withProjection
         case Some(_) => Distinct(withProjection)

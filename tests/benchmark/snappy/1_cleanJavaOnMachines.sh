@@ -2,10 +2,10 @@
 source PerfRun.conf
 
 echo "*****************Stop locator, server, lead***********************"
-sh $SnappyData/build-artifacts/scala-2.10/snappy/sbin/snappy-stop-all.sh
+sh $SnappyData/sbin/snappy-stop-all.sh
 
-rm -rf $SnappyData/build-artifacts/scala-2.10/snappy/work/*
-rm -rrf $SnappyData/build-artifacts/scala-2.10/snappy/conf/*
+rm -rf $SnappyData/work/*
+rm -rrf $SnappyData/conf/*
 
 # Below script is used only in cluster mode
 #echo "*****************kill java on lead**********************"

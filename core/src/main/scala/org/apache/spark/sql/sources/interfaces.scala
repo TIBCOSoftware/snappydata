@@ -18,6 +18,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -259,4 +260,23 @@ trait ExternalSchemaRelationProvider {
       parameters: Map[String, String],
       schema: String,
       data: Option[LogicalPlan]): BaseRelation
+}
+
+/**
+  * ::DeveloperApi::
+  * A BaseRelation that can eliminate unneeded columns and filter using selected
+  * predicates before producing an RDD containing all matching tuples as Unsafe Row objects.
+  *
+  * The actual filter should be the conjunction of all `filters`,
+  * i.e. they should be "and" together.
+  *
+  * The pushed down filters are currently purely an optimization as they will all be evaluated
+  * again.  This means it is safe to use them with methods that produce false positives such
+  * as filtering partitions based on a bloom filter.
+  *
+  * @since 1.3.0
+  */
+@DeveloperApi
+trait PrunedUnsafeFilteredScan {
+  def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[InternalRow]
 }
