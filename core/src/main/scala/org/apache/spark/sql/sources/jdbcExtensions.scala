@@ -282,6 +282,7 @@ object JdbcExtendedUtils extends Logging {
       getConnection: () => Connection,
       table: String,
       iterator: Iterator[InternalRow],
+      rddSchema: Array[DataType],
       tableSchema: StructType,
       dialect: JdbcDialect,
       batchSize: Int,
@@ -293,7 +294,7 @@ object JdbcExtendedUtils extends Logging {
         val stmt = insertStatement(conn, table, tableSchema, upsert)
         try {
           CodeGeneration.executeUpdate(table, stmt, iterator,
-            multipleRows = true, batchSize, tableSchema.fields, dialect)
+            multipleRows = true, batchSize, rddSchema, dialect)
         } finally {
           stmt.close()
         }
@@ -333,8 +334,9 @@ object JdbcExtendedUtils extends Logging {
       table, connProperties, forExecutor = true)
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
+    val rddSchema = df.schema.fields.map(_.dataType)
     df.queryExecution.toRdd.foreachPartition { iterator =>
-      savePartition(getConnection, table, iterator, tableSchema,
+      savePartition(getConnection, table, iterator, rddSchema, tableSchema,
         connProperties.dialect, batchSize, upsert)
     }
   }
