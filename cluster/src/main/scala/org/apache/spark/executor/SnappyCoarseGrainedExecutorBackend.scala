@@ -18,6 +18,7 @@ package org.apache.spark.executor
 
 import java.net.URL
 
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ExecutorInitiator
 
 import org.apache.spark.SparkEnv
@@ -53,9 +54,12 @@ class SnappyCoarseGrainedExecutorBackend(
    * but those functions will have to be brought in sync with CoarseGrainedExecutorBackend
    * after every merge.
    */
-  override protected def exitExecutor(code: Int,
+  override def exitExecutor(code: Int,
       reason: String, throwable: Throwable): Unit = {
     exitWithoutRestart()
+    // See if the VM is going down
+    GemFireStore.getBootingInstance.getGemFireCache.getCancelCriterion.
+        checkCancelInProgress(null)
     // Executor may fail to connect to the driver because of
     // https://issues.apache.org/jira/browse/SPARK-9820 and
     // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such
@@ -67,6 +71,7 @@ class SnappyCoarseGrainedExecutorBackend(
       logError(reasonStr, throwable)
     }
     ExecutorInitiator.restartExecutor()
+
   }
 
   def exitWithoutRestart(): Unit = {
