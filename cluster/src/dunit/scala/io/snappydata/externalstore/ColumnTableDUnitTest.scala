@@ -33,23 +33,37 @@ import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
  */
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val currenyLocatorPort = ClusterManagerTestBase.locPort
+  val currentLocatorPort = locPort
 
   def testTableCreation(): Unit = {
     startSparkJob()
   }
 
+  //After discussing with Namratam Commenting out this test as it causes other tests to fail
+/*
+
   def testTableCreationWithHA(): Unit = {
     val tableName = "TestTable"
     val snc = SnappyContext(sc)
 
-    createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
-    verifyTableData(snc , tableName)
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),
+      Seq(1, 2, 3), Seq(1, 2, 3), Seq(1, 2, 3), Seq(1, 2, 3), Seq(1, 2, 3), Seq(1, 2, 3))
+
+    //createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
+
+
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "column", dataDF.schema,
+      Map("BUCKETS" -> "3", "PERSISTENT" -> "async" , "REDUNDANCY" -> "2"))
+    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
+
+    verifyTableData(snc , tableName , 11)
 
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     val props = bootProps
-    val port = currenyLocatorPort
+    val port = currentLocatorPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
@@ -57,9 +71,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     vm2.invoke(restartServer)
 
-    verifyTableData(snc , tableName)
+    verifyTableData(snc , tableName , 11)
     dropTable(snc, tableName)
   }
+*/
+
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
@@ -276,10 +292,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
   }
 
-  def verifyTableData(snc: SnappyContext, tableName: String = tableName): Unit = {
+  def verifyTableData(snc: SnappyContext, tableName: String = tableName , resultLength:Int = 5): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 5)
+    assert(r.length == resultLength)
   }
 
   def dropTable(snc: SnappyContext, tableName: String = tableName): Unit = {
