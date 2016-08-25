@@ -120,11 +120,15 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    * For example, custom appender used by log4j.
    */
   protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
-    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, jdbcPrefixes())
+    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, snappyPrefixes())
         .filterNot(_ == "")
 
-  private def jdbcPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
-    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc")
+  /**
+   * Add any other classes which has already been loaded by base loader. As Hive Clients creates
+   * another class loader to load classes , it sometimes can give incorrect behaviour
+   */
+  private def snappyPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
+    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc", "com.mapr")
 
   /**
    * A comma separated list of class prefixes that should explicitly be
