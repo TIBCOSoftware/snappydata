@@ -52,7 +52,7 @@ trait ChangeValue[K, V] {
 
   def segmentEnd(segment: SegmentMap[K, V]) {}
 
-  def segmentAbort(segment: SegmentMap[K, V]) = false
+  def segmentAbort(segment: SegmentMap[K, V]): Boolean = false
 }
 
 object SegmentMap {

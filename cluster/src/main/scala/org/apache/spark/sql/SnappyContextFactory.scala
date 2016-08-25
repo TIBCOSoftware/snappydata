@@ -22,26 +22,8 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
+import org.apache.spark.util.{SnappyUtils, Utils}
 
-trait SnappySQLJob extends SparkJobBase {
-  type C = SnappyContext
-}
-
-object JavaJobValidate {
-  def validate(status: JSparkJobValidation): SparkJobValidation = {
-    status match {
-      case j: JSparkJobValid => SparkJobValid
-      case j: JSparkJobInvalid => SparkJobInvalid(j.reason)
-      case _ => SparkJobInvalid("isValid method is not correct")
-    }
-  }
-}
-
-trait JSparkJobValidation
-
-final class JSparkJobValid extends JSparkJobValidation
-
-case class JSparkJobInvalid(reason: String) extends JSparkJobValidation
 
 class SnappyContextFactory extends SparkContextFactory {
 
@@ -66,3 +48,44 @@ object SnappyContextFactory {
       }
     }
 }
+
+
+abstract class SnappySQLJob extends SparkJobBase {
+  type C = Any
+
+  final override def validate(sc: C, config: Config): SparkJobValidation = {
+    val parentLoader = Utils.getContextOrSparkClassLoader
+    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
+    Thread.currentThread().setContextClassLoader(currentLoader)
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyContext], config))
+  }
+
+  final override def runJob(sc: C, jobConfig: Config): Any = {
+    runSnappyJob(sc.asInstanceOf[SnappyContext], jobConfig)
+  }
+
+  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
+
+  def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
+
+  final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
+    SnappyUtils.installOrReplaceJar(jarName, jarPath, sc.asInstanceOf[SnappyContext].sparkContext)
+  }
+
+}
+
+object SnappyJobValidate {
+  def validate(status: SnappyJobValidation): SparkJobValidation = {
+    status match {
+      case j: SnappyJobValid => SparkJobValid
+      case j: SnappyJobInvalid => SparkJobInvalid(j.reason)
+      case _ => SparkJobInvalid("isValid method is not correct")
+    }
+  }
+}
+
+trait SnappyJobValidation
+
+case class SnappyJobValid() extends SnappyJobValidation
+
+case class SnappyJobInvalid(reason: String) extends SnappyJobValidation

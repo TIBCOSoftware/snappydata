@@ -4,7 +4,7 @@ source PerfRun.conf
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries$UseIndex
 mkdir $directory
 
-cp $SnappyData/build-artifacts/scala-2.10/snappy/work/$leads-lead-1/*.out $directory/
+cp $SnappyData/work/$leads-lead-1/*.out $directory/
 
 latestProp=$directory/latestProp.props
 

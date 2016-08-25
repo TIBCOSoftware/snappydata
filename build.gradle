@@ -46,6 +46,8 @@ allprojects {
 
   repositories {
     mavenCentral()
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'http://repository.snappydata.io:8089/repository/internal' }
     maven { url 'http://repository.snappydata.io:8089/repository/snapshots' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
@@ -525,7 +527,7 @@ subprojects {
 }
 
 task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'gemfirexd' }.collect {
       it.getTasksByName('install', false).collect { it.path }
@@ -533,7 +535,7 @@ task publishLocal {
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }

@@ -69,7 +69,7 @@ dependencies {
   if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.1'
+    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.2'
   }
 
   testCompile project(':dunit')
@@ -181,5 +181,5 @@ scalaTest {
   }
 }
 check.dependsOn test, scalaTest, dunitTest
+archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
 
-archivesBaseName = 'snappydata-cluster'
