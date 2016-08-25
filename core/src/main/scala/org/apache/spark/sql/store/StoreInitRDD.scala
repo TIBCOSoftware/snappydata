@@ -17,7 +17,7 @@
 package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
@@ -60,7 +60,12 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
         val store = new JDBCSourceAsColumnarStore(connProperties, partitions)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
           schema, store, columnBatchSize, userCompression)
-      case None =>
+      case None => // row table case
+        val region = Misc.getRegionForTable(table, false)
+        if (region != null &&
+            region.getAttributes.getDataPolicy.withReplication()) {
+          region.asInstanceOf[LocalRegion].setIsUsedForUserReplicatedTable(true)
+        }
     }
 
     GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,

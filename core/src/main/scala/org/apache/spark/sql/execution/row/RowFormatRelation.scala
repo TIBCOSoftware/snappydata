@@ -16,11 +16,8 @@
  */
 package org.apache.spark.sql.execution.row
 
-import org.apache.spark.sql.catalyst.InternalRow
-
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
@@ -29,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -40,7 +38,6 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.storage.BlockManagerId
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -249,12 +246,6 @@ final class DefaultSource extends MutableRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    connProperties.dialect match {
-      case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-        None, partitions, connProperties)
-      case _ =>
-    }
-
     var success = false
     val relation = new RowFormatRelation(connProperties,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -267,6 +258,11 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+      connProperties.dialect match {
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+          None, partitions, connProperties)
+        case _ =>
+      }
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))

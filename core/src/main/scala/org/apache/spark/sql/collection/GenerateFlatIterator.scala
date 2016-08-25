@@ -73,7 +73,7 @@ final class SlicedIterator[A](val iter: Iterator[A]) extends Iterator[A] {
     }
   }
 
-  override def hasNext = remaining > 0 && iter.hasNext
+  override def hasNext: Boolean = remaining > 0 && iter.hasNext
 
   override def next(): A =
     if (remaining > 0) {
