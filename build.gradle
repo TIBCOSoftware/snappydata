@@ -550,7 +550,6 @@ task product(type: Zip) {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-cluster_${scalaBinaryVersion}:generateSnappydataZeppelinInterpreterJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
 
