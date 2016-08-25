@@ -105,7 +105,7 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
 
   def restartSpark(): Unit = {
     ClusterManagerTestBase.stopSpark()
-    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    ClusterManagerTestBase.startSnappyLead(locatorPort, bootProps)
   }
 
   def verifyTable (snc: SnappyContext): Unit = {
