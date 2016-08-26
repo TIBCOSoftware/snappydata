@@ -214,13 +214,6 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   // for the time being it will avoid ThreadLocal access to set SessionState.
   // protected val internalHiveclient = this.client.client
 
-  private def addFileSchemeToHivePaths(metadataConf : HiveConf) : HiveConf = {
-    var scratchDir = metadataConf.get(
-      HiveConf.ConfVars.SCRATCHDIR.varname)
-    scratchDir = new java.io.File(scratchDir).getCanonicalPath
-    metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, scratchDir)
-    metadataConf
-  }
 
   private def newClient(): HiveClient = synchronized {
 
@@ -264,8 +257,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
 
-    val fileSchemeChangedConf = addFileSchemeToHivePaths(metadataConf)
-    val allConfig = fileSchemeChangedConf.asScala.map(e =>
+    val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
 
     val hiveMetastoreJars = this.hiveMetastoreJars()
