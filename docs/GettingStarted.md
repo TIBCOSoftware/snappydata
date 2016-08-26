@@ -716,7 +716,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataPythonApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/python/examples/AirlineDataPythonApp.py
+$ bin/spark-submit --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/quickstart/python/AirlineDataPythonApp.py
 
 ```
 
