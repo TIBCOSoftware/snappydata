@@ -174,4 +174,10 @@ abstract class SnappyFunSuite
     dirList += fileName
     fileName
   }
+
+  // scalastyle:off
+  protected def logStdOut(msg: String): Unit = {
+    println(msg)
+  }
+  // scalastyle:on
 }
