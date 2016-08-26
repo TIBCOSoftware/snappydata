@@ -139,7 +139,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
         try {
 
-          var zeppelinIntpUtilClass = Class.forName("org.apache.zeppelin.interpreter.ZeppelinIntpUtil")
+          var zeppelinIntpUtilClass = Utils.classForName("org.apache.zeppelin.interpreter.ZeppelinIntpUtil")
 
           /**
            * This will initialize the zeppelin repl interpreter.
@@ -155,7 +155,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         } catch {
           /* [Sachin] So we need to log warning that
           interpreter not started or do we need to exit? */
-          case _: Throwable => logWarning("Cannot find zeppelin interpreter in the classpath")
+          case e: Throwable => logWarning("Cannot find zeppelin interpreter in the classpath")
+            throw e;
         }
       }
       sparkContext = new SparkContext(conf)
@@ -416,7 +417,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       "false").equalsIgnoreCase("true")) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
       try {
-        remoteInterpreterServerClass = Class.forName("org.apache.zeppelin.interpreter.SnappyInterpreterServer")
+        remoteInterpreterServerClass = Utils.classForName("org.apache.zeppelin.interpreter.SnappyInterpreterServer")
         val constructor: Constructor[_] = remoteInterpreterServerClass.getConstructor(classOf[Integer])
         remoteInterpreterServerObj = constructor.newInstance(port.asInstanceOf[AnyRef])
 
@@ -477,6 +478,4 @@ object LeadImpl {
   def clearInitializingSparkContext(): Unit = {
     startingContext.set(null)
   }
-
-
 }
