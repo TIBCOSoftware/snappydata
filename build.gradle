@@ -639,7 +639,7 @@ task product(type: Zip) {
     // Spark portions already copied in the assembly:product dependency
     copy {
       from("${examplesProject.projectDir}/src/main/python")
-      into "${snappyProductDir}/examples/python"
+      into "${snappyProductDir}/quickstart/python"
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for optimized JNI calls
@@ -691,6 +691,11 @@ task product(type: Zip) {
       from("${examplesProject.projectDir}/quickstart")
       into "${snappyProductDir}/quickstart"
     }
+    copy {
+      from("${examplesProject.projectDir}/src")
+      into "${snappyProductDir}/quickstart/src"
+    }
+
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
