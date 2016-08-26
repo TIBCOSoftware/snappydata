@@ -76,7 +76,7 @@ object TPCHRowPartitionedTable {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val partData = sc.textFile(s"$path/part.tbl")
-    val partReadings = partData.map(s => s.split('|')).map(s => parsePartRow(s))
+    val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
     val partDF = sqlContext.createDataFrame(partReadings)
 
     if (isSnappy) {
@@ -113,7 +113,7 @@ object TPCHRowPartitionedTable {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
-    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => parsePartSuppRow(s))
+    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartSuppRow(s))
     val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
 
     if (isSnappy) {
@@ -180,7 +180,7 @@ object TPCHRowPartitionedTable {
     //val snappyContext = snappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val customerData = sc.textFile(s"$path/customer.tbl")
-    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
+    val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema.parseCustomerRow(s))
     val customerDF = sqlContext.createDataFrame(customerReadings)
 
     if (isSnappy) {
@@ -210,74 +210,6 @@ object TPCHRowPartitionedTable {
         println(output)
       }
     }
-  }
-
-  case class StreamMessagePartObject(
-      p_partkey: Int,
-      p_name: String,
-      p_mfgr: String,
-      p_brand: String,
-      p_type: String,
-      p_size: Int,
-      p_container: String,
-      p_retailprice: Double,
-      p_comment: String
-  )
-
-  def parsePartRow(s: Array[String]): StreamMessagePartObject = {
-    StreamMessagePartObject(
-      s(0).toInt,
-      s(1),
-      s(2),
-      s(3),
-      s(4),
-      s(5).toInt,
-      s(6),
-      s(7).toDouble,
-      s(8)
-    )
-  }
-
-  case class StreamMessagePartSuppObject(
-      ps_partkey: Int,
-      ps_suppkey: Int,
-      ps_availqty: Int,
-      ps_supplycost: Double,
-      ps_comment: String
-  )
-
-  def parsePartSuppRow(s: Array[String]): StreamMessagePartSuppObject = {
-    StreamMessagePartSuppObject(
-      s(0).toInt,
-      s(1).toInt,
-      s(2).toInt,
-      s(3).toDouble,
-      s(4)
-    )
-  }
-
-  case class StreamMessageCustomerObject(
-      C_CUSTKEY: Int,
-      C_NAME: String,
-      C_ADDRESS: String,
-      C_NATIONKEY: Int,
-      C_PHONE: String,
-      C_ACCTBAL: Double,
-      C_MKTSEGMENT: String,
-      C_COMMENT: String
-      )
-
-  def parseCustomerRow(s: Array[String]): StreamMessageCustomerObject = {
-    StreamMessageCustomerObject(
-      s(0).toInt,
-      s(1),
-      s(2),
-      s(3).toInt,
-      s(4),
-      s(5).toDouble,
-      s(6),
-      s(7)
-    )
   }
 
 }
