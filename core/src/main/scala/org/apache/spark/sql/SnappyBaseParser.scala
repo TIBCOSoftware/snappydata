@@ -136,7 +136,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   /**
-   * A strictIdentifier is more restricted that an identifier in that neither
+   * A strictIdentifier is more restricted than an identifier in that neither
    * any of the SQL reserved keywords nor non-reserved keywords will be
    * interpreted as a strictIdentifier.
    */
@@ -144,8 +144,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     atomic(capture(CharPredicate.Alpha ~ SnappyParserConsts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
-      test(!SnappyParserConsts.reservedKeywords.contains(ucase) &&
-          !SnappyParserConsts.nonReservedKeywords.contains(ucase)) ~
+      test(!SnappyParserConsts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
     quotedIdentifier
@@ -290,10 +289,10 @@ object SnappyParserConsts {
 
   final val reservedKeywords: mutable.Set[String] = mutable.Set[String]()
 
-  final val nonReservedKeywords: mutable.Set[String] = mutable.Set[String]()
+  final val allKeywords: mutable.Set[String] = mutable.Set[String]()
 
   /**
-   * Registering a Keyword with this method marks it as a reserved keyword,
+   * Registering a Keyword with this method marks it a reserved keyword,
    * i.e. it is interpreted as a keyword wherever it may appear and is never
    * interpreted as an identifier (except if quoted).
    * <p>
@@ -302,21 +301,22 @@ object SnappyParserConsts {
   private[sql] def reservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
     reservedKeywords += k.upper
+    allKeywords += k.upper
     k
   }
 
   /**
-   * Registering a Keyword with this method marks it as a non-reserved keyword.
+   * Registering a Keyword with this method marks it a non-reserved keyword.
    * These can be interpreted as identifiers as per the parsing rules,
    * but never interpreted as a "strictIdentifier". In other words, use
    * "strictIdentifier" in parsing rules where there can be an ambiguity
-   * between an identifier or a non-reserved keyword.
+   * between an identifier and a non-reserved keyword.
    * <p>
    * Use this for all SQL keywords used by grammar that are not reserved.
    */
   private[sql] def nonReservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    nonReservedKeywords += k.upper
+    allKeywords += k.upper
     k
   }
 
