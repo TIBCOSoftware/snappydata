@@ -17,7 +17,7 @@
 package io.snappydata.impl
 
 import java.lang
-import java.lang.reflect.{Field, Constructor, Method}
+import java.lang.reflect.{Constructor, Method}
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
@@ -28,21 +28,18 @@ import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.cache.control.InternalResourceManager
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.snappydata.gemxd.LeadNodeMemoryListener
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
-import scala.reflect.runtime.universe._
 import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{SparkException, Logging, SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 
@@ -91,8 +88,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def directApiInvoked: Boolean = _directApiInvoked
 
-  private var remoteInterpreterServerClass:Class[_] = _
-  private var remoteInterpreterServerObj:Any = _
+  private var remoteInterpreterServerClass: Class[_] = _
+  private var remoteInterpreterServerObj: Any = _
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
@@ -139,7 +136,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
         try {
 
-          var zeppelinIntpUtilClass = Utils.classForName("org.apache.zeppelin.interpreter.ZeppelinIntpUtil")
+          val zeppelinIntpUtilClass = Utils.classForName(
+            "org.apache.zeppelin.interpreter.ZeppelinIntpUtil")
 
           /**
            * This will initialize the zeppelin repl interpreter.
@@ -148,7 +146,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
            * which needs to be specified while creating sparkcontext in lead
            */
           logInfo("About to initialize SparkContext with SparkConf")
-          val method: Method = zeppelinIntpUtilClass.getMethod("initializeZeppelinReplAndGetConfig")
+          val method: Method = zeppelinIntpUtilClass.getMethod(
+            "initializeZeppelinReplAndGetConfig")
           val obj: Object = method.invoke(null)
           val props: Properties = obj.asInstanceOf[Properties]
           props.asScala.foreach(kv => conf.set(kv._1, kv._2))
@@ -203,8 +202,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           // let go.
           case false =>
             if (!_directApiInvoked) {
-              throw new SparkException("Primary Lead node (Spark Driver) is already running in the system. " +
-                  "You may use split cluster mode to connect to SnappyData cluster.")
+              throw new SparkException("Primary Lead node (Spark Driver) is " +
+                  "already running in the system. You may use split cluster " +
+                  "mode to connect to SnappyData cluster.")
             }
             serverstatus = State.STANDBY
             val callback = notifyStatusChange
@@ -240,9 +240,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     if (null != remoteInterpreterServerObj) {
-      val method:Method = remoteInterpreterServerClass.getMethod("isAlive")
-      val isAlive:lang.Boolean = method.invoke(remoteInterpreterServerObj).asInstanceOf[lang.Boolean]
-      val shutdown:Method = remoteInterpreterServerClass.getMethod("shutdown",classOf[lang.Boolean])
+      val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
+      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[lang.Boolean]
+      val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
+        classOf[lang.Boolean])
 
       if (isAlive) {
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
@@ -253,13 +255,15 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     bootProperties.clear()
     val sc = SnappyContext.globalSparkContext
-    if(sc != null) sc.stop()
+    if (sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
     sparkContext = null
     if (null != remoteInterpreterServerObj) {
-      val method:Method = remoteInterpreterServerClass.getMethod("isAlive")
-      val isAlive:lang.Boolean = method.invoke(remoteInterpreterServerObj).asInstanceOf[lang.Boolean]
-      val shutdown:Method = remoteInterpreterServerClass.getMethod("shutdown",classOf[lang.Boolean])
+      val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
+      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[lang.Boolean]
+      val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
+        classOf[lang.Boolean])
 
       if (isAlive) {
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
@@ -407,7 +411,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
    * As discussed by default zeppelin interpreter will be enabled.User can disable it by
    * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
    * the port on which intrepreter should listen using  property zeppelin.interpreter.port
-   * @param bootProperties
    */
   private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {
     // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
@@ -415,22 +418,26 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     // cut that down and not increase further with these external utilities.
     if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
       "false").equalsIgnoreCase("true")) {
-      val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
+      val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT,
+        "3768").toInt
       try {
-        remoteInterpreterServerClass = Utils.classForName("org.apache.zeppelin.interpreter.SnappyInterpreterServer")
-        val constructor: Constructor[_] = remoteInterpreterServerClass.getConstructor(classOf[Integer])
+        remoteInterpreterServerClass = Utils.classForName(
+          "org.apache.zeppelin.interpreter.SnappyInterpreterServer")
+        val constructor: Constructor[_] = remoteInterpreterServerClass
+            .getConstructor(classOf[Integer])
         remoteInterpreterServerObj = constructor.newInstance(port.asInstanceOf[AnyRef])
 
-        remoteInterpreterServerClass.getSuperclass.getSuperclass.getDeclaredMethod("start").invoke(remoteInterpreterServerObj)
-      logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
+        remoteInterpreterServerClass.getSuperclass.getSuperclass
+            .getDeclaredMethod("start").invoke(remoteInterpreterServerObj)
+        logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
       } catch {
         case tTransportException: TTransportException =>
           logWarning("Error while starting zeppelin interpreter.Actual exception : " +
               tTransportException.getMessage)
       }
-      //Add memory listener for zeppelin will need it for zeppelin
-      //val listener = new LeadNodeMemoryListener();
-      //GemFireCacheImpl.getInstance().getResourceManager().
+      // Add memory listener for zeppelin will need it for zeppelin
+      // val listener = new LeadNodeMemoryListener();
+      // GemFireCacheImpl.getInstance().getResourceManager().
       //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
     }
