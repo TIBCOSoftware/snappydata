@@ -74,6 +74,7 @@ allprojects {
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
+    scalaCompileOptions.fork = false
     scalaCompileOptions.deprecation = false
     scalaCompileOptions.additionalParameters = [ '-feature' ]
     options.encoding = 'UTF-8'
