@@ -203,7 +203,7 @@ abstract class SnappyDDLParser(session: SnappySession)
       else synchronized {
         // parse the schema string expecting Spark SQL format
         val colParser = newInstance()
-        colParser.parseSQL(schemaString, colParser.tableColsOrNone.run())
+        colParser.parseSQL(schemaString, colParser.tableSchemaOpt.run())
             .map(StructType(_))
       }
       val schemaDDL = if (hasExternalSchema && schemaString.length > 0) {
@@ -308,11 +308,12 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
-    CREATE ~ STREAM ~ TABLE ~ tableIdentifier ~ (IF ~ NOT ~ EXISTS ~>
-        trueFn).? ~ tableCols.? ~ USING ~ qualifiedName ~ OPTIONS ~ options ~> {
-      (streamIdent: TableIdentifier, ifNotExists: Any, cols: Any,
+    CREATE ~ STREAM ~ TABLE ~ (IF ~ NOT ~ EXISTS ~> trueFn).? ~
+        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        OPTIONS ~ options ~> {
+      (ifNotExists: Any, streamIdent: TableIdentifier, schema: Any,
           pname: String, opts: Map[String, String]) =>
-        val specifiedSchema = cols.asInstanceOf[Option[Seq[StructField]]]
+        val specifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]]
             .map(fields => StructType(fields))
         val provider = SnappyContext.getProvider(pname, onlyBuiltIn = false)
         // check that the provider is a stream relation
@@ -479,12 +480,12 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
-  protected final def tableCols: Rule1[Seq[StructField]] = rule {
+  protected final def tableSchema: Rule1[Seq[StructField]] = rule {
     '(' ~ ws ~ (column + commaSep) ~ ')' ~ ws
   }
 
-  protected final def tableColsOrNone: Rule1[Option[Seq[StructField]]] = rule {
-    (tableCols ~> (Some(_)) | ws ~> (() => None)) ~ EOI
+  protected final def tableSchemaOpt: Rule1[Option[Seq[StructField]]] = rule {
+    (tableSchema ~> (Some(_)) | ws ~> (() => None)).named("tableSchema") ~ EOI
   }
 
   protected final def pair: Rule1[(String, String)] = rule {
