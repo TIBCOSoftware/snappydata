@@ -179,6 +179,18 @@ class StreamingSuite
   }
 
   test("stream ad-hoc sql") {
+    // test SNAP-993
+    ssnc.sql("create stream table if not exists tweetsTable" +
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '***REMOVED***', " +
+        "consumerSecret '***REMOVED***', " +
+        "accessToken '***REMOVED***', " +
+        "accessTokenSecret '***REMOVED***', " +
+        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+    ssnc.sql("drop table tweetsTable")
+
     ssnc.sql("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +
