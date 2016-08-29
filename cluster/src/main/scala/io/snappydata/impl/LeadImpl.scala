@@ -16,6 +16,8 @@
  */
 package io.snappydata.impl
 
+import java.lang
+import java.lang.reflect.{Constructor, Method}
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
@@ -33,12 +35,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
-import org.apache.zeppelin.interpreter.{SnappyInterpreterServer, ZeppelinIntpUtil}
 import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 
@@ -87,7 +88,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def directApiInvoked: Boolean = _directApiInvoked
 
-  private var remoteInterpreterServer: SnappyInterpreterServer = _
+  private var remoteInterpreterServerClass: Class[_] = _
+  private var remoteInterpreterServerObj: Any = _
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
@@ -131,18 +133,33 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
       if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
         "false").equalsIgnoreCase("true")) {
-        /**
-         * This will initialize the zeppelin repl interpreter.
-         * This should be done before spark context is created as zeppelin
-         * interpreter will set some properties for classloader for repl
-         * which needs to be specified while creating sparkcontext in lead
-         */
-        val props: Properties = ZeppelinIntpUtil.initializeZeppelinReplAndGetConfig()
-        props.asScala.foreach(kv => conf.set(kv._1, kv._2))
-      }
-      logInfo("About to initialize SparkContext with SparkConf=" + conf.toDebugString)
 
+        try {
+
+          val zeppelinIntpUtilClass = Utils.classForName(
+            "org.apache.zeppelin.interpreter.ZeppelinIntpUtil")
+
+          /**
+           * This will initialize the zeppelin repl interpreter.
+           * This should be done before spark context is created as zeppelin
+           * interpreter will set some properties for classloader for repl
+           * which needs to be specified while creating sparkcontext in lead
+           */
+          logInfo("About to initialize SparkContext with SparkConf")
+          val method: Method = zeppelinIntpUtilClass.getMethod(
+            "initializeZeppelinReplAndGetConfig")
+          val obj: Object = method.invoke(null)
+          val props: Properties = obj.asInstanceOf[Properties]
+          props.asScala.foreach(kv => conf.set(kv._1, kv._2))
+        } catch {
+          /* [Sachin] So we need to log warning that
+          interpreter not started or do we need to exit? */
+          case e: Throwable => logWarning("Cannot find zeppelin interpreter in the classpath")
+            throw e;
+        }
+      }
       sparkContext = new SparkContext(conf)
+
       checkAndStartZeppelinInterpreter(bootProperties)
 
     } catch {
@@ -156,6 +173,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   }
 
+  @throws[SparkException]
   private[snappydata] def internalStart(sc: SparkContext): Unit = {
 
     val conf = sc.getConf // this will get you a cloned copy
@@ -183,6 +201,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
             logInfo("Primary lead lock acquired.")
           // let go.
           case false =>
+            if (!_directApiInvoked) {
+              throw new SparkException("Primary Lead node (Spark Driver) is " +
+                  "already running in the system. You may use split cluster " +
+                  "mode to connect to SnappyData cluster.")
+            }
             serverstatus = State.STANDBY
             val callback = notifyStatusChange
             if (callback != null) {
@@ -215,20 +238,36 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       sparkContext.stop()
       sparkContext = null
     }
-    if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
-      remoteInterpreterServer.shutdown(true)
+
+    if (null != remoteInterpreterServerObj) {
+      val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
+      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[lang.Boolean]
+      val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
+        classOf[lang.Boolean])
+
+      if (isAlive) {
+        shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
+      }
     }
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     bootProperties.clear()
     val sc = SnappyContext.globalSparkContext
-    if(sc != null) sc.stop()
+    if (sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
     sparkContext = null
+    if (null != remoteInterpreterServerObj) {
+      val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
+      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[lang.Boolean]
+      val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
+        classOf[lang.Boolean])
 
-    if (null != remoteInterpreterServer && remoteInterpreterServer.isAlive) {
-      remoteInterpreterServer.shutdown(true)
+      if (isAlive) {
+        shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
+      }
     }
     super.stop(shutdownCredentials)
   }
@@ -342,25 +381,25 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     ActorSystem("SnappyLeadJobServer", conf)
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startNetworkServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Network server cannot be started on lead node.")
+    throw new SparkException("Network server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startThriftServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("Thrift server cannot be started on lead node.")
+    throw new SparkException("Thrift server cannot be started on lead node.")
   }
 
-  @throws[SQLException]
+  @throws[SparkException]
   override def startDRDAServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
-    throw new SQLException("DRDA server cannot be started on lead node.")
+    throw new SparkException("DRDA server cannot be started on lead node.")
   }
 
   override def stopAllNetworkServers(): Unit = {
@@ -372,7 +411,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
    * As discussed by default zeppelin interpreter will be enabled.User can disable it by
    * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
    * the port on which intrepreter should listen using  property zeppelin.interpreter.port
-   * @param bootProperties
    */
   private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {
     // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
@@ -380,16 +418,28 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     // cut that down and not increase further with these external utilities.
     if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
       "false").equalsIgnoreCase("true")) {
-      val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT, "3768").toInt
+      val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT,
+        "3768").toInt
       try {
-        remoteInterpreterServer = new SnappyInterpreterServer(port)
-        remoteInterpreterServer.start()
+        remoteInterpreterServerClass = Utils.classForName(
+          "org.apache.zeppelin.interpreter.SnappyInterpreterServer")
+        val constructor: Constructor[_] = remoteInterpreterServerClass
+            .getConstructor(classOf[Integer])
+        remoteInterpreterServerObj = constructor.newInstance(port.asInstanceOf[AnyRef])
+
+        remoteInterpreterServerClass.getSuperclass.getSuperclass
+            .getDeclaredMethod("start").invoke(remoteInterpreterServerObj)
         logInfo(s"Starting Zeppelin RemoteInterpreter at port " + port)
       } catch {
         case tTransportException: TTransportException =>
           logWarning("Error while starting zeppelin interpreter.Actual exception : " +
               tTransportException.getMessage)
       }
+      // Add memory listener for zeppelin will need it for zeppelin
+      // val listener = new LeadNodeMemoryListener();
+      // GemFireCacheImpl.getInstance().getResourceManager().
+      //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
+
     }
   }
 }

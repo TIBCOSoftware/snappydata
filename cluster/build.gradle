@@ -69,7 +69,7 @@ dependencies {
   if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.1'
+    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.2'
   }
 
   testCompile project(':dunit')
@@ -181,41 +181,5 @@ scalaTest {
   }
 }
 check.dependsOn test, scalaTest, dunitTest
+archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
 
-archivesBaseName = 'snappydata-cluster'
-
-task generateSnappydataZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
-
-  //from sourceSets.main.output.classesDir
-  //from sourceSets.main.output.resourcesDir
-  //from sourceSets.main.resources.srcDirs
- // from 'src/main/resources/snappydata'
-  zip64 = true
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-  from sourceSets.main.output.classesDir
-  jar.includeEmptyDirs = false
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-  from {
-    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-  }
-  from('src/main/resources/snappydata'){
-    include 'interpreter-setting.json'
-    include 'ansi.sql.keywords'
-  }
-  jar.includeEmptyDirs = false
-
-  include 'org/apache/zeppelin/spark/**'
-  include 'org/apache/zeppelin/jdbc/**'
-  include 'org/apache/zeppelin/scheduler/**'
-  include 'org/apache/zeppelin/interpreter/**'
-  include 'com/google/**'
-  include 'org/slf4j/**'
-  include 'jline/console/**'
-  include 'jline/internal/**'
-  include 'jline/**'
-  include 'org/apache/commons/lang/**'
-
-  include 'org/apache/zeppelin/interpreter/**'
- // exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
-  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
-}

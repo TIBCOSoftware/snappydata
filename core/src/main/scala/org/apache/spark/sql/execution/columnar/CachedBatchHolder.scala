@@ -52,7 +52,7 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
     if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
-      //val stats = InternalRow.fromSeq(columnBuilders.map(
+      // val stats = InternalRow.fromSeq(columnBuilders.map(
       //  _.columnStats.collectedStatistics).flatMap(_.values))
       val stats: InternalRow = null
       // TODO: somehow push into global batchStats
