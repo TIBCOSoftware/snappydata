@@ -65,7 +65,7 @@ public class SnappyTest implements Serializable {
     private static String productBinDir = productDir + "bin" + sep;
     private static String SnappyShellPath = productBinDir + "snappy-shell";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
-    private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
     private static String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
     private static String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
@@ -1541,7 +1541,7 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " + " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " --driver-class-path " + snappyTest.getUserAppJarLocation(userAppJar) + " " + snappyTest.getUserAppJarLocation(userAppJar);
+                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " + " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " --driver-class-path " + snappyTest.getUserAppJarLocation(userAppJar) + " --jars "+ "/home/swati/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest_2.11/2.2.6/80cd969b5f678cd90017498d865e63d7f6e79696/scalatest_2.11-2.2.6.jar" + " " + snappyTest.getUserAppJarLocation(userAppJar);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -1829,6 +1829,7 @@ public class SnappyTest implements Serializable {
         try {
             int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.locatorsStarted);
             if (num == 1) {
+                Log.getLogWriter().info("SS - starting locator....");
                 if (useRowStore) {
                     Log.getLogWriter().info("Starting locator/s using rowstore option...");
                     pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
@@ -1842,6 +1843,7 @@ public class SnappyTest implements Serializable {
                 if (useRowStore)
                     snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
                 else snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
+                Log.getLogWriter().info("SS - started locator....");
             }
         } catch (IOException e) {
             String s = "problem occurred while retriving destination logFile path " + log;
@@ -1856,7 +1858,9 @@ public class SnappyTest implements Serializable {
     public static synchronized void HydraTask_createAndStartSnappyServers() {
         int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
         if (num == 1) {
+            Log.getLogWriter().info("SS - starting snappyserver....");
             snappyTest.startSnappyServer();
+            Log.getLogWriter().info("SS - started snappyserver....");
         }
     }
 
@@ -1866,7 +1870,11 @@ public class SnappyTest implements Serializable {
      */
     public static synchronized void HydraTask_createAndStartSnappyLeader() {
         int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
-        if (num == 1) snappyTest.startSnappyLead();
+        if (num == 1) {
+            Log.getLogWriter().info("SS - starting lead....");
+            snappyTest.startSnappyLead();
+            Log.getLogWriter().info("SS - started lead....");
+        }
     }
 
 
