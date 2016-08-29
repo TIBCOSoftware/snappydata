@@ -20,7 +20,7 @@ import java.util.{Collections, UUID}
 
 import scala.collection.concurrent.TrieMap
 
-import com.gemstone.gemfire.internal.cache.BucketRegion
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -33,6 +33,7 @@ import io.snappydata.Constant
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
@@ -42,7 +43,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   @transient private var sqlContext = None: Option[SQLContext]
   val stores = new TrieMap[String, (StructType, ExternalStore)]
 
-  val partioner = new StoreHashFunction
+  val partitioner = new StoreHashFunction
 
   var useCompression = false
   var cachedBatchSize = 0
@@ -66,7 +67,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
-    val container: GemFireContainer = region.getPartitionedRegion
+    val container = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getQualifiedTableName)
 
@@ -127,17 +128,16 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
-    partioner.computeHash(dvd, numPartitions)
+    partitioner.computeHash(dvd, numPartitions)
   }
 
   override def getHashCodeSnappy(dvds: scala.Array[Object],
       numPartitions: Int): Int = {
-    partioner.computeHash(dvds, numPartitions)
+    partitioner.computeHash(dvds, numPartitions)
   }
 
-  override def haveRegisteredExternalStore(tableName: String): Boolean = {
-    // TODO: SW: remove below that deals with default schema and all
-    stores.contains(tableName)
+  override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
+    HashedRelationCache.clear()
   }
 }
 

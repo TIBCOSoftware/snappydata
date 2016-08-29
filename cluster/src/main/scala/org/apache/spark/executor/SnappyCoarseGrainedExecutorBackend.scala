@@ -44,6 +44,9 @@ class SnappyCoarseGrainedExecutorBackend(
     super.onStart()
   }
 
+  override protected def registerExecutor: Executor =
+    new SnappyExecutor(executorId, hostName, env, userClassPath, isLocal = false)
+
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have
    * added functions calling System.exit to SnappyCoarseGrainedExecutorBackend

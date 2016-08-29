@@ -133,15 +133,26 @@ function execute() {
     args="${dirparam}"
   fi
 
-  if [ "$dirfolder" != "" ]; then
-    # Create the directory for the snappy component if the folder is a default folder
-    ssh $SPARK_SSH_OPTS "$host" \
-      "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" < /dev/null \
-      2>&1 | sed "s/^/$host: /"
+  if [ "$host" != "localhost" ]; then
+    if [ "$dirfolder" != "" ]; then
+      # Create the directory for the snappy component if the folder is a default folder
+      ssh $SPARK_SSH_OPTS "$host" \
+        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" < /dev/null \
+        2>&1 | sed "s/^/$host: /"
+    else
+      # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
+      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
+        2>&1 | sed "s/^/$host: /"
+    fi
   else
-    # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
-      2>&1 | sed "s/^/$host: /"
+    if [ "$dirfolder" != "" ]; then
+      # Create the directory for the snappy component if the folder is a default folder
+      if [ ! -d \"$dirfolder\" ]; then
+         mkdir -p "$dirfolder"
+      fi 
+      launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
+      eval $launchcommand
+    fi
   fi
 
   df=${dirfolder}
