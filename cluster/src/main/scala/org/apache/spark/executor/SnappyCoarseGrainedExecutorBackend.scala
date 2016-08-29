@@ -46,7 +46,9 @@ class SnappyCoarseGrainedExecutorBackend(
   }
 
   override protected def registerExecutor: Executor =
-    new SnappyExecutor(executorId, hostName, env, userClassPath, isLocal = false)
+    new SnappyExecutor(executorId, hostName, env,
+      userClassPath, new SnappyUncaughtExceptionHandler(this),
+      isLocal = false)
 
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have
