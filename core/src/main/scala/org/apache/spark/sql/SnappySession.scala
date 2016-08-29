@@ -43,7 +43,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
@@ -792,19 +792,13 @@ class SnappySession(@transient private val sc: SparkContext,
         case SaveMode.Ignore =>
           return sessionCatalog.lookupRelation(tableIdent, None)
         case _ =>
-          val schema = query.schema
           // Check if the specified data source match the data source
           // of the existing table.
-          EliminateSubqueryAliases(
-            sessionState.catalog.lookupRelation(tableIdent)) match {
+          val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
+            sessionState.catalog.lookupRelation(tableIdent))
+          EliminateSubqueryAliases(plan) match {
             case l@LogicalRelation(ir: InsertableRelation, _, _) =>
-              if (schema.size != l.schema.size) {
-                throw new AnalysisException(
-                  s"The column number of the existing schema[${l.schema}] " +
-                      s"doesn't match the data schema[$schema]'s")
-              }
               Some(ir)
-
             case o => throw new AnalysisException(
               s"Saving data in ${o.toString} is not supported.")
           }
@@ -833,8 +827,9 @@ class SnappySession(@transient private val sc: SparkContext,
             }
           case None =>
             val r = DataSource(self,
-              partitionColumns = partitionColumns,
               className = source,
+              userSpecifiedSchema = userSpecifiedSchema,
+              partitionColumns = partitionColumns,
               options = params).write(mode, data)
             (r, Some(r.schema))
         }

@@ -30,7 +30,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, Transac
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.execution.joins.HashedRelationCache
