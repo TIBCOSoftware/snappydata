@@ -18,10 +18,10 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.collection.ToolsCallbackInit
-import org.apache.spark.sql.sources.{PrunedUnsafeFilteredScan, BaseRelation}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.types.StructType
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -33,6 +33,7 @@ private[sql] case class PartitionedPhysicalRDD(
     output: Seq[Attribute],
     rdd: RDD[InternalRow],
     numPartitions: Int,
+    numBuckets: Int,
     partitionColumns: Seq[Expression],
     extraInformation: String) extends LeafExecNode {
 
@@ -42,11 +43,13 @@ private[sql] case class PartitionedPhysicalRDD(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1) SinglePartition
+    if (numPartitions == 1) {
+      SinglePartition
+    }
     else {
       val callbacks = ToolsCallbackInit.toolsCallback
       if (callbacks != null) {
-        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions)
+        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions, numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -55,17 +58,20 @@ private[sql] case class PartitionedPhysicalRDD(
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
-      " partitionColumns = " + partitionColumns.mkString("[", ",", "]")
+      " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
+      " numBuckets= " + numBuckets +
+      " numPartitions= " + numPartitions)
 }
 
 private[sql] object PartitionedPhysicalRDD {
   def createFromDataSource(
       output: Seq[Attribute],
       numPartition: Int,
+      numBuckets: Int,
       partitionColumns: Seq[Expression],
       rdd: RDD[InternalRow],
       relation: BaseRelation): PartitionedPhysicalRDD = {
-    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns,
+    PartitionedPhysicalRDD(output, rdd, numPartition, numBuckets, partitionColumns,
       relation.toString)
   }
 }
@@ -73,6 +79,8 @@ private[sql] object PartitionedPhysicalRDD {
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def numPartitions: Int
+
+  def numBuckets: Int
 
   def partitionColumns: Seq[String]
 }

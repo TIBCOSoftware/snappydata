@@ -18,15 +18,13 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -93,13 +91,16 @@ class BaseColumnFormatRelation(
     true).asInstanceOf[PartitionedRegion]
 
   override lazy val numPartitions: Int = {
-//    val region = Misc.getRegionForTable(resolvedName, true).
-//        asInstanceOf[PartitionedRegion]
-//    region.getTotalNumberOfBuckets
-    val numCores = Runtime.getRuntime.availableProcessors()
-    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-    val numPartitions = numServers * numCores
-    numPartitions
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      _context.sparkContext.schedulerBackend.defaultParallelism()
+    } else {
+      numBuckets
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    region.getTotalNumberOfBuckets
   }
 
   override def partitionColumns: Seq[String] = {

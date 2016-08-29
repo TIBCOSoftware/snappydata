@@ -16,22 +16,20 @@
  */
 package org.apache.spark.sql.execution.row
 
-import org.apache.spark.sql.catalyst.InternalRow
-
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -41,7 +39,6 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.storage.BlockManagerId
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -149,11 +146,22 @@ class RowFormatRelation(
     }
   }
 
-  def getNumPartitions : Int = {
-    val numCores = Runtime.getRuntime.availableProcessors()
-    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-    val numPartitions = numServers * numCores
-     numPartitions
+  def getNumPartitions: Int = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      _context.sparkContext.schedulerBackend.defaultParallelism()
+    } else {
+      numBuckets
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    region match {
+      case pr: PartitionedRegion =>
+        pr.getTotalNumberOfBuckets
+      case _ =>
+        1
+    }
   }
 
   override def partitionColumns: Seq[String] = {

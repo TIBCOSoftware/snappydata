@@ -43,6 +43,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         t.numPartitions,
+        t.numBuckets,
         t.partitionColumns,
         (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case PhysicalOperation(projects, filters,
@@ -51,6 +52,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         l,
         projects,
         filters,
+        0,
         0,
         Seq.empty[String],
         (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
@@ -63,6 +65,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       numPartition: Int,
+      numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Array[Filter]) => RDD[InternalRow]) = {
     pruneFilterProjectRaw(
@@ -70,6 +73,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects,
       filterPredicates,
       numPartition,
+      numBuckets,
       partitionColumns,
       (requestedColumns, _, pushedFilters) => {
         scanBuilder(requestedColumns, pushedFilters.toArray)
@@ -82,6 +86,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       numPartition: Int,
+      numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) => RDD[InternalRow]) = {
 
@@ -145,6 +150,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         execution.PartitionedPhysicalRDD.createFromDataSource(
           projects.map(_.toAttribute),
           numPartition,
+          numBuckets,
           joinedCols,
           scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
           relation.relation)
@@ -164,6 +170,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         execution.PartitionedPhysicalRDD.createFromDataSource(
           requestedColumns,
           numPartition,
+          numBuckets,
           joinedCols,
           scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
           relation.relation)
