@@ -18,8 +18,11 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.mutable
+
 import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
-import org.apache.spark._
+
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -33,8 +36,6 @@ import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-
-import scala.collection.mutable
 
 
 /**
@@ -169,7 +170,7 @@ case class JDBCAppendableRelation(
       }.toArray
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        schema, cachedBatchAggregate)
+        cachedBatchAggregate)
 
       rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()
