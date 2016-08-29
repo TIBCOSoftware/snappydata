@@ -20,6 +20,7 @@ import java.sql.Connection
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -167,7 +168,7 @@ class BaseColumnFormatRelation(
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= columnBatchSize) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
@@ -190,6 +191,7 @@ class BaseColumnFormatRelation(
       truncate()
     }
     JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
+    flushRowBuffer()
   }
 
   /**
@@ -235,8 +237,8 @@ class BaseColumnFormatRelation(
         connProperties.poolProps, connProps, connProperties.hikariCP)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
-        val result = CodeGeneration.executeUpdate(table, stmt,
-          rows, multipleRows = true, batchSize, schema.fields, dialect)
+        val result = CodeGeneration.executeUpdate(table, stmt, rows,
+          multipleRows = true, batchSize, schema.fields.map(_.dataType), dialect)
         stmt.close()
         result
       } finally {
@@ -398,13 +400,12 @@ class BaseColumnFormatRelation(
 
   override def flushRowBuffer(): Unit = {
     // force flush all the buckets into the column store
-    (Utils.mapExecutors(sqlContext, () => {
+    Utils.mapExecutors(sqlContext, () => {
       ColumnFormatRelation.flushLocalBuckets(resolvedName)
       Iterator.empty
-    })).count()
+    }).count()
     ColumnFormatRelation.flushLocalBuckets(resolvedName)
   }
-
 }
 
 class ColumnFormatRelation(
@@ -623,11 +624,6 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    connProperties.dialect match {
-      case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-        Some(schema), partitions, connProperties)
-      case _ =>
-    }
     val schemaString = JdbcExtendedUtils.schemaString(schema,
       connProperties.dialect)
     val schemaExtension = if (schemaString.length > 0) {
@@ -640,9 +636,6 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     val externalStore = new JDBCSourceAsColumnarStore(connProperties,
       partitions)
-
-    ColumnFormatRelation.registerStoreCallbacks(sqlContext, table,
-      schema, externalStore)
 
     var success = false
 
@@ -675,6 +668,13 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
+      ColumnFormatRelation.registerStoreCallbacks(sqlContext, table,
+        schema, externalStore)
+      connProperties.dialect match {
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+          Some(schema), partitions, connProperties)
+        case _ =>
+      }
       success = true
       relation
     } finally {

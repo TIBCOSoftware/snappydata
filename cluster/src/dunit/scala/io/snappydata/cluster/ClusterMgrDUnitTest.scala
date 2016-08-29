@@ -16,10 +16,13 @@
  */
 package io.snappydata.cluster
 
+import java.net.InetAddress
+
 import scala.math._
 import scala.util.Random
 
 import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
@@ -45,6 +48,14 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm3.invoke(getClass, "startSparkJob")
     vm3.invoke(getClass, "startGemJob")
     vm3.invoke(getClass, "stopSpark")
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+  }
+
+  def testSnap684(): Unit = {
+    startSparkJob()
+    startGemJob()
+    vm3.invoke(getClass, "stopAny")
+    vm3.invoke(getClass, "startExternalSparkApp", ClusterManagerTestBase.locatorPort)
   }
 }
 
@@ -94,10 +105,32 @@ object ClusterMgrDUnitTest {
     val expected = Set[Row](Row(2015, 2, 15, 1002, 1803, "AA    "),
         Row(2014, 4, 15, 1324, 1500, "UT    "))
     val returnedRows = result.collect()
+    // scalastyle:off
     println(s"Returned rows: ${returnedRows.mkString(",")} ")
     println(s"Expected rows: ${expected.mkString(",")}")
+    // scalastyle:on
     assert(returnedRows.toSet == expected)
 
     snContext.sql("drop table if exists airline")
+  }
+
+  def startExternalSparkApp(locatorPort: Int): Unit = {
+    //    println("locatorPort =" + locatorPort)
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf: SparkConf = new SparkConf()
+        .setMaster(s"snappydata://$hostName:$locatorPort")
+        .setAppName("externalApp").set("spark.testing.reservedMemory", "0")
+
+    try {
+      new SparkContext(conf)
+      assert(assertion = false,
+        "Expected SparkContext creation to fail due to existing lead")
+    } catch {
+      case e: org.apache.spark.SparkException =>
+        if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
+            "already running in the system")) {
+          throw e
+        } // else ok
+    }
   }
 }

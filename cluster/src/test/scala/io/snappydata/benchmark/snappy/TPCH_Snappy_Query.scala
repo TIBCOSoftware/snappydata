@@ -17,7 +17,6 @@
 
 package io.snappydata.benchmark.snappy
 
-import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
@@ -39,11 +38,11 @@ object TPCH_Snappy_Query extends SnappySQLJob{
 
    override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
-     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
-       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
-       println("****************SparkSqlProp : " + entryString)
-       snc.sql("set " + entryString)
-     })
+//     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
+//       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
+//       println("****************SparkSqlProp : " + entryString)
+//       snc.sql("set " + entryString)
+//     })
 
      for(prop <- sqlSparkProperties) {
        snc.sql(s"set $prop")

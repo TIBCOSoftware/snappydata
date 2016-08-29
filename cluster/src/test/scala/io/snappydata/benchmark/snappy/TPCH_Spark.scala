@@ -26,7 +26,6 @@ object TPCH_Spark {
     var isResultCollection : Boolean = args(2).toBoolean
     var warmup : Integer = args(3).toInt
     var runsForAverage : Integer = args(4).toInt
-    println(s"KBKBKB : sqlProperties : ${args(5)}")
     var sqlSparkProperties = args(5).split(",")
 
 
@@ -49,7 +48,6 @@ object TPCH_Spark {
     }
 
     for (i <- 1 to 1) {
-      println("KBKBKB : Going to execute queries")
       for (query <- queries) {
         query match {
           case "1" => TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage)
