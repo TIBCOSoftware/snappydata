@@ -131,6 +131,12 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long userAppJar;
 
+    public static Long scalaTestJar;
+
+    public static Long coreTestJar;
+
+    public static Long dunitJar;
+
     /**
      * (int) how long (milliseconds) it should wait for getting the job status
      */
@@ -306,6 +312,21 @@ public class SnappyPrms extends BasePrms {
     public static String getUserAppJar() {
         Long key = userAppJar;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
+
+    public static String getScalaTestJar() {
+        Long key = scalaTestJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
+    }
+
+    public static String getCoreTestsJarName() {
+        Long key = coreTestJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
+    }
+
+    public static String getDunitJarName() {
+        Long key = dunitJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
     }
 
     public static Vector getDataLocationList() {

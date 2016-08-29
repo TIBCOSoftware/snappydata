@@ -30,16 +30,22 @@ object NWTest extends SnappyFunSuite with Logging {
     snc.sql("set spark.sql.shuffle.partitions=6")
     dropTables(snc)
     test("Test replicated row tables queries") {
+      println("Test replicated row tables queries started")
       createAndLoadReplicatedTables(snc)
       validateReplicatedTableQueries(snc)
+      println("Test replicated row tables queries completed successfully")
     }
     test("Test partitioned row tables queries") {
+      println("Test partitioned row tables queries started")
       createAndLoadPartitionedTables(snc)
       validatePartitionedRowTableQueries(snc)
+      println("Test partitioned row tables queries completed successfully")
     }
     test("Test column tables queries") {
+      println("Test column tables queries started")
       createAndLoadColumnTables(snc)
       validatePartitionedColumnTableQueries(snc)
+      println("Test column tables queries completed successfully")
     }
     test("Test colocated tables queries") {
       createAndLoadColocatedTables(snc)
@@ -49,12 +55,14 @@ object NWTest extends SnappyFunSuite with Logging {
 
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int): Any = {
     val df = snc.sql(sqlString)
+    println(s"Actual df.count for join query is : ${df.count} \nExpected numRows : ${numRows}")
     assert(df.count() == numRows,
       "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows)
   }
 
   private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int): Any = {
     val df = snc.sql(sqlString)
+    println(s"Actual df.count is : ${df.count} \nExpected numRows : ${numRows}")
     assert(df.count() == numRows,
       "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString)
@@ -473,16 +481,27 @@ object NWTest extends SnappyFunSuite with Logging {
 
   private def dropTables(snc: SnappyContext): Unit = {
     snc.sql("drop table if exists regions")
+    println("regions table dropped successfully.");
     snc.sql("drop table if exists categories")
+    println("categories table dropped successfully.");
     snc.sql("drop table if exists products")
+    println("products table dropped successfully.");
     snc.sql("drop table if exists order_details")
+    println("order_details table dropped successfully.");
     snc.sql("drop table if exists orders")
+    println("orders table dropped successfully.");
     snc.sql("drop table if exists customers")
+    println("customers table dropped successfully.");
     snc.sql("drop table if exists employees")
+    println("employees table dropped successfully.");
     snc.sql("drop table if exists employee_territories")
+    println("employee_territories table dropped successfully.");
     snc.sql("drop table if exists shippers")
+    println("shippers table dropped successfully.");
     snc.sql("drop table if exists suppliers")
+    println("suppliers table dropped successfully.");
     snc.sql("drop table if exists territories")
+    println("territories table dropped successfully.");
   }
 
 }

@@ -1541,7 +1541,11 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " + " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " --driver-class-path " + snappyTest.getUserAppJarLocation(userAppJar) + " --jars "+ "/home/swati/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest_2.11/2.2.6/80cd969b5f678cd90017498d865e63d7f6e79696/scalatest_2.11-2.2.6.jar" + " " + snappyTest.getUserAppJarLocation(userAppJar);
+                String command = snappyJobScript + " --jars " + SnappyPrms.getScalaTestJar() + ","  + getCoreTestsJar() + ","   + getDunitJar() + " --class " + userJob +
+                        " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
+                        " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+                        " " + snappyTest.getUserAppJarLocation(userAppJar);
+                Log.getLogWriter().info("SS - sparkJob command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -1558,6 +1562,36 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
+    }
+
+
+    protected static String getCoreTestsJar(){
+        String coreTestJarName = SnappyPrms.getCoreTestsJarName();
+        String jarPath = dtests + sep + ".." + sep + "core" + sep + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
+        return getAbsoluteJarLocation(jarPath, coreTestJarName);
+
+    }
+
+    protected static String getDunitJar(){
+        String coreTestJarName = SnappyPrms.getDunitJarName();
+        String jarPath = dtests + sep + ".." + sep + "dunit" + sep + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
+        return getAbsoluteJarLocation(jarPath, coreTestJarName);
+    }
+
+     protected static String getAbsoluteJarLocation(String jarPath, final String jarName) {
+            String absoluteJarPath = null;
+            File baseDir = new File(jarPath);
+            try {
+                IOFileFilter filter = new WildcardFileFilter(jarName);
+                List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
+                Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
+                for (File file1 : files) {
+                    if (!file1.getAbsolutePath().contains("/work/")) absoluteJarPath = file1.getAbsolutePath();
+                }
+            } catch (Exception e) {
+                Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
+            }
+            return absoluteJarPath;
     }
 
     /**
