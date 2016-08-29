@@ -202,6 +202,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           // let go.
           case false =>
             if (!_directApiInvoked) {
+              // cleanup before throwing exception
+              internalStop(bootProperties)
               throw new SparkException("Primary Lead node (Spark Driver) is " +
                   "already running in the system. You may use split cluster " +
                   "mode to connect to SnappyData cluster.")
