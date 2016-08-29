@@ -16,10 +16,14 @@
  */
 package org.apache.spark.sql.store
 
+import scala.collection.JavaConverters._
+import scala.collection.generic.Growable
+import scala.collection.mutable
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
@@ -29,10 +33,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
-
-import scala.collection.JavaConverters._
-import scala.collection.generic.Growable
-import scala.collection.mutable
 
 
 object StoreUtils extends Logging {
@@ -125,9 +125,8 @@ object StoreUtils extends Logging {
       totalBuckets += p
       serverToBuckets put(owner, bucketSet)
     }
-    val numCores = Runtime.getRuntime.availableProcessors()
-    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-    val numPartitions = numServers * numCores
+    val numPartitions = sc.schedulerBackend.defaultParallelism()
+    val numCores = numPartitions / SnappyContext.storeToBlockMap.size
     val partitions = {
       if (numBuckets < numPartitions) {
         new Array[Partition](numBuckets)
