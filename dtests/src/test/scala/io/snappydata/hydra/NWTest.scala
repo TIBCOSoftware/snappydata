@@ -46,7 +46,7 @@ object NWTest {
   }
 
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
-    snc.sql("spark.sql.crossJoin.enabled = true")
+    snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
     println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \nExpected numRows : ${numRows}")
     assert(df.count() == numRows,
