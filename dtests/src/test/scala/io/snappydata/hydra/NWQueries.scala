@@ -291,9 +291,11 @@ object NWQueries {
     "Q54" -> Q54
   )
 
+  println(s"Resources path : ${getClass.getResource("northwind/regions.csv").getPath}")
+  println(s"Resources path : ${getClass.getResource("/northwind/regions.csv").getPath}")
   val regions = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/regions.csv").getPath)
+    .load(getClass.getResource("northwind/regions.csv").getPath)
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
