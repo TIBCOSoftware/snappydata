@@ -48,17 +48,18 @@ object NWTest {
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
-    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \nExpected numRows : ${numRows}")
+    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \nExpected numRows : ${numRows} \n df.explain() : ${df.explain()}")
     assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows)
+      s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
+        + " for query =" + sqlString + " df.explain() =" + df.explain())
   }
 
   private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
     val df = snc.sql(sqlString)
-    println(s"Query ${queryNum} \n df.count is : ${df.count} \nExpected numRows : ${numRows}")
+    println(s"Query ${queryNum} \n df.count is : ${df.count} \nExpected numRows : ${numRows} \n df.explain() : ${df.explain()}")
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
-        + " for query =" + sqlString)
+        + " for query =" + sqlString + " df.explain() =" + df.explain())
   }
 
   private def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
