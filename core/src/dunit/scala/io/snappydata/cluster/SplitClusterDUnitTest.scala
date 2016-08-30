@@ -17,7 +17,6 @@
 package io.snappydata.cluster
 
 import java.io.PrintWriter
-import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
@@ -33,8 +32,6 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import org.junit.Assert
 
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
 
@@ -137,27 +134,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private def getConnection(netPort: Int) = DriverManager.getConnection(
     s"jdbc:${Constant.JDBC_URL_PREFIX}localhost:$netPort")
-
-  override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
-    val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf()
-        .setAppName("test Application")
-        .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-
-    val sc = SparkContext.getOrCreate(conf)
-    val catalog = SnappySession.getOrCreate(sc).sessionCatalog
-    val t = catalog.newQualifiedTableName(tableName)
-    try {
-      catalog.getCachedHiveTable(t)
-      assert(assertion = false, s"Table $tableName should not exist in the " +
-          s"cached Hive catalog")
-    } catch {
-      // expected exception
-      case e: org.apache.spark.sql.TableNotFoundException =>
-    }
-  }
 
   override def createTablesAndInsertData(tableType: String): Unit = {
     val conn = getConnection(locatorNetPort)
