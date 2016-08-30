@@ -115,7 +115,7 @@ object NWTest {
         case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
         case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
         case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 6, "Q16")
         case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
         case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
