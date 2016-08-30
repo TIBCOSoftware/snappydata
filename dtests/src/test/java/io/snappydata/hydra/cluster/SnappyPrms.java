@@ -169,6 +169,11 @@ public class SnappyPrms extends BasePrms {
     public static Long appPropsForJobServer;
 
     /**
+     * (String) Parameter used to get the data files location.
+     */
+    public static Long dataFilesLocation;
+
+    /**
      * (int) number of executor cores to be used in test
      */
     public static Long executorCores;
@@ -286,6 +291,11 @@ public class SnappyPrms extends BasePrms {
     public static String getCommaSepAPPProps() {
         Long key = appPropsForJobServer;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
+
+    public static String getDataFilesLocation() {
+        Long key = dataFilesLocation;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
     }
 
     public static boolean getTableDefaultDataPolicy() {

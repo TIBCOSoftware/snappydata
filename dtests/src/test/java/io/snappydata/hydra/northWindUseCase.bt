@@ -4,3 +4,4 @@ io/snappydata/hydra/northWindUseCase.conf
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   scalaTestJar="/home/ssawant/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest_2.11/2.2.6/80cd969b5f678cd90017498d865e63d7f6e79696/scalatest_2.11-2.2.6.jar"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"

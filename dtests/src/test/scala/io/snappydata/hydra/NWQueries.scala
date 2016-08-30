@@ -16,6 +16,8 @@
  */
 package io.snappydata.hydra
 
+import org.apache.spark.SparkFiles
+
 object NWQueries {
 
   val Q1: String = "SELECT * FROM Categories"
@@ -290,19 +292,17 @@ object NWQueries {
     "Q53" -> Q53,
     "Q54" -> Q54
   )
-
-  println(s"Resources path : ${getClass.getResource("northwind/regions.csv").getPath}")
-  println(s"Resources path : ${getClass.getResource("/northwind/regions.csv").getPath}")
+  println(s"Resources path : ${SparkFiles.get("regions.csv")}")
   val regions = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("northwind/regions.csv").getPath)
+    .load(SparkFiles.get("regions.csv"))
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
 
   val categories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/categories.csv").getPath)
+    .load(SparkFiles.get("categories.csv"))
   val categories_table = "create table categories (" +
     "CategoryID int, " +
     "CategoryName string, " +
@@ -311,7 +311,7 @@ object NWQueries {
 
   val shippers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/shippers.csv").getPath)
+    .load(SparkFiles.get("shippers.csv"))
   val shippers_table = "create table shippers (" +
     "ShipperID int not null, " +
     "CompanyName string not null, " +
@@ -319,7 +319,7 @@ object NWQueries {
 
   val employees = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/employees.csv").getPath)
+    .load(SparkFiles.get("employees.csv"))
   val employees_table = "create table employees(" +
     //    "EmployeeID int not null , " +
     //    "LastName string not null, " +
@@ -345,7 +345,7 @@ object NWQueries {
 
   val customers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/customers.csv").getPath)
+    .load(SparkFiles.get("customers.csv"))
   val customers_table = "create table customers(" +
     //    "CustomerID string not null, " +
     //    "CompanyName string not null, " +
@@ -363,7 +363,7 @@ object NWQueries {
 
   val orders = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/orders.csv").getPath)
+    .load(SparkFiles.get("orders.csv"))
   val orders_table = "create table orders (" +
     //"OrderID int not null, " +
     "OrderID int, " +
@@ -383,7 +383,7 @@ object NWQueries {
 
   val order_details = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/order-details.csv").getPath)
+    .load(SparkFiles.get("order-details.csv"))
   val order_details_table = "create table order_details (" +
     //    "OrderID int not null, " +
     //    "ProductID int not null, " +
@@ -398,7 +398,7 @@ object NWQueries {
 
   val products = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/products.csv").getPath)
+    .load(SparkFiles.get("products.csv"))
   val products_table = "create table products(" +
     //"ProductID int not null, " +
     "ProductID int, " +
@@ -416,7 +416,7 @@ object NWQueries {
 
   val suppliers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/suppliers.csv").getPath)
+    .load(SparkFiles.get("suppliers.csv"))
   val suppliers_table = "create table suppliers(" +
     //    "SupplierID int not null, " +
     //    "CompanyName string not null, " +
@@ -435,7 +435,7 @@ object NWQueries {
 
   val territories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/territories.csv").getPath)
+    .load(SparkFiles.get("territories.csv"))
   val territories_table = "create table territories(" +
     //    "TerritoryID string not null, " +
     //    "TerritoryDescription string not null, " +
@@ -446,7 +446,7 @@ object NWQueries {
 
   val employee_territories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
+    .load(SparkFiles.get("employee-territories.csv"))
   val employee_territories_table = "create table employee_territories(" +
     //    "EmployeeID int not null, " +
     //    "TerritoryID int not null)"
