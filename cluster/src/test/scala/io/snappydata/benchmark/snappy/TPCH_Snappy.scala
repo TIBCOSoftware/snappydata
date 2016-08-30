@@ -27,15 +27,11 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
  */
 object TPCH_Snappy {
 
-  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
-  var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
   var planFileStream: FileOutputStream = null
   var planprintStream:PrintStream = null
 
 
   def close(): Unit = {
-    avgPrintStream.close()
-    avgFileStream.close()
     if (planFileStream != null) {
       planprintStream.close
       planFileStream.close()
@@ -43,7 +39,7 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer): Unit = {
+      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer, avgPrintStream:PrintStream): Unit = {
      var queryFileStream: FileOutputStream = new FileOutputStream(new File(s"$queryNumber.out"))
      var queryPrintStream:PrintStream = new PrintStream(queryFileStream)
 

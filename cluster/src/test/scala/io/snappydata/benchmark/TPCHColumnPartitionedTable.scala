@@ -16,11 +16,12 @@
  */
 package io.snappydata.benchmark
 
+import java.io.PrintStream
 import java.sql.Statement
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext}
 
 
 object TPCHColumnPartitionedTable  {
@@ -89,52 +90,6 @@ object TPCHColumnPartitionedTable  {
     println("Created Table ORDERS")
   }
 
-  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
-    val sc = sqlContext.sparkContext
-    val orderData = sc.textFile(s"$path/orders.tbl")
-    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
-    val orderDF = sqlContext.createDataFrame(orderReadings)
-    val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
-    if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
-
-      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("customer", ifExists = true)
-      snappyContext.dropTable("part", ifExists = true)
-      snappyContext.dropTable("LINEITEM", ifExists = true)
-      snappyContext.dropTable("ORDERS", ifExists = true)
-
-      snappyContext.createTable("ORDERS", "column", newSchema, p1)
-      orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS")
-      println("Created Table ORDERS")
-    } else {
-      orderDF.registerTempTable("ORDERS")
-      sqlContext.cacheTable("ORDERS")
-      val cnts = sqlContext.sql("select count(*) from ORDERS").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
-    }
-  }
-
-  def createAndPopulateOrder_CustTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
-    val sc = sqlContext.sparkContext
-    val orderData = sc.textFile(s"$path/orders.tbl")
-    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
-    val orderDF = sqlContext.createDataFrame(orderReadings)
-    val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
-    if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_custkey"),("BUCKETS"-> buckets), ("COLOCATE_WITH"->"CUSTOMER"))
-
-      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("ORDERS_CUST", ifExists = true)
-      snappyContext.createTable("ORDERS_CUST", "column", newSchema, p1)
-      orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS_CUST")
-      println("Created Table ORDERS_CUST")
-    }
-  }
-
   def createLineItemTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE TABLE LINEITEM ( L_ORDERKEY    INTEGER NOT NULL,"+
         "L_PARTKEY     INTEGER NOT NULL,"+
@@ -159,49 +114,102 @@ object TPCHColumnPartitionedTable  {
     println("Created Table LINEITEM")
   }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
+  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String,loadPerfPrintStream:PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
+    val orderData = sc.textFile(s"$path/orders.tbl")
+    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.createTable("ORDERS", "column", newSchema, p1)
+      orderDF.write.insertInto("ORDERS")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
+    } else {
+      orderDF.createOrReplaceTempView("ORDERS")
+      sqlContext.cacheTable("ORDERS")
+      sqlContext.table("ORDERS").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime-startTime}")
+
+    }
+  }
+
+  def createAndPopulateOrder_CustTable(props: Map[String, String], sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+    val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
+    val orderData = sc.textFile(s"$path/orders.tbl")
+    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "o_custkey"),("BUCKETS"-> buckets), ("COLOCATE_WITH"->"CUSTOMER"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("ORDERS_CUST", ifExists = true)
+      snappyContext.createTable("ORDERS_CUST", "column", newSchema, p1)
+      orderDF.write.insertInto("ORDERS_CUST")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create ORDERS_CUST Table : ${endTime-startTime}")
+    }
+  }
+
+
+  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean,
+      buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+    val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
-    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
-    val newSchema = TPCHTableSchema.newLineItemSchema(lineOrderDF.schema)
+    val lineItemDF = sqlContext.createDataFrame(lineItemReadings)
+    val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("LINEITEM", ifExists = true)
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
-      lineOrderDF.write.insertInto("LINEITEM")
+      lineItemDF.write.insertInto("LINEITEM")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime-startTime}")
       println("Created Table LINEITEM")
     } else {
-      lineOrderDF.registerTempTable("LINEITEM")
+      lineItemDF.createOrReplaceTempView("LINEITEM")
       sqlContext.cacheTable("LINEITEM")
-      var cnts = sqlContext.sql("select count(*) from LINEITEM").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("LINEITEM").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime-startTime}")
     }
   }
 
-  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, buckets: String,loadPerfPrintStream:PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
-    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
-    val newSchema = TPCHTableSchema.newLineItemSchema(lineOrderDF.schema)
+    val lineItemPartDF = sqlContext.createDataFrame(lineItemReadings)
+    val newSchema = TPCHTableSchema.newLineItemSchema(lineItemPartDF.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "l_partkey"),("COLOCATE_WITH"->"PART"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("LINEITEM_PART", ifExists = true)
       snappyContext.createTable("LINEITEM_PART", "column", newSchema, p1)
-      lineOrderDF.write.insertInto("LINEITEM_PART")
-      println("Created Table LINEITEM_PART")
+      lineItemPartDF.write.insertInto("LINEITEM_PART")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create LINEITEM_PART Table : ${endTime-startTime}")
     }
   }
-  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
     val customerData = sc.textFile(s"$path/customer.tbl")
     val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema.parseCustomerRow(s))
     val customerDF = sqlContext.createDataFrame(customerReadings)
@@ -209,27 +217,26 @@ object TPCHColumnPartitionedTable  {
 
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "c_custkey"),("BUCKETS"->buckets))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("ORDERS_CUST", ifExists = true)
-      snappyContext.dropTable("CUSTOMER", ifExists = true)
       snappyContext.createTable("CUSTOMER", "column", newSchema, p1)
-      customerDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("CUSTOMER")
+      customerDF.write.insertInto("CUSTOMER")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
       println("Created Table CUSTOMER")
     } else {
-      customerDF.registerTempTable("CUSTOMER")
+      customerDF.createOrReplaceTempView("CUSTOMER")
       sqlContext.cacheTable("CUSTOMER")
-      val cnts = sqlContext.sql("select count(*) from CUSTOMER").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("CUSTOMER").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
     }
   }
 
 
-  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
     val partData = sc.textFile(s"$path/part.tbl")
     val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
     val partDF = sqlContext.createDataFrame(partReadings)
@@ -238,24 +245,24 @@ object TPCHColumnPartitionedTable  {
       val p1 = Map(("PARTITION_BY"-> "p_partkey"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("LINEITEM_PART", ifExists = true)
-      snappyContext.dropTable("PART", ifExists = true)
       snappyContext.createTable("PART", "column", newSchema, p1)
-      partDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("PART")
+      partDF.write.insertInto("PART")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
       println("Created Table PART")
     } else {
-      partDF.registerTempTable("PART")
+      partDF.createOrReplaceTempView("PART")
       sqlContext.cacheTable("PART")
-      val cnts = sqlContext.sql("select count(*) from PART").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("PART").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
     }
   }
 
-  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
     val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartSuppRow(s))
     val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
@@ -265,18 +272,18 @@ object TPCHColumnPartitionedTable  {
       val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets),("COLOCATE_WITH"->"PART"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("PARTSUPP", ifExists = true)
+
       snappyContext.createTable("PARTSUPP", "column", newSchema, p1)
-      partSuppDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("PARTSUPP")
+      partSuppDF.write.insertInto("PARTSUPP")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
       println("Created Table PARTSUPP")
     } else {
-      partSuppDF.registerTempTable("PARTSUPP")
+      partSuppDF.createOrReplaceTempView("PARTSUPP")
       sqlContext.cacheTable("PARTSUPP")
-      val cnts = sqlContext.sql("select count(*) from PARTSUPP").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("PARTSUPP").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
     }
   }
 
@@ -310,82 +317,143 @@ object TPCHColumnPartitionedTable  {
       "select count(*) as sample_count from lineitem_sampled").collectAsList())
   }
 
-  def createAndPopulateNationTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+  def createAndPopulateNationTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
-    val orderData = sc.textFile(s"$path/nation.tbl")
-    val nationreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseNationRow(s))
+    val startTime=System.currentTimeMillis()
+    val nationData = sc.textFile(s"$path/nation.tbl")
+    val nationreadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema.parseNationRow(s))
     val nationdf = sqlContext.createDataFrame(nationreadings)
     val newSchema = TPCHTableSchema.newNationSchema(nationdf.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "N_NATIONKEY"),("BUCKETS"-> buckets))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("NATION", ifExists = true)
       snappyContext.createTable("NATION", "column", newSchema, p1)
-      nationdf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("NATION")
+      nationdf.write.insertInto("NATION")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
       println("Created Table NATION")
     } else {
-      nationdf.registerTempTable("NATION")
+      nationdf.createOrReplaceTempView("NATION")
       sqlContext.cacheTable("NATION")
-      val cnts = sqlContext.sql("select count(*) from NATION").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("NATION").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
     }
   }
 
-  def createAndPopulateRegionTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
-    //val snappyContext = SnappyContext.getOrCreate(sc)
+  def createAndPopulateRegionTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
-    val orderData = sc.textFile(s"$path/region.tbl")
-    val regionreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseRegionRow(s))
+    val startTime=System.currentTimeMillis()
+    val regionData = sc.textFile(s"$path/region.tbl")
+    val regionreadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema.parseRegionRow(s))
     val regiondf = sqlContext.createDataFrame(regionreadings)
     val newSchema = TPCHTableSchema.newRegionSchema(regiondf.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "R_REGIONKEY"),("BUCKETS"-> buckets))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("REGION", ifExists = true)
       snappyContext.createTable("REGION", "column", newSchema, p1)
-      regiondf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("REGION")
+      regiondf.write.insertInto("REGION")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
       println("Created Table REGION")
     } else {
-      regiondf.registerTempTable("REGION")
+      regiondf.createOrReplaceTempView("REGION")
       sqlContext.cacheTable("REGION")
-      val cnts = sqlContext.sql("select count(*) from REGION").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("REGION").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
     }
   }
 
-  def createAndPopulateSupplierTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
-    //val snappyContext = SnappyContext.getOrCreate(sc)
+  def createAndPopulateSupplierTable(props: Map[String, String], sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime=System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/supplier.tbl")
     val suppreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseSupplierRow(s))
     val suppdf = sqlContext.createDataFrame(suppreadings)
     val newSchema = TPCHTableSchema.newSupplierSchema(suppdf.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "S_SUPPKEY"),("BUCKETS"-> buckets))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("SUPPLIER", ifExists = true)
       snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
-      suppdf.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("SUPPLIER")
+      suppdf.write.insertInto("SUPPLIER")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
       println("Created Table SUPPLIER")
     } else {
-      suppdf.registerTempTable("SUPPLIER")
+      suppdf.createOrReplaceTempView("SUPPLIER")
       sqlContext.cacheTable("SUPPLIER")
-      val cnts = sqlContext.sql("select count(*) from SUPPLIER").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("SUPPLIER").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
     }
   }
 
+  def testLoadOrderTablePerformance(props: Map[String, String], sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
 
+    val sc = sqlContext.sparkContext
+    val startTime=System.currentTimeMillis()
+    val orderData = sc.textFile(s"$path/orders.tbl")
+    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.createTable("ORDERS", "column", newSchema, p1)
+      orderDF.write.insertInto("ORDERS")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
+    } else {
+      var newOrderDF : DataFrame = null
+      val numPartitions = buckets.toInt
+      if(numPartitions > 0){
+        newOrderDF = orderDF.repartition(buckets.toInt,orderDF.col("o_orderkey"))
+      }else{
+        newOrderDF = orderDF.repartition(orderDF.col("o_orderkey"))
+      }
+      newOrderDF.createOrReplaceTempView("ORDERS")
+      sqlContext.cacheTable("ORDERS")
+      sqlContext.table("ORDERS").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
+    }
+  }
+
+  def testLoadLineItemTablePerformance(props: Map[String, String], sqlContext: SQLContext, path:String,
+      isSnappy:Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+    val sc = sqlContext.sparkContext
+    val startTime = System.currentTimeMillis()
+    val lineItemData = sc.textFile(s"$path/lineitem.tbl")
+    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
+    val lineItemDF = sqlContext.createDataFrame(lineItemReadings)
+    val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("LINEITEM", ifExists = true)
+      snappyContext.createTable("LINEITEM", "column", newSchema, p1)
+      lineItemDF.write.insertInto("LINEITEM")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create LineItem Table : ${endTime-startTime}")
+    } else {
+      var newLineItemDF : DataFrame = null
+      val numPartitions = buckets.toInt
+      if(numPartitions > 0){
+        newLineItemDF = lineItemDF.repartition(buckets.toInt,lineItemDF.col("l_orderkey"))
+      }else{
+        newLineItemDF = lineItemDF.repartition(lineItemDF.col("l_orderkey"))
+      }
+      newLineItemDF.createOrReplaceTempView("LINEITEM")
+      sqlContext.cacheTable("LINEITEM")
+      sqlContext.table("LINEITEM").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create LineItem Table : ${endTime-startTime}")
+    }
+  }
 }
