@@ -38,6 +38,7 @@
 package io.snappydata.util.com.clearspring.analytics.stream.membership;
 
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 
 import io.snappydata.util.StringUtils;
 import io.snappydata.util.com.clearspring.analytics.hash.MurmurHash;
@@ -89,7 +90,7 @@ public abstract class Filter {
     // than performing further iterations of murmur.
     public static int[] getHashBuckets(String key, int hashCount, int max, boolean applyWidth) {
         byte[] b;
-        b = key.getBytes(StringUtils.UTF8());
+        b = key.getBytes(StandardCharsets.UTF_8);
         return getHashBuckets(b, hashCount, max, applyWidth);
     }
 
