@@ -33,7 +33,6 @@ import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging}
 import org.apache.spark.{Partition, SparkContext}
 
 
