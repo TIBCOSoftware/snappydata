@@ -25,24 +25,25 @@ object NWTest {
     setAppName("NW Application")
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
+
   def main(args: Array[String]) {
     snc.sql("set spark.sql.shuffle.partitions=6")
     dropTables(snc)
     println("Test replicated row tables queries started")
-      createAndLoadReplicatedTables(snc)
-      validateReplicatedTableQueries(snc)
-      println("Test replicated row tables queries completed successfully")
-      println("Test partitioned row tables queries started")
-      createAndLoadPartitionedTables(snc)
-      validatePartitionedRowTableQueries(snc)
-      println("Test partitioned row tables queries completed successfully")
-      println("Test column tables queries started")
-      createAndLoadColumnTables(snc)
-      validatePartitionedColumnTableQueries(snc)
-      println("Test column tables queries completed successfully")
-      createAndLoadColocatedTables(snc)
-      validateColocatedTableQueries(snc)
-   }
+    createAndLoadReplicatedTables(snc)
+    validateReplicatedTableQueries(snc)
+    println("Test replicated row tables queries completed successfully")
+    println("Test partitioned row tables queries started")
+    createAndLoadPartitionedTables(snc)
+    validatePartitionedRowTableQueries(snc)
+    println("Test partitioned row tables queries completed successfully")
+    println("Test column tables queries started")
+    createAndLoadColumnTables(snc)
+    validatePartitionedColumnTableQueries(snc)
+    println("Test column tables queries completed successfully")
+    createAndLoadColocatedTables(snc)
+    validateColocatedTableQueries(snc)
+  }
 
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
     snc.sql("spark.sql.crossJoin.enabled = true")
@@ -98,7 +99,7 @@ object NWTest {
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
       q._1 match {
-        case "Q1" => assertQuery(snc, NWQueries.Q1, 8,"Q1")
+        case "Q1" => assertQuery(snc, NWQueries.Q1, 8, "Q1")
         case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
         case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
         case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
@@ -118,26 +119,26 @@ object NWTest {
         case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
         case "Q20" => assertQuery(snc, NWQueries.Q20, 1, "Q20")
-        case "Q21" => assertQuery(snc, NWQueries.Q21, 1,"Q21")
+        case "Q21" => assertQuery(snc, NWQueries.Q21, 1, "Q21")
         case "Q22" => assertQuery(snc, NWQueries.Q22, 1, "Q22")
         case "Q23" => assertQuery(snc, NWQueries.Q23, 1, "Q23")
         case "Q24" => assertQuery(snc, NWQueries.Q24, 4, "Q24")
-        case "Q25" => //assertJoin(snc, NWQueries.Q25, 1, 1, classOf[LeftSemiJoinHash])
-        case "Q26" => //assertJoin(snc, NWQueries.Q26, 89, 1, classOf[LeftSemiJoinHash])
-        case "Q27" => //assertJoin(snc, NWQueries.Q27, 9, 1, classOf[LeftSemiJoinHash])
-        case "Q28" => //assertJoin(snc, NWQueries.Q28, 12, 1, classOf[LeftSemiJoinHash])
-        case "Q29" => //assertJoin(snc, NWQueries.Q29, 8, 1, classOf[LeftSemiJoinHash])
-        case "Q30" => //assertJoin(snc, NWQueries.Q30, 8, 1, classOf[LeftSemiJoinHash])
+        case "Q25" => assertJoin(snc, NWQueries.Q25, 1, "Q25")
+        case "Q26" => assertJoin(snc, NWQueries.Q26, 89, "Q26")
+        case "Q27" => assertJoin(snc, NWQueries.Q27, 9, "Q27")
+        case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
+        case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29")
+        case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
         case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
-        case "Q32" => //assertJoin(snc, NWQueries.Q32, 51, 1, classOf[LocalJoin])
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, 1, classOf[LocalJoin])
+        case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34")
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35")
         case "Q36" => assertJoin(snc, NWQueries.Q36, 5, "Q36")
         case "Q37" => assertJoin(snc, NWQueries.Q37, 69, "Q37")
         case "Q38" => assertJoin(snc, NWQueries.Q38, 71, "Q38")
         case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39")
-        case "Q40" => assertJoin(snc, NWQueries.Q40, 830,"Q40")
+        case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40")
         case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41")
         case "Q42" => assertJoin(snc, NWQueries.Q42, 22, "Q42")
         case "Q43" => assertJoin(snc, NWQueries.Q43, 830, "Q43")
@@ -146,7 +147,7 @@ object NWTest {
         case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650, "Q46")
         case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650, "Q47")
         case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650, "Q48")
-        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650,"Q49")
+        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650, "Q49")
         case "Q50" => assertJoin(snc, NWQueries.Q50, 2155, "Q50")
         case "Q51" => assertJoin(snc, NWQueries.Q51, 2155, "Q51")
         case "Q52" => assertJoin(snc, NWQueries.Q52, 2155, "Q52")
@@ -201,60 +202,60 @@ object NWTest {
   private def validatePartitionedRowTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
       q._1 match {
-        case "Q1" => assertQuery(snc, NWQueries.Q1, 8)
-        case "Q2" => assertQuery(snc, NWQueries.Q2, 91)
-        case "Q3" => assertQuery(snc, NWQueries.Q3, 830)
-        case "Q4" => assertQuery(snc, NWQueries.Q4, 8)
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8)
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 8)
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8)
-        case "Q8" => assertQuery(snc, NWQueries.Q8, 5)
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3)
-        case "Q10" => assertQuery(snc, NWQueries.Q10, 2)
-        case "Q11" => assertQuery(snc, NWQueries.Q11, 0)
-        case "Q12" => assertQuery(snc, NWQueries.Q12, 2)
-        case "Q13" => assertQuery(snc, NWQueries.Q13, 0)
-        case "Q14" => assertQuery(snc, NWQueries.Q14, 91)
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5)
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 7)
-        case "Q17" => assertQuery(snc, NWQueries.Q17, 3)
-        case "Q18" => assertQuery(snc, NWQueries.Q18, 8)
-        case "Q19" => assertQuery(snc, NWQueries.Q19, 13)
-        case "Q20" => assertQuery(snc, NWQueries.Q20, 1)
-        case "Q21" => assertQuery(snc, NWQueries.Q21, 1)
-        case "Q22" => assertQuery(snc, NWQueries.Q22, 1)
-        case "Q23" => assertQuery(snc, NWQueries.Q23, 1)
-        case "Q24" => assertQuery(snc, NWQueries.Q24, 4)
-        case "Q25" => //assertJoin(snc, NWQueries.Q25, 1, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftHashJOin
-        case "Q26" => //assertJoin(snc, NWQueries.Q26, 89, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q27" => //assertJoin(snc, NWQueries.Q27, 9, 4, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q28" => //assertJoin(snc, NWQueries.Q28, 12, 200, classOf[LeftSemiJoinHash])
-        case "Q29" => //assertJoin(snc, NWQueries.Q29, 8, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q30" => //assertJoin(snc, NWQueries.Q30, 8, 200, classOf[LeftSemiJoinHash])
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758)
-        case "Q32" => //assertJoin(snc, NWQueries.Q32, 51, 1, classOf[LocalJoin])
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, 1, classOf[LocalJoin])
-        case "Q34" => //assertJoin(snc, NWQueries.Q34, 5, 200, classOf[LocalJoin]) //BroadcastHashJoin
-        case "Q35" => assertJoin(snc, NWQueries.Q35, 3)
-        case "Q36" => assertJoin(snc, NWQueries.Q36, 5)
-        case "Q37" => assertJoin(snc, NWQueries.Q37, 69)
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 71)
-        case "Q39" => assertJoin(snc, NWQueries.Q39, 9)
-        case "Q40" => assertJoin(snc, NWQueries.Q40, 830)
-        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155)
-        case "Q42" => assertJoin(snc, NWQueries.Q42, 22)
-        case "Q43" => assertJoin(snc, NWQueries.Q43, 830)
-        case "Q44" => assertJoin(snc, NWQueries.Q44, 830) //LeftSemiJoinHash
-        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q50" => //assertJoin(snc, NWQueries.Q50, 2155, 4, classOf[LocalJoin]) //BroadcastHashJoin
-        case "Q51" => //assertJoin(snc, NWQueries.Q51, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155)
-        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155)
+        case "Q1" => assertQuery(snc, NWQueries.Q1, 8, "Q1")
+        case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
+        case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
+        case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
+        case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
+        case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
+        case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
+        case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
+        case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
+        case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
+        case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
+        case "Q20" => assertQuery(snc, NWQueries.Q20, 1, "Q20")
+        case "Q21" => assertQuery(snc, NWQueries.Q21, 1, "Q21")
+        case "Q22" => assertQuery(snc, NWQueries.Q22, 1, "Q22")
+        case "Q23" => assertQuery(snc, NWQueries.Q23, 1, "Q23")
+        case "Q24" => assertQuery(snc, NWQueries.Q24, 4, "Q24")
+        case "Q25" => assertJoin(snc, NWQueries.Q25, 1, "Q25") //BroadcastLeftHashJOin
+        case "Q26" => assertJoin(snc, NWQueries.Q26, 89, "Q26") //BroadcastLeftSemiJoinHash
+        case "Q27" => assertJoin(snc, NWQueries.Q27, 9, "Q27") //BroadcastLeftSemiJoinHash
+        case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
+        case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
+        case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
+        case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33")
+        case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
+        case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35")
+        case "Q36" => assertJoin(snc, NWQueries.Q36, 5, "Q36")
+        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, "Q37")
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, "Q38")
+        case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39")
+        case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40")
+        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41")
+        case "Q42" => assertJoin(snc, NWQueries.Q42, 22, "Q42")
+        case "Q43" => assertJoin(snc, NWQueries.Q43, 830, "Q43")
+        case "Q44" => assertJoin(snc, NWQueries.Q44, 830, "Q44") //LeftSemiJoinHash
+        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650, "Q45") //BroadcastLeftSemiJoinHash
+        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650, "Q46") //BroadcastLeftSemiJoinHash
+        case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650, "Q47") //BroadcastLeftSemiJoinHash
+        case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650, "Q48") //BroadcastLeftSemiJoinHash
+        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650, "Q49") //BroadcastLeftSemiJoinHash
+        case "Q50" => assertJoin(snc, NWQueries.Q50, 2155, "Q50") //BroadcastHashJoin
+        case "Q51" => assertJoin(snc, NWQueries.Q51, 2155, "Q51") //BroadcastHashOuterJoin
+        case "Q52" => assertJoin(snc, NWQueries.Q52, 2155, "Q52") //BroadcastHashOuterJoin
+        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, "Q53")
+        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, "Q54")
       }
     }
   }
@@ -304,60 +305,60 @@ object NWTest {
 
     for (q <- NWQueries.queries) {
       q._1 match {
-        case "Q1" => assertQuery(snc, NWQueries.Q1, 8)
-        case "Q2" => assertQuery(snc, NWQueries.Q2, 91)
-        case "Q3" => assertQuery(snc, NWQueries.Q3, 830)
-        case "Q4" => assertQuery(snc, NWQueries.Q4, 8)
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8)
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 8)
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8)
-        case "Q8" => assertQuery(snc, NWQueries.Q8, 5)
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3)
-        case "Q10" => assertQuery(snc, NWQueries.Q10, 2)
-        case "Q11" => assertQuery(snc, NWQueries.Q11, 0)
-        case "Q12" => assertQuery(snc, NWQueries.Q12, 2)
-        case "Q13" => assertQuery(snc, NWQueries.Q13, 0)
-        case "Q14" => assertQuery(snc, NWQueries.Q14, 91)
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5)
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 7)
-        case "Q17" => assertQuery(snc, NWQueries.Q17, 3)
-        case "Q18" => assertQuery(snc, NWQueries.Q18, 8)
-        case "Q19" => assertQuery(snc, NWQueries.Q19, 13)
-        case "Q20" => assertQuery(snc, NWQueries.Q20, 1)
-        case "Q21" => assertQuery(snc, NWQueries.Q21, 1)
-        case "Q22" => assertQuery(snc, NWQueries.Q22, 1)
-        case "Q23" => assertQuery(snc, NWQueries.Q23, 1)
-        case "Q24" => assertQuery(snc, NWQueries.Q24, 4)
-        case "Q25" => //assertJoin(snc, NWQueries.Q25, 1, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftHashJoin
-        case "Q26" => //assertJoin(snc, NWQueries.Q26, 89, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q27" => //assertJoin(snc, NWQueries.Q27, 9, 4, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q28" => //assertJoin(snc, NWQueries.Q28, 12, 200, classOf[LeftSemiJoinHash])
-        case "Q29" => //assertJoin(snc, NWQueries.Q29, 8, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q30" => //assertJoin(snc, NWQueries.Q30, 8, 200, classOf[LeftSemiJoinHash])
-        case "Q31" => //assertJoin(snc, NWQueries.Q31, 758, 200, classOf[SortMergeJoin]) //BroadcastHashJoin
-        case "Q32" => //assertJoin(snc, NWQueries.Q32, 51, 1, classOf[LocalJoin])
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, 1, classOf[LocalJoin])
-        case "Q34" => //assertJoin(snc, NWQueries.Q34, 5, 200, classOf[LocalJoin]) //BroadcastHashJoin
-        case "Q35" => assertJoin(snc, NWQueries.Q35, 3)
-        case "Q36" => assertJoin(snc, NWQueries.Q36, 5)
-        case "Q37" => //assertJoin(snc, NWQueries.Q37, 69, 5, classOf[BroadcastHashOuterJoin]) //SortMergeOuterJoin
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 71)
-        case "Q39" => assertJoin(snc, NWQueries.Q39, 9)
-        case "Q40" => assertJoin(snc, NWQueries.Q40, 830)
-        case "Q41" => //assertJoin(snc, NWQueries.Q41, 2155, 4, classOf[BroadcastHashJoin]) //SortMergeJoin
-        case "Q42" => //assertJoin(snc, NWQueries.Q42, 22, 200, classOf[SortMergeJoin]) // BroadcastHashJoin
-        case "Q43" => assertJoin(snc, NWQueries.Q43, 830)
-        case "Q44" => assertJoin(snc, NWQueries.Q44, 830)
-        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650) //BroadcastLeftSemiJoinHash
-        case "Q47" => //assertJoin(snc, NWQueries.Q47, 1788650, 8, classOf[CartesianProduct]) // //BroadcastLeftSemiJoinHash
-        case "Q48" => //assertJoin(snc, NWQueries.Q48, 1788650, 8, classOf[CartesianProduct]) //BroadcastLeftSemiJoinHash //BroadcastNestedLoopJoin
-        case "Q49" => //assertJoin(snc, NWQueries.Q49, 1788650, 8, classOf[CartesianProduct]) //BroadcastLeftSemiJoinHash //BroadcastNestedLoopJoin
-        case "Q50" => //assertJoin(snc, NWQueries.Q50, 2155, 4, classOf[SortMergeJoin]) //BroadcastHashJoin
-        case "Q51" => //assertJoin(snc, NWQueries.Q51, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155)
-        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155)
+        case "Q1" => assertQuery(snc, NWQueries.Q1, 8, "Q1")
+        case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
+        case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
+        case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
+        case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
+        case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
+        case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
+        case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
+        case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
+        case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
+        case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
+        case "Q20" => assertQuery(snc, NWQueries.Q20, 1, "Q20")
+        case "Q21" => assertQuery(snc, NWQueries.Q21, 1, "Q21")
+        case "Q22" => assertQuery(snc, NWQueries.Q22, 1, "Q22")
+        case "Q23" => assertQuery(snc, NWQueries.Q23, 1, "Q23")
+        case "Q24" => assertQuery(snc, NWQueries.Q24, 4, "Q24")
+        case "Q25" => assertJoin(snc, NWQueries.Q25, 1, "Q25") //BroadcastLeftHashJoin
+        case "Q26" => assertJoin(snc, NWQueries.Q26, 89, "Q26") //BroadcastLeftSemiJoinHash
+        case "Q27" => assertJoin(snc, NWQueries.Q27, 9, "Q27") //BroadcastLeftSemiJoinHash
+        case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
+        case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
+        case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31") //BroadcastHashJoin
+        case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33")
+        case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
+        case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35")
+        case "Q36" => assertJoin(snc, NWQueries.Q36, 5, "Q36")
+        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, "Q37") //SortMergeOuterJoin
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, "Q38")
+        case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39")
+        case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40")
+        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41") //SortMergeJoin
+        case "Q42" => assertJoin(snc, NWQueries.Q42, 22, "Q42") // BroadcastHashJoin
+        case "Q43" => assertJoin(snc, NWQueries.Q43, 830, "Q43")
+        case "Q44" => assertJoin(snc, NWQueries.Q44, 830, "Q44")
+        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650, "Q45") //BroadcastLeftSemiJoinHash
+        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650, "Q46") //BroadcastLeftSemiJoinHash
+        case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650, "Q47") // //BroadcastLeftSemiJoinHash
+        case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650, "Q48") //BroadcastLeftSemiJoinHash //BroadcastNestedLoopJoin
+        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650, "Q49") //BroadcastLeftSemiJoinHash //BroadcastNestedLoopJoin
+        case "Q50" => assertJoin(snc, NWQueries.Q50, 2155, "Q50") //BroadcastHashJoin
+        case "Q51" => assertJoin(snc, NWQueries.Q51, 2155, "Q51") //BroadcastHashOuterJoin
+        case "Q52" => assertJoin(snc, NWQueries.Q52, 2155, "Q52") //BroadcastHashOuterJoin
+        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, "Q53")
+        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, "Q54")
       }
     }
   }
@@ -413,60 +414,60 @@ object NWTest {
 
     for (q <- NWQueries.queries) {
       q._1 match {
-        case "Q1" => assertQuery(snc, NWQueries.Q1, 8)
-        case "Q2" => assertQuery(snc, NWQueries.Q2, 91)
-        case "Q3" => assertQuery(snc, NWQueries.Q3, 830)
-        case "Q4" => assertQuery(snc, NWQueries.Q4, 8)
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8)
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 8)
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8)
-        case "Q8" => assertQuery(snc, NWQueries.Q8, 5)
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3)
-        case "Q10" => assertQuery(snc, NWQueries.Q10, 2)
-        case "Q11" => assertQuery(snc, NWQueries.Q11, 0)
-        case "Q12" => assertQuery(snc, NWQueries.Q12, 2)
-        case "Q13" => assertQuery(snc, NWQueries.Q13, 0)
-        case "Q14" => assertQuery(snc, NWQueries.Q14, 91)
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5)
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 7)
-        case "Q17" => assertQuery(snc, NWQueries.Q17, 3)
-        case "Q18" => assertQuery(snc, NWQueries.Q18, 8)
-        case "Q19" => assertQuery(snc, NWQueries.Q19, 13)
-        case "Q20" => assertQuery(snc, NWQueries.Q20, 1)
-        case "Q21" => assertQuery(snc, NWQueries.Q21, 1)
-        case "Q22" => assertQuery(snc, NWQueries.Q22, 1)
-        case "Q23" => assertQuery(snc, NWQueries.Q23, 1)
-        case "Q24" => assertQuery(snc, NWQueries.Q24, 4)
-        case "Q25" => //assertJoin(snc, NWQueries.Q25, 1, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftHashJOin
-        case "Q26" => //assertJoin(snc, NWQueries.Q26, 89, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q27" => //assertJoin(snc, NWQueries.Q27, 9, 4, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q28" => //assertJoin(snc, NWQueries.Q28, 12, 200, classOf[LeftSemiJoinHash])
-        case "Q29" => //assertJoin(snc, NWQueries.Q29, 8, 200, classOf[LeftSemiJoinHash]) //BroadcastLeftSemiJoinHash
-        case "Q30" => //assertJoin(snc, NWQueries.Q30, 8, 200, classOf[LeftSemiJoinHash])
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758)
-        case "Q32" => //assertJoin(snc, NWQueries.Q32, 51, 1, classOf[LocalJoin])
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, 1, classOf[LocalJoin])
-        case "Q34" => //assertJoin(snc, NWQueries.Q34, 5, 200, classOf[SortMergeJoin]) //BroadcastHashJoin
-        case "Q35" => //assertJoin(snc, NWQueries.Q35, 3, 4, classOf[BroadcastHashJoin]) //SortMergeJoin
-        case "Q36" => //assertJoin(snc, NWQueries.Q36, 5, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q37" => //assertJoin(snc, NWQueries.Q37, 69, 5, classOf[BroadcastHashOuterJoin]) //SortMergeOuterJoin
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 71)
-        case "Q39" => assertJoin(snc, NWQueries.Q39, 9)
-        case "Q40" => assertJoin(snc, NWQueries.Q40, 830)
-        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155)
-        case "Q42" => assertJoin(snc, NWQueries.Q42, 22)
-        case "Q43" => assertJoin(snc, NWQueries.Q43, 830)
-        case "Q44" => assertJoin(snc, NWQueries.Q44, 830)
-        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650)
-        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650)
-        case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650)
-        case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650)
-        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650)
-        case "Q50" => //assertJoin(snc, NWQueries.Q50, 2155, 4, classOf[SortMergeJoin]) //BroadcastHashJoin
-        case "Q51" => //assertJoin(snc, NWQueries.Q51, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
-        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155)
-        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155)
+        case "Q1" => assertQuery(snc, NWQueries.Q1, 8, "Q1")
+        case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
+        case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
+        case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
+        case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
+        case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
+        case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
+        case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
+        case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
+        case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
+        case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
+        case "Q20" => assertQuery(snc, NWQueries.Q20, 1, "Q20")
+        case "Q21" => assertQuery(snc, NWQueries.Q21, 1, "Q21")
+        case "Q22" => assertQuery(snc, NWQueries.Q22, 1, "Q22")
+        case "Q23" => assertQuery(snc, NWQueries.Q23, 1, "Q23")
+        case "Q24" => assertQuery(snc, NWQueries.Q24, 4, "Q24")
+        case "Q25" => assertJoin(snc, NWQueries.Q25, 1, "Q25") //BroadcastLeftHashJOin
+        case "Q26" => assertJoin(snc, NWQueries.Q26, 89, "Q26") //BroadcastLeftSemiJoinHash
+        case "Q27" => assertJoin(snc, NWQueries.Q27, 9, "Q27") //BroadcastLeftSemiJoinHash
+        case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
+        case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
+        case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
+        case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33")
+        case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
+        case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35") //SortMergeJoin
+        case "Q36" => assertJoin(snc, NWQueries.Q36, 5, "Q36") //BroadcastHashOuterJoin
+        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, "Q37") //SortMergeOuterJoin
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, "Q38")
+        case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39")
+        case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40")
+        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41")
+        case "Q42" => assertJoin(snc, NWQueries.Q42, 22, "Q42")
+        case "Q43" => assertJoin(snc, NWQueries.Q43, 830, "Q43")
+        case "Q44" => assertJoin(snc, NWQueries.Q44, 830, "Q44")
+        case "Q45" => assertJoin(snc, NWQueries.Q45, 1788650, "Q45")
+        case "Q46" => assertJoin(snc, NWQueries.Q46, 1788650, "Q46")
+        case "Q47" => assertJoin(snc, NWQueries.Q47, 1788650, "Q47")
+        case "Q48" => assertJoin(snc, NWQueries.Q48, 1788650, "Q48")
+        case "Q49" => assertJoin(snc, NWQueries.Q49, 1788650, "Q49")
+        case "Q50" => assertJoin(snc, NWQueries.Q50, 2155, "Q50") //BroadcastHashJoin
+        case "Q51" => assertJoin(snc, NWQueries.Q51, 2155, "Q51") //BroadcastHashOuterJoin
+        case "Q52" => assertJoin(snc, NWQueries.Q52, 2155, "Q52") //BroadcastHashOuterJoin
+        case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, "Q53")
+        case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, "Q51")
       }
     }
   }
