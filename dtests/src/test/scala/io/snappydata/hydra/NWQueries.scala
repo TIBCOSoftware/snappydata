@@ -16,9 +16,7 @@
  */
 package io.snappydata.hydra
 
-import io.snappydata.SnappyFunSuite
-
-object NWQueries extends SnappyFunSuite {
+object NWQueries {
 
   val Q1: String = "SELECT * FROM Categories"
   val Q2: String = "SELECT * FROM Customers"
@@ -293,14 +291,14 @@ object NWQueries extends SnappyFunSuite {
     "Q54" -> Q54
   )
 
-  val regions = snc.read.format("com.databricks.spark.csv")
+  val regions = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/regions.csv").getPath)
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
 
-  val categories = snc.read.format("com.databricks.spark.csv")
+  val categories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/categories.csv").getPath)
   val categories_table = "create table categories (" +
@@ -309,7 +307,7 @@ object NWQueries extends SnappyFunSuite {
     "Description string, " +
     "Picture blob)"
 
-  val shippers = snc.read.format("com.databricks.spark.csv")
+  val shippers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/shippers.csv").getPath)
   val shippers_table = "create table shippers (" +
@@ -317,7 +315,7 @@ object NWQueries extends SnappyFunSuite {
     "CompanyName string not null, " +
     "Phone string)"
 
-  val employees = snc.read.format("com.databricks.spark.csv")
+  val employees = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/employees.csv").getPath)
   val employees_table = "create table employees(" +
@@ -343,7 +341,7 @@ object NWQueries extends SnappyFunSuite {
     "ReportsTo int, " +
     "PhotoPath string)"
 
-  val customers = snc.read.format("com.databricks.spark.csv")
+  val customers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/customers.csv").getPath)
   val customers_table = "create table customers(" +
@@ -361,7 +359,7 @@ object NWQueries extends SnappyFunSuite {
     "Phone string, " +
     "Fax string)"
 
-  val orders = snc.read.format("com.databricks.spark.csv")
+  val orders = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/orders.csv").getPath)
   val orders_table = "create table orders (" +
@@ -381,7 +379,7 @@ object NWQueries extends SnappyFunSuite {
     "ShipPostalCode string, " +
     "ShipCountry string)"
 
-  val order_details = snc.read.format("com.databricks.spark.csv")
+  val order_details = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/order-details.csv").getPath)
   val order_details_table = "create table order_details (" +
@@ -396,7 +394,7 @@ object NWQueries extends SnappyFunSuite {
     "Quantity smallint, " +
     "Discount double)"
 
-  val products = snc.read.format("com.databricks.spark.csv")
+  val products = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/products.csv").getPath)
   val products_table = "create table products(" +
@@ -414,7 +412,7 @@ object NWQueries extends SnappyFunSuite {
     "ReorderLevel smallint, " +
     "Discontinued smallint) "
 
-  val suppliers = snc.read.format("com.databricks.spark.csv")
+  val suppliers = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/suppliers.csv").getPath)
   val suppliers_table = "create table suppliers(" +
@@ -433,7 +431,7 @@ object NWQueries extends SnappyFunSuite {
     "Fax string, " +
     "HomePage string) "
 
-  val territories = snc.read.format("com.databricks.spark.csv")
+  val territories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/territories.csv").getPath)
   val territories_table = "create table territories(" +
@@ -444,7 +442,7 @@ object NWQueries extends SnappyFunSuite {
     "TerritoryDescription string, " +
     "RegionID string)"
 
-  val employee_territories = snc.read.format("com.databricks.spark.csv")
+  val employee_territories = NWTest.snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(getClass.getResource("/northwind/employee-territories.csv").getPath)
   val employee_territories_table = "create table employee_territories(" +

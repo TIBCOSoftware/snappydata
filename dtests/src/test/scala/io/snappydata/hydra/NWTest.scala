@@ -16,42 +16,33 @@
  */
 package io.snappydata.hydra
 
-import io.snappydata.SnappyFunSuite
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 
-object NWTest extends SnappyFunSuite with Logging {
+object NWTest {
+  val conf = new SparkConf().
+    setAppName("NW Application")
+  val sc = new SparkContext(conf)
+  val snc = SnappyContext(sc)
   def main(args: Array[String]) {
-    val conf = new SparkConf().
-      setAppName("NW Application")
-    val sc = new SparkContext(conf)
-    val snc = SnappyContext(sc)
     snc.sql("set spark.sql.shuffle.partitions=6")
     dropTables(snc)
-    test("Test replicated row tables queries") {
-      println("Test replicated row tables queries started")
+    println("Test replicated row tables queries started")
       createAndLoadReplicatedTables(snc)
       validateReplicatedTableQueries(snc)
       println("Test replicated row tables queries completed successfully")
-    }
-    test("Test partitioned row tables queries") {
       println("Test partitioned row tables queries started")
       createAndLoadPartitionedTables(snc)
       validatePartitionedRowTableQueries(snc)
       println("Test partitioned row tables queries completed successfully")
-    }
-    test("Test column tables queries") {
       println("Test column tables queries started")
       createAndLoadColumnTables(snc)
       validatePartitionedColumnTableQueries(snc)
       println("Test column tables queries completed successfully")
-    }
-    test("Test colocated tables queries") {
       createAndLoadColocatedTables(snc)
       validateColocatedTableQueries(snc)
-    }
-  }
+   }
 
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int): Any = {
     val df = snc.sql(sqlString)
