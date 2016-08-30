@@ -78,10 +78,11 @@ trait SingleRowInsertableRelation {
 trait SchemaInsertableRelation extends InsertableRelation {
 
   /**
-   * Return the schema required for insertion into the relation
+   * Return the actual relation to be used for insertion into the relation
    * or None if <code>sourceSchema</code> cannot be inserted.
    */
-  def schemaForInsert(sourceSchema: Seq[Attribute]): Option[Seq[Attribute]]
+  def insertableRelation(
+      sourceSchema: Seq[Attribute]): Option[InsertableRelation]
 
   /**
    * Append a given RDD or rows into the relation.

@@ -31,7 +31,7 @@ import scala.util.Sorting
 import io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
-import org.apache.spark._
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -47,10 +47,11 @@ import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
-  final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
+  final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
