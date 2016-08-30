@@ -493,7 +493,7 @@ object ExternalStoreUtils {
     }
   }
 
-  private def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
     Iterator.empty
