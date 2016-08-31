@@ -26,8 +26,7 @@ import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -101,6 +100,20 @@ object SplitSnappyClusterDUnitTest
     context
   }
 
+  def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
+    val catalog = SnappySession.getOrCreate(SnappyContext.globalSparkContext).
+        sessionCatalog
+    val t = catalog.newQualifiedTableName(tableName)
+    try {
+      catalog.getCachedHiveTable(t)
+      assert(assertion = false, s"Table $tableName should not exist in the " +
+          s"cached Hive catalog")
+    } catch {
+      // expected exception
+      case e: org.apache.spark.sql.TableNotFoundException =>
+    }
+  }
+
   override def createTablesAndInsertData(tableType: String): Unit = {
     val snc = SnappyContext(sc)
 
@@ -132,10 +145,6 @@ object SplitSnappyClusterDUnitTest
       props: Map[String, String]): Unit = {
     // embeddedModeTable1 is dropped in split mode. recreate it
     val snc = SnappyContext(sc)
-    // remove below once SNAP-653 is fixed
-    // val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1",
-      registerDestroy = true)
     if (isComplex) {
       createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
         tableType, props)

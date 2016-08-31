@@ -32,9 +32,8 @@ import org.junit.Assert
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql.{AnalysisException, SnappyContext, SnappySession}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -79,8 +78,16 @@ trait SplitClusterDUnitTestBase extends Logging {
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
       startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty)
 
+    // make sure that table dropped from external cluster is not cached
+    // in catalog of embedded mode cluster
+    testObject.assertTableNotCachedInHiveCatalog("APP.EMBEDDEDMODETABLE1")
+
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = false, props)
+
+    // make sure that table dropped from embedded cluster is not cached
+    // in catalog of external cluster
+    vm3.invoke(getClass, "assertTableNotCachedInHiveCatalog", "APP.SPLITMODETABLE1")
 
     logInfo("Test Completed Successfully")
   }
@@ -152,6 +159,8 @@ trait SplitClusterDUnitTestObject extends Logging {
   def verifySplitModeOperations(tableType: String, isComplex: Boolean,
       props: Map[String, String]): Unit
 
+  def assertTableNotCachedInHiveCatalog(tableName: String): Unit
+
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
       prop: Properties, tableType: String, isComplex: Boolean,
       props: Map[String, String], locatorProp: String): Unit = {
@@ -197,11 +206,6 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable2", 1005)
-
-    // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1",
-      registerDestroy = true)
 
     var expected = Seq.empty[ComplexData]
     // create a table in split mode
