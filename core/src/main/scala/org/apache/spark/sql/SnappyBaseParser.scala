@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import scala.collection.mutable
 
+import io.snappydata.Constant
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -189,7 +190,8 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def primitiveType: Rule1[DataType] = rule {
-    STRING ~> (() => CharType(32672, baseType = "STRING")) |
+    STRING ~> (() =>
+      CharType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING")) |
     INTEGER ~> (() => IntegerType) |
     INT ~> (() => IntegerType) |
     BIGINT ~> (() => LongType) |

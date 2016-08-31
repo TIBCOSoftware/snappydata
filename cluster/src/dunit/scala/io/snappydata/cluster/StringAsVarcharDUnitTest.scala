@@ -19,6 +19,7 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 
+import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -34,6 +35,9 @@ class StringAsVarcharDUnitTest(val s: String)
   val tableName1 = "colTab1"
 
   val tableName2 = "colTab2"
+
+  val varcharSize = 100;
+  val charSize = 10;
 
   def testSelectQuery(): Unit = {
     executeQuery("none")
@@ -145,15 +149,20 @@ class StringAsVarcharDUnitTest(val s: String)
 
     assert(md.getColumnName(2).equals("COL_STRING"))
     assert(md.getColumnTypeName(2).equals(stringType))
+    if (stringType.equals("VARCHAR")) {
+      assert(md.getPrecision(2) == Constant.MAX_VARCHAR_SIZE)
+    }
 
     assert(md.getColumnName(3).equals("COL_VARCHAR"))
     assert(md.getColumnTypeName(3).equals("VARCHAR"))
+    assert(md.getPrecision(3) == varcharSize)
 
     assert(md.getColumnName(4).equals("COL_CLOB"))
     assert(md.getColumnTypeName(4).equals("CLOB"))
 
     assert(md.getColumnName(5).equals("COL_CHAR"))
     assert(md.getColumnTypeName(5).equals("VARCHAR"))
+    assert(md.getPrecision(5) == charSize)
 
     assert(md.getTableName(1).equalsIgnoreCase(tName))
   }
@@ -162,10 +171,10 @@ class StringAsVarcharDUnitTest(val s: String)
     val snc = SnappyContext(sc)
 
     snc.sql(s"create table $tableName1 (col_int int, col_string string, " +
-        "col_varchar varchar(100)) using column options(buckets '7')")
+        s"col_varchar varchar($varcharSize)) using column options(buckets '7')")
 
     snc.sql(s"create table $tableName2 (col_int int, col_string string, " +
-        "col_varchar varchar(100), col_clob clob, col_char char(10)) " +
+        s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
         "using column options(buckets '7')")
 
     val data = Seq(Seq(1, "t1.1.string", "t1.1.varchar"),
