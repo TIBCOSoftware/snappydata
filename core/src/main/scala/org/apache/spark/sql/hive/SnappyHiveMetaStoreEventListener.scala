@@ -62,7 +62,7 @@ class SnappyHiveMetaStoreEventListener(config: Configuration)
           val table = getTableName(tableEvent)
           log.debug(s"onDropTable invoked for $table")
           val args = SnappyRemoveCachedObjectsFunction.
-              newArgs(table.toUpperCase, false)
+              newArgs(table, false)
           FunctionService.onMembers(accessors).withArgs(args).
               execute(SnappyRemoveCachedObjectsFunction.ID)
         }
@@ -75,7 +75,7 @@ class SnappyHiveMetaStoreEventListener(config: Configuration)
           val table = getTableName(tableEvent)
           log.debug(s"onDropTable invoked for $table")
           val args = SnappyRemoveCachedObjectsFunction.
-              newArgs(table.toUpperCase, true)
+              newArgs(table, true)
           FunctionService.onMembers(otherMembers).withArgs(args).
               execute(SnappyRemoveCachedObjectsFunction.ID)
         }

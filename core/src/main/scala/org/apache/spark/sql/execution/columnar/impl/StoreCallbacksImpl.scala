@@ -31,8 +31,9 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, Transac
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 
+import org.apache.spark.SparkException
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.{SnappySession, SnappyContext, SQLContext}
+import org.apache.spark.sql.{SparkSession, SplitClusterMode, SnappySession, SnappyContext, SQLContext}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.execution.joins.HashedRelationCache
@@ -156,10 +157,19 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     } else {
       // clean up invoked on external cluster driver (in split mode)
       // from embedded mode lead
-      StoreUtils.removeCachedObjects(SnappySession.
-          getOrCreate(SnappyContext.globalSparkContext).sqlContext, table, true)
-    }
+      val sc = SnappyContext.globalSparkContext
+      val mode = SnappyContext.getClusterMode(sc)
+      mode match {
+        case SplitClusterMode(_, _) =>
+          StoreUtils.removeCachedObjects(
+            SnappySession.getOrCreate(sc).sqlContext, table, true
+          )
 
+        case _ =>
+          throw new SparkException("Clean up expected to be invoked on" +
+            " external cluster driver. Current cluster mode is " + mode)
+      }
+    }
   }
 
 }
