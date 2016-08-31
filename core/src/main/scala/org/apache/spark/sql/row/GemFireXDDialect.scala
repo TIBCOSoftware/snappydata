@@ -116,13 +116,13 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def getJDBCType(dt: DataType,
       md: Metadata): Option[JdbcType] = dt match {
     case StringType =>
-      if (md.contains(Constant.CHAR_SIZE_NAME)) {
-        if (md.contains(Constant.CHAR_TYPE_NAME) &&
-            md.getString(Constant.CHAR_TYPE_NAME).equals("CHAR")) {
-          Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_SIZE_NAME)})",
+      if (md.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+        if (md.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+            md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR")) {
+          Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.CHAR))
         } else { // if VARCHAR/STRING?
-          Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_SIZE_NAME)})",
+          Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.VARCHAR))
         }
       } else {

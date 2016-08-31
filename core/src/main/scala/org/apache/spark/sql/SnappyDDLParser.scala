@@ -466,8 +466,8 @@ abstract class SnappyDDLParser(session: SnappySession)
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
         case CharType(size, baseType) =>
-          builder.putLong(Constant.CHAR_SIZE_NAME, size)
-              .putString(Constant.CHAR_TYPE_NAME, baseType)
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
           (StringType, false)
         case _ => (t, true)
       }

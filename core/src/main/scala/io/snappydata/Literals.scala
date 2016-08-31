@@ -81,9 +81,11 @@ object Constant {
 
   val DEFAULT_CACHE_TIMEOUT_SECS = 10
 
-  val CHAR_TYPE_NAME = "type"
+  val CHAR_TYPE_BASE_PROP = "base"
 
-  val CHAR_SIZE_NAME = "size"
+  val CHAR_TYPE_SIZE_PROP = "size"
+
+  val MAX_VARCHAR_SIZE = 32672
 }
 
 /**

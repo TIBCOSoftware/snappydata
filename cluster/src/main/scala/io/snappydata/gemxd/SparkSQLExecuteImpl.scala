@@ -92,6 +92,8 @@ class SparkSQLExecuteImpl(val sql: String,
     case None => false
   }
 
+  private val sqlConfStringAsClob = snc.sessionState.conf.stringAsClob
+
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
 
@@ -247,17 +249,18 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case s: StringType =>
-        if (snc.sessionState.conf.stringAsClob || stringAsClob) {
-            if (f.metadata.contains(Constant.CHAR_SIZE_NAME) &&
-                !f.metadata.getString(Constant.CHAR_TYPE_NAME).equals("STRING")) {
+        if (sqlConfStringAsClob || stringAsClob
+            /*(stringAsClob.isDefined && Misc.parseBoolean(stringAsClob.get))*/) {
+            if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
+                !f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equals("STRING")) {
               (StoredFormatIds.SQL_VARCHAR_ID,
-                  f.metadata.getLong(Constant.CHAR_SIZE_NAME).asInstanceOf[Int], -1)
+                  f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int], -1)
             } else {
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
-        } else if (f.metadata.contains(Constant.CHAR_SIZE_NAME)) {
+        } else if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
           (StoredFormatIds.SQL_VARCHAR_ID,
-              f.metadata.getLong(Constant.CHAR_SIZE_NAME).asInstanceOf[Int], -1)
+              f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int], -1)
         } else {
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
         }
