@@ -20,7 +20,7 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
 
-object NWTest {
+object NWTestSparkApp {
   val conf = new SparkConf().
     setAppName("NW Application")
   val sc = new SparkContext(conf)
@@ -28,6 +28,7 @@ object NWTest {
 
   def main(args: Array[String]) {
     snc.sql("set spark.sql.shuffle.partitions=6")
+    NWQueries.snc = snc
     dropTables(snc)
     println("Test replicated row tables queries started")
     createAndLoadReplicatedTables(snc)
@@ -48,7 +49,7 @@ object NWTest {
   private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
-    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \nExpected numRows : ${numRows} \n df.explain() : ${df.explain()}")
+    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n df.explain() : ${df.explain()}")
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " df.explain() =" + df.explain())
@@ -56,7 +57,7 @@ object NWTest {
 
   private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String): Any = {
     val df = snc.sql(sqlString)
-    println(s"Query ${queryNum} \n df.count is : ${df.count} \nExpected numRows : ${numRows} \n df.explain() : ${df.explain()}")
+    println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n df.explain() : ${df.explain()}")
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " df.explain() =" + df.explain())
@@ -104,20 +105,20 @@ object NWTest {
         case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
         case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
         case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 7, "Q6")
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 7, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 7, "Q7")
         case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 2, "Q9")
         case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
         case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
         case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
         case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
         case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 6, "Q16")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 3, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
         case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
-        case "Q18" => assertQuery(snc, NWQueries.Q18, 7, "Q18")
+        case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
         case "Q20" => assertQuery(snc, NWQueries.Q20, 1, "Q20")
         case "Q21" => assertQuery(snc, NWQueries.Q21, 1, "Q21")
@@ -130,7 +131,7 @@ object NWTest {
         case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
         case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29")
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 683, "Q31")
         case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
         case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34")
@@ -207,18 +208,18 @@ object NWTest {
         case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
         case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
         case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 7, "Q6")
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 7, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 7, "Q7")
         case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 2, "Q9")
         case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
         case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
         case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
         case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
         case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 6, "Q16")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 3, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
         case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
         case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
@@ -233,7 +234,7 @@ object NWTest {
         case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
         case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 683, "Q31")
         case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
         case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
@@ -310,18 +311,18 @@ object NWTest {
         case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
         case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
         case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 7, "Q6")
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 7, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 7, "Q7")
         case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 2, "Q9")
         case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
         case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
         case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
         case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
         case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 6, "Q16")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 3, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
         case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
         case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
@@ -336,7 +337,7 @@ object NWTest {
         case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
         case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31") //BroadcastHashJoin
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 683, "Q31") //BroadcastHashJoin
         case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
         case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
@@ -419,18 +420,18 @@ object NWTest {
         case "Q2" => assertQuery(snc, NWQueries.Q2, 91, "Q2")
         case "Q3" => assertQuery(snc, NWQueries.Q3, 830, "Q3")
         case "Q4" => assertQuery(snc, NWQueries.Q4, 8, "Q4")
-        case "Q5" => assertQuery(snc, NWQueries.Q5, 8, "Q5")
-        case "Q6" => assertQuery(snc, NWQueries.Q6, 7, "Q6")
-        case "Q7" => assertQuery(snc, NWQueries.Q7, 8, "Q7")
+        case "Q5" => assertQuery(snc, NWQueries.Q5, 7, "Q5")
+        case "Q6" => assertQuery(snc, NWQueries.Q6, 8, "Q6")
+        case "Q7" => assertQuery(snc, NWQueries.Q7, 7, "Q7")
         case "Q8" => assertQuery(snc, NWQueries.Q8, 5, "Q8")
-        case "Q9" => assertQuery(snc, NWQueries.Q9, 3, "Q9")
+        case "Q9" => assertQuery(snc, NWQueries.Q9, 2, "Q9")
         case "Q10" => assertQuery(snc, NWQueries.Q10, 2, "Q10")
         case "Q11" => assertQuery(snc, NWQueries.Q11, 0, "Q11")
         case "Q12" => assertQuery(snc, NWQueries.Q12, 2, "Q12")
         case "Q13" => assertQuery(snc, NWQueries.Q13, 0, "Q13")
         case "Q14" => assertQuery(snc, NWQueries.Q14, 91, "Q14")
-        case "Q15" => assertQuery(snc, NWQueries.Q15, 5, "Q15")
-        case "Q16" => assertQuery(snc, NWQueries.Q16, 6, "Q16")
+        case "Q15" => assertQuery(snc, NWQueries.Q15, 3, "Q15")
+        case "Q16" => assertQuery(snc, NWQueries.Q16, 7, "Q16")
         case "Q17" => assertQuery(snc, NWQueries.Q17, 3, "Q17")
         case "Q18" => assertQuery(snc, NWQueries.Q18, 8, "Q18")
         case "Q19" => assertQuery(snc, NWQueries.Q19, 13, "Q19")
@@ -445,7 +446,7 @@ object NWTest {
         case "Q28" => assertJoin(snc, NWQueries.Q28, 12, "Q28")
         case "Q29" => assertJoin(snc, NWQueries.Q29, 8, "Q29") //BroadcastLeftSemiJoinHash
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30")
-        case "Q31" => assertJoin(snc, NWQueries.Q31, 758, "Q31")
+        case "Q31" => assertJoin(snc, NWQueries.Q31, 683, "Q31")
         case "Q32" => assertJoin(snc, NWQueries.Q32, 51, "Q32")
         case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34") //BroadcastHashJoin
@@ -497,5 +498,6 @@ object NWTest {
     snc.sql("drop table if exists territories")
     println("territories table dropped successfully.");
   }
+
 
 }
