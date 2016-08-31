@@ -24,8 +24,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -111,6 +111,46 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsPartitionedTable(sc: SparkContext,
+      region: PartitionedRegion): Array[Partition] = {
+
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      allocateBucketsToPartitions(sc, region)
+    } else {
+      val numPartitions = region.getTotalNumberOfBuckets
+      val partitions = new Array[Partition](numPartitions)
+
+      for (p <- 0 until numPartitions) {
+        val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
+        val prefNodes = distMembers.map(
+          m => SnappyContext.storeToBlockMap.get(m.toString)
+        ).filter(_.isDefined)
+        val prefNodeSeq = prefNodes.map(_.get).toSeq
+        var buckets = new mutable.HashSet[Int]()
+        buckets += p
+        partitions(p) = new MultiBucketExecutorPartition(p, buckets, prefNodeSeq)
+      }
+      partitions
+    }
+  }
+
+  def getPartitionsReplicatedTable(sc: SparkContext,
+      region: CacheDistributionAdvisee): Array[Partition] = {
+
+    val numPartitions = 1
+    val partitions = new Array[Partition](numPartitions)
+
+    val regionMembers = if (Utils.isLoner(sc)) {
+      Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
+    } else {
+      region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
+    }
+    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
+    partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
+    partitions
+  }
+
+  private def allocateBucketsToPartitions(sc: SparkContext,
                                     region: PartitionedRegion): Array[Partition] = {
 
     val numBuckets = region.getTotalNumberOfBuckets
@@ -165,22 +205,6 @@ object StoreUtils extends Logging {
         }
     })
     assert(totalBuckets.isEmpty)
-    partitions
-  }
-
-  def getPartitionsReplicatedTable(sc: SparkContext,
-                                   region: CacheDistributionAdvisee): Array[Partition] = {
-
-    val numPartitions = 1
-    val partitions = new Array[Partition](numPartitions)
-
-    val regionMembers = if (Utils.isLoner(sc)) {
-      Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
-    } else {
-      region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
-    }
-    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
-    partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
     partitions
   }
 

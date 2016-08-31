@@ -45,8 +45,6 @@ object ExternalStoreUtils {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
-  val numCores = Runtime.getRuntime.availableProcessors()
-  //final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = s"$numCores"
   final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
   final val INDEX_TYPE = "INDEX_TYPE"
