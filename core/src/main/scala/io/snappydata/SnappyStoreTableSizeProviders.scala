@@ -29,6 +29,7 @@ import scala.reflect.ClassTag
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage, RegionSizeCalculatorFunction}
 import io.snappydata.Constant._
@@ -63,8 +64,12 @@ object StoreTableValueSizeProviderService extends Logging {
 
         result.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, Long]]]
             .asScala.foreach(_.asScala.foreach(row => {
-          currentTableSizeInfo += (row._1 ->
-              currentTableSizeInfo.get(row._1).map(value => value + row._2).getOrElse(row._2))
+
+          val size = if (currentTableSizeInfo.contains(row._1)) {
+            currentTableSizeInfo.get(row._1).get + row._2
+          } else row._2
+
+          currentTableSizeInfo += (row._1 -> size)
         }))
 
         tableSizeInfo = Utils.immutableMap(currentTableSizeInfo)
@@ -95,10 +100,10 @@ object StoreTableSizeProvider {
 
   private val memoryAnalyticsDefault = MemoryAnalytics(0, 0, 1)
 
-  def getTableSizes: (mutable.Set[UIAnalytics], mutable.Set[UIAnalytics]) = {
+  def getTableSizes: (Set[UIAnalytics], Set[UIAnalytics]) = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
     if (currentTableStats == null) {
-      return (mutable.Set(), mutable.Set())
+      return (Set(), Set())
     }
     val columnSet = mutable.Set[UIAnalytics]()
     val rowSet = mutable.Set[UIAnalytics]()
@@ -114,14 +119,21 @@ object StoreTableSizeProvider {
           maForColumn.totalRows, isColumnTable = true)
       }
       else {
-        rowSet += ( new UIAnalytics(details._1,
-          maForRowBuffer.totalSize/maForRowBuffer.numHosts,
-          maForRowBuffer.totalRows/maForRowBuffer.numHosts,
-          maForColumn.totalSize, maForColumn.totalRows, isColumnTable = false))
+        var size: Long = 0
+        var rowCount: Long = 0
+        if (Misc.getRegionForTable(details._1, true).isInstanceOf[PartitionedRegion]) {
+          size = maForRowBuffer.totalSize
+          rowCount = maForRowBuffer.totalRows
+        } else {
+          size = maForRowBuffer.totalSize / maForRowBuffer.numHosts
+          rowCount = maForRowBuffer.totalRows / maForRowBuffer.numHosts
+        }
+        rowSet += (new UIAnalytics(details._1, size, rowCount, maForColumn.totalSize,
+          maForColumn.totalRows, isColumnTable = false))
       }
     })
 
-    (rowSet, columnSet)
+    (rowSet.toSet, columnSet.toSet)
   }
 
   private def getMemoryAnalyticsDetails(
