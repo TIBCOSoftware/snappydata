@@ -20,8 +20,11 @@ import java.sql.Connection
 
 import io.snappydata.StoreTableValueSizeProviderService
 
+import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
@@ -31,7 +34,6 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, Partition}
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
@@ -47,7 +49,7 @@ case class JDBCMutableRelation(
     origOptions: Map[String, String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
-    with PrunedFilteredScan
+    with PrunedUnsafeFilteredScan
     with InsertableRelation
     with RowInsertableRelation
     with UpdatableRelation
@@ -148,8 +150,8 @@ case class JDBCMutableRelation(
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)
 
-  override def buildScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Row] = {
+  override def buildUnsafeScan(requiredColumns: Array[String],
+    filters: Array[Filter]): RDD[InternalRow] = {
     new JDBCRDD(
       sqlContext.sparkContext,
       executorConnector,
@@ -159,7 +161,7 @@ case class JDBCMutableRelation(
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
-      connProperties.executorConnProps).asInstanceOf[RDD[Row]]
+      connProperties.executorConnProps)
   }
 
   final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
@@ -230,11 +232,10 @@ case class JDBCMutableRelation(
     var index = 0
     // not using loop over index below because incoming Seq[...]
     // may not have efficient index lookup
-    updateColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
-        col, throw new AnalysisException(
+    updateColumns.foreach { c =>
+      setFields(index) = schemaFields.getOrElse(c, throw new AnalysisException(
           "JDBCUpdatableRelation: Cannot resolve column name " +
-              s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
+              s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,

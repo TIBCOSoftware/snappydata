@@ -16,11 +16,10 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.sql.catalyst.{InternalRow, expressions}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.catalyst.InternalRow
 
 private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
-    var rowCount: Int, val batchSize: Int, schema: StructType,
+    var rowCount: Int, val batchSize: Int,
     val batchAggregate: CachedBatch => Unit) extends Serializable {
 
   var columnBuilders = getColumnBuilders
@@ -32,7 +31,7 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
    */
   private def appendRow_(newBuilders: Boolean, row: InternalRow,
     flush: Boolean): Unit = {
-    val rowLength = if (row == expressions.EmptyRow) 0 else row.numFields
+    val rowLength = if (row ne null) row.numFields else 0
     if (rowLength > 0) {
       // Added for SPARK-6082. This assertion can be useful for scenarios when
       // something like Hive TRANSFORM is used. The external data generation
@@ -52,10 +51,9 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
     if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
-      //val stats = InternalRow.fromSeq(columnBuilders.map(
+      // val stats = InternalRow.fromSeq(columnBuilders.map(
       //  _.columnStats.collectedStatistics).flatMap(_.values))
       val stats: InternalRow = null
-      // TODO: somehow push into global batchStats
       batchAggregate(CachedBatch(rowCount,
         columnBuilders.map(_.build().array()), stats))
       if (newBuilders) columnBuilders = getColumnBuilders
@@ -68,7 +66,7 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
 
   def forceEndOfBatch(): Unit = {
     if (rowCount > 0) {
-      appendRow_(newBuilders = false, expressions.EmptyRow, flush = true)
+      appendRow_(newBuilders = false, null, flush = true)
     }
   }
 }

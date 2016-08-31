@@ -1,17 +1,31 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.benchmark.snappy
 
-import scala.collection.JavaConverters._
+import java.io.{File, FileOutputStream, PrintStream}
+
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
-import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
-  * Created by kishor on 28/1/16.
-  */
 object TPCH_Snappy_Query extends SnappySQLJob{
 
   var sqlSparkProperties: Array[String] = _
@@ -23,13 +37,16 @@ object TPCH_Snappy_Query extends SnappySQLJob{
   var runsForAverage: Integer = _
 
 
-   override def runJob(snc: C, jobConfig: Config): Any = {
+   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
-     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
-       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
-       println("****************SparkSqlProp : " + entryString)
-       snc.sql("set " + entryString)
-     })
+//     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
+//       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
+//       println("****************SparkSqlProp : " + entryString)
+//       snc.sql("set " + entryString)
+//     })
+
+     var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
+     var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
 
      for(prop <- sqlSparkProperties) {
        snc.sql(s"set $prop")
@@ -40,32 +57,34 @@ object TPCH_Snappy_Query extends SnappySQLJob{
      for(i <- 1 to 1) {
        for(query <- queries)
          query match {
-           case "1" =>   TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "2" =>   TPCH_Snappy.execute("q2", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "3"=>   TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "4" =>   TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "5" =>   TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "6" =>   TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "7" =>   TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "8" =>   TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "9" =>   TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "10" =>   TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "11" =>   TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "12" =>   TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "13" =>   TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "14" =>   TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "15" =>   TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "16" =>   TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "17" =>   TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "18" =>   TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "19" =>   TPCH_Snappy.execute("q19", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "20" =>   TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "21" =>   TPCH_Snappy.execute("q21", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
-           case "22" =>   TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage)
+           case "1" =>   TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "2" =>   TPCH_Snappy.execute("q2", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "3"=>   TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "4" =>   TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "5" =>   TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "6" =>   TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "7" =>   TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "8" =>   TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "9" =>   TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "10" =>   TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "11" =>   TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "12" =>   TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "13" =>   TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "14" =>   TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "15" =>   TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "16" =>   TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "17" =>   TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "18" =>   TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "19" =>   TPCH_Snappy.execute("q19", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "20" =>   TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "21" =>   TPCH_Snappy.execute("q21", snc,isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
+           case "22" =>   TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i, useIndex, warmUp, runsForAverage, avgPrintStream)
              println("---------------------------------------------------------------------------------")
          }
 
      }
+     avgPrintStream.close()
+     avgFileStream.close()
 
      TPCH_Snappy.close()
    }
@@ -89,7 +108,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
     runJob(snc, null)
   }
 
-   override def validate(sc: C, config: Config): SparkJobValidation = {
+   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
      var sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
        config.getString("sparkSqlProps")
@@ -101,7 +120,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
      var tempqueries = if (config.hasPath("queries")) {
        config.getString("queries")
      } else {
-       return new SparkJobInvalid("Specify Query number to be executed")
+       return new SnappyJobInvalid("Specify Query number to be executed")
      }
 
      println(s"tempqueries : $tempqueries")
@@ -110,25 +129,25 @@ object TPCH_Snappy_Query extends SnappySQLJob{
      useIndex = if (config.hasPath("useIndex")) {
        config.getBoolean("useIndex")
      } else {
-       return new SparkJobInvalid("Specify whether to use Index")
+       return new SnappyJobInvalid("Specify whether to use Index")
      }
 
      isResultCollection = if (config.hasPath("resultCollection")) {
        config.getBoolean("resultCollection")
      } else {
-       return new SparkJobInvalid("Specify whether to to collect results")
+       return new SnappyJobInvalid("Specify whether to to collect results")
      }
 
      warmUp = if (config.hasPath("warmUpIterations")) {
        config.getInt("warmUpIterations")
      } else {
-       return new SparkJobInvalid("Specify number of warmup iterations ")
+       return new SnappyJobInvalid("Specify number of warmup iterations ")
      }
      runsForAverage = if (config.hasPath("actualRuns")) {
        config.getInt("actualRuns")
      } else {
-       return new SparkJobInvalid("Specify number of  iterations of which average result is calculated")
+       return new SnappyJobInvalid("Specify number of  iterations of which average result is calculated")
      }
-     SparkJobValid
+     new SnappyJobValid()
    }
  }

@@ -16,13 +16,12 @@
  */
 package io.snappydata.benchmark.snappy
 
-import java.io.File
+import java.io.{PrintStream, FileOutputStream, File}
 
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
-import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.SnappySQLJob
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
@@ -31,39 +30,67 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
    var buckets_Cust_Part_PartSupp: String = _
    var buckets_Nation_Region_Supp: String = _
    var useIndex: Boolean = _
-   var nation_Region_Supp_col = false
+   var nation_Region_Supp_col: Boolean =  _
 
-   override def runJob(snc: C, jobConfig: Config): Any = {
+   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
      val props : Map[String, String] = null
      val isSnappy = true
+     val dbName = "TPCH"
 
+     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"BulkLoadPerf.out"))
+     var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
 
      val usingOptionString = s"""
            USING row
            OPTIONS ()"""
 
+
+     snc.dropTable("NATION", ifExists = true)
+     snc.dropTable("REGION", ifExists = true)
+     snc.dropTable("SUPPLIER", ifExists = true)
+     snc.dropTable("PARTSUPP", ifExists = true)
+     snc.dropTable("LINEITEM_PART", ifExists = true)
+     snc.dropTable("PART", ifExists = true)
+     snc.dropTable("ORDERS_CUST", ifExists = true)
+     snc.dropTable("CUSTOMER", ifExists = true)
+     snc.dropTable("LINEITEM", ifExists = true)
+     snc.dropTable("ORDERS", ifExists = true)
+
      if (nation_Region_Supp_col) {
-       TPCHColumnPartitionedTable.createAndPopulateNationTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
-       TPCHColumnPartitionedTable.createAndPopulateRegionTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
-       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(props, snc, tpchDataPath, isSnappy, buckets_Nation_Region_Supp)
+       TPCHColumnPartitionedTable.createAndPopulateNationTable(props, snc, tpchDataPath, isSnappy,
+         buckets_Nation_Region_Supp, loadPerfPrintStream)
+       TPCHColumnPartitionedTable.createAndPopulateRegionTable(props, snc, tpchDataPath, isSnappy,
+         buckets_Nation_Region_Supp, loadPerfPrintStream)
+       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(props, snc, tpchDataPath, isSnappy,
+         buckets_Nation_Region_Supp, loadPerfPrintStream)
      } else {
-       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
+       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+         loadPerfPrintStream)
+       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+         loadPerfPrintStream)
+       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+         loadPerfPrintStream)
      }
 
-     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
-     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
-     TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
-     TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
-     TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy,
+       buckets_Order_Lineitem, loadPerfPrintStream)
+     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy,
+       buckets_Order_Lineitem, loadPerfPrintStream)
+     TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+     TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+     TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
      if (useIndex) {
-       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
-       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(props, snc, tpchDataPath, isSnappy,
+         buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(props, snc, tpchDataPath, isSnappy,
+         buckets_Cust_Part_PartSupp, loadPerfPrintStream)
      }
    }
 
-   override def validate(sc: C, config: Config): SparkJobValidation = {
+   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
      tpchDataPath = if (config.hasPath("dataLocation")) {
        config.getString("dataLocation")
@@ -97,15 +124,15 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
      }
 
      if (!(new File(tpchDataPath)).exists()) {
-       return new SparkJobInvalid("Incorrect tpch data path. " +
+       return new SnappyJobInvalid("Incorrect tpch data path. " +
            "Specify correct location")
      }
 
      useIndex = if (config.hasPath("useIndex")) {
        config.getBoolean("useIndex")
      } else {
-       return new SparkJobInvalid("Specify whether to use Index")
+       return new SnappyJobInvalid("Specify whether to use Index")
      }
-     SparkJobValid
+     SnappyJobValid()
    }
  }
