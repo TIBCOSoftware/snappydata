@@ -80,6 +80,10 @@ object Constant {
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
   val DEFAULT_CACHE_TIMEOUT_SECS = 10
+
+  val CHAR_TYPE_NAME = "type"
+
+  val CHAR_SIZE_NAME = "size"
 }
 
 /**
@@ -181,4 +185,15 @@ object QueryHint extends Enumeration {
    * SELECT * FROM t1 --+ complexTypeAsClob(1)
    */
   val ComplexTypeAsClob = Value("complexTypeAsClob")
+
+  /**
+   * Query hint for SQL queries to serialize STRING type as CLOB rather than
+   * as varchars for performance benefits.
+   * <p>
+   * Possible values are 'true/1' or 'false/0'
+   * <p>
+   * Example:<br>
+   * SELECT * FROM t1 --+ stringAsClob(1)
+   */
+  val StringAsClob = Value("stringAsClob")
 }

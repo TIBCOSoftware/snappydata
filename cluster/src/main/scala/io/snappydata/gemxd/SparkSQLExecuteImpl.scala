@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.QueryHint
+import io.snappydata.{Constant, QueryHint}
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
@@ -81,6 +81,12 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as CLOBs
   private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsClob.toString) match {
+    case Some(v) => Misc.parseBoolean(v)
+    case None => false
+  }
+
+  private[this] val stringAsClob = snc.snappySession.getPreviousQueryHints.get(
+    QueryHint.StringAsClob.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
   }
@@ -213,6 +219,8 @@ class SparkSQLExecuteImpl(val sql: String,
       if (tp == StoredFormatIds.SQL_DECIMAL_ID) {
         InternalDataSerializer.writeSignedVL(precision, hdos) // precision
         InternalDataSerializer.writeSignedVL(scale, hdos) // scale
+      } else if (tp == StoredFormatIds.SQL_VARCHAR_ID) {
+        InternalDataSerializer.writeSignedVL(precision, hdos) // size
       }
     }
   }
@@ -222,9 +230,10 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => getSQLType(f.dataType)).toArray
+    querySchema.map(f => getSQLType(f)).toArray
 
-  private def getSQLType(dataType: DataType): (Int, Int, Int) = {
+  private def getSQLType(f: StructField): (Int, Int, Int) = {
+    val dataType = f.dataType
     dataType match {
       case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
       case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
@@ -236,7 +245,21 @@ class SparkSQLExecuteImpl(val sql: String,
       case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID, t.precision, t.scale)
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
-      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+      case s: StringType =>
+        if (snc.sessionState.conf.stringAsClob || stringAsClob) {
+            if (f.metadata.contains(Constant.CHAR_SIZE_NAME) &&
+                !f.metadata.getString(Constant.CHAR_TYPE_NAME).equals("STRING")) {
+              (StoredFormatIds.SQL_VARCHAR_ID,
+                  f.metadata.getLong(Constant.CHAR_SIZE_NAME).asInstanceOf[Int], -1)
+            } else {
+              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+            }
+        } else if (f.metadata.contains(Constant.CHAR_SIZE_NAME)) {
+          (StoredFormatIds.SQL_VARCHAR_ID,
+              f.metadata.getLong(Constant.CHAR_SIZE_NAME).asInstanceOf[Int], -1)
+        } else {
+          (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+        }
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       case _: ArrayType | _: MapType | _: StructType =>
         // the ID here is different from CLOB because serialization of CLOB
@@ -421,7 +444,7 @@ object SparkSQLExecuteImpl {
             dvd.setValue(in.readDouble())
           case StoredFormatIds.SQL_VARCHAR_ID =>
             // read the full length as an integer
-            val utfLen = in.readInt()
+            val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
               val pos = in.position()
               dvd.readBytes(in.array(), pos, utfLen)

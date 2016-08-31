@@ -188,7 +188,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def primitiveType: Rule1[DataType] = rule {
-    STRING ~> (() => StringType) |
+    STRING ~> (() => CharType(32672, baseType = "STRING")) |
     INTEGER ~> (() => IntegerType) |
     INT ~> (() => IntegerType) |
     BIGINT ~> (() => LongType) |
@@ -243,9 +243,9 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def columnCharType: Rule1[DataType] = rule {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, isFixedLength = false)) |
+      CharType(d.toInt, baseType = "VARCHAR")) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, isFixedLength = true))
+      CharType(d.toInt, baseType = "CHAR"))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
