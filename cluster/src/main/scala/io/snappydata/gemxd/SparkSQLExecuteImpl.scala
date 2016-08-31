@@ -18,6 +18,7 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -413,7 +414,7 @@ object SparkSQLExecuteImpl {
             if (utfLen >= 0) {
               val pos = in.position()
               dvd.setValue(new String(in.array(), pos, utfLen,
-                StringUtils.UTF8))
+                StandardCharsets.UTF_8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()

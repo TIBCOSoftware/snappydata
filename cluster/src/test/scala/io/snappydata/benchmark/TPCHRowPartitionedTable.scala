@@ -1,8 +1,9 @@
 package io.snappydata.benchmark
 
+import java.io.PrintStream
 import java.sql.Statement
 
-import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 
 /**
@@ -72,9 +73,10 @@ object TPCHRowPartitionedTable {
     println("Created Table CUSTOMER")
   }
 
-  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
-    //val snappyContext = SnappyContext.getOrCreate(sc)
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, buckets:String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime=System.currentTimeMillis()
     val partData = sc.textFile(s"$path/part.tbl")
     val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
     val partDF = sqlContext.createDataFrame(partReadings)
@@ -97,21 +99,22 @@ object TPCHRowPartitionedTable {
         """ + usingOptionString
       )
       println("Created Table PART")
-      partDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("PART")
+      partDF.write.insertInto("PART")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
     } else {
-      partDF.registerTempTable("PART")
+      partDF.createOrReplaceTempView("PART")
       sqlContext.cacheTable("PART")
-      val cnts = sqlContext.sql("select count(*) from PART").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("PART").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
     }
   }
 
-  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, bukcets:String): Unit = {
-    //val snappyContext = SnappyContext.getOrCreate(sc)
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, bukcets:String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime=System.currentTimeMillis()
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
     val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartSuppRow(s))
     val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
@@ -131,54 +134,22 @@ object TPCHRowPartitionedTable {
         """ + usingOptionString
       )
       println("Created Table PARTSUPP")
-      partSuppDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("PARTSUPP")
+      partSuppDF.write.insertInto("PARTSUPP")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
     } else {
-      partSuppDF.registerTempTable("PARTSUPP")
+      partSuppDF.createOrReplaceTempView("PARTSUPP")
       sqlContext.cacheTable("PARTSUPP")
-      val cnts = sqlContext.sql("select count(*) from PARTSUPP").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("PARTSUPP").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
     }
   }
 
-//  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
-//    val snappyContext = SnappyContext.getOrCreate(sc)
-//    val customerData = sc.textFile(s"$path/customer.tbl")
-//    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
-//    val customerDF = snappyContext.createDataFrame(customerReadings)
-//
-//    if (isSnappy) {
-//      snappyContext.sql(
-//        """CREATE TABLE CUSTOMER (
-//                C_CUSTKEY INTEGER NOT NULL PRIMARY KEY,
-//                C_NAME VARCHAR(25) NOT NULL,
-//                C_ADDRESS VARCHAR(40) NOT NULL,
-//                C_NATIONKEY INTEGER NOT NULL ,
-//                C_PHONE VARCHAR(15) NOT NULL,
-//                C_ACCTBAL DECIMAL(15,2) NOT NULL,
-//                C_MKTSEGMENT VARCHAR(10) NOT NULL,
-//                C_COMMENT VARCHAR(117) NOT NULL
-//             ) PARTITION BY COLUMN (C_CUSTKEY)
-//        """ + usingOptionString
-//      )
-//      println("Created Table CUSTOMER")
-//      customerDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("CUSTOMER")
-//    } else {
-//      customerDF.registerTempTable("CUSTOMER")
-//      snappyContext.cacheTable("CUSTOMER")
-//      val cnts = snappyContext.sql("select count(*) from CUSTOMER").collect()
-//      for (s <- cnts) {
-//        var output = s.toString()
-//        println(output)
-//      }
-//    }
-//  }
-
-  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
-    //val snappyContext = snappyContext.getOrCreate(sc)
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
+      path: String, isSnappy: Boolean, buckets:String, loadPerfPrintStream : PrintStream): Unit = {
     val sc = sqlContext.sparkContext
+    val startTime=System.currentTimeMillis()
     val customerData = sc.textFile(s"$path/customer.tbl")
     val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema.parseCustomerRow(s))
     val customerDF = sqlContext.createDataFrame(customerReadings)
@@ -200,15 +171,15 @@ object TPCHRowPartitionedTable {
         """ + usingOptionString
       )
       println("Created Table CUSTOMER")
-      customerDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("CUSTOMER")
+      customerDF.write.insertInto("CUSTOMER")
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
     } else {
-      customerDF.registerTempTable("CUSTOMER")
+      customerDF.createOrReplaceTempView("CUSTOMER")
       sqlContext.cacheTable("CUSTOMER")
-      val cnts = sqlContext.sql("select count(*) from CUSTOMER").collect()
-      for (s <- cnts) {
-        var output = s.toString()
-        println(output)
-      }
+      sqlContext.table("CUSTOMER").count()
+      val endTime = System.currentTimeMillis()
+      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
     }
   }
 

@@ -20,11 +20,12 @@ import scala.collection.mutable
 
 import org.parboiled2._
 
-import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -42,27 +43,27 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def commentBodyOrHint: Rule0 = rule {
-    '+' ~ (SnappyParserConsts.whitespace.* ~ capture(CharPredicate.Alpha ~
-        SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
-        '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
+    '+' ~ (Consts.whitespace.* ~ capture(CharPredicate.Alpha ~
+        Consts.identifier.*) ~ Consts.whitespace.* ~
+        '(' ~ capture(noneOf(Consts.hintValueEnd).*) ~ ')' ~>
         ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
         commentBody |
     commentBody
   }
 
   protected final def lineCommentOrHint: Rule0 = rule {
-    '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
-        SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
-        '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
+    '+' ~ (Consts.space.* ~ capture(CharPredicate.Alpha ~
+        Consts.identifier.*) ~ Consts.space.* ~
+        '(' ~ capture(noneOf(Consts.lineHintEnd).*) ~ ')' ~>
         ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
-        noneOf(SnappyParserConsts.lineCommentEnd).* |
-    noneOf(SnappyParserConsts.lineCommentEnd).*
+        noneOf(Consts.lineCommentEnd).* |
+    noneOf(Consts.lineCommentEnd).*
   }
 
   /** The recognized whitespace characters and comments. */
   protected final def ws: Rule0 = rule {
     quiet(
-      SnappyParserConsts.whitespace |
+      Consts.whitespace |
       '-' ~ '-' ~ lineCommentOrHint |
       '/' ~ '*' ~ (commentBodyOrHint | fail("unclosed comment"))
     ).*
@@ -70,7 +71,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   /** All recognized delimiters including whitespace. */
   final def delimiter: Rule0 = rule {
-    quiet(&(SnappyParserConsts.delimiters)) ~ ws | EOI
+    quiet(&(Consts.delimiters)) ~ ws | EOI
   }
 
   protected final def commaSep: Rule0 = rule {
@@ -82,11 +83,11 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def integral: Rule1[String] = rule {
-    capture(plusOrMinus.? ~ CharPredicate.Digit. +) ~ ws
+    capture(Consts.plusOrMinus.? ~ CharPredicate.Digit. +) ~ ws
   }
 
   protected final def scientificNotation: Rule0 = rule {
-    SnappyParserConsts.exponent ~ plusOrMinus.? ~ CharPredicate.Digit. +
+    Consts.exponent ~ Consts.plusOrMinus.? ~ CharPredicate.Digit. +
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
@@ -114,10 +115,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   protected def start: Rule1[LogicalPlan]
 
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ SnappyParserConsts.identifier.*)) ~
+    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
-      test(!SnappyParserConsts.reservedKeywords.contains(ucase)) ~
+      test(!Consts.reservedKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
     quotedIdentifier
@@ -141,10 +142,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ SnappyParserConsts.identifier.*)) ~
+    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
-      test(!SnappyParserConsts.allKeywords.contains(ucase)) ~
+      test(!Consts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
     quotedIdentifier
@@ -154,32 +155,32 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   // It is not useful to see long list of "expected ARRAY or BIGINT or ..."
   // for parse errors, so not making these separate rules and instead naming
   // the common rule as "datatype" which is otherwise identical to "keyword"
-  final def ARRAY: Rule0 = newDataType(SnappyParserConsts.ARRAY)
-  final def BIGINT: Rule0 = newDataType(SnappyParserConsts.BIGINT)
-  final def BINARY: Rule0 = newDataType(SnappyParserConsts.BINARY)
-  final def BLOB: Rule0 = newDataType(SnappyParserConsts.BLOB)
-  final def BOOLEAN: Rule0 = newDataType(SnappyParserConsts.BOOLEAN)
-  final def BYTE: Rule0 = newDataType(SnappyParserConsts.BYTE)
-  final def CHAR: Rule0 = newDataType(SnappyParserConsts.CHAR)
-  final def CLOB: Rule0 = newDataType(SnappyParserConsts.CLOB)
-  final def DATE: Rule0 = newDataType(SnappyParserConsts.DATE)
-  final def DECIMAL: Rule0 = newDataType(SnappyParserConsts.DECIMAL)
-  final def DOUBLE: Rule0 = newDataType(SnappyParserConsts.DOUBLE)
-  final def FLOAT: Rule0 = newDataType(SnappyParserConsts.FLOAT)
-  final def INT: Rule0 = newDataType(SnappyParserConsts.INT)
-  final def INTEGER: Rule0 = newDataType(SnappyParserConsts.INTEGER)
-  final def LONG: Rule0 = newDataType(SnappyParserConsts.LONG)
-  final def MAP: Rule0 = newDataType(SnappyParserConsts.MAP)
-  final def NUMERIC: Rule0 = newDataType(SnappyParserConsts.NUMERIC)
-  final def REAL: Rule0 = newDataType(SnappyParserConsts.REAL)
-  final def SHORT: Rule0 = newDataType(SnappyParserConsts.SHORT)
-  final def SMALLINT: Rule0 = newDataType(SnappyParserConsts.SMALLINT)
-  final def STRING: Rule0 = newDataType(SnappyParserConsts.STRING)
-  final def STRUCT: Rule0 = newDataType(SnappyParserConsts.STRUCT)
-  final def TIMESTAMP: Rule0 = newDataType(SnappyParserConsts.TIMESTAMP)
-  final def TINYINT: Rule0 = newDataType(SnappyParserConsts.TINYINT)
-  final def VARBINARY: Rule0 = newDataType(SnappyParserConsts.VARBINARY)
-  final def VARCHAR: Rule0 = newDataType(SnappyParserConsts.VARCHAR)
+  final def ARRAY: Rule0 = newDataType(Consts.ARRAY)
+  final def BIGINT: Rule0 = newDataType(Consts.BIGINT)
+  final def BINARY: Rule0 = newDataType(Consts.BINARY)
+  final def BLOB: Rule0 = newDataType(Consts.BLOB)
+  final def BOOLEAN: Rule0 = newDataType(Consts.BOOLEAN)
+  final def BYTE: Rule0 = newDataType(Consts.BYTE)
+  final def CHAR: Rule0 = newDataType(Consts.CHAR)
+  final def CLOB: Rule0 = newDataType(Consts.CLOB)
+  final def DATE: Rule0 = newDataType(Consts.DATE)
+  final def DECIMAL: Rule0 = newDataType(Consts.DECIMAL)
+  final def DOUBLE: Rule0 = newDataType(Consts.DOUBLE)
+  final def FLOAT: Rule0 = newDataType(Consts.FLOAT)
+  final def INT: Rule0 = newDataType(Consts.INT)
+  final def INTEGER: Rule0 = newDataType(Consts.INTEGER)
+  final def LONG: Rule0 = newDataType(Consts.LONG)
+  final def MAP: Rule0 = newDataType(Consts.MAP)
+  final def NUMERIC: Rule0 = newDataType(Consts.NUMERIC)
+  final def REAL: Rule0 = newDataType(Consts.REAL)
+  final def SHORT: Rule0 = newDataType(Consts.SHORT)
+  final def SMALLINT: Rule0 = newDataType(Consts.SMALLINT)
+  final def STRING: Rule0 = newDataType(Consts.STRING)
+  final def STRUCT: Rule0 = newDataType(Consts.STRUCT)
+  final def TIMESTAMP: Rule0 = newDataType(Consts.TIMESTAMP)
+  final def TINYINT: Rule0 = newDataType(Consts.TINYINT)
+  final def VARBINARY: Rule0 = newDataType(Consts.VARBINARY)
+  final def VARCHAR: Rule0 = newDataType(Consts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
     (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ commaSep ~ digits ~ ')' ~ ws ~>
@@ -373,6 +374,11 @@ object SnappyParserConsts {
   final val WHEN = reservedKeyword("when")
   final val WHERE = reservedKeyword("where")
   final val WITH = reservedKeyword("with")
+
+  // marked as internal keywords to prevent use in SQL
+  final val HIVE_METASTORE = reservedKeyword(
+    SnappyStoreHiveCatalog.HIVE_METASTORE)
+  final val SAMPLER_WEIGHTAGE = reservedKeyword(Utils.WEIGHTAGE_COLUMN_NAME)
 
   // non-reserved keywords
   final val ANTI = nonReservedKeyword("anti")
