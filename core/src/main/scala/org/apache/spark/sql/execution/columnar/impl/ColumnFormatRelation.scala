@@ -38,7 +38,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SQLContext, SaveMode, SnappySession}
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -80,7 +80,7 @@ class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation {
 
-  override def toString: String = s"ColumnFormatRelation[$table]"
+  override def toString: String = s"${getClass.getSimpleName}[$table]"
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
 
@@ -473,7 +473,7 @@ class ColumnFormatRelation(
       tableIdent: QualifiedTableName,
       tableRelation: JDBCAppendableRelation,
       indexColumns: Map[String, Option[SortDirection]],
-      options: Map[String, String]): Unit = {
+      options: Map[String, String]): DataFrame = {
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -518,6 +518,12 @@ class ColumnFormatRelation(
     try {
       snappySession.sessionState.catalog.alterTableToAddIndexProp(
         tableIdent, snappySession.getIndexTable(indexIdent))
+
+      val df = Dataset.ofRows(snappySession,
+        snappySession.sessionCatalog.lookupRelation(tableIdent))
+
+      // SB: Now populate the index table from base table.
+      df.write.insertInto(snappySession.getIndexTable(indexIdent).toString())
     } catch {
       case e: Throwable =>
         snappySession.dropTable(indexIdent, ifExists = false)

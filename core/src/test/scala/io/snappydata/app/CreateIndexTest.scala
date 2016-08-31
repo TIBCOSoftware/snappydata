@@ -17,32 +17,73 @@
 package io.snappydata.app
 
 import io.snappydata.SnappyFunSuite
-import org.apache.spark.sql.catalyst.expressions.{Descending, Ascending}
 
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{Row, SaveMode}
 
 class CreateIndexTest extends SnappyFunSuite {
 
   test("Test create Index on Column Table using Snappy API") {
-    val tableName : String = "tcol1"
+    val tableName: String = "tcol1"
     val snContext = org.apache.spark.sql.SnappyContext(sc)
+    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
-    val props = Map (
+    val props = Map(
       "PARTITION_BY" -> "col1")
     snContext.sql("drop table if exists " + tableName)
 
-    val data = Seq(Seq(111, "aaaaa"), Seq(222, "bbb"))
+    val data = Seq(Seq(111, "aaa", "hello"),
+      Seq(222, "bbb", "halo"),
+      Seq(333, "aaa", "hello"),
+      Seq(444, "bbb", "halo"),
+      Seq(555, "ccc", "halo"),
+      Seq(666, "ccc", "halo")
+    )
+
+    val table2 = "table2"
+    val table3 = "table3"
     val rdd = sc.parallelize(data, data.length).map(s =>
-      new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+      new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    val x = dataDF.schema
-    snContext.createTable("table2", "column", dataDF.schema, props)
+    val props2 = props + ("PARTITION_BY" -> "col2,col3")
+    snContext.createTable(s"$table2", "column", dataDF.schema, props2)
+
+    snContext.createTable(s"$table3", "column", dataDF.schema, props)
+
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(table2)
+    dataDF.write.insertInto(table2)
+    dataDF.write.insertInto(table3)
 
     doPrint("Verify index create and drop for various index types")
     snContext.sql("create index test1 on " + tableName + " (COL1)")
     snContext.sql("create index test2 on " + tableName +
-      s" (COL1) Options (colocate_with  '$tableName')")
+        s" (COL1) Options (colocate_with  '$table3')")
+
+    snContext.sql("create index test3 on " + tableName + " (COL2, COL3)")
+    snContext.sql("create index test4 on " + tableName +
+        s" (COL2, COL3) Options (colocate_with  '$table2')")
+
+    def executeQ(sqlText: String): Unit =
+    {
+      var selectRes = snContext.sql(sqlText)
+      selectRes.explain(true)
+      selectRes.show
+    }
+
+    executeQ("select * from tcol1 where col1 = 111")
+
+    executeQ("select * from tcol1 where col2 = 'aaa' ")
+
+    executeQ("select * from tcol1 where col2 = 'bbb' and col3 = 'halo' ")
+
+    executeQ(s"select * from $tableName tab1 " +
+        s"join $table3 tab2 on tab1.col1 = tab2.col1")
+
+    executeQ(s"select * from $tableName tab1 " +
+        s"join $table3 tab2 on tab1.col1 = tab2.col1 where tab1.col1 = 111 ")
+
     try {
       snContext.sql(s"drop table $tableName")
       fail("This should fail as there are indexes associated with this table")
@@ -51,6 +92,8 @@ class CreateIndexTest extends SnappyFunSuite {
     }
     snContext.sql("drop index test1")
     snContext.sql("drop index test2")
+    snContext.sql("drop index test3")
+    snContext.sql("drop index test4")
     try {
       snContext.sql("create index a1.test1 on " + tableName + " (COL1)")
       fail("This should fail as the index should have same database as the table")
@@ -76,16 +119,18 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.dropIndex("test1", true)
     snContext.sql("drop index if exists test1")
 
+    snContext.sql(s"drop table $tableName")
+    snContext.sql(s"drop table $table2")
   }
 
   test("Test create Index on Row Table using Snappy API") {
     val snContext = org.apache.spark.sql.SnappyContext(sc)
-    val tableName : String = "trow1"
-    val props = Map ("PARTITION_BY" -> "col2")
+    val tableName: String = "trow1"
+    val props = Map("PARTITION_BY" -> "col2")
 
     val data = Seq(Seq(111, "aaaaa"), Seq(222, ""))
     val rdd = sc.parallelize(data, data.length).
-      map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+        map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
     snContext.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -138,7 +183,7 @@ class CreateIndexTest extends SnappyFunSuite {
     doPrint("Drop Index - Done")
   }
 
-  def verifyRows(r: Row) : Unit = {
+  def verifyRows(r: Row): Unit = {
     doPrint(r.toString())
     assert(r.toString() == "[111]", "got=" + r.toString() + " but expected 111")
   }

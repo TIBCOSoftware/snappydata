@@ -17,18 +17,31 @@
 
 package org.apache.spark.sql.internal
 
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion, PartitionedRegionHelper}
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.sql.aqp.SnappyContextFunctions
+import org.apache.spark.sql.catalyst.{CatalystConf, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.catalog.{CatalogRelation, SessionCatalog}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.plans.Inner
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, InsertIntoTable, Join, LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.trees.TreeNode
+import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
-import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources.{ParentRelation, _}
+import org.apache.spark.sql.{AnalysisException, Column, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -45,23 +58,22 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val analyzer: Analyzer = {
-    new Analyzer(catalog, conf) {
-      override val extendedResolutionRules =
-        new PreprocessTableInsertOrPut(conf) ::
-        new FindDataSourceTable(snappySession) ::
-        DataSourceAnalysis(conf) :: ResolveRelationsExtended ::
-        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules =
+      new PreprocessTableInsertOrPut(conf) ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis(conf) ::
+          ResolveRelationsExtended ::
+          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
-      override val extendedCheckRules = Seq(
-        datasources.PreWriteCheck(conf, catalog), PrePutCheck)
-    }
+    override val extendedCheckRules = Seq(
+      datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
   /**
-   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-   */
-  object ResolveRelationsExtended extends Rule[LogicalPlan] {
+    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+    */
+  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
     def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
         catalog.lookupRelation(u.tableIdentifier, u.alias)
@@ -71,26 +83,302 @@ class SnappySessionState(snappySession: SnappySession)
       }
     }
 
+    private def extractIndexTransformations(cond: Expression, child: LogicalPlan) = {
+      val tableToIndexes = fetchIndexes(child)
+      val cols = splitConjunctivePredicates(cond)
+      val columnGroups = segregateColsByTables(cols)
+
+      getBestMatchingIndex(columnGroups, tableToIndexes)
+    }
+
+    private def isColocated(left: BaseColumnFormatRelation, right: BaseColumnFormatRelation) = {
+
+      val leftRegion = Misc.getRegionForTable(left.resolvedName, true)
+      val leftLeader = leftRegion.asInstanceOf[AbstractRegion] match {
+        case pr: PartitionedRegion => ColocationHelper.getLeaderRegionName(pr)
+      }
+
+      val rightRegion = Misc.getRegionForTable(right.resolvedName, true)
+      val rightLeader = rightRegion.asInstanceOf[AbstractRegion] match {
+        case pr: PartitionedRegion => ColocationHelper.getLeaderRegionName(pr)
+      }
+
+      leftLeader.equals(rightLeader)
+    }
+
+    private def ExtractPartitioningColumns(plan: LogicalPlan) = plan match {
+      case LogicalRelation(cf: BaseColumnFormatRelation, _, _) => cf.partitionColumns
+    }
+
+    private def matchColumnSets(partitioningColPairs: Seq[(String, String)],
+        joinRelationPairs: Seq[(AttributeReference, AttributeReference)]): Boolean = {
+
+      if (partitioningColPairs.length != joinRelationPairs.length) {
+        return false
+      }
+
+      partitioningColPairs.filter({
+        case (left, right) =>
+          joinRelationPairs.exists {
+            case (jleft, jright) =>
+              left.equalsIgnoreCase(jleft.name) && right.equalsIgnoreCase(jright.name) ||
+                  left.equalsIgnoreCase(jright.name) && right.equalsIgnoreCase(jleft.name)
+          }
+      }).length == partitioningColPairs.length
+
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+
+      case f@Filter(cond, j@Join(left, right, Inner, condition)) =>
+        f resolveOperators {
+          case q: LogicalPlan =>
+            q transformExpressionsUp {
+              case a: AttributeReference =>
+                q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+                  analyzer.resolver).getOrElse(a)
+            }
+        }
+
+      case j@Join(left, right, Inner, condition) if condition.isDefined =>
+        val cols = splitConjunctivePredicates(condition.get)
+        val leftIndexes = fetchIndexes2(left)
+        val rightIndexes = fetchIndexes2(right)
+
+        val colocatedEntities = leftIndexes.flatMap {
+          case p@LogicalRelation(c: BaseColumnFormatRelation, _, _) =>
+            val x = rightIndexes.filter {
+              case t@LogicalRelation(cf: BaseColumnFormatRelation, _, _) =>
+                isColocated(c, cf)
+              case _ => false
+            }
+            Seq.empty[LogicalPlan].zipAll(x, p, null.asInstanceOf[LogicalPlan])
+          case _ => Seq.empty[(LogicalPlan, LogicalPlan)]
+        }
+
+        if (colocatedEntities.isEmpty) {
+          logDebug("Nothing is colocated between the tables")
+          return j
+        }
+
+        val joinRelationPairs = cols.map({
+          case org.apache.spark.sql.catalyst.expressions.EqualTo(left, right) =>
+            (unwrapReference(left).get, unwrapReference(right).get)
+          case org.apache.spark.sql.catalyst.expressions.EqualNullSafe(left, right) =>
+            (unwrapReference(left).get, unwrapReference(right).get)
+        })
+
+        val satisfyingJoinCond = colocatedEntities.zipWithIndex.map { case ((left, right), i) =>
+          val partitioningColPairs = ExtractPartitioningColumns(left).zip(
+            ExtractPartitioningColumns(right))
+
+          if (matchColumnSets(partitioningColPairs, joinRelationPairs)) {
+            (i, partitioningColPairs.length)
+          } else {
+            (-1, 0)
+          }
+        }.filter(v => v._1 > 0 && v._2 > 0).sortBy(_._2)(Ordering[Int].reverse)
+
+        if (satisfyingJoinCond.isEmpty) {
+          logDebug("join condition insufficient for matching any colocation columns ")
+          return j
+        }
+
+        val (leftReplacement, rightReplacement) =
+          colocatedEntities(satisfyingJoinCond(0) match { case (idx, _) => idx })
+
+        val newLeft = applyRefreshTables(left, leftReplacement)
+        val newRight = applyRefreshTables(right, rightReplacement)
+
+        val retVal = {
+          if (newLeft.nonEmpty && newRight.nonEmpty) {
+            j.copy(left = newLeft.get, right = newRight.get)
+          } else if (newLeft.nonEmpty) {
+            j.copy(left = newLeft.get)
+          } else if (newRight.nonEmpty) {
+            j.copy(right = newRight.get)
+          } else {
+            j
+          }
+        }
+
+        retVal resolveOperators {
+          case q: LogicalPlan =>
+            q transformExpressionsUp {
+              case a: AttributeReference =>
+                q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+                  analyzer.resolver).getOrElse(a)
+            }
+        }
+
+      case f@Filter(cond, child) =>
+        val tabToIdxReplacementMap = extractIndexTransformations(cond, child)
+        if (tabToIdxReplacementMap.nonEmpty) {
+          val newF = RefreshAttributeReference(tabToIdxReplacementMap).apply(f)
+          newF
+        } else {
+          f
+        }
+
+      case q: LogicalPlan =>
+        q transformExpressionsUp {
+          case a: AttributeReference =>
+            q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+              analyzer.resolver).getOrElse(a)
+        }
+
+    }
+
+    def applyRefreshTables(plan: LogicalPlan, replaceWith: LogicalPlan): Option[LogicalPlan] = {
+      if (EliminateSubqueryAliases(plan) == replaceWith) {
+        return None
+      }
+
+      val tableName = plan match {
+        case LogicalRelation(cf: ColumnFormatRelation, _, _) => Some(cf.table)
+        case SubqueryAlias(alias, _) => Some(alias)
+        case _ => None
+      }
+      if (tableName.isDefined) {
+        Some(RefreshAttributeReference(Map(tableName.get -> Some(replaceWith))).apply(plan))
+      }
+      else {
+        None
+      }
+    }
+
+    private def fetchIndexes(plan: LogicalPlan): mutable.HashMap[LogicalPlan, Seq[LogicalPlan]] =
+      plan.children.foldLeft(mutable.HashMap.empty[LogicalPlan, Seq[LogicalPlan]]) {
+        case (m, table) =>
+          val newVal: Seq[LogicalPlan] = m.getOrElse(table,
+            table match {
+              case l@LogicalRelation(p: ParentRelation, _, _) =>
+                val catalog = snappySession.sessionCatalog
+                p.getDependents(catalog).map(idx =>
+                  catalog.lookupRelation(catalog.newQualifiedTableName(idx)))
+              case SubqueryAlias(alias, child@LogicalRelation(p: ParentRelation, _, _)) =>
+                val catalog = snappySession.sessionCatalog
+                p.getDependents(catalog).map(idx =>
+                  catalog.lookupRelation(catalog.newQualifiedTableName(idx)))
+              case _ => Nil
+            }
+          )
+          // we are capturing same set of indexes for one or more
+          // SubqueryAlias. This comes handy while matching columns
+          // that is aliased for lets say self join.
+          // select x.*, y.* from tab1 x, tab2 y where x.parentID = y.id
+          m += (table -> newVal)
+      }
+
+    private def fetchIndexes2(plan: LogicalPlan): Seq[LogicalPlan] =
+      EliminateSubqueryAliases(plan) match {
+        case l@LogicalRelation(p: ParentRelation, _, _) =>
+          val catalog = snappySession.sessionCatalog
+          Seq(l) ++ p.getDependents(catalog).map(idx =>
+            catalog.lookupRelation(catalog.newQualifiedTableName(idx)))
+        case _ => Nil
+      }
+
+    private def unwrapReference(input: Expression) = input.references.collectFirst {
+      case a: AttributeReference => a
+    }
+
+    private def segregateColsByTables(cols: Seq[Expression]) = cols.
+        foldLeft(mutable.MutableList.empty[AttributeReference]) {
+          case (m, col@BinaryComparison(left, _)) =>
+            unwrapReference(left).foldLeft(m) {
+              case (m, leftA: AttributeReference) =>
+                m.find(_.fastEquals(leftA)) match {
+                  case None => m += leftA
+                  case _ => m
+                }
+            }
+          case (m, _) => m
+        }.groupBy(_.qualifier.get)
+
+    private def getBestMatchingIndex(
+        columnGroups: Map[String, mutable.MutableList[AttributeReference]],
+        tableToIndexes: mutable.HashMap[LogicalPlan, Seq[LogicalPlan]]) = columnGroups.map {
+      case (table, colList) =>
+        val indexes = tableToIndexes.find { case (tableRelation, _) => tableRelation match {
+          case l@LogicalRelation(b: ColumnFormatRelation, _, _) =>
+            b.table.indexOf(table) >= 0
+          case SubqueryAlias(alias, _) => alias.equals(table)
+          case _ => false
+        }
+        }.map(_._2).getOrElse(Nil)
+
+        val index = indexes.foldLeft(Option.empty[LogicalPlan]) {
+          case (max, i) => i match {
+            case l@LogicalRelation(idx: IndexColumnFormatRelation, _, _) =>
+              idx.partitionColumns.filter(c => colList.exists(_.name.equalsIgnoreCase(c))) match {
+                case predicatesMatched
+                  if predicatesMatched.length == idx.partitionColumns.length =>
+                  val existing = max.getOrElse(l)
+                  existing match {
+                    case LogicalRelation(eIdx: IndexColumnFormatRelation, _, _)
+                      if (idx.partitionColumns.length > eIdx.partitionColumns.length) =>
+                      Some(l)
+                    case _ => Some(existing)
+                  }
+                case _ => max
+              }
+          }
+        }
+
+        if (index.isDefined) {
+          logInfo(s"Picking up $index for $table")
+        }
+
+        (table, index)
+    }.filter({ case (_, idx) => idx.isDefined })
+
+
+  }
+
+  case class RefreshAttributeReference(tabToIdxReplacementMap: Map[String, Option[LogicalPlan]])
+      extends Rule[LogicalPlan] {
+
+    override def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+      case l@LogicalRelation(b: ColumnFormatRelation, _, _) =>
+        tabToIdxReplacementMap.find {
+          case (t, Some(index)) =>
+            b.table.indexOf(t) >= 0
+          case (t, None) => false
+        }.flatMap(_._2).getOrElse(l)
+
+      case s@SubqueryAlias(alias, child@LogicalRelation(p: ParentRelation, _, _)) =>
+        tabToIdxReplacementMap.withDefaultValue(None)(alias) match {
+          case Some(i) => s.copy(child = i)
+          case _ => s
+        }
+
+      case q: LogicalPlan =>
+        q transformExpressionsUp {
+          case a: AttributeReference =>
+            q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+              analyzer.resolver).getOrElse(a)
+        }
+
     }
   }
 
+
   /**
-   * Internal catalog for managing table and database states.
-   */
+    * Internal catalog for managing table and database states.
+    */
   override lazy val catalog = new SnappyStoreHiveCatalog(
-      sharedState.externalCatalog,
-      snappySession,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+    sharedState.externalCatalog,
+    snappySession,
+    functionResourceLoader,
+    functionRegistry,
+    conf,
+    newHadoopConf())
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
-
 
   override def executePlan(plan: LogicalPlan): QueryExecution =
     contextFunctions.executePlan(snappySession, plan)
@@ -99,7 +387,7 @@ class SnappySessionState(snappySession: SnappySession)
 class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
     extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
-    with SnappyStrategies {
+        with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case _ => Nil
