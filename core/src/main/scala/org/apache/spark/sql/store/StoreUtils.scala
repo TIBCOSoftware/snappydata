@@ -167,7 +167,14 @@ object StoreUtils extends Logging {
       serverToBuckets put(owner, bucketSet)
     }
     val numPartitions = sc.schedulerBackend.defaultParallelism()
-    val numCores = numPartitions / SnappyContext.storeToBlockMap.size
+    val numExecuterNodes = {
+      if (Utils.isLoner(sc)) {
+        SnappyContext.storeToBlockMap.size
+      } else {
+        SnappyContext.storeToBlockMap.size - 1 // ignore driver
+      }
+    }
+    val numCores = numPartitions / numExecuterNodes
     val partitions = {
       if (numBuckets < numPartitions) {
         new Array[Partition](numBuckets)

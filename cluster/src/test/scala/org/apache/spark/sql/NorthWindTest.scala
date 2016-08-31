@@ -72,10 +72,10 @@ class NorthWindTest
     //        s" but got ${operators(0)}\n physical: \n$physical")
     //    }
     assert(df.count() == numRows,
-      "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows)
+      "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows + " for query " + sqlString)
     assert(df.rdd.partitions.length == numPartitions,
       "Mismatch got df.rdd.partitions.length ->" + df.rdd.partitions.length +
-          " but expected numPartitions ->" + numPartitions)
+          " but expected numPartitions ->" + numPartitions + " for query " + sqlString)
   }
 
   private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int,
@@ -178,8 +178,8 @@ class NorthWindTest
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, 1) //  classOf[LocalJoin])
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, 4) // classOf[LocalJoin])
         case "Q36" => assertJoin(snc, NWQueries.Q36, 5, 4) // classOf[SortMergeOuterJoin])
-        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, 5) //, classOf[SortMergeOuterJoin])
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, 5) //, classOf[SortMergeOuterJoin])
+        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, 4) //, classOf[SortMergeOuterJoin])
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, 4) //, classOf[SortMergeOuterJoin])
         case "Q39" => assertJoin(snc, NWQueries.Q39, 9, 1) //, classOf[LocalJoin])
         case "Q40" => assertJoin(snc, NWQueries.Q40, 830, 1) //, classOf[LocalJoin])
         case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, 1) //, classOf[LocalJoin])
@@ -281,8 +281,8 @@ class NorthWindTest
         case "Q34" => //assertJoin(snc, NWQueries.Q34, 5, 200, classOf[LocalJoin]) //BroadcastHashJoin
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, 4) //, classOf[LocalJoin])
         case "Q36" => assertJoin(snc, NWQueries.Q36, 5, 4) //, classOf[SortMergeOuterJoin])
-        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, 5) //, classOf[SortMergeOuterJoin])
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, 5) //, classOf[SortMergeOuterJoin])
+        case "Q37" => assertJoin(snc, NWQueries.Q37, 69, 4) //, classOf[SortMergeOuterJoin])
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 71, 4) //, classOf[SortMergeOuterJoin])
         case "Q39" => assertJoin(snc, NWQueries.Q39, 9, 4) //, classOf[BroadcastHashJoin])
         case "Q40" => assertJoin(snc, NWQueries.Q40, 830, 4) //, classOf[LocalJoin])
         case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, 4) //, classOf[BroadcastHashJoin])
