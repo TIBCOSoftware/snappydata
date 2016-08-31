@@ -110,7 +110,6 @@ class ConnectionConfBuilder(snc: SnappyContext) {
     if(poolSettings.size > 0){
       val sb = new StringBuilder()
       val poolProperties = poolSettings.map( x => (s"${x._1}=${x._2}")).mkString(",")
-      println(poolProperties)
       connSettings.put("poolProperties", poolProperties)
     }
 
