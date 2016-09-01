@@ -19,8 +19,6 @@ package org.apache.spark.sql.execution.row
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
@@ -30,7 +28,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData,
   UnsafeMapData, UnsafeRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.MultiExecutorLocalPartition
+import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.execution.{CompactExecRowToMutableRow, ConnectionPool}
@@ -40,6 +38,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -171,7 +171,12 @@ class RowFormatScanRDD(_sc: SparkContext,
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       try {
         ps.setString(1, tableName)
-        ps.setInt(2, thePart.index)
+        val partition = thePart.asInstanceOf[MultiBucketExecutorPartition]
+        var bucketString = ""
+        partition.buckets.foreach(bucket => {
+          bucketString = bucketString + bucket + ","
+        })
+        ps.setString(2, bucketString.substring(0, bucketString.length - 1))
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -224,7 +229,7 @@ class RowFormatScanRDD(_sc: SparkContext,
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
+    split.asInstanceOf[MultiBucketExecutorPartition].hostExecutorIds
   }
 
   override def getPartitions: Array[Partition] = {
