@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
@@ -75,6 +76,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    dosetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
@@ -94,7 +96,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     })
-
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
@@ -125,6 +126,10 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def setUp(): Unit = {
     super.setUp()
+    dosetUp()
+  }
+
+  private def dosetUp() : Unit = {
     val testName = getName
     val testClass = getClass
     // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
@@ -268,4 +273,27 @@ object ClusterManagerTestBase {
       service.stop(null)
     }
   }
+
+  /**
+    * Wait until given criterion is met
+    *
+    * @param check          Function criterion to wait on
+    * @param ms             total time to wait, in milliseconds
+    * @param interval       pause interval between waits
+    * @param throwOnTimeout if false, don't generate an error
+    */
+  def waitForCriterion(check: => Boolean, desc: String, ms: Long,
+      interval: Long, throwOnTimeout: Boolean): Unit = {
+    val criterion = new WaitCriterion {
+
+      override def done: Boolean = {
+        check
+      }
+
+      override def description() = desc
+    }
+    DistributedTestBase.waitForCriterion(criterion, ms, interval,
+      throwOnTimeout)
+  }
+
 }

@@ -27,7 +27,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -92,7 +92,18 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = region.getTotalNumberOfBuckets
+  override lazy val numPartitions: Int = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      _context.sparkContext.schedulerBackend.defaultParallelism()
+    } else {
+      numBuckets
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    region.getTotalNumberOfBuckets
+  }
 
   override def partitionColumns: Seq[String] = {
     partitioningColumns
@@ -136,6 +147,7 @@ class BaseColumnFormatRelation(
           leftItr ++ rightItr
         }
       case _ =>
+
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,
