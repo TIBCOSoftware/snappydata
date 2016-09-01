@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
@@ -268,4 +269,27 @@ object ClusterManagerTestBase {
       service.stop(null)
     }
   }
+
+  /**
+    * Wait until given criterion is met
+    *
+    * @param check          Function criterion to wait on
+    * @param ms             total time to wait, in milliseconds
+    * @param interval       pause interval between waits
+    * @param throwOnTimeout if false, don't generate an error
+    */
+  def waitForCriterion(check: => Boolean, desc: String, ms: Long,
+      interval: Long, throwOnTimeout: Boolean): Unit = {
+    val criterion = new WaitCriterion {
+
+      override def done: Boolean = {
+        check
+      }
+
+      override def description() = desc
+    }
+    DistributedTestBase.waitForCriterion(criterion, ms, interval,
+      throwOnTimeout)
+  }
+
 }
