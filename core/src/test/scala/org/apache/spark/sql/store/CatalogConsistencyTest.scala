@@ -44,13 +44,15 @@ class CatalogConsistencyTest
 
   def assertTableDoesNotExist(routeQueryDisabledConn: Connection, table: String,
       isColumnTable: Boolean = false): Unit = {
-    // after the catalog is repaired the table should not exist either in Hive metastore
-    // or snappy-store
+    // after the catalog is repaired the table should not exist
+    // either in Hive metastore or snappy-store
     intercept[TableNotFoundException] {
-      snc.snappySession.sessionCatalog.lookupRelation(snc.snappySession.sessionCatalog.newQualifiedTableName(table))
+      snc.snappySession.sessionCatalog.lookupRelation(
+        snc.snappySession.sessionCatalog.newQualifiedTableName(table))
     }
     val se = intercept[SQLException] {
-     routeQueryDisabledConn.createStatement().executeQuery("select * from " + table)
+     routeQueryDisabledConn.createStatement().executeQuery(
+         "select * from " + table)
     }
     assert(se.getSQLState.equals("42X05"))
 
@@ -83,7 +85,7 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
 
     // remove the table entry from Hive store but not from store DD
     snc.snappySession.sessionCatalog.unregisterDataSourceTable(
@@ -108,7 +110,7 @@ class CatalogConsistencyTest
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -141,7 +143,7 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -185,7 +187,7 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -198,8 +200,9 @@ class CatalogConsistencyTest
         ColumnFormatRelation.cachedBatchTableName("column_table1"))
 
     // make sure that the table exists in Hive metastore
-    assert(snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1")) != None)
+    // should not throw an exception
+    snc.snappySession.sessionCatalog.lookupRelation(
+      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
 
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
@@ -234,8 +237,9 @@ class CatalogConsistencyTest
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1")) != None)
+    // should not throw an exception
+    snc.snappySession.sessionCatalog.lookupRelation(
+      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
 
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
@@ -254,7 +258,7 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("row_table1", "row", dataDF.schema, props)
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
+//    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
 
     // remove the table entry from Hive store but not from store DD
     snc.snappySession.sessionCatalog.unregisterDataSourceTable(
@@ -273,7 +277,7 @@ class CatalogConsistencyTest
     assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
 
     snc.createTable("row_table1", "row", dataDF.schema, props)
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
+//    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
 
     snc.createTable("row_table2", "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
@@ -305,13 +309,15 @@ class CatalogConsistencyTest
     val routeQueryDisabledConn = getConnection(routeQuery = false)
 
     // remove the DD entry by dropping table just from the store
+    snc.sql("select * from row_table1").collect()
     val rs = routeQueryDisabledConn.createStatement().executeQuery("select * from row_table1")
     rs.close()
     routeQueryDisabledConn.createStatement().execute("drop table row_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1")) != None)
+    // should not throw an exception
+    snc.snappySession.sessionCatalog.lookupRelation(
+      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"))
 
     val connection = getConnection()
     // repair the catalog
@@ -333,13 +339,13 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
     val props2 = Map("PERSISTENT" -> "sync")
     snc.createTable("row_table1", "row", dataDF.schema, props2)
-    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table1")
+//    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table1")
 
     snc.createTable("row_table2", "row", dataDF.schema, props2)
     dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table2")

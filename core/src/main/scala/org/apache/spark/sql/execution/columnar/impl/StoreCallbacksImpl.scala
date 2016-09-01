@@ -179,6 +179,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     }
   }
 
+  override def registerRelationDestroyForHiveStore(): Unit = {
+    SnappyStoreHiveCatalog.registerRelationDestroy()
+  }
+
 }
 
 trait StoreCallback extends Serializable {

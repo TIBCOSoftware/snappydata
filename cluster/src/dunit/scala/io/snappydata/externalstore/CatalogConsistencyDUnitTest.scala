@@ -51,7 +51,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
+//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -99,8 +99,9 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def verifyTables(snc: SnappyContext): Unit = {
     val result = snc.sql("SELECT * FROM column_table2")
     assert(result.collect.length == 5)
-    assert(snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("tweetsTable")) != None)
+    // below call should not throw an exception
+    snc.snappySession.sessionCatalog.lookupRelation(
+      snc.snappySession.sessionCatalog.newQualifiedTableName("tweetsTable"))
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
@@ -148,8 +149,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1")) != None)
+    snc.snappySession.sessionCatalog.lookupRelation(
+      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
