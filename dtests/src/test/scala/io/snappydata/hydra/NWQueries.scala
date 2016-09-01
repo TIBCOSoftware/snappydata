@@ -70,7 +70,7 @@ object NWQueries {
   // Using the WHERE clause to check for equality or inequality
   val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
     " FROM Orders " +
-    " WHERE OrderDate = '19-May-1997'"
+    " WHERE OrderDate = '1997-05-19 00:00:00.0'"
 
   // Using WHERE and ORDER BY Together
   val Q14: String = "SELECT CompanyName, ContactName, Fax" +
@@ -90,7 +90,7 @@ object NWQueries {
 
   val Q17: String = "SELECT FirstName, LastName, BirthDate" +
     " FROM Employees" +
-    " WHERE BirthDate BETWEEN '1950-01-01' AND '1959-12-31 23:59:59'"
+    " WHERE BirthDate BETWEEN '1950-01-01 00:00:00.0' AND '1959-12-31 23:59:59'"
 
   val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
     " FROM Employees"
@@ -127,7 +127,7 @@ object NWQueries {
     "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN '1-Jan-1997' AND '31-Dec-1997')"
+    "FROM Orders WHERE OrderDate BETWEEN '1997-01-01 00:00:00.0' AND '1997-12-31 00:00:00.0')"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
     " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
@@ -143,7 +143,7 @@ object NWQueries {
     " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
     " WHERE CategoryName = 'Seafood'))"
 
-  val Q31: String = "SELECTG Employees.EmployeeID, Employees.FirstName," +
+  val Q31: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
     " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
     " FROM Employees JOIN Orders ON" +
     " (Employees.EmployeeID = Orders.EmployeeID)" +
@@ -294,14 +294,14 @@ object NWQueries {
     "Q54" -> Q54
   )
   println(s"Resources path : ${SparkFiles.get("regions.csv")}")
-  val regions = snc.read.format("com.databricks.spark.csv")
+  def regions = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("regions.csv"))
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
 
-  val categories = snc.read.format("com.databricks.spark.csv")
+  def categories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("categories.csv"))
   val categories_table = "create table categories (" +
@@ -310,7 +310,7 @@ object NWQueries {
     "Description string, " +
     "Picture blob)"
 
-  val shippers = snc.read.format("com.databricks.spark.csv")
+  def shippers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("shippers.csv"))
   val shippers_table = "create table shippers (" +
@@ -318,7 +318,7 @@ object NWQueries {
     "CompanyName string not null, " +
     "Phone string)"
 
-  val employees = snc.read.format("com.databricks.spark.csv")
+  def employees = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("employees.csv"))
   val employees_table = "create table employees(" +
@@ -344,7 +344,7 @@ object NWQueries {
     "ReportsTo int, " +
     "PhotoPath string)"
 
-  val customers = snc.read.format("com.databricks.spark.csv")
+  def customers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("customers.csv"))
   val customers_table = "create table customers(" +
@@ -362,7 +362,7 @@ object NWQueries {
     "Phone string, " +
     "Fax string)"
 
-  val orders = snc.read.format("com.databricks.spark.csv")
+  def orders = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("orders.csv"))
   val orders_table = "create table orders (" +
@@ -382,7 +382,7 @@ object NWQueries {
     "ShipPostalCode string, " +
     "ShipCountry string)"
 
-  val order_details = snc.read.format("com.databricks.spark.csv")
+  def order_details = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("order-details.csv"))
   val order_details_table = "create table order_details (" +
@@ -397,7 +397,7 @@ object NWQueries {
     "Quantity smallint, " +
     "Discount double)"
 
-  val products = snc.read.format("com.databricks.spark.csv")
+  def products = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("products.csv"))
   val products_table = "create table products(" +
@@ -415,7 +415,7 @@ object NWQueries {
     "ReorderLevel smallint, " +
     "Discontinued smallint) "
 
-  val suppliers = snc.read.format("com.databricks.spark.csv")
+  def suppliers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("suppliers.csv"))
   val suppliers_table = "create table suppliers(" +
@@ -434,7 +434,7 @@ object NWQueries {
     "Fax string, " +
     "HomePage string) "
 
-  val territories = snc.read.format("com.databricks.spark.csv")
+  def territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("territories.csv"))
   val territories_table = "create table territories(" +
@@ -445,7 +445,7 @@ object NWQueries {
     "TerritoryDescription string, " +
     "RegionID string)"
 
-  val employee_territories = snc.read.format("com.databricks.spark.csv")
+  def employee_territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .load(SparkFiles.get("employee-territories.csv"))
   val employee_territories_table = "create table employee_territories(" +

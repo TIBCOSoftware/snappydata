@@ -62,7 +62,7 @@ object AirlineDataQueriesJob extends SnappySQLJob {
 
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/AirlineDataQueriesJob.out"
+        s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
       case Failure(e) => pw.close();
         throw e;
     }
