@@ -130,8 +130,12 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
     _, _), _, child, _, _) if l.resolved && child.resolved =>
-      r.schemaForInsert(child.output) match {
-        case Some(output) => castAndRenameChildOutput(i, output, l, child)
+      r.insertableRelation(child.output) match {
+        case Some(ir) =>
+          val relation = LogicalRelation(ir.asInstanceOf[BaseRelation],
+            l.expectedOutputAttributes, l.metastoreTableIdentifier)
+          castAndRenameChildOutput(i.copy(table = relation),
+            relation.output, null, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
@@ -224,7 +228,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   def castAndRenameChildOutput[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
-      relation: LogicalRelation,
+      newRelation: LogicalRelation,
       child: LogicalPlan): T = {
     val newChildOutput = expectedOutput.zip(child.output).map {
       case (expected, actual) =>
@@ -238,11 +242,11 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
 
     if (newChildOutput == child.output) {
       plan match {
-        case p: PutIntoTable => p.copy(table = relation).asInstanceOf[T]
-        case _ => plan
+        case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
+        case i: InsertIntoTable => plan
       }
     } else plan match {
-      case p: PutIntoTable => p.copy(table = relation,
+      case p: PutIntoTable => p.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]

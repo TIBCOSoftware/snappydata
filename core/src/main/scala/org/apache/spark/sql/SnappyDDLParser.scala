@@ -46,8 +46,11 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def BETWEEN: Rule0 = rule { keyword(Consts.BETWEEN) }
   final def BY: Rule0 = rule { keyword(Consts.BY) }
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
+  final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
   final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
+  final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
+  final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
@@ -92,12 +95,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   // non-reserved keywords
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
-  final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
-  final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
-  final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
@@ -162,7 +162,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
 
-  //cube, rollup, grouping sets
+  // cube, rollup, grouping sets
   final def CUBE: Rule0 = rule { keyword(Consts.CUBE) }
   final def ROLLUP: Rule0 = rule { keyword(Consts.ROLLUP) }
   final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
@@ -203,7 +203,7 @@ abstract class SnappyDDLParser(session: SnappySession)
       else synchronized {
         // parse the schema string expecting Spark SQL format
         val colParser = newInstance()
-        colParser.parseSQL(schemaString, colParser.tableColsOrNone.run())
+        colParser.parseSQL(schemaString, colParser.tableSchemaOpt.run())
             .map(StructType(_))
       }
       val schemaDDL = if (hasExternalSchema && schemaString.length > 0) {
@@ -308,11 +308,12 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
-    CREATE ~ STREAM ~ TABLE ~ tableIdentifier ~ (IF ~ NOT ~ EXISTS ~>
-        trueFn).? ~ tableCols.? ~ USING ~ qualifiedName ~ OPTIONS ~ options ~> {
-      (streamIdent: TableIdentifier, ifNotExists: Any, cols: Any,
+    CREATE ~ STREAM ~ TABLE ~ (IF ~ NOT ~ EXISTS ~> trueFn).? ~
+        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        OPTIONS ~ options ~> {
+      (ifNotExists: Any, streamIdent: TableIdentifier, schema: Any,
           pname: String, opts: Map[String, String]) =>
-        val specifiedSchema = cols.asInstanceOf[Option[Seq[StructField]]]
+        val specifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]]
             .map(fields => StructType(fields))
         val provider = SnappyContext.getProvider(pname, onlyBuiltIn = false)
         // check that the provider is a stream relation
@@ -432,7 +433,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected final def colsWithDirection: Rule1[Map[String,
       Option[SortDirection]]] = rule {
     '(' ~ ws ~ (identifier ~ sortDirection.? ~> ((id: Any, direction: Any) =>
-      (id, direction))).*(',' ~ ws) ~ ')' ~ ws ~> ((cols: Any) =>
+      (id, direction))).*(commaSep) ~ ')' ~ ws ~> ((cols: Any) =>
       cols.asInstanceOf[Seq[(String, Option[SortDirection])]].toMap)
   }
 
@@ -479,12 +480,12 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
-  protected final def tableCols: Rule1[Seq[StructField]] = rule {
-    '(' ~ ws ~ (column + (',' ~ ws)) ~ ')' ~ ws
+  protected final def tableSchema: Rule1[Seq[StructField]] = rule {
+    '(' ~ ws ~ (column + commaSep) ~ ')' ~ ws
   }
 
-  protected final def tableColsOrNone: Rule1[Option[Seq[StructField]]] = rule {
-    (tableCols ~> (Some(_)) | ws ~> (() => None)) ~ EOI
+  protected final def tableSchemaOpt: Rule1[Option[Seq[StructField]]] = rule {
+    (tableSchema ~> (Some(_)) | ws ~> (() => None)).named("tableSchema") ~ EOI
   }
 
   protected final def pair: Rule1[(String, String)] = rule {
@@ -492,7 +493,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected final def options: Rule1[Map[String, String]] = rule {
-    '(' ~ ws ~ (pair * (',' ~ ws)) ~ ')' ~ ws ~>
+    '(' ~ ws ~ (pair * commaSep) ~ ')' ~ ws ~>
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 

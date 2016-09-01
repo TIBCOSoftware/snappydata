@@ -24,6 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
@@ -170,6 +171,27 @@ class QueryRoutingDUnitTest(val s: String)
     // actualResult.foreach(println)
     assert(expectedResult.sorted.sameElements(actualResult))
     setDMLMaxChunkSize(default_chunk_size)
+
+    // Check that update and delete on column table returns exception
+    try {
+      s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
+      TestCase.fail("update on column table should have failed")
+    } catch {
+      case sqe: SQLException =>
+        if ("42Y62" != sqe.getSQLState) {
+          throw sqe
+        }
+    }
+
+    try {
+      s.executeUpdate("delete from TEST.ColumnTableQR")
+      TestCase.fail("delete on column table should have failed")
+    } catch {
+      case sqe: SQLException =>
+        if ("42Y62" != sqe.getSQLState) {
+          throw sqe
+        }
+    }
 
     conn.close()
   }

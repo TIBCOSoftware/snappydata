@@ -18,7 +18,8 @@
 package io.snappydata.benchmark.snappy
 
 import java.io.{File, FileOutputStream, PrintStream}
-//import org.apache.spark.sql.execution.joins.HashedRelationCache
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
 /**
@@ -26,15 +27,11 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
  */
 object TPCH_Snappy {
 
-  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
-  var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
   var planFileStream: FileOutputStream = null
   var planprintStream:PrintStream = null
 
 
   def close(): Unit = {
-    avgPrintStream.close()
-    avgFileStream.close()
     if (planFileStream != null) {
       planprintStream.close
       planFileStream.close()
@@ -42,8 +39,7 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer): Unit = {
-    println(s"KBKBKB In execute $queryNumber")
+      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer, avgPrintStream:PrintStream): Unit = {
      var queryFileStream: FileOutputStream = new FileOutputStream(new File(s"$queryNumber.out"))
      var queryPrintStream:PrintStream = new PrintStream(queryFileStream)
 
@@ -99,11 +95,11 @@ object TPCH_Snappy {
          var totalTimeForLast5Iterations: Long = 0
          queryPrintStream.println(queryNumber)
          for (i <- 1 to (warmup + runsForAverage)) {
-//           HashedRelationCache.clear()
-//           Utils.mapExecutors(sqlContext, () => {
-//             HashedRelationCache.clear()
-//             Iterator.empty
-//           })
+           HashedRelationCache.clear()
+           Utils.mapExecutors(sqlContext, () => {
+             HashedRelationCache.clear()
+             Iterator.empty
+           })
            val startTime = System.currentTimeMillis()
            val cnts = queryExecution(queryNumber, sqlContext, useIndex)
            for (s <- cnts) {
@@ -849,13 +845,13 @@ object TPCH_Snappy {
             "                         n2.n_name as nation" +
             "                 from" +
             "                         LINEITEM," +
-            "                         PART" +
+            "                         PART," +
             "                         ORDERS," +
             "                         CUSTOMER," +
             "                         SUPPLIER," +
             "                         NATION n1," +
             "                         REGION," +
-            "                         NATION n2," +
+            "                         NATION n2" +
             "                 where" +
             "                         p_partkey = l_partkey" +
             "                         and s_suppkey = l_suppkey" +

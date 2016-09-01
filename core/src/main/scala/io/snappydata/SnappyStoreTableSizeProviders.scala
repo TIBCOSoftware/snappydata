@@ -144,7 +144,7 @@ object StoreTableSizeProvider {
         " SUM(NUM_ROWS), " +
         " COUNT(HOST) " +
         " from SYS.MEMORYANALYTICS " +
-        "WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
+        "WHERE table_name not like 'SNAPPY_HIVE_METASTORE%' group by TABLE_NAME"
     val rs = conn.prepareStatement(stmt).executeQuery()
     while (rs.next()) {
       val name = rs.getString(1)

@@ -248,6 +248,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
+      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -392,7 +394,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private var relationDestroyVersion = 0
 
-  private def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
+  def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
     sync.lock()
     try {
@@ -839,7 +841,7 @@ object SnappyStoreHiveCatalog {
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
-  val HIVE_METASTORE = "HIVE_METASTORE"
+  val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
