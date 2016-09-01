@@ -118,8 +118,10 @@ object SparkShellRDDHelper {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
+      var buckets = new mutable.HashSet[Int]()
+      buckets += p
       partitions(p) = new ExecutorMultiBucketLocalShellPartition(p,
-        mutable.HashSet.empty, bucketToServerList(p))
+        buckets, bucketToServerList(p))
     }
     partitions
   }

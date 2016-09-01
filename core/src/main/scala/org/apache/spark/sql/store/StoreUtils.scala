@@ -23,6 +23,7 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
@@ -169,12 +170,14 @@ object StoreUtils extends Logging {
     val numPartitions = sc.schedulerBackend.defaultParallelism()
     val numExecuterNodes = {
       if (Utils.isLoner(sc)) {
-        SnappyContext.storeToBlockMap.size
+          SnappyContext.storeToBlockMap.size
       } else {
         SnappyContext.storeToBlockMap.size - 1 // ignore driver
       }
     }
     val numCores = numPartitions / numExecuterNodes
+    val localCores = Runtime.getRuntime.availableProcessors()
+    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
     val partitions = {
       if (numBuckets < numPartitions) {
         new Array[Partition](numBuckets)
