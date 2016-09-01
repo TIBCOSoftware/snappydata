@@ -94,7 +94,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
         "USING column options (buckets '10')")
 
 
-    for ( i <- 1 to 100 ) {
+    for (i <- 1 to 100) {
       snc.sql(s"insert into $tableName values ($i ,2 , 3)")
     }
 
@@ -106,33 +106,37 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
     val rowDetails = queryMemoryAnalytics(tableName, TableType.COLUMN)
 
-    assert(size._2.head.rowBufferSize +  size._2.head.columnBufferSize  == rowDetails._2)
-    assert(size._2.head.rowBufferCount  + size._2.head.columnBufferCount == rowDetails._3)
+    assert(size._2.head.rowBufferSize + size._2.head.columnBufferSize == rowDetails._2)
+    assert(size._2.head.rowBufferCount + size._2.head.columnBufferCount == rowDetails._3)
 
 
     snc.sql(s"drop table $tableName")
   }
 
   def testPartitionedTableSizeForQueryOptimization: Unit = {
+
+    def getTableSize: Long =
+      StoreTableValueSizeProviderService.getTableSize(tableName).getOrElse(0)
+
     val snc = SnappyContext()
     snc.dropTable(tableName, ifExists = true)
-
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
         "USING row  OPTIONS (PARTITION_BY 'a' , buckets '4')")
 
-    for ( i <- 1 to 100 ) {
+    for (i <- 1 to 100) {
       snc.sql(s"insert into $tableName values ($i ,2 , 3)")
     }
 
     val result = snc.sql(s"SELECT * FROM $tableName")
     assert(result.collect().length == 100)
 
+    val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
 
     ClusterManagerTestBase.waitForCriterion({
-      StoreTableValueSizeProviderService.getTableSize(tableName).
-          getOrElse(0) == 2800
+      (ma._4 - getTableSize) < 600
     },
-      s"Comparing the value Size of $tableName with StoreTableValueSizeProviderService",
+      s"Comparing the value Size of $tableName with StoreTableValueSizeProviderService"
+      + " expected  " + ma._4 + "-" + getTableSize ,
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)
@@ -140,13 +144,17 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
 
   def testColumnTableSizeForQueryOptimization: Unit = {
+
+    def getTableSize(table: String): Long =
+      StoreTableValueSizeProviderService.getTableSize(table).getOrElse(0)
+
     val snc = SnappyContext()
     val dataDF = getDF(snc)
 
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
         "USING column  options (buckets '4')")
 
-    for ( i <- 1 to 100 ) {
+    for (i <- 1 to 100) {
       snc.sql(s"insert into $tableName values ($i ,2 , 3)")
     }
 
@@ -155,25 +163,33 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
     val colBuffer = ColumnFormatRelation.cachedBatchTableName(tableName)
 
+    val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
     ClusterManagerTestBase.waitForCriterion({
-      StoreTableValueSizeProviderService.getTableSize(colBuffer).
-          getOrElse(0) == 1376 &&
-          StoreTableValueSizeProviderService.getTableSize(tableName).
-              getOrElse(0) == 720
+      (ma._4 - getTableSize(colBuffer) - getTableSize(tableName)) < 600
     },
-      s"Comparing the value Size of $colBuffer with StoreTableValueSizeProviderService",
+      s"Comparing the value Size of $colBuffer with StoreTableValueSizeProviderService"
+      + " expected  " + ma._4 + "-" + getTableSize(colBuffer) + "- " + getTableSize(tableName),
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)
 
   }
 
-  private def queryMemoryAnalytics(tableName: String, tableType: TableType): (String, Long, Int) = {
-    val query = "SELECT  SUM(TOTAL_SIZE) ,  SUM(NUM_ROWS) , COUNT(HOST) FROM SYS.MEMORYANALYTICS" +
-        s" WHERE TABLE_NAME = '$tableName'  group by table_name"
-    var valueSize: Long = 0
+  private def queryMemoryAnalytics(tableName: String, tableType: TableType):
+  (String, Long, Int, Long) = {
+
+    val query = "SELECT  SUM(TOTAL_SIZE)," +
+        "  SUM(NUM_ROWS)," +
+        "  sum(value_size)," +
+        "  COUNT(HOST)" +
+        " FROM SYS.MEMORYANALYTICS" +
+        s" WHERE TABLE_NAME = '$tableName' " +
+        s" group by table_name"
+
     var totalSize: Long = 0
     var totalRows: Int = 0
+    var valueSize: Long = 0
+
     val conn = DriverManager.getConnection(Constant.DEFAULT_EMBEDDED_URL)
     val rs = conn.createStatement().executeQuery(query)
     if (rs.next()) {
@@ -184,22 +200,25 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
           val colDetails = queryMemoryAnalytics(columnBufferName, TableType.ROW)
           totalSize = (rs.getString(1).toDouble * 1024).toLong + colDetails._2
           totalRows = rs.getString(2).toInt + colDetails._3
+          valueSize = (rs.getString(3).toDouble * 1024).toLong + colDetails._4
         }
         case TableType.REPLICATE => {
-          val host = rs.getInt(3)
+          val host = rs.getInt(4)
           totalSize = (rs.getString(1).toDouble * 1024).toLong / host
           totalRows = rs.getString(2).toInt / host
+          valueSize = (rs.getString(3).toDouble * 1024).toLong / host
         }
         case TableType.ROW => {
           totalSize = (rs.getString(1).toDouble * 1024).toLong
           totalRows = rs.getString(2).toInt
+          valueSize = (rs.getString(3).toDouble * 1024).toLong
         }
       }
     }
 
     conn.close()
 
-    (tableName, totalSize, totalRows)
+    (tableName, totalSize, totalRows, valueSize)
   }
 
 
