@@ -75,6 +75,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    dosetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
@@ -94,7 +95,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     })
-
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
@@ -125,6 +125,10 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def setUp(): Unit = {
     super.setUp()
+    dosetUp()
+  }
+
+  private def dosetUp() : Unit = {
     val testName = getName
     val testClass = getClass
     // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
