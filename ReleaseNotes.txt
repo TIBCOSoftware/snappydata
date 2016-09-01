@@ -7,6 +7,9 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+  [SNAP-735] By default, STRING type will be serialized as VARCHAR with max size.
+    To serialize it instead as CLOB, use the query hint as 
+    '--+ columnsAsClob(*)' or '--+ columnsAsClob(col1_name,col4_name)'.
 
   [SNAP-864] Script to launch SnappyData cluster on AWS
 

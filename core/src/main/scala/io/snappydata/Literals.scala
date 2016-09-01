@@ -190,12 +190,15 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
-   * as varchars for performance benefits.
+   * as VARCHAR.
    * <p>
-   * Possible values are 'true/1' or 'false/0'
+   * Possible values are valid column names in the tables/schema. Multiple
+   * column names to be comma separated.
+   * One can also provide '*' for serializing all the STRING columns as CLOB.
    * <p>
    * Example:<br>
-   * SELECT * FROM t1 --+ stringAsClob(1)
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
    */
-  val StringAsClob = Value("stringAsClob")
+  val ColumnsAsClob = Value("columnsAsClob")
 }

@@ -33,7 +33,6 @@ import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.{Constant, QueryHint}
-import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -46,8 +45,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
 import org.apache.spark.util.SnappyUtils
+import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -86,13 +85,11 @@ class SparkSQLExecuteImpl(val sql: String,
     case None => false
   }
 
-  private[this] val stringAsClob = snc.snappySession.getPreviousQueryHints.get(
-    QueryHint.StringAsClob.toString) match {
-    case Some(v) => Misc.parseBoolean(v)
-    case None => false
+  private val (allAsClob, columnsAsClob) = snc.snappySession.getPreviousQueryHints.get(
+    QueryHint.ColumnsAsClob.toString) match {
+    case Some(v) => Utils.parseColumnsAsClob(v)
+    case None => (false, Array.empty[String])
   }
-
-  private val sqlConfStringAsClob = snc.sessionState.conf.stringAsClob
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
@@ -222,8 +219,10 @@ class SparkSQLExecuteImpl(val sql: String,
       if (tp == StoredFormatIds.SQL_DECIMAL_ID) {
         InternalDataSerializer.writeSignedVL(precision, hdos) // precision
         InternalDataSerializer.writeSignedVL(scale, hdos) // scale
-      } else if (tp == StoredFormatIds.SQL_VARCHAR_ID) {
-        InternalDataSerializer.writeSignedVL(precision, hdos) // size
+      } else if (tp == StoredFormatIds.SQL_VARCHAR_ID ||
+          tp == StoredFormatIds.SQL_CHAR_ID) {
+        // Write the size as precision
+        InternalDataSerializer.writeSignedVL(precision, hdos)
       }
     }
   }
@@ -249,19 +248,27 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case s: StringType =>
-        if (sqlConfStringAsClob || stringAsClob
-            /*(stringAsClob.isDefined && Misc.parseBoolean(stringAsClob.get))*/) {
-            if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
-                !f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equals("STRING")) {
-              (StoredFormatIds.SQL_VARCHAR_ID,
-                  f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int], -1)
-            } else {
+        val hasProp = f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)
+        lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+        lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+        //if (stringAsClob) {
+        if (allAsClob || columnsAsClob.contains(f.name)) {
+            if (hasProp && !base.equals("STRING")) {
+              if (base.equals("VARCHAR")) {
+                (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+              } else { // CHAR
+                (StoredFormatIds.SQL_CHAR_ID, size, -1)
+              }
+            } else { // STRING and CLOB
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
-        } else if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-          (StoredFormatIds.SQL_VARCHAR_ID,
-              f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int], -1)
-        } else {
+        } else if (hasProp) {
+          if (base.equals("CHAR")) {
+            (StoredFormatIds.SQL_CHAR_ID, size, -1)
+          } else { // VARCHAR and STRING
+            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+          }
+        } else { // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
         }
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
@@ -446,7 +453,8 @@ object SparkSQLExecuteImpl {
             dvd.setValue(in.readFloat())
           case StoredFormatIds.SQL_DOUBLE_ID =>
             dvd.setValue(in.readDouble())
-          case StoredFormatIds.SQL_VARCHAR_ID =>
+          case StoredFormatIds.SQL_CHAR_ID |
+               StoredFormatIds.SQL_VARCHAR_ID =>
             // read the full length as an integer
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {

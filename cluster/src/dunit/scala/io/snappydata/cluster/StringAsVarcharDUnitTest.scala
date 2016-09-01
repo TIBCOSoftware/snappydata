@@ -17,7 +17,7 @@ package io.snappydata.cluster
  * LICENSE file.
  */
 
-import java.sql.{Connection, DriverManager}
+import java.sql.Connection
 
 import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -36,30 +36,26 @@ class StringAsVarcharDUnitTest(val s: String)
 
   val tableName2 = "colTab2"
 
-  val varcharSize = 100;
+  val varcharSize = 20;
   val charSize = 10;
 
   def testSelectQuery(): Unit = {
     executeQuery("none")
   }
 
-  def testSelectQueryWithQueryHintTrue(): Unit = {
+  def testSelectQueryWithQueryHintAll(): Unit = {
     executeQuery("hint")
   }
 
-  def testSelectQueryWithSQLConfTrue(): Unit = {
-    executeQuery("sqlConf")
+  def testSelectQueryWithQueryHintSome(): Unit = {
+    executeQuery("hint", "col_string")
   }
 
-  def testSelectQueryWithQueryHintFalse(): Unit = {
-    executeQuery("hint", "false")
+  def testSelectQueryWithQueryHintInvalid(): Unit = {
+    executeQuery("hint", "inv,alid")
   }
 
-  def testSelectQueryWithSQLConfFalse(): Unit = {
-    executeQuery("sqlConf", "false")
-  }
-
-  def executeQuery(conf: String, confValue: String = "true"): Unit = {
+  def executeQuery(conf: String, hint: String = "*"): Unit = {
     var stringType = "VARCHAR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -74,19 +70,20 @@ class StringAsVarcharDUnitTest(val s: String)
         s"where t1.col_int = t2.col_int"
 
     def getType(value: String): String = value match {
-      case "false" => "VARCHAR"
-      case "true" => "CLOB"
+      case "*" => "CLOB"
+      case s: String => s.contains("col_string") match {
+        case true => "CLOB"
+        case false => "VARCHAR"
+      }
     }
 
     conf match {
       case "none" =>
       case "hint" =>
-        query1 += s" --+ stringAsClob($confValue)"
-        query2 += s" --+ stringAsClob($confValue)"
-        stringType = getType(confValue)
-      case "sqlConf" =>
-        s.execute(s"set spark.sql.stringAsClob=$confValue")
-        stringType = getType(confValue)
+        query1 += s" --+ stringAsClob($hint)"
+        query2 += s" --+ stringAsClob($hint)"
+        logInfo(s"Queries: '$query1' and '$query2'")
+        stringType = getType(hint)
       case _ => throw new IllegalArgumentException(s"Invalid argument $conf")
     }
 
@@ -161,7 +158,7 @@ class StringAsVarcharDUnitTest(val s: String)
     assert(md.getColumnTypeName(4).equals("CLOB"))
 
     assert(md.getColumnName(5).equals("COL_CHAR"))
-    assert(md.getColumnTypeName(5).equals("VARCHAR"))
+    assert(md.getColumnTypeName(5).equals("CHAR"))
     assert(md.getPrecision(5) == charSize)
 
     assert(md.getTableName(1).equalsIgnoreCase(tName))

@@ -324,6 +324,14 @@ object Utils {
     k
   }
 
+  def parseColumnsAsClob(s: String): (Boolean, Array[String]) = {
+    if (s.trim.equals("*")) {
+      (true, Array.empty[String])
+    } else {
+      (false, s.toUpperCase.split(','))
+    }
+  }
+
   def hasLowerCase(k: String): Boolean = {
     var index = 0
     val len = k.length
