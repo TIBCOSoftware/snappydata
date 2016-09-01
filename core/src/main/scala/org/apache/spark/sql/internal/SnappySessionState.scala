@@ -179,7 +179,7 @@ class SnappySessionState(snappySession: SnappySession)
           } else {
             (-1, 0)
           }
-        }.filter(v => v._1 > 0 && v._2 > 0).sortBy(_._2)(Ordering[Int].reverse)
+        }.filter(v => v._1 >= 0 && v._2 > 0).sortBy(_._2)(Ordering[Int].reverse)
 
         if (satisfyingJoinCond.isEmpty) {
           logDebug("join condition insufficient for matching any colocation columns ")
