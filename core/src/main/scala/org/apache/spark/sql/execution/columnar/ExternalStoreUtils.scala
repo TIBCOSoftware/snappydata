@@ -31,6 +31,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -388,7 +389,7 @@ object ExternalStoreUtils {
     (0 until (schemaFields.length - 1)).foreach { i =>
       sb.append(schemaFields(i).name).append(',')
     }
-    sb.append((schemaFields(schemaFields.length - 1).name))
+    sb.append(schemaFields(schemaFields.length - 1).name)
     sb.append(") VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
@@ -496,6 +497,7 @@ object ExternalStoreUtils {
   def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
+    HashedRelationCache.clear()
     Iterator.empty
   }
 }
