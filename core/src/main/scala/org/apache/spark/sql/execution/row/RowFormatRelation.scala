@@ -29,6 +29,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -138,8 +139,28 @@ class RowFormatRelation(
    */
   override lazy val numPartitions: Int = {
     region match {
-      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-      case _ => 1
+      case pr: PartitionedRegion =>
+        getNumPartitions
+      case _ =>
+        1
+    }
+  }
+
+  def getNumPartitions: Int = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      _context.sparkContext.schedulerBackend.defaultParallelism()
+    } else {
+      numBuckets
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    region match {
+      case pr: PartitionedRegion =>
+        pr.getTotalNumberOfBuckets
+      case _ =>
+        1
     }
   }
 

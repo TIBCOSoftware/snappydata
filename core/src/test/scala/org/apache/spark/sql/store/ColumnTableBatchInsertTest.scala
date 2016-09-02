@@ -21,8 +21,7 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.internal.Logging
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
 with Logging
