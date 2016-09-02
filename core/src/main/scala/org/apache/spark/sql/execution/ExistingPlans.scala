@@ -38,6 +38,7 @@ private[sql] case class PartitionedPhysicalRDD(
     output: Seq[Attribute],
     rdd: RDD[InternalRow],
     numPartitions: Int,
+    numBuckets: Int,
     partitionColumns: Seq[Expression],
     extraInformation: String) extends LeafExecNode with CodegenSupport {
 
@@ -71,11 +72,13 @@ private[sql] case class PartitionedPhysicalRDD(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1) SinglePartition
+    if (numPartitions == 1) {
+      SinglePartition
+    }
     else {
       val callbacks = ToolsCallbackInit.toolsCallback
       if (callbacks != null) {
-        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions)
+        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions, numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -125,17 +128,20 @@ private[sql] case class PartitionedPhysicalRDD(
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
-      " partitionColumns = " + partitionColumns.mkString("[", ",", "]")
+      " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
+      " numBuckets= " + numBuckets +
+      " numPartitions= " + numPartitions)
 }
 
 private[sql] object PartitionedPhysicalRDD {
   def createFromDataSource(
       output: Seq[Attribute],
       numPartition: Int,
+      numBuckets: Int,
       partitionColumns: Seq[Expression],
       rdd: RDD[InternalRow],
       relation: BaseRelation): PartitionedPhysicalRDD = {
-    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns,
+    PartitionedPhysicalRDD(output, rdd, numPartition, numBuckets, partitionColumns,
       relation.toString)
   }
 }
@@ -143,6 +149,8 @@ private[sql] object PartitionedPhysicalRDD {
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def numPartitions: Int
+
+  def numBuckets: Int
 
   def partitionColumns: Seq[String]
 }

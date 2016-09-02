@@ -121,10 +121,13 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def baseCleanup(): Unit = {
+  protected def baseCleanup(clearStoreToBlockMap : Boolean = true): Unit = {
     try {
       TestUtils.dropAllTables(this.snc)
     } finally {
+      if (clearStoreToBlockMap) {
+        SnappyContext.storeToBlockMap.clear()
+      }
       dirCleanup()
     }
   }
