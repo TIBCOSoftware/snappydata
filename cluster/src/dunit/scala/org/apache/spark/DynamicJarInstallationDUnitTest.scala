@@ -22,7 +22,7 @@ import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
-import _root_.io.snappydata.test.dunit.AvailablePortHelper
+import _root_.io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.{Utils => Utility}
 import org.apache.spark.util.Utils
@@ -30,6 +30,7 @@ import org.apache.spark.util.Utils
 class DynamicJarInstallationDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
+  val currentLocatorPort = ClusterManagerTestBase.locPort
 
   override def tearDown2(): Unit = {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
@@ -95,9 +96,28 @@ class DynamicJarInstallationDUnitTest(val s: String)
     verifyClassOnExecutors(snc, "FakeClass4", "2", 3)
     verifyClassOnExecutors(snc, "FakeClass3", "", 0)
 
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
+    val props = bootProps
+    val port = currentLocatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm1.invoke(restartServer)
+
+    // verify jar after restart
+    verifyClassOnExecutors(snc, "FakeClass1", "2", 3)
+    verifyClassOnExecutors(snc, "FakeClass2", "2", 3)
+    verifyClassOnExecutors(snc, "FakeClass4", "2", 3)
+    verifyClassOnExecutors(snc, "FakeClass3", "", 0)
+
+
     // remove the jar and check
 
     stmt.executeUpdate("call sqlj.remove_jar('app.sqlJars', 0)")
+
     verifyClassOnExecutors(snc, "FakeClass1", "", 0)
     verifyClassOnExecutors(snc, "FakeClass2", "", 0)
     verifyClassOnExecutors(snc, "FakeClass3", "", 0)
