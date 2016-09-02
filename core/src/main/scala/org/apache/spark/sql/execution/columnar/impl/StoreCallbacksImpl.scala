@@ -30,7 +30,6 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, TransactionController}
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
-
 import org.apache.spark.SparkException
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{SparkSession, SplitClusterMode, SnappySession, SnappyContext, SQLContext}
@@ -142,6 +141,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
     HashedRelationCache.clear()
   }
+  
+  override def cachedBatchTableName(table: String): String = {
+    ColumnFormatRelation.cachedBatchTableName(table)
+  }
+
+  override def snappyInternalSchemaName(): String = {
+    io.snappydata.Constant.INTERNAL_SCHEMA_NAME
+  }
 
   override def cleanUpCachedObjects(table: String,
       sentFromExternalCluster: lang.Boolean): Unit = {
@@ -170,6 +177,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             " external cluster driver. Current cluster mode is " + mode)
       }
     }
+  }
+
+  override def registerRelationDestroyForHiveStore(): Unit = {
+    SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
 }
