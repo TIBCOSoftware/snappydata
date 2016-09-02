@@ -809,7 +809,7 @@ def runSubmitQuery(def jobName, def appName, def workDir) {
 
   String jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
       submitjobairline.substring(4)
-  String json = new JsonSlurper().parseText(jsonStr)
+  def json = new JsonSlurper().parseText(jsonStr)
   String jobid = ''
   json.each {
     k, v ->
@@ -827,7 +827,7 @@ def runSubmitQuery(def jobName, def appName, def workDir) {
         workDir, ['status', '--lead', 'localhost:8090', '--job-id', jobid])
     println statusjobairline
 
-    String statusjson = new JsonSlurper().parseText(statusjobairline)
+    def statusjson = new JsonSlurper().parseText(statusjobairline)
     statusjson.each {
       k, v ->
         if (k == 'status') {
