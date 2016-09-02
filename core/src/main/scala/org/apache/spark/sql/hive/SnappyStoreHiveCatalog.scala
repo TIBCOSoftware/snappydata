@@ -21,6 +21,8 @@ import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.hadoop.fs.FileSystem
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -118,11 +120,15 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    * For example, custom appender used by log4j.
    */
   protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
-    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, jdbcPrefixes())
+    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, snappyPrefixes())
         .filterNot(_ == "")
 
-  private def jdbcPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
-    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc")
+  /**
+   * Add any other classes which has already been loaded by base loader. As Hive Clients creates
+   * another class loader to load classes , it sometimes can give incorrect behaviour
+   */
+  private def snappyPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
+    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc", "com.mapr")
 
   /**
    * A comma separated list of class prefixes that should explicitly be
@@ -208,6 +214,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   // for the time being it will avoid ThreadLocal access to set SessionState.
   // protected val internalHiveclient = this.client.client
 
+
   private def newClient(): HiveClient = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
@@ -223,6 +230,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
     }
     logInfo("Default warehouse location is " + warehouse)
+    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
