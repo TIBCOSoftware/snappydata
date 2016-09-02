@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra
+package io.snappydata.hydra.northWind
 
 import org.apache.spark.SparkFiles
 import org.apache.spark.sql.SnappyContext

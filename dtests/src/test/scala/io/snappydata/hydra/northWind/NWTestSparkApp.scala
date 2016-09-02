@@ -14,55 +14,24 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra
+package io.snappydata.hydra.northWind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
-import org.apache.spark.sql._
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{SparkConf, SparkContext}
 
-object NWTestSnappyJob extends SnappySQLJob {
-  var regions, categories, shippers, employees, customers, orders, order_details, products, suppliers, territories, employee_territories: DataFrame = null
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+object NWTestSparkApp {
+  val conf = new SparkConf().
+    setAppName("NWTestSparkApp Application")
+  val sc = new SparkContext(conf)
+  val snc = SnappyContext(sc)
+
+  def main(args: Array[String]) {
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
-    val dataLocation = jobConfig.getString("dataFilesLocation")
-    println(s"SS - dataLocation is : ${dataLocation}")
-    regions = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/regions.csv")
-    categories = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/categories.csv")
-    shippers = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/shippers.csv")
-    employees = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/employees.csv")
-    customers = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/customers.csv")
-    orders = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/orders.csv")
-    order_details = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/order-details.csv")
-    products = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/products.csv")
-    suppliers = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/suppliers.csv")
-    territories = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/territories.csv")
-    employee_territories = snc.read.format("com.databricks.spark.csv")
-      .option("header", "true")
-      .load(s"$dataLocation/employee-territories.csv")
-    val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
+    val pw = new PrintWriter(new FileOutputStream(new File("NWTestSparkApp.out"), true));
     dropTables(snc)
     println("Test replicated row tables queries started")
     createAndLoadReplicatedTables(snc)
@@ -84,7 +53,7 @@ object NWTestSnappyJob extends SnappySQLJob {
     pw.close()
   }
 
-  private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
+  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
     pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
@@ -93,7 +62,7 @@ object NWTestSnappyJob extends SnappySQLJob {
         + " for query =" + sqlString + " Table Type : " + tableType)
   }
 
-  private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
+  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
     val df = snc.sql(sqlString)
     pw.println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
     assert(df.count() == numRows,
@@ -101,42 +70,42 @@ object NWTestSnappyJob extends SnappySQLJob {
         + " for query =" + sqlString + " Table Type : " + tableType)
   }
 
-  private def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
+  def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    regions.write.insertInto("regions")
+    NWQueries.regions.write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    categories.write.insertInto("categories")
+    NWQueries.categories.write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    shippers.write.insertInto("shippers")
+    NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table)
-    employees.write.insertInto("employees")
+    NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    customers.write.insertInto("customers")
+    NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table)
-    orders.write.insertInto("orders")
+    NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table)
-    order_details.write.insertInto("order_details")
+    NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table)
-    products.write.insertInto("products")
+    NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table)
-    suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table)
-    territories.write.insertInto("territories")
+    NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table)
-    employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 
-  private def validateQueries(snc: SnappyContext, tableType: String, pw: PrintWriter): Unit = {
+  def validateQueries(snc: SnappyContext, tableType: String, pw: PrintWriter): Unit = {
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => assertQuery(snc, NWQueries.Q1, 8, "Q1", tableType, pw)
@@ -197,134 +166,134 @@ object NWTestSnappyJob extends SnappySQLJob {
     }
   }
 
-  private def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
+  def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    regions.write.insertInto("regions")
+    NWQueries.regions.write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    categories.write.insertInto("categories")
+    NWQueries.categories.write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    shippers.write.insertInto("shippers")
+    NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table)
-    employees.write.insertInto("employees")
+    NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    customers.write.insertInto("customers")
+    NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13')")
-    orders.write.insertInto("orders")
+    NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
-    order_details.write.insertInto("order_details")
+    NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " using row options ( partition_by 'ProductID', buckets '17')")
-    products.write.insertInto("products")
+    NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING row options (PARTITION_BY 'SupplierID', buckets '123' )")
-    suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using row options (partition_by 'TerritoryID', buckets '3')")
-    territories.write.insertInto("territories")
+    NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'EmployeeID', buckets '1')")
-    employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories.write.insertInto("employee_territories")
 
   }
 
-  private def createAndLoadColumnTables(snc: SnappyContext): Unit = {
+  def createAndLoadColumnTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    regions.write.insertInto("regions")
+    NWQueries.regions.write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    categories.write.insertInto("categories")
+    NWQueries.categories.write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    shippers.write.insertInto("shippers")
+    NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table + " using column options()")
-    employees.write.insertInto("employees")
+    NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    customers.write.insertInto("customers")
+    NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13')")
-    orders.write.insertInto("orders")
+    NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
-    order_details.write.insertInto("order_details")
+    NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " USING column options ( partition_by 'ProductID,SupplierID', buckets '17')")
-    products.write.insertInto("products")
+    NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING column options (PARTITION_BY 'SupplierID', buckets '123' )")
-    suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using column options (partition_by 'TerritoryID', buckets '3')")
-    territories.write.insertInto("territories")
+    NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'EmployeeID', buckets '1')")
-    employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 
-  private def createAndLoadColocatedTables(snc: SnappyContext): Unit = {
+  def createAndLoadColocatedTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    regions.write.insertInto("regions")
+    NWQueries.regions.write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    categories.write.insertInto("categories")
+    NWQueries.categories.write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    shippers.write.insertInto("shippers")
+    NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
       " using row options( partition_by 'EmployeeID', buckets '3')")
-    employees.write.insertInto("employees")
+    NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
       " using column options( partition_by 'CustomerID', buckets '19')")
-    customers.write.insertInto("customers")
+    NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
       " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers')")
-    orders.write.insertInto("orders")
+    NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using row options ( partition_by 'ProductID', buckets '329')")
-    order_details.write.insertInto("order_details")
+    NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " USING column options ( partition_by 'ProductID', buckets '329'," +
       " colocate_with 'order_details')")
-    products.write.insertInto("products")
+    NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING column options (PARTITION_BY 'SupplierID', buckets '123')")
-    suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using column options (partition_by 'TerritoryID', buckets '3')")
-    territories.write.insertInto("territories")
+    NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories') ")
-    employee_territories.write.insertInto("employee_territories")
-
+    NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 
-  private def dropTables(snc: SnappyContext): Unit = {
+
+  def dropTables(snc: SnappyContext): Unit = {
     snc.sql("drop table if exists regions")
     println("regions table dropped successfully.");
     snc.sql("drop table if exists categories")
@@ -348,7 +317,5 @@ object NWTestSnappyJob extends SnappySQLJob {
     snc.sql("drop table if exists territories")
     println("territories table dropped successfully.");
   }
-
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
 }
