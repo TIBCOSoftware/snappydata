@@ -70,7 +70,7 @@ object NWQueries {
   // Using the WHERE clause to check for equality or inequality
   val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
     " FROM Orders " +
-    " WHERE OrderDate = '1997-05-19 00:00:00.0'"
+    " WHERE OrderDate = '19-May-1997'"
 
   // Using WHERE and ORDER BY Together
   val Q14: String = "SELECT CompanyName, ContactName, Fax" +
@@ -90,7 +90,7 @@ object NWQueries {
 
   val Q17: String = "SELECT FirstName, LastName, BirthDate" +
     " FROM Employees" +
-    " WHERE BirthDate BETWEEN '1950-01-01 00:00:00.0' AND '1959-12-31 23:59:59'"
+    " WHERE BirthDate BETWEEN '1950-01-01' AND '1959-12-31 23:59:59'"
 
   val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
     " FROM Employees"
@@ -127,7 +127,7 @@ object NWQueries {
     "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN '1997-01-01 00:00:00.0' AND '1997-12-31 00:00:00.0')"
+    "FROM Orders WHERE OrderDate BETWEEN '1-Jan-1997' AND '31-Dec-1997')"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
     " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
@@ -153,7 +153,7 @@ object NWQueries {
     " FROM Orders o" +
     " JOIN Employees e ON (e.EmployeeID = o.EmployeeID)" +
     " JOIN Customers c ON (c.CustomerID = o.CustomerID)" +
-    " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1998-01-01 00:00:00.0'" +
+    " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1-Jan-1998'" +
     " ORDER BY c.CompanyName"
 
   val Q33: String = "SELECT e.FirstName, e.LastName, o.OrderID" +
@@ -237,7 +237,7 @@ object NWQueries {
   val Q54: String = "SELECT * FROM orders FULL JOIN order_details" +
     " ON Orders.OrderID = Order_Details.OrderID"
 
-  val queries = Map(
+  val queries = List(
     "Q1" -> Q1,
     "Q2" -> Q2,
     "Q3" -> Q3,
