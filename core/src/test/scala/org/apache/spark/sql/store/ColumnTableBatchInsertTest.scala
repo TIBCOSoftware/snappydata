@@ -22,6 +22,7 @@ import io.snappydata.core.{Data, TestData}
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.SaveMode
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
 with Logging
@@ -205,5 +206,57 @@ with BeforeAndAfter {
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")
+  }
+
+  test("test create table as select with alias") {
+    val rowTable="rowTable";
+    val colTable="colTable";
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(rowTable, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, props)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
+
+
+    val tempRowTableName = "testRowTable"
+    val tempColTableName = "testcolTable"
+
+    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName + " AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")"
+    )
+    var testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    assert(testResults1.length == 5)
+    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+
+    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName + " AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")"
+    )
+    var testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    assert(testResults2.length == 5)
+    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+
+
+    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")"
+    )
+    var testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults3.length == 5)
+    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+
+
+    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")"
+    )
+    var testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults4.length == 5)
+    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+
+    snc.sql("DROP TABLE IF EXISTS "+rowTable)
+    snc.sql("DROP TABLE IF EXISTS "+colTable)
+
+
   }
 }
