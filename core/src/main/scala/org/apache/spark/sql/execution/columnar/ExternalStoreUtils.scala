@@ -386,9 +386,9 @@ object ExternalStoreUtils {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>
-      sb.append(Utils.fieldName(schemaFields(i))).append(',')
+      sb.append(schemaFields(i).name).append(',')
     }
-    sb.append(Utils.fieldName(schemaFields(schemaFields.length - 1)))
+    sb.append((schemaFields(schemaFields.length - 1).name))
     sb.append(") VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
