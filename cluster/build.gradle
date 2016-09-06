@@ -30,9 +30,6 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-interpreter', version: '0.6.0'
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-spark', version: '0.6.0'
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-jdbc', version: '0.6.0'
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
