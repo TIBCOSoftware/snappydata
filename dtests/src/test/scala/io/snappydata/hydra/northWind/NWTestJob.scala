@@ -27,8 +27,9 @@ import scala.util.{Failure, Success, Try}
 object NWTestJob extends SnappySQLJob {
   var regions, categories, shippers, employees, customers, orders, order_details, products, suppliers, territories, employee_territories: DataFrame = null
 
+  def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
@@ -68,24 +69,24 @@ object NWTestJob extends SnappySQLJob {
       employee_territories = snc.read.format("com.databricks.spark.csv")
         .option("header", "true")
         .load(s"$dataLocation/employee-territories.csv")
-      NWTestSparkApp.dropTables(snc)
+      dropTables(snc)
       println("Test replicated row tables queries started")
-      NWTestSparkApp.createAndLoadReplicatedTables(snc)
-      NWTestSparkApp.validateQueries(snc, "Replicated Row Table", pw)
+      createAndLoadReplicatedTables(snc)
+      validateQueries(snc, "Replicated Row Table", pw)
       println("Test replicated row tables queries completed successfully")
-      NWTestSparkApp.dropTables(snc)
+      dropTables(snc)
       println("Test partitioned row tables queries started")
-      NWTestSparkApp.createAndLoadPartitionedTables(snc)
-      NWTestSparkApp.validateQueries(snc, "Partitioned Row Table", pw)
+      createAndLoadPartitionedTables(snc)
+      validateQueries(snc, "Partitioned Row Table", pw)
       println("Test partitioned row tables queries completed successfully")
-      NWTestSparkApp.dropTables(snc)
+      dropTables(snc)
       println("Test column tables queries started")
-      NWTestSparkApp.createAndLoadColumnTables(snc)
-      NWTestSparkApp.validateQueries(snc, "Column Table", pw)
+      createAndLoadColumnTables(snc)
+      validateQueries(snc, "Column Table", pw)
       println("Test column tables queries completed successfully")
-      NWTestSparkApp.dropTables(snc)
-      NWTestSparkApp.createAndLoadColocatedTables(snc)
-      NWTestSparkApp.validateQueries(snc, "Colocated Table", pw)
+      dropTables(snc)
+      createAndLoadColocatedTables(snc)
+      validateQueries(snc, "Colocated Table", pw)
       pw.close()
     } match {
       case Success(v) => pw.close()
@@ -95,7 +96,7 @@ object NWTestJob extends SnappySQLJob {
     }
   }
 
-  /*private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
+  private def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
     pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
@@ -359,7 +360,6 @@ object NWTestJob extends SnappySQLJob {
     snc.sql("drop table if exists territories")
     println("territories table dropped successfully.");
   }
-*/
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
