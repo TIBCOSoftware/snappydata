@@ -189,6 +189,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q52" => assertJoin(snc, NWQueries.Q52, 2155, 1) //, classOf[SortMergeOuterJoin])
         case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, 1) //, classOf[SortMergeOuterJoin])
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, 1) //, classOf[SortMergeOuterJoin])
+        case "Q55" => assertJoin(snc, NWQueries.Q55, 21, 4)
+        case "Q56" => assertJoin(snc, NWQueries.Q55, 8, 4)
       }
     }
   }
@@ -292,6 +294,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
         case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, 4) //, classOf[SortMergeOuterJoin])
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, 4) //, classOf[SortMergeOuterJoin])
+        case "Q55" => assertJoin(snc, NWQueries.Q55, 21, 4)
+        case "Q56" => assertJoin(snc, NWQueries.Q55, 8, 4)
       }
     }
   }
@@ -395,6 +399,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
         case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, 4) //, classOf[SortMergeOuterJoin])
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, 4) //, classOf[SortMergeOuterJoin])
+        case "Q55" => assertJoin(snc, NWQueries.Q55, 21, 4)
+        case "Q56" => assertJoin(snc, NWQueries.Q55, 8, 4)
       }
     }
   }
@@ -504,6 +510,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q52" => //assertJoin(snc, NWQueries.Q52, 2155, 4, classOf[SortMergeOuterJoin]) //BroadcastHashOuterJoin
         case "Q53" => assertJoin(snc, NWQueries.Q53, 2155, 200) //, classOf[SortMergeOuterJoin])
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, 200) //, classOf[SortMergeOuterJoin])
+        case "Q55" => assertJoin(snc, NWQueries.Q55, 21, 4)
+        case "Q56" => assertJoin(snc, NWQueries.Q55, 8, 4)
       }
     }
   }
