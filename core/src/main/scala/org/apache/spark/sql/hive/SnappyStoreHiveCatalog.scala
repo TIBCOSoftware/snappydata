@@ -145,6 +145,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    */
   protected def configure(): Map[String, String] = Map.empty
 
+
+
   /**
    * Hive client that is used to retrieve metadata from the Hive MetaStore.
    * The version of the Hive client that is used here must match the
@@ -217,6 +219,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private def newClient(): HiveClient = synchronized {
 
+    closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
