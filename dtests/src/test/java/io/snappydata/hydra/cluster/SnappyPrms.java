@@ -131,6 +131,11 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long userAppJar;
 
+    /**
+     * (String) args to be passed to the Spark App
+     */
+    public static Long userAppArgs;
+
     public static Long scalaTestJar;
 
     public static Long coreTestJar;
@@ -331,6 +336,11 @@ public class SnappyPrms extends BasePrms {
 
     public static String getCoreTestsJarName() {
         Long key = coreTestJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
+    }
+
+    public static String getUserAppArgs() {
+        Long key = userAppArgs;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
     }
 

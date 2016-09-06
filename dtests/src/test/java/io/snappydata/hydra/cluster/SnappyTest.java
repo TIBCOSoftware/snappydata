@@ -1541,10 +1541,14 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --jars " + SnappyPrms.getScalaTestJar() + ","  + getCoreTestsJar() + ","   + getDunitJar() + " --files " + getAllDataFiles() + " --class " + userJob +
+                /*String command = snappyJobScript + " --jars " + SnappyPrms.getScalaTestJar() + ","  + getCoreTestsJar() + ","   + getDunitJar() + " --files " + getAllDataFiles() + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar);
+                        " " + snappyTest.getUserAppJarLocation(userAppJar)*/
+                String command = snappyJobScript + " --files " + getAllDataFiles() + " --class " + userJob +
+                        " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
+                        " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+                        " " + snappyTest.getUserAppJarLocation(userAppJar); //+ SnappyPrms.getUserAppArgs();
                 Log.getLogWriter().info("SS - sparkJob command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
