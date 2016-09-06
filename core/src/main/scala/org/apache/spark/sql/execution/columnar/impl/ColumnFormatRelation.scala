@@ -22,10 +22,12 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
+import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -37,7 +39,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
-import org.apache.spark.{Logging, Partition}
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -91,7 +92,18 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = region.getTotalNumberOfBuckets
+  override lazy val numPartitions: Int = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      _context.sparkContext.schedulerBackend.defaultParallelism()
+    } else {
+      numBuckets
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    region.getTotalNumberOfBuckets
+  }
 
   override def partitionColumns: Seq[String] = {
     partitioningColumns
@@ -135,6 +147,7 @@ class BaseColumnFormatRelation(
           leftItr ++ rightItr
         }
       case _ =>
+
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,

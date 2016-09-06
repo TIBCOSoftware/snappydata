@@ -121,10 +121,13 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def baseCleanup(): Unit = {
+  protected def baseCleanup(clearStoreToBlockMap : Boolean = true): Unit = {
     try {
       TestUtils.dropAllTables(this.snc)
     } finally {
+      if (clearStoreToBlockMap) {
+        SnappyContext.storeToBlockMap.clear()
+      }
       dirCleanup()
     }
   }
@@ -174,4 +177,10 @@ abstract class SnappyFunSuite
     dirList += fileName
     fileName
   }
+
+  // scalastyle:off
+  protected def logStdOut(msg: String): Unit = {
+    println(msg)
+  }
+  // scalastyle:on
 }

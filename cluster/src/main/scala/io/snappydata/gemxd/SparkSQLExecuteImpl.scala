@@ -18,6 +18,7 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -102,9 +103,7 @@ class SparkSQLExecuteImpl(val sql: String,
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
-      snc.handleErrorLimitExceeded[Unit](handler.apply, resultsRdd, df,
-        df.queryExecution.logical, bm.removeRdd(resultsRdd.id))
-
+      handler(resultsRdd, df)
       hdos.clearForReuse()
       var metaDataSent = false
       for (p <- partitionBlockIds if p != null) {
@@ -390,7 +389,7 @@ object SparkSQLExecuteImpl {
             if (utfLen >= 0) {
               val pos = in.position()
               dvd.setValue(new String(in.array(), pos, utfLen,
-                StringUtils.UTF8))
+                StandardCharsets.UTF_8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()

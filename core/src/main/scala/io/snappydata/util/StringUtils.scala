@@ -16,11 +16,7 @@
  */
 package io.snappydata.util
 
-import java.nio.charset.Charset
-
 object StringUtils {
-
-  val UTF8: Charset = Charset.forName("utf-8")
 
   val numFormatter = java.text.NumberFormat.getInstance
 

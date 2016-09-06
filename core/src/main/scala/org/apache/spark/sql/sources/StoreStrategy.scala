@@ -34,7 +34,7 @@ object StoreStrategy extends Strategy {
         false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
       ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
-          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = true)) :: Nil
+          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
 
     case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
         bucketSpec, mode, opts, query) =>

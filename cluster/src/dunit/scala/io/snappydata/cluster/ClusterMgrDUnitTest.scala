@@ -17,7 +17,6 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
-import java.sql.SQLException
 
 import scala.math._
 import scala.util.Random
@@ -138,8 +137,10 @@ object ClusterMgrDUnitTest {
     val expected = Set[Row](Row(2015, 2, 15, 1002, 1803, "AA    "),
         Row(2014, 4, 15, 1324, 1500, "UT    "))
     val returnedRows = result.collect()
+    // scalastyle:off
     println(s"Returned rows: ${returnedRows.mkString(",")} ")
     println(s"Expected rows: ${expected.mkString(",")}")
+    // scalastyle:on
     assert(returnedRows.toSet == expected)
 
     snContext.sql("drop table if exists airline")
@@ -153,7 +154,9 @@ object ClusterMgrDUnitTest {
         .setAppName("externalApp").set("spark.testing.reservedMemory", "0")
 
     try {
-      val sc2 = new SparkContext(conf)
+      new SparkContext(conf)
+      assert(assertion = false,
+        "Expected SparkContext creation to fail due to existing lead")
     } catch {
       case e: org.apache.spark.SparkException =>
         if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
