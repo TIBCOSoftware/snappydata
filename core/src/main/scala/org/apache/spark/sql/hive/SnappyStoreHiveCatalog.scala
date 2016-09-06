@@ -145,8 +145,6 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    */
   protected def configure(): Map[String, String] = Map.empty
 
-
-
   /**
    * Hive client that is used to retrieve metadata from the Hive MetaStore.
    * The version of the Hive client that is used here must match the
