@@ -19,10 +19,14 @@ package io.snappydata.app
 import io.snappydata.{Constant, SnappyFunSuite}
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SnappyContext}
 
 class CreateIndexTest extends SnappyFunSuite {
+  self =>
 
   test("Test create Index on Column Table using Snappy API") {
     val tableName: String = "tcol1"
@@ -90,19 +94,6 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $table2")
   }
 
-
-  private def executeQuery(snContext: SnappyContext, withExplain: Boolean = false)
-      (sqlText: String)(implicit validate: DataFrame => Unit = _ => ()) = {
-    val selectRes = snContext.sql(sqlText)
-    if (withExplain) {
-      selectRes.explain(true)
-    }
-    selectRes.show
-    if (validate != null) {
-      validate(selectRes)
-    }
-  }
-
   test("Test choice of index according to where predicate") {
     val tableName = "tabOne"
     val snContext = SnappyContext(sc)
@@ -137,7 +128,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"create index $indexTwo on $tableName (COL2, COL3)")
     snContext.sql(s"create index $indexThree on $tableName (COL1, COL3)")
 
-    val executeQ = executeQuery(snContext) _
+    val executeQ = QueryExecutor(snContext)
 
     executeQ(s"select * from $tableName where col1 = 111")
 
@@ -153,44 +144,41 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $tableName")
   }
 
+  private def createBase3Tables(snContext: SnappyContext,
+      table1: String,
+      table2: String,
+      table3: String): Unit = {
+
+    val props = Map(
+      "PARTITION_BY" -> "col1")
+    snContext.sql(s"drop table if exists $table1")
+
+    val data = Seq(Seq(111, "aaa", "hello"),
+      Seq(222, "bbb", "halo"),
+      Seq(333, "aaa", "hello"),
+      Seq(444, "bbb", "halo"),
+      Seq(555, "ccc", "halo"),
+      Seq(666, "ccc", "halo")
+    )
+
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
+    val dataDF = snContext.createDataFrame(rdd)
+
+    snContext.createTable(s"$table2", "column", dataDF.schema,
+      props + ("PARTITION_BY" -> "col2,col3"))
+
+    snContext.createTable(s"$table3", "column", dataDF.schema, props)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
+    dataDF.write.insertInto(table2)
+    dataDF.write.insertInto(table3)
+  }
+
   test("Test two table joins") {
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
-
-    val snContext = SnappyContext(sc)
-    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-
-
-    def createBaseTables() : Unit = {
-      val props = Map(
-        "PARTITION_BY" -> "col1")
-      snContext.sql(s"drop table if exists $table1")
-
-      val data = Seq(Seq(111, "aaa", "hello"),
-        Seq(222, "bbb", "halo"),
-        Seq(333, "aaa", "hello"),
-        Seq(444, "bbb", "halo"),
-        Seq(555, "ccc", "halo"),
-        Seq(666, "ccc", "halo")
-      )
-
-      val rdd = sc.parallelize(data, data.length).map(s =>
-        new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
-      val dataDF = snContext.createDataFrame(rdd)
-
-      snContext.createTable(s"$table2", "column", dataDF.schema,
-        props + ("PARTITION_BY" -> "col2,col3"))
-
-      snContext.createTable(s"$table3", "column", dataDF.schema, props)
-
-      dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
-      dataDF.write.insertInto(table2)
-      dataDF.write.insertInto(table3)
-    }
-
-
-    createBaseTables()
 
     val index1 = s"${table1}_IdxOne"
     val index2 = s"${table1}_IdxTwo"
@@ -198,6 +186,11 @@ class CreateIndexTest extends SnappyFunSuite {
     val index4 = s"${table1}_IdxFour"
 
     val index31 = s"${table3}_IdxOne"
+
+    val snContext = SnappyContext(sc)
+    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+
+    createBase3Tables(snContext, table1, table2, table3)
 
     doPrint("Verify index create and drop for various index types")
     snContext.sql(s"create index $index1 on $table1 (COL1)")
@@ -211,37 +204,36 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"create index $index31 on $table3 " +
         s" (COL2, COL3) Options (colocate_with  '$index4')")
 
-    val executeQ = executeQuery(snContext, true) _
+    val executeQ = QueryExecutor(snContext)
 
-/*
-    executeQ(s"select * from $table1 tab1 " +
-        s"join $table3 tab2 on tab1.col1 = tab2.col1")
+    executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1") {
+      validateIndex(s"$index2")(_)
+    }
 
-    executeQ(s"select * from $table1 tab1 " +
-        s"join $table3 tab2 on tab1.col1 = tab2.col1 where tab1.col1 = 111 ")
-
-
-    executeQ(s"select * from $table1, $table3 " +
-        s" where $table1.col1 = $table3.col1")
-
-    executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
-        s"where $table1.col1 = $table3.col1 and $table3.col1 = 111 ")
-
-    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 " +
-    s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ")
+    executeQ(s"select * from $table1 t1, $table3 t2 where t1.col1 = t2.col1  ") {
+      validateIndex(s"$index2")(_)
+    }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-    s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ")
+        s"and t1.col3 = t2.col3 ") {
+      validateIndex(s"$index4")(_)
+    }
 
-    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-        s"where t1.col3 = t2.col3 ")
-*/
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col2 " +
+        s"and t1.col3 = t2.col3 ") {
+      validateIndex(s"$index4")(_)
+    }
 
     executeQ(s"select t1.col2, t2.col3 from $table2 t1 join $table3 t2 on t1.col2 = t2.col2 " +
-        s"and t1.col3 = t2.col3 ") // tab2 vs index31
+        s"and t1.col3 = t2.col3 ") { df => // tab2 vs index31
+      validateIndex(s"$index31")(df)
+    }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2 = t2.col2 " +
-        s"and t1.col3 = t2.col3 ") // index4 vs index31
+        s"and t1.col3 = t2.col3 ") { df => // index4 vs index31
+      validateIndex(s"$index31")(df)
+      validateIndex(s"$index4")(df)
+    }
 
     snContext.sql(s"drop index $index1")
     snContext.sql(s"drop index $index2")
@@ -254,6 +246,66 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $table3")
   }
 
+  test("Test two table joins corner cases") {
+
+    val table1 = "tabOne"
+    val table2 = "tabTwo"
+    val table3 = "tabThree"
+
+    val index1 = s"${table1}_IdxOne"
+    val index2 = s"${table1}_IdxTwo"
+
+    val index31 = s"${table3}_IdxOne"
+
+    val snContext = SnappyContext(sc)
+    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+
+    createBase3Tables(snContext, table1, table2, table3)
+
+    doPrint("Verify index create and drop for various index types")
+    snContext.sql(s"create index $index1 on $table1 " +
+        s" (COL1) Options (colocate_with  '$table3')")
+
+    snContext.sql(s"create index $index2 on $table1 " +
+        s" (COL2, COL3) Options (colocate_with  '$table2')")
+
+    snContext.sql(s"create index $index31 on $table3 " +
+        s" (COL2, COL3) Options (colocate_with  '$index2')")
+
+    val executeQ = QueryExecutor(snContext)
+
+    executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1 " +
+        s"where tab1.col1 = 111 ") {
+      validateIndex(s"$index2")(_)
+    }
+
+    executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
+        s"where $table1.col1 = $table3.col1 and $table3.col1 = 111 ") { df =>
+      // TODO: validateIndex(s"$index2")(_)
+      val msg = s"TODO:SB: Fix this ${df.queryExecution.simpleString}"
+      logWarning(msg)
+      info(msg)
+    }
+
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
+        s"where t1.col3 = t2.col3 ") {
+      validateIndex(s"$index2")(_)
+    }
+
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") {
+      validateIndex(s"$index2")(_)
+    }
+
+
+    snContext.sql(s"drop index $index1")
+    snContext.sql(s"drop index $index31")
+    snContext.sql(s"drop index $index2")
+
+    snContext.sql(s"drop table $table1")
+    snContext.sql(s"drop table $table2")
+    snContext.sql(s"drop table $table3")
+  }
 
   test("Test choice of index for 3 or more table joins") {
     val table1 = "tabOne"
@@ -264,7 +316,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
 
-    def createBaseTables() : Unit = {
+    def createBaseTables(): Unit = {
       val props = Map(
         "PARTITION_BY" -> "col1")
       snContext.sql(s"drop table if exists $table1")
@@ -308,7 +360,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"create index $index2 on $table1 " +
         s" (COL2, COL3) Options (colocate_with  '$table2')")
 
-    val executeQ = executeQuery(snContext, true) _
+    val executeQ = QueryExecutor(snContext, true, true)
 
     /*
         executeQ(s"select * from $table1 tab1 " +
@@ -410,6 +462,42 @@ class CreateIndexTest extends SnappyFunSuite {
   }
 
   def doPrint(s: Any): Unit = {
-    //println(s)
+    // println(s)
   }
+
+  private case class QueryExecutor(snContext: SnappyContext,
+      showResults: Boolean = false,
+      withExplain: Boolean = false) {
+
+    private[app] def apply(sqlText: String)(implicit validate: DataFrame => Unit = _ => ()) = {
+      val msg = s"Executing $sqlText"
+      logInfo(msg) // log it
+      info(msg) // inform it
+
+      val selectRes = snContext.sql(sqlText)
+
+      if (withExplain) {
+        selectRes.explain(true)
+      }
+
+      validate(selectRes)
+
+      if (showResults) {
+        selectRes.show
+      }
+    }
+
+  }
+
+  private def validateIndex(index: String)(df: DataFrame): Unit = {
+    df.queryExecution.optimizedPlan.find {
+      case l@LogicalRelation(i: IndexColumnFormatRelation, _, _) =>
+        i.resolvedName.indexOf(index.toUpperCase) > 0
+      case _ => false
+    }.orElse {
+      df.explain(true)
+      fail(s"Expected index selection $index")
+    }
+  }
+
 }
