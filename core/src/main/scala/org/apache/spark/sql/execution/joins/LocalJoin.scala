@@ -21,7 +21,7 @@ import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
 
 import scala.collection.mutable
 
-import com.google.common.cache.{CacheBuilder, RemovalListener, RemovalNotification}
+import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
@@ -90,7 +90,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
       val start = System.nanoTime()
       val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
-        split, context)
+        buildPartition, context)
       buildTime += (System.nanoTime() - start) / 1000000L
       val estimatedSize = hashed.estimatedSize
       buildDataSize += estimatedSize
@@ -109,25 +109,29 @@ case class LocalJoin(leftKeys: Seq[Expression],
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-  override def doProduce(ctx: CodegenContext): String = {
+  override def doProduce(ctx: CodegenContext): String =
     streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
-  }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
     // create a name for HashedRelation
     val relationTerm = ctx.freshName("relation")
+    val relationIsUnique = ctx.freshName("keyIsUnique")
     val buildRDDRef = ctx.addReferenceObj("buildRDD", buildRDD)
     val buildPartRef = ctx.addReferenceObj("buildPartition", buildPartition)
     ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
       prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))
+    ctx.addMutableState(classOf[Boolean].getName, relationIsUnique,
+      s"$relationIsUnique = $relationTerm.keyIsUnique();")
 
     joinType match {
-      case Inner => codeGenInner(ctx, input, relationTerm)
-      case LeftOuter | RightOuter => codeGenOuter(ctx, input, relationTerm)
-      case LeftSemi => codeGenSemi(ctx, input, relationTerm)
-      case LeftAnti => codeGenAnti(ctx, input, relationTerm)
-      case j: ExistenceJoin => codeGenExistence(ctx, input, relationTerm)
+      case Inner => codeGenInner(ctx, input, relationTerm, relationIsUnique)
+      case LeftOuter | RightOuter => codeGenOuter(ctx, input,
+        relationTerm, relationIsUnique)
+      case LeftSemi => codeGenSemi(ctx, input, relationTerm, relationIsUnique)
+      case LeftAnti => codeGenAnti(ctx, input, relationTerm, relationIsUnique)
+      case j: ExistenceJoin => codeGenExistence(ctx, input,
+        relationTerm, relationIsUnique)
       case x =>
         throw new IllegalArgumentException(
           s"BroadcastHashJoin should not take $x as the JoinType")
@@ -254,7 +258,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generates the code for Inner join.
    */
   private def codeGenInner(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
+      input: Seq[ExprCode], relationTerm: String,
+      relationIsUnique: String): String = {
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
     val (matched, checkCondition, _, buildVars) = getJoinCondition(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
@@ -269,7 +274,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val consumeResult = consume(ctx, resultVars)
 
     s"""
-       |if ($relationTerm.keyIsUnique()) {
+       |if ($relationIsUnique) {
        |  // generate join key for stream side
        |  ${keyEv.code}
        |  // find matches from HashedRelation
@@ -300,7 +305,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generates the code for left or right outer join.
    */
   private def codeGenOuter(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
+      input: Seq[ExprCode], relationTerm: String,
+      relationIsUnique: String): String = {
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
     val matched = ctx.freshName("matched")
     val buildVars = genBuildSideVars(ctx, matched)
@@ -339,7 +345,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val consumeResult = consume(ctx, resultVars)
 
     s"""
-       |if ($relationTerm.keyIsUnique()) {
+       |if ($relationIsUnique) {
        |  // generate join key for stream side
        |  ${keyEv.code}
        |  // find matches from HashedRelation
@@ -380,7 +386,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generates the code for left semi join.
    */
   private def codeGenSemi(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
+      input: Seq[ExprCode], relationTerm: String,
+      relationIsUnique: String): String = {
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
     val (matched, checkCondition, _, _) = getJoinCondition(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
@@ -390,7 +397,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val consumeResult = consume(ctx, input)
 
     s"""
-       |if ($relationTerm.keyIsUnique()) {
+       |if ($relationIsUnique) {
        |  // generate join key for stream side
        |  ${keyEv.code}
        |  // find matches from HashedRelation
@@ -424,7 +431,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generates the code for anti join.
    */
   private def codeGenAnti(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
+      input: Seq[ExprCode], relationTerm: String,
+      relationIsUnique: String): String = {
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
     val (matched, checkCondition, antiCondition, _) =
       getJoinCondition(ctx, input, anti = true)
@@ -435,7 +443,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val consumeResult = consume(ctx, input)
 
     s"""
-       |if ($relationTerm.keyIsUnique()) {
+       |if ($relationIsUnique) {
        |  // generate join key for stream side
        |  ${keyEv.code}
        |  // Check if the key has nulls.
@@ -479,7 +487,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generates the code for existence join.
    */
   private def codeGenExistence(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
+      input: Seq[ExprCode], relationTerm: String,
+      relationIsUnique: String): String = {
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
     val existsVar = ctx.freshName("exists")
@@ -510,7 +519,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val consumeResult = consume(ctx, resultVar)
 
     s"""
-       |if ($relationTerm.keyIsUnique()) {
+       |if ($relationIsUnique) {
        |  // generate join key for stream side
        |  ${keyEv.code}
        |  // find matches from HashedRelation
@@ -546,8 +555,12 @@ object HashedRelationCache {
 
   type KeyType = (StructType, Seq[Expression])
 
+  @volatile private[this] var _relationCache: Option[(Cache[
+      KeyType, HashedRelation], TaskMemoryManager)] = None
   private[this] val relationCacheSize = new AtomicLong(0L)
-  private[this] lazy val (relationCache, cacheMemoryManager) = {
+
+  private[this] def initCache(): (Cache[KeyType, HashedRelation],
+      TaskMemoryManager) = {
     val env = SparkEnv.get
     val cacheTimeoutSecs = Property.LocalCacheTimeout.getOption(env.conf)
         .map(_.toInt).getOrElse(Constant.DEFAULT_CACHE_TIMEOUT_SECS)
@@ -564,15 +577,33 @@ object HashedRelationCache {
     (cache, new TaskMemoryManager(env.memoryManager, -1L))
   }
 
+  private def getCache: (Cache[KeyType, HashedRelation], TaskMemoryManager) = {
+    val c = _relationCache
+    c match {
+      case Some(relationCache) => relationCache
+      case None => synchronized {
+        _relationCache match {
+          case Some(cache) => cache
+          case None =>
+            val relationCache = initCache()
+            _relationCache = Some(relationCache)
+            relationCache
+        }
+      }
+    }
+  }
+
   def get(schema: StructType, buildKeys: Seq[Expression], rdd: RDD[InternalRow],
-      split: Partition, context: TaskContext, tries: Int = 1): HashedRelation = {
+      split: Partition, context: TaskContext,
+      tries: Int = 1): HashedRelation = {
     try {
-      relationCache.get(schema -> buildKeys, new Callable[HashedRelation] {
+      val (cache, memoryManager) = getCache
+      cache.get(schema -> buildKeys, new Callable[HashedRelation] {
         override def call(): HashedRelation = {
-            val relation = HashedRelation(rdd.iterator(split, context),
-              buildKeys, taskMemoryManager = cacheMemoryManager)
-            relationCacheSize.incrementAndGet()
-            relation
+          val relation = HashedRelation(rdd.iterator(split, context),
+            buildKeys, taskMemoryManager = memoryManager)
+          relationCacheSize.incrementAndGet()
+          relation
         }
       }).asReadOnlyCopy()
     } catch {
@@ -582,7 +613,7 @@ object HashedRelationCache {
         cause match {
           case _: OutOfMemoryError =>
             if (tries <= 10 && relationCacheSize.get() > 0) {
-              relationCache.invalidateAll()
+              getCache._1.invalidateAll()
               get(schema, buildKeys, rdd, split, context, tries + 1)
             } else {
               throw new RuntimeException(cause.getMessage, cause)
@@ -594,12 +625,21 @@ object HashedRelationCache {
   }
 
   def remove(schema: StructType, buildKeys: Seq[Expression]): Unit = {
-    relationCache.invalidate(schema -> buildKeys)
+    getCache._1.invalidate(schema -> buildKeys)
   }
 
   def clear(): Unit = {
     if (relationCacheSize.get() > 0) {
-      relationCache.invalidateAll()
+      getCache._1.invalidateAll()
+    }
+  }
+
+  def close(): Unit = synchronized {
+    _relationCache match {
+      case Some(cache) =>
+        cache._1.invalidateAll()
+        _relationCache = None
+      case None => // nothing to be done
     }
   }
 }

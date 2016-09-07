@@ -230,6 +230,9 @@ class SnappySession(@transient private val sc: SparkContext,
       case LogicalRelation(br, _, _) =>
         br match {
           case d: DestroyRelation => d.truncate()
+          case _ => if (!ignoreIfUnsupported) {
+            throw new AnalysisException(s"Table $tableIdent cannot be truncated")
+          }
         }
       case _ => if (!ignoreIfUnsupported) {
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
@@ -892,7 +895,7 @@ class SnappySession(@transient private val sc: SparkContext,
               s"Table '$tableIdent' not found", Some(e))
         }
     }
-    // additional cleanup for external tables, if required
+    // additional cleanup for external and temp tables, if required
     plan match {
       case LogicalRelation(br, _, _) =>
         br match {
@@ -907,15 +910,20 @@ class SnappySession(@transient private val sc: SparkContext,
           case _ => // ignore
         }
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+        if(sessionCatalog.isTemporaryTable(tableIdent)){ // This is due to temp table
+          // can be made from a backing relation like Parquet or Hadoop
+          sessionCatalog.unregisterTable(tableIdent)
+        }else{
+          sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+        }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
         }
-      case _ =>
-        // assume a temporary table
+      case _ => { // This is a temp table with no relation as source
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
         sessionCatalog.unregisterTable(tableIdent)
+      }
     }
   }
 
