@@ -176,29 +176,90 @@ object NWQueries {
     " GROUP BY e.City, c.City " +
     " ORDER BY numEmployees DESC"
 
-  val Q36: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-    " e.City, c.City" +
-    " FROM Employees e LEFT JOIN Customers c ON" +
-    " (e.City = c.City) " +
-    " GROUP BY e.City, c.City " +
-    " ORDER BY numEmployees DESC"
+  val Q36: String = "select distinct (a.ShippedDate) as ShippedDate," +
+    " a.OrderID," +
+    " b.Subtotal," +
+    " year(a.ShippedDate) as Year" +
+    " from Orders a" +
+    " inner join" +
+    " (" +
+    " select distinct OrderID," +
+    " sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal" +
+    " from order_details" +
+    " group by OrderID" +
+    ") b on a.OrderID = b.OrderID" +
+    " where a.ShippedDate is not null" +
+    " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
+    " order by a.ShippedDate"
 
-  val Q37: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-    " e.City, c.City " +
-    " FROM Employees e RIGHT JOIN Customers c ON" +
-    " (e.City = c.City) " +
-    " GROUP BY e.City, c.City" +
-    " ORDER BY numEmployees DESC"
+  val Q37: String = "select distinct a.CategoryID," +
+    " a.CategoryName," +
+    " b.ProductName," +
+    " sum(c.ExtendedPrice) as ProductSales" +
+    " from Categories a " +
+    " inner join Products b on a.CategoryID = b.CategoryID" +
+    " inner join" +
+    " ( select distinct y.OrderID," +
+    " y.ProductID," +
+    " x.ProductName," +
+    " y.UnitPrice," +
+    " y.Quantity," +
+    " y.Discount," +
+    " round(y.UnitPrice * y.Quantity * (1 - y.Discount), 2) as ExtendedPrice" +
+    " from Products x" +
+    " inner join Order_Details y on x.ProductID = y.ProductID" +
+    " order by y.OrderID" +
+    " ) c on c.ProductID = b.ProductID" +
+    " inner join Orders d on d.OrderID = c.OrderID" +
+    " where d.OrderDate > '1997/1/1' and d.OrderDate < '1997/12/31'" +
+    " group by a.CategoryID, a.CategoryName, b.ProductName" +
+    " order by a.CategoryName, b.ProductName, ProductSales"
 
-  val Q38: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-    " e.City, c.City" +
-    " FROM Employees e FULL JOIN Customers c ON" +
-    " (e.City = c.City) " +
-    " GROUP BY e.City, c.City " +
-    " ORDER BY numEmployees DESC"
+  /*
+    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
+    val Q38: String = "select distinct ProductName as Ten_Most_Expensive_Products," +
+        " UnitPrice" +
+        " from Products as a" +
+        " where 10 >= (select count(distinct UnitPrice)" +
+        " from Products as b" +
+        " where b.UnitPrice == a.UnitPrice)" +
+        "order by UnitPrice desc"
+  */
+
+  // A simple query to get detailed information for each sale so that invoice can be issued.
+  val Q38: String = "select distinct b.ShipName," +
+    " b.ShipAddress," +
+    " b.ShipCity," +
+    " b.ShipRegion," +
+    " b.ShipPostalCode," +
+    " b.ShipCountry," +
+    " b.CustomerID," +
+    " c.CompanyName," +
+    " c.Address," +
+    " c.City," +
+    " c.Region," +
+    " c.PostalCode," +
+    " c.Country, " +
+    " concat(d.FirstName,  ' ', d.LastName) as Salesperson," +
+    " b.OrderID," +
+    " b.OrderDate," +
+    " b.RequiredDate," +
+    " b.ShippedDate," +
+    " a.CompanyName," +
+    " e.ProductID," +
+    " f.ProductName," +
+    " e.UnitPrice," +
+    " e.Quantity," +
+    " e.Discount," +
+    " e.UnitPrice * e.Quantity * (1 - e.Discount) as ExtendedPrice," +
+    " b.Freight" +
+    " from Shippers a " +
+    " inner join Orders b on a.ShipperID = b.ShipVia" +
+    " inner join Customers c on c.CustomerID = b.CustomerID" +
+    " inner join Employees d on d.EmployeeID = b.EmployeeID" +
+    " inner join Order_Details e on b.OrderID = e.OrderID" +
+    " inner join Products f on f.ProductID = e.ProductID" +
+    " order by b.ShipName"
 
   val Q39: String = "select s.supplierid,s.companyname,p.productid,p.productname " +
     "from suppliers s join products p on(s.supplierid= p.supplierid) and" +
@@ -236,6 +297,55 @@ object NWQueries {
     " ON Orders.OrderID = Order_Details.OrderID"
   val Q54: String = "SELECT * FROM orders FULL JOIN order_details" +
     " ON Orders.OrderID = Order_Details.OrderID"
+
+  // Number of units in stock by category and supplier continent
+  val Q55: String = "select c.CategoryName as Product_Category," +
+    " case when s.Country in" +
+    " ('UK','Spain','Sweden','Germany','Norway'," +
+    " 'Denmark','Netherlands','Finland','Italy','France')" +
+    " then 'Europe'" +
+    " when s.Country in ('USA','Canada','Brazil')" +
+    " then 'America'" +
+    " else 'Asia-Pacific'" +
+    " end as Supplier_Continent," +
+    " sum(p.UnitsInStock) as UnitsInStock" +
+    " from Suppliers s " +
+    " inner join Products p on p.SupplierID=s.SupplierID" +
+    " inner join Categories c on c.CategoryID=p.CategoryID" +
+    " group by c.CategoryName," +
+    " case when s.Country in" +
+    " ('UK','Spain','Sweden','Germany','Norway'," +
+    " 'Denmark','Netherlands','Finland','Italy','France')" +
+    " then 'Europe'" +
+    " when s.Country in ('USA','Canada','Brazil')" +
+    " then 'America'" +
+    " else 'Asia-Pacific'" +
+    " end"
+
+  // This query shows sales figures by categories - mainly just aggregation with sub-query.
+  // The inner query aggregates to product level, and the outer query further aggregates
+  // the result set from inner-query to category level.
+  val Q56: String = "select CategoryName, format(sum(ProductSales), 2) as CategorySales" +
+    " from" +
+    " (" +
+    " select distinct a.CategoryName," +
+    " b.ProductName," +
+    " format(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+    " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
+    " from Categories as a" +
+    " inner join Products as b on a.CategoryID = b.CategoryID" +
+    " inner join Order_Details as c on b.ProductID = c.ProductID" +
+    " inner join Orders as d on d.OrderID = c.OrderID" +
+    " where d.ShippedDate > '1997-01-01' and d.ShippedDate < '1997-12-31'" +
+    " group by a.CategoryName," +
+    " b.ProductName," +
+    " concat('Qtr ', quarter(d.ShippedDate))" +
+    " order by a.CategoryName," +
+    " b.ProductName," +
+    " ShippedQuarter" +
+    " ) as x" +
+    " group by CategoryName" +
+    " order by CategoryName"
 
   val queries = List(
     "Q1" -> Q1,
