@@ -181,4 +181,14 @@ object QueryHint extends Enumeration {
    * SELECT * FROM t1 --+ complexTypeAsClob(1)
    */
   val ComplexTypeAsClob = Value("complexTypeAsClob")
+
+  /**
+    * Query hint followed by table to override optimizer choice of index per table.
+    * <p>
+    * Possible values are valid indexes defined on the table.
+    * <p>
+    * Example:<br>
+    * SELECT * FROM t1 /*+ withIndex(xxx) */, t2 --+ withIndex(yyy)
+    */
+  val WithIndex = Value("withIndex")
 }

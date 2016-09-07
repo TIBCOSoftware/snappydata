@@ -23,6 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion, PartitionedRegionHelper}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.QueryHint
 
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.{CatalystConf, TableIdentifier}
@@ -96,24 +97,46 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
 
+      val indexHint = QueryHint.WithIndex.toString
+      val explicitIndexHint = snappySession.queryHints.collect {
+        case (hint, value) if hint.startsWith(indexHint) =>
+          (hint.substring(indexHint.length),
+              catalog.lookupRelation(
+                snappySession.getIndexTable(catalog.newQualifiedTableName(value))))
+      }
+
       val newPlan = plan transformUp {
+        case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _)
+          if explicitIndexHint.size > 0 => // if any index hint is provided, honor only that much.
+          explicitIndexHint.get(colRelation.table) match {
+            case Some(index) => applyRefreshTables(table, index).getOrElse(table)
+            case _ => table
+          }
+        case subQuery@SubqueryAlias(alias, child)
+          if explicitIndexHint.size > 0 => // if any index hint is provided, honor only that much.
+          explicitIndexHint.get(alias) match {
+            case Some(index) => applyRefreshTables(subQuery, index).getOrElse(subQuery)
+            case _ => subQuery
+          }
         case f@Filter(filterCondition, j@Join(left, right, Inner, joinCondition)) =>
           val newF = PushPredicateThroughJoin(f)
           val replacedF = ResolveIndex(newF)
           replacedF
+
         case j@Join(left, right, Inner, condition) if condition.isDefined =>
           val cols = splitConjunctivePredicates(condition.get)
           val leftIndexes = fetchIndexes2(left)
           val rightIndexes = fetchIndexes2(right)
 
           val colocatedEntities = leftIndexes.flatMap {
-            case p@LogicalRelation(c: BaseColumnFormatRelation, _, _) =>
-              val x = rightIndexes.filter {
-                case t@LogicalRelation(cf: BaseColumnFormatRelation, _, _) =>
-                  isColocated(c, cf)
+            case leftEntity@LogicalRelation(leftRelation: BaseColumnFormatRelation, _, _) =>
+              val colocatedRightEntities = rightIndexes.filter {
+                case t@LogicalRelation(rightRelation: BaseColumnFormatRelation, _, _) =>
+                  isColocated(leftRelation, rightRelation)
                 case _ => false
               }
-              Seq.empty[LogicalPlan].zipAll(x, p, null.asInstanceOf[LogicalPlan])
+              Seq.empty[LogicalPlan].zipAll(colocatedRightEntities,
+                leftEntity, null.asInstanceOf[LogicalPlan])
             case _ => Seq.empty[(LogicalPlan, LogicalPlan)]
           }
 

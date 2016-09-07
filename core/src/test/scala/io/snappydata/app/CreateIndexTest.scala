@@ -16,14 +16,16 @@
  */
 package io.snappydata.app
 
-import io.snappydata.{Constant, SnappyFunSuite}
+import scala.util.{Failure, Try}
+
+import io.snappydata.{Constant, QueryHint, SnappyFunSuite}
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SnappyContext}
 
 class CreateIndexTest extends SnappyFunSuite {
   self =>
@@ -207,32 +209,58 @@ class CreateIndexTest extends SnappyFunSuite {
     val executeQ = QueryExecutor(snContext)
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1") {
-      validateIndex(s"$index2")(_)
+      validateIndex(Seq(s"$index2"), s"$table3")(_)
     }
 
     executeQ(s"select * from $table1 t1, $table3 t2 where t1.col1 = t2.col1  ") {
-      validateIndex(s"$index2")(_)
+      validateIndex(Seq(s"$index2"), s"$table3")(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(s"$index4")(_)
+      validateIndex(Seq(s"$index4"), s"$table2")(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(s"$index4")(_)
+      validateIndex(Seq(s"$index4"), s"$table2")(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table2 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // tab2 vs index31
-      validateIndex(s"$index31")(df)
+      validateIndex(Seq(s"$index31"), s"$table2")(df)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // index4 vs index31
-      validateIndex(s"$index31")(df)
-      validateIndex(s"$index4")(df)
+      validateIndex(Seq(s"$index31", s"$index4"))(df)
+    }
+
+    executeQ(s"select * from $table1 /*+ ${QueryHint.WithIndex}($index1) */, $table3 " +
+        s"where $table1.col1 = $table3.col1") {
+      validateIndex(Seq(s"$index1"), s"$table3")(_)
+    }
+
+    executeQ(s"select * from $table1 t1 /*+ ${QueryHint.WithIndex}($index1) */, $table3 t2 " +
+        s"where t1.col1 = t2.col1") {
+      validateIndex(Seq(s"$index1"), s"$table3")(_)
+    }
+
+    executeQ(s"select * from $table1 /*+ ${QueryHint.WithIndex}($index1) */ as t1, $table3 t2 " +
+        s"where t1.col1 = t2.col1") {
+      validateIndex(Seq(s"$index1"), s"$table3")(_)
+    }
+
+    try {
+      executeQ(s"select * from (select * from $table1 ) t1 /*+ ${QueryHint.WithIndex}($index1) */" +
+          s", $table3 t2 where t1.col1 = t2.col1")
+      fail(s"exepected AnalysisException as ${QueryHint.WithIndex}" +
+          s" hint cannot be specified on derived tables")
+    } catch {
+      case ae: AnalysisException if ae.message.contains(s"${QueryHint.WithIndex}") =>
+      // okay correct message.
+      case e: Throwable => alert(e.getMessage)
+        throw e
     }
 
     snContext.sql(s"drop index $index1")
@@ -246,7 +274,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $table3")
   }
 
-  test("Test two table joins corner cases") {
+  ignore("Test two table joins corner cases") {
 
     val table1 = "tabOne"
     val table2 = "tabTwo"
@@ -276,7 +304,7 @@ class CreateIndexTest extends SnappyFunSuite {
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1 " +
         s"where tab1.col1 = 111 ") {
-      validateIndex(s"$index2")(_)
+      validateIndex(Seq(s"$index2"))(_)
     }
 
     executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
@@ -289,14 +317,13 @@ class CreateIndexTest extends SnappyFunSuite {
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"where t1.col3 = t2.col3 ") {
-      validateIndex(s"$index2")(_)
+      validateIndex(Seq(s"$index2"))(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") {
-      validateIndex(s"$index2")(_)
+      validateIndex(Seq(s"$index2"))(_)
     }
-
 
     snContext.sql(s"drop index $index1")
     snContext.sql(s"drop index $index31")
@@ -307,7 +334,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $table3")
   }
 
-  test("Test choice of index for 3 or more table joins") {
+  ignore("Test choice of index for 3 or more table joins") {
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
@@ -469,14 +496,15 @@ class CreateIndexTest extends SnappyFunSuite {
       showResults: Boolean = false,
       withExplain: Boolean = false) {
 
-    private[app] def apply(sqlText: String)(implicit validate: DataFrame => Unit = _ => ()) = {
+    private[app] def apply(sqlText: String, explainQ: Boolean = false)
+        (implicit validate: DataFrame => Unit = _ => ()) = {
       val msg = s"Executing $sqlText"
       logInfo(msg) // log it
       info(msg) // inform it
 
       val selectRes = snContext.sql(sqlText)
 
-      if (withExplain) {
+      if (withExplain || explainQ) {
         selectRes.explain(true)
       }
 
@@ -489,15 +517,26 @@ class CreateIndexTest extends SnappyFunSuite {
 
   }
 
-  private def validateIndex(index: String)(df: DataFrame): Unit = {
-    df.queryExecution.optimizedPlan.find {
-      case l@LogicalRelation(i: IndexColumnFormatRelation, _, _) =>
-        i.resolvedName.indexOf(index.toUpperCase) > 0
-      case _ => false
-    }.orElse {
+  private def validateIndex(index: Seq[String], tables: String*)(df: DataFrame): Unit = {
+    val (indexesMatched, indexesUnMatched) = df.queryExecution.optimizedPlan.collect {
+      case l@LogicalRelation(index: IndexColumnFormatRelation, _, _) => index
+    }.partition(rel => index.exists(i => rel.table.indexOf(i.toUpperCase) > 0))
+
+    if (indexesMatched.size != index.size) {
       df.explain(true)
-      fail(s"Expected index selection $index")
+      fail(s"Expected index selection $index, but found $indexesUnMatched")
     }
+
+    val (tablesFound, tablesNotFound) = df.queryExecution.optimizedPlan.collect {
+      case l@LogicalRelation(columnTable: ColumnFormatRelation, _, _) => columnTable
+    }.partition(tab => tables.exists(t => tab.table.indexOf(t.toUpperCase) > 0))
+
+    if (tablesFound.size != tables.size) {
+      df.explain(true)
+      fail(s"Expected tables $tables not found. UnFound tables ${tablesNotFound} ")
+    }
+
+
   }
 
 }
