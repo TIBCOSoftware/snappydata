@@ -217,6 +217,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private def newClient(): HiveClient = synchronized {
 
+    closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
