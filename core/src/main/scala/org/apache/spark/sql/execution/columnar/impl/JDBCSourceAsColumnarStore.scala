@@ -109,7 +109,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
         partition.buckets.foreach( bucket => {
           bucketString = bucketString + bucket + ","
         })
-        ps1.setString(2, bucketString.substring(0, bucketString.length-1))
+        ps1.setString(2, bucketString.substring(0, bucketString.length - 1))
         ps1.execute()
 
         val ps = conn.prepareStatement("select " + requiredColumns.mkString(
@@ -118,7 +118,27 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
         val rs = ps.executeQuery()
         ps1.close()
         new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs, context)
-    }, closeOnSuccess = false, onExecutor = true)
+        /*
+        val SW_blowup = 15000
+        val baseRS = new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs, context)
+        new Iterator[CachedBatch] {
+          var SW_n = SW_blowup
+          var SW_batch: CachedBatch = _
+          override def hasNext: Boolean = baseRS.hasNext
+
+          override def next(): CachedBatch = {
+            if (SW_n < SW_blowup) {
+              SW_n += 1
+              SW_batch
+            } else {
+              SW_batch = baseRS.next()
+              SW_n = 0
+              SW_batch
+            }
+          }
+        }
+        */
+      }, closeOnSuccess = false, onExecutor = true)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -154,7 +174,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](_sc: SparkContext,
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-        .hostList.map(_._1.asInstanceOf[String]).toSeq
+        .hostList.map(_._1.asInstanceOf[String])
   }
 
   override def getPartitions: Array[Partition] = {
@@ -172,7 +192,8 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
     extends RowFormatScanRDD(_sc, getConnection, schema, tableName,
-      isPartitioned, columns, connProperties, filters, partitions) {
+      isPartitioned, columns, pushProjections = true, connProperties,
+      filters, partitions) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -214,7 +235,7 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-        .hostList.map(_._1.asInstanceOf[String]).toSeq
+        .hostList.map(_._1.asInstanceOf[String])
   }
 
   override def getPartitions: Array[Partition] = {

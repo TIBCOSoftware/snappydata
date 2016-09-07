@@ -35,6 +35,7 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -80,11 +81,13 @@ class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation {
 
+  val scanAsUnsafeRows = false
+
   override def toString: String = s"ColumnFormatRelation[$table]"
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
     resolvedName, schema)
@@ -110,7 +113,7 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
       requiredColumns, filters)
   }
@@ -118,8 +121,17 @@ class BaseColumnFormatRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
-    val colRdd = scanTable(table, requiredColumns, filters)
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, requestedColumns) = scanTable(table, requiredColumns, filters)
+    val colRdd = if (scanAsUnsafeRows) {
+      rdd.mapPartitionsPreserve { cachedBatchIterator =>
+        // Find the ordinals and data types of the requested columns.
+        // If none are requested, use the narrowest (the field with
+        // minimum default element size).
+        ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
+          requestedColumns, schema, forScan = true)
+      }
+    } else rdd
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to
@@ -138,16 +150,17 @@ class BaseColumnFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
+          pushProjections = false,
           connProperties,
-          filters,
+          Array.empty[Filter],
           Array.empty[Partition]
         )
 
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
-          leftItr ++ rightItr
+          Iterator[Any](leftItr, rightItr)
         }
-      case _ =>
 
+      case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,
@@ -160,10 +173,10 @@ class BaseColumnFormatRelation(
         )
 
         rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
-          leftItr ++ rightItr
+          Iterator[Any](leftItr, rightItr)
         }
     }
-    zipped
+    (zipped, Nil)
   }
 
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
@@ -173,9 +186,11 @@ class BaseColumnFormatRelation(
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
-      // TODO: can we do it before compressing. Might save a bit
+      // TODO: can we do it before compressing. Might save a bit.
+      // [sumedh] instead we should add it to a separate CachedBatch
+      // which will be appended with such small pieces in future.
       val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
-        Iterator(batch), schema.map(_.name).toArray, schema, forScan = true)
+        Iterator(batch), schema.map(_.name).toArray, schema, forScan = false)
       insert(unCachedRows)
     }
   }
