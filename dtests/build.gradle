@@ -49,7 +49,17 @@ dependencies {
         exclude(group: 'org.scala-lang', module: 'scala-reflect')
         exclude(group: 'org.scala-lang', module: 'scala-compiler')
     }
-    compile project(':snappy-core_' + scalaBinaryVersion)
+    compile (project(':snappy-core_' + scalaBinaryVersion)) {
+       exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+       exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+    }
     if (new File(rootDir, 'spark/build.gradle').exists()) {
         compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
         compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
