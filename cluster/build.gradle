@@ -40,9 +40,6 @@ dependencies {
      exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
      exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-interpreter', version: '0.6.0'
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-spark', version: '0.6.0'
-  compile group: 'org.apache.zeppelin', name: 'zeppelin-jdbc', version: '0.6.0'
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
