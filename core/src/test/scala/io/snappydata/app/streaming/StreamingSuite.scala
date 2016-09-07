@@ -314,11 +314,7 @@ class StreamingSuite
     })
     schemaStream2.registerAsTable("tweetStream2")
 
-
-    val allRows = ssnc.registerCQ("SELECT id, text FROM " +
-        "tweetStream1 ")
-
-    allRows.foreachDataFrame(df => {
+    schemaStream1.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
           .saveAsTable("dataTable")
     })
