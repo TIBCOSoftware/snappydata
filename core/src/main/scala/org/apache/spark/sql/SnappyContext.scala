@@ -765,9 +765,6 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappySession.queryApproxTSTopK(topK, startTime, endTime, k)
 
-  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T =
-    snappySession.handleErrorLimitExceeded(fn, rowRDD, df, lp, fn2)
 }
 
 

@@ -21,6 +21,8 @@ import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.hadoop.fs.FileSystem
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -118,11 +120,15 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    * For example, custom appender used by log4j.
    */
   protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
-    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, jdbcPrefixes())
+    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, snappyPrefixes())
         .filterNot(_ == "")
 
-  private def jdbcPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
-    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc")
+  /**
+   * Add any other classes which has already been loaded by base loader. As Hive Clients creates
+   * another class loader to load classes , it sometimes can give incorrect behaviour
+   */
+  private def snappyPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
+    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc", "com.mapr")
 
   /**
    * A comma separated list of class prefixes that should explicitly be
@@ -208,6 +214,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   // for the time being it will avoid ThreadLocal access to set SessionState.
   // protected val internalHiveclient = this.client.client
 
+
   private def newClient(): HiveClient = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
@@ -223,6 +230,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
     }
     logInfo("Default warehouse location is " + warehouse)
+    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
@@ -248,6 +256,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
+      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -392,7 +402,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private var relationDestroyVersion = 0
 
-  private def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
+  def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
     sync.lock()
     try {
@@ -506,6 +516,13 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   final def setSchema(schema: String): Unit = {
     this.currentSchema = schema
+  }
+
+  /**
+   * Return whether a table with the specified name is a temporary table.
+   */
+  def isTemporaryTable(tableIdent: QualifiedTableName): Boolean = synchronized {
+    if(tempTables.contains(tableIdent.table)) true else false
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
@@ -839,7 +856,7 @@ object SnappyStoreHiveCatalog {
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
-  val HIVE_METASTORE = "HIVE_METASTORE"
+  val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {

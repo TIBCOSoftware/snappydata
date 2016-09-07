@@ -17,8 +17,10 @@
 package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
+import java.util
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -32,9 +34,9 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.ExecutorLocalShellPartition
+import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.{ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -54,19 +56,24 @@ final class SparkShellRDDHelper {
   def executeQuery(conn: Connection, tableName: String,
       split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
-    val par = split.index
-    val statement = conn.createStatement()
+    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
+    val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
+    var bucketString = ""
+    partition.buckets.foreach( bucket => {
+      bucketString = bucketString + bucket + ","
+    })
+    val buckets = bucketString.substring(0, bucketString.length-1)
+    val statement = conn.createStatement()
     if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
 
     val rs = statement.executeQuery(query)
     (statement, rs)
   }
 
   def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
-    val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
+    val urlsOfNetServerHost = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition].hostList
     useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
@@ -111,9 +118,81 @@ object SparkShellRDDHelper {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
-      partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+      var buckets = new mutable.HashSet[Int]()
+      buckets += p
+      partitions(p) = new ExecutorMultiBucketLocalShellPartition(p,
+        buckets, bucketToServerList(p))
     }
     partitions
+  }
+
+  private def mapBucketsToPartitions(tableName: String, conn: Connection): Array[Partition] = {
+    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+    val bucketToServerList = getBucketToServerMapping(resolvedName)
+    val numBuckets = bucketToServerList.length
+
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
+      case pr: PartitionedRegion =>
+        val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
+            mutable.HashSet[Int]]()
+        var totalBuckets = new mutable.HashSet[Int]()
+        for (p <- 0 until numBuckets) {
+          val owner = pr.getBucketPrimary(p)
+          val bucketSet = {
+            if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
+            else new mutable.HashSet[Int]()
+          }
+          bucketSet += p
+          totalBuckets += p
+          serverToBuckets put(owner, bucketSet)
+        }
+        val numCores = Runtime.getRuntime.availableProcessors()
+        val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+        val numPartitions = numServers * numCores
+        val partitions = {
+          if (numBuckets < numPartitions) {
+            new Array[Partition](numBuckets)
+          } else {
+            new Array[Partition](numPartitions)
+          }
+        }
+        var partCnt = 0;
+        serverToBuckets foreach (e => {
+          var numCoresPending = numCores
+          var localBuckets = e._2
+          assert(!localBuckets.isEmpty)
+          var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
+          assert(maxBucketsPerPart >= 1)
+          while (partCnt <= numPartitions && !localBuckets.isEmpty) {
+            var cntr = 0;
+            val bucketsPerPart = new mutable.HashSet[Int]()
+            maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
+            assert(maxBucketsPerPart >= 1)
+            while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
+              val buck = localBuckets.head
+              bucketsPerPart += buck
+              localBuckets = localBuckets - buck
+              totalBuckets = totalBuckets - buck
+              cntr += 1
+            }
+            partitions(partCnt) = new ExecutorMultiBucketLocalShellPartition(
+              partCnt, bucketsPerPart, bucketToServerList(bucketsPerPart.head))
+            partCnt += 1
+            numCoresPending -= 1
+          }
+        })
+        partitions
+      case pr: DistributedRegion =>
+        val numPartitions = bucketToServerList.length
+        val partitions = new Array[Partition](numPartitions)
+        for (p <- 0 until numPartitions) {
+          partitions(p) = new ExecutorMultiBucketLocalShellPartition(
+            p,
+            mutable.HashSet.empty,
+            bucketToServerList(p))
+        }
+        partitions
+    }
   }
 
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =

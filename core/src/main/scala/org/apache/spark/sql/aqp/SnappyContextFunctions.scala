@@ -19,11 +19,8 @@ package org.apache.spark.sql.aqp
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
@@ -34,16 +31,6 @@ class SnappyContextFunctions {
   def clear(): Unit = {}
 
   def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit = {}
-
-  def getAQPRuleExecutor(session: SnappySession): RuleExecutor[SparkPlan] =
-    new RuleExecutor[SparkPlan] {
-      val batches = Seq(
-        Batch("Add exchange", Once, EnsureRequirements(session.sessionState.conf))
-        // Batch("Add row converters", Once, EnsureRowFormats)
-        // @TODO check why not needed, may
-        // be because everything is expected in terms of unsafe row now
-      )
-    }
 
   def registerAQPErrorFunctions(session: SnappySession) {}
 
@@ -102,10 +89,6 @@ class SnappyContextFunctions {
 
   def executePlan(session: SnappySession,
       plan: LogicalPlan): QueryExecution = new QueryExecution(session, plan)
-
-  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan,
-      fn2: => Int): T = fn(rowRDD, df)
 
   def sql[T](fn: => T): T = fn
 }

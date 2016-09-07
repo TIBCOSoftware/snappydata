@@ -29,6 +29,6 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      numPartitions: Int): Partitioning = OrderlessHashPartitioning(
-    partitionColumns, numPartitions)
+      numPartitions: Int, numBuckets: Int): Partitioning = OrderlessHashPartitioning(
+    partitionColumns, numPartitions, numBuckets)
 }
