@@ -251,12 +251,12 @@ class SparkSQLExecuteImpl(val sql: String,
         val hasProp = f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)
         lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
         lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
-        //if (stringAsClob) {
         if (allAsClob || columnsAsClob.contains(f.name)) {
             if (hasProp && !base.equals("STRING")) {
               if (base.equals("VARCHAR")) {
                 (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
               } else { // CHAR
+                System.out.println(s"ABS getSQLType CHAR, name ${f.name}")
                 (StoredFormatIds.SQL_CHAR_ID, size, -1)
               }
             } else { // STRING and CLOB
@@ -353,8 +353,11 @@ object SparkSQLExecuteImpl {
         InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
       case TimestampType =>
         InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(
-        colIndex, t.precision, t.scale).toJavaBigDecimal, hdos)
+      case t: DecimalType =>
+        val dec = row.getDecimal(colIndex, t.precision, t.scale).toJavaBigDecimal
+        println(s"ABS writeColDataInOptimizedWay() DecimalType name ${schema(colIndex).name}, decimal $dec class name = " + dec.getClass.getName)
+        //Thread.currentThread().getStackTrace.foreach(s => println(s"  $s"))
+        DataSerializer.writeObject(dec, hdos)
       case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
       case DateType =>
         InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
@@ -417,6 +420,7 @@ object SparkSQLExecuteImpl {
     while (index < numColsInGroup) {
       val dvdIndex = (groupNum << 3) + index
       val dvd = dvds(dvdIndex)
+      Misc.getCacheLogWriter.info("ABS: Type of dvd index to be read = " + types(dvdIndex))
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
         types(dvdIndex) match {
           case StoredFormatIds.SQL_CLOB_ID =>
@@ -439,7 +443,12 @@ object SparkSQLExecuteImpl {
               InternalDataSerializer.readSignedVL(in))
             dvd.setValue(ts)
           case StoredFormatIds.SQL_DECIMAL_ID =>
-            val bd = DataSerializer.readObject[java.math.BigDecimal](in)
+            Misc.getCacheLogWriter.info("ABS: SQLDecimal stacktrace", new Exception())
+            Misc.getCacheLogWriter.info(s"ABS readAGroup() dvd.typeName ${dvd.getTypeName}, dvd $dvd")
+            // Thread.currentThread().getStackTrace.foreach(s => println(s"  $s"))
+            val bdo: Any = DataSerializer.readObject(in)
+            Misc.getCacheLogWriter.info(s"ABS readAGroup() bdo $bdo class " + bdo.getClass.getName)
+            val bd = bdo.asInstanceOf[java.math.BigDecimal]
             dvd.setBigDecimal(bd)
           case StoredFormatIds.SQL_DATE_ID =>
             val dt = DateTimeUtils.toJavaDate(

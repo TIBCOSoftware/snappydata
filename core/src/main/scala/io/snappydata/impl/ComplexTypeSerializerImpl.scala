@@ -55,6 +55,7 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
       stmt.setString(2, tableName)
       stmt.registerOutParameter(3, Types.CLOB)
       stmt.execute()
+      System.out.println(s"ABS GET_COLUMN_TABLE_SCHEMA output\n ${stmt.getString(3)}")
       DataType.fromJson(stmt.getString(3)).asInstanceOf[StructType]
     } finally {
       stmt.close()

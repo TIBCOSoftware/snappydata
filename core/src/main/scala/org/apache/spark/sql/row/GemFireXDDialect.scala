@@ -76,18 +76,20 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
 
   override def getCatalystType(sqlType: Int, typeName: String,
       size: Int, md: MetadataBuilder): Option[DataType] = {
+    System.out.println(s"getCatalystType() ABS sqlType $sqlType, typeName $typeName")
     if (sqlType == Types.FLOAT && typeName.equalsIgnoreCase("float")) {
       Some(DoubleType)
     } else if (sqlType == Types.REAL && typeName.equalsIgnoreCase("real")) {
       Some(FloatType)
     } else if (sqlType == Types.VARCHAR && size > 0 &&
         typeName.equalsIgnoreCase("varchar")) {
-      md.putLong("size", size)
+      md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+      md.putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
       Some(StringType)
     } else if (sqlType == Types.CHAR && size > 0 &&
         typeName.equalsIgnoreCase("char")) {
-      md.putLong("size", size)
-      md.putBoolean("fixed", value = true)
+      md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+      md.putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
       Some(StringType)
     } else if (sqlType == Types.BIT && size > 1 &&
         typeName.equalsIgnoreCase("bit")) {
@@ -116,16 +118,23 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def getJDBCType(dt: DataType,
       md: Metadata): Option[JdbcType] = dt match {
     case StringType =>
-      if (md.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-        if (md.contains(Constant.CHAR_TYPE_BASE_PROP) &&
-            md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR")) {
+      if (md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
+          md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+        if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR")) {
+          System.out.println(s"ABS getJDBCType() typeName ${dt.typeName}, base is CHAR")
           Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.CHAR))
-        } else { // if VARCHAR/STRING?
+        } else if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("VARCHAR")) {
+          System.out.println(s"ABS getJDBCType() typeName ${dt.typeName}, base is VARCHAR")
           Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.VARCHAR))
+        } else {
+          // STRING
+          System.out.println(s"ABS getJDBCType() typeName ${dt.typeName}, base is STRING")
+          Some(JdbcType("CLOB", java.sql.Types.CLOB))
         }
       } else {
+        System.out.println(s"ABS getJDBCType() typeName ${dt.typeName}, is CLOB")
         Some(JdbcType("CLOB", java.sql.Types.CLOB))
       }
     case _ => getJDBCType(dt)

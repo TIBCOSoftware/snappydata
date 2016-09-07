@@ -203,6 +203,7 @@ abstract class SnappyDDLParser(session: SnappySession)
       val userSpecifiedSchema = if (hasExternalSchema) None
       else synchronized {
         // parse the schema string expecting Spark SQL format
+        println(s"ABS schemaString before parse $schemaString")
         val colParser = newInstance()
         colParser.parseSQL(schemaString, colParser.tableSchemaOpt.run())
             .map(StructType(_))
@@ -236,9 +237,11 @@ abstract class SnappyDDLParser(session: SnappySession)
         case None =>
           tempOrExternal match {
             case None =>
+              println(s"ABS remaining._3 is None, tempOrExternal is None, userSpecifiedSchema $userSpecifiedSchema")
               CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
                 schemaDDL, provider, allowExisting, options, isBuiltIn = true)
             case Some(true) =>
+              println(s"ABS remaining._3 is None, tempOrExternal is true, userSpecifiedSchema $userSpecifiedSchema")
               CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
                 schemaDDL, provider, allowExisting, options, isBuiltIn = false)
             case Some(false) =>

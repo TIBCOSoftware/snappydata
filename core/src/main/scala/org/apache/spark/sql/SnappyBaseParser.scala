@@ -226,17 +226,30 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def arrayType: Rule1[DataType] = rule {
     ARRAY ~ '<' ~ ws ~ dataType ~ '>' ~ ws ~>
-        ((t: DataType) => ArrayType(t))
+        ((t: DataType) => t match {
+          case CharType(size, baseType) => ArrayType(StringType)
+          case _ => ArrayType(t)
+        })
   }
 
   protected final def mapType: Rule1[DataType] = rule {
     MAP ~ '<' ~ ws ~ dataType ~ commaSep ~ dataType ~ '>' ~ ws ~>
-        ((t1: DataType, t2: DataType) => MapType(t1, t2))
+        ((t1: DataType, t2: DataType) =>
+        (t1, t2) match {
+          case (CharType(size1, baseType1), CharType(size2, baseType2)) =>
+            MapType(StringType, StringType)
+          case (CharType(size, baseType), t2) => MapType(StringType, t2)
+          case (t1, CharType(size, baseType)) => MapType(t1, StringType)
+          case (t1, t2) => MapType(t1, t2)
+        })
   }
 
   protected final def structField: Rule1[StructField] = rule {
-    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) =>
-      StructField(name, t, nullable = true))
+    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) => t match {
+      case CharType(size, baseType) =>
+        StructField(name, StringType, nullable = true)
+      case _ => StructField(name, t, nullable = true)
+    })
   }
 
   protected final def structType: Rule1[DataType] = rule {

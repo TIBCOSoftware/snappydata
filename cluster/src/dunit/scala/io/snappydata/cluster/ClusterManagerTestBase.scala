@@ -45,7 +45,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  bootProps.setProperty("log-level", "fine")
   // Easier to switch ON traces. thats why added this.
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation")
@@ -206,7 +206,7 @@ object ClusterManagerTestBase {
    * Only a single instance of SnappyLead should be started.
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
-    // bootProps.setProperty("log-level", "fine")
+    props.setProperty("log-level", "fine")
     val conf: SparkConf = new SparkConf()
         .setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp").set("spark.testing.reservedMemory", "0")
@@ -246,7 +246,7 @@ object ClusterManagerTestBase {
    */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
-    // bootProps.setProperty("log-level", "info")
+    props.setProperty("log-level", "fine")
     val server: Server = ServiceManager.getServerInstance
     server.start(props)
     assert(server.status == FabricService.State.RUNNING)

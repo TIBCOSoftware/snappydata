@@ -725,6 +725,7 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+    println(s"ABS schema after normalization $schema")
     var relationSchema: Option[StructType] = None
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
@@ -742,6 +743,7 @@ class SnappySession(@transient private val sc: SparkContext,
           options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
         relationSchema = Some(r.schema)
+        println(s"ABS relationSchema after resolveRelation $relationSchema")
         r
     }
 
