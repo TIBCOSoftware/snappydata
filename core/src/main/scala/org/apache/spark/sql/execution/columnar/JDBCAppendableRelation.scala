@@ -78,7 +78,7 @@ case class JDBCAppendableRelation(
 
   protected final def dialect = connProperties.dialect
 
-  val schemaFields = Utils.schemaFields(schema)
+  val schemaFields = Utils.getSchemaFields(schema)
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)
