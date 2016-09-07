@@ -92,11 +92,27 @@ class ConnectionConfBuilder(snc: SnappyContext) {
   }
 
   /**
+   * Sets properties for a pool.
+   * For detailed list for Hikari refer https://github.com/brettwooldridge/HikariCP/wiki/Configuration
+   * For detailed list for Tomcat refer https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
+   *
+   * Even if you don't mention any properties it defaults it to some sensible values
+   *
+   * @param props map of key-value
+   */
+  def setPoolConfs(props: Map[String, String]) = {
+    if (props != null && !props.isEmpty) {
+      props.map(e => poolSettings.put(e._1, e._2))
+    }
+    this
+  }
+
+  /**
    * Sets any additional information in connection setting
    * @param prop property name
    * @param value property value
    */
-  def setConnectionConf(prop: String, value: String) = {
+  def setConf(prop: String, value: String) = {
     connSettings.put(prop, value)
     this
   }

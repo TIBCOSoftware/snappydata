@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.jdbc
 
 import java.sql.{SQLException, DriverManager}
@@ -43,6 +59,19 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
         .setPoolConf("maximumPoolSize", "50")
         .setPoolConf("minimumIdle", "5")
+        .build
+    assert(conf.connProps.hikariCP)
+    assert(conf.connProps.poolProps("maximumPoolSize") == "50")
+    assert(conf.connProps.poolProps("minimumIdle") == "5")
+
+    val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
+    assert(conn.getSchema != null)
+  }
+
+  test("test multiple hikari conf by map") {
+    val poolProps = Map("maximumPoolSize" ->"50", "minimumIdle"->"5" )
+    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
+        .setPoolConfs(poolProps)
         .build
     assert(conf.connProps.hikariCP)
     assert(conf.connProps.poolProps("maximumPoolSize") == "50")
@@ -121,7 +150,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props).saveAsTable("TEST_JDBC_TABLE_1")
     val connConf =  new ConnectionConfBuilder(snc)
-    props.map( entry => connConf.setConnectionConf(entry._1, entry._2))
+    props.map( entry => connConf.setConf(entry._1, entry._2))
     val conf = connConf.build()
 
     try{
