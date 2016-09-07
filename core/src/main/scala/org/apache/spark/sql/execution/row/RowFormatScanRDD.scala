@@ -17,29 +17,29 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.GregorianCalendar
+import java.util.{Collections, GregorianCalendar}
+
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
+import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData,
-  UnsafeMapData, UnsafeRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
-import org.apache.spark.sql.execution.{CompactExecRowToMutableRow, ConnectionPool}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -53,12 +53,11 @@ class RowFormatScanRDD(_sc: SparkContext,
     tableName: String,
     isPartitioned: Boolean,
     columns: Array[String],
+    val pushProjections: Boolean,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends JDBCRDD(_sc, getConnection, schema, tableName, columns,
-      filters, partitions, connProperties.url,
-      connProperties.executorConnProps) {
+    extends RDD[Any](_sc, Nil) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -152,7 +151,8 @@ class RowFormatScanRDD(_sc: SparkContext,
    * `columns`, but as a String suitable for injection into a SQL query.
    */
   protected val columnList: String = {
-    if (columns.length > 0) {
+    if (!pushProjections) "*"
+    else if (columns.length > 0) {
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
@@ -210,21 +210,23 @@ class RowFormatScanRDD(_sc: SparkContext,
    * Runs the SQL query against the JDBC driver.
    */
   override def compute(thePart: Partition,
-      context: TaskContext): Iterator[InternalRow] = {
-    val (conn, stmt, rs) = computeResultSet(thePart)
-    val itr = new InternalRowIteratorOnRS(conn, stmt, rs, context, schema)
-    // move once to next at the start (or close if no result available)
-    itr.moveNext()
-    // switch to optimized iterator for CompactExecRows
-    rs match {
-      case r: EmbedResultSet =>
-        if (itr.hasNext && r.currentRow.isInstanceOf[AbstractCompactExecRow]) {
-          // use the optimized iterator
-          new CompactExecRowIteratorOnRS(conn, stmt, r, context, schema)
-        } else {
-          itr
-        }
-      case _ => itr
+      context: TaskContext): Iterator[Any] = {
+    if (pushProjections) {
+      val (conn, stmt, rs) = computeResultSet(thePart)
+      new ResultSetTraversal(conn, stmt, rs, context)
+    } else {
+      // use iterator over CompactExecRows directly when no projection;
+      // higher layer PartitionedPhysicalRDD will take care of conversion
+      // or direct code generation as appropriate
+      if (isPartitioned && filterWhereClause.isEmpty) {
+        val container = Misc.getRegionForTable(tableName, true)
+            .getUserAttribute.asInstanceOf[GemFireContainer]
+        new CompactExecRowIteratorOnScan(container, thePart.index)
+      } else {
+        val (conn, stmt, rs) = computeResultSet(thePart)
+        new CompactExecRowIteratorOnRS(conn, stmt,
+          rs.asInstanceOf[EmbedResultSet], context)
+      }
     }
   }
 
@@ -252,6 +254,20 @@ class RowFormatScanRDD(_sc: SparkContext,
   }
 }
 
+/**
+ * This does not return any valid results from result set rather caller is
+ * expected to explicitly invoke ResultSet.next()/get*.
+ * This is primarily intended to be used for cleanup.
+ */
+final class ResultSetTraversal(conn: Connection,
+    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    extends ResultSetIterator[Void](conn, stmt, rs, context) {
+
+  val defaultCal: GregorianCalendar = new GregorianCalendar()
+
+  override protected def getCurrentValue: Void = null
+}
+
 final class InternalRowIteratorOnRS(conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext, schema: StructType)
     extends ResultSetIterator[InternalRow](conn, stmt, rs, context) {
@@ -263,11 +279,12 @@ final class InternalRowIteratorOnRS(conn: Connection,
 
   private[this] val fieldTypes = StoreUtils.mapCatalystTypes(schema, dataTypes)
 
-  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
+  private[this] val unsafeproj = UnsafeProjection.create(
+    schema.map(_.dataType).toArray)
 
   private[this] val mutableRow = new SpecificMutableRow(dataTypes)
 
-  override def next(): InternalRow = {
+  override protected def getCurrentValue: InternalRow = {
     var i = 0
     while (i < schema.length) {
       val pos = i + 1
@@ -334,8 +351,8 @@ final class InternalRowIteratorOnRS(conn: Connection,
           // is not correctly matched to the table schema reported by
           // ResultSetMetaData.getPrecision and ResultSetMetaData.getScale.
           // If inserting values like 19999 into a column with NUMBER(12, 2)
-          // type, you get through a BigDecimal object with scale as 0. But the
-          // dataframe schema has correct type as DecimalType(12, 2).
+          // type, you get through a BigDecimal object with scale as 0.
+          // But the dataframe schema has correct type as DecimalType(12, 2).
           // Thus, after saving the dataframe into parquet file and then
           // retrieve it, you will get wrong result 199.99. So it is needed
           // to set precision and scale for Decimal based on JDBC metadata.
@@ -418,25 +435,57 @@ final class InternalRowIteratorOnRS(conn: Connection,
       }
       i = i + 1
     }
-    moveNext()
     unsafeproj.apply(mutableRow)
   }
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
-    stmt: Statement, ers: EmbedResultSet, context: TaskContext,
-    override val schema: StructType)
-    extends ResultSetIterator[InternalRow](conn, stmt, ers, context)
-    with CompactExecRowToMutableRow {
+    stmt: Statement, ers: EmbedResultSet, context: TaskContext)
+    extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
+      ers, context) {
 
-  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
+  override protected def getCurrentValue: AbstractCompactExecRow = {
+    ers.currentRow.asInstanceOf[AbstractCompactExecRow]
+  }
+}
 
-  private[this] val mutableRow = new SpecificMutableRow(dataTypes)
+final class CompactExecRowIteratorOnScan(container: GemFireContainer,
+    bucketId: Int) extends Iterator[AbstractCompactExecRow] {
 
-  override def next(): InternalRow = {
-    val result = createInternalRow(
-      ers.currentRow.asInstanceOf[AbstractCompactExecRow], mutableRow)
-    moveNext()
-    unsafeproj.apply(result)
+  private[this] var hasNextValue = true
+  private[this] var doMove = true
+
+  private[this] val itr = container.getEntrySetIteratorForBucketSet(
+    Collections.singleton(bucketId), null, null, 0, false, true)
+      .asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  private[this] val row = container.newTemplateRow()
+      .asInstanceOf[AbstractCompactExecRow]
+
+  private def moveNext(): Unit = {
+    while (itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      val owner = itr.getHostedBucketRegion
+      if ((owner ne null) && (RegionEntryUtils.fillRowWithoutFaultIn(
+        container, owner, rl.getRegionEntry, row) ne null)) {
+        return
+      }
+    }
+    hasNextValue = false
+  }
+
+  override def hasNext: Boolean = {
+    if (doMove) {
+      moveNext()
+      doMove = false
+    }
+    hasNextValue
+  }
+
+  override def next: AbstractCompactExecRow = {
+    if (doMove) {
+      moveNext()
+    }
+    doMove = true
+    row
   }
 }

@@ -24,7 +24,6 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
-import scala.util.control.NonFatal
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
@@ -129,26 +128,44 @@ abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
     extends Iterator[A] with Logging {
 
-  protected final var hasNextValue = true
+  protected[this] final var doMove = true
 
-  context.addTaskCompletionListener { context => close() }
+  protected[this] final var hasNextValue = true
 
-  override final def hasNext: Boolean = hasNextValue
+  context.addTaskCompletionListener { _ => close() }
 
-  protected[execution] final def moveNext(): Unit = {
+  override final def hasNext: Boolean = {
     var success = false
     try {
       // TODO: see if optimization using rs.lightWeightNext
       // and explicit context pop in close possible (was causing trouble)
-      success = rs.next()
-    } catch {
-      case NonFatal(e) => logWarning("Exception iterating resultSet", e)
+      if (doMove) {
+        success = rs.next()
+        doMove = false
+        return success
+      } else {
+        success = hasNextValue
+      }
     } finally {
       if (!success) {
         close()
       }
     }
+    hasNextValue
   }
+
+  override final def next(): A = {
+    if (doMove) {
+      hasNext
+      doMove = true
+      if (!hasNextValue) return null.asInstanceOf[A]
+    }
+    val result = getCurrentValue
+    doMove = true
+    result
+  }
+
+  protected def getCurrentValue: A
 
   final def close() {
     if (!hasNextValue) return
@@ -182,10 +199,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
   private val numCols = requiredColumns.length
   private val colBuffers = new Array[Array[Byte]](numCols)
 
-  // move once to next at the start (or close if no result available)
-  moveNext()
-
-  override def next(): CachedBatch = {
+  override protected def getCurrentValue: CachedBatch = {
     var i = 0
     while (i < numCols) {
       colBuffers(i) = rs.getBytes(i + 1)
@@ -194,7 +208,6 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     // val stats = SparkSqlSerializer.deserialize[InternalRow](rs.getBytes("stats"))
     val stats: InternalRow = null
     val numRows = rs.getInt("numRows")
-    moveNext()
     CachedBatch(numRows, colBuffers, stats)
   }
 }
