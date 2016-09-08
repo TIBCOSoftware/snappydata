@@ -17,8 +17,9 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Collections, GregorianCalendar}
+import java.util.GregorianCalendar
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
@@ -28,17 +29,12 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeProjection, UnsafeRow}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
@@ -171,12 +167,11 @@ class RowFormatScanRDD(_sc: SparkContext,
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       try {
         ps.setString(1, tableName)
-        val partition = thePart.asInstanceOf[MultiBucketExecutorPartition]
-        var bucketString = ""
-        partition.buckets.foreach(bucket => {
-          bucketString = bucketString + bucket + ","
-        })
-        ps.setString(2, bucketString.substring(0, bucketString.length - 1))
+        val bucketString = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets.mkString(",")
+          case _ => thePart.index.toString
+        }
+        ps.setString(2, bucketString)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -221,7 +216,11 @@ class RowFormatScanRDD(_sc: SparkContext,
       if (isPartitioned && filterWhereClause.isEmpty) {
         val container = Misc.getRegionForTable(tableName, true)
             .getUserAttribute.asInstanceOf[GemFireContainer]
-        new CompactExecRowIteratorOnScan(container, thePart.index)
+        val bucketIds = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets
+          case _ => Set(thePart.index)
+        }
+        new CompactExecRowIteratorOnScan(container, bucketIds)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         new CompactExecRowIteratorOnRS(conn, stmt,
@@ -268,177 +267,6 @@ final class ResultSetTraversal(conn: Connection,
   override protected def getCurrentValue: Void = null
 }
 
-final class InternalRowIteratorOnRS(conn: Connection,
-    stmt: Statement, rs: ResultSet, context: TaskContext, schema: StructType)
-    extends ResultSetIterator[InternalRow](conn, stmt, rs, context) {
-
-  private[this] lazy val defaultCal = new GregorianCalendar()
-
-  private[this] val dataTypes: ArrayBuffer[DataType] =
-    new ArrayBuffer[DataType](schema.length)
-
-  private[this] val fieldTypes = StoreUtils.mapCatalystTypes(schema, dataTypes)
-
-  private[this] val unsafeproj = UnsafeProjection.create(
-    schema.map(_.dataType).toArray)
-
-  private[this] val mutableRow = new SpecificMutableRow(dataTypes)
-
-  override protected def getCurrentValue: InternalRow = {
-    var i = 0
-    while (i < schema.length) {
-      val pos = i + 1
-      fieldTypes(i) match {
-        case StoreUtils.STRING_TYPE =>
-          val v = rs.getString(pos)
-          if (v != null) {
-            mutableRow.update(i, UTF8String.fromString(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.INT_TYPE =>
-          val v = rs.getInt(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setInt(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.LONG_TYPE =>
-          val v = rs.getLong(pos)
-          if (v != 0L || !rs.wasNull()) {
-            mutableRow.setLong(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BINARY_LONG_TYPE =>
-          val bytes = rs.getBytes(pos)
-          if (bytes != null) {
-            var v = 0L
-            var j = 0
-            val numBytes = bytes.size
-            while (j < numBytes) {
-              v = 256 * v + (255 & bytes(j))
-              j = j + 1
-            }
-            mutableRow.setLong(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.SHORT_TYPE =>
-          val v = rs.getShort(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setShort(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BYTE_TYPE =>
-          val v = rs.getByte(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setByte(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BOOLEAN_TYPE =>
-          val v = rs.getBoolean(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setBoolean(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DECIMAL_TYPE =>
-          // When connecting with Oracle DB through JDBC, the precision and
-          // scale of BigDecimal object returned by ResultSet.getBigDecimal
-          // is not correctly matched to the table schema reported by
-          // ResultSetMetaData.getPrecision and ResultSetMetaData.getScale.
-          // If inserting values like 19999 into a column with NUMBER(12, 2)
-          // type, you get through a BigDecimal object with scale as 0.
-          // But the dataframe schema has correct type as DecimalType(12, 2).
-          // Thus, after saving the dataframe into parquet file and then
-          // retrieve it, you will get wrong result 199.99. So it is needed
-          // to set precision and scale for Decimal based on JDBC metadata.
-          val v = rs.getBigDecimal(pos)
-          if (v != null) {
-            val d = schema.fields(i).dataType.asInstanceOf[DecimalType]
-            mutableRow.update(i, Decimal(v, d.precision, d.scale))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DOUBLE_TYPE =>
-          val v = rs.getDouble(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setDouble(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.FLOAT_TYPE =>
-          val v = rs.getFloat(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setFloat(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DATE_TYPE =>
-          val cal = this.defaultCal
-          cal.clear()
-          val v = rs.getDate(pos, cal)
-          if (v != null) {
-            mutableRow.setInt(i, DateTimeUtils.fromJavaDate(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.TIMESTAMP_TYPE =>
-          val cal = this.defaultCal
-          cal.clear()
-          val v = rs.getTimestamp(pos, cal)
-          if (v != null) {
-            mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BINARY_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            mutableRow.update(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.ARRAY_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val array = new UnsafeArrayData
-            array.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, array)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.MAP_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val map = new UnsafeMapData
-            map.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, map)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.STRUCT_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val s = schema.fields(i).dataType.asInstanceOf[StructType]
-            val row = new UnsafeRow(s.fields.length)
-            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, row)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case _ => throw new IllegalArgumentException(
-          s"Unsupported field ${schema.fields(i)}")
-      }
-      i = i + 1
-    }
-    unsafeproj.apply(mutableRow)
-  }
-}
-
 final class CompactExecRowIteratorOnRS(conn: Connection,
     stmt: Statement, ers: EmbedResultSet, context: TaskContext)
     extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
@@ -450,14 +278,15 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketId: Int) extends Iterator[AbstractCompactExecRow] {
+    bucketIds: scala.collection.Set[Int])
+    extends Iterator[AbstractCompactExecRow] {
 
   private[this] var hasNextValue = true
   private[this] var doMove = true
 
   private[this] val itr = container.getEntrySetIteratorForBucketSet(
-    Collections.singleton(bucketId), null, null, 0, false, true)
-      .asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+    bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
   private[this] val row = container.newTemplateRow()
       .asInstanceOf[AbstractCompactExecRow]
 

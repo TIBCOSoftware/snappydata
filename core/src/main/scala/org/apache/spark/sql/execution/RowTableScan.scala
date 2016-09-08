@@ -71,7 +71,7 @@ object RowTableScan {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
-    val holder = ctx.freshName("holder")
+    val holder = ctx.freshName("nullHolder")
     val holderClass = classOf[ResultNullHolder].getName
     val compactRowClass = classOf[AbstractCompactExecRow].getName
     val baseSchema = baseRelation.schema
@@ -106,15 +106,16 @@ object RowTableScan {
     val iterator = ctx.freshName("iterator")
     val iteratorClass = classOf[ResultSetTraversal].getName
     val rs = ctx.freshName("resultSet")
-    val baseSchema = baseRelation.schema
-    val columnsRowInput = output.map(a => genCodeResultSetColumn(ctx,
-      rs, iterator, baseSchema.fieldIndex(a.name), a.dataType, a.nullable))
+    val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
+      genCodeResultSetColumn(ctx, rs, iterator, index, a.dataType, a.nullable)
+    }
     s"""
        |final $iteratorClass $iterator = ($iteratorClass)$input;
        |final java.sql.ResultSet $rs = $iterator.rs();
        |long $numRows = 0L;
        |try {
-       |  while ($rs.next()) {
+       |  while ($iterator.hasNext()) {
+       |    $iterator.next();
        |    $numRows++;
        |    ${forObject.consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
