@@ -142,7 +142,8 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         val newPlan = plan transformUp {
           case q: LogicalPlan =>
             val replacement = replacementMap.collect {
-              case (plan, replaceWith) if plan.fastEquals(q) => replaceWith
+              case (plan, replaceWith) if plan.fastEquals(q)
+                  && ! plan.fastEquals(replaceWith) => replaceWith
             }.reduceLeftOption((acc, p_) => if (!p_.fastEquals(acc)) p_ else acc)
 
             replacement.getOrElse(q)
@@ -173,6 +174,26 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
       val leftIndexes = fetchIndexes2(left)
       val rightIndexes = fetchIndexes2(right)
 
+      /** now doing a one-to-one mapping of lefttable and its indexes with
+        * right table and its indexes. Following example explains the mapping
+        * and collect method on the $cols is to pick colocated relations.
+        *
+        * val l = Seq(1, 2, 3)
+        * val r = Seq(4, 5)
+        * l.zip(Seq.fill(l.length)(r)).flatMap {
+        *   case (leftElement, rightList) => rightList.flatMap { e =>
+        *     Seq((l, e))
+        *   }
+        * }.foreach(println)
+        * will output :
+        * (1, 4)
+        * (1, 5)
+        * (2, 4)
+        * (2, 5)
+        * (3, 4)
+        * (3, 5)
+        *
+        */
       val (leftPair, rightPair) = leftIndexes.zip(Seq.fill(leftIndexes.length)(rightIndexes)).
           flatMap { case (l, r) => r.flatMap(e => Seq((l, e))) }.
           collect {
