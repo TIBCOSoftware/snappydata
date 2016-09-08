@@ -30,6 +30,7 @@ object NWTestSparkApp {
 
   def main(args: Array[String]) {
     val dataFilesLocation = args(0)
+    println(s"SS - dataFilesLocation : ${dataFilesLocation}")
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation

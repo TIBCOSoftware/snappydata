@@ -186,9 +186,9 @@ object NWTestJob extends SnappySQLJob {
         case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, northWind.NWQueries.Q34, 5, "Q34", tableType, pw)
         case "Q35" => assertJoin(snc, northWind.NWQueries.Q35, 3, "Q35", tableType, pw)
-        case "Q36" => assertJoin(snc, northWind.NWQueries.Q36, 5, "Q36", tableType, pw)
-        case "Q37" => assertJoin(snc, northWind.NWQueries.Q37, 69, "Q37", tableType, pw)
-        case "Q38" => assertJoin(snc, northWind.NWQueries.Q38, 71, "Q38", tableType, pw)
+        case "Q36" => //assertJoin(snc, northWind.NWQueries.Q36, 5, "Q36", tableType, pw)
+        case "Q37" => //assertJoin(snc, northWind.NWQueries.Q37, 69, "Q37", tableType, pw)
+        case "Q38" => //assertJoin(snc, northWind.NWQueries.Q38, 71, "Q38", tableType, pw)
         case "Q39" => assertJoin(snc, northWind.NWQueries.Q39, 9, "Q39", tableType, pw)
         case "Q40" => assertJoin(snc, northWind.NWQueries.Q40, 830, "Q40", tableType, pw)
         case "Q41" => assertJoin(snc, northWind.NWQueries.Q41, 2155, "Q41", tableType, pw)
@@ -205,6 +205,9 @@ object NWTestJob extends SnappySQLJob {
         case "Q52" => assertJoin(snc, northWind.NWQueries.Q52, 2155, "Q52", tableType, pw)
         case "Q53" => assertJoin(snc, northWind.NWQueries.Q53, 2155, "Q53", tableType, pw)
         case "Q54" => assertJoin(snc, northWind.NWQueries.Q54, 2155, "Q54", tableType, pw)
+        case "Q55" => assertJoin(snc, NWQueries.Q55, 21, "Q55", tableType, pw)
+        case "Q56" => //assertJoin(snc, NWQueries.Q56, 8, "Q56", tableType, pw)
+        case _ => println("ok")
       }
     }
   }

@@ -1545,11 +1545,11 @@ public class SnappyTest implements Serializable {
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                         " " + snappyTest.getUserAppJarLocation(userAppJar)*/
-                String command = snappyJobScript + " --files " + getAllDataFiles() + " --class " + userJob +
+                String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar) + SnappyPrms.getUserAppArgs();
-                Log.getLogWriter().info("SS - sparkJob command is : " + command);
+                        " " + snappyTest.getUserAppJarLocation(userAppJar) + " " + SnappyPrms.getUserAppArgs();
+                Log.getLogWriter().info("spark-submit command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -1566,20 +1566,6 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
-    }
-
-
-    protected static String getCoreTestsJar(){
-        String coreTestJarName = SnappyPrms.getCoreTestsJarName();
-        String jarPath = dtests + sep + ".." + sep + "core" + sep + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
-        return getAbsoluteJarLocation(jarPath, coreTestJarName);
-
-    }
-
-    protected static String getDunitJar(){
-        String coreTestJarName = SnappyPrms.getDunitJarName();
-        String jarPath = dtests + sep + ".." + sep + "dunit" + sep + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
-        return getAbsoluteJarLocation(jarPath, coreTestJarName);
     }
 
     protected static String getAllDataFiles() {
@@ -1601,20 +1587,20 @@ public class SnappyTest implements Serializable {
         return SnappyJarsList;
     }
 
-     protected static String getAbsoluteJarLocation(String jarPath, final String jarName) {
-            String absoluteJarPath = null;
-            File baseDir = new File(jarPath);
-            try {
-                IOFileFilter filter = new WildcardFileFilter(jarName);
-                List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
-                Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
-                for (File file1 : files) {
-                    if (!file1.getAbsolutePath().contains("/work/")) absoluteJarPath = file1.getAbsolutePath();
-                }
-            } catch (Exception e) {
-                Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
+    protected static String getAbsoluteJarLocation(String jarPath, final String jarName) {
+        String absoluteJarPath = null;
+        File baseDir = new File(jarPath);
+        try {
+            IOFileFilter filter = new WildcardFileFilter(jarName);
+            List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
+            Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
+            for (File file1 : files) {
+                if (!file1.getAbsolutePath().contains("/work/")) absoluteJarPath = file1.getAbsolutePath();
             }
-            return absoluteJarPath;
+        } catch (Exception e) {
+            Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
+        }
+        return absoluteJarPath;
     }
 
     /**
@@ -1886,7 +1872,6 @@ public class SnappyTest implements Serializable {
         try {
             int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.locatorsStarted);
             if (num == 1) {
-                Log.getLogWriter().info("SS - starting locator....");
                 if (useRowStore) {
                     Log.getLogWriter().info("Starting locator/s using rowstore option...");
                     pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
@@ -1900,7 +1885,6 @@ public class SnappyTest implements Serializable {
                 if (useRowStore)
                     snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
                 else snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
-                Log.getLogWriter().info("SS - started locator....");
             }
         } catch (IOException e) {
             String s = "problem occurred while retriving destination logFile path " + log;
@@ -1915,9 +1899,7 @@ public class SnappyTest implements Serializable {
     public static synchronized void HydraTask_createAndStartSnappyServers() {
         int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
         if (num == 1) {
-            Log.getLogWriter().info("SS - starting snappyserver....");
             snappyTest.startSnappyServer();
-            Log.getLogWriter().info("SS - started snappyserver....");
         }
     }
 
@@ -1928,9 +1910,7 @@ public class SnappyTest implements Serializable {
     public static synchronized void HydraTask_createAndStartSnappyLeader() {
         int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
         if (num == 1) {
-            Log.getLogWriter().info("SS - starting lead....");
             snappyTest.startSnappyLead();
-            Log.getLogWriter().info("SS - started lead....");
         }
     }
 

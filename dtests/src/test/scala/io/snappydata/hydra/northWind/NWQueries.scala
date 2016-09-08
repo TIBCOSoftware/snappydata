@@ -402,7 +402,9 @@ object NWQueries {
     "Q51" -> Q51,
     "Q52" -> Q52,
     "Q53" -> Q53,
-    "Q54" -> Q54
+    "Q54" -> Q54,
+    "Q55" -> Q55,
+    "Q56" -> Q56
   )
   println(s"Resources path : ${SparkFiles.get("regions.csv")}")
 
