@@ -31,6 +31,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -386,9 +387,9 @@ object ExternalStoreUtils {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>
-      sb.append(Utils.fieldName(schemaFields(i))).append(',')
+      sb.append(schemaFields(i).name).append(',')
     }
-    sb.append(Utils.fieldName(schemaFields(schemaFields.length - 1)))
+    sb.append(schemaFields(schemaFields.length - 1).name)
     sb.append(") VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
@@ -493,9 +494,10 @@ object ExternalStoreUtils {
     }
   }
 
-  private def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
+    HashedRelationCache.clear()
     Iterator.empty
   }
 }

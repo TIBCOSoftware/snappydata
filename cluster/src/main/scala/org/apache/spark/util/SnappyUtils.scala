@@ -17,12 +17,13 @@
 
 package org.apache.spark.util
 
+import java.io.File
 import java.security.SecureClassLoader
 import java.sql.{DriverManager, SQLException}
 
 import _root_.io.snappydata.util.ServiceUtils
 import com.pivotal.gemfirexd.internal.engine.Misc
-
+import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
 
 object SnappyUtils {
@@ -45,8 +46,8 @@ object SnappyUtils {
     // whether the jar is already loaded or not.
 
     val jarExistsException =
-      executeCall("CALL SQLJ.INSTALL_JAR(?, ?, 0)", jarName, jarPath, sc)
-    if (jarExistsException) executeCall("CALL SQLJ.REPLACE_JAR(?, ?)", jarName, jarPath, sc)
+      executeCall("CALL SQLJ.INSTALL_JAR_BYTES(?, ?)", jarName, jarPath, sc)
+    if (jarExistsException) executeCall("CALL SQLJ.REPLACE_JAR_BYTES(?, ?)", jarName, jarPath, sc)
   }
 
   private def executeCall(sql: String, jarName: String, jarPath: String,
@@ -56,7 +57,7 @@ object SnappyUtils {
     val conn = DriverManager.getConnection(ServiceUtils.getLocatorJDBCURL(sc))
     try {
       val cs = conn.prepareCall(sql)
-      cs.setString(1, jar)
+      cs.setBytes(1, FileUtils.readFileToByteArray(new File(jarPath)))
       cs.setString(2, jarName)
       cs.executeUpdate()
       cs.close

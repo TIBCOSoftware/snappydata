@@ -20,7 +20,10 @@ import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 
+import org.apache.spark.storage.BlockManagerId
+
 import scala.collection.{mutable, Map => SMap}
+
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -356,6 +359,13 @@ object Utils {
     }: _*)
   }
 
+  def getSchemaFields(schema: StructType): Map[String, StructField] = {
+    Map(schema.fields.flatMap { f =>
+      Iterator((f.name, f))
+    }: _*)
+  }
+
+
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
       field.setAccessible(true)
@@ -648,12 +658,15 @@ class ExecutorLocalPartition(override val index: Int,
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
-class MultiExecutorLocalPartition(override val index: Int,
-    val blockIds: Seq[BlockManagerId]) extends Partition {
+class MultiBucketExecutorPartition(override val index: Int,
+                                   val buckets: mutable.HashSet[Int],
+                                   val blockIds: Seq[BlockManagerId]) extends Partition {
 
-  def hostExecutorIds: Seq[String] = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
-
-  override def toString: String = s"MultiExecutorLocalPartition($index, $blockIds)"
+  def hostExecutorIds : Seq[String] = {
+    val execs = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+    execs
+  }
+  override def toString = s"MultiBucketExecutorPartition($index, $buckets, $blockIds)"
 }
 
 
@@ -696,9 +709,10 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorLocalShellPartition(override val index: Int,
-    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString: String = s"ExecutorLocalShellPartition($index, $hostList"
+class ExecutorMultiBucketLocalShellPartition(override val index: Int,
+                                             val buckets: mutable.HashSet[Int],
+                                  val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+  override def toString = s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {

@@ -18,6 +18,9 @@ package io.snappydata.impl;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,20 +33,14 @@ import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
-import io.snappydata.Constant;
-import io.snappydata.util.ServiceUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.hive.ExternalTableType;
-import org.apache.spark.sql.hive.QualifiedTableName;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
-import org.apache.spark.sql.store.StoreUtils;
-import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
 
 public class SnappyHiveCatalog implements ExternalCatalog {
@@ -107,6 +104,25 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     return (String)handleFutureResult(f);
   }
 
+  public HashMap<String, List<String>> getAllStoreTablesInCatalog(boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.GET_ALL_TABLES_MANAGED_IN_DD, null, null, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (HashMap<String, List<String>>)handleFutureResult(f);
+  }
+
+  public boolean removeTable(String schema,
+      String table, boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.REMOVE_TABLE, table, schema, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Boolean)handleFutureResult(f);
+  }
+
+  @Override
+  public String catalogSchemaName() {
+    return SnappyStoreHiveCatalog.HIVE_METASTORE();
+  }
 
   @Override
   public void stop() {
@@ -146,6 +162,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int ISROWTABLE_QUERY = 1;
     private static final int ISCOLUMNTABLE_QUERY = 2;
     private static final int COLUMNTABLE_SCHEMA = 3;
+    // all hive tables that are expected to be in datadictionary
+    // this will exclude external tables like parquet tables, stream tables
+    private static final int GET_ALL_TABLES_MANAGED_IN_DD = 4;
+    private static final int REMOVE_TABLE = 5;
     // private static final int CLOSE_HMC = 4;
 
     // More to be added later
@@ -185,6 +205,29 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         case COLUMNTABLE_SCHEMA:
           hmc = SnappyHiveCatalog.this.hmClients.get();
           return getSchema(hmc);
+
+        case GET_ALL_TABLES_MANAGED_IN_DD:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          List<String> dbList = hmc.getAllDatabases();
+          HashMap<String, List<String>> dbTablesMap = new HashMap<>();
+          for (String db : dbList) {
+            List<String> tables = hmc.getAllTables(db);
+            // TODO: FIX ME: should not convert to upper case blindly
+            List <String> upperCaseTableNames = new LinkedList<>();
+            for (String t : tables) {
+              Table hiveTab = hmc.getTable(db, t);
+              if (isTableInStoreDD(hiveTab)) {
+                upperCaseTableNames.add(t.toUpperCase());
+              }
+            }
+            dbTablesMap.put(db.toUpperCase(), upperCaseTableNames);
+          }
+          return dbTablesMap;
+
+        case REMOVE_TABLE:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          hmc.dropTable(this.dbName, this.tableName);
+          return true;
 
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
@@ -237,6 +280,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         // assume ROW type in GemFireXD
         return ExternalTableType.Row().toString();
       }
+    }
+
+    private boolean isTableInStoreDD(Table t) {
+      String type = t.getParameters().get("EXTERNAL");
+      return type.equalsIgnoreCase(ExternalTableType.Row().toString()) ||
+          type.equalsIgnoreCase(ExternalTableType.Column().toString()) ||
+          type.equalsIgnoreCase(ExternalTableType.Sample().toString());
     }
 
     private String getSchema(HiveMetaStoreClient hmc) throws SQLException {
