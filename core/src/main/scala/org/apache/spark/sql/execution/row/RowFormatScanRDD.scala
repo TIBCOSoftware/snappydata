@@ -17,8 +17,9 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Collections, GregorianCalendar}
+import java.util.GregorianCalendar
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
@@ -166,12 +167,11 @@ class RowFormatScanRDD(_sc: SparkContext,
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       try {
         ps.setString(1, tableName)
-        val partition = thePart.asInstanceOf[MultiBucketExecutorPartition]
-        var bucketString = ""
-        partition.buckets.foreach(bucket => {
-          bucketString = bucketString + bucket + ","
-        })
-        ps.setString(2, bucketString.substring(0, bucketString.length - 1))
+        val bucketString = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets.mkString(",")
+          case _ => thePart.index.toString
+        }
+        ps.setString(2, bucketString)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -216,7 +216,11 @@ class RowFormatScanRDD(_sc: SparkContext,
       if (isPartitioned && filterWhereClause.isEmpty) {
         val container = Misc.getRegionForTable(tableName, true)
             .getUserAttribute.asInstanceOf[GemFireContainer]
-        new CompactExecRowIteratorOnScan(container, thePart.index)
+        val bucketIds = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets
+          case _ => Set(thePart.index)
+        }
+        new CompactExecRowIteratorOnScan(container, bucketIds)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         new CompactExecRowIteratorOnRS(conn, stmt,
@@ -274,14 +278,15 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketId: Int) extends Iterator[AbstractCompactExecRow] {
+    bucketIds: scala.collection.Set[Int])
+    extends Iterator[AbstractCompactExecRow] {
 
   private[this] var hasNextValue = true
   private[this] var doMove = true
 
   private[this] val itr = container.getEntrySetIteratorForBucketSet(
-    Collections.singleton(bucketId), null, null, 0, false, true)
-      .asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+    bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
   private[this] val row = container.newTemplateRow()
       .asInstanceOf[AbstractCompactExecRow]
 

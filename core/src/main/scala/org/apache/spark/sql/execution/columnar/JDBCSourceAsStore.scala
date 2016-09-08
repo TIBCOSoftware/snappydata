@@ -139,19 +139,19 @@ abstract class ResultSetIterator[A](conn: Connection,
     try {
       // TODO: see if optimization using rs.lightWeightNext
       // and explicit context pop in close possible (was causing trouble)
-      if (doMove) {
+      if (doMove && hasNextValue) {
         success = rs.next()
         doMove = false
-        return success
+        success
       } else {
         success = hasNextValue
+        success
       }
     } finally {
       if (!success) {
         close()
       }
     }
-    hasNextValue
   }
 
   override final def next(): A = {
