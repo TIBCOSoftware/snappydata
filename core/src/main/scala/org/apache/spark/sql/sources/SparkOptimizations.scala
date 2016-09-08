@@ -32,6 +32,11 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 
+/** This rule changing table to index relations cannot be done in optimize phase
+  * without intrusive changes to the optimizedPlan. Also, didn't wanted to bypass
+  * checkAnalysis phase after we replace table with index effecting all TreeNode.resolved
+  * references.
+  */
 case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     with PredicateHelper {
 
@@ -59,6 +64,14 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     }
 
     val replacementMap = if (explicitIndexHint.isEmpty) {
+      /** Having decided to change the table with index during analysis phase,
+        * we are faced with issues like 'select * from a, b where a.c1 = b.c1'
+        * will have join condition in the Filter. It is the optimizer which does
+        * many such intelligent Predicate push down etc. So, we walkthrough an
+        * optimized plan here to determine whether its possible and beneficial
+        * to replace table with index but we apply the transformation on the
+        * ongoing analysis plan.
+        */
       val optimizedPlan = snappySession.sessionState.optimizer.execute(plan)
       optimizedPlan.flatMap {
         case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, extraConditions, left, right) =>
@@ -95,9 +108,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
               satisfyingJoinCond.nonEmpty match {
                 case true =>
                   val (_, idx) = satisfyingJoinCond(0)
-                  val (leftT, leftReplace) = leftReplacements(idx)
-                  val (rightT, rightReplace) = rightReplacements(idx)
-                  Seq((leftT, leftReplace), (rightT, rightReplace))
+                  Seq(leftReplacements(idx), rightReplacements(idx))
                 case false =>
                   logDebug("join condition insufficient for matching any colocation columns ")
                   Nil
@@ -127,6 +138,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
     replacementMap.nonEmpty match {
       case true =>
+        // now lets modify the analysis plan with index
         val newPlan = plan transformUp {
           case q: LogicalPlan =>
             val replacement = replacementMap.collect {
@@ -252,38 +264,6 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     }
 
     leftLeader.equals(rightLeader)
-  }
-
-  private def matchColumnSets(partitioningColPairs: Seq[(String, String)],
-      joinRelationPairs: Seq[(AttributeReference, AttributeReference)]): Boolean = {
-
-    if (partitioningColPairs.length != joinRelationPairs.length) {
-      return false
-    }
-
-    partitioningColPairs.filter({
-      case (left, right) =>
-        joinRelationPairs.exists {
-          case (jleft, jright) =>
-            left.equalsIgnoreCase(jleft.name) && right.equalsIgnoreCase(jright.name) ||
-                left.equalsIgnoreCase(jright.name) && right.equalsIgnoreCase(jleft.name)
-        }
-    }).length == partitioningColPairs.length
-
-  }
-
-  def applyRefreshTables(plan: LogicalPlan, replaceWith: LogicalPlan): Option[LogicalPlan] = {
-    if (EliminateSubqueryAliases(plan) == replaceWith) {
-      return None
-    }
-
-    plan match {
-      case LogicalRelation(cf: ColumnFormatRelation, _, _) =>
-        Some(replaceTableWithIndex(Map(cf.table -> Some(replaceWith)), plan))
-      case SubqueryAlias(alias, _) =>
-        Some(replaceTableWithIndex(Map(alias -> Some(replaceWith)), plan))
-      case _ => None
-    }
   }
 
   private def fetchIndexes(plan: LogicalPlan): mutable.HashMap[LogicalPlan, Seq[LogicalPlan]] =
