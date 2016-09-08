@@ -169,7 +169,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         execution.DataSourceScanExec.create(
           mappedProjects,
           scanBuilder(requestedColumns, candidatePredicates,
-            pushedFilters).asInstanceOf[RDD[InternalRow]],
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -193,7 +193,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         execution.DataSourceScanExec.create(
           requestedColumns,
           scanBuilder(requestedColumns, candidatePredicates,
-            pushedFilters).asInstanceOf[RDD[InternalRow]],
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       execution.ProjectExec(projects,

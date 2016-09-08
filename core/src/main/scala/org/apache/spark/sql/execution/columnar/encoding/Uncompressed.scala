@@ -24,8 +24,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-private[columnar] final class Uncompressed
-    extends UncompressedBase with NotNullColumn {
+final class Uncompressed extends UncompressedBase with NotNullColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
@@ -38,8 +37,7 @@ private[columnar] final class Uncompressed
     new Array[Byte](dataType.defaultSize * batchSize + 4 /* for typeId */)
 }
 
-private[columnar] final class UncompressedNullable
-    extends UncompressedBase with NullableColumn {
+final class UncompressedNullable extends UncompressedBase with NullableColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
@@ -55,7 +53,7 @@ private[columnar] final class UncompressedNullable
   }
 }
 
-private[columnar] abstract class UncompressedBase extends ColumnEncoding {
+abstract class UncompressedBase extends ColumnEncoding {
 
   import ColumnEncoding.littleEndian
 
@@ -82,54 +80,63 @@ private[columnar] abstract class UncompressedBase extends ColumnEncoding {
     }
   }
 
+  override def nextBoolean(bytes: Array[Byte]): Unit =
+    cursor += 1
+
   override def readBoolean(bytes: Array[Byte]): Boolean =
     Platform.getByte(bytes, cursor) == 1
 
-  override def nextBoolean(bytes: Array[Byte]): Unit =
+  override def nextByte(bytes: Array[Byte]): Unit =
     cursor += 1
 
   override def readByte(bytes: Array[Byte]): Byte =
     Platform.getByte(bytes, cursor)
 
-  override def nextByte(bytes: Array[Byte]): Unit =
-    cursor += 1
+  override def nextShort(bytes: Array[Byte]): Unit =
+    cursor += 2
 
   override def readShort(bytes: Array[Byte]): Short =
     if (littleEndian) Platform.getShort(bytes, cursor)
     else java.lang.Short.reverseBytes(Platform.getShort(bytes, cursor))
 
-  override def nextShort(bytes: Array[Byte]): Unit =
-    cursor += 2
+  override def nextInt(bytes: Array[Byte]): Unit =
+    cursor += 4
 
   override def readInt(bytes: Array[Byte]): Int =
     if (littleEndian) Platform.getInt(bytes, cursor)
     else java.lang.Integer.reverseBytes(Platform.getInt(bytes, cursor))
 
-  override def nextInt(bytes: Array[Byte]): Unit =
-    cursor += 4
+  override def nextLong(bytes: Array[Byte]): Unit =
+    cursor += 8
 
   override def readLong(bytes: Array[Byte]): Long =
     if (littleEndian) Platform.getLong(bytes, cursor)
     else java.lang.Long.reverseBytes(Platform.getLong(bytes, cursor))
 
-  override def nextLong(bytes: Array[Byte]): Unit =
-    cursor += 8
+  override def nextFloat(bytes: Array[Byte]): Unit =
+    cursor += 4
 
   override def readFloat(bytes: Array[Byte]): Float =
     if (littleEndian) Platform.getFloat(bytes, cursor)
     else java.lang.Float.intBitsToFloat(java.lang.Integer.reverseBytes(
       Platform.getInt(bytes, cursor)))
 
-  override def nextFloat(bytes: Array[Byte]): Unit =
-    cursor += 4
+  override def nextDouble(bytes: Array[Byte]): Unit =
+    cursor += 8
 
   override def readDouble(bytes: Array[Byte]): Double =
     if (littleEndian) Platform.getDouble(bytes, cursor)
     else java.lang.Double.longBitsToDouble(java.lang.Long.reverseBytes(
       Platform.getLong(bytes, cursor)))
 
-  override def nextDouble(bytes: Array[Byte]): Unit =
-    cursor += 8
+  override def nextDecimal(bytes: Array[Byte], precision: Int): Unit = {
+    if (precision <= Decimal.MAX_LONG_DIGITS) {
+      cursor += 8
+    } else {
+      val size = readInt(bytes)
+      cursor += (4 + size)
+    }
+  }
 
   override def readDecimal(bytes: Array[Byte], precision: Int,
       scale: Int): Decimal = {
@@ -141,13 +148,9 @@ private[columnar] abstract class UncompressedBase extends ColumnEncoding {
     }
   }
 
-  override def nextDecimal(bytes: Array[Byte], precision: Int): Unit = {
-    if (precision <= Decimal.MAX_LONG_DIGITS) {
-      cursor += 8
-    } else {
-      val size = readInt(bytes)
-      cursor += (4 + size)
-    }
+  override def nextUTF8String(columnBytes: Array[Byte]): Unit = {
+    val size = readInt(columnBytes)
+    cursor += (4 + size)
   }
 
   override def readUTF8String(columnBytes: Array[Byte]): UTF8String = {
@@ -155,22 +158,8 @@ private[columnar] abstract class UncompressedBase extends ColumnEncoding {
     UTF8String.fromAddress(columnBytes, cursor + 4, size)
   }
 
-  override def nextUTF8String(columnBytes: Array[Byte]): Unit = {
-    val size = readInt(columnBytes)
-    cursor += (4 + size)
-  }
-
-  override def readBinary(bytes: Array[Byte]): Array[Byte] = {
-    val size = readInt(bytes)
-    val b = new Array[Byte](size)
-    Platform.copyMemory(bytes, cursor + 4, b, Platform.BYTE_ARRAY_OFFSET, size)
-    b
-  }
-
-  override def nextBinary(bytes: Array[Byte]): Unit = {
-    val size = readInt(bytes)
-    cursor += (4 + size)
-  }
+  override def nextInterval(bytes: Array[Byte]): Unit =
+    cursor += 12
 
   override def readInterval(bytes: Array[Byte]): CalendarInterval = {
     val months = readInt(bytes)
@@ -180,8 +169,17 @@ private[columnar] abstract class UncompressedBase extends ColumnEncoding {
     new CalendarInterval(months, micros)
   }
 
-  override def nextInterval(bytes: Array[Byte]): Unit =
-    cursor += 12
+  override def nextBinary(bytes: Array[Byte]): Unit = {
+    val size = readInt(bytes)
+    cursor += (4 + size)
+  }
+
+  override def readBinary(bytes: Array[Byte]): Array[Byte] = {
+    val size = readInt(bytes)
+    val b = new Array[Byte](size)
+    Platform.copyMemory(bytes, cursor + 4, b, Platform.BYTE_ARRAY_OFFSET, size)
+    b
+  }
 
   override def readArray(bytes: Array[Byte]): UnsafeArrayData = {
     val result = new UnsafeArrayData

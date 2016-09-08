@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalRDD, RowTableScan}
 import org.apache.spark.sql.types._
 
@@ -47,9 +48,7 @@ private[sql] final case class ColumnTableScan(
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows"),
-    "numRowBufferOutput" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows from the row buffer")) ++ (
+      "number of output rows")) ++ (
       if (otherRDDs.isEmpty) Map.empty
       else Map("numOtherRows" -> SQLMetrics.createMetric(sparkContext,
         "number of output rows from other RDDs")))
@@ -65,7 +64,6 @@ private[sql] final case class ColumnTableScan(
 
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")
-    val numRowBufferOutput = metricTerm(ctx, "numRowBufferOutput")
     val numOtherRows =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numOtherRows")
     val numRows = ctx.freshName("numRows")
@@ -75,6 +73,9 @@ private[sql] final case class ColumnTableScan(
     // RDDs return iterator of UnsafeRows.
     val rowInput = ctx.freshName("rowInput")
     val colInput = ctx.freshName("colInput")
+    val input = ctx.freshName("input")
+    val rs = ctx.freshName("resultSet")
+    val rsIterClass = classOf[ResultSetTraversal].getName
     if (otherRDDs.isEmpty) {
       ctx.addMutableState("scala.collection.Iterator",
         rowInput, s"$rowInput = (scala.collection.Iterator)inputs[0].next();")
@@ -94,67 +95,19 @@ private[sql] final case class ColumnTableScan(
                 ? (scala.collection.Iterator)inputs[0].next() : null;
         """)
     }
-    ctx.currentVars = null
-
-    // if this is a partition for "otherRDDs" then just do a normal UnsafeRow
-    // scan and return (e.g. for sample tables)
-    val otherRDDScan = if (otherRDDs.isEmpty) ""
-    else {
-      val row = ctx.freshName("row")
-      ctx.INPUT_ROW = row
-      val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
-        BoundReference(index, a.dataType, a.nullable).genCode(ctx)
-      }
-      s"""
-         |// check if this partition is for other UnsafeRow iterators
-         |if (partitionIndex >= $internalRowPartitionIndex) {
-         |  // iterate UnsafeRows from the RDD
-         |  long $numRows = 0L;
-         |  try {
-         |    while ($rowInput.hasNext()) {
-         |      final UnsafeRow $row = (UnsafeRow)$rowInput.next();
-         |      $numRows++;
-         |      ${consume(ctx, columnsRowInput, row).trim}
-         |      if (shouldStop()) return;
-         |    }
-         |    return;
-         |  } finally {
-         |    $numOtherRows.add($numRows);
-         |  }
-         |}
-       """.stripMargin
-    }
-
-    val rowScanCode = baseRelation.connectionType match {
-      case ConnectionType.Embedded =>
-        // row buffer returns CompactExecRow iterator
-        RowTableScan.doProduceWithoutProjection(ctx, rowInput,
-          numRowBufferOutput, output, baseRelation, this)
-      case _ =>
-        // row buffer returns ResultSet
-        RowTableScan.doProduceWithProjection(ctx, rowInput,
-          numRowBufferOutput, output, baseRelation, this)
-    }
 
     ctx.currentVars = null
-    if (scanUnsafeRows) {
+    val tableScan = if (scanUnsafeRows) {
       val row = ctx.freshName("row")
       ctx.INPUT_ROW = row
-      val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
-        BoundReference(index, a.dataType, a.nullable).genCode(ctx)
-      }
       s"""
-         |// start with the check for other RDDs being scanned
-         |$otherRDDScan
-         |// then iterate the row buffer
-         |$rowScanCode
-         |// iterate UnsafeRows from column table next
+         |// for testing just iterate UnsafeRows from column table
          |long $numRows = 0L;
          |try {
          |  while ($colInput.hasNext()) {
          |    final UnsafeRow $row = (UnsafeRow)$colInput.next();
          |    $numRows++;
-         |    ${consume(ctx, columnsRowInput, row).trim}
+         |    ${consume(ctx, null, row).trim}
          |    if (shouldStop()) return;
          |  }
          |} finally {
@@ -164,6 +117,7 @@ private[sql] final case class ColumnTableScan(
     } else {
       val cachedBatchClass = classOf[CachedBatch].getName
       val decoderClass = classOf[ColumnEncoding].getName
+      val rsDecoderClass = classOf[ResultSetEncodingAdapter].getName
       val batch = ctx.freshName("batch")
       val numBatchRows = ctx.freshName("numBatchRows")
       val batchOrdinal = ctx.freshName("batchOrdinal")
@@ -178,28 +132,55 @@ private[sql] final case class ColumnTableScan(
         val buffer = ctx.freshName("buffer")
         initCode.append(
           s"""
-            final byte[] $buffer = $buffers[$index];
-            final $decoderClass $decoder = $decoderClass.getColumnDecoder(
-              $buffer, $numBatchRows, $fields[$index]);
+            final byte[] $buffer;
+            final $decoderClass $decoder;
+            if ($buffers != null) {
+              $buffer = $buffers[$index];
+              $decoder = $decoderClass.getColumnDecoder($buffer,
+                $fields[$index]);
+            } else {
+              // TODO: SW: for ResultSet, more efficient will be to not push
+              // projection and use baseSchema index below
+              $buffer = null;
+              $decoder = new $rsDecoderClass($rs, ${index + 1});
+            }
           """)
-        val isNullVar = if (a.nullable) ctx.freshName("nullable") else null
+        val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
         moveNextCode.append(genCodeColumnNext(ctx, decoder, buffer,
-          batchOrdinal, a.dataType, isNullVar)).append('\n')
-        genCodeColumnBuffer(ctx, decoder, buffer,
-          batchOrdinal, a.dataType, isNullVar)
+          batchOrdinal, a.dataType, notNullVar)).append('\n')
+        genCodeColumnBuffer(ctx, decoder, buffer, a.dataType, notNullVar)
       }
       s"""
-         |// start with the check for other RDDs being scanned
-         |$otherRDDScan
-         |// then iterate the row buffer
-         |$rowScanCode
-         |// iterate cached batches from column table next
+         |// combined iterator for cached batches from column table
+         |// and ResultSet from row buffer
          |long $numRows = 0L;
+         |scala.collection.Iterator $input = $rowInput;
+         |boolean ${input}IsRow = true;
+         |final java.sql.ResultSet $rs = (($rsIterClass)$rowInput).rs();
          |try {
-         |  while ($colInput.hasNext()) {
-         |    $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
-         |    final int $numBatchRows = $batch.numRows();
-         |    final byte[][] $buffers = $batch.buffers();
+         |  while (true) {
+         |    if (!$input.hasNext()) {
+         |      if ($input == $rowInput) {
+         |        $input = $colInput;
+         |        ${input}IsRow = false;
+         |        if ($input == null || !$input.hasNext()) {
+         |          break;
+         |        }
+         |      } else {
+         |        break;
+         |      }
+         |    }
+         |    final byte[][] $buffers;
+         |    final int $numBatchRows;
+         |    if (${input}IsRow) {
+         |      $rowInput.next();
+         |      $buffers = null;
+         |      $numBatchRows = 1;
+         |    } else {
+         |      $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
+         |      $buffers = $batch.buffers();
+         |      $numBatchRows = $batch.numRows();
+         |    }
          |    ${initCode.toString()}
          |    for (int $batchOrdinal = 0; $batchOrdinal < $numBatchRows;
          |        $batchOrdinal++) {
@@ -218,11 +199,41 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin
     }
+    // for the case of otherRDDs, only iterate those as UnsafeRows
+    // if this is a partition for "otherRDDs" then just do a normal UnsafeRow
+    // scan and return (e.g. for sample tables)
+    if (otherRDDs.isEmpty) tableScan
+    else {
+      val row = ctx.freshName("row")
+      ctx.INPUT_ROW = row
+      val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
+        BoundReference(index, a.dataType, a.nullable).genCode(ctx)
+      }
+      s"""
+         |// check if this partition is for other UnsafeRow iterators
+         |if (partitionIndex >= $internalRowPartitionIndex) {
+         |  // iterate UnsafeRows from the RDD
+         |  long $numRows = 0L;
+         |  try {
+         |    while ($rowInput.hasNext()) {
+         |      final UnsafeRow $row = (UnsafeRow)$rowInput.next();
+         |      $numRows++;
+         |      ${consume(ctx, columnsRowInput, row).trim}
+         |      if (shouldStop()) return;
+         |    }
+         |  } finally {
+         |    $numOtherRows.add($numRows);
+         |  }
+         |} else {
+         |  $tableScan
+         |}
+       """.stripMargin
+    }
   }
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
       buffer: String, batchOrdinal: String, dataType: DataType,
-      isNullVar: String): String = {
+      notNullVar: String): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val moveNext = sqlType match {
@@ -238,20 +249,21 @@ private[sql] final case class ColumnTableScan(
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
-    if (isNullVar != null) {
+    if (notNullVar != null) {
       val nullCode =
-        s"final boolean $isNullVar = $decoder.readNull($buffer, $batchOrdinal);"
+        s"final byte $notNullVar = $decoder.notNull($buffer, $batchOrdinal);"
       if (moveNext.isEmpty) nullCode
-      else s"$nullCode\nif (!$isNullVar) $moveNext"
+      else s"$nullCode\nif ($notNullVar == 1) $moveNext"
     } else moveNext
   }
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
-      buffer: String, batchOrdinal: String, dataType: DataType,
-      isNullVar: String): ExprCode = {
+      buffer: String, dataType: DataType, notNullVar: String): ExprCode = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val extract = sqlType match {
+      case DateType => s"$decoder.readDate($buffer)"
+      case TimestampType => s"$decoder.readTimestamp($buffer)"
       case _ if ctx.isPrimitiveType(jt) =>
         s"$decoder.read${ctx.primitiveTypeName(jt)}($buffer)"
       case StringType => s"$decoder.readUTF8String($buffer)"
@@ -267,10 +279,24 @@ private[sql] final case class ColumnTableScan(
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
     val col = ctx.freshName("col")
-    if (isNullVar != null) {
+    if (notNullVar != null) {
+      val nullVar = ctx.freshName("nullVal")
       val code =
-        s"final $jt $col = $isNullVar ? ${ctx.defaultValue(jt)} : $extract;"
-      ExprCode(code, isNullVar, col)
+        s"""
+          final $jt $col;
+          final boolean $nullVar;
+          if ($notNullVar == 1) {
+            $col = $extract;
+            $nullVar = false;
+          } else if ($notNullVar == 0) {
+            $col = ${ctx.defaultValue(jt)};
+            $nullVar = true;
+          } else {
+            $col = $extract;
+            $nullVar = $decoder.wasNull();
+          }
+        """
+      ExprCode(code, nullVar, col)
     } else {
       ExprCode(s"final $jt $col = $extract;", "false", col)
     }

@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -39,7 +39,7 @@ private[sql] abstract class PartitionedPhysicalRDD(
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan)
+    baseRelation: PartitionedDataSourceScan)
     extends LeafExecNode with CodegenSupport {
 
   private val extraInformation = baseRelation.toString

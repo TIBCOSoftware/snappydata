@@ -18,14 +18,12 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import org.apache.spark.sql.types.{DataType, LongType}
 
-private[columnar] final class LongDeltaEncoding
-    extends LongDeltaEncodingBase with NotNullColumn
+final class LongDeltaEncoding extends LongDeltaEncodingBase with NotNullColumn
 
-private[columnar] final class LongDeltaEncodingNullable
+final class LongDeltaEncodingNullable
     extends LongDeltaEncodingBase with NullableColumn
 
-private[columnar] abstract class LongDeltaEncodingBase
-    extends UncompressedBase {
+abstract class LongDeltaEncodingBase extends UncompressedBase {
 
   private[this] var prev = 0L
 
@@ -33,9 +31,6 @@ private[columnar] abstract class LongDeltaEncodingBase
 
   override final def supports(dataType: DataType): Boolean =
     dataType == LongType
-
-  override final def readLong(bytes: Array[Byte]): Long =
-    prev
 
   override final def nextLong(bytes: Array[Byte]): Unit = {
     val delta = bytes(cursor)
@@ -47,4 +42,7 @@ private[columnar] abstract class LongDeltaEncodingBase
       cursor += 8
     }
   }
+
+  override final def readLong(bytes: Array[Byte]): Long =
+    prev
 }

@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types.{BooleanType, DataType}
 
-private[columnar] final class BooleanBitSetEncoding
+final class BooleanBitSetEncoding
     extends BooleanBitSetEncodingBase with NotNullColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
@@ -29,7 +29,7 @@ private[columnar] final class BooleanBitSetEncoding
   }
 }
 
-private[columnar] final class BooleanBitSetEncodingNullable
+final class BooleanBitSetEncodingNullable
     extends BooleanBitSetEncodingBase with NullableColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
@@ -39,8 +39,7 @@ private[columnar] final class BooleanBitSetEncodingNullable
   }
 }
 
-private[columnar] abstract class BooleanBitSetEncodingBase
-    extends UncompressedBase {
+abstract class BooleanBitSetEncodingBase extends UncompressedBase {
 
   private[this] var currentBitIndex = 0
   private[this] var currentWord = 0L
@@ -58,9 +57,6 @@ private[columnar] abstract class BooleanBitSetEncodingBase
     currentBitIndex = ColumnEncoding.BITS_PER_LONG
   }
 
-  override final def readBoolean(bytes: Array[Byte]): Boolean =
-    ((currentWord >> currentBitIndex) & 1) != 0
-
   override final def nextBoolean(bytes: Array[Byte]): Unit = {
     currentBitIndex += 1
     if (currentBitIndex >= ColumnEncoding.BITS_PER_LONG) {
@@ -69,4 +65,7 @@ private[columnar] abstract class BooleanBitSetEncodingBase
       cursor += 8
     }
   }
+
+  override final def readBoolean(bytes: Array[Byte]): Boolean =
+    ((currentWord >> currentBitIndex) & 1) != 0
 }

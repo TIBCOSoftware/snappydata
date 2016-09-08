@@ -20,14 +20,12 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-private[columnar] final class RunLengthEncoding
-    extends RunLengthEncodingBase with NotNullColumn
+final class RunLengthEncoding extends RunLengthEncodingBase with NotNullColumn
 
-private[columnar] final class RunLengthEncodingNullable
+final class RunLengthEncodingNullable
     extends RunLengthEncodingBase with NullableColumn
 
-private[columnar] abstract class RunLengthEncodingBase
-    extends UncompressedBase {
+abstract class RunLengthEncodingBase extends UncompressedBase {
 
   private[this] var valueCount = 0
   private[this] var run = 0
@@ -42,9 +40,6 @@ private[columnar] abstract class RunLengthEncodingBase
     case _ => false
   }
 
-  override final def readByte(bytes: Array[Byte]): Byte =
-    currentValueLong.asInstanceOf[Byte]
-
   override final def nextByte(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
       valueCount += 1
@@ -57,14 +52,14 @@ private[columnar] abstract class RunLengthEncodingBase
     }
   }
 
-  override final def readBoolean(bytes: Array[Byte]): Boolean =
-    currentValueLong == 1
+  override final def readByte(bytes: Array[Byte]): Byte =
+    currentValueLong.asInstanceOf[Byte]
 
   override final def nextBoolean(bytes: Array[Byte]): Unit =
     this.nextByte(bytes)
 
-  override final def readShort(bytes: Array[Byte]): Short =
-    currentValueLong.asInstanceOf[Short]
+  override final def readBoolean(bytes: Array[Byte]): Boolean =
+    currentValueLong == 1
 
   override final def nextShort(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
@@ -78,8 +73,8 @@ private[columnar] abstract class RunLengthEncodingBase
     }
   }
 
-  override final def readInt(bytes: Array[Byte]): Int =
-    currentValueLong.asInstanceOf[Int]
+  override final def readShort(bytes: Array[Byte]): Short =
+    currentValueLong.asInstanceOf[Short]
 
   override final def nextInt(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
@@ -93,8 +88,8 @@ private[columnar] abstract class RunLengthEncodingBase
     }
   }
 
-  override final def readLong(bytes: Array[Byte]): Long =
-    currentValueLong
+  override final def readInt(bytes: Array[Byte]): Int =
+    currentValueLong.asInstanceOf[Int]
 
   override final def nextLong(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
@@ -108,8 +103,8 @@ private[columnar] abstract class RunLengthEncodingBase
     }
   }
 
-  override final def readUTF8String(bytes: Array[Byte]): UTF8String =
-    currentValueString
+  override final def readLong(bytes: Array[Byte]): Long =
+    currentValueLong
 
   override final def nextUTF8String(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
@@ -122,4 +117,7 @@ private[columnar] abstract class RunLengthEncodingBase
       valueCount = 1
     }
   }
+
+  override final def readUTF8String(bytes: Array[Byte]): UTF8String =
+    currentValueString
 }

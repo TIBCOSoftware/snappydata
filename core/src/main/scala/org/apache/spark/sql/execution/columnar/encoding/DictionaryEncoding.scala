@@ -16,14 +16,12 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import scala.reflect.ClassTag
-
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types.{DataType, IntegerType, LongType, StringType}
 import org.apache.spark.unsafe.types.UTF8String
 
-private[columnar] final class DictionaryEncoding[@specialized(Long,
-  Int) T: ClassTag] extends DictionaryEncodingBase[T] with NotNullColumn {
+final class DictionaryEncoding
+    extends DictionaryEncodingBase with NotNullColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
@@ -32,8 +30,8 @@ private[columnar] final class DictionaryEncoding[@specialized(Long,
   }
 }
 
-private[columnar] final class DictionaryEncodingNullable[@specialized(Long,
-  Int) T: ClassTag] extends DictionaryEncodingBase[T] with NullableColumn {
+final class DictionaryEncodingNullable
+    extends DictionaryEncodingBase with NullableColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
@@ -42,8 +40,7 @@ private[columnar] final class DictionaryEncodingNullable[@specialized(Long,
   }
 }
 
-private[columnar] abstract class DictionaryEncodingBase[@specialized(Long,
-  Int) T: ClassTag] extends UncompressedBase {
+abstract class DictionaryEncodingBase extends UncompressedBase {
 
   override final def typeId: Int = 2
 
@@ -52,27 +49,33 @@ private[columnar] abstract class DictionaryEncodingBase[@specialized(Long,
     case _ => false
   }
 
-  private var dictionary: Array[T] = _
+  private[this] final var stringDictionary: Array[UTF8String] = _
+  private[this] final var intDictionary: Array[Int] = _
+  private[this] final var longDictionary: Array[Long] = _
 
   protected final def initializeDecodingBase(columnBytes: Array[Byte],
       field: Attribute): Unit = {
     val elementNum = super.readInt(columnBytes)
-    dictionary = new Array[T](elementNum)
+    cursor += 4
     field.dataType match {
       case StringType =>
-        val stringDictionary = dictionary.asInstanceOf[Array[UTF8String]]
+        stringDictionary = new Array[UTF8String](elementNum)
         (0 until elementNum).foreach { index =>
-          stringDictionary(index) = super.readUTF8String(columnBytes)
+          val s = super.readUTF8String(columnBytes)
+          stringDictionary(index) = s
+          cursor += (4 + s.numBytes())
         }
       case IntegerType =>
-        val intDictionary = dictionary.asInstanceOf[Array[Int]]
+        intDictionary = new Array[Int](elementNum)
         (0 until elementNum).foreach { index =>
           intDictionary(index) = super.readInt(columnBytes)
+          cursor += 4
         }
       case LongType =>
-        val longDictionary = dictionary.asInstanceOf[Array[Long]]
+        longDictionary = new Array[Long](elementNum)
         (0 until elementNum).foreach { index =>
           longDictionary(index) = super.readLong(columnBytes)
+          cursor += 8
         }
       case _ => throw new UnsupportedOperationException(
         s"DictionaryEncoding not supported for ${field.dataType}")
@@ -80,27 +83,21 @@ private[columnar] abstract class DictionaryEncodingBase[@specialized(Long,
     cursor -= 2 // move cursor back so that first next call increments it
   }
 
-  override final def readUTF8String(columnBytes: Array[Byte]): UTF8String = {
-    val index = super.readShort(columnBytes)
-    dictionary.asInstanceOf[Array[UTF8String]].apply(index)
-  }
-
   override final def nextUTF8String(columnBytes: Array[Byte]): Unit =
     cursor += 2
 
-  override final def readInt(columnBytes: Array[Byte]): Int = {
-    val index = super.readShort(columnBytes)
-    dictionary.asInstanceOf[Array[Int]].apply(index)
-  }
+  override final def readUTF8String(columnBytes: Array[Byte]): UTF8String =
+    stringDictionary(super.readShort(columnBytes))
 
   override final def nextInt(columnBytes: Array[Byte]): Unit =
     cursor += 2
 
-  override final def readLong(columnBytes: Array[Byte]): Long = {
-    val index = super.readShort(columnBytes)
-    dictionary.asInstanceOf[Array[Long]].apply(index)
-  }
+  override final def readInt(columnBytes: Array[Byte]): Int =
+    intDictionary(super.readShort(columnBytes))
 
   override final def nextLong(columnBytes: Array[Byte]): Unit =
     cursor += 2
+
+  override final def readLong(columnBytes: Array[Byte]): Long =
+    longDictionary(super.readShort(columnBytes))
 }

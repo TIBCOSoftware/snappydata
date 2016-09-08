@@ -25,7 +25,7 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.BitSet
 
-private[columnar] abstract class ColumnEncoding {
+abstract class ColumnEncoding {
 
   private[columnar] final var cursor = 0
 
@@ -35,52 +35,56 @@ private[columnar] abstract class ColumnEncoding {
 
   def initializeDecoding(columnBytes: Array[Byte], field: Attribute): Unit
 
-  def readNull(columnBytes: Array[Byte], ordinal: Int): Boolean
-
-  def readBoolean(columnBytes: Array[Byte]): Boolean
+  def notNull(columnBytes: Array[Byte], ordinal: Int): Byte
 
   def nextBoolean(columnBytes: Array[Byte]): Unit
 
-  def readByte(columnBytes: Array[Byte]): Byte
+  def readBoolean(columnBytes: Array[Byte]): Boolean
 
   def nextByte(columnBytes: Array[Byte]): Unit
 
-  def readShort(columnBytes: Array[Byte]): Short
+  def readByte(columnBytes: Array[Byte]): Byte
 
   def nextShort(columnBytes: Array[Byte]): Unit
 
-  def readInt(columnBytes: Array[Byte]): Int
+  def readShort(columnBytes: Array[Byte]): Short
 
   def nextInt(columnBytes: Array[Byte]): Unit
 
-  def readLong(columnBytes: Array[Byte]): Long
+  def readInt(columnBytes: Array[Byte]): Int
 
   def nextLong(columnBytes: Array[Byte]): Unit
 
-  def readFloat(columnBytes: Array[Byte]): Float
+  def readLong(columnBytes: Array[Byte]): Long
 
   def nextFloat(columnBytes: Array[Byte]): Unit
 
-  def readDouble(columnBytes: Array[Byte]): Double
+  def readFloat(columnBytes: Array[Byte]): Float
 
   def nextDouble(columnBytes: Array[Byte]): Unit
+
+  def readDouble(columnBytes: Array[Byte]): Double
+
+  def nextDecimal(columnBytes: Array[Byte], precision: Int): Unit
 
   def readDecimal(columnBytes: Array[Byte], precision: Int,
       scale: Int): Decimal
 
-  def nextDecimal(columnBytes: Array[Byte], precision: Int): Unit
+  def nextUTF8String(columnBytes: Array[Byte]): Unit
 
   def readUTF8String(columnBytes: Array[Byte]): UTF8String
 
-  def nextUTF8String(columnBytes: Array[Byte]): Unit
+  def readDate(columnBytes: Array[Byte]): Int = readInt(columnBytes)
 
-  def readBinary(columnBytes: Array[Byte]): Array[Byte]
+  def readTimestamp(columnBytes: Array[Byte]): Long = readLong(columnBytes)
 
-  def nextBinary(columnBytes: Array[Byte]): Unit
+  def nextInterval(columnBytes: Array[Byte]): Unit
 
   def readInterval(columnBytes: Array[Byte]): CalendarInterval
 
-  def nextInterval(columnBytes: Array[Byte]): Unit
+  def nextBinary(columnBytes: Array[Byte]): Unit
+
+  def readBinary(columnBytes: Array[Byte]): Array[Byte]
 
   def readArray(columnBytes: Array[Byte]): UnsafeArrayData
 
@@ -88,36 +92,56 @@ private[columnar] abstract class ColumnEncoding {
 
   def readStruct(columnBytes: Array[Byte], numFields: Int): UnsafeRow
 
-  def initializeEncoding(dataType: DataType, batchSize: Int): Array[Byte]
+  def wasNull(): Boolean = false
 
-  def writeBoolean(columnBytes: Array[Byte], value: Boolean): Unit
+  def initializeEncoding(dataType: DataType, batchSize: Int): Array[Byte] =
+    throw new UnsupportedOperationException(s"initializeEncoding for $toString")
 
-  def writeByte(columnBytes: Array[Byte], value: Byte): Unit
+  def writeBoolean(columnBytes: Array[Byte], value: Boolean): Unit =
+    throw new UnsupportedOperationException(s"writeBoolean for $toString")
 
-  def writeShort(columnBytes: Array[Byte], value: Short): Unit
+  def writeByte(columnBytes: Array[Byte], value: Byte): Unit =
+    throw new UnsupportedOperationException(s"writeByte for $toString")
 
-  def writeInt(columnBytes: Array[Byte], value: Int): Unit
+  def writeShort(columnBytes: Array[Byte], value: Short): Unit =
+    throw new UnsupportedOperationException(s"writeShort for $toString")
 
-  def writeLong(columnBytes: Array[Byte], value: Long): Unit
+  def writeInt(columnBytes: Array[Byte], value: Int): Unit =
+    throw new UnsupportedOperationException(s"writeInt for $toString")
 
-  def writeFloat(columnBytes: Array[Byte], value: Float): Unit
+  def writeLong(columnBytes: Array[Byte], value: Long): Unit =
+    throw new UnsupportedOperationException(s"writeLong for $toString")
 
-  def writeDouble(columnBytes: Array[Byte], value: Double): Unit
+  def writeFloat(columnBytes: Array[Byte], value: Float): Unit =
+    throw new UnsupportedOperationException(s"writeFloat for $toString")
+
+  def writeDouble(columnBytes: Array[Byte], value: Double): Unit =
+    throw new UnsupportedOperationException(s"writeDouble for $toString")
 
   def writeDecimal(columnBytes: Array[Byte], value: Decimal,
-      precision: Int): Unit
+      precision: Int): Unit =
+    throw new UnsupportedOperationException(s"writeDecimal for $toString")
 
-  def writeUTF8String(columnBytes: Array[Byte], value: UTF8String): Unit
+  def writeUTF8String(columnBytes: Array[Byte],
+      value: UTF8String): Unit =
+    throw new UnsupportedOperationException(s"writeUTF8String for $toString")
 
-  def writeBinary(columnBytes: Array[Byte], value: Array[Byte]): Unit
+  def writeBinary(columnBytes: Array[Byte], value: Array[Byte]): Unit =
+    throw new UnsupportedOperationException(s"writeBinary for $toString")
 
-  def writeInterval(columnBytes: Array[Byte], value: CalendarInterval): Unit
+  def writeInterval(columnBytes: Array[Byte],
+      value: CalendarInterval): Unit =
+    throw new UnsupportedOperationException(s"writeInterval for $toString")
 
-  def writeArray(columnBytes: Array[Byte], value: UnsafeArrayData): Unit
+  def writeArray(columnBytes: Array[Byte],
+      value: UnsafeArrayData): Unit =
+    throw new UnsupportedOperationException(s"writeArray for $toString")
 
-  def writeMap(columnBytes: Array[Byte], value: UnsafeMapData): Unit
+  def writeMap(columnBytes: Array[Byte], value: UnsafeMapData): Unit =
+    throw new UnsupportedOperationException(s"writeMap for $toString")
 
-  def writeStruct(columnBytes: Array[Byte], value: UnsafeRow): Unit
+  def writeStruct(columnBytes: Array[Byte], value: UnsafeRow): Unit =
+    throw new UnsupportedOperationException(s"writeStruct for $toString")
 }
 
 object ColumnEncoding {
@@ -164,7 +188,7 @@ object ColumnEncoding {
     encoding
   }
 
-  def getColumnDecoder(columnBytes: Array[Byte], numRows: Int,
+  def getColumnDecoder(columnBytes: Array[Byte],
       field: Attribute): ColumnEncoding = {
     val encoding = getColumnEncoding(columnBytes,
       field.dataType, field.nullable)
@@ -187,15 +211,9 @@ object ColumnEncoding {
 
   private[columnar] def createDictionaryEncoding(dataType: DataType,
       nullable: Boolean): ColumnEncoding = dataType match {
-    case StringType =>
-      if (nullable) new DictionaryEncodingNullable[UTF8String]
-      else new DictionaryEncoding[UTF8String]
-    case IntegerType =>
-      if (nullable) new DictionaryEncodingNullable[Int]
-      else new DictionaryEncoding[Int]
-    case LongType =>
-      if (nullable) new DictionaryEncodingNullable[Long]
-      else new DictionaryEncoding[Long]
+    case StringType | IntegerType | LongType =>
+      if (nullable) new DictionaryEncodingNullable
+      else new DictionaryEncoding
     case _ => throw new UnsupportedOperationException(
       s"DictionaryEncoding not supported for $dataType")
   }
@@ -226,7 +244,7 @@ object ColumnEncoding {
   }
 }
 
-private[columnar] trait NotNullColumn extends ColumnEncoding {
+trait NotNullColumn extends ColumnEncoding {
 
   override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
@@ -239,10 +257,10 @@ private[columnar] trait NotNullColumn extends ColumnEncoding {
     cursor += 4
   }
 
-  override final def readNull(bytes: Array[Byte], ordinal: Int): Boolean = false
+  override def notNull(bytes: Array[Byte], ordinal: Int): Byte = 1
 }
 
-private[columnar] trait NullableColumn extends ColumnEncoding {
+trait NullableColumn extends ColumnEncoding {
 
   private[this] final var nullValues: Array[Byte] = _
   // private[this] final var nullValuesBitSet: BitSet = _
@@ -336,11 +354,11 @@ private[columnar] trait NullableColumn extends ColumnEncoding {
     */
   }
 
-  override final def readNull(bytes: Array[Byte], ordinal: Int): Boolean = {
-    if (ordinal != nextNullOrdinal) false
+  override final def notNull(bytes: Array[Byte], ordinal: Int): Byte = {
+    if (ordinal != nextNullOrdinal) 1
     else {
       updateNextNullOrdinal()
-      true
+      0
     }
   }
 }

@@ -18,14 +18,12 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import org.apache.spark.sql.types.{DataType, IntegerType}
 
-private[columnar] final class IntDeltaEncoding
-    extends IntDeltaEncodingBase with NotNullColumn
+final class IntDeltaEncoding extends IntDeltaEncodingBase with NotNullColumn
 
-private[columnar] final class IntDeltaEncodingNullable
+final class IntDeltaEncodingNullable
     extends IntDeltaEncodingBase with NullableColumn
 
-private[columnar] abstract class IntDeltaEncodingBase
-    extends UncompressedBase {
+abstract class IntDeltaEncodingBase extends UncompressedBase {
 
   private[this] var prev = 0
 
@@ -33,9 +31,6 @@ private[columnar] abstract class IntDeltaEncodingBase
 
   override final def supports(dataType: DataType): Boolean =
     dataType == IntegerType
-
-  override final def readInt(bytes: Array[Byte]): Int =
-    prev
 
   override final def nextInt(bytes: Array[Byte]): Unit = {
     val delta = bytes(cursor)
@@ -47,4 +42,7 @@ private[columnar] abstract class IntDeltaEncodingBase
       cursor += 4
     }
   }
+
+  override final def readInt(bytes: Array[Byte]): Int =
+    prev
 }
