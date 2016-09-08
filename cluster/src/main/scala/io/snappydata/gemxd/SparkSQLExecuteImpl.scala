@@ -45,6 +45,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
@@ -276,7 +277,8 @@ class SparkSQLExecuteImpl(val sql: String,
         // the ID here is different from CLOB because serialization of CLOB
         // uses full UTF8 like in UTF8String while below is still modified
         // UTF8 (no code for full UTF8 yet -- change when full UTF8 code added)
-        if (complexTypeAsClob) (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
+        // We should remove the above comment. (TODO)
+        if (complexTypeAsClob) (StoredFormatIds.SQL_CLOB_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
@@ -390,7 +392,15 @@ object SparkSQLExecuteImpl {
           val sb = new StringBuilder()
           Utils.dataTypeStringBuilder(other, sb)(col)
           // write the full length as an integer
-          hdos.writeUTF(sb.toString(), true, false)
+          val utf8String = UTF8String.fromString(sb.toString())
+          if (utf8String ne null) {
+            val utfLen = utf8String.numBytes()
+            InternalDataSerializer.writeSignedVL(utfLen, hdos)
+            hdos.copyMemory(utf8String.getBaseObject,
+              utf8String.getBaseOffset, utfLen)
+          } else {
+            InternalDataSerializer.writeSignedVL(-1, hdos)
+          }
         } else {
           hdos.writeInt(-1)
         }
@@ -420,7 +430,6 @@ object SparkSQLExecuteImpl {
     while (index < numColsInGroup) {
       val dvdIndex = (groupNum << 3) + index
       val dvd = dvds(dvdIndex)
-      Misc.getCacheLogWriter.info("ABS: Type of dvd index to be read = " + types(dvdIndex))
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
         types(dvdIndex) match {
           case StoredFormatIds.SQL_CLOB_ID =>
@@ -443,8 +452,6 @@ object SparkSQLExecuteImpl {
               InternalDataSerializer.readSignedVL(in))
             dvd.setValue(ts)
           case StoredFormatIds.SQL_DECIMAL_ID =>
-            Misc.getCacheLogWriter.info("ABS: SQLDecimal stacktrace", new Exception())
-            Misc.getCacheLogWriter.info(s"ABS readAGroup() dvd.typeName ${dvd.getTypeName}, dvd $dvd")
             // Thread.currentThread().getStackTrace.foreach(s => println(s"  $s"))
             val bdo: Any = DataSerializer.readObject(in)
             Misc.getCacheLogWriter.info(s"ABS readAGroup() bdo $bdo class " + bdo.getClass.getName)

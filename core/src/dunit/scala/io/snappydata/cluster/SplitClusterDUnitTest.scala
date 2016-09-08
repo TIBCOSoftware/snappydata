@@ -180,10 +180,10 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val stmt = conn.createStatement()
 
     createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
-    selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1, stmt)
+    selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
 
     createComplexTableUsingJDBC("embeddedModeTable2", conn, stmt, props)
-    selectFromComplexTypeTableUsingJDBC("embeddedModeTable2", 1, stmt)
+    selectFromComplexTypeTableUsingJDBC("embeddedModeTable2", 1005, stmt)
 
     stmt.close()
     conn.close()
@@ -298,9 +298,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val data = ArrayBuffer[ComplexData]()
     data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", Decimal("3.8")),
       dec1(0), ts(0))
-//    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", Decimal("9")),
-//      dec2(0), ts(1))
-    /*data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", Decimal("7.3")),
+    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", Decimal("9")),
+      dec2(0), ts(1))
+    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", Decimal("7.3")),
       dec1(1), ts(2))
     data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", Decimal("4.3")),
       dec2(1), ts(3))
@@ -323,7 +323,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       data += ComplexData(rnd1, dec, rnd2.toString, map, Random.nextDouble(),
         Data(rnd1, Integer.toString(rnd2), Decimal(drnd1.toString + '.' +
             drnd2.toString)), dec(1), ts(math.abs(rnd1) % 5))
-    }*/
+    }
     stmt.execute(
       s"""
         CREATE TABLE $tableName (
@@ -337,10 +337,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
           col8 Timestamp
         ) USING column${getPropertiesAsSQLString(propsMap)}""")
 
-    System.out.println(s"ABS create table done")
     val pstmt = conn.prepareStatement(
       s"insert into $tableName values (?, ?, ?, ?, ?, ?, ?, ?)")
-    System.out.println(s"ABS creating serializer for col2")
     val serializer1 = ComplexTypeSerializer.create(tableName, "col2", conn)
     val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
     val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
@@ -357,18 +355,17 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       pstmt.setBytes(4, serializer2.serialize(d.col4))
       pstmt.setDouble(5, d.col5)
       // test with Product, Array, int[], Seq and Collection
-      //Random.nextInt(5) match {
-        //case 0 => pstmt.setBytes(6, serializer3.serialize(d.col6))
-      pstmt.setBytes(6, serializer3.serialize(d.col6))
-//        case 1 => pstmt.setBytes(6, serializer3.serialize(
-//          d.col6.productIterator.toArray))
-//        case 2 => pstmt.setBytes(6, serializer3.serialize(
-//          Array(d.col6.col1, d.col6.col2, d.col6.col3)))
-//        case 3 => pstmt.setBytes(6, serializer3.serialize(
-//          d.col6.productIterator.toSeq))
-//        case 4 => pstmt.setBytes(6, serializer3.serialize(
-//          d.col6.productIterator.toSeq.asJava))
-      //}
+      Random.nextInt(5) match {
+        case 0 => pstmt.setBytes(6, serializer3.serialize(d.col6))
+        case 1 => pstmt.setBytes(6, serializer3.serialize(
+          d.col6.productIterator.toArray))
+        case 2 => pstmt.setBytes(6, serializer3.serialize(
+          Array(d.col6.col1, d.col6.col2, d.col6.col3)))
+        case 3 => pstmt.setBytes(6, serializer3.serialize(
+          d.col6.productIterator.toSeq))
+        case 4 => pstmt.setBytes(6, serializer3.serialize(
+          d.col6.productIterator.toSeq.asJava))
+      }
       pstmt.setBigDecimal(7, d.col7.toJavaBigDecimal)
       pstmt.setTimestamp(8, d.col8)
       pstmt.addBatch()
