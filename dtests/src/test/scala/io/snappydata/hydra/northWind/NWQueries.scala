@@ -20,7 +20,8 @@ import org.apache.spark.SparkFiles
 import org.apache.spark.sql.SnappyContext
 
 object NWQueries {
- var snc:SnappyContext = _
+  var snc:SnappyContext = _
+  var dataFilesLocation: String = _
   val Q1: String = "SELECT * FROM Categories"
   val Q2: String = "SELECT * FROM Customers"
   val Q3: String = "SELECT * FROM Orders"
@@ -404,16 +405,17 @@ object NWQueries {
     "Q54" -> Q54
   )
   println(s"Resources path : ${SparkFiles.get("regions.csv")}")
+
   def regions = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("regions.csv"))
+    .load(s"${dataFilesLocation}/regions.csv")
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
 
   def categories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("categories.csv"))
+    .load(s"${dataFilesLocation}/categories.csv")
   val categories_table = "create table categories (" +
     "CategoryID int, " +
     "CategoryName string, " +
@@ -422,7 +424,7 @@ object NWQueries {
 
   def shippers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("shippers.csv"))
+    .load(s"${dataFilesLocation}/shippers.csv")
   val shippers_table = "create table shippers (" +
     "ShipperID int not null, " +
     "CompanyName string not null, " +
@@ -430,7 +432,7 @@ object NWQueries {
 
   def employees = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("employees.csv"))
+    .load(s"${dataFilesLocation}/employees.csv")
   val employees_table = "create table employees(" +
     //    "EmployeeID int not null , " +
     //    "LastName string not null, " +
@@ -456,7 +458,7 @@ object NWQueries {
 
   def customers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("customers.csv"))
+    .load(s"${dataFilesLocation}/customers.csv")
   val customers_table = "create table customers(" +
     //    "CustomerID string not null, " +
     //    "CompanyName string not null, " +
@@ -474,7 +476,7 @@ object NWQueries {
 
   def orders = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("orders.csv"))
+    .load(s"${dataFilesLocation}/orders.csv")
   val orders_table = "create table orders (" +
     //"OrderID int not null, " +
     "OrderID int, " +
@@ -494,7 +496,7 @@ object NWQueries {
 
   def order_details = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("order-details.csv"))
+    .load(s"${dataFilesLocation}/order-details.csv")
   val order_details_table = "create table order_details (" +
     //    "OrderID int not null, " +
     //    "ProductID int not null, " +
@@ -509,7 +511,7 @@ object NWQueries {
 
   def products = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("products.csv"))
+    .load(s"${dataFilesLocation}/products.csv")
   val products_table = "create table products(" +
     //"ProductID int not null, " +
     "ProductID int, " +
@@ -527,7 +529,7 @@ object NWQueries {
 
   def suppliers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("suppliers.csv"))
+    .load(s"${dataFilesLocation}/suppliers.csv")
   val suppliers_table = "create table suppliers(" +
     //    "SupplierID int not null, " +
     //    "CompanyName string not null, " +
@@ -546,7 +548,7 @@ object NWQueries {
 
   def territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("territories.csv"))
+    .load(s"${dataFilesLocation}/territories.csv")
   val territories_table = "create table territories(" +
     //    "TerritoryID string not null, " +
     //    "TerritoryDescription string not null, " +
@@ -557,7 +559,7 @@ object NWQueries {
 
   def employee_territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
-    .load(SparkFiles.get("employee-territories.csv"))
+    .load(s"${dataFilesLocation}/employee-territories.csv")
   val employee_territories_table = "create table employee_territories(" +
     //    "EmployeeID int not null, " +
     //    "TerritoryID int not null)"

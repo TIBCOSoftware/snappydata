@@ -1548,7 +1548,7 @@ public class SnappyTest implements Serializable {
                 String command = snappyJobScript + " --files " + getAllDataFiles() + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar); //+ SnappyPrms.getUserAppArgs();
+                        " " + snappyTest.getUserAppJarLocation(userAppJar) + SnappyPrms.getUserAppArgs();
                 Log.getLogWriter().info("SS - sparkJob command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;

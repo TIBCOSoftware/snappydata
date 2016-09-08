@@ -18,9 +18,8 @@ package io.snappydata.hydra.northWind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkConf, SparkContext, SparkFiles}
+import org.apache.spark.{SparkConf, SparkContext}
 
 
 object NWTestSparkApp {
@@ -30,10 +29,10 @@ object NWTestSparkApp {
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
-    println(s"Resources path : ${SparkFiles.get("regions.csv")}")
-    println(s"Resources path : ${SparkFiles.get("employees.csv")}")
+    val dataFilesLocation = args(0)
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
+    NWQueries.dataFilesLocation = dataFilesLocation
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSparkApp.out"), true));
     dropTables(snc)
     println("Test replicated row tables queries started")
