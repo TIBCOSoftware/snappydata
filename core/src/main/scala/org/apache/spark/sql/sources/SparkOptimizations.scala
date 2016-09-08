@@ -61,10 +61,47 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     val replacementMap = if (explicitIndexHint.isEmpty) {
       val optimizedPlan = snappySession.sessionState.optimizer.execute(plan)
       optimizedPlan.flatMap {
-        case ExtractEquiJoinKeys(joinType,
-        leftKeys, rightKeys, extraConditions, left, right) =>
-          (left, right, leftKeys, rightKeys) match {
-            case HasColocatedReplacement(replacements) => replacements
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, extraConditions, left, right) =>
+          (left, right) match {
+            case HasColocatedEntities(colocatedEntities, leftReplacements, rightReplacements) =>
+
+              val joinKeys = leftKeys.zip(rightKeys).flatMap { case (leftExp, rightExp) =>
+                val l = leftExp.collectFirst({ case a: AttributeReference => a })
+                val r = rightExp.collectFirst({ case a: AttributeReference => a })
+                (l, r) match {
+                  case (Some(x), Some(y)) => Seq((x, y))
+                  case _ => Seq.empty[(AttributeReference, AttributeReference)]
+                }
+              }
+
+              def hasJoinKeys(leftPCol: String, rightPCol: String): Boolean = {
+                joinKeys.exists({ case (lA, rA) =>
+                  lA.name.equalsIgnoreCase(leftPCol) && rA.name.equalsIgnoreCase(rightPCol) ||
+                      lA.name.equalsIgnoreCase(rightPCol) && rA.name.equalsIgnoreCase(leftPCol)
+                })
+              }
+
+              val satisfyingJoinCond = colocatedEntities.zipWithIndex.filter({
+                case ((leftE, rightE), idx) =>
+                  val matchedCols = leftE.partitionColumns.zip(rightE.partitionColumns).
+                      foldLeft(0) {
+                        case (cnt, partitionColumn)
+                          if (hasJoinKeys _).tupled(partitionColumn) => cnt + 1
+                        case (cnt, _) => cnt
+                      }
+                  matchedCols == leftE.partitionColumns.length
+              }).sortBy({ case ((p, _), _) => p.partitionColumns.length }).takeRight(1)
+
+              satisfyingJoinCond.nonEmpty match {
+                case true =>
+                  val (_, idx) = satisfyingJoinCond(0)
+                  val (leftT, leftReplace) = leftReplacements(idx)
+                  val (rightT, rightReplace) = rightReplacements(idx)
+                  Seq((leftT, leftReplace), (rightT, rightReplace))
+                case false =>
+                  logDebug("join condition insufficient for matching any colocation columns ")
+                  Nil
+              }
             case _ => Nil
           }
         case f@org.apache.spark.sql.catalyst.plans.logical.Filter(cond, child) =>
@@ -112,59 +149,34 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
   }
 
-  object HasColocatedReplacement {
+  object HasColocatedEntities {
 
-    type ReturnType = (LogicalPlan, LogicalPlan)
+    type ReturnType = (Seq[(BaseColumnFormatRelation, BaseColumnFormatRelation)],
+        Seq[(LogicalPlan, LogicalPlan)], Seq[(LogicalPlan, LogicalPlan)])
 
-    def unapply(tables: (LogicalPlan, LogicalPlan, Seq[Expression], Seq[Expression])):
-    Option[Seq[ReturnType]] = {
-      val (left, right, leftKeys, rightKeys) = tables
+    def unapply(tables: (LogicalPlan, LogicalPlan)):
+    Option[ReturnType] = {
+      val (left, right) = tables
 
       val leftIndexes = fetchIndexes2(left)
       val rightIndexes = fetchIndexes2(right)
 
-      val colocatedEntities = leftIndexes.zip(Seq.fill(leftIndexes.length)(rightIndexes)).
-          flatMap { case (l, r) => r.flatMap((l, _) :: Nil) }.
+      val (leftPair, rightPair) = leftIndexes.zip(Seq.fill(leftIndexes.length)(rightIndexes)).
+          flatMap { case (l, r) => r.flatMap(e => Seq((l, e))) }.
           collect {
             case plans@ExtractBaseColumnFormatRelation(leftEntity, rightEntity)
               if isColocated(leftEntity, rightEntity) =>
               val (leftPlan, rightPlan) = plans
               ((leftEntity, leftPlan), (rightEntity, rightPlan))
-          }
+          }.unzip
 
-      colocatedEntities.nonEmpty match {
+      leftPair.nonEmpty match {
         case true =>
-          val joinRelationPairs = leftKeys.zip(rightKeys).map {
-            case (left, right) => (unwrapReference(left).get, unwrapReference(right).get)
-          }
-
-          val satisfyingJoinCond = colocatedEntities.zipWithIndex.map {
-            case (((leftT, _), (rightT, _)), i) =>
-              val partitioningColPairs = leftT.partitionColumns.zip(rightT.partitionColumns)
-
-              if (matchColumnSets(partitioningColPairs, joinRelationPairs)) {
-                (i, partitioningColPairs.length)
-              } else {
-                (-1, 0)
-              }
-          }.filter(v => v._1 >= 0 && v._2 > 0).sortBy(_._2)(Ordering[Int].reverse)
-
-          satisfyingJoinCond.nonEmpty match {
-            case true =>
-              val ((_, leftReplacement), (_, rightReplacement)) =
-                colocatedEntities(satisfyingJoinCond(0) match {
-                  case (idx, _) => idx
-                })
-
-              Some(Seq((leftIndexes(0), leftReplacement),
-                (rightIndexes(0), rightReplacement)))
-
-            case false =>
-              logDebug("join condition insufficient for matching any colocation columns ")
-              None
-          }
-
-        case _ =>
+          val (leftBase, leftEntities) = leftPair.unzip
+          val (rightBase, rightEntities) = rightPair.unzip
+          Some((leftBase.zip(rightBase), leftEntities.map(e => (leftIndexes(0), e)),
+              rightEntities.map(e => (rightIndexes(0), e))))
+        case false =>
           logDebug(s"Nothing is colocated between the tables $leftIndexes and $rightIndexes")
           None
       }

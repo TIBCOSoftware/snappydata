@@ -17,34 +17,18 @@
 
 package org.apache.spark.sql.internal
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion, PartitionedRegionHelper}
-import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.QueryHint
-
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.{CatalystConf, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.{CatalogRelation, SessionCatalog}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, PredicateHelper}
-import org.apache.spark.sql.catalyst.optimizer.{Optimizer, PushPredicateThroughJoin}
-import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
-import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, InsertIntoTable, Join, LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.catalyst.catalog.CatalogRelation
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.trees.TreeNode
-import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.{ParentRelation, _}
-import org.apache.spark.sql.{AnalysisException, Column, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
+import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
 
 class SnappySessionState(snappySession: SnappySession)

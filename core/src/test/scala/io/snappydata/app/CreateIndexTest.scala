@@ -321,8 +321,8 @@ class CreateIndexTest extends SnappyFunSuite {
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-        s"where t1.col3 = t2.col3 ") {
-      validateIndex(Seq(s"$index2", s"$table2"))(_)
+        s"where t1.col3 = t2.col3 ", true) {
+      validateIndex(Seq(s"$index2"), s"$table2")(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
