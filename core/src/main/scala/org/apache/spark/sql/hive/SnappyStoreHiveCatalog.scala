@@ -531,6 +531,28 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     }
   }
 
+  final def lookupRelationOption(tableIdent: QualifiedTableName): Option[LogicalPlan] = {
+    tableIdent.getTableOption(client) match {
+      case Some(table) =>
+        if (table.properties.contains(HIVE_PROVIDER)) {
+          Some(getCachedHiveTable(tableIdent))
+        } else if (table.tableType == CatalogTableType.VIEW) {
+          // @TODO Confirm from Sumedh
+          // Difference between VirtualView & View
+          val viewText = table.viewText
+              .getOrElse(sys.error("Invalid view without text."))
+          Some(snappySession.sessionState.sqlParser.parsePlan(viewText))
+        } else {
+          None
+        }
+
+      case None => synchronized {
+        tempTables.get(tableIdent.table).orElse(None)
+      }
+    }
+  }
+
+
   override def lookupRelation(tableIdent: TableIdentifier,
       alias: Option[String]): LogicalPlan = {
     // If an alias was specified by the lookup, wrap the plan in a
