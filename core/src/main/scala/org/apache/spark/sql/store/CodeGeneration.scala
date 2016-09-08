@@ -59,7 +59,7 @@ object CodeGeneration extends Logging {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
-        logInfo(s"Expression code generated in $elapsed ms")
+        logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
         result
       }
     })
@@ -254,7 +254,7 @@ object CodeGeneration extends Logging {
       }
       return result;"""
 
-    // logInfo(s"DEBUG: For table=$table generated code=$expression")
+    logDebug(s"DEBUG: For update to table=$table, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[GeneratedStatement],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
         "dialect")).asInstanceOf[GeneratedStatement]
@@ -376,7 +376,7 @@ object CodeGeneration extends Logging {
       ${varDeclarations.mkString(separator)}
       $typeConversion"""
 
-    // logInfo(s"DEBUG: For type=$dataType generated code=$expression")
+    logDebug(s"DEBUG: For complex type=$dataType, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[SerializeComplexType],
       Array(inputVar, bufferHolderVar, dosVar))
         .asInstanceOf[SerializeComplexType]

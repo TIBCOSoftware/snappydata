@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 class SnappyStoreTableSizeProviderDUnitTest(s: String)
     extends ClusterManagerTestBase(s) {
   val tableName = "APP.TESTTABLE"
-  val serviceInterval = "3"
+  val serviceInterval = "10"
   bootProps.put("spark.snappy.calcTableSizeInterval", serviceInterval)
   bootProps.put("spark.sql.inMemoryColumnarStorage.batchSize", "10")
 
@@ -121,7 +121,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
     val snc = SnappyContext()
     snc.dropTable(tableName, ifExists = true)
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
-        "USING row  OPTIONS (PARTITION_BY 'a' , buckets '4')")
+        "USING row  OPTIONS (PARTITION_BY 'a' , buckets '3')")
 
     for (i <- 1 to 100) {
       snc.sql(s"insert into $tableName values ($i ,2 , 3)")
@@ -132,11 +132,12 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
     val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
 
+
     ClusterManagerTestBase.waitForCriterion({
-      (ma._4 - getTableSize) < 600
+      getTableSize == 2800
     },
-      s"Comparing the value Size of $tableName with StoreTableValueSizeProviderService"
-      + " expected  " + ma._4 + "-" + getTableSize ,
+      s"Comparing StoreTableValueSizeProviderService partitioned table size "
+          + getTableSize + " with expected size 2800",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)
@@ -152,7 +153,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
     val dataDF = getDF(snc)
 
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
-        "USING column  options (buckets '4')")
+        "USING column  options (buckets '3')")
 
     for (i <- 1 to 100) {
       snc.sql(s"insert into $tableName values ($i ,2 , 3)")
@@ -165,10 +166,10 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
     val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
     ClusterManagerTestBase.waitForCriterion({
-      (ma._4 - getTableSize(colBuffer) - getTableSize(tableName)) < 600
+      (getTableSize(colBuffer) == 1548 && getTableSize(tableName) == 360)
     },
-      s"Comparing the value Size of $colBuffer with StoreTableValueSizeProviderService"
-      + " expected  " + ma._4 + "-" + getTableSize(colBuffer) + "- " + getTableSize(tableName),
+      s"Comparing StoreTableValueSizeProviderService Column table size (ColumnBuffer:RowBuffer) "
+          + getTableSize(colBuffer) + ":" + getTableSize(tableName) + " with expected (1548:360)",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)

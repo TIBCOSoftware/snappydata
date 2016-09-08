@@ -217,6 +217,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private def newClient(): HiveClient = synchronized {
 
+    closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
@@ -516,6 +517,13 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   final def setSchema(schema: String): Unit = {
     this.currentSchema = schema
+  }
+
+  /**
+   * Return whether a table with the specified name is a temporary table.
+   */
+  def isTemporaryTable(tableIdent: QualifiedTableName): Boolean = synchronized {
+    if(tempTables.contains(tableIdent.table)) true else false
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {

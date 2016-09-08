@@ -76,6 +76,7 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
+    exclude(group: 'com.univocity', module: 'univocity-parsers')
   }
 
   testCompile project(':dunit')
