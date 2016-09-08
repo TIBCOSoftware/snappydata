@@ -632,17 +632,11 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     // may be too long to be stored into a single meta-store SerDe property.
     // In this case, we split the JSON string and store each part as a
     // separate SerDe property.
-//    println("ABS: userSpecifiedSchema.isdefined = " + userSpecifiedSchema.isDefined)
     if (userSpecifiedSchema.isDefined) {
-//      println("ABS: userSpecifiedSchema = " + userSpecifiedSchema.getOrElse("not there"))
       val threshold = sqlConf.schemaStringLengthThreshold
       val schemaJsonString = userSpecifiedSchema.get.json
       // Split the JSON string.
       val parts = schemaJsonString.grouped(threshold).toSeq
-//      new Exception().printStackTrace()
-//      parts.foreach( x => {
-//       println("ABS: x = " + x)
-//      })
       tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
       parts.zipWithIndex.foreach { case (part, index) =>
         tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
@@ -893,20 +887,10 @@ object SnappyStoreHiveCatalog {
 
   private def getSchemaString(
       tableProps: scala.collection.Map[String, String]): Option[String] = {
-    val tmpstr = tableProps.get(HIVE_SCHEMA_NUMPARTS)
-//    println("ABS: tmpstr numparts started")
-//    println("ABS: tmpstr = " + tmpstr.getOrElse("it was null"))
-//    tmpstr.map { numParts =>
-//      println("ABS: numParts = " + numParts)
-//    }
-//    println("ABS: tmpstr numparts ended")
-    tmpstr.map { numParts =>
+    tableProps.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
       (0 until numParts.toInt).map { index =>
         val partProp = s"$HIVE_SCHEMA_PART.$index"
-//        println("ABS: partprop = " + partProp)
-        val pp = tableProps.get(partProp)
-//        println("ABS: partprop tableprops.get gave " + pp.getOrElse("No part prop found"))
-        pp match {
+        tableProps.get(partProp) match {
           case Some(part) => part
           case None => throw new AnalysisException("Could not read " +
               "schema from metastore because it is corrupted (missing " +

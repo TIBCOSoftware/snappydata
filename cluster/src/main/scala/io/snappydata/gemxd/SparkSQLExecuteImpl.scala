@@ -255,7 +255,6 @@ class SparkSQLExecuteImpl(val sql: String,
               if (base.equals("VARCHAR")) {
                 (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
               } else { // CHAR
-                System.out.println(s"ABS getSQLType CHAR, name ${f.name}")
                 (StoredFormatIds.SQL_CHAR_ID, size, -1)
               }
             } else { // STRING and CLOB
@@ -353,11 +352,8 @@ object SparkSQLExecuteImpl {
         InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
       case TimestampType =>
         InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case t: DecimalType =>
-        val dec = row.getDecimal(colIndex, t.precision, t.scale).toJavaBigDecimal
-        println(s"ABS writeColDataInOptimizedWay() DecimalType name ${schema(colIndex).name}, decimal $dec class name = " + dec.getClass.getName)
-        //Thread.currentThread().getStackTrace.foreach(s => println(s"  $s"))
-        DataSerializer.writeObject(dec, hdos)
+      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(
+        colIndex, t.precision, t.scale).toJavaBigDecimal, hdos)
       case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
       case DateType =>
         InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
@@ -450,10 +446,7 @@ object SparkSQLExecuteImpl {
               InternalDataSerializer.readSignedVL(in))
             dvd.setValue(ts)
           case StoredFormatIds.SQL_DECIMAL_ID =>
-            // Thread.currentThread().getStackTrace.foreach(s => println(s"  $s"))
-            val bdo: Any = DataSerializer.readObject(in)
-            Misc.getCacheLogWriter.info(s"ABS readAGroup() bdo $bdo class " + bdo.getClass.getName)
-            val bd = bdo.asInstanceOf[java.math.BigDecimal]
+            val bd = DataSerializer.readObject[java.math.BigDecimal](in)
             dvd.setBigDecimal(bd)
           case StoredFormatIds.SQL_DATE_ID =>
             val dt = DateTimeUtils.toJavaDate(

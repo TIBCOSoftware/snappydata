@@ -90,8 +90,6 @@ class StringAsVarcharDUnitTest(val s: String)
     }
 
     if (!join) {
-      logInfo(s"ABS selecting from table $colTab1")
-      System.out.println(s"ABS selecting from table $colTab1")
       s.executeQuery(s"select * from $colTab1 $affix")
       val rs = s.getResultSet
       verify(rs, 5, stringType, colTab1)
@@ -169,13 +167,9 @@ class StringAsVarcharDUnitTest(val s: String)
   def createTableAndInsertData(conn: Connection): Unit = {
     val snc = SnappyContext(sc)
 
-    logInfo(s"ABS creating table $rowTab1")
-    System.out.println(s"ABS creating table $rowTab1")
     snc.sql(s"create table $rowTab1 (col_int int, col_string string, " +
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) using row")
 
-    logInfo(s"ABS creating table $colTab1")
-    System.out.println(s"ABS creating table $colTab1")
     snc.sql(s"create table $colTab1 (col_int int, col_string string, " +
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
         "using column options(buckets '7')")
@@ -189,11 +183,9 @@ class StringAsVarcharDUnitTest(val s: String)
     val rdd = sc.parallelize(data, data.length).map(s =>
         Data9(s(0).asInstanceOf[Int], s(1).toString, s(2).toString, s(3).toString, s(4).toString))
     val dataDF = snc.createDataFrame(rdd)
-    logInfo(s"ABS inserting into table $rowTab1")
     dataDF.write.format("row").mode(SaveMode.Append)
         .saveAsTable(rowTab1)
 
-    logInfo(s"ABS inserting into table $colTab1")
     snc.sql(s"insert into $colTab1 values (1, 't2.1.string', " +
         s"'t2.1.varchar', 't2.1.clob', 't2.1.char')")
     snc.sql(s"insert into $colTab1 values (4, 't2.4.string', " +
