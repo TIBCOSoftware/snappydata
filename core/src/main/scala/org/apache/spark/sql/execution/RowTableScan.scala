@@ -236,7 +236,7 @@ object RowTableScan {
     }
     if (nullable) {
       val isNullVar = ctx.freshName("isNull")
-      ExprCode(code + s"\nfinal boolean $isNullVar = $holder.wasNull();",
+      ExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
         isNullVar, col)
     } else {
       ExprCode(code, "false", col)
