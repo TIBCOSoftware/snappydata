@@ -68,7 +68,7 @@ object StreamSqlHelper {
     val encoder = ExpressionEncoder[A]()
     val schema = encoder.schema
     val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      stream.map(encoder.toRow))(ssc)
+      stream.map(encoder.toRow(_).copy()))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
@@ -76,7 +76,7 @@ object StreamSqlHelper {
       schema: StructType): SchemaDStream = {
     val encoder = RowEncoder(schema)
     val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      rowStream.map(encoder.toRow))(ssc)
+      rowStream.map(encoder.toRow(_).copy()))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
@@ -85,7 +85,7 @@ object StreamSqlHelper {
     val encoder = ExpressionEncoder.javaBean(beanClass.asInstanceOf[Class[Any]])
     val schema = encoder.schema
     val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      rowStream.dstream.map(encoder.toRow))(ssc)
+      rowStream.dstream.map(encoder.toRow(_).copy()))(ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 }

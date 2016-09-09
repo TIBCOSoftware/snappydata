@@ -38,7 +38,7 @@ with BeforeAndAfter {
 
   test("test drop table from a simple source") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd =  sc.parallelize(data, data.length).map(s => new io.snappydata.core.Data(s(0), s(1), s(2)))
     val df = snc.createDataFrame(rdd)
 
     df.createOrReplaceTempView(tableName)
