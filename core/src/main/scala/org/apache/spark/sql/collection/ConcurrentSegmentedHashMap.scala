@@ -225,13 +225,19 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // need to take the latest reference of segmnet
                 //after segmnetAbort is successful
                 lock.unlock()
+                //Because two threads can concurrently call segmentAbort
+                //& is since locks are released,  there is no guarantee that
+                // one thread would correctly identify if the other has cleared
+                // the segments. So after the changeSegment, it should unconditionally
+                // refresh the segments
                 try {
-                  if (change.segmentAbort(seg)) {
+                //  if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
                     //idx = nhashes
-                    seg = segs(i)
-                    lock = seg.writeLock()
-                  }
+                  change.segmentAbort(seg)
+                  seg = segs(i)
+                  lock = seg.writeLock()
+                //  }
                   idx += 1
 
                 } finally {
