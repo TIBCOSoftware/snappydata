@@ -38,7 +38,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
+import org.apache.spark.sql._
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -192,7 +192,12 @@ class BaseColumnFormatRelation(
       truncate()
     }
     JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
-    flushRowBuffer()
+
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) => flushRowBuffer()
+      case LocalMode(_, _) => flushRowBuffer()
+      case _ =>
+    }
   }
 
   /**
