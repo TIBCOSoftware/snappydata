@@ -52,7 +52,7 @@ class SnappyContext(SQLContext):
                             "./gradlew product ", e)
 
     def _get_snappy_ctx(self):
-        return self._jvm.SnappyContext(self.sparkSession)
+        return self._jvm.SnappyContext(self.sparkSession._jsparkSession)
 
     def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """

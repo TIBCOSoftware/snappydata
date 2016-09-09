@@ -53,7 +53,6 @@ class SnappyContextTests(ReusedPySparkTestCase):
     testdata = [[1, 2, 3], [7, 8, 9], [1, 2, 3], [4, 2, 3], [5, 6, 7]]
     tablename = "TESTTABLE"
 
-
     def test_new_session(self):
         sqlcontext1 = SnappyContext(self.sc)
         sqlcontext1.setConf("test_key", "a")
@@ -68,7 +67,6 @@ class SnappyContextTests(ReusedPySparkTestCase):
         ddl = "CREATE TABLE " + SnappyContextTests.tablename + \
               " (Col1 INT, Col2 INT, Col3 INT) " + " USING row OPTIONS (PARTITION_BY 'Col1')"
         self.create_table_using_sql(ddl, "row")
-        print("table created")
         self.verify_table_rows(5)
 
         self.truncate_table()
@@ -76,7 +74,64 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
         self.drop_table()
 
+    def test_column_table_with_sql_api(self):
+        ddl = "Create Table " + SnappyContextTests.tablename + \
+              " (Col1 INT, Col2 INT, Col3 INT) " + " USING column OPTIONS ()"
+        self.create_table_using_sql(ddl, "column")
+        self.verify_table_rows(5)
 
+        self.truncate_table()
+        self.verify_table_rows(0)
+
+        self.drop_table()
+
+    def test_row_table_with_datasource_api(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        self.verify_table_rows(5)
+
+        self.truncate_table()
+        self.verify_table_rows(0)
+
+        self.drop_table()
+
+        self.create_table_using_datasource("row", True)
+        self.verify_table_rows(5)
+
+        self.drop_table()
+
+    def test_column_table_with_datasource_api(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("column")
+        self.verify_table_rows(5)
+        self.truncate_table()
+        self.verify_table_rows(0)
+
+    def test_update(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        self.update_table()
+        self.drop_table()
+
+    def test_put(self):
+         self.drop_table(True)
+         self.create_table_using_datasource("row")
+         self.put_table()
+         self.drop_table()
+
+    def test_insert(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        self.insert_table()
+        self.drop_table()
+
+
+    def test_delete(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        sqlcontext = SnappyContext(self.sc)
+        self.assertTrue(sqlcontext.delete(SnappyContextTests.tablename, "col1=1"), 2)
+        self.drop_table()
 
     def put_table(self):
         sqlcontext = SnappyContext(self.sc)
@@ -108,7 +163,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
     def verify_table_rows(self, rowcount):
         sqlcontext = SnappyContext(self.sc)
         result = sqlcontext.sql("SELECT COUNT(*) FROM " + SnappyContextTests.tablename).collect()
-        self.assertTrue(result[0]._c0 == rowcount)
+        self.assertTrue(result[0][0] == rowcount)
 
     def drop_table(self, ifexists=False):
         sqlcontext = SnappyContext(self.sc)
