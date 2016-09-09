@@ -941,11 +941,9 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-  /* (TODO: will be enabled once AQP is fixed after Spark 2.0 merge)
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  */
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
