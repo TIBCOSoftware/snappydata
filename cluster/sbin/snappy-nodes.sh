@@ -147,12 +147,12 @@ function execute() {
   else
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
-      if [ ! -d \"$dirfolder\" ]; then
+      if [ ! -d "$dirfolder" ]; then
          mkdir -p "$dirfolder"
-      fi 
-      launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
-      eval $launchcommand
+      fi
     fi
+    launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
+    eval $launchcommand
   fi
 
   df=${dirfolder}
@@ -203,9 +203,9 @@ if [ -n "${HOSTLIST}" ]; then
     fi
   fi
 else
-    host="localhost"
-    args=""
-    execute "$@"
+  host="localhost"
+  args=""
+  execute "$@"
 fi
 wait
 
