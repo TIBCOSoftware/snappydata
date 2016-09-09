@@ -16,26 +16,15 @@
  */
 package org.apache.spark.sql.execution.row
 
-import java.sql.ResultSet
-import java.util.GregorianCalendar
-
 import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.{DataType, Decimal}
-import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-/**
- * An adapter for a ResultSet to pose as ColumnEncoding so that the same
- * generated code can be used for both row buffer and column data access.
- */
-final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
+final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
     extends ColumnEncoding {
 
-  private[this] val defaultCal = new GregorianCalendar()
-
-  override def typeId: Int = -1
+  override def typeId: Int = -2
 
   override def supports(dataType: DataType): Boolean = true
 
@@ -61,86 +50,57 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
 
   override def nextBinary(columnBytes: Array[Byte]): Unit = {}
 
-  override def notNull(columnBytes: Array[Byte], ordinal: Int): Byte = -1
+  override def notNull(columnBytes: Array[Byte], ordinal: Int): Byte =
+    if (holder.row.isNullAt(columnIndex)) 0 else 1
 
   override def readBoolean(bytes: Array[Byte]): Boolean =
-    rs.getBoolean(columnPosition)
+    holder.row.getBoolean(columnIndex)
 
   override def readByte(bytes: Array[Byte]): Byte =
-    rs.getByte(columnPosition)
+    holder.row.getByte(columnIndex)
 
   override def readShort(bytes: Array[Byte]): Short =
-    rs.getShort(columnPosition)
+    holder.row.getShort(columnIndex)
 
   override def readInt(bytes: Array[Byte]): Int =
-    rs.getInt(columnPosition)
+    holder.row.getInt(columnIndex)
 
   override def readLong(bytes: Array[Byte]): Long =
-    rs.getLong(columnPosition)
+    holder.row.getLong(columnIndex)
 
   override def readFloat(bytes: Array[Byte]): Float =
-    rs.getFloat(columnPosition)
+    holder.row.getFloat(columnIndex)
 
   override def readDouble(bytes: Array[Byte]): Double =
-    rs.getDouble(columnPosition)
+    holder.row.getDouble(columnIndex)
 
   override def readDecimal(bytes: Array[Byte], precision: Int,
-      scale: Int): Decimal = {
-    val dec = rs.getBigDecimal(columnPosition)
-    if (dec != null) {
-      Decimal.apply(dec, precision, scale)
-    } else {
-      null
-    }
-  }
+      scale: Int): Decimal =
+    holder.row.getDecimal(columnIndex, precision, scale)
 
   override def readUTF8String(columnBytes: Array[Byte]): UTF8String =
-    UTF8String.fromString(rs.getString(columnPosition))
-
-  override def readDate(columnBytes: Array[Byte]): Int = {
-    defaultCal.clear()
-    val date = rs.getDate(columnPosition, defaultCal)
-    DateTimeUtils.fromJavaDate(date)
-  }
-
-  override def readTimestamp(columnBytes: Array[Byte]): Long = {
-    defaultCal.clear()
-    val timestamp = rs.getTimestamp(columnPosition, defaultCal)
-    DateTimeUtils.fromJavaTimestamp(timestamp)
-  }
+    holder.row.getUTF8String(columnIndex)
 
   override def readBinary(bytes: Array[Byte]): Array[Byte] =
-    rs.getBytes(columnPosition)
+    holder.row.getBinary(columnIndex)
 
   override def readInterval(bytes: Array[Byte]): CalendarInterval =
-    new CalendarInterval(0, rs.getLong(columnPosition))
+    holder.row.getInterval(columnIndex)
 
-  override def readArray(bytes: Array[Byte]): UnsafeArrayData = {
-    val b = rs.getBytes(columnPosition)
-    if (b != null) {
-      val result = new UnsafeArrayData
-      result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
-      result
-    } else null
-  }
+  override def readArray(bytes: Array[Byte]): UnsafeArrayData =
+    holder.row.getArray(columnIndex)
 
-  override def readMap(bytes: Array[Byte]): UnsafeMapData = {
-    val b = rs.getBytes(columnPosition)
-    if (b != null) {
-      val result = new UnsafeMapData
-      result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
-      result
-    } else null
-  }
+  override def readMap(bytes: Array[Byte]): UnsafeMapData =
+    holder.row.getMap(columnIndex)
 
-  override def readStruct(bytes: Array[Byte], numFields: Int): UnsafeRow = {
-    val b = rs.getBytes(columnPosition)
-    if (b != null) {
-      val result = new UnsafeRow(numFields)
-      result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
-      result
-    } else null
-  }
+  override def readStruct(bytes: Array[Byte], numFields: Int): UnsafeRow =
+    holder.row.getStruct(columnIndex, numFields)
 
-  override def wasNull(): Boolean = rs.wasNull()
+  override def wasNull(): Boolean = false
+}
+
+final class UnsafeRowHolder {
+  private[row] var row: UnsafeRow = _
+
+  def setRow(row: UnsafeRow): Unit = this.row = row
 }

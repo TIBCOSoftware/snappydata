@@ -138,7 +138,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
           }
         }
         */
-      }, closeOnSuccess = false, onExecutor = true)
+    }, closeOnSuccess = false, onExecutor = true)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

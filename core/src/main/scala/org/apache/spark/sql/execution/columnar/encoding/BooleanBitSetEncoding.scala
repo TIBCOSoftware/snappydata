@@ -20,24 +20,10 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types.{BooleanType, DataType}
 
 final class BooleanBitSetEncoding
-    extends BooleanBitSetEncodingBase with NotNullColumn {
-
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(columnBytes)
-  }
-}
+    extends BooleanBitSetEncodingBase with NotNullColumn
 
 final class BooleanBitSetEncodingNullable
-    extends BooleanBitSetEncodingBase with NullableColumn {
-
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(columnBytes)
-  }
-}
+    extends BooleanBitSetEncodingBase with NullableColumn
 
 abstract class BooleanBitSetEncodingBase extends UncompressedBase {
 
@@ -49,9 +35,10 @@ abstract class BooleanBitSetEncodingBase extends UncompressedBase {
   override final def supports(dataType: DataType): Boolean =
     dataType == BooleanType
 
-  protected final def initializeDecodingBase(columnBytes: Array[Byte]): Unit = {
+  override def initializeDecoding(columnBytes: Array[Byte],
+      field: Attribute): Unit = {
     // read the count but its not used since CachedBatch has numRows
-    super.readInt(columnBytes)
+    ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
     // initialize to max to force reading word in first nextBoolean call
     currentBitIndex = ColumnEncoding.BITS_PER_LONG
@@ -61,7 +48,7 @@ abstract class BooleanBitSetEncodingBase extends UncompressedBase {
     currentBitIndex += 1
     if (currentBitIndex >= ColumnEncoding.BITS_PER_LONG) {
       currentBitIndex = 0
-      currentWord = super.readLong(bytes)
+      currentWord = ColumnEncoding.readLong(bytes, cursor)
       cursor += 8
     }
   }

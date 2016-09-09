@@ -27,13 +27,23 @@ import org.apache.spark.util.collection.BitSet
 
 abstract class ColumnEncoding {
 
-  private[columnar] final var cursor = 0
+  protected final var cursor = 0
+
+  protected final var nullValues: Array[Byte] = _
+  // protected final var nullValuesBitSet: BitSet = _
+  protected final var nextNullOrdinal = 0
+  protected final var nextNullCursor = 0
+  protected final var nextNullCursorEnd = 0
+  // protected final var nullValuesType: Byte = 0
 
   def typeId: Int
 
   def supports(dataType: DataType): Boolean
 
-  def initializeDecoding(columnBytes: Array[Byte], field: Attribute): Unit
+  private[columnar] def initializeNulls(columnBytes: Array[Byte],
+      field: Attribute): Unit = {}
+
+  def initializeDecoding(columnBytes: Array[Byte], field: Attribute): Unit = {}
 
   def notNull(columnBytes: Array[Byte], ordinal: Int): Byte
 
@@ -146,9 +156,6 @@ abstract class ColumnEncoding {
 
 object ColumnEncoding {
 
-  private[columnar] val baseOffset: Int =
-    Platform.BYTE_ARRAY_OFFSET + 4 /* for typeId */
-
   private[columnar] val bitSetWords: Field = {
     val f = classOf[BitSet].getDeclaredField("words")
     f.setAccessible(true)
@@ -168,15 +175,11 @@ object ColumnEncoding {
     createLongDeltaEncoding
   )
 
-  def getColumnEncoding(columnBytes: Array[Byte], dataType: DataType,
-      nullable: Boolean): ColumnEncoding = {
-    val typeId = if (littleEndian) {
-      Platform.getInt(columnBytes, Platform.BYTE_ARRAY_OFFSET)
-    } else {
-      java.lang.Integer.reverseBytes(
-        Platform.getInt(columnBytes, Platform.BYTE_ARRAY_OFFSET))
-    }
-    val encoding = allEncodings(typeId)(dataType, nullable)
+  def getColumnDecoder(columnBytes: Array[Byte],
+      field: Attribute): ColumnEncoding = {
+    val typeId = initializeDecoding(columnBytes)
+    val dataType = field.dataType
+    val encoding = allEncodings(typeId)(dataType, field.nullable)
     if (encoding.typeId != typeId) {
       throw new AssertionError(s"typeId for $encoding = ${encoding.typeId} " +
           s"does not match typeId = $typeId in global registration")
@@ -185,13 +188,7 @@ object ColumnEncoding {
       throw new AssertionError(s"Encoder bug? Unsupported type $dataType " +
           s"for encoding $encoding")
     }
-    encoding
-  }
-
-  def getColumnDecoder(columnBytes: Array[Byte],
-      field: Attribute): ColumnEncoding = {
-    val encoding = getColumnEncoding(columnBytes,
-      field.dataType, field.nullable)
+    encoding.initializeNulls(columnBytes, field)
     encoding.initializeDecoding(columnBytes, field)
     encoding
   }
@@ -203,7 +200,7 @@ object ColumnEncoding {
   private[columnar] def createRunLengthEncoding(dataType: DataType,
       nullable: Boolean): ColumnEncoding = dataType match {
     case BooleanType | ByteType | ShortType |
-         IntegerType | LongType | StringType =>
+         IntegerType | DateType | LongType | TimestampType | StringType =>
       if (nullable) new RunLengthEncodingNullable else new RunLengthEncoding
     case _ => throw new UnsupportedOperationException(
       s"RunLengthEncoding not supported for $dataType")
@@ -211,7 +208,7 @@ object ColumnEncoding {
 
   private[columnar] def createDictionaryEncoding(dataType: DataType,
       nullable: Boolean): ColumnEncoding = dataType match {
-    case StringType | IntegerType | LongType =>
+    case StringType | IntegerType | DateType | LongType | TimestampType =>
       if (nullable) new DictionaryEncodingNullable
       else new DictionaryEncoding
     case _ => throw new UnsupportedOperationException(
@@ -229,7 +226,7 @@ object ColumnEncoding {
 
   private[columnar] def createIntDeltaEncoding(dataType: DataType,
       nullable: Boolean): ColumnEncoding = dataType match {
-    case IntegerType =>
+    case IntegerType | DateType =>
       if (nullable) new IntDeltaEncodingNullable else new IntDeltaEncoding
     case _ => throw new UnsupportedOperationException(
       s"IntDeltaEncoding not supported for $dataType")
@@ -237,24 +234,46 @@ object ColumnEncoding {
 
   private[columnar] def createLongDeltaEncoding(dataType: DataType,
       nullable: Boolean): ColumnEncoding = dataType match {
-    case LongType =>
+    case LongType | TimestampType =>
       if (nullable) new LongDeltaEncodingNullable else new LongDeltaEncoding
     case _ => throw new UnsupportedOperationException(
       s"LongDeltaEncoding not supported for $dataType")
+  }
+
+  private[columnar] final def readInt(columnBytes: Array[Byte],
+      cursor: Int): Int = if (littleEndian) {
+    Platform.getInt(columnBytes, cursor)
+  } else {
+    java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
+  }
+
+  private[columnar] final def readLong(columnBytes: Array[Byte],
+      cursor: Int): Long = if (littleEndian) {
+    Platform.getLong(columnBytes, cursor)
+  } else {
+    java.lang.Long.reverseBytes(Platform.getLong(columnBytes, cursor))
+  }
+
+  private[columnar] def initializeDecoding(columnBytes: Array[Byte]): Int = {
+    // read and skip null values array at the start, then read the typeId
+    var cursor = Platform.BYTE_ARRAY_OFFSET
+    val nullValuesSize = readInt(columnBytes, cursor)
+    cursor += (4 + nullValuesSize)
+    readInt(columnBytes, cursor)
   }
 }
 
 trait NotNullColumn extends ColumnEncoding {
 
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    cursor = ColumnEncoding.baseOffset
-    val numNullValues = Platform.getInt(columnBytes, cursor)
+  override private[columnar] final def initializeNulls(
+      columnBytes: Array[Byte], field: Attribute): Unit = {
+    cursor = Platform.BYTE_ARRAY_OFFSET
+    val numNullValues = ColumnEncoding.readInt(columnBytes, cursor)
     if (numNullValues != 0) {
       throw new IllegalStateException(
-        s"Null values found in NOT NULL column $field")
+        s"$numNullValues null values found in NOT NULL column $field")
     }
-    cursor += 4
+    cursor += 8 // skip numNullValues and typeId
   }
 
   override def notNull(bytes: Array[Byte], ordinal: Int): Byte = 1
@@ -262,16 +281,9 @@ trait NotNullColumn extends ColumnEncoding {
 
 trait NullableColumn extends ColumnEncoding {
 
-  private[this] final var nullValues: Array[Byte] = _
-  // private[this] final var nullValuesBitSet: BitSet = _
-  private[this] final var nextNullOrdinal = 0
-  private[this] final var nextNullCursor = 0
-  private[this] final var nextNullCursorEnd = 0
-  // private[this] final var nullValuesType: Byte = 0
-
   private final def updateNextNullOrdinal() {
     if (nextNullCursor < nextNullCursorEnd) {
-      nextNullOrdinal = Platform.getInt(nullValues, nextNullCursor)
+      nextNullOrdinal = ColumnEncoding.readInt(nullValues, nextNullCursor)
       nextNullCursor += 4
     } else nextNullOrdinal = -1
     /*
@@ -297,13 +309,13 @@ trait NullableColumn extends ColumnEncoding {
     */
   }
 
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    cursor = ColumnEncoding.baseOffset
-    // copying instead of keeping pointer will help in better cache alignment
-    val nullValuesSize = Platform.getInt(columnBytes, cursor)
+  override private[columnar] final def initializeNulls(
+      columnBytes: Array[Byte], field: Attribute): Unit = {
+    cursor = Platform.BYTE_ARRAY_OFFSET
+    val nullValuesSize = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
     if (nullValuesSize > 0) {
+      // copying instead of keeping pointer will help in better cache alignment
       nullValues = new Array[Byte](nullValuesSize)
       Platform.copyMemory(columnBytes, cursor, nullValues,
         Platform.BYTE_ARRAY_OFFSET, nullValuesSize)
@@ -312,9 +324,10 @@ trait NullableColumn extends ColumnEncoding {
       nextNullCursorEnd = nextNullCursor + nullValuesSize
       updateNextNullOrdinal()
     } else nextNullOrdinal = -1
+    cursor += 4 // skip typeId
     /*
-    nullValuesType = columnBytes(4)
-    cursor = Platform.BYTE_ARRAY_OFFSET + 4 /* for typeId */ + 1
+    nullValuesType = columnBytes(0)
+    cursor = Platform.BYTE_ARRAY_OFFSET + 1
     // copying instead of keeping pointer will help in better cache alignment
     // since these are at the start of the byte array
     if (nullValuesType <= 1) {
@@ -331,7 +344,7 @@ trait NullableColumn extends ColumnEncoding {
     } else {
       nullValues = null
       nullValuesBitSet = null
-      val numWords = Platform.getInt(columnBytes, cursor)
+      val numWords = ColumnEncoding.readInt(columnBytes, cursor)
       cursor += 4
       if (numWords > 0) {
         try {
@@ -341,7 +354,7 @@ trait NullableColumn extends ColumnEncoding {
             nullValuesBitSet).asInstanceOf[Array[Long]]
           var index = 0
           while (index < numWords) {
-            words(index) = Platform.getLong(columnBytes, cursor)
+            words(index) = ColumnEncoding.readLong(columnBytes, cursor)
             cursor += 8
             index += 1
           }

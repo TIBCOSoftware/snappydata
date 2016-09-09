@@ -19,12 +19,12 @@ package org.apache.spark.sql.execution.columnar
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal}
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalRDD, RowTableScan}
+import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalRDD}
 import org.apache.spark.sql.types._
 
 /**
@@ -48,15 +48,18 @@ private[sql] final case class ColumnTableScan(
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows")) ++ (
+      "number of output rows"),
+    "numRowsBufferOutput" -> SQLMetrics.createMetric(sparkContext,
+      "number of output rows from row buffer")) ++ (
       if (otherRDDs.isEmpty) Map.empty
-      else Map("numOtherRows" -> SQLMetrics.createMetric(sparkContext,
+      else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
         "number of output rows from other RDDs")))
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
-  else rdd.sparkContext.union((Seq(rdd) ++ otherRDDs).asInstanceOf[Seq[RDD[Any]]])
+  else rdd.sparkContext.union((Seq(rdd) ++ otherRDDs)
+      .asInstanceOf[Seq[RDD[Any]]])
 
-  private val internalRowPartitionIndex = rdd.getNumPartitions
+  private val otherRDDsPartitionIndex = rdd.getNumPartitions
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
@@ -64,9 +67,12 @@ private[sql] final case class ColumnTableScan(
 
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")
-    val numOtherRows =
-      if (otherRDDs.isEmpty) null else metricTerm(ctx, "numOtherRows")
+    val numRowsBufferOutput = metricTerm(ctx, "numRowsBufferOutput")
+    val numRowsOtherOutput =
+      if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
     val numRows = ctx.freshName("numRows")
+    val numRowsBuffer = s"${numRows}RowBuffer"
+    val numRowsOther = s"${numRows}OtherRDDs"
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
@@ -85,19 +91,19 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState("scala.collection.Iterator",
         rowInput,
         s"""
-            $rowInput = (partitionIndex < $internalRowPartitionIndex)
+            $rowInput = (partitionIndex < $otherRDDsPartitionIndex)
                 ? (scala.collection.Iterator)inputs[0].next() : inputs[0];
         """)
       ctx.addMutableState("scala.collection.Iterator",
         colInput,
         s"""
-            $colInput = (partitionIndex < $internalRowPartitionIndex)
+            $colInput = (partitionIndex < $otherRDDsPartitionIndex)
                 ? (scala.collection.Iterator)inputs[0].next() : null;
         """)
     }
 
     ctx.currentVars = null
-    val tableScan = if (scanUnsafeRows) {
+    if (scanUnsafeRows) {
       val row = ctx.freshName("row")
       ctx.INPUT_ROW = row
       s"""
@@ -118,51 +124,140 @@ private[sql] final case class ColumnTableScan(
       val cachedBatchClass = classOf[CachedBatch].getName
       val decoderClass = classOf[ColumnEncoding].getName
       val rsDecoderClass = classOf[ResultSetEncodingAdapter].getName
+      val unsafeDecoderClass = classOf[UnsafeRowEncodingAdapter].getName
+      val unsafeHolderClass = classOf[UnsafeRowHolder].getName
       val batch = ctx.freshName("batch")
       val numBatchRows = ctx.freshName("numBatchRows")
       val batchOrdinal = ctx.freshName("batchOrdinal")
       val buffers = ctx.freshName("buffers")
+      val inputIsRow = s"${input}IsRow"
+      val inputIsOtherRDD = s"${input}IsOtherRDD"
+      val unsafeHolder =
+        if (otherRDDs.isEmpty) null else ctx.freshName("unsafeHolder")
 
       // need DataType and nullable to get decoder in generated code
       val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
       val initCode = new StringBuilder
+      val rsInitCode = new StringBuilder
+      val otherRDDsInitCode = new StringBuilder
+      val bufferInitCode = new StringBuilder
       val moveNextCode = new StringBuilder
+
+      if (otherRDDs.isEmpty) {
+        rsInitCode.append(
+          s"final java.sql.ResultSet $rs = (($rsIterClass)$rowInput).rs();")
+      } else {
+        rsInitCode.append(
+          s"""
+            final java.sql.ResultSet $rs = $inputIsOtherRDD ? null
+                : (($rsIterClass)$rowInput).rs();
+          """
+        )
+        otherRDDsInitCode.append(
+          s"""
+            // check if this partition is for otherRDDs iteration
+            final boolean $inputIsOtherRDD =
+              partitionIndex >= $otherRDDsPartitionIndex;
+            // initialize otherRDDs adapters for required columns
+            final $unsafeHolderClass $unsafeHolder = new $unsafeHolderClass();
+          """.stripMargin
+        )
+      }
+
+      val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
+      else {
+        s"""
+          if ($inputIsOtherRDD) {
+            $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
+          } else {
+            $rowInput.next();
+          }
+        """
+      }
+      val incrementNumRowsSnippet = if (otherRDDs.isEmpty) s"$numRowsBuffer++;"
+      else {
+        s"""
+          if ($inputIsOtherRDD) {
+            $numRowsOther++;
+          } else {
+            $numRowsBuffer++;
+          }
+        """
+      }
+      val incrementOtherRows = if (otherRDDs.isEmpty) ""
+      else s"$numRowsOtherOutput.add($numRowsOther);"
+
       val columnsInput = output.zipWithIndex.map { case (a, index) =>
         val decoder = ctx.freshName("decoder")
+        val rsDecoder = ctx.freshName("rsDecoder")
+        val unsafeDecoder =
+          if (otherRDDs.isEmpty) null else ctx.freshName("unsafeDecoder")
         val buffer = ctx.freshName("buffer")
-        initCode.append(
+        rsInitCode.append(
           s"""
-            final byte[] $buffer;
-            final $decoderClass $decoder;
-            if ($buffers != null) {
-              $buffer = $buffers[$index];
-              $decoder = $decoderClass.getColumnDecoder($buffer,
-                $fields[$index]);
-            } else {
-              // TODO: SW: for ResultSet, more efficient will be to not push
-              // projection and use baseSchema index below
-              $buffer = null;
-              $decoder = new $rsDecoderClass($rs, ${index + 1});
-            }
+             // TODO: SW: for ResultSet, more efficient will be to not push
+             // projection and use baseSchema index below
+             final $rsDecoderClass $rsDecoder = new $rsDecoderClass($rs,
+               ${index + 1});
+          """
+        )
+        if (otherRDDs.isEmpty) {
+          initCode.append(
+            s"""
+              byte[] $buffer = null;
+              $decoderClass $decoder = $rsDecoder;
+            """)
+        } else {
+          otherRDDsInitCode.append(
+            s"""
+              final $unsafeDecoderClass $unsafeDecoder = new $unsafeDecoderClass(
+                $unsafeHolder, ${baseRelation.schema.fieldIndex(a.name)});
+            """
+          )
+          initCode.append(
+            s"""
+              byte[] $buffer = null;
+              $decoderClass $decoder = null;
+              if ($inputIsOtherRDD) {
+                $decoder = $unsafeDecoder;
+              } else {
+                $decoder = $rsDecoder;
+              }
+            """)
+        }
+        bufferInitCode.append(
+          s"""
+            $buffer = $buffers[$index];
+            $decoder = $decoderClass.getColumnDecoder($buffer,
+              $fields[$index]);
           """)
         val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
         moveNextCode.append(genCodeColumnNext(ctx, decoder, buffer,
           batchOrdinal, a.dataType, notNullVar)).append('\n')
         genCodeColumnBuffer(ctx, decoder, buffer, a.dataType, notNullVar)
       }
+
       s"""
-         |// combined iterator for cached batches from column table
-         |// and ResultSet from row buffer
+         |// Combined iterator for cached batches from column table
+         |// and ResultSet from row buffer. Also takes care of otherRDDs
+         |// case when partition is of otherRDDs by iterating over it
+         |// using an UnsafeRow adapter.
          |long $numRows = 0L;
+         |long $numRowsBuffer = 0L;
+         |long $numRowsOther = 0L;
          |scala.collection.Iterator $input = $rowInput;
-         |boolean ${input}IsRow = true;
-         |final java.sql.ResultSet $rs = (($rsIterClass)$rowInput).rs();
+         |boolean $inputIsRow = true;
+         |// initialize the ResultSet and other RDD adapters
+         |${rsInitCode.toString()}
+         |${otherRDDsInitCode.toString()}
+         |// initialize the decoders for ResultSet and other RDD iteration
+         |${initCode.toString()}
          |try {
          |  while (true) {
          |    if (!$input.hasNext()) {
          |      if ($input == $rowInput) {
          |        $input = $colInput;
-         |        ${input}IsRow = false;
+         |        $inputIsRow = false;
          |        if ($input == null || !$input.hasNext()) {
          |          break;
          |        }
@@ -172,20 +267,24 @@ private[sql] final case class ColumnTableScan(
          |    }
          |    final byte[][] $buffers;
          |    final int $numBatchRows;
-         |    if (${input}IsRow) {
-         |      $rowInput.next();
+         |    if ($inputIsRow) {
+         |      $nextRowSnippet
          |      $buffers = null;
          |      $numBatchRows = 1;
          |    } else {
          |      $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
          |      $buffers = $batch.buffers();
          |      $numBatchRows = $batch.numRows();
+         |      // initialize the buffers and decoders
+         |      ${bufferInitCode.toString()}
          |    }
-         |    ${initCode.toString()}
          |    for (int $batchOrdinal = 0; $batchOrdinal < $numBatchRows;
          |        $batchOrdinal++) {
          |      ${moveNextCode.toString()}
          |      $numRows++;
+         |      if ($inputIsRow) {
+         |        $incrementNumRowsSnippet
+         |      }
          |      ${consume(ctx, columnsInput).trim}
          |      if (shouldStop()) return;
          |    }
@@ -196,38 +295,10 @@ private[sql] final case class ColumnTableScan(
          |  throw new RuntimeException(e);
          |} finally {
          |  $numOutputRows.add($numRows);
+         |  $numRowsBufferOutput.add($numRowsBuffer);
+         |  $incrementOtherRows
          |}
       """.stripMargin
-    }
-    // for the case of otherRDDs, only iterate those as UnsafeRows
-    // if this is a partition for "otherRDDs" then just do a normal UnsafeRow
-    // scan and return (e.g. for sample tables)
-    if (otherRDDs.isEmpty) tableScan
-    else {
-      val row = ctx.freshName("row")
-      ctx.INPUT_ROW = row
-      val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
-        BoundReference(index, a.dataType, a.nullable).genCode(ctx)
-      }
-      s"""
-         |// check if this partition is for other UnsafeRow iterators
-         |if (partitionIndex >= $internalRowPartitionIndex) {
-         |  // iterate UnsafeRows from the RDD
-         |  long $numRows = 0L;
-         |  try {
-         |    while ($rowInput.hasNext()) {
-         |      final UnsafeRow $row = (UnsafeRow)$rowInput.next();
-         |      $numRows++;
-         |      ${consume(ctx, columnsRowInput, row).trim}
-         |      if (shouldStop()) return;
-         |    }
-         |  } finally {
-         |    $numOtherRows.add($numRows);
-         |  }
-         |} else {
-         |  $tableScan
-         |}
-       """.stripMargin
     }
   }
 
@@ -288,12 +359,14 @@ private[sql] final case class ColumnTableScan(
           if ($notNullVar == 1) {
             $col = $extract;
             $nullVar = false;
-          } else if ($notNullVar == 0) {
-            $col = ${ctx.defaultValue(jt)};
-            $nullVar = true;
           } else {
-            $col = $extract;
-            $nullVar = $decoder.wasNull();
+            if ($notNullVar == 0) {
+              $col = ${ctx.defaultValue(jt)};
+              $nullVar = true;
+            } else {
+              $col = $extract;
+              $nullVar = $decoder.wasNull();
+            }
           }
         """
       ExprCode(code, nullVar, col)

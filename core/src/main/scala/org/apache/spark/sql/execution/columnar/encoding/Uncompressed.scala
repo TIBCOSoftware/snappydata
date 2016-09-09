@@ -27,10 +27,8 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 final class Uncompressed extends UncompressedBase with NotNullColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(field.dataType)
-  }
+      field: Attribute): Unit =
+    initializeDecodingBase(columnBytes, field.dataType)
 
   override def initializeEncoding(dataType: DataType,
       batchSize: Int): Array[Byte] =
@@ -40,10 +38,8 @@ final class Uncompressed extends UncompressedBase with NotNullColumn {
 final class UncompressedNullable extends UncompressedBase with NullableColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(field.dataType)
-  }
+      field: Attribute): Unit =
+    initializeDecodingBase(columnBytes, field.dataType)
 
   override def initializeEncoding(dataType: DataType,
       batchSize: Int): Array[Byte] = {
@@ -57,11 +53,15 @@ abstract class UncompressedBase extends ColumnEncoding {
 
   import ColumnEncoding.littleEndian
 
+  // indicates whether the cursor needs to be positioned in the next call
+  protected final var initialized = false
+
   def typeId: Int = 0
 
   def supports(dataType: DataType): Boolean = true
 
-  protected final def initializeDecodingBase(dataType: DataType): Unit = {
+  protected final def initializeDecodingBase(columnBytes: Array[Byte],
+      dataType: DataType): Unit = {
     // adjust cursor for the first next call to avoid extra checks in next
     Utils.getSQLDataType(dataType) match {
       case BooleanType | ByteType => cursor -= 1
@@ -73,7 +73,7 @@ abstract class UncompressedBase extends ColumnEncoding {
         cursor -= 8
       case StringType | BinaryType | _: DecimalType |
            _: ArrayType | _: MapType | _: StructType =>
-        cursor -= 4 // read and skip null values in first call
+      // these will check for initialized flag
       case NullType => // no role of cursor for NullType
       case _ =>
         throw new UnsupportedOperationException(s"Unsupported type $dataType")
@@ -109,9 +109,11 @@ abstract class UncompressedBase extends ColumnEncoding {
   override def nextLong(bytes: Array[Byte]): Unit =
     cursor += 8
 
-  override def readLong(bytes: Array[Byte]): Long =
-    if (littleEndian) Platform.getLong(bytes, cursor)
+  override def readLong(bytes: Array[Byte]): Long = {
+    val result = if (littleEndian) Platform.getLong(bytes, cursor)
     else java.lang.Long.reverseBytes(Platform.getLong(bytes, cursor))
+    result
+  }
 
   override def nextFloat(bytes: Array[Byte]): Unit =
     cursor += 4
@@ -132,50 +134,61 @@ abstract class UncompressedBase extends ColumnEncoding {
   override def nextDecimal(bytes: Array[Byte], precision: Int): Unit = {
     if (precision <= Decimal.MAX_LONG_DIGITS) {
       cursor += 8
-    } else {
-      val size = readInt(bytes)
+    } else if (initialized) {
+      val size = ColumnEncoding.readInt(bytes, cursor)
       cursor += (4 + size)
+    } else {
+      initialized = true
     }
   }
 
   override def readDecimal(bytes: Array[Byte], precision: Int,
       scale: Int): Decimal = {
     if (precision <= Decimal.MAX_LONG_DIGITS) {
-      Decimal.createUnsafe(readLong(bytes), precision, scale)
+      Decimal.createUnsafe(ColumnEncoding.readLong(bytes, cursor),
+        precision, scale)
     } else {
       Decimal.apply(new BigDecimal(new BigInteger(readBinary(bytes)),
         scale), precision, scale)
     }
   }
 
-  override def nextUTF8String(columnBytes: Array[Byte]): Unit = {
-    val size = readInt(columnBytes)
-    cursor += (4 + size)
+  override def nextUTF8String(bytes: Array[Byte]): Unit = {
+    if (initialized) {
+      val size = ColumnEncoding.readInt(bytes, cursor)
+      cursor += (4 + size)
+    } else {
+      initialized = true
+    }
   }
 
-  override def readUTF8String(columnBytes: Array[Byte]): UTF8String = {
-    val size = readInt(columnBytes)
-    UTF8String.fromAddress(columnBytes, cursor + 4, size)
+  override def readUTF8String(bytes: Array[Byte]): UTF8String = {
+    val size = ColumnEncoding.readInt(bytes, cursor)
+    UTF8String.fromAddress(bytes, cursor + 4, size)
   }
 
   override def nextInterval(bytes: Array[Byte]): Unit =
     cursor += 12
 
   override def readInterval(bytes: Array[Byte]): CalendarInterval = {
-    val months = readInt(bytes)
+    val months = ColumnEncoding.readInt(bytes, cursor)
     cursor += 4
-    val micros = readLong(bytes)
+    val micros = ColumnEncoding.readLong(bytes, cursor)
     cursor -= 4
     new CalendarInterval(months, micros)
   }
 
   override def nextBinary(bytes: Array[Byte]): Unit = {
-    val size = readInt(bytes)
-    cursor += (4 + size)
+    if (initialized) {
+      val size = ColumnEncoding.readInt(bytes, cursor)
+      cursor += (4 + size)
+    } else {
+      initialized = true
+    }
   }
 
   override def readBinary(bytes: Array[Byte]): Array[Byte] = {
-    val size = readInt(bytes)
+    val size = ColumnEncoding.readInt(bytes, cursor)
     val b = new Array[Byte](size)
     Platform.copyMemory(bytes, cursor + 4, b, Platform.BYTE_ARRAY_OFFSET, size)
     b
@@ -183,29 +196,26 @@ abstract class UncompressedBase extends ColumnEncoding {
 
   override def readArray(bytes: Array[Byte]): UnsafeArrayData = {
     val result = new UnsafeArrayData
-    val size = readInt(bytes)
+    val size = ColumnEncoding.readInt(bytes, cursor)
     result.pointTo(bytes, cursor + 4, size)
     result
   }
 
   override def readMap(bytes: Array[Byte]): UnsafeMapData = {
     val result = new UnsafeMapData
-    val size = readInt(bytes)
+    val size = ColumnEncoding.readInt(bytes, cursor)
     result.pointTo(bytes, cursor + 4, size)
     result
   }
 
   override def readStruct(bytes: Array[Byte], numFields: Int): UnsafeRow = {
     val result = new UnsafeRow(numFields)
-    val size = readInt(bytes)
+    val size = ColumnEncoding.readInt(bytes, cursor)
     result.pointTo(bytes, cursor + 4, size)
     result
   }
 
-  override def initializeEncoding(dataType: DataType,
-      batchSize: Int): Array[Byte] =
-    throw new UnsupportedOperationException(s"initializeEncoding for $toString")
-
+  /*
   override def writeBoolean(bytes: Array[Byte], value: Boolean): Unit = {
     Platform.putByte(bytes, cursor, if (value) 1 else 0)
     cursor += 1
@@ -302,4 +312,5 @@ abstract class UncompressedBase extends ColumnEncoding {
       cursor, size)
     cursor += size
   }
+  */
 }

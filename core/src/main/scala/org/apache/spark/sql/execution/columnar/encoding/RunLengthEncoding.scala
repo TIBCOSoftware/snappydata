@@ -36,7 +36,7 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
 
   override final def supports(dataType: DataType): Boolean = dataType match {
     case BooleanType | ByteType | ShortType |
-         IntegerType | LongType | StringType => true
+         IntegerType | DateType | LongType | TimestampType | StringType => true
     case _ => false
   }
 
@@ -46,7 +46,7 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
     } else {
       currentValueLong = Platform.getByte(bytes, cursor)
       cursor += 1
-      run = super.readInt(bytes)
+      run = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
       valueCount = 1
     }
@@ -67,7 +67,7 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
     } else {
       currentValueLong = super.readShort(bytes)
       cursor += 2
-      run = super.readInt(bytes)
+      run = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
       valueCount = 1
     }
@@ -80,9 +80,9 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
     if (valueCount != run) {
       valueCount += 1
     } else {
-      currentValueLong = super.readInt(bytes)
+      currentValueLong = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
-      run = super.readInt(bytes)
+      run = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
       valueCount = 1
     }
@@ -91,13 +91,16 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
   override final def readInt(bytes: Array[Byte]): Int =
     currentValueLong.asInstanceOf[Int]
 
+  override final def readDate(bytes: Array[Byte]): Int =
+    currentValueLong.asInstanceOf[Int]
+
   override final def nextLong(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
       valueCount += 1
     } else {
-      currentValueLong = super.readLong(bytes)
+      currentValueLong = ColumnEncoding.readLong(bytes, cursor)
       cursor += 8
-      run = super.readInt(bytes)
+      run = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
       valueCount = 1
     }
@@ -106,13 +109,16 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
   override final def readLong(bytes: Array[Byte]): Long =
     currentValueLong
 
+  override final def readTimestamp(columnBytes: Array[Byte]): Long =
+    currentValueLong
+
   override final def nextUTF8String(bytes: Array[Byte]): Unit = {
     if (valueCount != run) {
       valueCount += 1
     } else {
       currentValueString = super.readUTF8String(bytes)
       cursor += (4 + currentValueString.numBytes())
-      run = super.readInt(bytes)
+      run = ColumnEncoding.readInt(bytes, cursor)
       cursor += 4
       valueCount = 1
     }

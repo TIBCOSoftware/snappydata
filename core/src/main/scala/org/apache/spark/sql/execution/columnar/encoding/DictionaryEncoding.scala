@@ -17,35 +17,21 @@
 package org.apache.spark.sql.execution.columnar.encoding
 
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.types.{DataType, IntegerType, LongType, StringType}
+import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, TimestampType}
 import org.apache.spark.unsafe.types.UTF8String
 
 final class DictionaryEncoding
-    extends DictionaryEncodingBase with NotNullColumn {
-
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(columnBytes, field)
-  }
-}
+    extends DictionaryEncodingBase with NotNullColumn
 
 final class DictionaryEncodingNullable
-    extends DictionaryEncodingBase with NullableColumn {
-
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
-    super.initializeDecoding(columnBytes, field)
-    initializeDecodingBase(columnBytes, field)
-  }
-}
+    extends DictionaryEncodingBase with NullableColumn
 
 abstract class DictionaryEncodingBase extends UncompressedBase {
 
   override final def typeId: Int = 2
 
   override final def supports(dataType: DataType): Boolean = dataType match {
-    case StringType | IntegerType | LongType => true
+    case StringType | IntegerType | DateType | LongType | TimestampType => true
     case _ => false
   }
 
@@ -53,9 +39,9 @@ abstract class DictionaryEncodingBase extends UncompressedBase {
   private[this] final var intDictionary: Array[Int] = _
   private[this] final var longDictionary: Array[Long] = _
 
-  protected final def initializeDecodingBase(columnBytes: Array[Byte],
+  override def initializeDecoding(columnBytes: Array[Byte],
       field: Attribute): Unit = {
-    val elementNum = super.readInt(columnBytes)
+    val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
     field.dataType match {
       case StringType =>
@@ -65,16 +51,16 @@ abstract class DictionaryEncodingBase extends UncompressedBase {
           stringDictionary(index) = s
           cursor += (4 + s.numBytes())
         }
-      case IntegerType =>
+      case IntegerType | DateType =>
         intDictionary = new Array[Int](elementNum)
         (0 until elementNum).foreach { index =>
-          intDictionary(index) = super.readInt(columnBytes)
+          intDictionary(index) = ColumnEncoding.readInt(columnBytes, cursor)
           cursor += 4
         }
-      case LongType =>
+      case LongType | TimestampType =>
         longDictionary = new Array[Long](elementNum)
         (0 until elementNum).foreach { index =>
-          longDictionary(index) = super.readLong(columnBytes)
+          longDictionary(index) = ColumnEncoding.readLong(columnBytes, cursor)
           cursor += 8
         }
       case _ => throw new UnsupportedOperationException(
