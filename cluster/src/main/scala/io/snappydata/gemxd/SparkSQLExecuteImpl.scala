@@ -466,7 +466,8 @@ object SparkSQLExecuteImpl {
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.readBytes(in.array(), pos, utfLen)
+              dvd.setValue(new String(in.array(), pos, utfLen,
+                StandardCharsets.UTF_8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()
