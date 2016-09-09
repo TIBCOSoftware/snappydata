@@ -230,19 +230,26 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // one thread would correctly identify if the other has cleared
                 // the segments. So after the changeSegment, it should unconditionally
                 // refresh the segments
-                try {
+               // try {
                 //  if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
                     //idx = nhashes
                   change.segmentAbort(seg)
                   seg = segs(i)
-                  lock = seg.writeLock()
+                  lock = seg.writeLock
+                  lock.lock()
+                  while(!seg.valid) {
+                    lock.unlock()
+                    seg = segs(i)
+                    lock = seg.writeLock
+                    lock.lock()
+                  }
                 //  }
                   idx += 1
 
-                } finally {
-                  lock.lock()
-                }
+               // } finally {
+                  //lock.lock()
+                //}
               }
             }
           } finally {
