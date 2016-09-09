@@ -226,4 +226,10 @@ class ResultNullHolder extends ResultWasNull {
   override final def setWasNull(): Unit = {
     wasNull = true
   }
+
+  final def wasNullAndClear(): Boolean = {
+    val result = wasNull
+    wasNull = false
+    result
+  }
 }
