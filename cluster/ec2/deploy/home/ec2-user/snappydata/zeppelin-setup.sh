@@ -23,24 +23,24 @@ pushd /home/ec2-user/snappydata > /dev/null
 
 source /home/ec2-user/snappydata/ec2-variables.sh
 
-which jar
+which jar > /dev/null
 
 JAR_STATUS=`echo $?`
 
 if [[ ${JAR_STATUS} -ne 0 ]]; then
-  # if ! yum -q list installed  java-1.7.0-openjdk-devel &>/dev/null; then
   echo "Installing openjdk 1.7 ..."
   sudo yum -y install java-1.7.0-openjdk-devel
 fi
 
 ZEP_DIR="zeppelin-0.6.1-bin-netinst"
+ZEP_URL="http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
 
 # Download and extract Zeppelin distribution
 if [[ ! -d ${ZEP_DIR} ]]; then
   if [[ ! -e "${ZEP_DIR}.tgz" ]]; then
-    wget "http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
+    wget "${ZEP_URL}"
   fi
-  tar -xf zeppelin-0.6.1-bin-netinst.tgz
+  tar -xf "${ZEP_DIR}.tgz"
 fi
 
 # At this point, SnappyData dist should be available (placed here by lead)
@@ -49,17 +49,19 @@ if [[ ! -d ${SNAPPY_HOME_DIR} ]]; then
 fi
 
 # Download, extract and place SnappyData interpreter under interpreter/ directory
-# TODO Later we need to download this from maven/official-github.
-INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar"
+# TODO Later we need to download this from maven/official-github-release.
+INTERPRETER_JAR="snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar"
+INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/${INTERPRETER_JAR}"
 INTERPRETER_DIR="${ZEP_DIR}/interpreter/snappydata"
 
-if [[ ! -d ${INTERPRETER_DIR} ]]; then
-  wget -q "${INTERPRETER_URL}"
-  # tar -xf snappydata-interpreter.tar.gz
-  mkdir "${INTERPRETER_DIR}"
-  mv snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar "${INTERPRETER_DIR}"
-  jar -xf "${INTERPRETER_DIR}/snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar" interpreter-setting.json
-  mv interpreter-setting.json "${INTERPRETER_DIR}"
+if [[ ! -d ${INTERPRETER_DIR} ]] || [[ ! -e interpreter-setting.json.orig ]]; then
+  mkdir -p "${INTERPRETER_DIR}"
+  if [[ ! -e ${INTERPRETER_JAR} ]]; then
+    wget -q "${INTERPRETER_URL}"
+    mv "${INTERPRETER_JAR}" "${INTERPRETER_DIR}"
+  fi
+  jar -xf "${INTERPRETER_DIR}/${INTERPRETER_JAR}" interpreter-setting.json
+  mv interpreter-setting.json interpreter-setting.json.orig
 
   # Place interpreter dependencies into the directory
   cp "${SNAPPY_HOME_DIR}/lib/datanucleus-api-jdo-3.2.6.jar" "${INTERPRETER_DIR}"
@@ -69,29 +71,51 @@ if [[ ! -d ${INTERPRETER_DIR} ]]; then
   cp "${SNAPPY_HOME_DIR}/lib/snappydata-store-client-1.5.1-SNAPSHOT.jar" "${INTERPRETER_DIR}"
 fi
 
+cp interpreter-setting.json.orig "${INTERPRETER_DIR}"/interpreter-setting.json
 
-# Modify conf/zeppelin-site.xml
+
+# Modify conf/zeppelin-site.xml to include classnames of snappydata interpreters.
 if [[ ! -e "${ZEP_DIR}/conf/zeppelin-site.xml" ]]; then
   cp "${ZEP_DIR}/conf/zeppelin-site.xml.template" "${ZEP_DIR}/conf/zeppelin-site.xml"
   SEARCH_STRING="<name>zeppelin.interpreters<\/name>"
   INSERT_STRING="org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter,"
-  # sed -i "/${SEARCH_STRING}/{n;s/<\/value>/${INSERT_STRING}<\/value>/}" "${ZEP_DIR}/conf/zeppelin-site.xml"
   sed -i "/${SEARCH_STRING}/{n;s/<value>/<value>${INSERT_STRING}/}" "${ZEP_DIR}/conf/zeppelin-site.xml"
 fi
 
-# Modify interpreter/snappydata/interpreter-setting.json
-# TODO Pass the port, if modified by user.
+# Modify interpreter/snappydata/interpreter-setting.json to include locator host and port.
 echo "${LOCATORS}" > locator_list
 FIRST_LOCATOR=`cat locator_list | sed -n '1p'`
 SEARCH_STRING="jdbc:snappydata:\/\/localhost:1527\/"
-INSERT_STRING="jdbc:snappydata:\/\/${FIRST_LOCATOR}:1527\/"
+INSERT_STRING="jdbc:snappydata:\/\/${FIRST_LOCATOR}:${LOCATOR_CLIENT_PORT}\/"
 sed -i "s/${SEARCH_STRING}/${INSERT_STRING}/" "${INTERPRETER_DIR}/interpreter-setting.json"
+# Add S3 access credentials
+if [[ -n "${AWS_ACCESS_KEY_ID}" ]] && [[ -n "${AWS_SECRET_ACCESS_KEY}" ]]; then
+  sed -i "/SnappyDataZeppelinInterpreter/,/properties/ s/properties/properties_marker/"  "${INTERPRETER_DIR}/interpreter-setting.json"
+  sed -i "/properties_marker/a \
+        \"fs.s3a.access.key\": {\n\
+            \"envName\": null, \n\
+            \"propertyName\": \"fs.s3a.access.key\", \n\
+            \"defaultValue\": \"${AWS_ACCESS_KEY_ID}\", \n\
+            \"description\": \"S3 ACCESS KEY ID.\" \n\
+        }, \n\
+        \"fs.s3a.secret.key\": {\n\
+            \"envName\": null, \n\
+            \"propertyName\": \"fs.s3a.secret.key\", \n\
+            \"defaultValue\": \"${AWS_SECRET_ACCESS_KEY}\", \n\
+            \"description\": \"S3 SECRET ACCESS KEY.\" \n\
+        },"  "${INTERPRETER_DIR}/interpreter-setting.json"
+  sed -i "s/properties_marker/properties/"  "${INTERPRETER_DIR}/interpreter-setting.json"
+  # fs.s3.awsAccessKeyId
+  # fs.s3.awsSecretAccessKey
+fi
 
 
 # Ensure conf/interpreter.json exists (generated after zeppelin is started for the first time)
 if [[ -e "${ZEP_DIR}/conf/interpreter.json.orig" ]]; then
   cp "${ZEP_DIR}/conf/interpreter.json.orig" "${ZEP_DIR}/conf/interpreter.json"
-else # if [[ ! -e "${ZEP_DIR}/conf/interpreter.json" ]]; then
+  sh "${ZEP_DIR}/bin/zeppelin-daemon.sh" stop
+else
+  # TODO If user has made any changes to the interpreter config, those will be lost.
   # Start and stop the Zeppelin daemon
   sh "${ZEP_DIR}/bin/zeppelin-daemon.sh" start
   sleep 2
@@ -103,7 +127,7 @@ else # if [[ ! -e "${ZEP_DIR}/conf/interpreter.json" ]]; then
   fi
 fi
 
-# Modify conf/interpreter.json
+# Modify conf/interpreter.json to include lead host and port and set isExistingProcess to true.
 if [[ -e "${ZEP_DIR}/conf/interpreter.json" ]]; then
   LEAD_HOST="localhost"
   LEAD_PORT="3768"
@@ -112,7 +136,7 @@ if [[ -e "${ZEP_DIR}/conf/interpreter.json" ]]; then
     LEAD_HOST=`cat lead_list | sed -n '1p'`
   fi
   sed -i "/group\": \"snappydata\"/,/isExistingProcess\": false/{s/isExistingProcess\": false/isExistingProcess\": snappydatainc_marker,/}" "${ZEP_DIR}/conf/interpreter.json"
-  sed -i "/snappydatainc_marker/a \"host\": \"${LEAD_HOST}\",\
+  sed -i "/snappydatainc_marker/a \"host\": \"${LEAD_HOST}\",\n\
          \"port\": \"${LEAD_PORT}\"" "${ZEP_DIR}/conf/interpreter.json"
   sed -i "s/snappydatainc_marker/true/" "${ZEP_DIR}/conf/interpreter.json"
 fi

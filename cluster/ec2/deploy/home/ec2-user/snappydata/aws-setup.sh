@@ -29,6 +29,9 @@ sh fetch-distribution.sh
 # Do it again to read new variables.
 source ec2-variables.sh
 
+# Stop an already running cluster, if so.
+sh "${SNAPPY_HOME_DIR}/sbin/snappy-stop-all.sh"
+
 echo "$LOCATORS" > locator_list
 echo "$LEADS" > lead_list
 echo "$SERVERS" > server_list
@@ -49,6 +52,11 @@ if [[ -e leads ]]; then
   mv leads "${SNAPPY_HOME_DIR}/conf/"
 else
   cp lead_list "${SNAPPY_HOME_DIR}/conf/leads"
+fi
+
+if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
+  # Enable interpreter on lead
+  sed -i '/^#/ ! {/\\$/ ! { /^[[:space:]]*$/ ! s/$/ -zeppelin.interpreter.enable=true/}}' "${SNAPPY_HOME_DIR}/conf/leads"
 fi
 
 if [[ -e servers ]]; then
@@ -85,19 +93,18 @@ for node in ${SERVERS}; do
 done
 
 # Launch the SnappyData cluster
-sh "${SNAPPY_HOME_DIR}/sbin/snappy-stop-all.sh"
 sh "${SNAPPY_HOME_DIR}/sbin/snappy-start-all.sh"
 
-# Launch zeppelin, if configured.
+# Setup and launch zeppelin, if configured.
 if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
   if [[ "${ZEPPELIN_MODE}" = "NON-EMBEDDED" ]]; then
     sh copy-dir.sh "${SNAPPY_HOME_DIR}" zeppelin_server
   fi
   for server in "$ZEPPELIN_HOST"; do
-    scp -q ec2-variables.sh "${server}:~/snappydata/"
-    scp -q zeppelin-setup.sh "${server}:~/snappydata/"
-    scp -q fetch-distribution.sh "${server}:~/snappydata/"
-    # scp snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar "${server}:~/snappydata/"
+    ssh "$server" "mkdir -p ~/snappydata"
+    scp -q ec2-variables.sh "${server}:~/snappydata"
+    scp -q zeppelin-setup.sh "${server}:~/snappydata"
+    scp -q fetch-distribution.sh "${server}:~/snappydata"
   done
   ssh "$ZEPPELIN_HOST" -t -t "sh ${DIR}/zeppelin-setup.sh"
 fi

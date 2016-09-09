@@ -61,6 +61,7 @@ SNAPPY_EC2_VERSION = "0.1"
 SNAPPY_EC2_DIR = os.path.dirname(os.path.realpath(__file__))
 SNAPPY_AWS_CONF_DIR = SNAPPY_EC2_DIR + "/deploy/home/ec2-user/snappydata"
 SNAPPYDATA_UI_PORT = ""
+LOCATOR_CLIENT_PORT = "1527"
 
 DEFAULT_SNAPPY_VERSION = "LATEST"
 
@@ -260,9 +261,9 @@ def parse_args():
         "--additional-tags", type="string", default="",
         help="Additional tags to set on the machines; tags are comma-separated, while name and " +
              "value are colon separated; ex: \"Task:MySnappyProject,Env:production\"")
-    # parser.add_option(
-    #     "--copy-aws-credentials", action="store_true", default=False,
-    #     help="Add AWS credentials to hadoop configuration to allow Snappy to access S3")
+    parser.add_option(
+        "--copy-aws-credentials", action="store_true", default=False,
+        help="Add AWS credentials to hadoop configuration to allow Snappy to access S3")
     parser.add_option(
         "--subnet-id", default=None,
         help="VPC subnet to launch instances in")
@@ -392,9 +393,11 @@ def get_ami(opts):
 
 def read_ports_from_conf(fname, patterns):
     global SNAPPYDATA_UI_PORT
+    global LOCATOR_CLIENT_PORT
     ports = []
 
     if os.path.exists(fname):
+        print("Path exists %s" % fname);
         with open(fname) as conffile:
             filedata = conffile.read()
             for pattern in patterns:
@@ -403,6 +406,8 @@ def read_ports_from_conf(fname, patterns):
                     ports.append(m.group(0))
                     if pattern == "-spark.ui.port=":
                         SNAPPYDATA_UI_PORT = m.group(0)
+                    if pattern == "-client-port=" and fname == SNAPPY_AWS_CONF_DIR + '/locators':
+                        LOCATOR_CLIENT_PORT = m.group(0)
             conffile.close()
     return ports
 
@@ -848,7 +853,7 @@ def launch_cluster(conn, opts, cluster_name):
              key_name=opts.key_pair,
              security_group_ids=[zeppelin_group.id] + additional_group_ids,
              instance_type=opts.instance_type,
-             placement=[opts.zone],
+             placement=zones[0],
              min_count=1,
              max_count=1,
              block_device_map=block_map,
@@ -859,7 +864,7 @@ def launch_cluster(conn, opts, cluster_name):
              instance_profile_name=opts.instance_profile_name)
          zeppelin_nodes += zeppelin_res.instances
          print("Launched zeppelin server in {z}, regid = {r}".format(
-               z=opts.zone,
+               z=zones[0],
                r=zeppelin_res.id))
 
     # This wait time corresponds to SPARK-4983
@@ -946,6 +951,7 @@ def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes,
     locator = get_dns_name(locator_nodes[0], opts.private_ips)
     # Read the UI port from conf/leads, if available.
     read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-spark.ui.port='])
+    read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port='])
 
     if deploy_ssh_key:
         print("Generating cluster's SSH key on locator...")
@@ -956,7 +962,8 @@ def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, zeppelin_nodes,
         """
         ssh(locator, opts, key_setup)
         dot_ssh_tar = ssh_read(locator, opts, ['tar', 'c', '.ssh'])
-        print("Transferring cluster's SSH key to other locators...")
+        if len(locator_nodes) > 1:
+            print("Transferring cluster's SSH key to other locators...")
         for index in range(len(locator_nodes)):
             if index > 0:
                 locator_address = get_dns_name(locator_nodes[index], opts.private_ips)
@@ -1214,7 +1221,6 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
         else: 
             zeppelin_address = lead_addresses[0]
 
-    print("zp addr %s" % zeppelin_address)
     template_vars = {
         "locator_list": '\n'.join(locator_addresses),
         "lead_list": '\n'.join(lead_addresses),
@@ -1222,12 +1228,14 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
         "zeppelin_server": zeppelin_address
     }
 
-    # if opts.copy_aws_credentials:
-    #     template_vars["aws_access_key_id"] = conn.aws_access_key_id
-    #     template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
-    # else:
-    #     template_vars["aws_access_key_id"] = ""
-    #     template_vars["aws_secret_access_key"] = ""
+    if opts.copy_aws_credentials:
+        template_vars["aws_access_key_id"] = conn.aws_access_key_id
+        template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
+    else:
+        template_vars["aws_access_key_id"] = ""
+        template_vars["aws_secret_access_key"] = ""
+
+    template_vars["locator_client_port"] = LOCATOR_CLIENT_PORT
 
     # Create a temp directory in which we will place all the files to be
     # deployed after we substitue template parameters in them
@@ -1505,8 +1513,9 @@ def real_main():
             else:
                 zp = lead
             url = "http://%s:8080" % zp
-            print("Apache Zeppelin server started at http://%s:8080" % zp)
-            webbrowser.open(url, new=2)
+            print("Apache Zeppelin server started at %s" % url)
+            # webbrowser.open(url, new=2)
+            webbrowser.open_new_tab(url)
 
     elif action == "destroy":
         (locator_nodes, lead_nodes, server_nodes, zeppelin_nodes) = get_existing_cluster(
@@ -1721,6 +1730,7 @@ def main():
         real_main()
     except UsageError as e:
         print("\nError:\n", e, file=stderr)
+        print("\n\t\t** PLEASE STOP/TERMINATE THE EC2 INSTANCES OF THIS CLUSTER IF ANY OF THEM ARE LAUNCHED BEFORE THIS ERROR **\n", e, file=stderr)
         sys.exit(1)
 
 
