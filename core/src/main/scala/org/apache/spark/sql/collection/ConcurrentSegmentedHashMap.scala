@@ -18,7 +18,7 @@
 package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.{ReentrantReadWriteLock, Lock}
 
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
@@ -173,6 +173,18 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val groupedHashes = new Array[mutable.ArrayBuilder.ofInt](nsegs)
     var numAdded = 0
 
+    def getLockedValidSegmentAndLock(i:Int) :(M, ReentrantReadWriteLock.WriteLock) = {
+      var seg = segs(i)
+      var lock = seg.writeLock
+      lock.lock()
+      while(!seg.valid) {
+        lock.unlock()
+        seg = segs(i)
+        lock = seg.writeLock
+        lock.lock()
+      }
+      (seg, lock)
+    }
     // split into max batch sizes to avoid buffering up too much
     val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
@@ -202,15 +214,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         if (keys != null) {
           val hashes = groupedHashes(i).result()
           val nhashes = hashes.length
-          var seg = segs(i)
-          var lock = seg.writeLock
-          lock.lock()
-          while(!seg.valid) {
-            lock.unlock()
-            seg = segs(i)
-            lock = seg.writeLock
-            lock.lock()
-          }
+          var(seg, lock) = getLockedValidSegmentAndLock(i)
 
           try {
             var added: java.lang.Boolean = null
@@ -234,18 +238,12 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 //  if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
                     //idx = nhashes
-                  change.segmentAbort(seg)
-                  seg = segs(i)
-                  lock = seg.writeLock
-                  lock.lock()
-                  while(!seg.valid) {
-                    lock.unlock()
-                    seg = segs(i)
-                    lock = seg.writeLock
-                    lock.lock()
-                  }
+                change.segmentAbort(seg)
+                val segmentAndLock = getLockedValidSegmentAndLock(i)
+                seg = segmentAndLock._1
+                lock = segmentAndLock._2
                 //  }
-                  idx += 1
+                idx += 1
 
                // } finally {
                   //lock.lock()
