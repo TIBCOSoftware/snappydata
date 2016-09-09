@@ -150,7 +150,8 @@ class BaseColumnFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
-          pushProjections = true,
+          pushProjections = false,
+          useResultSet = true,
           connProperties,
           Array.empty[Filter],
           Array.empty[Partition]

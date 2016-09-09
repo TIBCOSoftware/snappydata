@@ -61,7 +61,7 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
 
   override def nextBinary(columnBytes: Array[Byte]): Unit = {}
 
-  override def notNull(columnBytes: Array[Byte], ordinal: Int): Byte = -1
+  override def notNull(columnBytes: Array[Byte], ordinal: Int): Int = -1
 
   override def readBoolean(bytes: Array[Byte]): Boolean =
     rs.getBoolean(columnPosition)

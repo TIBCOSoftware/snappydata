@@ -50,6 +50,7 @@ class RowFormatScanRDD(_sc: SparkContext,
     isPartitioned: Boolean,
     columns: Array[String],
     val pushProjections: Boolean,
+    val useResultSet: Boolean,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
@@ -206,7 +207,7 @@ class RowFormatScanRDD(_sc: SparkContext,
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
-    if (pushProjections) {
+    if (pushProjections || useResultSet) {
       val (conn, stmt, rs) = computeResultSet(thePart)
       new ResultSetTraversal(conn, stmt, rs, context)
     } else {

@@ -110,6 +110,7 @@ class RowFormatRelation(
           isPartitioned,
           requiredColumns,
           pushProjections = false,
+          useResultSet = false,
           connProperties,
           handledFilters,
           parts

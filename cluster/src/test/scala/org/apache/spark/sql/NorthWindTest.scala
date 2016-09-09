@@ -522,7 +522,7 @@ class NorthWindTest
         case "Q23" => assertQuery(snc, NWQueries.Q23, 1, 1, classOf[RowTableScan])
         case "Q24" => assertQuery(snc, NWQueries.Q24, 4, 5, classOf[ProjectExec])
         case "Q25" => assertJoin(snc, NWQueries.Q25, 1, 4, classOf[ColumnTableScan])
-        case "Q26" => assertJoin(snc, NWQueries.Q26, 89, 4, classOf[BroadcastHashJoinExec])
+        case "Q26" => assertJoin(snc, NWQueries.Q26, 86, 4, classOf[BroadcastHashJoinExec])
 //       // case "Q27" => assertJoin(snc, NWQueries.Q27, 9, 4, classOf[SortMergeJoinExec])
 //        case "Q28" => assertJoin(snc, NWQueries.Q28, 12, 4, classOf[ColumnTableScan])
 //        case "Q29" => assertJoin(snc, NWQueries.Q29, 8, 4, classOf[BroadcastHashJoinExec])

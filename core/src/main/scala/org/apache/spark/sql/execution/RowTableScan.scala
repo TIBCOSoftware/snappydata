@@ -53,21 +53,17 @@ private[sql] final case class RowTableScan(
 
     rdd match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
-        RowTableScan.doProduceWithoutProjection(ctx, input, numOutputRows,
-          output, baseRelation, this)
+        doProduceWithoutProjection(ctx, input, numOutputRows,
+          output, baseRelation)
       case _ =>
-        RowTableScan.doProduceWithProjection(ctx, input, numOutputRows,
-          output, baseRelation, this)
+        doProduceWithProjection(ctx, input, numOutputRows,
+          output, baseRelation)
     }
   }
-}
-
-object RowTableScan {
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
       numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan,
-      forObject: CodegenSupport): String = {
+      baseRelation: PartitionedDataSourceScan): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
@@ -84,7 +80,7 @@ object RowTableScan {
        |  while ($input.hasNext()) {
        |    final $compactRowClass $row = ($compactRowClass)$input.next();
        |    $numRows++;
-       |    ${forObject.consume(ctx, columnsRowInput).trim}
+       |    ${consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {
@@ -99,8 +95,7 @@ object RowTableScan {
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
       numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan,
-      forObject: CodegenSupport): String = {
+      baseRelation: PartitionedDataSourceScan): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
     val iterator = ctx.freshName("iterator")
@@ -117,7 +112,7 @@ object RowTableScan {
        |  while ($iterator.hasNext()) {
        |    $iterator.next();
        |    $numRows++;
-       |    ${forObject.consume(ctx, columnsRowInput).trim}
+       |    ${consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {

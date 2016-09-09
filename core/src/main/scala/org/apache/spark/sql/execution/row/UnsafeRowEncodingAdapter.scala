@@ -50,7 +50,7 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def nextBinary(columnBytes: Array[Byte]): Unit = {}
 
-  override def notNull(columnBytes: Array[Byte], ordinal: Int): Byte =
+  override def notNull(columnBytes: Array[Byte], ordinal: Int): Int =
     if (holder.row.isNullAt(columnIndex)) 0 else 1
 
   override def readBoolean(bytes: Array[Byte]): Boolean =
@@ -95,8 +95,6 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def readStruct(bytes: Array[Byte], numFields: Int): UnsafeRow =
     holder.row.getStruct(columnIndex, numFields)
-
-  override def wasNull(): Boolean = false
 }
 
 final class UnsafeRowHolder {

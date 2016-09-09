@@ -45,7 +45,13 @@ abstract class ColumnEncoding {
 
   def initializeDecoding(columnBytes: Array[Byte], field: Attribute): Unit = {}
 
-  def notNull(columnBytes: Array[Byte], ordinal: Int): Byte
+  /**
+   * Returns 1 to indicate that column value was not-null,
+   * 0 to indicate that it was null and -1 to indicate that
+   * <code>wasNull()</code> needs to be invoked after the
+   * appropriate read method.
+   */
+  def notNull(columnBytes: Array[Byte], ordinal: Int): Int
 
   def nextBoolean(columnBytes: Array[Byte]): Unit
 
@@ -102,6 +108,11 @@ abstract class ColumnEncoding {
 
   def readStruct(columnBytes: Array[Byte], numFields: Int): UnsafeRow
 
+  /**
+   * Only to be used for implementations (ResultSet adapter) that need to check
+   * for null after having invoked the appropriate read method.
+   * The <code>notNull</code> method should return -1 for such implementations.
+   */
   def wasNull(): Boolean = false
 
   def initializeEncoding(dataType: DataType, batchSize: Int): Array[Byte] =
@@ -276,7 +287,7 @@ trait NotNullColumn extends ColumnEncoding {
     cursor += 8 // skip numNullValues and typeId
   }
 
-  override def notNull(bytes: Array[Byte], ordinal: Int): Byte = 1
+  override def notNull(bytes: Array[Byte], ordinal: Int): Int = 1
 }
 
 trait NullableColumn extends ColumnEncoding {
@@ -367,7 +378,7 @@ trait NullableColumn extends ColumnEncoding {
     */
   }
 
-  override final def notNull(bytes: Array[Byte], ordinal: Int): Byte = {
+  override final def notNull(bytes: Array[Byte], ordinal: Int): Int = {
     if (ordinal != nextNullOrdinal) 1
     else {
       updateNextNullOrdinal()
