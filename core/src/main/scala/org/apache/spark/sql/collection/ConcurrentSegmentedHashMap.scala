@@ -202,8 +202,8 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         if (keys != null) {
           val hashes = groupedHashes(i).result()
           val nhashes = hashes.length
-          val seg = segs(i)
-          val lock = seg.writeLock
+          var seg = segs(i)
+          var lock = seg.writeLock
           lock.lock()
           try {
             var added: java.lang.Boolean = null
@@ -215,14 +215,18 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 idx += 1
               } else {
                 // indicates that loop must be broken immediately
+                // need to take the latest reference of segmnet
+                //after segmnetAbort is successful
                 lock.unlock()
                 try {
                   if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
-                    idx = nhashes
-                  } else {
-                    idx += 1
+                    //idx = nhashes
+                    seg = segs(i)
+                    lock = seg.writeLock()
                   }
+                  idx += 1
+
                 } finally {
                   lock.lock()
                 }
