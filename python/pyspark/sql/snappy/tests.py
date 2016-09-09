@@ -53,12 +53,9 @@ class SnappyContextTests(ReusedPySparkTestCase):
     testdata = [[1, 2, 3], [7, 8, 9], [1, 2, 3], [4, 2, 3], [5, 6, 7]]
     tablename = "TESTTABLE"
 
-    def test_get_or_create(self):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
-        self.assertTrue(SnappyContext.getOrCreate(self.sc) is sqlcontext)
 
     def test_new_session(self):
-        sqlcontext1 = SnappyContext.getOrCreate(self.sc)
+        sqlcontext1 = SnappyContext(self.sc)
         sqlcontext1.setConf("test_key", "a")
 
         sqlcontext2 = sqlcontext1.newSession()
@@ -71,6 +68,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
         ddl = "CREATE TABLE " + SnappyContextTests.tablename + \
               " (Col1 INT, Col2 INT, Col3 INT) " + " USING row OPTIONS (PARTITION_BY 'Col1')"
         self.create_table_using_sql(ddl, "row")
+        print("table created")
         self.verify_table_rows(5)
 
         self.truncate_table()
@@ -78,67 +76,10 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
         self.drop_table()
 
-    def test_column_table_with_sql_api(self):
-        ddl = "Create Table " + SnappyContextTests.tablename + \
-              " (Col1 INT, Col2 INT, Col3 INT) " + " USING column OPTIONS ()"
-        self.create_table_using_sql(ddl, "column")
-        self.verify_table_rows(5)
 
-        self.truncate_table()
-        self.verify_table_rows(0)
-
-        self.drop_table()
-
-    def test_row_table_with_datasource_api(self):
-        self.drop_table(True)
-        self.create_table_using_datasource("row")
-        self.verify_table_rows(5)
-
-        self.truncate_table()
-        self.verify_table_rows(0)
-
-        self.drop_table()
-
-        self.create_table_using_datasource("row", True)
-        self.verify_table_rows(5)
-
-        self.drop_table()
-
-    def test_column_table_with_datasource_api(self):
-        self.drop_table(True)
-        self.create_table_using_datasource("column")
-        self.verify_table_rows(5)
-        self.truncate_table()
-        self.verify_table_rows(0)
-
-    def test_update(self):
-        self.drop_table(True)
-        self.create_table_using_datasource("row")
-        self.update_table()
-        self.drop_table()
-
-    def test_put(self):
-         self.drop_table(True)
-         self.create_table_using_datasource("row")
-         self.put_table()
-         self.drop_table()
-
-    def test_insert(self):
-        self.drop_table(True)
-        self.create_table_using_datasource("row")
-        self.insert_table()
-        self.drop_table()
-
-
-    def test_delete(self):
-        self.drop_table(True)
-        self.create_table_using_datasource("row")
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
-        self.assertTrue(sqlcontext.delete(SnappyContextTests.tablename, "col1=1"), 2)
-        self.drop_table()
 
     def put_table(self):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         newrow = [1L, 2L, 3L], [2L, 3L, 4L]
         sqlcontext.put(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
@@ -147,7 +88,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
         self.verify_table_rows(8)
 
     def insert_table(self):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         newrow = [1L, 2L, 3L], [2L, 3L, 4L]
         sqlcontext.insert(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
@@ -156,32 +97,32 @@ class SnappyContextTests(ReusedPySparkTestCase):
         self.verify_table_rows(8)
 
     def update_table(self):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         modifiedrows = sqlcontext.update(SnappyContextTests.tablename, "COL2 =2", [7L], ["COL1"])
         self.assertTrue(modifiedrows == 3)
 
     def truncate_table(self):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         sqlcontext.truncateTable(SnappyContextTests.tablename)
 
     def verify_table_rows(self, rowcount):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         result = sqlcontext.sql("SELECT COUNT(*) FROM " + SnappyContextTests.tablename).collect()
         self.assertTrue(result[0]._c0 == rowcount)
 
     def drop_table(self, ifexists=False):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         sqlcontext.dropTable(SnappyContextTests.tablename, ifexists)
 
     def create_table_using_sql(self, ddl, provider):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         dataDF = sqlcontext._sc.parallelize(SnappyContextTests.testdata, 5).toDF()
         sqlcontext.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
         sqlcontext.sql(ddl)
         dataDF.write.format(provider).mode("append").saveAsTable(SnappyContextTests.tablename)
 
     def create_table_using_datasource(self, provider, schemaddl=False):
-        sqlcontext = SnappyContext.getOrCreate(self.sc)
+        sqlcontext = SnappyContext(self.sc)
         df = sqlcontext._sc.parallelize(SnappyContextTests.testdata, 5).toDF(["COL1", "COL2", "COL3"])
         if schemaddl is False:
             sqlcontext.createTable(SnappyContextTests.tablename, provider, df.schema)

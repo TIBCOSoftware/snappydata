@@ -776,7 +776,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -860,7 +860,7 @@ task runQuickstart {
 
       runSQLScript('create_and_load_row_table.sql', workingDir)
 
-      runSQLScript('create_and_load_sample_table.sql', workingDir)
+     /* runSQLScript('create_and_load_sample_table.sql', workingDir)
 
       runSQLScript('status_queries.sql', workingDir)
 
@@ -876,14 +876,14 @@ task runQuickstart {
           'createJob', workingDir)
 
       runSubmitQuery('io.snappydata.examples.AirlineDataJob',
-          'processjob', workingDir)
+          'processjob', workingDir)*/
 
       String startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh",
           workingDir, [])
       println startSparkResult
 
       String hostname = 'hostname'.execute().text.trim()
-      String airlineappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
+      /*String airlineappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
               ['--class', 'io.snappydata.examples.AirlineDataSparkApp', '--master', "spark://${hostname}:7077",
                '--conf', 'snappydata.store.locators=localhost:10334', '--conf', 'spark.ui.port=4041',
                "${snappyProductDir}/examples/jars/${exampleArchiveName}"])
@@ -891,13 +891,13 @@ task runQuickstart {
       println airlineappresult
       if (airlineappresult.toLowerCase().contains('exception')) {
         throw new GradleException('Failed to submit AirlineDataSparkApp')
-      }
+      }*/
 
       def examplesdir = project(":snappy-examples_${scalaBinaryVersion}")
 
       String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/python/examples/AirlineDataPythonApp.py"])
+           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
 
       println airlinepythonappresult
       if (airlinepythonappresult.toLowerCase().contains('exception')) {
