@@ -205,6 +205,13 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
           var seg = segs(i)
           var lock = seg.writeLock
           lock.lock()
+          while(!seg.valid) {
+            lock.unlock()
+            seg = segs(i)
+            lock = seg.writeLock
+            lock.lock()
+          }
+
           try {
             var added: java.lang.Boolean = null
             var idx = 0
@@ -296,8 +303,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def clear(): Unit = writeLockAllSegments { segments =>
-    segments.indices.foreach(segments(_) =
-        segmentCreator(initSegmentCapacity(segments.length), loadFactor))
+    segments.indices.foreach(i=> {
+      segments(i).valid_=(false)
+      segments(i) = segmentCreator(initSegmentCapacity(segments.length), loadFactor)
+    })
   }
 
   final def size = _size.get
