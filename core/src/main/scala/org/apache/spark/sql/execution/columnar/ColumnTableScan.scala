@@ -14,9 +14,31 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+/*
+ * UnionScanRDD taken from Spark's UnionRDD having the license below.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.rdd.RDD
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
+
+import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
@@ -26,6 +48,7 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalRDD}
 import org.apache.spark.sql.types._
+import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -56,7 +79,7 @@ private[sql] final case class ColumnTableScan(
         "number of output rows from other RDDs")))
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
-  else rdd.sparkContext.union((Seq(rdd) ++ otherRDDs)
+  else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
       .asInstanceOf[Seq[RDD[Any]]])
 
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
@@ -317,7 +340,7 @@ private[sql] final case class ColumnTableScan(
         s"$decoder.nextDecimal($buffer, ${t.precision});"
       case CalendarIntervalType => s"$decoder.nextInterval($buffer);"
       case BinaryType | _: ArrayType | _: MapType | _: StructType =>
-        s"$decoder.nextBinary($buffer)"
+        s"$decoder.nextBinary($buffer);"
       case NullType => ""
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
@@ -381,5 +404,50 @@ private[sql] final case class ColumnTableScan(
     } else {
       ExprCode(s"final $jt $col = $extract;", "false", col)
     }
+  }
+}
+
+/**
+ * This class is a simplified copy of Spark's UnionRDD. The reason for
+ * having this is to ensure that partition IDs are always assigned in order
+ * (which may possibly change in future versions of Spark's UnionRDD)
+ * so that a compute on executor can tell owner RDD of the current partition.
+ */
+private[sql] final class UnionScanRDD[T: ClassTag](
+    sc: SparkContext,
+    var rdds: Seq[RDD[T]])
+    extends RDD[T](sc, Nil) {
+
+  override def getPartitions: Array[Partition] = {
+    val array = new Array[Partition](rdds.map(_.getNumPartitions).sum)
+    var pos = 0
+    for ((rdd, rddIndex) <- rdds.zipWithIndex; split <- rdd.partitions) {
+      array(pos) = new UnionPartition(pos, rdd, rddIndex, split.index)
+      pos += 1
+    }
+    array
+  }
+
+  override def getDependencies: Seq[Dependency[_]] = {
+    val deps = new ArrayBuffer[Dependency[_]]
+    var pos = 0
+    for (rdd <- rdds) {
+      deps += new RangeDependency(rdd, 0, pos, rdd.getNumPartitions)
+      pos += rdd.getNumPartitions
+    }
+    deps
+  }
+
+  override def compute(s: Partition, context: TaskContext): Iterator[T] = {
+    val part = s.asInstanceOf[UnionPartition[T]]
+    parent[T](part.parentRddIndex).iterator(part.parentPartition, context)
+  }
+
+  override def getPreferredLocations(s: Partition): Seq[String] =
+    s.asInstanceOf[UnionPartition[T]].preferredLocations()
+
+  override def clearDependencies() {
+    super.clearDependencies()
+    rdds = null
   }
 }

@@ -37,7 +37,7 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(sqlText, sqlParser.expression.run())
+    sqlParser.parse(sqlText, sqlParser.namedExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */

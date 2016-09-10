@@ -23,7 +23,6 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
@@ -152,7 +151,7 @@ object StoreUtils extends Logging {
   }
 
   private def allocateBucketsToPartitions(sc: SparkContext,
-                                    region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion): Array[Partition] = {
 
     val numBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember, mutable.HashSet[Int]]()
@@ -160,7 +159,7 @@ object StoreUtils extends Logging {
     for (p <- 0 until numBuckets) {
       val owner = region.getBucketPrimary(p)
       val bucketSet = {
-        if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
+        if (serverToBuckets.contains(owner)) serverToBuckets(owner)
         else new mutable.HashSet[Int]()
       }
       bucketSet += p
@@ -168,16 +167,14 @@ object StoreUtils extends Logging {
       serverToBuckets put(owner, bucketSet)
     }
     val numPartitions = sc.schedulerBackend.defaultParallelism()
-    val numExecuterNodes = {
+    val numExecutorNodes = {
       if (Utils.isLoner(sc)) {
-          SnappyContext.storeToBlockMap.size
+        SnappyContext.storeToBlockMap.size
       } else {
         SnappyContext.storeToBlockMap.size - 1 // ignore driver
       }
     }
-    val numCores = numPartitions / numExecuterNodes
-    val localCores = Runtime.getRuntime.availableProcessors()
-    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+    val numCores = numPartitions / math.max(1, numExecutorNodes)
     val partitions = {
       if (numBuckets < numPartitions) {
         new Array[Partition](numBuckets)
@@ -185,18 +182,18 @@ object StoreUtils extends Logging {
         new Array[Partition](numPartitions)
       }
     }
-    var partCnt = 0;
+    var partCnt = 0
     serverToBuckets foreach (e => {
       var numCoresPending = numCores
       var localBuckets = e._2
       var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
       assert(maxBucketsPerPart >= 1)
-        while (partCnt <= numPartitions && !localBuckets.isEmpty) {
-          var cntr = 0;
+        while (partCnt <= numPartitions && localBuckets.nonEmpty) {
+          var cntr = 0
           val bucketsPerPart = new mutable.HashSet[Int]()
           maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
           assert(maxBucketsPerPart >= 1)
-          while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
+          while (cntr < maxBucketsPerPart && localBuckets.nonEmpty) {
             val buck = localBuckets.head
             bucketsPerPart += buck
             localBuckets = localBuckets - buck
@@ -205,7 +202,7 @@ object StoreUtils extends Logging {
           }
           val perfNodes = new mutable.HashSet[BlockManagerId]()
           if (SnappyContext.storeToBlockMap.get(e._1.toString).isDefined) {
-            perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
+            perfNodes += SnappyContext.storeToBlockMap(e._1.toString)
           }
           val prefNodeSeq = perfNodes.toSeq
           partitions(partCnt) = new MultiBucketExecutorPartition(
