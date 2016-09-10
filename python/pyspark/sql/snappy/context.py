@@ -17,6 +17,7 @@
 
 from py4j.protocol import Py4JError
 from pyspark.sql.context import SQLContext
+from pyspark.sql.snappy.snappysession import SnappySession
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame
 
@@ -31,20 +32,14 @@ class SnappyContext(SQLContext):
     """
 
     def __init__(self, sparkContext, snappyContext=None):
-        SQLContext.__init__(self, sparkContext)
+        self._sc = sparkContext
+        self._jsc = self._sc._jsc
+        self._jvm = self._sc._jvm
+        snappySession = SnappySession(sparkContext)
+        SQLContext.__init__(self, sparkContext, snappySession)
         if snappyContext:
             self._scala_SnappyContext = snappyContext
 
-    @classmethod
-    def getOrCreate(cls, sc):
-        """
-        Get the existing SnappyContext or create a new one with given SparkContext.
-        :param sc: SparkContext
-        """
-        if cls._instantiatedContext is None:
-            jsqlContext = sc._jvm.SnappyContext.getOrCreate(sc._jsc.sc())
-            cls(sc, jsqlContext)
-        return cls._instantiatedContext
 
     @property
     def _ssql_ctx(self):
@@ -57,7 +52,7 @@ class SnappyContext(SQLContext):
                             "./gradlew product ", e)
 
     def _get_snappy_ctx(self):
-        return self._jvm.SnappyContext(self._jsc.sc())
+        return self._jvm.SnappyContext(self.sparkSession._jsparkSession)
 
     def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """
