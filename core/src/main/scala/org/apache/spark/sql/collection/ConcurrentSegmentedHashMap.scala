@@ -206,6 +206,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         }
       }
 
+      var lockedState = false
       // now lock segments one by one and then apply changes for all keys
       // of the locked segment
       // shuffle the indexes to minimize segment thread contention
@@ -215,7 +216,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
           val hashes = groupedHashes(i).result()
           val nhashes = hashes.length
           var(seg, lock) = getLockedValidSegmentAndLock(i)
-
+          lockedState = true
           try {
             var added: java.lang.Boolean = null
             var idx = 0
@@ -229,6 +230,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // need to take the latest reference of segmnet
                 //after segmnetAbort is successful
                 lock.unlock()
+                lockedState = false
                 //Because two threads can concurrently call segmentAbort
                 //& is since locks are released,  there is no guarantee that
                 // one thread would correctly identify if the other has cleared
@@ -240,6 +242,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                     //idx = nhashes
                 change.segmentAbort(seg)
                 val segmentAndLock = getLockedValidSegmentAndLock(i)
+                lockedState = true
                 seg = segmentAndLock._1
                 lock = segmentAndLock._2
                 //  }
@@ -250,8 +253,11 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 //}
               }
             }
-          } finally {
-            lock.unlock()
+          }
+          finally {
+            if(lockedState) {
+              lock.unlock()
+            }
           }
           // invoke the segmentEnd method outside of the segment lock
           change.segmentEnd(seg)
