@@ -17,6 +17,7 @@
 package org.apache.spark.sql.execution.columnar.encoding
 
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, TimestampType}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -26,7 +27,7 @@ final class DictionaryEncoding
 final class DictionaryEncodingNullable
     extends DictionaryEncodingBase with NullableColumn
 
-abstract class DictionaryEncodingBase extends UncompressedBase {
+abstract class DictionaryEncodingBase extends ColumnEncoding {
 
   override final def typeId: Int = 2
 
@@ -39,15 +40,16 @@ abstract class DictionaryEncodingBase extends UncompressedBase {
   private[this] final var intDictionary: Array[Int] = _
   private[this] final var longDictionary: Array[Long] = _
 
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute, dataType: DataType): Unit = {
+  override def initializeDecoding(columnBytes: AnyRef,
+      field: Attribute): Long = {
+    var cursor = super.initializeDecoding(columnBytes, field)
     val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
-    dataType match {
+    Utils.getSQLDataType(field.dataType) match {
       case StringType =>
         stringDictionary = new Array[UTF8String](elementNum)
         (0 until elementNum).foreach { index =>
-          val s = super.readUTF8String(columnBytes)
+          val s = ColumnEncoding.readUTF8String(columnBytes, cursor)
           stringDictionary(index) = s
           cursor += (4 + s.numBytes())
         }
@@ -66,24 +68,25 @@ abstract class DictionaryEncodingBase extends UncompressedBase {
       case _ => throw new UnsupportedOperationException(
         s"DictionaryEncoding not supported for ${field.dataType}")
     }
-    cursor -= 2 // move cursor back so that first next call increments it
+    cursor - 2 // move cursor back so that first next call increments it
   }
 
-  override final def nextUTF8String(columnBytes: Array[Byte]): Unit =
-    cursor += 2
+  override final def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
+    cursor + 2
 
-  override final def readUTF8String(columnBytes: Array[Byte]): UTF8String =
-    stringDictionary(super.readShort(columnBytes))
+  override final def readUTF8String(columnBytes: AnyRef,
+      cursor: Long): UTF8String =
+    stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
-  override final def nextInt(columnBytes: Array[Byte]): Unit =
-    cursor += 2
+  override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
+    cursor + 2
 
-  override final def readInt(columnBytes: Array[Byte]): Int =
-    intDictionary(super.readShort(columnBytes))
+  override final def readInt(columnBytes: AnyRef, cursor: Long): Int =
+    intDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
-  override final def nextLong(columnBytes: Array[Byte]): Unit =
-    cursor += 2
+  override final def nextLong(columnBytes: AnyRef, cursor: Long): Long =
+    cursor + 2
 
-  override final def readLong(columnBytes: Array[Byte]): Long =
-    longDictionary(super.readShort(columnBytes))
+  override final def readLong(columnBytes: AnyRef, cursor: Long): Long =
+    longDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 }

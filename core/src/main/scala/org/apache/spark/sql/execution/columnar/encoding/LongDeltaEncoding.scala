@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types.{DataType, LongType, TimestampType}
 import org.apache.spark.unsafe.Platform
 
@@ -25,9 +24,9 @@ final class LongDeltaEncoding extends LongDeltaEncodingBase with NotNullColumn
 final class LongDeltaEncodingNullable
     extends LongDeltaEncodingBase with NullableColumn
 
-abstract class LongDeltaEncodingBase extends UncompressedBase {
+abstract class LongDeltaEncodingBase extends ColumnEncoding {
 
-  private[this] var prev = 0L
+  private[this] final var prev: Long = 0L
 
   override final def typeId: Int = 5
 
@@ -36,24 +35,19 @@ abstract class LongDeltaEncodingBase extends UncompressedBase {
     case _ => false
   }
 
-  override final def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute, dataType: DataType): Unit = {
-    // optimistically use the cursor as java index for single byte reads
-    cursor -= Platform.BYTE_ARRAY_OFFSET
-  }
-
-  override final def nextLong(bytes: Array[Byte]): Unit = {
-    val delta = bytes(cursor)
-    cursor += 1
+  override final def nextLong(columnBytes: AnyRef, cursor: Long): Long = {
+    val delta = Platform.getByte(columnBytes, cursor)
     if (delta > Byte.MinValue) {
       prev += delta
+      cursor + 1
     } else {
-      prev = ColumnEncoding.readLong(bytes, cursor + Platform.BYTE_ARRAY_OFFSET)
-      cursor += 8
+      prev = ColumnEncoding.readLong(columnBytes, cursor + 1)
+      cursor + 9
     }
   }
 
-  override final def readLong(bytes: Array[Byte]): Long = prev
+  override final def readLong(columnBytes: AnyRef, cursor: Long): Long = prev
 
-  override final def readTimestamp(columnBytes: Array[Byte]): Long = prev
+  override final def readTimestamp(columnBytes: AnyRef,
+      cursor: Long): Long = prev
 }

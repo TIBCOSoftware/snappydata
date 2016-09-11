@@ -172,6 +172,7 @@ private[sql] final case class ColumnTableScan(
     val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
     val columnBufferInitCode = new StringBuilder
     val bufferInitCode = new StringBuilder
+    val cursorUpdateCode = new StringBuilder
     val moveNextCode = new StringBuilder
 
     val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
@@ -204,7 +205,9 @@ private[sql] final case class ColumnTableScan(
 
     val columnsInput = output.zipWithIndex.map { case (a, index) =>
       val decoder = ctx.freshName("decoder")
+      val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
+      val cursorVar = s"cursor$index"
       val decoderVar = s"decoder$index"
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
@@ -228,38 +231,38 @@ private[sql] final case class ColumnTableScan(
           """
         )
       }
+      ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       if (!isEmbedded) {
-        columnBufferInitCode.append(
-          s"""
-            $buffer = $buffers[$index];
-            $decoder = $decoderClass.getColumnDecoder($buffer,
-              $fields[$index]);
-          """)
+        columnBufferInitCode.append(s"$buffer = $buffers[$index];")
       } else if (isOffHeap) {
         columnBufferInitCode.append(
           s"""
             $buffer = $batch.getAsBytes($bufferPosition, ($wasNullClass)null);
-            $decoder = $decoderClass.getColumnDecoder($buffer,
-              $fields[$index]);
           """)
       } else {
         columnBufferInitCode.append(
-          s"""
-            $buffer = $rowFormatter.getLob($buffers, $bufferPosition);
-            $decoder = $decoderClass.getColumnDecoder($buffer,
-              $fields[$index]);
-          """)
+          s"$buffer = $rowFormatter.getLob($buffers, $bufferPosition);")
       }
+      columnBufferInitCode.append(
+        s"""
+          $decoder = $decoderClass.getColumnDecoder($buffer,
+            $fields[$index]);
+          // intialize the decoder and store the starting cursor position
+          $cursor = $decoder.initializeDecoding($buffer, $fields[$index]);
+        """)
       bufferInitCode.append(
         s"""
           final $decoderClass $decoderVar = $decoder;
           final byte[] $bufferVar = $buffer;
+          long $cursorVar = $cursor;
         """
       )
+      cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
       val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-        "batchOrdinal", a.dataType, notNullVar)).append('\n')
-      genCodeColumnBuffer(ctx, decoderVar, bufferVar, a.dataType, notNullVar)
+        cursorVar, "batchOrdinal", a.dataType, notNullVar)).append('\n')
+      genCodeColumnBuffer(ctx, decoderVar, bufferVar, cursorVar,
+        a.dataType, notNullVar)
     }
 
     val batchInit = if (!isEmbedded) {
@@ -337,6 +340,8 @@ private[sql] final case class ColumnTableScan(
        |      if (shouldStop()) {
        |        // increment index for premature return
        |        $batchIndex = batchOrdinal + 1;
+       |        // set the cursors
+       |        ${cursorUpdateCode.toString()}
        |        return;
        |      }
        |    }
@@ -355,19 +360,24 @@ private[sql] final case class ColumnTableScan(
   }
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
-      buffer: String, batchOrdinal: String, dataType: DataType,
-      notNullVar: String): String = {
+      buffer: String, cursorVar: String, batchOrdinal: String,
+      dataType: DataType, notNullVar: String): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val moveNext = sqlType match {
       case _ if ctx.isPrimitiveType(jt) =>
-        s"$decoder.next${ctx.primitiveTypeName(jt)}($buffer);"
-      case StringType => s"$decoder.nextUTF8String($buffer);"
-      case t: DecimalType =>
-        s"$decoder.nextDecimal($buffer, ${t.precision});"
-      case CalendarIntervalType => s"$decoder.nextInterval($buffer);"
+        val typeName = ctx.primitiveTypeName(jt)
+        s"$cursorVar = $decoder.next$typeName($buffer, $cursorVar);"
+      case StringType =>
+        s"$cursorVar = $decoder.nextUTF8String($buffer, $cursorVar);"
+      case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
+        s"$cursorVar = $decoder.nextLong($buffer, $cursorVar);"
+      case _: DecimalType =>
+        s"$cursorVar = $decoder.nextDecimal($buffer, $cursorVar);"
+      case CalendarIntervalType =>
+        s"$cursorVar = $decoder.nextInterval($buffer, $cursorVar);"
       case BinaryType | _: ArrayType | _: MapType | _: StructType =>
-        s"$decoder.nextBinary($buffer);"
+        s"$cursorVar = $decoder.nextBinary($buffer, $cursorVar);"
       case NullType => ""
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
@@ -381,22 +391,27 @@ private[sql] final case class ColumnTableScan(
   }
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
-      buffer: String, dataType: DataType, notNullVar: String): ExprCode = {
+      buffer: String, cursorVar: String, dataType: DataType,
+      notNullVar: String): ExprCode = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val extract = sqlType match {
-      case DateType => s"$decoder.readDate($buffer)"
-      case TimestampType => s"$decoder.readTimestamp($buffer)"
+      case DateType => s"$decoder.readDate($buffer, $cursorVar)"
+      case TimestampType => s"$decoder.readTimestamp($buffer, $cursorVar)"
       case _ if ctx.isPrimitiveType(jt) =>
-        s"$decoder.read${ctx.primitiveTypeName(jt)}($buffer)"
-      case StringType => s"$decoder.readUTF8String($buffer)"
-      case t: DecimalType =>
-        s"$decoder.readDecimal($buffer, ${t.precision}, ${t.scale})"
-      case BinaryType => s"$decoder.readBinary($buffer)"
-      case CalendarIntervalType => s"$decoder.readInterval($buffer)"
-      case _: ArrayType => s"$decoder.readArray($buffer)"
-      case _: MapType => s"$decoder.readMap($buffer)"
-      case t: StructType => s"$decoder.readStruct($buffer, ${t.size})"
+        s"$decoder.read${ctx.primitiveTypeName(jt)}($buffer, $cursorVar)"
+      case StringType => s"$decoder.readUTF8String($buffer, $cursorVar)"
+      case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
+        s"$decoder.readLongDecimal($buffer, ${d.precision}, ${d.scale}, " +
+            s"$cursorVar)"
+      case d: DecimalType =>
+        s"$decoder.readDecimal($buffer, ${d.precision}, ${d.scale}, $cursorVar)"
+      case BinaryType => s"$decoder.readBinary($buffer, $cursorVar)"
+      case CalendarIntervalType => s"$decoder.readInterval($buffer, $cursorVar)"
+      case _: ArrayType => s"$decoder.readArray($buffer, $cursorVar)"
+      case _: MapType => s"$decoder.readMap($buffer, $cursorVar)"
+      case t: StructType =>
+        s"$decoder.readStruct($buffer, ${t.size}, $cursorVar)"
       case NullType => "null"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")

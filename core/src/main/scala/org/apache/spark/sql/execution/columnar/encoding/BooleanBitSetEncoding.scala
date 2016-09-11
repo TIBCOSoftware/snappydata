@@ -25,9 +25,9 @@ final class BooleanBitSetEncoding
 final class BooleanBitSetEncodingNullable
     extends BooleanBitSetEncodingBase with NullableColumn
 
-abstract class BooleanBitSetEncodingBase extends UncompressedBase {
+abstract class BooleanBitSetEncodingBase extends ColumnEncoding {
 
-  private[this] var currentBitIndex = 0
+  private[this] var byteCursor = 0L
   private[this] var currentWord = 0L
 
   override final def typeId: Int = 3
@@ -35,24 +35,30 @@ abstract class BooleanBitSetEncodingBase extends UncompressedBase {
   override final def supports(dataType: DataType): Boolean =
     dataType == BooleanType
 
-  override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute, dataType: DataType): Unit = {
+  override def initializeDecoding(columnBytes: AnyRef,
+      field: Attribute): Long = {
+    val cursor = super.initializeDecoding(columnBytes, field)
     // read the count but its not used since CachedBatch has numRows
     ColumnEncoding.readInt(columnBytes, cursor)
-    cursor += 4
-    // initialize to max to force reading word in first nextBoolean call
-    currentBitIndex = ColumnEncoding.BITS_PER_LONG
+    byteCursor = cursor + 4
+    // return current bit index as the cursor so that is used and
+    // incremented in the next call; the byte position will happen once
+    // every 64 calls so that can be a member variable;
+    // return max to force reading word in first nextBoolean call
+    ColumnEncoding.BITS_PER_LONG
   }
 
-  override final def nextBoolean(bytes: Array[Byte]): Unit = {
+  override final def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = {
+    var currentBitIndex = cursor
     currentBitIndex += 1
-    if (currentBitIndex >= ColumnEncoding.BITS_PER_LONG) {
-      currentBitIndex = 0
-      currentWord = ColumnEncoding.readLong(bytes, cursor)
-      cursor += 8
+    if (currentBitIndex < ColumnEncoding.BITS_PER_LONG) currentBitIndex
+    else {
+      currentWord = ColumnEncoding.readLong(columnBytes, byteCursor)
+      byteCursor += 8
+      0L
     }
   }
 
-  override final def readBoolean(bytes: Array[Byte]): Boolean =
-    ((currentWord >> currentBitIndex) & 1) != 0
+  override final def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
+    ((currentWord >> cursor) & 1) != 0
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types.{DataType, DateType, IntegerType}
 import org.apache.spark.unsafe.Platform
 
@@ -25,9 +24,9 @@ final class IntDeltaEncoding extends IntDeltaEncodingBase with NotNullColumn
 final class IntDeltaEncodingNullable
     extends IntDeltaEncodingBase with NullableColumn
 
-abstract class IntDeltaEncodingBase extends UncompressedBase {
+abstract class IntDeltaEncodingBase extends ColumnEncoding {
 
-  private[this] var prev = 0
+  private[this] final var prev: Int = 0
 
   override final def typeId: Int = 4
 
@@ -36,24 +35,18 @@ abstract class IntDeltaEncodingBase extends UncompressedBase {
     case _ => false
   }
 
-  override final def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute, dataType: DataType): Unit = {
-    // optimistically use the cursor as java index for single byte reads
-    cursor -= Platform.BYTE_ARRAY_OFFSET
-  }
-
-  override final def nextInt(bytes: Array[Byte]): Unit = {
-    val delta = bytes(cursor)
-    cursor += 1
+  override final def nextInt(columnBytes: AnyRef, cursor: Long): Long = {
+    val delta = Platform.getByte(columnBytes, cursor)
     if (delta > Byte.MinValue) {
       prev += delta
+      cursor + 1
     } else {
-      prev = ColumnEncoding.readInt(bytes, cursor + Platform.BYTE_ARRAY_OFFSET)
-      cursor += 4
+      prev = ColumnEncoding.readInt(columnBytes, cursor + 1)
+      cursor + 5
     }
   }
 
-  override final def readInt(bytes: Array[Byte]): Int = prev
+  override final def readInt(columnBytes: AnyRef, cursor: Long): Int = prev
 
-  override final def readDate(bytes: Array[Byte]): Int = prev
+  override final def readDate(columnBytes: AnyRef, cursor: Long): Int = prev
 }

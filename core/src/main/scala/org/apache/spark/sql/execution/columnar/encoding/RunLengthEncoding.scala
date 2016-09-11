@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
+import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -25,10 +26,10 @@ final class RunLengthEncoding extends RunLengthEncodingBase with NotNullColumn
 final class RunLengthEncodingNullable
     extends RunLengthEncodingBase with NullableColumn
 
-abstract class RunLengthEncodingBase extends UncompressedBase {
+abstract class RunLengthEncodingBase extends ColumnEncoding {
 
-  private[this] var valueCount = 0
-  private[this] var run = 0
+  private[this] var runLength = 0
+  private[this] var cursorPos = 0L
   private[this] var currentValueLong: Long = _
   private[this] var currentValueString: UTF8String = _
 
@@ -40,90 +41,110 @@ abstract class RunLengthEncodingBase extends UncompressedBase {
     case _ => false
   }
 
-  override final def nextByte(bytes: Array[Byte]): Unit = {
-    if (valueCount != run) {
-      valueCount += 1
+  override def initializeDecoding(columnBytes: AnyRef,
+      field: Attribute): Long = {
+    cursorPos = super.initializeDecoding(columnBytes, field)
+    // use the current count + value for cursor since that will be read and
+    // written most frequently while actual cursor will be less frequently used
+    0L
+  }
+
+  override final def nextByte(columnBytes: AnyRef, countValue: Long): Long = {
+    val count = countValue.toInt
+    if (count != runLength) {
+      countValue + 1
     } else {
-      currentValueLong = Platform.getByte(bytes, cursor)
-      cursor += 1
-      run = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      valueCount = 1
+      val cursor = cursorPos
+      val currentValue: Long = Platform.getByte(columnBytes, cursor)
+      runLength = ColumnEncoding.readInt(columnBytes, cursor + 1)
+      cursorPos = cursor + 5
+      // reset count to 1
+      (currentValue << 32) | 1L
     }
   }
 
-  override final def readByte(bytes: Array[Byte]): Byte =
-    currentValueLong.asInstanceOf[Byte]
+  override final def readByte(columnBytes: AnyRef, countValue: Long): Byte =
+    (countValue >> 32).toByte
 
-  override final def nextBoolean(bytes: Array[Byte]): Unit =
-    this.nextByte(bytes)
+  override final def nextBoolean(columnBytes: AnyRef, countValue: Long): Long =
+    this.nextByte(columnBytes, countValue)
 
-  override final def readBoolean(bytes: Array[Byte]): Boolean =
-    currentValueLong == 1
+  override final def readBoolean(columnBytes: AnyRef,
+      countValue: Long): Boolean =
+    (countValue >> 32) == 1
 
-  override final def nextShort(bytes: Array[Byte]): Unit = {
-    if (valueCount != run) {
-      valueCount += 1
+  override final def nextShort(columnBytes: AnyRef, countValue: Long): Long = {
+    val count = countValue.toInt
+    if (count != runLength) {
+      countValue + 1
     } else {
-      currentValueLong = super.readShort(bytes)
-      cursor += 2
-      run = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      valueCount = 1
+      val cursor = cursorPos
+      val currentValue: Long = ColumnEncoding.readShort(columnBytes, cursor)
+      runLength = ColumnEncoding.readInt(columnBytes, cursor + 2)
+      cursorPos = cursor + 6
+      // reset count to 1
+      (currentValue << 32) | 1L
     }
   }
 
-  override final def readShort(bytes: Array[Byte]): Short =
-    currentValueLong.asInstanceOf[Short]
+  override final def readShort(columnBytes: AnyRef, countValue: Long): Short =
+    (countValue >> 32).toShort
 
-  override final def nextInt(bytes: Array[Byte]): Unit = {
-    if (valueCount != run) {
-      valueCount += 1
+  override final def nextInt(columnBytes: AnyRef, countValue: Long): Long = {
+    val count = countValue.toInt
+    if (count != runLength) {
+      countValue + 1
     } else {
-      currentValueLong = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      run = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      valueCount = 1
+      val cursor = cursorPos
+      val currentValue: Long = ColumnEncoding.readInt(columnBytes, cursor)
+      runLength = ColumnEncoding.readInt(columnBytes, cursor + 4)
+      cursorPos = cursor + 8
+      // reset count to 1
+      (currentValue << 32) | 1L
     }
   }
 
-  override final def readInt(bytes: Array[Byte]): Int =
-    currentValueLong.asInstanceOf[Int]
+  override final def readInt(columnBytes: AnyRef, countValue: Long): Int =
+    (countValue >> 32).toInt
 
-  override final def readDate(bytes: Array[Byte]): Int =
-    currentValueLong.asInstanceOf[Int]
+  override final def readDate(columnBytes: AnyRef, countValue: Long): Int =
+    (countValue >> 32).toInt
 
-  override final def nextLong(bytes: Array[Byte]): Unit = {
-    if (valueCount != run) {
-      valueCount += 1
+  override final def nextLong(columnBytes: AnyRef, count: Long): Long = {
+    if (count != runLength) {
+      count + 1
     } else {
-      currentValueLong = ColumnEncoding.readLong(bytes, cursor)
-      cursor += 8
-      run = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      valueCount = 1
+      val cursor = cursorPos
+      currentValueLong = ColumnEncoding.readLong(columnBytes, cursor)
+      runLength = ColumnEncoding.readInt(columnBytes, cursor + 8)
+      cursorPos = cursor + 12
+      // reset count to 1
+      1L
     }
   }
 
-  override final def readLong(bytes: Array[Byte]): Long =
+  override final def readLong(columnBytes: AnyRef, count: Long): Long =
     currentValueLong
 
-  override final def readTimestamp(columnBytes: Array[Byte]): Long =
+  override final def readTimestamp(columnBytes: AnyRef, count: Long): Long =
     currentValueLong
 
-  override final def nextUTF8String(bytes: Array[Byte]): Unit = {
-    if (valueCount != run) {
-      valueCount += 1
+  override final def nextUTF8String(columnBytes: AnyRef, count: Long): Long = {
+    if (count != runLength) {
+      count + 1
     } else {
-      currentValueString = super.readUTF8String(bytes)
-      cursor += (4 + currentValueString.numBytes())
-      run = ColumnEncoding.readInt(bytes, cursor)
-      cursor += 4
-      valueCount = 1
+      var cursor = cursorPos
+      val currentValue = ColumnEncoding.readUTF8String(columnBytes, cursor)
+      cursor += (4 + currentValue.numBytes())
+      runLength = ColumnEncoding.readInt(columnBytes, cursor)
+      cursorPos = cursor + 4
+      currentValueString = currentValue
+      // reset count to 1
+      1L
     }
   }
 
-  override final def readUTF8String(bytes: Array[Byte]): UTF8String =
+  override final def readUTF8String(columnBytes: AnyRef,
+      count: Long): UTF8String =
     currentValueString
 }
