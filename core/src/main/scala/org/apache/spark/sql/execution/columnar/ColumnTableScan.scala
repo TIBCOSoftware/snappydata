@@ -38,6 +38,9 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
+
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -64,7 +67,6 @@ private[sql] final case class ColumnTableScan(
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    scanUnsafeRows: Boolean,
     @transient baseRelation: PartitionedDataSourceScan)
     extends PartitionedPhysicalRDD(output, rdd, numPartitions, numBuckets,
       partitionColumns, baseRelation) {
@@ -82,6 +84,9 @@ private[sql] final case class ColumnTableScan(
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
       .asInstanceOf[Seq[RDD[Any]]])
 
+  private val isOffHeap = GemFireXDUtils.getGemFireContainer(
+    baseRelation.table, true).isOffHeap
+
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
@@ -93,6 +98,10 @@ private[sql] final case class ColumnTableScan(
     val numRowsBufferOutput = metricTerm(ctx, "numRowsBufferOutput")
     val numRowsOtherOutput =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
+    val isEmbedded = baseRelation.connectionType match {
+      case ConnectionType.Embedded => true
+      case _ => false
+    }
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
@@ -108,11 +117,15 @@ private[sql] final case class ColumnTableScan(
     else ctx.freshName("unsafeHolder")
     val unsafeHolderClass = classOf[UnsafeRowHolder].getName
 
+    val colItrClass = if (!isEmbedded) classOf[CachedBatchIteratorOnRS].getName
+    else if (isOffHeap) classOf[OffHeapLobsIteratorOnScan].getName
+    else classOf[ByteArraysIteratorOnScan].getName
+
     if (otherRDDs.isEmpty) {
       ctx.addMutableState("scala.collection.Iterator",
         rowInput, s"$rowInput = (scala.collection.Iterator)inputs[0].next();")
-      ctx.addMutableState("scala.collection.Iterator",
-        colInput, s"$colInput = (scala.collection.Iterator)inputs[0].next();")
+      ctx.addMutableState(colItrClass, colInput,
+        s"$colInput = ($colItrClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = (($rsIterClass)$rowInput).rs();")
     } else {
@@ -123,11 +136,8 @@ private[sql] final case class ColumnTableScan(
             $rowInput = $inputIsOtherRDD ? inputs[0]
                 : (scala.collection.Iterator)inputs[0].next();
         """)
-      ctx.addMutableState("scala.collection.Iterator", colInput,
-        s"""
-            $colInput = $inputIsOtherRDD ? null
-                : (scala.collection.Iterator)inputs[0].next();
-        """)
+      ctx.addMutableState(colItrClass, colInput,
+        s"$colInput = $inputIsOtherRDD ? null : ($colItrClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
       ctx.addMutableState(unsafeHolderClass, unsafeHolder,
@@ -138,193 +148,210 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
-    if (scanUnsafeRows) {
-      val numRows = ctx.freshName("numRows")
-      val row = ctx.freshName("row")
-      ctx.INPUT_ROW = row
+    val cachedBatchClass = classOf[CachedBatch].getName
+    val execRowClass = classOf[OffHeapCompactExecRowWithLobs].getName
+    val decoderClass = classOf[ColumnEncoding].getName
+    val wasNullClass = classOf[ResultWasNull].getName
+    val rsAdapterClass = classOf[ResultSetEncodingAdapter].getName
+    val rowAdapterClass = classOf[UnsafeRowEncodingAdapter].getName
+    val rowFormatterClass = classOf[RowFormatter].getName
+    val batch = ctx.freshName("batch")
+    val numBatchRows = s"${batch}NumRows"
+    val batchIndex = s"${batch}Index"
+    val buffers = s"${batch}Buffers"
+    val rowFormatter = s"${batch}RowFormatter"
+
+    val numRowsBuffer = ctx.freshName("numRowsBuffer")
+    val numRowsOther = s"${numRowsBuffer}Other"
+
+    ctx.addMutableState("byte[][]", buffers, s"$buffers = null;")
+    ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
+    ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
+
+    // need DataType and nullable to get decoder in generated code
+    val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
+    val columnBufferInitCode = new StringBuilder
+    val bufferInitCode = new StringBuilder
+    val moveNextCode = new StringBuilder
+
+    val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
+    else {
       s"""
-         |// for testing just iterate UnsafeRows from column table
-         |long $numRows = 0L;
-         |try {
-         |  while ($colInput.hasNext()) {
-         |    final UnsafeRow $row = (UnsafeRow)$colInput.next();
-         |    $numRows++;
-         |    ${consume(ctx, null, row).trim}
-         |    if (shouldStop()) return;
-         |  }
-         |} finally {
-         |  $numOutputRows.add($numRows);
-         |}
-      """.stripMargin
-    } else {
-      val cachedBatchClass = classOf[CachedBatch].getName
-      val decoderClass = classOf[ColumnEncoding].getName
-      val rsAdapterClass = classOf[ResultSetEncodingAdapter].getName
-      val rowAdapterClass = classOf[UnsafeRowEncodingAdapter].getName
-      val batch = ctx.freshName("batch")
-      val numBatchRows = s"${batch}NumRows"
-      val batchIndex = s"${batch}Index"
-      val buffers = s"${batch}Buffers"
-
-      val numRowsBuffer = ctx.freshName("numRowsBuffer")
-      val numRowsOther = s"${numRowsBuffer}Other"
-
-      ctx.addMutableState("byte[][]", buffers, s"$buffers = null;")
-      ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
-      ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
-
-      // need DataType and nullable to get decoder in generated code
-      val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
-      val columnBufferInitCode = new StringBuilder
-      val bufferInitCode = new StringBuilder
-      val moveNextCode = new StringBuilder
-
-      val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
-      else {
-        s"""
-          if ($inputIsOtherRDD) {
-            $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
-          } else {
-            $rowInput.next();
-          }
-        """
-      }
-      val incrementNumRowsSnippet = if (otherRDDs.isEmpty) s"$numRowsBuffer++;"
-      else {
-        s"""
-          if ($inputIsOtherRDD) {
-            $numRowsOther++;
-          } else {
-            $numRowsBuffer++;
-          }
-        """
-      }
-      val incrementOtherRows = if (otherRDDs.isEmpty) ""
-      else {
-        s"""
-          $numOutputRows.add($numRowsOther);
-          $numRowsOtherOutput.add($numRowsOther);
-        """
-      }
-      val isEmbedded = baseRelation.connectionType match {
-        case ConnectionType.Embedded => true
-        case _ => false
-      }
-
-      val columnsInput = output.zipWithIndex.map { case (a, index) =>
-        val decoder = ctx.freshName("decoder")
-        val buffer = ctx.freshName("buffer")
-        val decoderVar = s"decoder$index"
-        val bufferVar = s"buffer$index"
-        // projections are not pushed in embedded mode for optimized access
-        val baseIndex = baseRelation.schema.fieldIndex(a.name)
-        val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
-
-        ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
-        if (otherRDDs.isEmpty) {
-          ctx.addMutableState(decoderClass, decoder,
-            s"$decoder = new $rsAdapterClass($rs, $rsPosition);")
+        if ($inputIsOtherRDD) {
+          $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
         } else {
-          ctx.addMutableState(decoderClass, decoder,
-            s"""
-              if ($inputIsOtherRDD) {
-                $decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);
-              } else {
-                $decoder = new $rsAdapterClass($rs, $rsPosition);
-              }
-            """
-          )
+          $rowInput.next();
         }
+      """
+    }
+    val incrementNumRowsSnippet = if (otherRDDs.isEmpty) s"$numRowsBuffer++;"
+    else {
+      s"""
+        if ($inputIsOtherRDD) {
+          $numRowsOther++;
+        } else {
+          $numRowsBuffer++;
+        }
+      """
+    }
+    val incrementOtherRows = if (otherRDDs.isEmpty) ""
+    else {
+      s"""
+        $numOutputRows.add($numRowsOther);
+        $numRowsOtherOutput.add($numRowsOther);
+      """
+    }
+
+    val columnsInput = output.zipWithIndex.map { case (a, index) =>
+      val decoder = ctx.freshName("decoder")
+      val buffer = ctx.freshName("buffer")
+      val decoderVar = s"decoder$index"
+      val bufferVar = s"buffer$index"
+      // projections are not pushed in embedded mode for optimized access
+      val baseIndex = baseRelation.schema.fieldIndex(a.name)
+      val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
+
+      val bufferPosition = baseIndex + PartitionedPhysicalRDD.CT_COLUMN_START
+
+      ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
+      if (otherRDDs.isEmpty) {
+        ctx.addMutableState(decoderClass, decoder,
+          s"$decoder = new $rsAdapterClass($rs, $rsPosition);")
+      } else {
+        ctx.addMutableState(decoderClass, decoder,
+          s"""
+            if ($inputIsOtherRDD) {
+              $decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);
+            } else {
+              $decoder = new $rsAdapterClass($rs, $rsPosition);
+            }
+          """
+        )
+      }
+      if (!isEmbedded) {
         columnBufferInitCode.append(
           s"""
             $buffer = $buffers[$index];
             $decoder = $decoderClass.getColumnDecoder($buffer,
               $fields[$index]);
           """)
-        bufferInitCode.append(
+      } else if (isOffHeap) {
+        columnBufferInitCode.append(
           s"""
-            final $decoderClass $decoderVar = $decoder;
-            final byte[] $bufferVar = $buffer;
-          """
-        )
-        val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
-        moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-          "batchOrdinal", a.dataType, notNullVar)).append('\n')
-        genCodeColumnBuffer(ctx, decoderVar, bufferVar, a.dataType, notNullVar)
+            $buffer = $batch.getAsBytes($bufferPosition, ($wasNullClass)null);
+            $decoder = $decoderClass.getColumnDecoder($buffer,
+              $fields[$index]);
+          """)
+      } else {
+        columnBufferInitCode.append(
+          s"""
+            $buffer = $rowFormatter.getLob($buffers, $bufferPosition);
+            $decoder = $decoderClass.getColumnDecoder($buffer,
+              $fields[$index]);
+          """)
       }
-
-      val nextBatch = ctx.freshName("nextBatch")
-      ctx.addNewFunction(nextBatch,
+      bufferInitCode.append(
         s"""
-           |private boolean $nextBatch() {
-           |  if ($buffers != null) return true;
-           |  // get next batch or row (latter for non-batch source iteration)
-           |  if ($input == null) return false;
-           |  if (!$input.hasNext()) {
-           |    if ($input == $rowInput) {
-           |      $input = $colInput;
-           |      $inputIsRow = false;
-           |      if ($input == null || !$input.hasNext()) {
-           |        return false;
-           |      }
-           |    } else {
-           |      return false;
-           |    }
-           |  }
-           |  if ($inputIsRow) {
-           |    $nextRowSnippet
-           |    $numBatchRows = 1;
-           |  } else {
-           |    $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
-           |    $buffers = $batch.buffers();
-           |    $numBatchRows = $batch.numRows();
-           |    $numOutputRows.add($numBatchRows);
-           |    // initialize the column buffers and decoders
-           |    ${columnBufferInitCode.toString()}
-           |  }
-           |  $batchIndex = 0;
-           |  return true;
-           |}
-        """.stripMargin)
-
-      s"""
-         |// Combined iterator for cached batches from column table
-         |// and ResultSet from row buffer. Also takes care of otherRDDs
-         |// case when partition is of otherRDDs by iterating over it
-         |// using an UnsafeRow adapter.
-         |long $numRowsBuffer = 0L;
-         |long $numRowsOther = 0L;
-         |try {
-         |  while ($nextBatch()) {
-         |    final int numRows = $numBatchRows;
-         |    ${bufferInitCode.toString()}
-         |    final boolean isRow = $inputIsRow;
-         |    for (int batchOrdinal = $batchIndex; batchOrdinal < numRows;
-         |         batchOrdinal++) {
-         |      ${moveNextCode.toString()}
-         |      if (isRow) {
-         |        $incrementNumRowsSnippet
-         |      }
-         |      ${consume(ctx, columnsInput).trim}
-         |      if (shouldStop()) {
-         |        // increment index for premature return
-         |        $batchIndex = batchOrdinal + 1;
-         |        return;
-         |      }
-         |    }
-         |    $buffers = null;
-         |  }
-         |} catch (RuntimeException re) {
-         |  throw re;
-         |} catch (Exception e) {
-         |  throw new RuntimeException(e);
-         |} finally {
-         |  $numOutputRows.add($numRowsBuffer);
-         |  $numRowsBufferOutput.add($numRowsBuffer);
-         |  $incrementOtherRows
-         |}
-      """.stripMargin
+          final $decoderClass $decoderVar = $decoder;
+          final byte[] $bufferVar = $buffer;
+        """
+      )
+      val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
+      moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
+        "batchOrdinal", a.dataType, notNullVar)).append('\n')
+      genCodeColumnBuffer(ctx, decoderVar, bufferVar, a.dataType, notNullVar)
     }
+
+    val batchInit = if (!isEmbedded) {
+      s"""
+        final $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
+        $buffers = $batch.buffers();
+        $numBatchRows = $batch.numRows();
+      """
+    } else if (isOffHeap) {
+      s"""
+        final $execRowClass $batch = ($execRowClass)$colInput.next();
+        $numBatchRows = $batch.getAsInt(
+          ${PartitionedPhysicalRDD.CT_NUMROWS_POSITION}, ($wasNullClass)null);
+      """
+    } else {
+      s"""
+        final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
+        $buffers = (byte[][])$colInput.next();
+        $numBatchRows = $rowFormatter.getAsInt(
+          ${PartitionedPhysicalRDD.CT_NUMROWS_POSITION}, $buffers[0],
+          ($wasNullClass)null);
+      """
+    }
+    val nextBatch = ctx.freshName("nextBatch")
+    ctx.addNewFunction(nextBatch,
+      s"""
+         |private boolean $nextBatch() throws Exception {
+         |  if ($buffers != null) return true;
+         |  // get next batch or row (latter for non-batch source iteration)
+         |  if ($input == null) return false;
+         |  if (!$input.hasNext()) {
+         |    if ($input == $rowInput) {
+         |      $input = $colInput;
+         |      $inputIsRow = false;
+         |      if ($input == null || !$input.hasNext()) {
+         |        return false;
+         |      }
+         |    } else {
+         |      return false;
+         |    }
+         |  }
+         |  if ($inputIsRow) {
+         |    $nextRowSnippet
+         |    $numBatchRows = 1;
+         |  } else {
+         |    $batchInit
+         |    $numOutputRows.add($numBatchRows);
+         |    // initialize the column buffers and decoders
+         |    ${columnBufferInitCode.toString()}
+         |  }
+         |  $batchIndex = 0;
+         |  return true;
+         |}
+      """.stripMargin)
+
+    s"""
+       |// Combined iterator for cached batches from column table
+       |// and ResultSet from row buffer. Also takes care of otherRDDs
+       |// case when partition is of otherRDDs by iterating over it
+       |// using an UnsafeRow adapter.
+       |long $numRowsBuffer = 0L;
+       |long $numRowsOther = 0L;
+       |try {
+       |  while ($nextBatch()) {
+       |    final int numRows = $numBatchRows;
+       |    ${bufferInitCode.toString()}
+       |    final boolean isRow = $inputIsRow;
+       |    for (int batchOrdinal = $batchIndex; batchOrdinal < numRows;
+       |         batchOrdinal++) {
+       |      ${moveNextCode.toString()}
+       |      if (isRow) {
+       |        $incrementNumRowsSnippet
+       |      }
+       |      ${consume(ctx, columnsInput).trim}
+       |      if (shouldStop()) {
+       |        // increment index for premature return
+       |        $batchIndex = batchOrdinal + 1;
+       |        return;
+       |      }
+       |    }
+       |    $buffers = null;
+       |  }
+       |} catch (RuntimeException re) {
+       |  throw re;
+       |} catch (Exception e) {
+       |  throw new RuntimeException(e);
+       |} finally {
+       |  $numOutputRows.add($numRowsBuffer);
+       |  $numRowsBufferOutput.add($numRowsBuffer);
+       |  $incrementOtherRows
+       |}
+    """.stripMargin
   }
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,

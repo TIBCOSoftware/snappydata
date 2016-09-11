@@ -40,10 +40,10 @@ abstract class DictionaryEncodingBase extends UncompressedBase {
   private[this] final var longDictionary: Array[Long] = _
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
+      field: Attribute, dataType: DataType): Unit = {
     val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
-    field.dataType match {
+    dataType match {
       case StringType =>
         stringDictionary = new Array[UTF8String](elementNum)
         (0 until elementNum).foreach { index =>

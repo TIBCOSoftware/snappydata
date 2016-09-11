@@ -188,7 +188,7 @@ object StoreUtils extends Logging {
       var localBuckets = e._2
       var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
       assert(maxBucketsPerPart >= 1)
-        while (partCnt <= numPartitions && localBuckets.nonEmpty) {
+        while (partCnt < numPartitions && localBuckets.nonEmpty) {
           var cntr = 0
           val bucketsPerPart = new mutable.HashSet[Int]()
           maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)

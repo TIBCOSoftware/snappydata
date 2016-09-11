@@ -120,7 +120,6 @@ private[sql] final case class RowTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $iterator.close();
        |  $numOutputRows.add($numRows);
        |}
     """.stripMargin

@@ -233,9 +233,10 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
+    minHeapSize '4g'
     maxHeapSize '4g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -245,15 +246,15 @@ subprojects {
 
     def result = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
-    extensions.add('testResult', { String name -> result.append(name) } )
+    extensions.add('testResult', { String name -> result.setLength(0); result.append(name) } )
 
     def output = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.append(name) } )
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) } )
 
     def errorOutput = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.append(name) } )
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) } )
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -271,8 +272,8 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=384m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -941,9 +942,11 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+    /*
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
+  */
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
@@ -1036,6 +1039,6 @@ distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }

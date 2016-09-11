@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
@@ -215,8 +216,7 @@ class RowFormatScanRDD(_sc: SparkContext,
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
       if (isPartitioned && filterWhereClause.isEmpty) {
-        val container = Misc.getRegionForTable(tableName, true)
-            .getUserAttribute.asInstanceOf[GemFireContainer]
+        val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => Set(thePart.index)
@@ -278,32 +278,21 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
   }
 }
 
-final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
-    extends Iterator[AbstractCompactExecRow] {
+abstract class PRValuesIterator[T](val container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int]) extends Iterator[T] {
 
-  private[this] var hasNextValue = true
-  private[this] var doMove = true
+  protected final var hasNextValue = true
+  protected final var doMove = true
 
-  private[this] val itr = container.getEntrySetIteratorForBucketSet(
+  protected final val itr = container.getEntrySetIteratorForBucketSet(
     bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-  private[this] val row = container.newTemplateRow()
-      .asInstanceOf[AbstractCompactExecRow]
 
-  private def moveNext(): Unit = {
-    while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
-      val owner = itr.getHostedBucketRegion
-      if ((owner ne null) && (RegionEntryUtils.fillRowWithoutFaultIn(
-        container, owner, rl.getRegionEntry, row) ne null)) {
-        return
-      }
-    }
-    hasNextValue = false
-  }
+  protected def currentVal: T
 
-  override def hasNext: Boolean = {
+  protected def moveNext(): Unit
+
+  override final def hasNext: Boolean = {
     if (doMove) {
       moveNext()
       doMove = false
@@ -311,11 +300,31 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
     hasNextValue
   }
 
-  override def next: AbstractCompactExecRow = {
+  override final def next: T = {
     if (doMove) {
       moveNext()
     }
     doMove = true
-    row
+    currentVal
+  }
+}
+
+final class CompactExecRowIteratorOnScan(container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int])
+    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
+
+  override protected val currentVal: AbstractCompactExecRow = container
+      .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
+
+  override protected def moveNext(): Unit = {
+    while (itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      val owner = itr.getHostedBucketRegion
+      if ((owner ne null) && (RegionEntryUtils.fillRowWithoutFaultIn(
+        container, owner, rl.getRegionEntry, currentVal) ne null)) {
+        return
+      }
+    }
+    hasNextValue = false
   }
 }

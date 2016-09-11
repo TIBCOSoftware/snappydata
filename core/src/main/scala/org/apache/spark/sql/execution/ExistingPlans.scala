@@ -80,6 +80,10 @@ private[sql] abstract class PartitionedPhysicalRDD(
 }
 
 private[sql] object PartitionedPhysicalRDD {
+
+  private[sql] val CT_NUMROWS_POSITION = 3
+  private[sql] val CT_COLUMN_START = 5
+
   def createFromDataSource(
       output: Seq[Attribute],
       numPartitions: Int,
@@ -91,10 +95,10 @@ private[sql] object PartitionedPhysicalRDD {
     relation match {
       case r: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, r.scanAsUnsafeRows, relation)
+          partitionColumns, relation)
       case r: SamplingRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, r.baseRelation.scanAsUnsafeRows, relation)
+          partitionColumns, relation)
       case _: RowFormatRelation =>
         if (otherRDDs.nonEmpty) {
           throw new UnsupportedOperationException(
@@ -106,6 +110,8 @@ private[sql] object PartitionedPhysicalRDD {
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
+
+  def table: String
 
   def schema: StructType
 

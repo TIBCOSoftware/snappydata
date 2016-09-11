@@ -18,9 +18,13 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
 
+import scala.reflect.ClassTag
+
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.SparkShellRDDHelper
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
@@ -29,8 +33,6 @@ import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, SparkContext, TaskContext}
-
-import scala.reflect.ClassTag
 
 /**
  * Column Store implementation for GemFireXD.
@@ -44,7 +46,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
-          tableName, requiredColumns, this)
+          tableName, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -92,33 +94,17 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
 }
 
 class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
-    tableName: String, requiredColumns: Array[String],
-    store: JDBCSourceAsColumnarStore) extends RDD[CachedBatch](_sc, Nil) {
+    tableName: String,
+    store: JDBCSourceAsColumnarStore) extends RDD[Any](_sc, Nil) {
 
-  override def compute(split: Partition,
-      context: TaskContext): Iterator[CachedBatch] = {
-    store.tryExecute(tableName,
-      conn => {
-        val resolvedName = ExternalStoreUtils.lookupName(tableName,
-          conn.getSchema)
-        val ps1 = conn.prepareStatement(
-          "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
-        ps1.setString(1, resolvedName)
-        val partition = split.asInstanceOf[MultiBucketExecutorPartition]
-        var bucketString = ""
-        partition.buckets.foreach(bucket => {
-          bucketString = bucketString + bucket + ","
-        })
-        ps1.setString(2, bucketString.substring(0, bucketString.length - 1))
-        ps1.execute()
-
-        val ps = conn.prepareStatement("select " + requiredColumns.mkString(
-          ", ") + ", numRows, stats from " + tableName)
-
-        val rs = ps.executeQuery()
-        ps1.close()
-        new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs, context)
-      }, closeOnSuccess = false, onExecutor = true)
+  override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
+    val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+    val bucketIds = part match {
+      case p: MultiBucketExecutorPartition => p.buckets
+      case _ => Set(part.index)
+    }
+    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
+    else new ByteArraysIteratorOnScan(container, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -184,16 +170,13 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
 
     // TODO: this will fail if no network server is available unless SNAP-365 is
     // fixed with the approach of having an iterator that can fetch from remote
-    if(isPartitioned) {
+    if (isPartitioned) {
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       ps.setString(1, resolvedName)
       val partition = thePart.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-      var bucketString = ""
-      partition.buckets.foreach(bucket => {
-        bucketString = bucketString + bucket + ","
-      })
-      ps.setString(2, bucketString.substring(0, bucketString.length - 1))
+      val bucketString = partition.buckets.mkString(",")
+      ps.setString(2, bucketString)
       ps.executeUpdate()
       ps.close()
     }

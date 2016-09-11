@@ -36,7 +36,7 @@ abstract class BooleanBitSetEncodingBase extends UncompressedBase {
     dataType == BooleanType
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
+      field: Attribute, dataType: DataType): Unit = {
     // read the count but its not used since CachedBatch has numRows
     ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4

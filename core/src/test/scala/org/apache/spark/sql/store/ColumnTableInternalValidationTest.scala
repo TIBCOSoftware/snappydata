@@ -115,7 +115,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
         cachedBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
-    val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2)) // Seq(4, 2), Seq(5, 6))
+    val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2)) // Seq(5, 6))
 
     val rdd = sc.parallelize(data, data.length).map(
       s => MyTestData(s.head, s(1)))
@@ -131,12 +131,12 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
     val r = result.collect()
-    assert(r.length == 3)
+    assert(r.length == 4)
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
-    assert(GemFireCacheImpl.getColumnBatchSize == 3)
+    assert(GemFireCacheImpl.getColumnBatchSize == 4)
 
     assert(region.size == 0)
     assert(shadowRegion.size == 1)
@@ -225,8 +225,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (GemFireCacheImpl.getColumnBatchSize == 3) {
-      assert(region.size == 2)
+    if (GemFireCacheImpl.getColumnBatchSize == 4) {
+      assert(region.size == 1)
       assert(shadowRegion.size == 1)
     }
     else {

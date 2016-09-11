@@ -35,7 +35,6 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -81,8 +80,6 @@ class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation {
 
-  val scanAsUnsafeRows = false
-
   override def toString: String = s"ColumnFormatRelation[$table]"
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -122,16 +119,7 @@ class BaseColumnFormatRelation(
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (rdd, requestedColumns) = scanTable(table, requiredColumns, filters)
-    val colRdd = if (scanAsUnsafeRows) {
-      rdd.mapPartitionsPreserve { cachedBatchIterator =>
-        // Find the ordinals and data types of the requested columns.
-        // If none are requested, use the narrowest (the field with
-        // minimum default element size).
-        ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
-          requestedColumns, schema, forScan = true)
-      }
-    } else rdd
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to
@@ -157,7 +145,7 @@ class BaseColumnFormatRelation(
           Array.empty[Partition]
         )
 
-        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
+        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
           Iterator[Any](leftItr, rightItr)
         }
 
@@ -173,7 +161,7 @@ class BaseColumnFormatRelation(
           filters
         )
 
-        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
+        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
           Iterator[Any](leftItr, rightItr)
         }
     }
@@ -338,7 +326,7 @@ class BaseColumnFormatRelation(
       "createExternalTableForCachedBatches: expected non-empty table name")
 
 
-    val (primarykey, partitionStrategy, concurrency) = dialect match {
+    val (primaryKey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
@@ -349,11 +337,13 @@ class BaseColumnFormatRelation(
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
+    // if the numRows or other columns are ever changed here, then change
+    // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer, numRows integer not null, stats blob, " +
         schema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(", ") +
-        s", $primarykey) $partitionStrategy $colocationClause " +
+        s", $primaryKey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
   }

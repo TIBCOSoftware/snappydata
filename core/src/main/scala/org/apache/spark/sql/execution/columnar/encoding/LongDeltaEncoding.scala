@@ -37,7 +37,7 @@ abstract class LongDeltaEncodingBase extends UncompressedBase {
   }
 
   override final def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit = {
+      field: Attribute, dataType: DataType): Unit = {
     // optimistically use the cursor as java index for single byte reads
     cursor -= Platform.BYTE_ARRAY_OFFSET
   }

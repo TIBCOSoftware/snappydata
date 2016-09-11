@@ -27,8 +27,8 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 final class Uncompressed extends UncompressedBase with NotNullColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit =
-    initializeDecodingBase(columnBytes, field.dataType)
+      field: Attribute, dataType: DataType): Unit =
+    initializeDecodingBase(columnBytes, dataType)
 
   override def initializeEncoding(dataType: DataType,
       batchSize: Int): Array[Byte] =
@@ -38,8 +38,8 @@ final class Uncompressed extends UncompressedBase with NotNullColumn {
 final class UncompressedNullable extends UncompressedBase with NullableColumn {
 
   override def initializeDecoding(columnBytes: Array[Byte],
-      field: Attribute): Unit =
-    initializeDecodingBase(columnBytes, field.dataType)
+      field: Attribute, dataType: DataType): Unit =
+    initializeDecodingBase(columnBytes, dataType)
 
   override def initializeEncoding(dataType: DataType,
       batchSize: Int): Array[Byte] = {
@@ -63,7 +63,7 @@ abstract class UncompressedBase extends ColumnEncoding {
   protected final def initializeDecodingBase(columnBytes: Array[Byte],
       dataType: DataType): Unit = {
     // adjust cursor for the first next call to avoid extra checks in next
-    Utils.getSQLDataType(dataType) match {
+    dataType match {
       case BooleanType | ByteType => cursor -= 1
       case ShortType => cursor -= 2
       case IntegerType | FloatType | DateType => cursor -= 4

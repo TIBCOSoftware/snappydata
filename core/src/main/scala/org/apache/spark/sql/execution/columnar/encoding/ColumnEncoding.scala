@@ -20,6 +20,7 @@ import java.lang.reflect.Field
 import java.nio.ByteOrder
 
 import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -29,13 +30,6 @@ abstract class ColumnEncoding {
 
   protected final var cursor = 0
 
-  protected final var nullValues: Array[Byte] = _
-  // protected final var nullValuesBitSet: BitSet = _
-  protected final var nextNullOrdinal = 0
-  protected final var nextNullCursor = 0
-  protected final var nextNullCursorEnd = 0
-  // protected final var nullValuesType: Byte = 0
-
   def typeId: Int
 
   def supports(dataType: DataType): Boolean
@@ -43,7 +37,8 @@ abstract class ColumnEncoding {
   private[columnar] def initializeNulls(columnBytes: Array[Byte],
       field: Attribute): Unit = {}
 
-  def initializeDecoding(columnBytes: Array[Byte], field: Attribute): Unit = {}
+  def initializeDecoding(columnBytes: Array[Byte], field: Attribute,
+      dataType: DataType): Unit = {}
 
   /**
    * Returns 1 to indicate that column value was not-null,
@@ -188,19 +183,38 @@ object ColumnEncoding {
 
   def getColumnDecoder(columnBytes: Array[Byte],
       field: Attribute): ColumnEncoding = {
-    val typeId = initializeDecoding(columnBytes)
-    val dataType = field.dataType
-    val encoding = allEncodings(typeId)(dataType, field.nullable)
+    // read and skip null values array at the start, then read the typeId
+    var cursor = Platform.BYTE_ARRAY_OFFSET
+    val nullValuesSize = readInt(columnBytes, cursor) << 2
+    cursor += (4 + nullValuesSize)
+
+    val dataType = Utils.getSQLDataType(field.dataType)
+    // no typeId for complex types
+    val isComplexType = dataType match {
+      case d: DecimalType => d.precision > Decimal.MAX_LONG_DIGITS
+      case BinaryType | _: ArrayType | _: MapType | _: StructType => true
+      case _ => false
+    }
+    val typeId = if (isComplexType) 0 else readInt(columnBytes, cursor)
+    if (typeId >= allEncodings.length) {
+      throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
+          s"for $dataType($field) bytes: ${columnBytes.toSeq}")
+    }
+    val encoding = allEncodings(typeId)(dataType,
+      // use NotNull version if field is marked so or no nulls in the batch
+      field.nullable && nullValuesSize > 0)
     if (encoding.typeId != typeId) {
-      throw new AssertionError(s"typeId for $encoding = ${encoding.typeId} " +
-          s"does not match typeId = $typeId in global registration")
+      throw new IllegalStateException(s"typeId for $encoding = " +
+          s"${encoding.typeId} does not match $typeId in global registration")
     }
     if (!encoding.supports(dataType)) {
-      throw new AssertionError(s"Encoder bug? Unsupported type $dataType " +
-          s"for encoding $encoding")
+      throw new IllegalStateException("Encoder bug? Unsupported type " +
+          s"$dataType for encoding $encoding")
     }
     encoding.initializeNulls(columnBytes, field)
-    encoding.initializeDecoding(columnBytes, field)
+    // skip typeId if present
+    if (!isComplexType) encoding.cursor += 4
+    encoding.initializeDecoding(columnBytes, field, dataType)
     encoding
   }
 
@@ -264,14 +278,6 @@ object ColumnEncoding {
   } else {
     java.lang.Long.reverseBytes(Platform.getLong(columnBytes, cursor))
   }
-
-  private[columnar] def initializeDecoding(columnBytes: Array[Byte]): Int = {
-    // read and skip null values array at the start, then read the typeId
-    var cursor = Platform.BYTE_ARRAY_OFFSET
-    val nullValuesSize = readInt(columnBytes, cursor)
-    cursor += (4 + nullValuesSize)
-    readInt(columnBytes, cursor)
-  }
 }
 
 trait NotNullColumn extends ColumnEncoding {
@@ -284,13 +290,20 @@ trait NotNullColumn extends ColumnEncoding {
       throw new IllegalStateException(
         s"$numNullValues null values found in NOT NULL column $field")
     }
-    cursor += 8 // skip numNullValues and typeId
+    cursor += 4 // skip numNullValues
   }
 
   override def notNull(bytes: Array[Byte], ordinal: Int): Int = 1
 }
 
 trait NullableColumn extends ColumnEncoding {
+
+  protected final var nullValues: Array[Byte] = _
+  // protected final var nullValuesBitSet: BitSet = _
+  protected final var nextNullOrdinal = 0
+  protected final var nextNullCursor = 0
+  protected final var nextNullCursorEnd = 0
+  // protected final var nullValuesType: Byte = 0
 
   private final def updateNextNullOrdinal() {
     if (nextNullCursor < nextNullCursorEnd) {
@@ -323,7 +336,7 @@ trait NullableColumn extends ColumnEncoding {
   override private[columnar] final def initializeNulls(
       columnBytes: Array[Byte], field: Attribute): Unit = {
     cursor = Platform.BYTE_ARRAY_OFFSET
-    val nullValuesSize = ColumnEncoding.readInt(columnBytes, cursor)
+    val nullValuesSize = ColumnEncoding.readInt(columnBytes, cursor) << 2
     cursor += 4
     if (nullValuesSize > 0) {
       // copying instead of keeping pointer will help in better cache alignment
@@ -335,7 +348,6 @@ trait NullableColumn extends ColumnEncoding {
       nextNullCursorEnd = nextNullCursor + nullValuesSize
       updateNextNullOrdinal()
     } else nextNullOrdinal = -1
-    cursor += 4 // skip typeId
     /*
     nullValuesType = columnBytes(0)
     cursor = Platform.BYTE_ARRAY_OFFSET + 1
