@@ -821,7 +821,6 @@ object SnappyContext extends Logging {
     if (_anySNContext == null) {
       _anySNContext = snc
     }
-    initMemberBlockMap(sc)
     snc
   }
 
@@ -948,6 +947,7 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           sc.ui.foreach(new SnappyStatsTab(_))
+          initMemberBlockMap(sc)
           _globalSNContextInitialized = true
         }
       }
