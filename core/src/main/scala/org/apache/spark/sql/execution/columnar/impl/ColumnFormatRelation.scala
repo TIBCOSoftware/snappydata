@@ -38,7 +38,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappySession}
+import org.apache.spark.sql._
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -400,12 +400,16 @@ class BaseColumnFormatRelation(
   }
 
   override def flushRowBuffer(): Unit = {
-    // force flush all the buckets into the column store
-    Utils.mapExecutors(sqlContext, () => {
-      ColumnFormatRelation.flushLocalBuckets(resolvedName)
-      Iterator.empty
-    }).count()
-    ColumnFormatRelation.flushLocalBuckets(resolvedName)
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
+        // force flush all the buckets into the column store
+        Utils.mapExecutors(sqlContext, () => {
+          ColumnFormatRelation.flushLocalBuckets(resolvedName)
+          Iterator.empty
+        }).count()
+        ColumnFormatRelation.flushLocalBuckets(resolvedName)
+      case _ =>
+    }
   }
 }
 
