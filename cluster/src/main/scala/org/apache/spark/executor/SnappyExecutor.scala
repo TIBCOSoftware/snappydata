@@ -22,16 +22,26 @@ import java.net.URL
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.util.{ChildFirstURLClassLoader, MutableURLClassLoader, Utils}
+import org.apache.spark.internal.Logging
+import org.apache.spark.util.SparkUncaughtExceptionHandler._
+import org.apache.spark.util.{SparkExitCode, ShutdownHookManager,
+ChildFirstURLClassLoader, MutableURLClassLoader, Utils}
 
 class SnappyExecutor(
     executorId: String,
     executorHostname: String,
     env: SparkEnv,
     userClassPath: Seq[URL] = Nil,
+    exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
     extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
 
+  if (!isLocal) {
+    // Setup an uncaught exception handler for non-local mode.
+    // Make any thread terminations due to uncaught exceptions
+    // kill the executor component
+    Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
+  }
   override def createClassLoader(): MutableURLClassLoader = {
     // Bootstrap the list of jars with the user class path.
     val now = System.currentTimeMillis()
@@ -68,7 +78,6 @@ class SnappyChildFirstURLClassLoader(urls: Array[URL], parent: ClassLoader)
   }
 }
 
-
 class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) {
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
@@ -77,6 +86,39 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     } catch {
       case e: ClassNotFoundException =>
         Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+    }
+  }
+}
+
+
+/**
+ * The default uncaught exception handler for Executors
+ */
+private class SnappyUncaughtExceptionHandler(
+    val executorBackend: SnappyCoarseGrainedExecutorBackend)
+    extends Thread.UncaughtExceptionHandler with Logging {
+
+  override def uncaughtException(thread: Thread, exception: Throwable) {
+    try {
+      // Make it explicit that uncaught exceptions are thrown when container is shutting down.
+      // It will help users when they analyze the executor logs
+      val inShutdownMsg = if (ShutdownHookManager.inShutdown()) "[Container in shutdown] " else ""
+      val errMsg = "Uncaught exception in thread "
+      logError(inShutdownMsg + errMsg + thread, exception)
+
+      // We may have been called from a shutdown hook, there is no need to do anything
+      if (!ShutdownHookManager.inShutdown()) {
+        if (exception.isInstanceOf[OutOfMemoryError]) {
+          executorBackend.exitExecutor(SparkExitCode.OOM, "Out of Memory", exception)
+        } else {
+          executorBackend.exitExecutor(
+            SparkExitCode.UNCAUGHT_EXCEPTION, errMsg, exception)
+        }
+      }
+    } catch {
+      // Exception while handling an uncaught exception. we cannot do much here
+      case oom: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
+      case t: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
     }
   }
 }

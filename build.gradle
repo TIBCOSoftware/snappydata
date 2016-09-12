@@ -776,7 +776,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -897,7 +897,7 @@ task runQuickstart {
 
       String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/python/examples/AirlineDataPythonApp.py"])
+           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
 
       println airlinepythonappresult
       if (airlinepythonappresult.toLowerCase().contains('exception')) {
