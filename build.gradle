@@ -942,11 +942,9 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-    /*
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  */
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
@@ -1039,6 +1037,6 @@ distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
 task precheckin {
-  dependsOn buildAll, checkAll, allReports, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }

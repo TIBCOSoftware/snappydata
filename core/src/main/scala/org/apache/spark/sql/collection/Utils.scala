@@ -663,16 +663,10 @@ class ExecutorLocalPartition(override val index: Int,
 }
 
 class MultiBucketExecutorPartition(override val index: Int,
-    val buckets: mutable.HashSet[Int],
-    val blockIds: Seq[BlockManagerId]) extends Partition {
-
-  def hostExecutorIds: Seq[String] = {
-    val execs = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
-    execs
-  }
+    val buckets: Set[Int], val hostExecutorIds: Seq[String]) extends Partition {
 
   override def toString: String =
-    s"MultiBucketExecutorPartition($index, $buckets, $blockIds)"
+    s"MultiBucketExecutorPartition($index, $buckets, $hostExecutorIds)"
 }
 
 

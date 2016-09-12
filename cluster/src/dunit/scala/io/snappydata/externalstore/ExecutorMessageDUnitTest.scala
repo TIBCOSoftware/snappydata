@@ -56,15 +56,15 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
 
     val wc: WaitCriterion = new WaitCriterion {
       override def done(): Boolean = {
-        SnappyContext.storeToBlockMap.size == 4 // 3 servers + 1 lead/driver
+        SnappyContext.getAllBlockIds.size == 4 // 3 servers + 1 lead/driver
       }
       override def description(): String = {
         s"Expected SnappyContext.storeToBlockMap.size: 4, actual: " +
-            s"${SnappyContext.storeToBlockMap.size}"
+            s"${SnappyContext.getAllBlockIds.size}"
       }
     }
     DistributedTestBase.waitForCriterion(wc, 10000, 500, true)
-    for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
+    for ((dm, blockId) <- SnappyContext.getAllBlockIds) {
       assert(blockId != null)
     }
   }
@@ -75,7 +75,7 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
 
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, "column", dataDF.schema, props)
@@ -86,15 +86,15 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
 
   def verifyMap(snc: SnappyContext, m: String): Unit = {
     vm0.invoke(getClass, m)
-    assert(SnappyContext.storeToBlockMap.size == 3)
-    for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
+    assert(SnappyContext.getAllBlockIds.size == 3)
+    for ((dm, blockId) <- SnappyContext.getAllBlockIds) {
       assert(blockId != null)
     }
     verifyTable(snc)
 
     vm1.invoke(getClass, m)
-    assert(SnappyContext.storeToBlockMap.size == 2)
-    for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
+    assert(SnappyContext.getAllBlockIds.size == 2)
+    for ((dm, blockId) <- SnappyContext.getAllBlockIds) {
       assert(blockId != null)
     }
     verifyTable(snc)
@@ -109,7 +109,8 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
   }
 
   def verifyTable (snc: SnappyContext): Unit = {
-    assert(snc.sql("SELECT * FROM " + tableName).collect().length == 1005)
+    val count = snc.sql("SELECT * FROM " + tableName).collect().length
+    assert(count == 1005, s"unexpected count $count")
   }
 }
 
