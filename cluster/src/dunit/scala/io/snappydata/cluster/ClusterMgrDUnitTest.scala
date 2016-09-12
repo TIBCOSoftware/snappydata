@@ -51,6 +51,24 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
   }
 
+  def testUncaughtExceptionInExecutor(): Unit = {
+    try {
+      failTheExecutors
+    } catch {
+      case _ : Throwable =>
+    }
+    // The executors should have started automatically, so this should not hang
+    startSparkJob()
+  }
+
+  def testUncaughtExceptionInExecutorthread(): Unit = {
+    vm2.invoke(getClass, "failAThread")
+    vm1.invoke(getClass, "failAThread")
+    vm0.invoke(getClass, "failAThread")
+    // The executors should have started automatically, so this should not hang
+    startSparkJob()
+  }
+
   def testSnap684(): Unit = {
     startSparkJob()
     startGemJob()
@@ -74,6 +92,20 @@ object ClusterMgrDUnitTest {
     val pi = 4.0 * count / n
     assert(3.04 <= pi)
     assert(3.25 > pi)
+  }
+
+  def failTheExecutors: Unit = {
+    sc.parallelize(1 until 100, 5).map { i =>
+      throw new InternalError()
+    }.collect()
+  }
+
+  def failAThread: Unit = {
+    new Thread(){
+      override def run(): Unit = {
+        throw new InternalError();
+      }
+    }.start()
   }
 
   def startGemJob(): Unit = {
