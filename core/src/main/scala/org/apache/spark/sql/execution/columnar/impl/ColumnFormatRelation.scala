@@ -192,12 +192,7 @@ class BaseColumnFormatRelation(
       truncate()
     }
     JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
-
-    SnappyContext.getClusterMode(_context.sparkContext) match {
-      case SnappyEmbeddedMode(_, _) => flushRowBuffer()
-      case LocalMode(_, _) => flushRowBuffer()
-      case _ =>
-    }
+    flushRowBuffer()
   }
 
   /**
@@ -405,12 +400,16 @@ class BaseColumnFormatRelation(
   }
 
   override def flushRowBuffer(): Unit = {
-    // force flush all the buckets into the column store
-    Utils.mapExecutors(sqlContext, () => {
-      ColumnFormatRelation.flushLocalBuckets(resolvedName)
-      Iterator.empty
-    }).count()
-    ColumnFormatRelation.flushLocalBuckets(resolvedName)
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
+        // force flush all the buckets into the column store
+        Utils.mapExecutors(sqlContext, () => {
+          ColumnFormatRelation.flushLocalBuckets(resolvedName)
+          Iterator.empty
+        }).count()
+        ColumnFormatRelation.flushLocalBuckets(resolvedName)
+      case _ =>
+    }
   }
 }
 
