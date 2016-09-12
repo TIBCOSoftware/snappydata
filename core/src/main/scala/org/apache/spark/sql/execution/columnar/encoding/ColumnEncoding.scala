@@ -326,7 +326,7 @@ object ColumnEncoding {
 
   private[columnar] final def readUTF8String(columnBytes: AnyRef,
       cursor: Long): UTF8String = {
-    val size = ColumnEncoding.readInt(columnBytes, cursor)
+    val size = readInt(columnBytes, cursor)
     UTF8String.fromAddress(columnBytes, cursor + 4, size)
   }
 }

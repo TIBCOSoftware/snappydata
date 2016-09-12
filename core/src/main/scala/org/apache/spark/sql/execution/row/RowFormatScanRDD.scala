@@ -22,7 +22,7 @@ import java.util.GregorianCalendar
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
@@ -320,8 +320,9 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
     while (itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if ((owner ne null) && (RegionEntryUtils.fillRowWithoutFaultIn(
-        container, owner, rl.getRegionEntry, currentVal) ne null)) {
+      if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
+          (RegionEntryUtils.fillRowWithoutFaultIn(container, owner,
+            rl.getRegionEntry, currentVal) ne null)) {
         return
       }
     }

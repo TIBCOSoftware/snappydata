@@ -25,7 +25,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 
-import com.gemstone.gemfire.internal.cache.OffHeapRegionEntry
+import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
@@ -229,7 +229,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
     while (itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if (owner ne null) {
+      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
         val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
         if (v ne null) {
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
@@ -257,7 +257,7 @@ final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
     while (itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if (owner ne null) {
+      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
         val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
         if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
           v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
