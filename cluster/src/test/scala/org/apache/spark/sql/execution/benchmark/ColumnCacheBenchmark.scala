@@ -101,6 +101,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 
+  private def doGC(): Unit = {
+    System.gc()
+    System.runFinalization()
+    System.gc()
+    System.runFinalization()
+  }
+
   /**
    * Benchmark caching randomized keys created from a range.
    *
@@ -136,6 +143,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           testDF.createOrReplaceTempView("test")
           ds = snappySession.sql(query)
         }
+        doGC()
         if (cache) {
           testDF.createOrReplaceTempView("test")
           snappySession.catalog.cacheTable("test")
@@ -153,15 +161,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           collect(ds, expectedAnswer)
           testCleanup()
         }
+        doGC()
       }
       def cleanup(): Unit = {
         defaults.foreach { case (k, v) => snappySession.conf.set(k, v) }
         snappySession.catalog.clearCache()
         snappySession.sql("drop table if exists test")
-        System.gc()
-        System.runFinalization()
-        System.gc()
-        System.runFinalization()
+        doGC()
       }
       def testCleanup(): Unit = {
         snappySession.sparkContext.parallelize(1 to 10, 10).foreach { _ =>

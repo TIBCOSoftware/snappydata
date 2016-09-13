@@ -235,8 +235,14 @@ subprojects {
     maxParallelForks = 1
     minHeapSize '4g'
     maxHeapSize '4g'
-    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    // for benchmarking
+    // minHeapSize '12g'
+    // maxHeapSize '12g'
+    // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
