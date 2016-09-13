@@ -84,7 +84,7 @@ class BaseColumnFormatRelation(
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
     resolvedName, schema)
@@ -110,7 +110,7 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
       requiredColumns, filters)
   }
@@ -118,8 +118,8 @@ class BaseColumnFormatRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
-    val colRdd = scanTable(table, requiredColumns, filters)
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to
@@ -138,16 +138,18 @@ class BaseColumnFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
+          pushProjections = false,
+          useResultSet = true,
           connProperties,
-          filters,
+          Array.empty[Filter],
           Array.empty[Partition]
         )
 
-        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
-          leftItr ++ rightItr
+        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
+          Iterator[Any](leftItr, rightItr)
         }
-      case _ =>
 
+      case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,
@@ -159,11 +161,11 @@ class BaseColumnFormatRelation(
           filters
         )
 
-        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
-          leftItr ++ rightItr
+        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
+          Iterator[Any](leftItr, rightItr)
         }
     }
-    zipped
+    (zipped, Nil)
   }
 
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
@@ -174,9 +176,11 @@ class BaseColumnFormatRelation(
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
-      // TODO: can we do it before compressing. Might save a bit
+      // TODO: can we do it before compressing. Might save a bit.
+      // [sumedh] instead we should add it to a separate CachedBatch
+      // which will be appended with such small pieces in future.
       val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
-        Iterator(batch), schema.map(_.name).toArray, schema, forScan = true)
+        Iterator(batch), schema.map(_.name).toArray, schema, forScan = false)
       insert(unCachedRows)
     }
   }
@@ -323,7 +327,7 @@ class BaseColumnFormatRelation(
       "createExternalTableForCachedBatches: expected non-empty table name")
 
 
-    val (primarykey, partitionStrategy, concurrency) = dialect match {
+    val (primaryKey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
@@ -334,11 +338,13 @@ class BaseColumnFormatRelation(
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
+    // if the numRows or other columns are ever changed here, then change
+    // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer, numRows integer not null, stats blob, " +
         schema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(", ") +
-        s", $primarykey) $partitionStrategy $colocationClause " +
+        s", $primaryKey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
   }

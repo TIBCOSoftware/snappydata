@@ -24,6 +24,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
 /**
@@ -35,13 +36,13 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
-    rdd: RDD[Any],
+    dataRDD: RDD[Any],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalRDD(output, rdd, numPartitions, numBuckets,
-      partitionColumns, baseRelation) {
+    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")
@@ -51,23 +52,19 @@ private[sql] final case class RowTableScan(
       input, s"$input = inputs[0];")
     ctx.currentVars = null
 
-    rdd match {
+    dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
-        RowTableScan.doProduceWithoutProjection(ctx, input, numOutputRows,
-          output, baseRelation, this)
+        doProduceWithoutProjection(ctx, input, numOutputRows,
+          output, baseRelation)
       case _ =>
-        RowTableScan.doProduceWithProjection(ctx, input, numOutputRows,
-          output, baseRelation, this)
+        doProduceWithProjection(ctx, input, numOutputRows,
+          output, baseRelation)
     }
   }
-}
-
-object RowTableScan {
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
       numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan,
-      forObject: CodegenSupport): String = {
+      baseRelation: PartitionedDataSourceScan): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
@@ -84,7 +81,7 @@ object RowTableScan {
        |  while ($input.hasNext()) {
        |    final $compactRowClass $row = ($compactRowClass)$input.next();
        |    $numRows++;
-       |    ${forObject.consume(ctx, columnsRowInput).trim}
+       |    ${consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {
@@ -99,8 +96,7 @@ object RowTableScan {
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
       numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan,
-      forObject: CodegenSupport): String = {
+      baseRelation: PartitionedDataSourceScan): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
     val iterator = ctx.freshName("iterator")
@@ -117,7 +113,7 @@ object RowTableScan {
        |  while ($iterator.hasNext()) {
        |    $iterator.next();
        |    $numRows++;
-       |    ${forObject.consume(ctx, columnsRowInput).trim}
+       |    ${consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {
@@ -125,7 +121,6 @@ object RowTableScan {
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $iterator.close();
        |  $numOutputRows.add($numRows);
        |}
     """.stripMargin

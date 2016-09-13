@@ -73,7 +73,7 @@ object NWQueries extends SnappyFunSuite{
   // Using the WHERE clause to check for equality or inequality
   val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
       " FROM Orders " +
-      " WHERE OrderDate = '19-May-1997'"
+      " WHERE OrderDate = '1997-05-19'"
 
   // Using WHERE and ORDER BY Together
   val Q14: String = "SELECT CompanyName, ContactName, Fax" +
@@ -130,7 +130,7 @@ object NWQueries extends SnappyFunSuite{
       "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-      "FROM Orders WHERE OrderDate BETWEEN '1-Jan-1997' AND '31-Dec-1997')"
+      "FROM Orders WHERE OrderDate BETWEEN '1997-01-01' AND '1997-12-31')"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
       " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
@@ -156,7 +156,7 @@ object NWQueries extends SnappyFunSuite{
       " FROM Orders o" +
       " JOIN Employees e ON (e.EmployeeID = o.EmployeeID)" +
       " JOIN Customers c ON (c.CustomerID = o.CustomerID)" +
-      " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1-Jan-1998'" +
+      " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1998-01-01'" +
       " ORDER BY c.CompanyName"
 
   val Q33: String = "SELECT e.FirstName, e.LastName, o.OrderID" +
@@ -214,7 +214,7 @@ object NWQueries extends SnappyFunSuite{
       " order by y.OrderID" +
       " ) c on c.ProductID = b.ProductID" +
       " inner join Orders d on d.OrderID = c.OrderID" +
-      " where d.OrderDate > '1997/1/1' and d.OrderDate < '1997/12/31'" +
+      " where d.OrderDate > '1997-01-01' and d.OrderDate < '1997-12-31'" +
       " group by a.CategoryID, a.CategoryName, b.ProductName" +
       " order by a.CategoryName, b.ProductName, ProductSales"
 

@@ -17,9 +17,9 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
@@ -33,21 +33,27 @@ import org.apache.spark.sql.types._
  * all nodes this SparkPla can be used to avoid expensive shuffle
  * and Broadcast joins. This plan overrides outputPartitioning and
  * make it inline with the partitioning of the underlying DataSource */
-private[sql] abstract class PartitionedPhysicalRDD(
+private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
-    rdd: RDD[Any],
+    dataRDD: RDD[Any],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan)
-    extends LeafExecNode with CodegenSupport {
+    @transient override val relation: BaseRelation,
+    // not used currently (if need to use then get from relation.table)
+    override val metastoreTableIdentifier: Option[TableIdentifier] = None)
+    extends DataSourceScanExec with CodegenSupport {
 
-  private val extraInformation = baseRelation.toString
+  private val extraInformation = relation.toString
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
 
+  // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
+  // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
+  override val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
+
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    rdd.asInstanceOf[RDD[InternalRow]] :: Nil
+    rdd :: Nil
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
@@ -79,7 +85,11 @@ private[sql] abstract class PartitionedPhysicalRDD(
       " numPartitions= " + numPartitions)
 }
 
-private[sql] object PartitionedPhysicalRDD {
+private[sql] object PartitionedPhysicalScan {
+
+  private[sql] val CT_NUMROWS_POSITION = 3
+  private[sql] val CT_COLUMN_START = 5
+
   def createFromDataSource(
       output: Seq[Attribute],
       numPartitions: Int,
@@ -87,14 +97,14 @@ private[sql] object PartitionedPhysicalRDD {
       partitionColumns: Seq[Expression],
       rdd: RDD[Any],
       otherRDDs: Seq[RDD[InternalRow]],
-      relation: PartitionedDataSourceScan): PartitionedPhysicalRDD =
+      relation: PartitionedDataSourceScan): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, r.scanAsUnsafeRows, relation)
+          partitionColumns, relation)
       case r: SamplingRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, r.baseRelation.scanAsUnsafeRows, relation)
+          partitionColumns, relation)
       case _: RowFormatRelation =>
         if (otherRDDs.nonEmpty) {
           throw new UnsupportedOperationException(
@@ -106,6 +116,8 @@ private[sql] object PartitionedPhysicalRDD {
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
+
+  def table: String
 
   def schema: StructType
 

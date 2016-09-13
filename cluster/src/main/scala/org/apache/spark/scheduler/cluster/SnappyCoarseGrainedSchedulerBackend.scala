@@ -21,10 +21,11 @@ import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
+import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
-import org.apache.spark.scheduler.{SparkListener, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, TaskSchedulerImpl}
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
+import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext}
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
@@ -41,7 +42,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.storeToBlockMap -= id.toString
+      SnappyContext.removeBlockId(id.toString)
     }
   }
 
@@ -71,7 +72,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   override def stop() {
     super.stop()
     _driverUrl = ""
-    SnappyClusterManager.cm.map(_.stopLead()).isDefined
+    SnappyClusterManager.cm.foreach(_.stopLead())
     try {
       GemFireXDUtils.getGfxdAdvisor.getDistributionManager
           .removeMembershipListener(membershipListener)
@@ -90,16 +91,37 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   }
 }
 
-class BlockManagerIdListener extends SparkListener with Logging {
+class BlockManagerIdListener(sc: SparkContext)
+    extends SparkListener with Logging {
+
+  override def onExecutorAdded(
+      msg: SparkListenerExecutorAdded): Unit = synchronized {
+    SnappyContext.getBlockId(msg.executorId) match {
+      case None => SnappyContext.addBlockId(msg.executorId,
+        new BlockAndExecutorId(null, msg.executorInfo.totalCores))
+      case Some(b) => b._executorCores = msg.executorInfo.totalCores
+    }
+  }
 
   override def onBlockManagerAdded(
-      blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {
-    SnappyContext.storeToBlockMap(blockManagerAdded.blockManagerId.executorId) =
-        blockManagerAdded.blockManagerId
+      msg: SparkListenerBlockManagerAdded): Unit = synchronized {
+    val executorId = msg.blockManagerId.executorId
+    SnappyContext.getBlockIdIfNull(executorId) match {
+      case None => SnappyContext.addBlockId(executorId,
+        new BlockAndExecutorId(msg.blockManagerId,
+          sc.schedulerBackend.defaultParallelism()))
+      case Some(b) => b._blockId = msg.blockManagerId
+    }
   }
 
   override def onBlockManagerRemoved(
-      blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = {
-    SnappyContext.storeToBlockMap -= blockManagerRemoved.blockManagerId.executorId
+      msg: SparkListenerBlockManagerRemoved): Unit = {
+    SnappyContext.removeBlockId(msg.blockManagerId.executorId)
   }
+
+  override def onExecutorRemoved(msg: SparkListenerExecutorRemoved): Unit =
+    SnappyContext.removeBlockId(msg.executorId)
+
+  override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
+    SnappyContext.clearBlockIds()
 }

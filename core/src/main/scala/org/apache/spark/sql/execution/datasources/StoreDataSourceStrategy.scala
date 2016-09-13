@@ -42,6 +42,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         l,
         projects,
         filters,
+        isPartitioned = true,
         t.numPartitions,
         t.numBuckets,
         t.partitionColumns,
@@ -52,6 +53,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         l,
         projects,
         filters,
+        isPartitioned = false,
         0,
         0,
         Seq.empty[String],
@@ -64,14 +66,17 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       relation: LogicalRelation,
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
+      isPartitioned: Boolean,
       numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Array[Filter]) => RDD[InternalRow]) = {
+      scanBuilder: (Seq[Attribute], Array[Filter]) =>
+          (RDD[Any], Seq[RDD[InternalRow]])) = {
     pruneFilterProjectRaw(
       relation,
       projects,
       filterPredicates,
+      isPartitioned,
       numPartition,
       numBuckets,
       partitionColumns,
@@ -85,10 +90,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       relation: LogicalRelation,
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
+      isPartitioned: Boolean,
       numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) => RDD[InternalRow]) = {
+      scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) =>
+          (RDD[Any], Seq[RDD[InternalRow]])) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
@@ -103,8 +110,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     val (unhandledPredicates, pushedFilters) =
       selectFilters(relation.relation, candidatePredicates)
 
-    // A set of column attributes that are only referenced by pushed down filters.  We can eliminate
-    // them from requested columns.
+    // A set of column attributes that are only referenced by pushed down
+    // filters. We can eliminate them from requested columns.
     val handledSet = {
       val handledPredicates = filterPredicates.filterNot(unhandledPredicates.contains)
       val unhandledSet = AttributeSet(unhandledPredicates.flatMap(_.references))
@@ -112,8 +119,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           (projectSet ++ unhandledSet).map(relation.attributeMap)
     }
 
-    // Combines all Catalyst filter `Expression`s that are either not convertible to data source
-    // `Filter`s or cannot be handled by `relation`.
+    // Combines all Catalyst filter `Expression`s that are either not
+    // convertible to data source `Filter`s or cannot be handled by `relation`.
     val filterCondition = unhandledPredicates.reduceLeftOption(expressions.And)
 
     // Get the partition column attribute INFO from relation schema
@@ -134,7 +141,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       pairs.toMap
     }
 
-    if (projects.map(_.toAttribute) == projects &&
+    val mappedProjects = projects.map(_.toAttribute)
+    if (mappedProjects == projects &&
         projectSet.size == projects.size &&
         filterSet.subsetOf(projectSet)) {
       // When it is possible to just use column pruning to get the right projection and
@@ -146,18 +154,22 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           // Don't request columns that are only referenced by pushed filters.
           .filterNot(handledSet.contains)
 
-      val scan = if (numPartition > 0) {
-        execution.PartitionedPhysicalRDD.createFromDataSource(
-          projects.map(_.toAttribute),
+      val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
+        execution.PartitionedPhysicalScan.createFromDataSource(
+          mappedProjects,
           numPartition,
           numBuckets,
           joinedCols,
-          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-          relation.relation)
+          rdd,
+          otherRDDs,
+          relation.relation.asInstanceOf[PartitionedDataSourceScan])
       } else {
         execution.DataSourceScanExec.create(
-          projects.map(_.toAttribute),
-          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          mappedProjects,
+          scanBuilder(requestedColumns, candidatePredicates,
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -166,18 +178,22 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val requestedColumns = (projectSet ++ filterSet -- handledSet).map(
         relation.attributeMap).toSeq
 
-      val scan = if (numPartition > 0) {
-        execution.PartitionedPhysicalRDD.createFromDataSource(
+      val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
+        execution.PartitionedPhysicalScan.createFromDataSource(
           requestedColumns,
           numPartition,
           numBuckets,
           joinedCols,
-          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-          relation.relation)
+          rdd,
+          otherRDDs,
+          relation.relation.asInstanceOf[PartitionedDataSourceScan])
       } else {
         execution.DataSourceScanExec.create(
           requestedColumns,
-          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          scanBuilder(requestedColumns, candidatePredicates,
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       execution.ProjectExec(projects,
