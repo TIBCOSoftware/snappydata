@@ -17,6 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
+import java.util.UUID
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -55,6 +56,28 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
             _connProperties.hikariCP), this)
+    }
+  }
+
+  override protected def doInsert(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): (Connection => Any) = {
+    {
+      (connection: Connection) => {
+        super.doInsert(tableName, batch, batchId, partitionId)(connection)
+        connectionType match {
+          case ConnectionType.Embedded =>
+            val resolvedName = ExternalStoreUtils.lookupName(tableName,
+              connection.getSchema)
+            val region = Misc.getRegionForTable(resolvedName, true)
+            region.asInstanceOf[AbstractRegion] match {
+              case pr: PartitionedRegion =>
+                pr.asInstanceOf[PartitionedRegion]
+                    .getPrStats().incPRNumRowsInCachedBatches(batch.numRows)
+              case _ => // do nothing
+            }
+          case _ => // do nothing
+        }
+      }
     }
   }
 
