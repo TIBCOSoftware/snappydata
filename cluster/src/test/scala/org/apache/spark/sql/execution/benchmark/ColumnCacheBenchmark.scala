@@ -57,7 +57,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     conf.set("snappy.store.optimization", "true")
     conf.set("spark.sql.shuffle.partitions", "1")
     conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
-    // conf.set("spark.sql.autoBroadcastJoinThreshold", "1")
+    conf.set("spark.sql.autoBroadcastJoinThreshold", "1")
     if (addOn != null) {
       addOn(conf)
     }
@@ -71,7 +71,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   test("cache with randomized keys - read path only") {
-    benchmarkRandomizedKeys(size = 20 << 21, readPathOnly = true)
+    benchmarkRandomizedKeys(size = 20 << 20, readPathOnly = true)
   }
 
   /**
