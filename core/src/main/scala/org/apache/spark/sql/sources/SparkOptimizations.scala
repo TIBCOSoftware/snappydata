@@ -24,8 +24,8 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.QueryHint
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BinaryComparison, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedAlias, UnresolvedAttribute}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BinaryComparison, Cast, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -64,6 +64,15 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     }
 
     val replacementMap = if (explicitIndexHint.isEmpty) {
+      val hasUnresolvedReferences = plan.find (_.references.exists {
+        case UnresolvedAttribute(_) => true
+        case _ => false
+      }).isDefined
+
+      if (hasUnresolvedReferences) {
+        // try once all references are resolved.
+        return plan
+      }
       /** Having decided to change the table with index during analysis phase,
         * we are faced with issues like 'select * from a, b where a.c1 = b.c1'
         * will have join condition in the Filter. It is the optimizer which does

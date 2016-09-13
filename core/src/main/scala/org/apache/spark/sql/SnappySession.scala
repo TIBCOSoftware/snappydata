@@ -913,7 +913,7 @@ class SnappySession(@transient private val sc: SparkContext,
         if(sessionCatalog.isTemporaryTable(tableIdent)){ // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
-        }else{
+        } else {
           sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
         }
         br match {

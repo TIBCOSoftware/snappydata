@@ -213,50 +213,55 @@ class CreateIndexTest extends SnappyFunSuite {
     val executeQ = QueryExecutor(snContext)
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1") {
-      validateIndex(Seq(s"$index2"), s"$table3")(_)
+      validateIndex(Seq(index2), table3)(_)
     }
 
     executeQ(s"select * from $table1 t1, $table3 t2 where t1.col1 = t2.col1  ") {
-      validateIndex(Seq(s"$index2"), s"$table3")(_)
+      validateIndex(Seq(index2), table3)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(Seq(s"$index4"), s"$table2")(_)
+      validateIndex(Seq(index4), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(Seq(s"$index4"), s"$table2")(_)
+      validateIndex(Seq(index4), table2)(_)
+    }
+
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col3 " +
+        s"and t1.col3 = t2.col2 ") {
+      validateIndex(Seq.empty, table1, table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table2 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // tab2 vs index31
-      validateIndex(Seq(s"$index31"), s"$table2")(df)
+      validateIndex(Seq(index31), table2)(df)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // index4 vs index31
-      validateIndex(Seq(s"$index31", s"$index4"))(df)
+      validateIndex(Seq(index31, index4))(df)
     }
 
     executeQ(s"select * from $table1 /*+ ${QueryHint.WithIndex}($index1) */, $table3 " +
         s"where $table1.col1 = $table3.col1") {
-      validateIndex(Seq(s"$index1"), s"$table3")(_)
+      validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 t1 /*+ ${QueryHint.WithIndex}($index1) */, $table3 t2 " +
         s"where t1.col1 = t2.col1") {
-      validateIndex(Seq(s"$index1"), s"$table3")(_)
+      validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 /*+ ${QueryHint.WithIndex}($index1) */ as t1, $table3 t2 " +
         s"where t1.col1 = t2.col1") {
-      validateIndex(Seq(s"$index1"), s"$table3")(_)
+      validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 tab1 join $table2 tab2 on tab1.col2 = tab2.col2") {
-      validateIndex(Seq.empty, s"$table1", s"$table2")(_)
+      validateIndex(Seq.empty, table1, table2)(_)
     }
 
     try {
@@ -312,22 +317,22 @@ class CreateIndexTest extends SnappyFunSuite {
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1 " +
         s"where tab1.col1 = 111 ") {
-      validateIndex(Seq(s"$index1"), s"$table3")(_)
+      validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
         s"where $table1.col1 = $table3.col1 and $table3.col1 = 111 ") {
-      validateIndex(Seq(s"$index1"), s"$table3")(_)
+      validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"where t1.col3 = t2.col3 ", true) {
-      validateIndex(Seq(s"$index2"), s"$table2")(_)
+      validateIndex(Seq(index2), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") {df =>
-      // validateIndex(Seq(s"$index2", s"$table2"))(_)
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") { df =>
+      // validateIndex(Seq(index2", table2"))(_)
       val msg = "TODO:SB: Fix this "
       logInfo(msg)
       info(msg)
@@ -342,31 +347,32 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"drop table $table3")
   }
 
-  ignore("Test choice of index for 3 or more table joins") {
-    val table1 = "tabOne"
-    val table2 = "tabTwo"
-    val table3 = "tabThree"
+  test("Test choice of index for 3 or more table joins") {
+    val (table1, table2, table3, table4) = ("T_one", "T_two",
+        "T_three", "T_four")
 
     val snContext = SnappyContext(sc)
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
 
     def createBaseTables(): Unit = {
-      val props = Map(
-        "PARTITION_BY" -> "col1")
       snContext.sql(s"drop table if exists $table1")
 
-      val data = Seq(Seq(111, "aaa", "hello"),
-        Seq(222, "bbb", "halo"),
-        Seq(333, "aaa", "hello"),
-        Seq(444, "bbb", "halo"),
-        Seq(555, "ccc", "halo"),
-        Seq(666, "ccc", "halo")
+      val data = Seq(Seq(1, "aaa", "v1", "p1"),
+        Seq(2, "bbb", "v2", "p2"),
+        Seq(3, "aaa", "v1", "p3"),
+        Seq(4, "bbb", "v2", "p1"),
+        Seq(5, "ccc", "v3", "p2"),
+        Seq(6, "ccc", "v3", "p3")
       )
 
       val rdd = sc.parallelize(data, data.length).map(s =>
-        new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
+        new Data3(s(0).asInstanceOf[Int], s(1).asInstanceOf[String],
+          s(2).asInstanceOf[String], s(3).asInstanceOf[String]))
       val dataDF = snContext.createDataFrame(rdd)
+
+      val props = Map(
+        "PARTITION_BY" -> "col1")
 
       snContext.createTable(s"$table2", "column", dataDF.schema,
         props + ("PARTITION_BY" -> "col2, col3"))
@@ -374,57 +380,63 @@ class CreateIndexTest extends SnappyFunSuite {
       snContext.createTable(s"$table3", "column", dataDF.schema,
         (props + ("PARTITION_BY" -> "col1, col3")))
 
+      snContext.createTable(s"$table4", "column", dataDF.schema,
+        (props + ("PARTITION_BY" -> "col4")))
+
       dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
       dataDF.write.insertInto(table2)
-      dataDF.write.insertInto(table2)
       dataDF.write.insertInto(table3)
+      dataDF.write.insertInto(table4)
     }
 
 
     createBaseTables()
 
-    val index1 = s"${table1}_IdxOne"
-    val index2 = s"${table1}_IdxTwo"
-    val index3 = s"${table1}_IdxThree"
-    val index4 = s"${table1}_IdxFour"
+    val index1 = s"${table1}_Idx_One"
+    val index2 = s"${table1}_Idx_Two"
+    val index3 = s"${table1}_Idx_Three"
 
     doPrint("Verify index create and drop for various index types")
-    snContext.sql(s"create index $index1 on $table1 " +
-        s" (COL1, COL3) Options (colocate_with  '$table3')")
 
-    snContext.sql(s"create index $index2 on $table1 " +
+    snContext.sql(s"create index $index1 on $table1 " +
         s" (COL2, COL3) Options (colocate_with  '$table2')")
 
-    val executeQ = QueryExecutor(snContext, true, true)
+    snContext.sql(s"create index $index2 on $table1 " +
+        s" (COL1, COL3) Options (colocate_with  '$table3')")
+
+    snContext.sql(s"create index $index3 on $table1 " +
+        s" (COL4) Options (colocate_with  '$table4')")
+
+    val executeQ = QueryExecutor(snContext, false, false)
+
+/*
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table3 t3 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
+        s"and t1.col1 = t3.col1 and t1.col3 = t3.col3") {
+      validateIndex(Seq(index1), table2, table3)(_)
+    }
+*/
+
+    executeQ(s"select t1.col2, t4.col3 from $table1 t1, $table4 t4 " +
+        s"where t1.col4 = t4.col4 and t1.col1 = t4.col2 ", true)
+
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
+        s"and t1.col4 = t4.col4 ")
+
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table4 t4, $table2 t2 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
+        s"and t1.col4 = t4.col4 ")
 
     /*
-        executeQ(s"select * from $table1 tab1 " +
-            s"join $table3 tab2 on tab1.col1 = tab2.col1")
-
-        executeQ(s"select * from $table1 tab1 " +
-            s"join $table3 tab2 on tab1.col1 = tab2.col1 where tab1.col1 = 111 ")
-
-
-        executeQ(s"select * from $table1, $table3 " +
-            s" where $table1.col1 = $table3.col1")
-
-        executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
-            s"where $table1.col1 = $table3.col1 and $table3.col1 = 111 ")
-
-        executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 " +
-        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ")
-
-        executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ")
-    */
-
-    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
-        s"where t1.col3 = t2.col3 ")
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
+        s"and t1.col4 = t4.col4 and t1.col1 = t4.col2 ")
+*/
 
     snContext.sql(s"drop index $index1")
     snContext.sql(s"drop index $index2")
     snContext.sql(s"drop index $index3")
-    snContext.sql(s"drop index $index4")
 
     snContext.sql(s"drop table $table1")
     snContext.sql(s"drop table $table2")
