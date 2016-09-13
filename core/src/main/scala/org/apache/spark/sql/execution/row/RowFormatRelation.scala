@@ -67,7 +67,7 @@ class RowFormatRelation(
 
   override def toString: String = s"RowFormatRelation[$table]"
 
-  protected val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
@@ -96,11 +96,11 @@ class RowFormatRelation(
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-    filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
-    connectionType match {
+    val rdd = connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
@@ -109,6 +109,8 @@ class RowFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
+          pushProjections = false,
+          useResultSet = false,
           connProperties,
           handledFilters,
           parts
@@ -126,6 +128,7 @@ class RowFormatRelation(
           handledFilters
         )
     }
+    (rdd, Nil)
   }
 
   /**

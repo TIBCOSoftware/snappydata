@@ -53,6 +53,9 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+
+    testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
+        configuration: 'testOutput')
   } else {
     compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -66,6 +69,9 @@ dependencies {
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+
+    testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
+                version: snappySparkVersion, classfier: 'tests'
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
