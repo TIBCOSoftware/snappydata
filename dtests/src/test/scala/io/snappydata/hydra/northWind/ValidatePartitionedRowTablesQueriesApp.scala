@@ -31,9 +31,9 @@ object ValidatePartitionedRowTablesQueriesApp {
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     val tableType = args(0)
-        val pw = new PrintWriter(new FileOutputStream(new File("ValidatePartitionedRowTablesQueriesApp.out"), true));
-    println(s"Create and load ${tableType } tables Test started")
-    NWTestSparkApp.validateQueries(snc, tableType, pw)
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidatePartitionedRowTablesQueriesApp.out"), true));
+    println(s"Create and load ${tableType} tables Test started")
+    NWTestUtil.validateQueries(snc, tableType, pw)
     println(s"Create and load ${tableType} tables Test completed successfully")
     pw.close()
   }

@@ -24,19 +24,16 @@ import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation,
 
 import scala.util.{Failure, Success, Try}
 
-/**
- * Created by swati on 2/9/16.
- */
 object CreateAndLoadPartitionedRowTablesJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadPartitionedRowTablesJob.out"), true));
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       northWind.NWQueries.snc = snc
-      NWTestSparkApp.dropTables(snc)
+      NWTestUtil.dropTables(snc)
       println("Create and load Partitioned Row tables Test started")
-      NWTestSparkApp.createAndLoadPartitionedTables(snc)
-      NWTestSparkApp.validateQueries(snc, "Partitioned Row Table", pw)
+      NWTestUtil.createAndLoadPartitionedTables(snc)
+      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw)
       println("Create and load Partitioned Row tables Test completed successfully")
       pw.close()
     } match {

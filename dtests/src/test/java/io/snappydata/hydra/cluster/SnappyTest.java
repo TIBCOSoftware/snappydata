@@ -1541,10 +1541,6 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
                 String locatorsList = getLocatorsList("locators");
-                /*String command = snappyJobScript + " --jars " + SnappyPrms.getScalaTestJar() + ","  + getCoreTestsJar() + ","   + getDunitJar() + " --files " + getAllDataFiles() + " --class " + userJob +
-                        " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
-                        " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar)*/
                 String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
@@ -1566,25 +1562,6 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
-    }
-
-    protected static String getAllDataFiles() {
-        String dataFilesLocation = SnappyPrms.getDataFilesLocation();
-        ArrayList<String> jarFiles = new ArrayList<>();
-        String SnappyJarsList = null;
-        File baseDir = new File(dataFilesLocation);
-        try {
-            IOFileFilter filter = new WildcardFileFilter("*");
-            List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
-            Log.getLogWriter().info("Data files found: " + Arrays.asList(files));
-            for (File file1 : files) {
-                jarFiles.add(file1.getAbsolutePath());
-            }
-        } catch (Exception e) {
-            Log.getLogWriter().info("Unable to find " + dataFilesLocation + " location.");
-        }
-        SnappyJarsList = StringUtils.join(jarFiles, ",");
-        return SnappyJarsList;
     }
 
     protected static String getAbsoluteJarLocation(String jarPath, final String jarName) {

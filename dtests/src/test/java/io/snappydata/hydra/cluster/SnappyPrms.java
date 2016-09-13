@@ -136,12 +136,6 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long userAppArgs;
 
-    public static Long scalaTestJar;
-
-    public static Long coreTestJar;
-
-    public static Long dunitJar;
-
     /**
      * (int) how long (milliseconds) it should wait for getting the job status
      */
@@ -172,11 +166,6 @@ public class SnappyPrms extends BasePrms {
      * (VectosetValues of Strings) A list of values for snappy-job.
      */
     public static Long appPropsForJobServer;
-
-    /**
-     * (String) Parameter used to get the data files location.
-     */
-    public static Long dataFilesLocation;
 
     /**
      * (int) number of executor cores to be used in test
@@ -298,11 +287,6 @@ public class SnappyPrms extends BasePrms {
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
-    public static String getDataFilesLocation() {
-        Long key = dataFilesLocation;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
-    }
-
     public static boolean getTableDefaultDataPolicy() {
         Long key = tableDefaultPartitioned;
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
@@ -329,23 +313,8 @@ public class SnappyPrms extends BasePrms {
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
-    public static String getScalaTestJar() {
-        Long key = scalaTestJar;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
-    }
-
-    public static String getCoreTestsJarName() {
-        Long key = coreTestJar;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
-    }
-
     public static String getUserAppArgs() {
         Long key = userAppArgs;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
-    }
-
-    public static String getDunitJarName() {
-        Long key = dunitJar;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
     }
 

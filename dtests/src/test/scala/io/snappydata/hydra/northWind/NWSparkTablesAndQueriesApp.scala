@@ -21,9 +21,6 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
- * Created by swati on 1/9/16.
- */
 object NWSparkTablesAndQueriesApp {
   val conf = new SparkConf().
     setAppName("NWSparkTablesAndQueriesApp Application")
@@ -34,7 +31,7 @@ object NWSparkTablesAndQueriesApp {
   def main(args: Array[String]) {
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
-    dropTables(snc)
+    NWTestUtil.dropTables(snc)
     val pw = new PrintWriter(new FileOutputStream(new File("NWSparkTablesAndQueriesApp.out"), true));
     println("Test replicated row tables queries started")
     createAndLoadSparkTables(snc)
@@ -128,32 +125,6 @@ object NWSparkTablesAndQueriesApp {
       }
     }
   }
-
-  private def dropTables(snc: SnappyContext): Unit = {
-    snc.sql("drop table if exists regions")
-    println("regions table dropped successfully.");
-    snc.sql("drop table if exists categories")
-    println("categories table dropped successfully.");
-    snc.sql("drop table if exists products")
-    println("products table dropped successfully.");
-    snc.sql("drop table if exists order_details")
-    println("order_details table dropped successfully.");
-    snc.sql("drop table if exists orders")
-    println("orders table dropped successfully.");
-    snc.sql("drop table if exists customers")
-    println("customers table dropped successfully.");
-    snc.sql("drop table if exists employees")
-    println("employees table dropped successfully.");
-    snc.sql("drop table if exists employee_territories")
-    println("employee_territories table dropped successfully.");
-    snc.sql("drop table if exists shippers")
-    println("shippers table dropped successfully.");
-    snc.sql("drop table if exists suppliers")
-    println("suppliers table dropped successfully.");
-    snc.sql("drop table if exists territories")
-    println("territories table dropped successfully.");
-  }
-
 
 }
 

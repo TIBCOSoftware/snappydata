@@ -24,9 +24,6 @@ import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappyContext,
 
 import scala.util.{Failure, Success, Try}
 
-/**
- * Created by swati on 2/9/16.
- */
 object ValidateReplicatedTableQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
@@ -35,7 +32,7 @@ object ValidateReplicatedTableQueriesJob extends SnappySQLJob {
       snc.sql("set spark.sql.shuffle.partitions=6")
       northWind.NWQueries.snc = snc
       println("Validate Replicated Row tables queries Test started")
-      NWTestSparkApp.validateQueries(snc, "Replicated Row Table", pw)
+      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
       println("Validate Replicated Row tables queries Test completed successfully")
       pw.close()
     } match {

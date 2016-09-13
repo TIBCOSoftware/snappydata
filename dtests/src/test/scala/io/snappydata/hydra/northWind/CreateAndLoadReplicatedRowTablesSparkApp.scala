@@ -23,7 +23,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 
 object CreateAndLoadReplicatedRowTablesSparkApp {
   val conf = new SparkConf().
-    setAppName("NWTestSparkApp Application")
+    setAppName("NWTestUtil Application")
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
 
@@ -31,18 +31,18 @@ object CreateAndLoadReplicatedRowTablesSparkApp {
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     val tableType = args(0)
-    val pw = new PrintWriter(new FileOutputStream(new File("NWTestSparkApp.out"), true));
-    NWTestSparkApp.dropTables(snc)
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadReplicatedRowTablesSparkApp.out"), true));
+    NWTestUtil.dropTables(snc)
     println(s"Create and load ${tableType} tables Test started")
     tableType match {
-      case "Replicated Row" => NWTestSparkApp.createAndLoadReplicatedTables(snc)
-      case "Partitioned Row" => NWTestSparkApp.createAndLoadPartitionedTables(snc)
-      case "Column" => NWTestSparkApp.createAndLoadColumnTables(snc)
-      case "Colocated" => NWTestSparkApp.createAndLoadColocatedTables(snc)
-      case _  => // the default, catch-all
+      case "Replicated Row" => NWTestUtil.createAndLoadReplicatedTables(snc)
+      case "Partitioned Row" => NWTestUtil.createAndLoadPartitionedTables(snc)
+      case "Column" => NWTestUtil.createAndLoadColumnTables(snc)
+      case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
+      case _ => // the default, catch-all
     }
-    NWTestSparkApp.createAndLoadReplicatedTables(snc)
-    NWTestSparkApp.validateQueries(snc, tableType +"  Table", pw)
+    NWTestUtil.createAndLoadReplicatedTables(snc)
+    NWTestUtil.validateQueries(snc, tableType + "  Table", pw)
     println(s"Create and load ${tableType} tables Test completed successfully")
     pw.close()
   }
