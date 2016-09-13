@@ -31,23 +31,15 @@ import org.apache.spark.sql.types.{DataType, Decimal, DecimalType, StructType}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-trait CompactExecRowToMutableRow extends ResultWasNull {
+abstract class CompactExecRowToMutableRow extends ResultNullHolder {
 
   val schema: StructType
-
-  protected final var wasNull: Boolean = _
-
-  protected final lazy val defaultCal = new GregorianCalendar()
 
   protected final val dataTypes: ArrayBuffer[DataType] =
     new ArrayBuffer[DataType](schema.length)
 
   protected final val fieldTypes = StoreUtils.mapCatalystTypes(
     schema, dataTypes)
-
-  override final def setWasNull(): Unit = {
-    wasNull = true
-  }
 
   protected final def createInternalRow(execRow: AbstractCompactExecRow,
       mutableRow: SpecificMutableRow): InternalRow = {
@@ -222,5 +214,22 @@ trait CompactExecRowToMutableRow extends ResultWasNull {
       i = i + 1
     }
     mutableRow
+  }
+}
+
+class ResultNullHolder extends ResultWasNull {
+
+  final var wasNull: Boolean = _
+
+  final val defaultCal = new GregorianCalendar()
+
+  override final def setWasNull(): Unit = {
+    wasNull = true
+  }
+
+  final def wasNullAndClear(): Boolean = {
+    val result = wasNull
+    wasNull = false
+    result
   }
 }

@@ -41,9 +41,10 @@ import org.apache.hadoop.util.VersionInfo
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, FunctionRegistry, NoSuchDatabaseException}
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
@@ -860,6 +861,47 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       case x: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
+  }
+
+  /**
+   * Retrieve the metadata of an existing metastore table.
+   * If no database is specified, assume the table is in the current database.
+   * If the specified table is not found in the database then a [[NoSuchTableException]] is thrown.
+   */
+  override def getTableMetadata(name: TableIdentifier): CatalogTable = {
+    val db = formatDatabaseName(name.database.getOrElse(getCurrentDatabase))
+    val table = formatTableName(name.table)
+    val tid = TableIdentifier(table)
+    if (isTemporaryTable(name)) {
+      CatalogTable(
+        identifier = tid,
+        tableType = CatalogTableType.VIEW,
+        storage = CatalogStorageFormat.empty,
+        schema = tempTables(table).output.map { c =>
+          CatalogColumn(
+            name = c.name,
+            dataType = c.dataType.catalogString,
+            nullable = c.nullable,
+            comment = Option(c.name)
+          )
+        },
+        properties = Map(),
+        viewText = None)
+    } else {
+      requireDbExists(db)
+      tableExists(TableIdentifier(table, Some(db)))
+      client.getTable(db, table)
+    }
+  }
+
+  /**
+   * List all matching tables in the specified database, including temporary tables.
+   */
+  override def listTables(db: String, pattern: String): Seq[TableIdentifier] = {
+    val dbName = formatDatabaseName(db)
+    requireDbExists(dbName)
+    val dbTables = getTables(Some(dbName)).map(t => TableIdentifier(t._1))
+    dbTables
   }
 
 }

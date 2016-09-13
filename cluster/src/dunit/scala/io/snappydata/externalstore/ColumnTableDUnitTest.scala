@@ -16,13 +16,13 @@
  */
 package io.snappydata.externalstore
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters._
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.{SerializableRunnable, SerializableCallable}
+import io.snappydata.test.dunit.{SerializableCallable, SerializableRunnable}
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
@@ -209,7 +209,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           buckets = buckets + x
         }
         val iter = pr.getAppropriateLocalEntriesIterator(
-          JavaConversions.setAsJavaSet(buckets), false, false, true, pr, true)
+          buckets.asJava, false, false, true, pr, true)
         var count = 0
         while (iter.hasNext) {
           iter.next

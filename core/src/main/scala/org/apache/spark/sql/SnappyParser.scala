@@ -258,7 +258,7 @@ class SnappyParser(session: SnappySession)
     ) ~ ws
   }
 
-  protected final def namedExpression: Rule1[Expression] = rule {
+  final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
         AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
@@ -266,7 +266,7 @@ class SnappyParser(session: SnappySession)
     )
   }
 
-  final def expression: Rule1[Expression] = rule {
+  protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
   }

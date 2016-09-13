@@ -233,9 +233,16 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
+    minHeapSize '4g'
     maxHeapSize '4g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    // for benchmarking
+    // minHeapSize '12g'
+    // maxHeapSize '12g'
+    // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -245,15 +252,15 @@ subprojects {
 
     def result = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
-    extensions.add('testResult', { String name -> result.append(name) } )
+    extensions.add('testResult', { String name -> result.setLength(0); result.append(name) } )
 
     def output = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.append(name) } )
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) } )
 
     def errorOutput = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.append(name) } )
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) } )
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -271,8 +278,8 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=384m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -776,7 +783,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -897,7 +904,7 @@ task runQuickstart {
 
       String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/python/examples/AirlineDataPythonApp.py"])
+           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
 
       println airlinepythonappresult
       if (airlinepythonappresult.toLowerCase().contains('exception')) {

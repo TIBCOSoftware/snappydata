@@ -106,12 +106,22 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
-    scanTable(table, requiredColumns, filters)
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (cachedColumnBuffers, requestedColumns) = scanTable(table,
+      requiredColumns, filters)
+    val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
+      // Find the ordinals and data types of the requested columns.
+      // If none are requested, use the narrowest (the field with
+      // minimum default element size).
+
+      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
+        requestedColumns, schema, forScan = true)
+    }
+    (rdd.asInstanceOf[RDD[Any]], Nil)
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -129,15 +139,7 @@ case class JDBCAppendableRelation(
         requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkContext)
     }
-
-    cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
-      // Find the ordinals and data types of the requested columns.
-      // If none are requested, use the narrowest (the field with
-      // minimum default element size).
-
-      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
-        requestedColumns, schema, forScan = true)
-    }
+    (cachedColumnBuffers, requestedColumns)
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
