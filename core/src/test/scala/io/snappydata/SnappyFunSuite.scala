@@ -125,9 +125,6 @@ abstract class SnappyFunSuite
     try {
       TestUtils.dropAllTables(this.snc)
     } finally {
-      if (clearStoreToBlockMap) {
-        SnappyContext.storeToBlockMap.clear()
-      }
       dirCleanup()
     }
   }
