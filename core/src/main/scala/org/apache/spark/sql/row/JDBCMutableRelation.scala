@@ -151,8 +151,8 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-    filters: Array[Filter]): RDD[InternalRow] = {
-    new JDBCRDD(
+    filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val rdd = new JDBCRDD(
       sqlContext.sparkContext,
       executorConnector,
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -161,7 +161,8 @@ case class JDBCMutableRelation(
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
-      connProperties.executorConnProps)
+      connProperties.executorConnProps).asInstanceOf[RDD[Any]]
+    (rdd, Nil)
   }
 
   final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)

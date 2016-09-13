@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{AnalysisException, SnappyContext, SnappySession}
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 

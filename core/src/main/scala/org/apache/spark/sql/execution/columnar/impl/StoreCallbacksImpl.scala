@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
-import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, TransactionController}
+import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 import org.apache.spark.SparkException
@@ -95,7 +95,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         lcc.setExecuteLocally(Collections.singleton(bucketID),
           region.getPartitionedRegion, false, null)
         try {
-          val sc: ScanController = lcc.getTransactionExecute.openScan(
+          val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
             TransactionController.ISOLATION_NOLOCK /* not used */ ,
