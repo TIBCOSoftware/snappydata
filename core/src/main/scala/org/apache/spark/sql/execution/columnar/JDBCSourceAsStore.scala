@@ -63,10 +63,10 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
     rand.nextInt(numPartitions)
   }
 
-  def storeCurrentBatch(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): Unit = {
-    tryExecute(tableName, {
-      connection =>
+  protected def doInsert(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): (Connection => Any) = {
+    {
+      (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, batchId.toString)
@@ -84,7 +84,14 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         })
         stmt.executeUpdate()
         stmt.close()
-    }, closeOnSuccess = true, onExecutor = true)
+      }
+    }
+  }
+
+  def storeCurrentBatch(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): Unit = {
+    tryExecute(tableName, doInsert(tableName, batch, batchId, partitionId),
+      closeOnSuccess = true, onExecutor = true)
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
