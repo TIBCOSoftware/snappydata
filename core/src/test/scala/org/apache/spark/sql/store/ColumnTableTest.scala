@@ -761,7 +761,7 @@ class ColumnTableTest
     }
   }
 
-  ignore("compare parser performance") {
+  test("compare parser performance") {
     val snc = this.snc
     val sqlText = " select" +
         "         SUPP_NATION," +
