@@ -23,6 +23,7 @@ import scala.util.hashing.MurmurHash3
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.util.collection.BitSet
 
@@ -360,7 +361,7 @@ private[sql] object MultiColumnOpenHashSet {
    * column types for array creation, hashing avoid boxing hash code
    * computation etc.
    */
-  abstract sealed class ColumnHandler extends Serializable {
+  abstract  class ColumnHandler extends Serializable {
 
     val columns: Array[Int]
 
@@ -426,6 +427,9 @@ private[sql] object MultiColumnOpenHashSet {
       new MultiColumnHandler(columns, numColumns, types)
     }
   }
+
+
+
 
   final class LongHandler(val col: Int) extends ColumnHandler {
 
