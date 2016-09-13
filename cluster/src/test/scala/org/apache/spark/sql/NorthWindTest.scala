@@ -70,7 +70,7 @@ class NorthWindTest
       case j: CartesianProductExec => j
       case j: SortMergeJoinExec => j
       case j: ShuffledHashJoinExec => j
-      case j: PartitionedPhysicalRDD => j
+      case j: PartitionedPhysicalScan => j
 
     }
     if (operators(0).getClass() != c) {
@@ -96,7 +96,7 @@ class NorthWindTest
       case j: ProjectExec => j
       // case j: TungstenAggregate => j
       case j: PartitionedDataSourceScan => j
-      case j: PartitionedPhysicalRDD => j
+      case j: PartitionedPhysicalScan => j
       case j: LocalTableScanExec => j
       case j: CoalesceExec => j
       case j: FilterExec => j

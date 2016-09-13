@@ -24,6 +24,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
 /**
@@ -35,13 +36,13 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
-    rdd: RDD[Any],
+    dataRDD: RDD[Any],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalRDD(output, rdd, numPartitions, numBuckets,
-      partitionColumns, baseRelation) {
+    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")
@@ -51,7 +52,7 @@ private[sql] final case class RowTableScan(
       input, s"$input = inputs[0];")
     ctx.currentVars = null
 
-    rdd match {
+    dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
         doProduceWithoutProjection(ctx, input, numOutputRows,
           output, baseRelation)

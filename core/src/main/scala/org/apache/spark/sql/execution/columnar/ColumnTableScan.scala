@@ -49,7 +49,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalRDD}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
@@ -62,14 +63,14 @@ import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, T
  */
 private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
-    rdd: RDD[Any],
+    dataRDD: RDD[Any],
     otherRDDs: Seq[RDD[InternalRow]],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalRDD(output, rdd, numPartitions, numBuckets,
-      partitionColumns, baseRelation) {
+    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
@@ -214,7 +215,7 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = baseRelation.schema.fieldIndex(a.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
-      val bufferPosition = baseIndex + PartitionedPhysicalRDD.CT_COLUMN_START
+      val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
 
       ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
       if (otherRDDs.isEmpty) {
@@ -275,14 +276,14 @@ private[sql] final case class ColumnTableScan(
       s"""
         final $execRowClass $batch = ($execRowClass)$colInput.next();
         $numBatchRows = $batch.getAsInt(
-          ${PartitionedPhysicalRDD.CT_NUMROWS_POSITION}, ($wasNullClass)null);
+          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, ($wasNullClass)null);
       """
     } else {
       s"""
         final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
         $buffers = (byte[][])$colInput.next();
         $numBatchRows = $rowFormatter.getAsInt(
-          ${PartitionedPhysicalRDD.CT_NUMROWS_POSITION}, $buffers[0],
+          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, $buffers[0],
           ($wasNullClass)null);
       """
     }

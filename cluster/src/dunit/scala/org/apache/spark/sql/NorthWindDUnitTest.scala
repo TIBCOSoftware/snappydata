@@ -17,8 +17,9 @@
 package org.apache.spark.sql
 
 import io.snappydata.cluster.ClusterManagerTestBase
+
 import org.apache.spark.sql.execution.joins._
-import org.apache.spark.sql.execution.{LocalTableScanExec, ProjectExec, PartitionedPhysicalRDD}
+import org.apache.spark.sql.execution.{LocalTableScanExec, PartitionedPhysicalScan, PartitionedPhysicalScan$, ProjectExec}
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
@@ -81,7 +82,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       // case j: Sort => j
       case j: ProjectExec => j
       // case j: TungstenAggregate => j
-      case j: PartitionedPhysicalRDD => j
+      case j: PartitionedPhysicalScan => j
       case j: LocalTableScanExec => j
     }
     //    if (operators(0).getClass() != c) {

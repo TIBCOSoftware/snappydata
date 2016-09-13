@@ -157,7 +157,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val scan = if (isPartitioned) {
         val (rdd, otherRDDs) = scanBuilder(requestedColumns,
           candidatePredicates, pushedFilters)
-        execution.PartitionedPhysicalRDD.createFromDataSource(
+        execution.PartitionedPhysicalScan.createFromDataSource(
           mappedProjects,
           numPartition,
           numBuckets,
@@ -181,7 +181,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val scan = if (isPartitioned) {
         val (rdd, otherRDDs) = scanBuilder(requestedColumns,
           candidatePredicates, pushedFilters)
-        execution.PartitionedPhysicalRDD.createFromDataSource(
+        execution.PartitionedPhysicalScan.createFromDataSource(
           requestedColumns,
           numPartition,
           numBuckets,
