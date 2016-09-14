@@ -22,6 +22,7 @@ pages:
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
 - API: apidocsintro.md
+- ISight Demo: aqp_aws.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
