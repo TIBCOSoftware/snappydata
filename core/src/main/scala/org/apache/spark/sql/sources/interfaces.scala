@@ -21,6 +21,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -141,6 +142,11 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
    * The QCS columns for the sample.
    */
   def qcs: Array[String]
+
+  /**
+   * The underlying column table used to store data.
+   */
+  def baseRelation: BaseColumnFormatRelation
 }
 
 @DeveloperApi
@@ -279,5 +285,7 @@ trait ExternalSchemaRelationProvider {
   */
 @DeveloperApi
 trait PrunedUnsafeFilteredScan {
-  def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[InternalRow]
+
+  def buildUnsafeScan(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]])
 }
