@@ -16,7 +16,9 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.sql.Connection
+import java.sql.{Connection, PreparedStatement}
+
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -36,9 +38,10 @@ import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.{CodeGeneration, GeneratedIndexStatement, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 
 /**
   * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -602,9 +605,13 @@ class IndexColumnFormatRelation(
   override def baseTable: Option[String] = Some(baseTableName)
 
   override def name: String = _table
+
 }
 
 object ColumnFormatRelation extends Logging with StoreCallback {
+
+  type IndexUpdateStruct = ((PreparedStatement, InternalRow) => Int, PreparedStatement)
+
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
 
@@ -622,14 +629,19 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     }
   }
 
-  def registerStoreCallbacks(sqlContext: SQLContext, table: String,
-      userSchema: StructType, externalStore: ExternalStore): Unit = {
-    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
-      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
-  }
-
   final def cachedBatchTableName(table: String): String =
     JDBCAppendableRelation.cachedBatchTableName(table)
+
+  def getIndexUpdateStruct(indexEntry: ExecutorCatalogEntry,
+      connectedExternalStore: ConnectedExternalStore):
+  ColumnFormatRelation.IndexUpdateStruct = {
+    assert(indexEntry.dmls.nonEmpty)
+    val rowInsertStr = indexEntry.dmls(0)
+    (CodeGeneration.getGeneratedIndexStatement(indexEntry.entityName,
+      indexEntry.schema,
+      indexEntry.externalStore.connProperties.dialect),
+        connectedExternalStore.prepareStatement(rowInsertStr))
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
@@ -673,7 +685,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     var success = false
 
     // create an index relation if it is an index table
-    val relation = options.get(StoreUtils.GEM_INDEXED_TABLE) match {
+    val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
+    val relation = baseTable match {
       case Some(baseTable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
           processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
@@ -701,11 +714,17 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
-      ColumnFormatRelation.registerStoreCallbacks(sqlContext, table,
-        schema, externalStore)
+
+      StoreCallbacksImpl.registerExternalStoreAndSchema(
+        ExecutorCatalogEntry(table, schema, externalStore,
+        sqlContext.conf.columnBatchSize,
+        sqlContext.conf.useCompression,
+          baseTable, ArrayBuffer(relation.rowInsertStr)))
+
       connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          Some(schema), partitions, connProperties)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext,
+          table, Some(schema), partitions, connProperties,
+          baseTable, ArrayBuffer(relation.rowInsertStr))
         case _ =>
       }
       success = true

@@ -16,11 +16,19 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.PreparedStatement
+
+import scala.collection.mutable.ArrayBuffer
+
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+
 
 private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int,
-    val batchAggregate: CachedBatch => Unit) extends Serializable {
+    val batchAggregate: CachedBatch => Unit,
+    val indexes: Seq[ColumnFormatRelation.IndexUpdateStruct] = Seq.empty
+) extends Serializable {
 
   var columnBuilders = getColumnBuilders
 
@@ -46,6 +54,7 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
         columnBuilders(i).appendFrom(row, i)
         i += 1
       }
+      indexes.foreach { case (indexUpdater, prepStmt) => indexUpdater(prepStmt, row)}
       rowCount += 1
     }
     if (rowCount >= batchSize || flush) {

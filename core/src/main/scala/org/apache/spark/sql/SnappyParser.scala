@@ -125,14 +125,14 @@ class SnappyParser(session: SnappySession)
 
   private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
       optAlias: Option[String]) = {
-    val indexHint = queryHints.remove(QueryHint.WithIndex.toString)
+    val indexHint = queryHints.remove(QueryHint.Index.toString)
     if (indexHint.nonEmpty) {
       val table = optAlias match {
         case Some(alias) => alias
         case _ => tableIdent.unquotedString
       }
 
-      queryHints.put(QueryHint.WithIndex.toString + table, indexHint.get)
+      queryHints.put(QueryHint.Index.toString + table, indexHint.get)
     }
   }
 
@@ -437,12 +437,12 @@ class SnappyParser(session: SnappySession)
         ((child: LogicalPlan, window: Any, alias: String) => window
             .asInstanceOf[Option[(Duration, Option[Duration])]] match {
           case None =>
-            assertNoQueryHint(QueryHint.WithIndex,
-              s"${QueryHint.WithIndex} cannot be applied to derived table $alias")
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
             SubqueryAlias(alias, child)
           case Some(win) =>
-            assertNoQueryHint(QueryHint.WithIndex,
-              s"${QueryHint.WithIndex} cannot be applied to derived table $alias")
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
             WindowLogicalPlan(win._1, win._2,
               SubqueryAlias(alias, child))
         })

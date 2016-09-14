@@ -46,7 +46,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
 
-    val indexHint = QueryHint.WithIndex.toString
+    val indexHint = QueryHint.Index.toString
     val explicitIndexHint = snappySession.queryHints.collect {
       case (hint, value) if hint.startsWith(indexHint) =>
         val tableOrAlias = hint.substring(indexHint.length)

@@ -36,6 +36,7 @@ import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, U
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -58,6 +59,17 @@ object CodeGeneration extends Logging {
       override def load(key: ExecuteKey) = {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
+        def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
+        logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
+        result
+      }
+    })
+
+  private[this] val indexCache = CacheBuilder.newBuilder().maximumSize(100).build(
+    new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
+      override def load(key: ExecuteKey) = {
+        val start = System.nanoTime()
+        val result = compileGeneratedIndexUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
         result
@@ -193,24 +205,7 @@ object CodeGeneration extends Logging {
   private[this] def getBufferHolderVar(numFields: Int): String =
     "bufferHolderForComplexType_" + numFields
 
-  private[this] def compilePreparedUpdate(table: String,
-      schema: Array[DataType], dialect: JdbcDialect): GeneratedStatement = {
-    val ctx = new CodegenContext
-    val sb = new StringBuilder()
-    schema.indices.foreach { col =>
-      val (nonNullCode, nullCode) = getColumnSetterFragment(col,
-        schema(col), dialect, ctx)
-      sb.append(s"""
-        if (!row.isNullAt($col)) {
-          $nonNullCode
-        } else {
-          $nullCode
-        }""")
-    }
-    val evaluator = new CompilerFactory().newScriptEvaluator()
-    evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
-    evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(Array(
+  private[this] def defaultImports = Array(
       DateTimeUtils.getClass.getName.replace("$", ""),
       classOf[Platform].getName,
       classOf[InternalRow].getName,
@@ -224,7 +219,35 @@ object CodeGeneration extends Logging {
       classOf[MapData].getName,
       classOf[UnsafeMapData].getName,
       classOf[java.util.Arrays].getName,
-      classOf[MutableRow].getName))
+      classOf[MutableRow].getName)
+
+  private[this] def getRowSetterFragment(schema: Array[DataType],
+      dialect: JdbcDialect,
+      ctx: CodegenContext): StringBuilder = {
+    val sb = new StringBuilder()
+    schema.indices.foreach { col =>
+      val (nonNullCode, nullCode) = getColumnSetterFragment(col,
+        schema(col), dialect, ctx)
+      sb.append(
+        s"""
+        if (!row.isNullAt($col)) {
+          $nonNullCode
+        } else {
+          $nullCode
+        }""")
+    }
+    sb
+  }
+
+  private[this] def compilePreparedUpdate(table: String,
+      schema: Array[DataType], dialect: JdbcDialect): GeneratedStatement = {
+    val ctx = new CodegenContext
+    val sb = getRowSetterFragment(schema, dialect, ctx)
+
+    val evaluator = new CompilerFactory().newScriptEvaluator()
+    evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
+    evaluator.setParentClassLoader(getClass.getClassLoader)
+    evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -259,6 +282,32 @@ object CodeGeneration extends Logging {
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
         "dialect")).asInstanceOf[GeneratedStatement]
   }
+
+
+  private[this] def compileGeneratedIndexUpdate(table: String,
+      schema: Array[DataType], dialect: JdbcDialect): GeneratedIndexStatement = {
+    val ctx = new CodegenContext
+    val sb = getRowSetterFragment(schema, dialect, ctx)
+
+    val evaluator = new CompilerFactory().newScriptEvaluator()
+    evaluator.setClassName("io.snappydata.execute.GeneratedIndexEvaluation")
+    evaluator.setParentClassLoader(getClass.getClassLoader)
+    evaluator.setDefaultImports(defaultImports)
+    val separator = "\n      "
+    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
+      s"$javaType $name;$separator${init.replace("this.", "")}"
+    }
+    val expression = s"""
+      ${varDeclarations.mkString(separator)}
+        ${sb.toString()}
+        stmt.addBatch();
+      return 1;"""
+
+    logDebug(s"DEBUG: For update to index=$table, generated code=$expression")
+    evaluator.createFastEvaluator(expression, classOf[GeneratedIndexStatement],
+      Array("schema", "dialect", "stmt", "row")).asInstanceOf[GeneratedIndexStatement]
+  }
+
 
   private[this] def compileComplexType(
       dataType: DataType): SerializeComplexType = {
@@ -427,12 +476,25 @@ object CodeGeneration extends Logging {
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
     typeCache.get(dataType)
 
+  def getGeneratedIndexStatement(name: String,
+      schema: StructType,
+      dialect: JdbcDialect): (PreparedStatement, InternalRow) => Int = {
+    val schemaArr = schema.map(_.dataType).toArray
+    val result = indexCache.get(new ExecuteKey(name, schemaArr,
+      dialect, forIndex = true))
+    result.addBatch(schemaArr, dialect) _
+  }
+
   def removeCache(name: String): Unit =
     cache.invalidate(new ExecuteKey(name, null, null))
 
   def removeCache(dataType: DataType): Unit = cache.invalidate(dataType)
 
+  def removeIndexCache(indexName: String): Unit =
+    indexCache.invalidate(new ExecuteKey(indexName, null, null, true))
+
   def clearCache(): Unit = cache.invalidateAll()
+
 }
 
 trait GeneratedStatement {
@@ -450,15 +512,25 @@ trait SerializeComplexType {
       dos: GfxdHeapDataOutputStream): Array[Byte]
 }
 
-private final class ExecuteKey(val name: String,
-    val schema: Array[DataType], val dialect: JdbcDialect) {
 
-  override def hashCode(): Int = if (schema != null) {
+trait GeneratedIndexStatement {
+
+  @throws[java.sql.SQLException]
+  def addBatch(schema: Array[DataType], dialect: JdbcDialect)
+      (stmt: PreparedStatement, row: InternalRow): Int
+}
+
+
+private final class ExecuteKey(val name: String,
+    val schema: Array[DataType], val dialect: JdbcDialect,
+    val forIndex: Boolean = false) {
+
+  override def hashCode(): Int = if (schema != null && !forIndex) {
     scala.util.hashing.MurmurHash3.arrayHash(schema)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => if (schema != null && o.schema != null) {
+    case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
       schema.sameElements(o.schema)
     } else {
       name == o.name

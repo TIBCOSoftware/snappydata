@@ -524,7 +524,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
    * Return whether a table with the specified name is a temporary table.
    */
   def isTemporaryTable(tableIdent: QualifiedTableName): Boolean = synchronized {
-    if(tempTables.contains(tableIdent.table)) true else false
+    if (tempTables.contains(tableIdent.table)) true else false
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {

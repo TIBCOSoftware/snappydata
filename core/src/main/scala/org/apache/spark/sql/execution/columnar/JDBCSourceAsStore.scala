@@ -40,7 +40,7 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
 /*
 Generic class to query column table from SnappyData execution.
  */
-class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
+class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
     numPartitions: Int) extends ExternalStore {
 
   @transient
@@ -48,6 +48,47 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
+
+
+  class JDBCConnectedStore(override val connProperties: ConnectionProperties,
+      numPartitions: Int,
+      val connectedInstance: Connection) extends JDBCSourceAsStore(connProperties, numPartitions)
+      with ConnectedExternalStore {
+
+    override def getConnection(id: String, onExecutor: Boolean): Connection =
+      connectedInstance
+
+    override def getConnectedStore(id: String, onExecutor: Boolean): ConnectedExternalStore = this
+
+    override def storeCurrentBatch(tableName: String, batch: CachedBatch,
+        batchId: UUID, partitionId: Int): Unit = {
+      tryExecuteWithDependents(tableName, {
+        (connection, psList) =>
+          val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+          val stmt = connection.prepareStatement(rowInsertStr)
+          stmt.setString(1, batchId.toString)
+          stmt.setInt(2, partitionId)
+          stmt.setInt(3, batch.numRows)
+          // TODO: set to null since stats are currently not being used
+          // Need to use them for partition/CachedBatch pruning but also
+          // add more efficient custom serialization below (shows perf impact)
+          // stmt.setBytes(4, SparkSqlSerializer.serialize(batch.stats))
+          stmt.setNull(4, java.sql.Types.BLOB)
+          var columnIndex = 5
+          batch.buffers.foreach(buffer => {
+            stmt.setBytes(columnIndex, buffer)
+            columnIndex += 1
+          })
+          stmt.executeUpdate()
+          psList.foreach(_.executeBatch())
+          stmt.close()
+      }, onExecutor = true)
+    }
+
+  }
+
+  override def getConnectedStore(id: String, onExecutor: Boolean): ConnectedExternalStore =
+    new JDBCConnectedStore(connProperties, numPartitions, getConnection(id, onExecutor))
 
 
   def getCachedBatchRDD(tableName: String,

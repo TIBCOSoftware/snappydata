@@ -190,5 +190,5 @@ object QueryHint extends Enumeration {
     * Example:<br>
     * SELECT * FROM t1 /*+ withIndex(xxx) */, t2 --+ withIndex(yyy)
     */
-  val WithIndex = Value("withIndex")
+  val Index = Value("index")
 }
