@@ -20,10 +20,8 @@ import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 
-import org.apache.spark.storage.BlockManagerId
-
+import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
-
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -298,6 +296,12 @@ object Utils {
       // case "boolean" => org.apache.spark.sql.types.BooleanType
       case _ => throw new IllegalArgumentException(s"Invalid type $dataType")
     }
+  }
+
+  @tailrec
+  def getSQLDataType(dataType: DataType): DataType = dataType match {
+    case udt: UserDefinedType[_] => getSQLDataType(udt.sqlType)
+    case _ => dataType
   }
 
   def getClientHostPort(netServer: String): String = {
@@ -667,14 +671,10 @@ class ExecutorLocalPartition(override val index: Int,
 }
 
 class MultiBucketExecutorPartition(override val index: Int,
-                                   val buckets: mutable.HashSet[Int],
-                                   val blockIds: Seq[BlockManagerId]) extends Partition {
+    val buckets: Set[Int], val hostExecutorIds: Seq[String]) extends Partition {
 
-  def hostExecutorIds : Seq[String] = {
-    val execs = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
-    execs
-  }
-  override def toString = s"MultiBucketExecutorPartition($index, $buckets, $blockIds)"
+  override def toString: String =
+    s"MultiBucketExecutorPartition($index, $buckets, $hostExecutorIds)"
 }
 
 
@@ -718,9 +718,10 @@ private[spark] class CoGroupExecutorLocalPartition(
 }
 
 class ExecutorMultiBucketLocalShellPartition(override val index: Int,
-                                             val buckets: mutable.HashSet[Int],
-                                  val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString = s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
+    val buckets: mutable.HashSet[Int],
+    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+  override def toString: String =
+    s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {

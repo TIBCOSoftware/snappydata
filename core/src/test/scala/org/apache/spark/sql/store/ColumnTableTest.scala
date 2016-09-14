@@ -32,6 +32,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
 /**
@@ -895,5 +896,36 @@ class ColumnTableTest
       conn.close()
     }
     // scalastyle:on println
+  }
+
+  test("Check cachedBatch num rows") {
+    System.setProperty("forceFlush", "true")
+    val data = (1 to 200) map (i => Seq(i, +i, +i))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val parDF = dataDF.repartition(1)
+
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
+        " USING column ")
+    try {
+      parDF.write.insertInto(tableName)
+    } finally {
+      System.clearProperty("forceFlush")
+    }
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    val r = result.collect
+    assert(r.length === 200)
+
+    val rowBuffer = Misc.getRegionForTable(("APP." + tableName).toUpperCase, true)
+    println(rowBuffer.asInstanceOf[PartitionedRegion].getPrStats.getDataStoreEntryCount)
+
+    val region = Misc.getRegionForTable(JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+    val entries = region.asInstanceOf[PartitionedRegion].getPrStats.getPRNumRowsInCachedBatches
+
+    assert(entries == 200)
+    logInfo("Successful")
   }
 }

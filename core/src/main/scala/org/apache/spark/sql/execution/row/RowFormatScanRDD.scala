@@ -19,27 +19,24 @@ package org.apache.spark.sql.execution.row
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
+import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData,
-  UnsafeMapData, UnsafeRow, UnsafeProjection}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
-import org.apache.spark.sql.execution.{CompactExecRowToMutableRow, ConnectionPool}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -53,12 +50,12 @@ class RowFormatScanRDD(_sc: SparkContext,
     tableName: String,
     isPartitioned: Boolean,
     columns: Array[String],
+    val pushProjections: Boolean,
+    val useResultSet: Boolean,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends JDBCRDD(_sc, getConnection, schema, tableName, columns,
-      filters, partitions, connProperties.url,
-      connProperties.executorConnProps) {
+    extends RDD[Any](_sc, Nil) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -152,7 +149,8 @@ class RowFormatScanRDD(_sc: SparkContext,
    * `columns`, but as a String suitable for injection into a SQL query.
    */
   protected val columnList: String = {
-    if (columns.length > 0) {
+    if (!pushProjections) "*"
+    else if (columns.length > 0) {
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
@@ -171,12 +169,11 @@ class RowFormatScanRDD(_sc: SparkContext,
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       try {
         ps.setString(1, tableName)
-        val partition = thePart.asInstanceOf[MultiBucketExecutorPartition]
-        var bucketString = ""
-        partition.buckets.foreach(bucket => {
-          bucketString = bucketString + bucket + ","
-        })
-        ps.setString(2, bucketString.substring(0, bucketString.length - 1))
+        val bucketString = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets.mkString(",")
+          case _ => thePart.index.toString
+        }
+        ps.setString(2, bucketString)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -210,21 +207,26 @@ class RowFormatScanRDD(_sc: SparkContext,
    * Runs the SQL query against the JDBC driver.
    */
   override def compute(thePart: Partition,
-      context: TaskContext): Iterator[InternalRow] = {
-    val (conn, stmt, rs) = computeResultSet(thePart)
-    val itr = new InternalRowIteratorOnRS(conn, stmt, rs, context, schema)
-    // move once to next at the start (or close if no result available)
-    itr.moveNext()
-    // switch to optimized iterator for CompactExecRows
-    rs match {
-      case r: EmbedResultSet =>
-        if (itr.hasNext && r.currentRow.isInstanceOf[AbstractCompactExecRow]) {
-          // use the optimized iterator
-          new CompactExecRowIteratorOnRS(conn, stmt, r, context, schema)
-        } else {
-          itr
+      context: TaskContext): Iterator[Any] = {
+    if (pushProjections || useResultSet) {
+      val (conn, stmt, rs) = computeResultSet(thePart)
+      new ResultSetTraversal(conn, stmt, rs, context)
+    } else {
+      // use iterator over CompactExecRows directly when no projection;
+      // higher layer PartitionedPhysicalRDD will take care of conversion
+      // or direct code generation as appropriate
+      if (isPartitioned && filterWhereClause.isEmpty) {
+        val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+        val bucketIds = thePart match {
+          case p: MultiBucketExecutorPartition => p.buckets
+          case _ => Set(thePart.index)
         }
-      case _ => itr
+        new CompactExecRowIteratorOnScan(container, bucketIds)
+      } else {
+        val (conn, stmt, rs) = computeResultSet(thePart)
+        new CompactExecRowIteratorOnRS(conn, stmt,
+          rs.asInstanceOf[EmbedResultSet], context)
+      }
     }
   }
 
@@ -252,191 +254,78 @@ class RowFormatScanRDD(_sc: SparkContext,
   }
 }
 
-final class InternalRowIteratorOnRS(conn: Connection,
-    stmt: Statement, rs: ResultSet, context: TaskContext, schema: StructType)
-    extends ResultSetIterator[InternalRow](conn, stmt, rs, context) {
+/**
+ * This does not return any valid results from result set rather caller is
+ * expected to explicitly invoke ResultSet.next()/get*.
+ * This is primarily intended to be used for cleanup.
+ */
+final class ResultSetTraversal(conn: Connection,
+    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
-  private[this] lazy val defaultCal = new GregorianCalendar()
+  val defaultCal: GregorianCalendar = new GregorianCalendar()
 
-  private[this] val dataTypes: ArrayBuffer[DataType] =
-    new ArrayBuffer[DataType](schema.length)
-
-  private[this] val fieldTypes = StoreUtils.mapCatalystTypes(schema, dataTypes)
-
-  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
-
-  private[this] val mutableRow = new SpecificMutableRow(dataTypes)
-
-  override def next(): InternalRow = {
-    var i = 0
-    while (i < schema.length) {
-      val pos = i + 1
-      fieldTypes(i) match {
-        case StoreUtils.STRING_TYPE =>
-          val v = rs.getString(pos)
-          if (v != null) {
-            mutableRow.update(i, UTF8String.fromString(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.INT_TYPE =>
-          val v = rs.getInt(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setInt(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.LONG_TYPE =>
-          val v = rs.getLong(pos)
-          if (v != 0L || !rs.wasNull()) {
-            mutableRow.setLong(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BINARY_LONG_TYPE =>
-          val bytes = rs.getBytes(pos)
-          if (bytes != null) {
-            var v = 0L
-            var j = 0
-            val numBytes = bytes.size
-            while (j < numBytes) {
-              v = 256 * v + (255 & bytes(j))
-              j = j + 1
-            }
-            mutableRow.setLong(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.SHORT_TYPE =>
-          val v = rs.getShort(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setShort(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BYTE_TYPE =>
-          val v = rs.getByte(pos)
-          if (v != 0 || !rs.wasNull()) {
-            mutableRow.setByte(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BOOLEAN_TYPE =>
-          val v = rs.getBoolean(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setBoolean(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DECIMAL_TYPE =>
-          // When connecting with Oracle DB through JDBC, the precision and
-          // scale of BigDecimal object returned by ResultSet.getBigDecimal
-          // is not correctly matched to the table schema reported by
-          // ResultSetMetaData.getPrecision and ResultSetMetaData.getScale.
-          // If inserting values like 19999 into a column with NUMBER(12, 2)
-          // type, you get through a BigDecimal object with scale as 0. But the
-          // dataframe schema has correct type as DecimalType(12, 2).
-          // Thus, after saving the dataframe into parquet file and then
-          // retrieve it, you will get wrong result 199.99. So it is needed
-          // to set precision and scale for Decimal based on JDBC metadata.
-          val v = rs.getBigDecimal(pos)
-          if (v != null) {
-            val d = schema.fields(i).dataType.asInstanceOf[DecimalType]
-            mutableRow.update(i, Decimal(v, d.precision, d.scale))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DOUBLE_TYPE =>
-          val v = rs.getDouble(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setDouble(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.FLOAT_TYPE =>
-          val v = rs.getFloat(pos)
-          if (!rs.wasNull()) {
-            mutableRow.setFloat(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.DATE_TYPE =>
-          val cal = this.defaultCal
-          cal.clear()
-          val v = rs.getDate(pos, cal)
-          if (v != null) {
-            mutableRow.setInt(i, DateTimeUtils.fromJavaDate(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.TIMESTAMP_TYPE =>
-          val cal = this.defaultCal
-          cal.clear()
-          val v = rs.getTimestamp(pos, cal)
-          if (v != null) {
-            mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(v))
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.BINARY_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            mutableRow.update(i, v)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.ARRAY_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val array = new UnsafeArrayData
-            array.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, array)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.MAP_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val map = new UnsafeMapData
-            map.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, map)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case StoreUtils.STRUCT_TYPE =>
-          val v = rs.getBytes(pos)
-          if (v != null) {
-            val s = schema.fields(i).dataType.asInstanceOf[StructType]
-            val row = new UnsafeRow(s.fields.length)
-            row.pointTo(v, Platform.BYTE_ARRAY_OFFSET, v.length)
-            mutableRow.update(i, row)
-          } else {
-            mutableRow.setNullAt(i)
-          }
-        case _ => throw new IllegalArgumentException(
-          s"Unsupported field ${schema.fields(i)}")
-      }
-      i = i + 1
-    }
-    moveNext()
-    unsafeproj.apply(mutableRow)
-  }
+  override protected def getCurrentValue: Void = null
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
-    stmt: Statement, ers: EmbedResultSet, context: TaskContext,
-    override val schema: StructType)
-    extends ResultSetIterator[InternalRow](conn, stmt, ers, context)
-    with CompactExecRowToMutableRow {
+    stmt: Statement, ers: EmbedResultSet, context: TaskContext)
+    extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
+      ers, context) {
 
-  private lazy val unsafeproj = UnsafeProjection.create(schema.map(_.dataType).toArray)
+  override protected def getCurrentValue: AbstractCompactExecRow = {
+    ers.currentRow.asInstanceOf[AbstractCompactExecRow]
+  }
+}
 
-  private[this] val mutableRow = new SpecificMutableRow(dataTypes)
+abstract class PRValuesIterator[T](val container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int]) extends Iterator[T] {
 
-  override def next(): InternalRow = {
-    val result = createInternalRow(
-      ers.currentRow.asInstanceOf[AbstractCompactExecRow], mutableRow)
-    moveNext()
-    unsafeproj.apply(result)
+  protected final var hasNextValue = true
+  protected final var doMove = true
+
+  protected final val itr = container.getEntrySetIteratorForBucketSet(
+    bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+
+  protected def currentVal: T
+
+  protected def moveNext(): Unit
+
+  override final def hasNext: Boolean = {
+    if (doMove) {
+      moveNext()
+      doMove = false
+    }
+    hasNextValue
+  }
+
+  override final def next: T = {
+    if (doMove) {
+      moveNext()
+    }
+    doMove = true
+    currentVal
+  }
+}
+
+final class CompactExecRowIteratorOnScan(container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int])
+    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
+
+  override protected val currentVal: AbstractCompactExecRow = container
+      .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
+
+  override protected def moveNext(): Unit = {
+    while (itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      val owner = itr.getHostedBucketRegion
+      if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
+          (RegionEntryUtils.fillRowWithoutFaultIn(container, owner,
+            rl.getRegionEntry, currentVal) ne null)) {
+        return
+      }
+    }
+    hasNextValue = false
   }
 }

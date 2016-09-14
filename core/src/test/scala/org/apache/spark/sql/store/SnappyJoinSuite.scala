@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
-import org.apache.spark.sql.execution.{PartitionedPhysicalRDD, QueryExecution, RowDataSourceScanExec}
+import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
@@ -196,7 +196,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     } else {
       lj.foreach(a => a.child.collect {
         // this means no Exhange should have child as PartitionedPhysicalRDD
-        case p: PartitionedPhysicalRDD => sys.error(
+        case p: PartitionedPhysicalScan => sys.error(
           s"Did not expect exchange with partitioned scan with same partitions")
         case p: RowDataSourceScanExec => sys.error(
           s"Did not expect RowDataSourceScanExec with PartitionedDataSourceScan")
