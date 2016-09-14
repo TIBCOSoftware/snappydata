@@ -43,7 +43,8 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     _numColumns: Int,
     _initialCapacity: Int,
     _loadFactor: Double,
-    qcsSparkPlanOption: Option[(CodeAndComment, ArrayBuffer[Any])])
+    qcsSparkPlanOption: Option[(CodeAndComment, ArrayBuffer[Any],
+        Array[Any => Any], Array[Int], Array[DataType], Int )])
     extends SegmentMap[Row, V]
     with mutable.Map[Row, V]
     with mutable.MapLike[Row, V, MultiColumnOpenHashMap[V]]
