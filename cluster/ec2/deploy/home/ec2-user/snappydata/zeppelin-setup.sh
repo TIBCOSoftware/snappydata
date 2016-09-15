@@ -34,14 +34,30 @@ fi
 
 ZEP_DIR="zeppelin-0.6.1-bin-netinst"
 ZEP_URL="http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
+ZEP_URL_MIRROR="http://redrockdigimark.com/apachemirror/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
+ZEP_NOTEBOOKS_URL="https://github.com/SnappyDataInc/zeppelin-interpreter/raw/notes/examples/notebook/"
+ZEP_NOTEBOOKS_DIR="notebook"
 
 # Download and extract Zeppelin distribution
 if [[ ! -d ${ZEP_DIR} ]]; then
   if [[ ! -e "${ZEP_DIR}.tgz" ]]; then
     wget "${ZEP_URL}"
+    # Try another mirror if the actual site is down.Faced this issue many times while testing 
+    if [ $? -ne 0 ]; then
+      wget "${ZEP_URL_MIRROR}"
+    fi
+    
   fi
   tar -xf "${ZEP_DIR}.tgz"
 fi
+
+# Download examples notebook from the github
+if [[ ! -e "${ZEP_NOTEBOOKS_DIR}.tar.gz" ]]; then
+  wget "${ZEP_NOTEBOOKS_URL}/${ZEP_NOTEBOOKS_DIR}.tar.gz"
+fi
+tar -xzf "${ZEP_NOTEBOOKS_DIR}.tar.gz"
+echo "Copying sample notebooks..."
+cp -ar "${ZEP_NOTEBOOKS_DIR}/." "${ZEP_DIR}/${ZEP_NOTEBOOKS_DIR}/"
 
 # At this point, SnappyData dist should be available (placed here by lead)
 if [[ ! -d ${SNAPPY_HOME_DIR} ]]; then
@@ -49,9 +65,11 @@ if [[ ! -d ${SNAPPY_HOME_DIR} ]]; then
 fi
 
 # Download, extract and place SnappyData interpreter under interpreter/ directory
-# TODO Later we need to download this from maven/official-github-release.
-INTERPRETER_JAR="snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar"
-INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/${INTERPRETER_JAR}"
+# TODO Download this from official-github-release. See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
+# INTERPRETER_JAR="snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar"
+# INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/${INTERPRETER_JAR}"
+INTERPRETER_JAR="snappydata-zeppelin-0.6-SNAPSHOT.jar"
+INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/${INTERPRETER_JAR}"
 INTERPRETER_DIR="${ZEP_DIR}/interpreter/snappydata"
 
 if [[ ! -d ${INTERPRETER_DIR} ]] || [[ ! -e interpreter-setting.json.orig ]]; then
@@ -64,11 +82,7 @@ if [[ ! -d ${INTERPRETER_DIR} ]] || [[ ! -e interpreter-setting.json.orig ]]; th
   mv interpreter-setting.json interpreter-setting.json.orig
 
   # Place interpreter dependencies into the directory
-  cp "${SNAPPY_HOME_DIR}/lib/datanucleus-api-jdo-3.2.6.jar" "${INTERPRETER_DIR}"
-  cp "${SNAPPY_HOME_DIR}/lib/datanucleus-core-3.2.10.jar" "${INTERPRETER_DIR}"
-  cp "${SNAPPY_HOME_DIR}/lib/datanucleus-rdbms-3.2.9.jar" "${INTERPRETER_DIR}"
-  cp "${SNAPPY_HOME_DIR}/lib/snappydata-assembly_2.10-0.5.2-SNAPSHOT-hadoop2.4.1.jar" "${INTERPRETER_DIR}"
-  cp "${SNAPPY_HOME_DIR}/lib/snappydata-store-client-1.5.1-SNAPSHOT.jar" "${INTERPRETER_DIR}"
+  cp -a "${SNAPPY_HOME_DIR}/jars/." "${INTERPRETER_DIR}"
 fi
 
 cp interpreter-setting.json.orig "${INTERPRETER_DIR}"/interpreter-setting.json
@@ -115,7 +129,7 @@ if [[ -e "${ZEP_DIR}/conf/interpreter.json.orig" ]]; then
   cp "${ZEP_DIR}/conf/interpreter.json.orig" "${ZEP_DIR}/conf/interpreter.json"
   sh "${ZEP_DIR}/bin/zeppelin-daemon.sh" stop
 else
-  # TODO If user has made any changes to the interpreter config, those will be lost.
+  # TODO If user has made any changes to the interpreter config, those may be lost.
   # Start and stop the Zeppelin daemon
   sh "${ZEP_DIR}/bin/zeppelin-daemon.sh" start
   sleep 2

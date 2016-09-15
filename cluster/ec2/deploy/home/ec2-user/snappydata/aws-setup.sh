@@ -48,6 +48,10 @@ else
   cp locator_list "${SNAPPY_HOME_DIR}/conf/locators"
 fi
 
+# Enable jmx-manager for pulse to start
+sed -i '/^#/ ! {/\\$/ ! { /^[[:space:]]*$/ ! s/$/ -jmx-manager-start=true -jmx-manager-http-port=7075/}}' "${SNAPPY_HOME_DIR}/conf/locators"
+
+
 if [[ -e leads ]]; then
   mv leads "${SNAPPY_HOME_DIR}/conf/"
 else
@@ -57,6 +61,13 @@ fi
 if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
   # Enable interpreter on lead
   sed -i '/^#/ ! {/\\$/ ! { /^[[:space:]]*$/ ! s/$/ -zeppelin.interpreter.enable=true/}}' "${SNAPPY_HOME_DIR}/conf/leads"
+
+  # Add interpreter jar to snappydata's jars directory
+  # TODO Download this from official-github-release. See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
+  INTERPRETER_JAR="snappydata-zeppelin-0.6-SNAPSHOT.jar"
+  INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/${INTERPRETER_JAR}"
+  wget -q "${INTERPRETER_URL}"
+  mv ${INTERPRETER_JAR} ${SNAPPY_HOME_DIR}/jars/
 fi
 
 if [[ -e servers ]]; then

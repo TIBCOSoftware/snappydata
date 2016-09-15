@@ -397,7 +397,6 @@ def read_ports_from_conf(fname, patterns):
     ports = []
 
     if os.path.exists(fname):
-        print("Path exists %s" % fname);
         with open(fname) as conffile:
             filedata = conffile.read()
             for pattern in patterns:
