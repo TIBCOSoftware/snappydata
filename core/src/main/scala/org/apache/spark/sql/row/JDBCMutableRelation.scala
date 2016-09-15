@@ -20,6 +20,8 @@ import java.sql.Connection
 
 import io.snappydata.StoreTableValueSizeProviderService
 
+import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -32,7 +34,6 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, Partition}
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
@@ -150,8 +151,8 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-    filters: Array[Filter]): RDD[InternalRow] = {
-    new JDBCRDD(
+    filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val rdd = new JDBCRDD(
       sqlContext.sparkContext,
       executorConnector,
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -160,7 +161,8 @@ case class JDBCMutableRelation(
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
-      connProperties.executorConnProps)
+      connProperties.executorConnProps).asInstanceOf[RDD[Any]]
+    (rdd, Nil)
   }
 
   final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
@@ -231,11 +233,10 @@ case class JDBCMutableRelation(
     var index = 0
     // not using loop over index below because incoming Seq[...]
     // may not have efficient index lookup
-    updateColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
-        col, throw new AnalysisException(
+    updateColumns.foreach { c =>
+      setFields(index) = schemaFields.getOrElse(c, throw new AnalysisException(
           "JDBCUpdatableRelation: Cannot resolve column name " +
-              s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
+              s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,

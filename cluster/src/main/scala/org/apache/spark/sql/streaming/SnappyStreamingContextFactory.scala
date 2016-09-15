@@ -24,6 +24,7 @@ import spark.jobserver.{SparkJobValidation, ContextLike, SparkJobBase}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SnappyJobValidation, SnappyJobValidate}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
+import org.apache.spark.util.SnappyUtils
 
 abstract class SnappyStreamingJob extends SparkJobBase {
   override type C = SnappyStreamingContext
@@ -33,6 +34,11 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
     runSnappyJob(sc.asInstanceOf[SnappyStreamingContext], jobConfig)
+  }
+
+  final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
+    SnappyUtils.installOrReplaceJar(jarName, jarPath,
+      sc.asInstanceOf[SnappyStreamingContext].snappyContext.sparkContext)
   }
 
   def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation

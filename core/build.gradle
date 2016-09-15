@@ -76,6 +76,7 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
+    exclude(group: 'com.univocity', module: 'univocity-parsers')
   }
 
   testCompile project(':dunit')
@@ -152,7 +153,7 @@ test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 check.dependsOn test, scalaTest, dunitTest
 
-archivesBaseName = 'snappydata-core'
+archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
   zip64 = true
 

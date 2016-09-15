@@ -24,13 +24,18 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
-import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
+import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
+
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /*
 Generic class to query column table from SnappyData execution.
@@ -63,19 +68,18 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
     rand.nextInt(numPartitions)
   }
 
-  def storeCurrentBatch(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): Unit = {
-    tryExecute(tableName, {
-      connection =>
+  protected def doInsert(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): (Connection => Any) = {
+    {
+      (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, batchId.toString)
         stmt.setInt(2, partitionId)
         stmt.setInt(3, batch.numRows)
         // TODO: set to null since stats are currently not being used
-        // Need to use them for partition/CachedBatch pruning but also
-        // add more efficient custom serialization below (shows perf impact)
-        // stmt.setBytes(4, SparkSqlSerializer.serialize(batch.stats))
+        // Need to use them for partition/CachedBatch pruning.
+        // Use UnsafeRow for efficient serialization else shows perf impact.
         stmt.setNull(4, java.sql.Types.BLOB)
         var columnIndex = 5
         batch.buffers.foreach(buffer => {
@@ -84,7 +88,14 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         })
         stmt.executeUpdate()
         stmt.close()
-    }, closeOnSuccess = true, onExecutor = true)
+      }
+    }
+  }
+
+  def storeCurrentBatch(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): Unit = {
+    tryExecute(tableName, doInsert(tableName, batch, batchId, partitionId),
+      closeOnSuccess = true, onExecutor = true)
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
@@ -128,26 +139,42 @@ abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
     extends Iterator[A] with Logging {
 
-  protected final var hasNextValue = true
+  protected[this] final var doMove = true
 
-  context.addTaskCompletionListener { context => close() }
+  protected[this] final var hasNextValue = true
 
-  override final def hasNext: Boolean = hasNextValue
+  context.addTaskCompletionListener { _ => close() }
 
-  protected[execution] final def moveNext(): Unit = {
+  override final def hasNext: Boolean = {
     var success = false
     try {
-      // TODO: see if optimization using rs.lightWeightNext
-      // and explicit context pop in close possible (was causing trouble)
-      success = rs.next()
-    } catch {
-      case NonFatal(e) => logWarning("Exception iterating resultSet", e)
+      if (doMove && hasNextValue) {
+        success = rs.next()
+        doMove = false
+        success
+      } else {
+        success = hasNextValue
+        success
+      }
     } finally {
       if (!success) {
         close()
       }
     }
   }
+
+  override final def next(): A = {
+    if (doMove) {
+      hasNext
+      doMove = true
+      if (!hasNextValue) return null.asInstanceOf[A]
+    }
+    val result = getCurrentValue
+    doMove = true
+    result
+  }
+
+  protected def getCurrentValue: A
 
   final def close() {
     if (!hasNextValue) return
@@ -181,20 +208,71 @@ final class CachedBatchIteratorOnRS(conn: Connection,
   private val numCols = requiredColumns.length
   private val colBuffers = new Array[Array[Byte]](numCols)
 
-  // move once to next at the start (or close if no result available)
-  moveNext()
-
-  override def next(): CachedBatch = {
+  override protected def getCurrentValue: CachedBatch = {
     var i = 0
     while (i < numCols) {
       colBuffers(i) = rs.getBytes(i + 1)
       i += 1
     }
-    // val stats = SparkSqlSerializer.deserialize[InternalRow](rs.getBytes("stats"))
-    val stats: InternalRow = null
+    // val statsBytes = rs.getBytes("stats")
+    val stats: UnsafeRow = null
     val numRows = rs.getInt("numRows")
-    moveNext()
     CachedBatch(numRows, colBuffers, stats)
+  }
+}
+
+final class ByteArraysIteratorOnScan(container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int])
+    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
+
+  assert(!container.isOffHeap,
+    s"Unexpected byte[][] iterator call for off-heap $container")
+
+  protected var currentVal: Array[Array[Byte]] = _
+
+  var rowFormatter: RowFormatter = _
+
+  override protected def moveNext(): Unit = {
+    while (itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      val owner = itr.getHostedBucketRegion
+      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
+        if (v ne null) {
+          currentVal = v.asInstanceOf[Array[Array[Byte]]]
+          rowFormatter = container.getRowFormatter(currentVal(0))
+          return
+        }
+      }
+    }
+    hasNextValue = false
+  }
+}
+
+final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
+    bucketIds: scala.collection.Set[Int])
+    extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
+      bucketIds) {
+
+  assert(container.isOffHeap,
+    s"Unexpected off-heap iterator call for on-heap $container")
+
+  override protected val currentVal: OffHeapCompactExecRowWithLobs = container
+      .newTemplateRow().asInstanceOf[OffHeapCompactExecRowWithLobs]
+
+  override protected def moveNext(): Unit = {
+    while (itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      val owner = itr.getHostedBucketRegion
+      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
+        if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
+          v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
+          return
+        }
+      }
+    }
+    hasNextValue = false
   }
 }
 

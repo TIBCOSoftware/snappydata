@@ -31,6 +31,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -349,21 +350,17 @@ object ExternalStoreUtils {
   }
 
   def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema: StructType): (Seq[Int], Seq[DataType]) = {
-
+      schema: StructType): Seq[(Int, StructField)] = {
     if (requestedSchema.isEmpty) {
-
-      val (narrowestOrdinal, narrowestDataType) =
-        schema.fields.zipWithIndex.map { case (a, ordinal) =>
-          ordinal -> a.dataType
-        } minBy { case (_, dataType) =>
-          ColumnType(dataType).defaultSize
+      val (narrowestOrdinal, narrowestField) =
+        schema.fields.zipWithIndex.map(f => f._2 -> f._1).minBy { f =>
+          ColumnType(f._2.dataType).defaultSize
         }
-      Seq(narrowestOrdinal) -> Seq(narrowestDataType)
+      Seq(narrowestOrdinal -> narrowestField)
     } else {
       requestedSchema.map { a =>
-        schema.fieldIndex(Utils.fieldName(a)) -> a.dataType
-      }.unzip
+        schema.fieldIndex(Utils.fieldName(a)) -> a
+      }
     }
   }
 
@@ -390,9 +387,9 @@ object ExternalStoreUtils {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>
-      sb.append(Utils.fieldName(schemaFields(i))).append(',')
+      sb.append(schemaFields(i).name).append(',')
     }
-    sb.append(Utils.fieldName(schemaFields(schemaFields.length - 1)))
+    sb.append(schemaFields(schemaFields.length - 1).name)
     sb.append(") VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
@@ -497,9 +494,10 @@ object ExternalStoreUtils {
     }
   }
 
-  private def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
+    HashedRelationCache.clear()
     Iterator.empty
   }
 }
@@ -509,16 +507,17 @@ object ConnectionType extends Enumeration {
   val Embedded, Net, Unknown = Value
 }
 
-private[sql] class ArrayBufferForRows(externalStore: ExternalStore,
+private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     colTableName: String,
     schema: StructType,
     useCompression: Boolean,
     bufferSize: Int) {
+
   var holder = getCachedBatchHolder
 
   def getCachedBatchHolder: CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,
-      Int.MaxValue, schema, (c: CachedBatch) =>
+      Int.MaxValue, (c: CachedBatch) =>
         externalStore.storeCachedBatch(colTableName, c))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {
@@ -529,15 +528,13 @@ private[sql] class ArrayBufferForRows(externalStore: ExternalStore,
         attribute.name, useCompression)
   }.toArray
 
-  def appendRow_(row: InternalRow, flush: Boolean): Unit = holder.appendRow(row)
-
   def endRows(u: Unit): Unit = {
     holder.forceEndOfBatch()
     holder = getCachedBatchHolder
   }
 
   def appendRow(u: Unit, row: InternalRow): Unit = {
-    appendRow_(row, flush = false)
+    holder.appendRow(row)
   }
 
   def forceEndOfBatch(): Unit = endRows(())

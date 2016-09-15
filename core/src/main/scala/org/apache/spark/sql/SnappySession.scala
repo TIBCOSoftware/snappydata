@@ -43,7 +43,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
@@ -57,6 +57,10 @@ class SnappySession(@transient private val sc: SparkContext,
     extends SparkSession(sc) with Logging {
 
   self =>
+
+  private[sql] def this(sc: SparkContext) {
+    this(sc, None)
+  }
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -230,6 +234,9 @@ class SnappySession(@transient private val sc: SparkContext,
       case LogicalRelation(br, _, _) =>
         br match {
           case d: DestroyRelation => d.truncate()
+          case _ => if (!ignoreIfUnsupported) {
+            throw new AnalysisException(s"Table $tableIdent cannot be truncated")
+          }
         }
       case _ => if (!ignoreIfUnsupported) {
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
@@ -792,19 +799,13 @@ class SnappySession(@transient private val sc: SparkContext,
         case SaveMode.Ignore =>
           return sessionCatalog.lookupRelation(tableIdent, None)
         case _ =>
-          val schema = query.schema
           // Check if the specified data source match the data source
           // of the existing table.
-          EliminateSubqueryAliases(
-            sessionState.catalog.lookupRelation(tableIdent)) match {
+          val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
+            sessionState.catalog.lookupRelation(tableIdent))
+          EliminateSubqueryAliases(plan) match {
             case l@LogicalRelation(ir: InsertableRelation, _, _) =>
-              if (schema.size != l.schema.size) {
-                throw new AnalysisException(
-                  s"The column number of the existing schema[${l.schema}] " +
-                      s"doesn't match the data schema[$schema]'s")
-              }
               Some(ir)
-
             case o => throw new AnalysisException(
               s"Saving data in ${o.toString} is not supported.")
           }
@@ -833,8 +834,9 @@ class SnappySession(@transient private val sc: SparkContext,
             }
           case None =>
             val r = DataSource(self,
-              partitionColumns = partitionColumns,
               className = source,
+              userSpecifiedSchema = userSpecifiedSchema,
+              partitionColumns = partitionColumns,
               options = params).write(mode, data)
             (r, Some(r.schema))
         }
@@ -897,7 +899,7 @@ class SnappySession(@transient private val sc: SparkContext,
               s"Table '$tableIdent' not found", Some(e))
         }
     }
-    // additional cleanup for external tables, if required
+    // additional cleanup for external and temp tables, if required
     plan match {
       case LogicalRelation(br, _, _) =>
         br match {
@@ -912,15 +914,20 @@ class SnappySession(@transient private val sc: SparkContext,
           case _ => // ignore
         }
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+        if(sessionCatalog.isTemporaryTable(tableIdent)){ // This is due to temp table
+          // can be made from a backing relation like Parquet or Hadoop
+          sessionCatalog.unregisterTable(tableIdent)
+        }else{
+          sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+        }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
         }
-      case _ =>
-        // assume a temporary table
+      case _ => { // This is a temp table with no relation as source
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
         sessionCatalog.unregisterTable(tableIdent)
+      }
     }
   }
 
@@ -1279,11 +1286,6 @@ class SnappySession(@transient private val sc: SparkContext,
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
-
-  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan,
-      fn2: => Int): T =
-    snappyContextFunctions.handleErrorLimitExceeded[T](fn, rowRDD, df, lp, fn2)
 }
 
 object SnappySession {

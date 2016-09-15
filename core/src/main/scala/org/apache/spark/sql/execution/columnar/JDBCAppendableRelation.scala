@@ -18,8 +18,11 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.mutable
+
 import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
-import org.apache.spark._
+
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -33,8 +36,6 @@ import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-
-import scala.collection.mutable
 
 
 /**
@@ -77,7 +78,7 @@ case class JDBCAppendableRelation(
 
   protected final def dialect = connProperties.dialect
 
-  val schemaFields = Utils.schemaFields(schema)
+  val schemaFields = Utils.getSchemaFields(schema)
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)
@@ -105,12 +106,22 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
-    scanTable(table, requiredColumns, filters)
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (cachedColumnBuffers, requestedColumns) = scanTable(table,
+      requiredColumns, filters)
+    val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
+      // Find the ordinals and data types of the requested columns.
+      // If none are requested, use the narrowest (the field with
+      // minimum default element size).
+
+      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
+        requestedColumns, schema, forScan = true)
+    }
+    (rdd.asInstanceOf[RDD[Any]], Nil)
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[InternalRow] = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -128,15 +139,7 @@ case class JDBCAppendableRelation(
         requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkContext)
     }
-
-    cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
-      // Find the ordinals and data types of the requested columns.
-      // If none are requested, use the narrowest (the field with
-      // minimum default element size).
-
-      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
-        requestedColumns, schema, forScan = true)
-    }
+    (cachedColumnBuffers, requestedColumns)
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
@@ -169,7 +172,7 @@ case class JDBCAppendableRelation(
       }.toArray
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        schema, cachedBatchAggregate)
+        cachedBatchAggregate)
 
       rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()

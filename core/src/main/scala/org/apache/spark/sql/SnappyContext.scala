@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql
 
+import java.io.{Externalizable, ObjectInput, ObjectOutput}
+
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
@@ -30,13 +32,12 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
@@ -765,9 +766,6 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappySession.queryApproxTSTopK(topK, startTime, endTime, k)
 
-  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T =
-    snappySession.handleErrorLimitExceeded(fn, rowRDD, df, lp, fn2)
 }
 
 
@@ -807,8 +805,39 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
-  val storeToBlockMap: TrieMap[String, BlockManagerId] =
-    TrieMap.empty[String, BlockManagerId]
+  private[this] val storeToBlockMap: TrieMap[String, BlockAndExecutorId] =
+    TrieMap.empty[String, BlockAndExecutorId]
+
+  def containsBlockId(executorId: String): Boolean = {
+    storeToBlockMap.get(executorId) match {
+      case Some(b) => b.blockId != null
+      case None => false
+    }
+  }
+
+  def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
+    storeToBlockMap.get(executorId) match {
+      case s@Some(b) if b.blockId != null => s
+      case None => None
+    }
+  }
+
+  private[spark] def getBlockIdIfNull(
+      executorId: String): Option[BlockAndExecutorId] =
+    storeToBlockMap.get(executorId)
+
+  private[spark] def addBlockId(executorId: String,
+      blockId: BlockAndExecutorId): Option[BlockAndExecutorId] =
+    storeToBlockMap.put(executorId, blockId)
+
+  private[spark] def removeBlockId(executorId: String): Option[BlockAndExecutorId] =
+    storeToBlockMap.remove(executorId)
+
+  def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
+    storeToBlockMap.filter(_._2.blockId != null)
+  }
+
+  private[spark] def clearBlockIds(): Unit = storeToBlockMap.clear()
 
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
@@ -823,7 +852,6 @@ object SnappyContext extends Logging {
     if (_anySNContext == null) {
       _anySNContext = snc
     }
-    initMemberBlockMap(sc)
     snc
   }
 
@@ -831,7 +859,8 @@ object SnappyContext extends Logging {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
       storeToBlockMap(cache.getMyId.toString) =
-          SparkEnv.get.blockManager.blockManagerId
+          new BlockAndExecutorId(SparkEnv.get.blockManager.blockManagerId,
+            sc.schedulerBackend.defaultParallelism())
     }
   }
 
@@ -950,6 +979,7 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           sc.ui.foreach(new SnappyStatsTab(_))
+          initMemberBlockMap(sc)
           _globalSNContextInitialized = true
         }
       }
@@ -1006,6 +1036,7 @@ object SnappyContext extends Logging {
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
     CodeGeneration.clearCache()
+    HashedRelationCache.close()
     _clusterMode match {
       case m: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
@@ -1031,6 +1062,37 @@ object SnappyContext extends Logging {
 abstract class ClusterMode {
   val sc: SparkContext
   val url: String
+}
+
+final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
+    private[spark] var _executorCores: Int) extends Externalizable {
+
+  def blockId: BlockManagerId = _blockId
+
+  def executorCores: Int = _executorCores
+
+  override def hashCode: Int = if (blockId != null) blockId.hashCode() else 0
+
+  override def equals(that: Any): Boolean = that match {
+    case b: BlockAndExecutorId => b.blockId == blockId
+    case b: BlockManagerId => b == blockId
+    case _ => false
+  }
+
+  override def writeExternal(out: ObjectOutput): Unit = {
+    _blockId.writeExternal(out)
+    out.writeInt(_executorCores)
+  }
+
+  override def readExternal(in: ObjectInput): Unit = {
+    _blockId.readExternal(in)
+    _executorCores = in.readInt()
+  }
+
+  override def toString: String = if (blockId != null) {
+    s"BlockAndExecutorId(${blockId.executorId}," +
+        s" ${blockId.host}, ${blockId.port}, cores=$executorCores)"
+  } else "BlockAndExecutor()"
 }
 
 /**

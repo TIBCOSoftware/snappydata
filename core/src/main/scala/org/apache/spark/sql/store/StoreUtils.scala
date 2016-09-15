@@ -20,17 +20,20 @@ import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.internal.Logging
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext}
+import org.apache.spark.{Partition, SparkContext}
+
 
 object StoreUtils extends Logging {
 
@@ -97,21 +100,34 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
+  def lookupName(tableName: String, schema: String): String = {
+    val lookupName = {
+      if (tableName.indexOf('.') <= 0) {
+        schema + '.' + tableName
+      } else tableName
+    }
+    lookupName
+  }
+
   def getPartitionsPartitionedTable(sc: SparkContext,
       region: PartitionedRegion): Array[Partition] = {
 
-    val numPartitions = region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numPartitions)
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      allocateBucketsToPartitions(sc, region)
+    } else {
+      val numPartitions = region.getTotalNumberOfBuckets
 
-    for (p <- 0 until numPartitions) {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-      val prefNodes = distMembers.map(
-        m => SnappyContext.storeToBlockMap.get(m.toString)
-      ).filter(_.isDefined)
-      val prefNodeSeq = prefNodes.map(_.get).toSeq
-      partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
+      (0 until numPartitions).map { p =>
+        val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
+        val prefNodes = distMembers.collect {
+          case m if SnappyContext.containsBlockId(m.toString) =>
+            Utils.getHostExecutorId(SnappyContext.getBlockId(
+              m.toString).get.blockId)
+        }
+        new MultiBucketExecutorPartition(p, Set(p), prefNodes.toSeq)
+      }.toArray[Partition]
     }
-    partitions
   }
 
   def getPartitionsReplicatedTable(sc: SparkContext,
@@ -125,23 +141,100 @@ object StoreUtils extends Logging {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
-    partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
+    val prefNodes = regionMembers.collect {
+      case m if SnappyContext.containsBlockId(m.toString) =>
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
+    }.toSeq
+    partitions(0) = new MultiBucketExecutorPartition(0, Set.empty, prefNodes)
+    partitions
+  }
+
+  private def allocateBucketsToPartitions(sc: SparkContext,
+      region: PartitionedRegion): Array[Partition] = {
+
+    val numBuckets = region.getTotalNumberOfBuckets
+    val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
+        (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
+    val adviser = region.getRegionAdvisor
+    for (p <- 0 until numBuckets) {
+      var prefNode = adviser.getPreferredInitializedNode(p, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
+      }
+      // prefer another copy if this one does not have an executor
+      val prefBlockId = SnappyContext.getBlockId(prefNode.toString) match {
+        case b@Some(_) => b
+        case None =>
+          prefNode = adviser.getBucketOwners(p).asScala.find(m =>
+            SnappyContext.containsBlockId(m.toString)).getOrElse(prefNode)
+          SnappyContext.getBlockId(prefNode.toString)
+      }
+      val buckets = serverToBuckets.get(prefNode) match {
+        case Some(b) => b._2
+        case None =>
+          val buckets = new mutable.ArrayBuffer[Int]()
+          serverToBuckets.put(prefNode, prefBlockId -> buckets)
+          buckets
+      }
+      buckets += p
+    }
+    // marker array to check that all buckets have been allocated
+    val allocatedBuckets = new Array[Boolean](numBuckets)
+    // group buckets into as many partitions as available cores on each member
+    var partitionIndex = -1
+    val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
+      val numBuckets = buckets.length
+      val numPartitions = math.max(1, math.min(numBuckets,
+        blockId.map(_.executorCores).getOrElse(numBuckets)))
+      val minPartitions = numBuckets / numPartitions
+      val remaining = numBuckets % numPartitions
+      var partitionStart = 0
+      (0 until numPartitions).map { index =>
+        val partitionEnd = partitionStart + (
+            if (index < remaining) minPartitions + 1 else minPartitions)
+        // find any alternative servers for whole bucket group
+        val partBuckets = buckets.slice(partitionStart, partitionEnd)
+        val alternates = partBuckets.map { bucketId =>
+          assert(!allocatedBuckets(bucketId), s"Double allocate for $bucketId")
+          allocatedBuckets(bucketId) = true
+          // remove self from the bucket owners before intersect;
+          // add back at the start before returning the list
+          val owners = adviser.getBucketOwners(bucketId)
+          owners.remove(m)
+          owners.asScala
+        } reduce { (set1, set2) =>
+          // empty check useful only for set on left which is result
+          // of previous intersect
+          if (set1.isEmpty) set1
+          else set1.intersect(set2)
+        }
+        partitionStart = partitionEnd
+        val preferredLocations = (blockId :: alternates.map(mbr =>
+          SnappyContext.getBlockId(mbr.toString)).toList).collect {
+          case Some(b) => Utils.getHostExecutorId(b.blockId)
+        }
+        partitionIndex += 1
+        new MultiBucketExecutorPartition(partitionIndex, partBuckets.toSet,
+          preferredLocations)
+      }
+    }.toArray[Partition]
+    assert(allocatedBuckets.forall(_ == true),
+      s"Failed to allocate a bucket (${allocatedBuckets.toSeq})")
     partitions
   }
 
   def initStore(sqlContext: SQLContext,
-      table: String,
-      schema: Option[StructType],
-      partitions: Int,
-      connProperties: ConnectionProperties): Unit = {
+                table: String,
+                schema: Option[StructType],
+                partitions: Int,
+                connProperties: ConnectionProperties): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
     new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
-        .collect()
+      .collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
-      registerDestroy: Boolean = false): Unit = {
+                          registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
       StoreCallbacksImpl.stores.remove(table)
@@ -162,8 +255,8 @@ object StoreUtils extends Logging {
     ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-      schema: StructType,
-      context: SQLContext): String = {
+                          schema: StructType,
+                          context: SQLContext): String = {
     val sb = new StringBuilder()
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
@@ -202,7 +295,7 @@ object StoreUtils extends Logging {
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String],
-      isRowTable: Boolean, isShadowTable: Boolean): String = {
+                         isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
     if (!isShadowTable) {
@@ -242,24 +335,23 @@ object StoreUtils extends Logging {
           ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
       })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
-        .getOrElse(EMPTY_STRING))
-
+      .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(
       v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
-        .getOrElse(EMPTY_STRING))
+      .getOrElse(EMPTY_STRING))
 
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
+      .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v =>
         if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
-          .getOrElse(defaultEviction))
+        .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
@@ -284,7 +376,7 @@ object StoreUtils extends Logging {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
         isPersistent = true
       } else if (v.equalsIgnoreCase("sync") ||
-          v.equalsIgnoreCase("synchronous")) {
+        v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
         isPersistent = true
       } else {
@@ -334,7 +426,7 @@ object StoreUtils extends Logging {
   }
 
   def mapCatalystTypes(schema: StructType,
-      types: Growable[DataType]): Array[Int] = {
+                       types: Growable[DataType]): Array[Int] = {
     var i = 0
     val result = new Array[Int](schema.length)
     while (i < schema.length) {

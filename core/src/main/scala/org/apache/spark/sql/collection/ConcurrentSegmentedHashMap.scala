@@ -18,7 +18,7 @@
 package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.{ReentrantReadWriteLock, Lock}
 
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
@@ -173,6 +173,18 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val groupedHashes = new Array[mutable.ArrayBuilder.ofInt](nsegs)
     var numAdded = 0
 
+    def getLockedValidSegmentAndLock(i:Int) :(M, ReentrantReadWriteLock.WriteLock) = {
+      var seg = segs(i)
+      var lock = seg.writeLock
+      lock.lock()
+      while(!seg.valid) {
+        lock.unlock()
+        seg = segs(i)
+        lock = seg.writeLock
+        lock.lock()
+      }
+      (seg, lock)
+    }
     // split into max batch sizes to avoid buffering up too much
     val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
@@ -194,6 +206,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         }
       }
 
+      var lockedState = false
       // now lock segments one by one and then apply changes for all keys
       // of the locked segment
       // shuffle the indexes to minimize segment thread contention
@@ -202,9 +215,8 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         if (keys != null) {
           val hashes = groupedHashes(i).result()
           val nhashes = hashes.length
-          val seg = segs(i)
-          val lock = seg.writeLock
-          lock.lock()
+          var(seg, lock) = getLockedValidSegmentAndLock(i)
+          lockedState = true
           try {
             var added: java.lang.Boolean = null
             var idx = 0
@@ -215,21 +227,37 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 idx += 1
               } else {
                 // indicates that loop must be broken immediately
+                // need to take the latest reference of segmnet
+                //after segmnetAbort is successful
                 lock.unlock()
-                try {
-                  if (change.segmentAbort(seg)) {
+                lockedState = false
+                //Because two threads can concurrently call segmentAbort
+                //& is since locks are released,  there is no guarantee that
+                // one thread would correctly identify if the other has cleared
+                // the segments. So after the changeSegment, it should unconditionally
+                // refresh the segments
+               // try {
+                //  if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
-                    idx = nhashes
-                  } else {
-                    idx += 1
-                  }
-                } finally {
-                  lock.lock()
-                }
+                    //idx = nhashes
+                change.segmentAbort(seg)
+                val segmentAndLock = getLockedValidSegmentAndLock(i)
+                lockedState = true
+                seg = segmentAndLock._1
+                lock = segmentAndLock._2
+                //  }
+                idx += 1
+
+               // } finally {
+                  //lock.lock()
+                //}
               }
             }
-          } finally {
-            lock.unlock()
+          }
+          finally {
+            if(lockedState) {
+              lock.unlock()
+            }
           }
           // invoke the segmentEnd method outside of the segment lock
           change.segmentEnd(seg)
@@ -292,8 +320,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def clear(): Unit = writeLockAllSegments { segments =>
-    segments.indices.foreach(segments(_) =
-        segmentCreator(initSegmentCapacity(segments.length), loadFactor))
+    segments.indices.foreach(i=> {
+      segments(i).valid_=(false)
+      segments(i) = segmentCreator(initSegmentCapacity(segments.length), loadFactor)
+    })
   }
 
   final def size = _size.get

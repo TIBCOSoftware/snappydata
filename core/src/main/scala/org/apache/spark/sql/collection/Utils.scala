@@ -20,6 +20,7 @@ import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 
+import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -28,7 +29,7 @@ import scala.util.Sorting
 import io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
-import org.apache.spark._
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -44,10 +45,11 @@ import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
-  final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
+  final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
@@ -296,6 +298,12 @@ object Utils {
     }
   }
 
+  @tailrec
+  def getSQLDataType(dataType: DataType): DataType = dataType match {
+    case udt: UserDefinedType[_] => getSQLDataType(udt.sqlType)
+    case _ => dataType
+  }
+
   def getClientHostPort(netServer: String): String = {
     val addrIdx = netServer.indexOf('/')
     val portEndIndex = netServer.indexOf(']')
@@ -354,6 +362,13 @@ object Utils {
       Iterator((name, f))
     }: _*)
   }
+
+  def getSchemaFields(schema: StructType): Map[String, StructField] = {
+    Map(schema.fields.flatMap { f =>
+      Iterator((f.name, f))
+    }: _*)
+  }
+
 
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
@@ -586,7 +601,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
 
   override def getPartitions: Array[Partition] = {
     val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
+        keySet.toList.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
@@ -647,12 +662,11 @@ class ExecutorLocalPartition(override val index: Int,
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
-class MultiExecutorLocalPartition(override val index: Int,
-    val blockIds: Seq[BlockManagerId]) extends Partition {
+class MultiBucketExecutorPartition(override val index: Int,
+    val buckets: Set[Int], val hostExecutorIds: Seq[String]) extends Partition {
 
-  def hostExecutorIds: Seq[String] = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
-
-  override def toString: String = s"MultiExecutorLocalPartition($index, $blockIds)"
+  override def toString: String =
+    s"MultiBucketExecutorPartition($index, $buckets, $hostExecutorIds)"
 }
 
 
@@ -695,9 +709,11 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorLocalShellPartition(override val index: Int,
+class ExecutorMultiBucketLocalShellPartition(override val index: Int,
+    val buckets: mutable.HashSet[Int],
     val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString: String = s"ExecutorLocalShellPartition($index, $hostList"
+  override def toString: String =
+    s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {

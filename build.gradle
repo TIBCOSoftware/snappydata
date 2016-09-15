@@ -46,6 +46,8 @@ allprojects {
 
   repositories {
     mavenCentral()
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'http://repository.snappydata.io:8089/repository/internal' }
     maven { url 'http://repository.snappydata.io:8089/repository/snapshots' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
@@ -72,6 +74,7 @@ allprojects {
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
+    scalaCompileOptions.fork = false
     scalaCompileOptions.deprecation = false
     scalaCompileOptions.additionalParameters = [ '-feature' ]
     options.encoding = 'UTF-8'
@@ -230,9 +233,16 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
+    minHeapSize '4g'
     maxHeapSize '4g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    // for benchmarking
+    // minHeapSize '12g'
+    // maxHeapSize '12g'
+    // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -242,15 +252,15 @@ subprojects {
 
     def result = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
-    extensions.add('testResult', { String name -> result.append(name) } )
+    extensions.add('testResult', { String name -> result.setLength(0); result.append(name) } )
 
     def output = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.append(name) } )
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) } )
 
     def errorOutput = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.append(name) } )
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) } )
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -268,8 +278,8 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=384m', '-ea'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -525,7 +535,7 @@ subprojects {
 }
 
 task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'gemfirexd' }.collect {
       it.getTasksByName('install', false).collect { it.path }
@@ -533,7 +543,7 @@ task publishLocal {
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
     p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }
@@ -550,7 +560,6 @@ task product(type: Zip) {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-cluster_${scalaBinaryVersion}:generateSnappydataZeppelinInterpreterJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
 
@@ -591,6 +600,9 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        if (rootProject.hasProperty('hadoop-provided')) {
+          exclude 'hadoop-*.jar'
+        }
       }
       from targetProject.jar.outputs
       into "${snappyProductDir}/jars"
@@ -605,12 +617,20 @@ task product(type: Zip) {
     if (rootProject.hasProperty('ganglia')) {
       buildFlags += ' -Pganglia'
     }
+    if (rootProject.hasProperty('hadoop-provided')) {
+      buildFlags += ' -Phadoop-provided'
+    }
     String gitRevision = "${gitCmd} rev-parse --short HEAD".execute().text.trim()
     if (gitRevision.length() > 0) {
       gitRevision = " (git revision ${gitRevision})"
     }
 
-    releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}\n")
+    if (rootProject.hasProperty('hadoop-provided')) {
+      releaseFile.append("SnappyData ${version}${gitRevision} " +
+              "built with Hadoop ${hadoopVersion}  but hadoop not bundled \n")
+    }else {
+      releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}\n")
+    }
     releaseFile.append("Build flags:${buildFlags}\n")
 
     // copy LICENSE, README.md and doc files
@@ -637,7 +657,7 @@ task product(type: Zip) {
     // Spark portions already copied in the assembly:product dependency
     copy {
       from("${examplesProject.projectDir}/src/main/python")
-      into "${snappyProductDir}/examples/python"
+      into "${snappyProductDir}/quickstart/python"
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for optimized JNI calls
@@ -689,6 +709,11 @@ task product(type: Zip) {
       from("${examplesProject.projectDir}/quickstart")
       into "${snappyProductDir}/quickstart"
     }
+    copy {
+      from("${examplesProject.projectDir}/src")
+      into "${snappyProductDir}/quickstart/src"
+    }
+
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
@@ -758,7 +783,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -791,7 +816,7 @@ def runSubmitQuery(def jobName, def appName, def workDir) {
 
   String jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
       submitjobairline.substring(4)
-  String json = new JsonSlurper().parseText(jsonStr)
+  def json = new JsonSlurper().parseText(jsonStr)
   String jobid = ''
   json.each {
     k, v ->
@@ -809,7 +834,7 @@ def runSubmitQuery(def jobName, def appName, def workDir) {
         workDir, ['status', '--lead', 'localhost:8090', '--job-id', jobid])
     println statusjobairline
 
-    String statusjson = new JsonSlurper().parseText(statusjobairline)
+    def statusjson = new JsonSlurper().parseText(statusjobairline)
     statusjson.each {
       k, v ->
         if (k == 'status') {
@@ -879,7 +904,7 @@ task runQuickstart {
 
       String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/python/examples/AirlineDataPythonApp.py"])
+           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
 
       println airlinepythonappresult
       if (airlinepythonappresult.toLowerCase().contains('exception')) {
@@ -923,11 +948,9 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-  /* (TODO: will be enabled once AQP is fixed after Spark 2.0 merge)
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  */
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {

@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
-import org.apache.spark.sql.execution.{PartitionedPhysicalRDD, QueryExecution, RowDataSourceScanExec}
+import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
@@ -196,7 +196,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     } else {
       lj.foreach(a => a.child.collect {
         // this means no Exhange should have child as PartitionedPhysicalRDD
-        case p: PartitionedPhysicalRDD => sys.error(
+        case p: PartitionedPhysicalScan => sys.error(
           s"Did not expect exchange with partitioned scan with same partitions")
         case p: RowDataSourceScanExec => sys.error(
           s"Did not expect RowDataSourceScanExec with PartitionedDataSourceScan")
@@ -445,7 +445,9 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
         s"PR_TABLE9 P JOIN PR_TABLE10 R ON P.ORDERID = R.OrderId AND " +
         s"P.ORDERREF = R.OrderRef")
-    checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
+    // shuffle will not happen now, even though buckets are different, rdd partitions are same
+    // checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
+
     assert(excatJoinKeys.count() === 500)
   }
 
@@ -492,7 +494,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef " +
         s"AND " +
         s"R.ORDERID = Q.OrderId AND R.ORDERREF = Q.OrderRef")
-    checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
+    // shuffle will not happen now, even though buckets are different, rdd partitions are same
+    // checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
     assert(excatJoinKeys.count() === 500)
   }
 

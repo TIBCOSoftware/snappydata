@@ -18,6 +18,7 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -46,6 +47,7 @@ import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.util.SnappyUtils
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -57,6 +59,11 @@ class SparkSQLExecuteImpl(val sql: String,
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
+
+  if (Thread.currentThread().getContextClassLoader != null) {
+    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
+    Thread.currentThread().setContextClassLoader(loader)
+  }
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
@@ -96,9 +103,7 @@ class SparkSQLExecuteImpl(val sql: String,
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
-      snc.handleErrorLimitExceeded[Unit](handler.apply, resultsRdd, df,
-        df.queryExecution.logical, bm.removeRdd(resultsRdd.id))
-
+      handler(resultsRdd, df)
       hdos.clearForReuse()
       var metaDataSent = false
       for (p <- partitionBlockIds if p != null) {
@@ -245,6 +250,9 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
     }
   }
+
+  def getContextOrCurrentClassLoader: ClassLoader =
+    Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
 }
 
 object SparkSQLExecuteImpl {
@@ -381,7 +389,7 @@ object SparkSQLExecuteImpl {
             if (utfLen >= 0) {
               val pos = in.position()
               dvd.setValue(new String(in.array(), pos, utfLen,
-                StringUtils.UTF8))
+                StandardCharsets.UTF_8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()

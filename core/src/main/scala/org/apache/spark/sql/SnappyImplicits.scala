@@ -19,11 +19,11 @@ package org.apache.spark.sql
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.plans.logical.{SubqueryAlias, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.sources.PutIntoTable
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * Implicit conversions used by Snappy.
@@ -77,7 +77,7 @@ object snappy extends Serializable {
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
       new MapPartitionsPreserveRDD[U, T](rdd,
-        (context, pid, iter) => iter.map(cleanF))
+        (context, part, iter) => iter.map(cleanF))
     }
 
     /**
@@ -93,9 +93,8 @@ object snappy extends Serializable {
         f: Iterator[T] => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd,
-        (context: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(iter),
-        preservesPartitioning)
+      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+          itr: Iterator[T]) => cleanedF(itr), preservesPartitioning)
     }
 
     /**
@@ -112,9 +111,25 @@ object snappy extends Serializable {
         f: (Int, Iterator[T]) => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd,
-        (context: TaskContext, index: Int, iter: Iterator[T]) =>
-          cleanedF(index, iter),
+      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+          itr: Iterator[T]) => cleanedF(part.index, itr), preservesPartitioning)
+    }
+
+    /**
+     * Return a new RDD by applying a function to each partition of given RDD.
+     *
+     * This variant also preserves the preferred locations of parent RDD.
+     *
+     * `preservesPartitioning` indicates whether the input function preserves
+     * the partitioner, which should be `false` unless this is a pair RDD and
+     * the input function doesn't modify the keys.
+     */
+    def mapPartitionsPreserveWithPartition[U: ClassTag](
+        f: (TaskContext, Partition, Iterator[T]) => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      val cleanedF = rdd.sparkContext.clean(f)
+      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+          itr: Iterator[T]) => cleanedF(context, part, itr),
         preservesPartitioning)
     }
   }

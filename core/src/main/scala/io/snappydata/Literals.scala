@@ -78,6 +78,8 @@ object Constant {
   // Property to specify the port on which zeppelin interpreter
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
+
+  val DEFAULT_CACHE_TIMEOUT_SECS = 10
 }
 
 /**
@@ -153,6 +155,8 @@ object Property extends Enumeration {
 
   val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
     Constant.SPARK_PREFIX)
+
+  val LocalCacheTimeout = Val(s"${Constant.SPARK_PREFIX}sql.cacheTimeout")
 }
 
 /**

@@ -16,25 +16,28 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.lang
 import java.util.{Collections, UUID}
 
 import scala.collection.concurrent.TrieMap
 
-import com.gemstone.gemfire.internal.cache.BucketRegion
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
-import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, TransactionController}
+import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
-
-import org.apache.spark.Logging
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
+import org.apache.spark.SparkException
+import org.apache.spark.internal.Logging
+import org.apache.spark.sql.{SparkSession, SplitClusterMode, SnappySession, SnappyContext, SQLContext}
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.store.StoreHashFunction
+import org.apache.spark.sql.store.{StoreUtils, CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
@@ -42,7 +45,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   @transient private var sqlContext = None: Option[SQLContext]
   val stores = new TrieMap[String, (StructType, ExternalStore)]
 
-  val partioner = new StoreHashFunction
+  val partitioner = new StoreHashFunction
 
   var useCompression = false
   var cachedBatchSize = 0
@@ -66,7 +69,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
-    val container: GemFireContainer = region.getPartitionedRegion
+    val container = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getQualifiedTableName)
 
@@ -92,7 +95,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         lcc.setExecuteLocally(Collections.singleton(bucketID),
           region.getPartitionedRegion, false, null)
         try {
-          val sc: ScanController = lcc.getTransactionExecute.openScan(
+          val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
             TransactionController.ISOLATION_NOLOCK /* not used */ ,
@@ -127,18 +130,59 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
-    partioner.computeHash(dvd, numPartitions)
+    partitioner.computeHash(dvd, numPartitions)
   }
 
   override def getHashCodeSnappy(dvds: scala.Array[Object],
       numPartitions: Int): Int = {
-    partioner.computeHash(dvds, numPartitions)
+    partitioner.computeHash(dvds, numPartitions)
   }
 
-  override def haveRegisteredExternalStore(tableName: String): Boolean = {
-    // TODO: SW: remove below that deals with default schema and all
-    stores.contains(tableName)
+  override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
+    HashedRelationCache.clear()
   }
+  
+  override def cachedBatchTableName(table: String): String = {
+    ColumnFormatRelation.cachedBatchTableName(table)
+  }
+
+  override def snappyInternalSchemaName(): String = {
+    io.snappydata.Constant.INTERNAL_SCHEMA_NAME
+  }
+
+  override def cleanUpCachedObjects(table: String,
+      sentFromExternalCluster: lang.Boolean): Unit = {
+    if (sentFromExternalCluster) {
+      // cleanup invoked on embedded mode nodes
+      // from external cluster (in split mode) driver
+      ExternalStoreUtils.removeCachedObjects(table)
+      stores.remove(table)
+      // clean up cached hive relations on lead node
+      if (GemFireXDUtils.getGfxdAdvisor.getMyProfile.hasSparkURL) {
+        SnappyStoreHiveCatalog.registerRelationDestroy()
+      }
+    } else {
+      // clean up invoked on external cluster driver (in split mode)
+      // from embedded mode lead
+      val sc = SnappyContext.globalSparkContext
+      val mode = SnappyContext.getClusterMode(sc)
+      mode match {
+        case SplitClusterMode(_, _) =>
+          StoreUtils.removeCachedObjects(
+            SnappySession.getOrCreate(sc).sqlContext, table, true
+          )
+
+        case _ =>
+          throw new SparkException("Clean up expected to be invoked on" +
+            " external cluster driver. Current cluster mode is " + mode)
+      }
+    }
+  }
+
+  override def registerRelationDestroyForHiveStore(): Unit = {
+    SnappyStoreHiveCatalog.registerRelationDestroy()
+  }
+
 }
 
 trait StoreCallback extends Serializable {

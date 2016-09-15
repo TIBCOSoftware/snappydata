@@ -235,14 +235,15 @@ class SnappyParser(session: SnappySession)
     ) ~ ws
   }
 
-  protected final def namedExpression: Rule1[Expression] = rule {
+  final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
   }
 
-  final def expression: Rule1[Expression] = rule {
+  protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
   }
@@ -299,7 +300,7 @@ class SnappyParser(session: SnappySession)
     */
   protected final def invertibleExpression: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
+    IN ~ '(' ~ ws ~ (termExpression * commaSep) ~ ')' ~ ws ~>
         ((e: Expression, es: Any) => In(e, es.asInstanceOf[Seq[Expression]])) |
     LIKE ~ termExpression ~> Like |
     BETWEEN ~ termExpression ~ AND ~ termExpression ~>
@@ -343,13 +344,58 @@ class SnappyParser(session: SnappySession)
 
   protected final def streamWindowOptions: Rule1[(Duration,
       Option[Duration])] = rule {
-    WINDOW ~ '(' ~ ws ~ DURATION ~ durationUnit ~ (',' ~ ws ~
+    WINDOW ~ '(' ~ ws ~ DURATION ~ durationUnit ~ (commaSep ~
         SLIDE ~ durationUnit).? ~ ')' ~ ws ~> ((d: Duration, s: Any) =>
       (d, s.asInstanceOf[Option[Duration]]))
   }
 
+  protected final def extractGroupingSet(
+      child: LogicalPlan,
+      aggregations: Seq[NamedExpression],
+      groupByExprs: Seq[Expression],
+      groupingSets: Seq[Seq[Expression]]): GroupingSets = {
+    val keyMap = groupByExprs.zipWithIndex.toMap
+    val numExpressions = keyMap.size
+    val mask = (1 << numExpressions) - 1
+    val bitmasks: Seq[Int] = groupingSets.map(set => set.foldLeft(mask)((bitmap, col) => {
+      require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
+      bitmap & ~(1 << (numExpressions - 1 - keyMap(col)))
+    }))
+    GroupingSets(bitmasks, groupByExprs, child, aggregations)
+  }
+
+  protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
+        ((e: Any) => e.asInstanceOf[Seq[Expression]]) |
+    (expression + commaSep)
+  }
+
+  protected final def cubeRollUpGroupingSet: Rule1[
+      (Seq[Seq[Expression]], String)] = rule {
+    WITH ~ (
+        CUBE ~> (() => (Seq(Seq[Expression]()), "CUBE")) |
+        ROLLUP ~> (() => (Seq(Seq[Expression]()), "ROLLUP"))
+    ) |
+    GROUPING ~ SETS ~ ('(' ~ ws ~ (groupingSetExpr + commaSep) ~ ')' ~ ws)  ~>
+        ((gs: Seq[Seq[Expression]]) => (gs, "GROUPINGSETS"))
+  }
+
+  protected final def groupBy: Rule1[(Seq[Expression],
+      Seq[Seq[Expression]], String)] = rule {
+    GROUP ~ BY ~ (expression + commaSep) ~ cubeRollUpGroupingSet.? ~>
+        ((groupingExpr: Any, crgs: Any) =>
+        {  // if cube, rollup, GrSet is not used
+          val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), "")
+          val cubeRollupGrSetExprs = crgs.asInstanceOf[Option[(Seq[
+              Seq[Expression]], String)]].getOrElse(emptyCubeRollupGrSet)
+          (groupingExpr.asInstanceOf[Seq[Expression]], cubeRollupGrSetExprs._1,
+              cubeRollupGrSetExprs._2)
+        })
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
-    tableIdentifier ~ streamWindowOptions.? ~ (AS.? ~ identifier).? ~>
+    tableIdentifier ~ streamWindowOptions.? ~
+        (AS ~ identifier | strictIdentifier).? ~>
         ((tableIdent: TableIdentifier,
             window: Any, alias: Any) => window.asInstanceOf[Option[
             (Duration, Option[Duration])]] match {
@@ -358,7 +404,8 @@ class SnappyParser(session: SnappySession)
           case Some(win) => WindowLogicalPlan(win._1, win._2,
             UnresolvedRelation(tableIdent, alias.asInstanceOf[Option[String]]))
         }) |
-    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~ AS.? ~ identifier ~>
+    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
+        (AS ~ identifier | strictIdentifier) ~>
         ((child: LogicalPlan, window: Any, alias: String) => window
             .asInstanceOf[Option[(Duration, Option[Duration])]] match {
           case None => SubqueryAlias(alias, child)
@@ -371,7 +418,7 @@ class SnappyParser(session: SnappySession)
     joinType.? ~ JOIN ~ relationFactor ~ (
         ON ~ expression ~> ((t: Any, r: LogicalPlan, j: Expression) =>
           (t.asInstanceOf[Option[JoinType]], r, Some(j))) |
-        USING ~ '(' ~ ws ~ (identifier + (',' ~ ws)) ~ ')' ~ ws ~>
+        USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
             ((t: Any, r: LogicalPlan, ids: Any) =>
               (Some(UsingJoin(t.asInstanceOf[Option[JoinType]]
                   .getOrElse(Inner), ids.asInstanceOf[Seq[String]]
@@ -397,7 +444,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
     ((expression ~ sortDirection.? ~> ((e: Expression,
-        d: Any) => e -> d)) + (',' ~ ws)) ~> ((exps: Any) =>
+        d: Any) => e -> d)) + commaSep) ~> ((exps: Any) =>
       exps.asInstanceOf[Seq[(Expression, Option[SortDirection])]].map(pair =>
         SortOrder(pair._1, pair._2.getOrElse(Ascending))))
   }
@@ -410,11 +457,11 @@ class SnappyParser(session: SnappySession)
       (l: LogicalPlan) => Sort(o, global = false, d.asInstanceOf[Option[
           LogicalPlan => LogicalPlan]].map(_ (l)).getOrElse(l))) |
     distributeBy |
-    CLUSTER ~ BY ~ (expression + (',' ~ ws)) ~> ((e: Seq[Expression]) =>
+    CLUSTER ~ BY ~ (expression + commaSep) ~> ((e: Seq[Expression]) =>
       (l: LogicalPlan) => Sort(e.map(SortOrder(_, Ascending)), global = false,
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
-        ((id: String, w: WindowSpec) => id -> w)) + (',' ~ ws))).? ~
+        ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
     (LIMIT ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
@@ -440,13 +487,13 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
-    DISTRIBUTE ~ BY ~ (expression + (',' ~ ws)) ~> ((e: Seq[Expression]) =>
+    DISTRIBUTE ~ BY ~ (expression + commaSep) ~> ((e: Seq[Expression]) =>
       (l: LogicalPlan) => RepartitionByExpression(e, l))
   }
 
   protected final def windowSpec: Rule1[WindowSpec] = rule {
     '(' ~ ws ~ ((PARTITION | DISTRIBUTE | CLUSTER) ~ BY ~ (expression +
-        (',' ~ ws))).? ~ (ORDER | SORT) ~ BY ~ ordering ~ windowFrame.? ~ ')' ~
+        commaSep)).? ~ (ORDER | SORT) ~ BY ~ ordering ~ windowFrame.? ~ ')' ~
         ws ~> ((p: Any, o: Seq[SortOrder], w: Any) => WindowSpecDefinition(
       p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty), o,
       w.asInstanceOf[Option[SpecifiedWindowFrame]]
@@ -486,7 +533,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
-    (relation + (',' ~ ws)) ~> ((joins: Seq[LogicalPlan]) =>
+    (relation + commaSep) ~> ((joins: Seq[LogicalPlan]) =>
       if (joins.size == 1) joins.head
       else joins.tail.foldLeft(joins.head) {
         case (lhs, rel) => Join(lhs, rel, Inner, None)
@@ -518,7 +565,7 @@ class SnappyParser(session: SnappySession)
               } else {
                 throw Utils.analysisException(s"invalid expression $udfName(*)")
               }) |
-            (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~
+            (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
                 (OVER ~ windowSpec).? ~> { (u: Any, d: Any, e: Any, w: Any) =>
               val udfName = u.asInstanceOf[String]
               val exprs = e.asInstanceOf[Seq[Expression]]
@@ -575,10 +622,10 @@ class SnappyParser(session: SnappySession)
 
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
-    (namedExpression + (',' ~ ws)) ~
+    (namedExpression + commaSep) ~
     (FROM ~ relations).? ~
     (WHERE ~ expression).? ~
-    (GROUP ~ BY ~ (expression + (',' ~ ws))).? ~
+    groupBy.? ~
     (HAVING ~ expression).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
@@ -587,9 +634,20 @@ class SnappyParser(session: SnappySession)
           .getOrElse(base)
       val expressions = p.asInstanceOf[Seq[Expression]]
           .map(UnresolvedAlias(_, None))
-      val withProjection = g.asInstanceOf[Option[Seq[Expression]]]
-          .map(Aggregate(_, expressions, withFilter))
-          .getOrElse(Project(expressions, withFilter))
+      val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
+      val withProjection = gr.map(x => {
+        x._3 match {
+          // group by cols with rollup
+          case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter)
+          // group by cols with cube
+          case "CUBE" => Aggregate(Seq(Cube(x._1)), expressions, withFilter)
+          // group by cols with grouping sets()()
+          case "GROUPINGSETS" => extractGroupingSet(withFilter, expressions, x._1, x._2)
+          // just "group by cols"
+          case _ => Aggregate(x._1, expressions, withFilter)
+        }
+      }
+      ).getOrElse(Project(expressions, withFilter))
       val withDistinct = d.asInstanceOf[Option[Boolean]] match {
         case None => withProjection
         case Some(_) => Distinct(withProjection)
@@ -632,7 +690,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def ctes: Rule1[LogicalPlan] = rule {
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
-        ((id: String, p: LogicalPlan) => (id, p))) + (',' ~ ws)) ~
+        ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
         With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2))).toMap))
   }

@@ -82,7 +82,7 @@ object LocalSparkConf {
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
     conf.set("snappy.store.optimization", "true")
-    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "4")
     if (addOn != null) {
       addOn(conf)
     }

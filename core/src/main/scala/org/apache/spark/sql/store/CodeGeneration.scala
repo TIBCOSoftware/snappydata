@@ -27,7 +27,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
 
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
@@ -59,7 +59,7 @@ object CodeGeneration extends Logging {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
-        logInfo(s"Expression code generated in $elapsed ms")
+        logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
         result
       }
     })
@@ -184,7 +184,7 @@ object CodeGeneration extends Logging {
               $buffVar.buffer, $buffVar.totalSize()));
         }"""
       case _ =>
-        s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
+        s"stmt.setObject(${col + 1}, row.get($col, schema[$col]));"
     }
     (nonNullCode, s"stmt.setNull(${col + 1}, " +
         s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
@@ -194,12 +194,12 @@ object CodeGeneration extends Logging {
     "bufferHolderForComplexType_" + numFields
 
   private[this] def compilePreparedUpdate(table: String,
-      schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
+      schema: Array[DataType], dialect: JdbcDialect): GeneratedStatement = {
     val ctx = new CodegenContext
     val sb = new StringBuilder()
     schema.indices.foreach { col =>
       val (nonNullCode, nullCode) = getColumnSetterFragment(col,
-        schema(col).dataType, dialect, ctx)
+        schema(col), dialect, ctx)
       sb.append(s"""
         if (!row.isNullAt($col)) {
           $nonNullCode
@@ -254,7 +254,7 @@ object CodeGeneration extends Logging {
       }
       return result;"""
 
-    // logInfo(s"DEBUG: For table=$table generated code=$expression")
+    logDebug(s"DEBUG: For update to table=$table, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[GeneratedStatement],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
         "dialect")).asInstanceOf[GeneratedStatement]
@@ -376,7 +376,7 @@ object CodeGeneration extends Logging {
       ${varDeclarations.mkString(separator)}
       $typeConversion"""
 
-    // logInfo(s"DEBUG: For type=$dataType generated code=$expression")
+    logDebug(s"DEBUG: For complex type=$dataType, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[SerializeComplexType],
       Array(inputVar, bufferHolderVar, dosVar))
         .asInstanceOf[SerializeComplexType]
@@ -384,7 +384,7 @@ object CodeGeneration extends Logging {
 
   private[this] def executeUpdate(name: String, stmt: PreparedStatement,
       rows: java.util.Iterator[InternalRow], multipleRows: Boolean,
-      batchSize: Int, schema: Array[StructField], dialect: JdbcDialect): Int = {
+      batchSize: Int, schema: Array[DataType], dialect: JdbcDialect): Int = {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize,
       schema, dialect)
@@ -392,7 +392,7 @@ object CodeGeneration extends Logging {
 
   def executeUpdate(name: String, stmt: PreparedStatement,
       rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int =
+      schema: Array[DataType], dialect: JdbcDialect): Int =
     executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
       schema, dialect)
 
@@ -414,14 +414,14 @@ object CodeGeneration extends Logging {
         throw new UnsupportedOperationException("remove not supported")
     }
     executeUpdate(name, stmt, iterator, multipleRows, batchSize,
-      schema, dialect)
+      schema.map(_.dataType), dialect)
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
     val encoder = RowEncoder(StructType(schema))
     executeUpdate(name, stmt, Collections.singleton(encoder.toRow(row))
-        .iterator(), multipleRows = false, 0, schema, dialect)
+        .iterator(), multipleRows = false, 0, schema.map(_.dataType), dialect)
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
@@ -440,7 +440,7 @@ trait GeneratedStatement {
   @throws[java.sql.SQLException]
   def executeStatement(stmt: PreparedStatement, multipleRows: Boolean,
       rows: java.util.Iterator[InternalRow], batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int
+      schema: Array[DataType], dialect: JdbcDialect): Int
 }
 
 trait SerializeComplexType {
@@ -451,12 +451,18 @@ trait SerializeComplexType {
 }
 
 private final class ExecuteKey(val name: String,
-    val schema: Array[StructField], val dialect: JdbcDialect) {
+    val schema: Array[DataType], val dialect: JdbcDialect) {
 
-  override def hashCode(): Int = name.hashCode
+  override def hashCode(): Int = if (schema != null) {
+    scala.util.hashing.MurmurHash3.arrayHash(schema)
+  } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => name == o.name
+    case o: ExecuteKey => if (schema != null && o.schema != null) {
+      schema.sameElements(o.schema)
+    } else {
+      name == o.name
+    }
     case s: String => name == s
     case _ => false
   }
