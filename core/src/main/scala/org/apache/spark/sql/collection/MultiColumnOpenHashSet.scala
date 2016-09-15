@@ -1110,11 +1110,11 @@ private[sql] object MultiColumnOpenHashSet {
 }
 
 final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
-    Array[DataType], Array[DataType] ),  hashColumnHandler: ColumnHandler) extends ColumnHandler {
+    Array[DataType], Array[DataType]), hashColumnHandler: ColumnHandler) extends ColumnHandler {
   val threadLocalIter = new ThreadLocal[Iterator[InternalRow]]() {
-    override def initialValue:Iterator[InternalRow] =  {
+    override def initialValue: Iterator[InternalRow] = {
       val iter = {
-        val func : (Int, Iterator[InternalRow]) => Iterator[InternalRow] = {
+        val func: (Int, Iterator[InternalRow]) => Iterator[InternalRow] = {
           (index, iter) =>
             val clazz = CodeGenerator.compile(qcsSparkPlan._1)
             val buffer = clazz.generate(qcsSparkPlan._2.toArray).asInstanceOf[BufferedRowIterator]
@@ -1144,7 +1144,7 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
   override def initDataContainer(capacity: Int): Array[Any] = hashColumnHandler.initDataContainer(capacity)
 
   override def hash(row: Row): Int = {
-    RowToInternalRow.rowHolder.set((row,rowToInternalRowConverter))
+    RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
     threadLocalIter.get.hasNext
     val retVal = hashColumnHandler.hash(threadLocalIter.get.next())
     RowToInternalRow.rowHolder.set(null)
@@ -1155,40 +1155,21 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
     throw new UnsupportedOperationException("Invocation not expected")
   }
 
-  override def hash(row: WrappedInternalRow): Int = {
-   // RowToInternalRow.rowHolder.set(row)
-   // child.hash(qcsSparkPlan.executeCollectPublic()(0))
-    throw new UnsupportedOperationException("Not implemented")
-  }
+  override def hash(row: WrappedInternalRow): Int = this.hash(row.asInstanceOf[Row])
 
-  override def hash(data: Array[Any], pos: Int): Int = {
-    /*try {
-      RowToInternalRow.rowHolder.set(new GenericRow(data(0).asInstanceOf[Array[Any]]), rowToInternalRowConverter)
-    }catch {
-      case th : Throwable =>
-        th.printStackTrace()
-        throw th
-    }
-    threadLocalIter.get.hasNext
-    val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.set(null)
-    InternalRowToRoww.rowHolder.set((ir, internalRowToRowConverter, projectedTypes ))
-    this.hashColumnHandler.hash(Array(InternalRowToRoww.toSeq.toArray), pos)*/
-    this.hashColumnHandler.hash(data, pos)
-  }
+  override def hash(data: Array[Any], pos: Int): Int =  this.hashColumnHandler.hash(data, pos)
 
-  override def equals(data: Array[Any], pos: Int, row: Row): Boolean =this.extractFromRowAndExecuteFunction(
+
+  override def equals(data: Array[Any], pos: Int, row: Row): Boolean = this.extractFromRowAndExecuteFunction(
     this.hashColumnHandler.equals(data, pos, _), row)
 
 
-
   override def fillValue(data: Array[Any], pos: Int,
-      row: ReusableRow) =  this.hashColumnHandler.fillValue(data, pos, row) //throw new UnsupportedOperationException("Not implemenyted") //this.realColHandler.fillValue(data, pos, row)
+      row: ReusableRow) = this.hashColumnHandler.fillValue(data, pos, row)
 
 
   override def setValue(data: Array[Any], pos: Int, row: Row) = this.extractFromRowAndExecuteFunction(
     this.hashColumnHandler.setValue(data, pos, _), row)
-
 
 
   override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
@@ -1199,7 +1180,7 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
     threadLocalIter.get.hasNext
     val ir = threadLocalIter.get.next()
     RowToInternalRow.rowHolder.set(null)
-    InternalRowToRoww.rowHolder.set((ir, internalRowToRowConverter, projectedTypes ))
+    InternalRowToRoww.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
     f(InternalRowToRoww)
   }
 }
@@ -1213,23 +1194,24 @@ object QCSSQLColumnHandler {
 
   val iter = new Iterator[InternalRow]() {
     def next: InternalRow = {
-      if(RowToInternalRow.rowHolder.get() != null)
-      RowToInternalRow
+      if (RowToInternalRow.rowHolder.get() != null)
+        RowToInternalRow
       else null
     }
+
     def hasNext = {
       RowToInternalRow.rowHolder.get() != null
     }
   }
 }
 
-object RowToInternalRow extends  BaseGenericInternalRow {
-  val rowHolder = new ThreadLocal[(Row, Array[ Any => Any])]()
+object RowToInternalRow extends BaseGenericInternalRow {
+  val rowHolder = new ThreadLocal[(Row, Array[Any => Any])]()
 
   override def numFields = rowHolder.get()._2.length
 
-  override  protected def genericGet(ordinal: Int): Any = {
-    val( row, converters) = rowHolder.get()
+  override protected def genericGet(ordinal: Int): Any = {
+    val (row, converters) = rowHolder.get()
     converters(ordinal)(row.getAs(ordinal))
   }
 
@@ -1237,11 +1219,9 @@ object RowToInternalRow extends  BaseGenericInternalRow {
 
 }
 
-object InternalRowToRoww extends  Row {
+object InternalRowToRoww extends Row {
 
-  val rowHolder = new ThreadLocal[(InternalRow, Array[ Any => Any], Array[DataType])]()
-
-
+  val rowHolder = new ThreadLocal[(InternalRow, Array[Any => Any], Array[DataType])]()
 
 
   override def length: Int = rowHolder.get._2.length
@@ -1249,6 +1229,7 @@ object InternalRowToRoww extends  Row {
   override def isNullAt(ordinal: Int): Boolean = rowHolder.get._1.isNullAt(ordinal)
 
   override def getBoolean(ordinal: Int): Boolean = rowHolder.get._1.getBoolean(ordinal)
+
   override def getByte(ordinal: Int): Byte = rowHolder.get._1.getByte(ordinal)
 
   override def getShort(ordinal: Int): Short = rowHolder.get._1.getShort(ordinal)
@@ -1264,12 +1245,11 @@ object InternalRowToRoww extends  Row {
   override def getString(ordinal: Int): String = rowHolder.get._1.getString(ordinal)
 
 
-
   override def get(ordinal: Int): Any = {
     val (ir, converter, types) = rowHolder.get
     converter(ordinal)(ir.get(ordinal, types(ordinal)))
   }
 
-  override def copy(): WrappedInternalRow =  throw new UnsupportedOperationException("Not implemented")
+  override def copy(): WrappedInternalRow = throw new UnsupportedOperationException("Not implemented")
 
 }
