@@ -20,24 +20,34 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northWind
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 import scala.util.{Failure, Success, Try}
 
-object ValidateReplicatedTableQueriesJob extends SnappySQLJob {
+object CreateAndLoadNWTablesJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateReplicatedTableQueriesJob.out"), true));
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
+    val tableType = jobConfig.getString("tableType")
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       northWind.NWQueries.snc = snc
-      println("Validate Replicated Row tables queries Test started")
-      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
-      println("Validate Replicated Row tables queries Test completed successfully")
+      val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+      pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
+      NWQueries.dataFilesLocation = dataFilesLocation
+      NWTestUtil.dropTables(snc)
+      pw.println(s"Create and load ${tableType} tables Test started")
+      tableType match {
+        case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
+        case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
+        case "Column" => NWTestUtil.createAndLoadColumnTables(snc)
+        case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
+        case _ => // the default, catch-all
+      }
+      pw.println(s"Create and load ${tableType} tables Test completed successfully")
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/ValidateReplicatedTableQueriesJob.out"
+        s"See ${NWTestJob.getCurrentDirectory}/CreateAndLoadNWTablesJob.out"
       case Failure(e) => pw.close();
         throw e;
     }
@@ -45,3 +55,4 @@ object ValidateReplicatedTableQueriesJob extends SnappySQLJob {
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
+

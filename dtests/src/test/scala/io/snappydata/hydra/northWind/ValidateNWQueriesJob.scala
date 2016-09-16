@@ -20,25 +20,25 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northWind
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 import scala.util.{Failure, Success, Try}
 
-object CreateAndLoadPartitionedRowTablesJob extends SnappySQLJob {
+object ValidateNWQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadPartitionedRowTablesJob.out"), true));
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueriesJob.out"), true));
+    val tableType = jobConfig.getString("tableType")
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       northWind.NWQueries.snc = snc
-      NWTestUtil.dropTables(snc)
-      println("Create and load Partitioned Row tables Test started")
-      NWTestUtil.createAndLoadPartitionedTables(snc)
-      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw)
-      println("Create and load Partitioned Row tables Test completed successfully")
+      pw.println(s"Validate ${tableType} tables Queries Test started")
+      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
+      pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${NWTestJob.getCurrentDirectory}/CreateAndLoadPartitionedRowTablesJob.out"
+        s"See ${getCurrentDirectory}/ValidateNWQueriesJob.out"
       case Failure(e) => pw.close();
         throw e;
     }
@@ -46,4 +46,3 @@ object CreateAndLoadPartitionedRowTablesJob extends SnappySQLJob {
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
-

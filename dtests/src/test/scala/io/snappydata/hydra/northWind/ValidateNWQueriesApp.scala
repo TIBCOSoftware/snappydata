@@ -21,9 +21,9 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkContext, SparkConf}
 
-object ValidatePartitionedRowTablesQueriesApp {
+object ValidateNWQueriesApp {
   val conf = new SparkConf().
-    setAppName("ValidatePartitionedRowTablesQueriesApp Application")
+    setAppName("ValidateNWQueriesApp Application")
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
 
@@ -31,10 +31,10 @@ object ValidatePartitionedRowTablesQueriesApp {
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     val tableType = args(0)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidatePartitionedRowTablesQueriesApp.out"), true));
-    println(s"Create and load ${tableType} tables Test started")
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueriesApp.out"), true));
+    pw.println(s"Validate ${tableType} tables Queries Test started")
     NWTestUtil.validateQueries(snc, tableType, pw)
-    println(s"Create and load ${tableType} tables Test completed successfully")
+    pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
     pw.close()
   }
 }
