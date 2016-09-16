@@ -264,7 +264,12 @@ class SparkSQLExecuteImpl(val sql: String,
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
           } else { // VARCHAR and STRING
-            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
+              (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+            }
+            else {
+              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+            }
           }
         } else { // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
@@ -290,6 +295,8 @@ class SparkSQLExecuteImpl(val sql: String,
 }
 
 object SparkSQLExecuteImpl {
+
+  lazy val STRING_AS_CLOB = System.getProperty(Constant.STRING_AS_CLOB_PROP, "false").toBoolean
 
   def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
       numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream,

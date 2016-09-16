@@ -86,6 +86,10 @@ object Constant {
   val CHAR_TYPE_SIZE_PROP = "size"
 
   val MAX_VARCHAR_SIZE = 32672
+
+  // System property to tell the system whether the String type columns
+  // should be considered as clob or not
+  val STRING_AS_CLOB_PROP = "string-as-clob"
 }
 
 /**
