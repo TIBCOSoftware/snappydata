@@ -33,7 +33,7 @@ object ValidateNWQueriesJob extends SnappySQLJob {
       snc.sql("set spark.sql.shuffle.partitions=6")
       northWind.NWQueries.snc = snc
       pw.println(s"Validate ${tableType} tables Queries Test started")
-      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
+      NWTestUtil.validateQueries(snc, tableType, pw)
       pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
       pw.close()
     } match {
