@@ -609,7 +609,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
 
   override def getPartitions: Array[Partition] = {
     val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
+        keySet.toList.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {

@@ -83,7 +83,8 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
 
   def getPeerPartitions: Array[Partition] = {
     val numberedPeers = org.apache.spark.sql.collection.Utils.
-        getAllExecutorsMemoryStatus(sqlContext.sparkContext).keySet.zipWithIndex
+        getAllExecutorsMemoryStatus(sqlContext.sparkContext)
+        .keySet.toList.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
