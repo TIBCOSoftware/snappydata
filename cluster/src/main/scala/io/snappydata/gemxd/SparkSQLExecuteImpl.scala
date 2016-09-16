@@ -79,6 +79,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val resultsRdd = df.queryExecution.toRdd
 
+  private[this] lazy val colTypes = getColumnTypes
+
   // check for query hint to serialize complex types as CLOBs
   private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsClob.toString) match {
@@ -105,7 +107,7 @@ class SparkSQLExecuteImpl(val sql: String,
         case _ => false
       })
     val handler = new ExecutionHandler(sql, querySchema, resultsRdd.id,
-      partitionBlockIds, serializeComplexType)
+      partitionBlockIds, serializeComplexType, colTypes)
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
@@ -212,7 +214,6 @@ class SparkSQLExecuteImpl(val sql: String,
     DataSerializer.writeStringArray(tableNames, hdos)
     DataSerializer.writeStringArray(getColumnNames, hdos)
     DataSerializer.writeBooleanArray(nullability, hdos)
-    val colTypes = getColumnTypes
     colTypes.foreach { case (tp, precision, scale) =>
       InternalDataSerializer.writeSignedVL(tp, hdos)
       if (tp == StoredFormatIds.SQL_DECIMAL_ID) {
@@ -279,14 +280,13 @@ class SparkSQLExecuteImpl(val sql: String,
         // the ID here is different from CLOB because serialization of CLOB
         // uses full UTF8 like in UTF8String while below is still modified
         // UTF8 (no code for full UTF8 yet -- change when full UTF8 code added)
-        // We should remove the above comment. (TODO)
-        if (complexTypeAsClob) (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+        if (complexTypeAsClob) (StoredFormatIds.REF_TYPE_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
 
       // send across rest as CLOBs
-      case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
+      case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
     }
   }
 
@@ -300,22 +300,22 @@ object SparkSQLExecuteImpl {
 
   def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
       numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolders: TIntObjectHashMap): Unit = {
+      bufferHolders: TIntObjectHashMap, rowStoreColTypes: Array[(Int, Int, Int)] = null): Unit = {
     var groupNum: Int = 0
     // using the gemfirexd way of sending results where in the number of
     // columns in each row is divided into sets of 8 columns. Per eight column group a
     // byte will be sent to indicate which all column in that group has a
     // non-null value.
     while (groupNum < numEightColGroups) {
-      writeAGroup(groupNum, 8, row, schema, hdos, bufferHolders)
+      writeAGroup(groupNum, 8, row, schema, hdos, bufferHolders, rowStoreColTypes)
       groupNum += 1
     }
-    writeAGroup(groupNum, numPartCols, row, schema, hdos, bufferHolders)
+    writeAGroup(groupNum, numPartCols, row, schema, hdos, bufferHolders, rowStoreColTypes)
   }
 
   private def writeAGroup(groupNum: Int, numColsInGrp: Int, row: InternalRow,
       schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolders: TIntObjectHashMap): Unit = {
+      bufferHolders: TIntObjectHashMap, rowStoreColTypes: Array[(Int, Int, Int)] = null): Unit = {
     var activeByteForGroup: Byte = 0x00
     var colIndex: Int = 0
     var index: Int = 0
@@ -332,27 +332,37 @@ object SparkSQLExecuteImpl {
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
-        writeColDataInOptimizedWay(row, colIndex, schema, hdos, bufferHolders)
+        writeColDataInOptimizedWay(row, colIndex, schema, hdos, bufferHolders, rowStoreColTypes)
       }
       index += 1
     }
   }
 
+  private def writeStringColumnAsPerFormatId(row: InternalRow, colIndex: Int,
+      hdos: GfxdHeapDataOutputStream, rowStoreColTypes: Array[(Int, Int, Int)] = null): Unit = {
+    if (rowStoreColTypes != null && rowStoreColTypes(colIndex)._1 == StoredFormatIds.SQL_CLOB_ID) {
+      val utf8String = row.getUTF8String(colIndex)
+      if (utf8String ne null) {
+        val utfLen = utf8String.numBytes()
+        InternalDataSerializer.writeSignedVL(utfLen, hdos)
+        hdos.copyMemory(utf8String.getBaseObject,
+          utf8String.getBaseOffset, utfLen)
+      } else {
+        InternalDataSerializer.writeSignedVL(-1, hdos)
+      }
+    }
+    else {
+      // null value won't come here
+      DataSerializer.writeString(row.getString(colIndex), hdos)
+    }
+  }
+
   private def writeColDataInOptimizedWay(row: InternalRow, colIndex: Int,
       schema: StructType, hdos: GfxdHeapDataOutputStream,
-      bufferHolders: TIntObjectHashMap): Unit = {
+      bufferHolders: TIntObjectHashMap, rowStoreColTypes: Array[(Int, Int, Int)] = null): Unit = {
     schema(colIndex).dataType match {
       case StringType =>
-        val utf8String = row.getUTF8String(colIndex)
-
-        if (utf8String ne null) {
-          val utfLen = utf8String.numBytes()
-          InternalDataSerializer.writeSignedVL(utfLen, hdos)
-          hdos.copyMemory(utf8String.getBaseObject,
-            utf8String.getBaseOffset, utfLen)
-        } else {
-          InternalDataSerializer.writeSignedVL(-1, hdos)
-        }
+        writeStringColumnAsPerFormatId(row, colIndex, hdos, rowStoreColTypes)
       case IntegerType =>
         InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
       case LongType =>
@@ -393,15 +403,7 @@ object SparkSQLExecuteImpl {
           val sb = new StringBuilder()
           Utils.dataTypeStringBuilder(other, sb)(col)
           // write the full length as an integer
-          val utf8String = UTF8String.fromString(sb.toString())
-          if (utf8String ne null) {
-            val utfLen = utf8String.numBytes()
-            InternalDataSerializer.writeSignedVL(utfLen, hdos)
-            hdos.copyMemory(utf8String.getBaseObject,
-              utf8String.getBaseOffset, utfLen)
-          } else {
-            InternalDataSerializer.writeSignedVL(-1, hdos)
-          }
+          hdos.writeUTF(sb.toString(), true, false)
         } else {
           hdos.writeInt(-1)
         }
@@ -469,12 +471,13 @@ object SparkSQLExecuteImpl {
             dvd.setValue(in.readDouble())
           case StoredFormatIds.SQL_CHAR_ID |
                StoredFormatIds.SQL_VARCHAR_ID =>
+            dvd.setValue(DataSerializer.readString(in))
+          case StoredFormatIds.REF_TYPE_ID =>
             // read the full length as an integer
-            val utfLen = InternalDataSerializer.readSignedVL(in).toInt
+            val utfLen = in.readInt()
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.setValue(new String(in.array(), pos, utfLen,
-                StandardCharsets.UTF_8))
+              dvd.readBytes(in.array(), pos, utfLen)
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()
@@ -494,7 +497,7 @@ object SparkSQLExecuteImpl {
 
 class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     partitionBlockIds: Array[RDDBlockId],
-    serializeComplexType: Boolean) extends Serializable {
+    serializeComplexType: Boolean, rowStoreColTypes: Array[(Int, Int, Int)] = null) extends Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
     Utils.withNewExecutionId(df.sparkSession, df.queryExecution) {
@@ -546,7 +549,7 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
         evalNumColumnGroups(row)
       }
       SparkSQLExecuteImpl.writeRow(row, numCols, numEightColGroups,
-        numPartCols, schema, dos, bufferHolders)
+        numPartCols, schema, dos, bufferHolders, rowStoreColTypes)
     }
     dos.toByteArray
   }
