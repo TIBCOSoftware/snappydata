@@ -1122,11 +1122,7 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
 
               override def hasNext(): Boolean =   buffer.hasNext
 
-              override def next: InternalRow = {
-                val retVal = buffer.next
-                RowToInternalRow.rowHolder.remove()
-                retVal
-              }
+              override def next: InternalRow =buffer.next
             }
         }
         func(0, QCSSQLColumnHandler.iter)
@@ -1149,7 +1145,9 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
   override def hash(row: Row): Int = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
     threadLocalIter.get.hasNext
-    hashColumnHandler.hash(threadLocalIter.get.next())
+    val ir = threadLocalIter.get.next()
+    RowToInternalRow.rowHolder.remove()
+    hashColumnHandler.hash(ir)
   }
 
   override def hash(row: InternalRow): Int = {
@@ -1180,7 +1178,7 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
     threadLocalIter.get.hasNext
     val ir = threadLocalIter.get.next()
-
+    RowToInternalRow.rowHolder.remove()
     InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
     f(InternalRowToRow)
   }
