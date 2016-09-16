@@ -59,7 +59,8 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     val numColumns: Int,
     val initialCapacity: Int,
     val loadFactor: Double,
-    val qcsSparkPlan: Option[(CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType] )])
+
+    val qcsColHandlerOption: Option[ColumnHandler])
     extends Iterable[ReusableRow]
     with IterableLike[ReusableRow, MultiColumnOpenHashSet]
     with Growable[Row]
@@ -87,10 +88,8 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
 
   private var _columnHandler: ColumnHandler = _
   private var _projectionColumnHandler: ColumnHandler = _
-  _columnHandler =  qcsSparkPlan.map(
-    QCSSQLColumnHandler.newSqlHandler(_,
-      MultiColumnOpenHashSet.newColumnHandler(columns, types, numColumns))
-  ).getOrElse( MultiColumnOpenHashSet.newColumnHandler(columns, types, numColumns) )
+
+  _columnHandler =  qcsColHandlerOption.getOrElse(MultiColumnOpenHashSet.newColumnHandler(columns, types, numColumns))
 
   _projectionColumnHandler = newColumnHandler((0 until numColumns).toArray,
     types, numColumns)
@@ -101,10 +100,10 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   private var _growThreshold = (loadFactor * _capacity).toInt
 
   private[sql] def getColumnHandler(r: Row) =
-    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
+    if (r.length == numColumns && qcsColHandlerOption.isEmpty) _projectionColumnHandler else _columnHandler
 
   private[sql] def getColumnHandler(r: WrappedInternalRow) =
-    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
+    if (r.length == numColumns  && qcsColHandlerOption.isEmpty) _projectionColumnHandler else _columnHandler
 
   private var _bitset = new BitSet(_capacity)
 
@@ -254,7 +253,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
 
   private def newBuilder(from: MultiColumnOpenHashSet) = {
     new MultiColumnOpenHashSet(from.columns, from.types,
-      from.numColumns, from.capacity, from.loadFactor, qcsSparkPlan)
+      from.numColumns, from.capacity, from.loadFactor, qcsColHandlerOption)
   }
 
   override protected[this] def newBuilder = newBuilder(self)
@@ -1120,10 +1119,10 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
             val buffer = clazz.generate(qcsSparkPlan._2.toArray).asInstanceOf[BufferedRowIterator]
             buffer.init(index, Array(iter))
             new Iterator[InternalRow] {
-              override def hasNext(): Boolean = buffer.hasNext
 
-              override def next: InternalRow = buffer.next
+              override def hasNext(): Boolean =   buffer.hasNext
 
+              override def next: InternalRow =buffer.next
             }
         }
         func(0, QCSSQLColumnHandler.iter)
@@ -1146,9 +1145,9 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
   override def hash(row: Row): Int = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
     threadLocalIter.get.hasNext
-    val retVal = hashColumnHandler.hash(threadLocalIter.get.next())
-    RowToInternalRow.rowHolder.set(null)
-    retVal
+    val ir = threadLocalIter.get.next()
+    RowToInternalRow.rowHolder.remove()
+    hashColumnHandler.hash(ir)
   }
 
   override def hash(row: InternalRow): Int = {
@@ -1179,9 +1178,9 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
     threadLocalIter.get.hasNext
     val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.set(null)
-    InternalRowToRoww.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
-    f(InternalRowToRoww)
+    RowToInternalRow.rowHolder.remove()
+    InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
+    f(InternalRowToRow)
   }
 }
 
@@ -1193,15 +1192,8 @@ object QCSSQLColumnHandler {
   }
 
   val iter = new Iterator[InternalRow]() {
-    def next: InternalRow = {
-      if (RowToInternalRow.rowHolder.get() != null)
-        RowToInternalRow
-      else null
-    }
-
-    def hasNext = {
-      RowToInternalRow.rowHolder.get() != null
-    }
+    def next: InternalRow =  RowToInternalRow
+    def hasNext = RowToInternalRow.rowHolder.get() != null
   }
 }
 
@@ -1219,10 +1211,10 @@ object RowToInternalRow extends BaseGenericInternalRow {
 
 }
 
-object InternalRowToRoww extends Row {
+
+object InternalRowToRow extends Row {
 
   val rowHolder = new ThreadLocal[(InternalRow, Array[Any => Any], Array[DataType])]()
-
 
   override def length: Int = rowHolder.get._2.length
 

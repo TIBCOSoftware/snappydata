@@ -43,7 +43,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     _numColumns: Int,
     _initialCapacity: Int,
     _loadFactor: Double,
-    qcsSparkPlanOption: Option[(CodeAndComment, ArrayBuffer[Any],  Array[DataType], Array[DataType])])
+    qcsColHandlerOption: Option[ColumnHandler])
     extends SegmentMap[Row, V]
     with mutable.Map[Row, V]
     with mutable.MapLike[Row, V, MultiColumnOpenHashMap[V]]
@@ -61,7 +61,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     this(columns, types, 64)
 
   private val _keySet = new MultiColumnOpenHashSet(_columns, _types,
-    _numColumns, _initialCapacity, _loadFactor, qcsSparkPlanOption)
+    _numColumns, _initialCapacity, _loadFactor, qcsColHandlerOption)
 
   // Init in constructor (instead of in declaration) to work around
   // a Scala compiler specialization bug that would generate two arrays
@@ -247,7 +247,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   override def empty: MultiColumnOpenHashMap[V] = {
     val keySet = _keySet
     new MultiColumnOpenHashMap[V](keySet.columns, keySet.types,
-      keySet.numColumns, 1, keySet.loadFactor, qcsSparkPlanOption)
+      keySet.numColumns, 1, keySet.loadFactor, qcsColHandlerOption)
   }
 
   /**
@@ -425,7 +425,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
   private def newBuilder[B: ClassTag](keySet: MultiColumnOpenHashSet) = {
     new MultiColumnOpenHashMap[B](keySet.columns, keySet.types,
-      keySet.numColumns, keySet.capacity, keySet.loadFactor, qcsSparkPlanOption)
+      keySet.numColumns, keySet.capacity, keySet.loadFactor, qcsColHandlerOption)
   }
 
   override protected[this] def newBuilder = newBuilder[V](self._keySet)
