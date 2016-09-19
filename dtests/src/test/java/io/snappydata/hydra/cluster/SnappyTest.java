@@ -107,6 +107,7 @@ public class SnappyTest implements Serializable {
     public static final String LEAD_PORT = "8090";
     public static final String MASTER_PORT = "7077";
     private static int jobSubmissionCount = 0;
+    private static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
@@ -161,9 +162,9 @@ public class SnappyTest implements Serializable {
                 .getVmDescription().getHostDescription();
     }
 
-    protected static String getUserAppJarLocation(final String jarName) {
+    protected static String getUserAppJarLocation(final String jarName, String jarPath) {
         String userAppJarPath = null;
-        String jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep;
+       // String jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep;
         File baseDir = new File(jarPath);
         try {
             IOFileFilter filter = new WildcardFileFilter(jarName);
@@ -203,7 +204,7 @@ public class SnappyTest implements Serializable {
             scriptPath = productBinDir + scriptName;
             if (new File(scriptPath).exists()) return scriptPath;
             else
-                scriptPath = dtestsScriptLocation + scriptName;
+                scriptPath = getUserAppJarLocation(scriptName, dtestsScriptLocation);//dtestsScriptLocation + scriptName;
             if (new File(scriptPath).exists()) return scriptPath;
             else
                 scriptPath = quickstartScriptLocation + scriptName;
@@ -1424,7 +1425,7 @@ public class SnappyTest implements Serializable {
                 }
                 contextName = "snappyStreamingContext" + System.currentTimeMillis();
                 String contextFactory = "org.apache.spark.sql.streaming.SnappyStreamingContextFactory";
-                curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
+                curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
                 curlCommand2 = "curl -d  \"\"" + " '" + leadHost + ":" + LEAD_PORT + "/" + "contexts/" + contextName + "?context-factory=" + contextFactory + "'";
                 curlCommand3 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=myapp&classPath=" + userJob + "&context=" + contextName + "'";
                 pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
@@ -1454,7 +1455,7 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + LEAD_PORT, "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar), "--stream");
+                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + LEAD_PORT, "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--stream");
                 java.util.Map<String, String> env = pb.environment();
                 if (SnappyPrms.getCommaSepAPPProps() == null) {
                     env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
@@ -1505,7 +1506,7 @@ public class SnappyTest implements Serializable {
                 } else {
                     APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 }
-                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
+                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=myapp&classPath=" + userJob + "'";
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 log = new File(".");
@@ -1544,7 +1545,7 @@ public class SnappyTest implements Serializable {
                 String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar) + " " + SnappyPrms.getUserAppArgs();
+                        " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
                 Log.getLogWriter().info("spark-submit command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
