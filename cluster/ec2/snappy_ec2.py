@@ -303,6 +303,11 @@ def parse_args():
                     print("ERROR: The environment variable AWS_SECRET_ACCESS_KEY must be set",
                           file=stderr)
                     sys.exit(1)
+
+    if opts.with_zeppelin is not None:
+        print("--with-zeppelin specified. The latest SnappyData version will be used.")
+        opts.snappydata_version = "LATEST"
+
     return (opts, action, cluster_name)
 
 

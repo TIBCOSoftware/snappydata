@@ -66,8 +66,6 @@ fi
 
 # Download, extract and place SnappyData interpreter under interpreter/ directory
 # TODO Download this from official-github-release. See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
-# INTERPRETER_JAR="snappydata-zeppelin-interpreter-0.5.2-SNAPSHOT.jar"
-# INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/${INTERPRETER_JAR}"
 INTERPRETER_JAR="snappydata-zeppelin-0.6-SNAPSHOT.jar"
 INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/${INTERPRETER_JAR}"
 INTERPRETER_DIR="${ZEP_DIR}/interpreter/snappydata"

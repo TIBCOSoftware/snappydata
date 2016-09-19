@@ -44,11 +44,7 @@ getLatestUrl() {
 SNAPPY_HOME_DIR="snappydata-${SNAPPYDATA_VERSION}-bin"
 SNAPPY_HOME_DIR_NO_BIN="snappydata-${SNAPPYDATA_VERSION}"
 
-if [[ "${SNAPPYDATA_VERSION}" = "CUSTOM" ]]; then
-  # URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/v0.5.1/snappydata-0.5.2-SNAPSHOT-bin.tar.gz"
-  URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/snappydata-0.6-SNAPSHOT-bin.tar.gz"
-  extract
-elif [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
+if [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
   getLatestUrl
   extract
 elif [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
