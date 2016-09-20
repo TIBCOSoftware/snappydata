@@ -24,7 +24,7 @@ extract() {
   if [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
     # Download and extract the distribution tar
     echo "Downloading ${URL}..."
-    wget "${URL}"
+    wget -q "${URL}"
     tar -xf "${TAR_NAME}"
 
     rm -f README.md "${TAR_NAME}" releases

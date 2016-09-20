@@ -175,9 +175,9 @@ We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/sna
 
 If you're interested in the Scala/Spark side of things, go through the [programming quick start below](#quick-start-with-scalasparksnappy-programming).
 
-If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
+If you are interested in contributing, please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
 
-If you want to quickly setup a cluster on Amazon Cloud, use our [ec2 script](docs/snappyOnAWS.md).
+If you want to quickly setup a cluster on Amazon Cloud, you may find our [ec2 script](docs/snappyOnAWS.md) useful.
 
 ## Quick start with Scala/Spark/Snappy Programming
 
