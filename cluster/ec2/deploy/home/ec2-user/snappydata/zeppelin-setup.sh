@@ -32,6 +32,11 @@ if [[ ${JAR_STATUS} -ne 0 ]]; then
   sudo yum -y install java-1.7.0-openjdk-devel
 fi
 
+echo "${LOCATORS}" > locator_list
+FIRST_LOCATOR=`cat locator_list | sed -n '1p'`
+echo "${LEADS}" > lead_list
+FIRST_LEAD=`cat lead_list | sed -n '1p'`
+
 ZEP_DIR="zeppelin-0.6.1-bin-netinst"
 # ZEP_URL="http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
 ZEP_URL_MIRROR="http://redrockdigimark.com/apachemirror/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
@@ -60,6 +65,10 @@ if [[ ! -e "${ZEP_NOTEBOOKS_DIR}.tar.gz" ]]; then
   wget -q "${ZEP_NOTEBOOKS_URL}/${ZEP_NOTEBOOKS_DIR}.tar.gz"
 fi
 tar -xzf "${ZEP_NOTEBOOKS_DIR}.tar.gz"
+
+find ${ZEP_NOTEBOOKS_DIR} -type f -print0 | xargs -0 sed -i "s/localhost:4040/${FIRST_LEAD}:4040/g"
+find ${ZEP_NOTEBOOKS_DIR} -type f -print0 | xargs -0 sed -i "s/localhost:7070/${FIRST_LOCATOR}:7070/g"
+
 echo "Copying sample notebooks..."
 cp -ar "${ZEP_NOTEBOOKS_DIR}/." "${ZEP_DIR}/${ZEP_NOTEBOOKS_DIR}/"
 
@@ -100,8 +109,6 @@ if [[ ! -e "${ZEP_DIR}/conf/zeppelin-site.xml" ]]; then
 fi
 
 # Modify interpreter/snappydata/interpreter-setting.json to include locator host and port.
-echo "${LOCATORS}" > locator_list
-FIRST_LOCATOR=`cat locator_list | sed -n '1p'`
 SEARCH_STRING="jdbc:snappydata:\/\/localhost:1527\/"
 INSERT_STRING="jdbc:snappydata:\/\/${FIRST_LOCATOR}:${LOCATOR_CLIENT_PORT}\/"
 sed -i "s/${SEARCH_STRING}/${INSERT_STRING}/" "${INTERPRETER_DIR}/interpreter-setting.json"
