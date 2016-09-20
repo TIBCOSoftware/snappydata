@@ -1270,7 +1270,7 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
                             for idx in range(len(server_nodes)):
                                 text = text.replace("{{SERVER_" + str(idx) + "}}", server_addresses[idx])
                             text = text.replace("{{snappydata_version}}", opts.snappydata_version)
-                            text = text.replace("EMBEDDED", zp_mode)
+                            text = text.replace("{{EMBEDDED}}", zp_mode)
                             dest.write(text)
                             dest.close()
     # rsync the whole directory over to the locator instance
