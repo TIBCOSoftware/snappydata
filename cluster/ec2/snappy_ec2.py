@@ -167,7 +167,7 @@ def parse_args():
         help="DEPRECATED (no longer necessary) - Seconds to wait for nodes to start")
     parser.add_option(
         "-k", "--key-pair",
-        help="Key pair to use on instances")
+        help="Name of the key pair to use on instances")
     parser.add_option(
         "-i", "--identity-file",
         help="SSH private key file to use for logging into instances")
@@ -305,7 +305,7 @@ def parse_args():
                     sys.exit(1)
 
     if opts.with_zeppelin is not None:
-        print("--with-zeppelin specified. The latest SnappyData version will be used.")
+        print("Option --with-zeppelin specified. The latest SnappyData version will be used.")
         opts.snappydata_version = "LATEST"
 
     return (opts, action, cluster_name)
@@ -419,7 +419,7 @@ def retrieve_ports():
     # files = ['servers', 'locators', 'leads'] include snappy-env.sh too?
     # patterns = ['-client-port=', '-peer-discovery-port=', '-thrift-server-port=', '-spark.shuffle.service.port=', '-spark.ui.port=']
 
-    locator_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port=', '-thrift-server-port=', '-peer-discovery-port=', '-jmx-manager-http-port='])
+    locator_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port=', '-thrift-server-port=', '-peer-discovery-port=', '-jmx-manager-http-port=', '-jmx-manager-port='])
     server_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/servers', ['-client-port=', '-thrift-server-port='])
     lead_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-peer-discovery-port=', '-spark.shuffle.service.port=', '-spark.ui.port='])
     return (locator_ports, server_ports, lead_ports)
@@ -504,6 +504,10 @@ def launch_cluster(conn, opts, cluster_name):
         locator_group.authorize('tcp', 8088, 8088, authorized_address)
         # SnappyData netserver uses this port to listen to clients by default
         locator_group.authorize('tcp', 1527, 1527, authorized_address)
+        # Port used by Pulse UI
+        locator_group.authorize('tcp', 7070, 7070, authorized_address)
+        # JMX manager port
+        locator_group.authorize('tcp', 1099, 1099, authorized_address)
         # Default locator port for peer discovery
         locator_group.authorize('tcp', 10334, 10334, authorized_address)
         for port in locator_ports:
@@ -1518,7 +1522,7 @@ def real_main():
                 zp = lead
             url = "http://%s:8080" % zp
             print("Apache Zeppelin server started at %s" % url)
-            # webbrowser.open(url, new=2)
+            time.sleep(2)
             webbrowser.open_new_tab(url)
 
     elif action == "destroy":

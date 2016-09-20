@@ -49,7 +49,7 @@ else
 fi
 
 # Enable jmx-manager for pulse to start
-sed -i '/^#/ ! {/\\$/ ! { /^[[:space:]]*$/ ! s/$/ -jmx-manager-start=true -jmx-manager-http-port=7075/}}' "${SNAPPY_HOME_DIR}/conf/locators"
+sed -i '/^#/ ! {/\\$/ ! { /^[[:space:]]*$/ ! s/$/ -jmx-manager=true -jmx-manager-start=true/}}' "${SNAPPY_HOME_DIR}/conf/locators"
 
 
 if [[ -e leads ]]; then
@@ -64,8 +64,8 @@ if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
 
   # Add interpreter jar to snappydata's jars directory
   # TODO Download this from official-github-release. See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
-  INTERPRETER_JAR="snappydata-zeppelin-0.6-SNAPSHOT.jar"
-  INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/${INTERPRETER_JAR}"
+  INTERPRETER_JAR="snappydata-zeppelin-0.6.jar"
+  INTERPRETER_URL="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/download/v0.6/${INTERPRETER_JAR}"
   wget -q "${INTERPRETER_URL}"
   mv ${INTERPRETER_JAR} ${SNAPPY_HOME_DIR}/jars/
 fi
@@ -112,12 +112,12 @@ if [[ "${ZEPPELIN_HOST}" != "zeppelin_server" ]]; then
     sh copy-dir.sh "${SNAPPY_HOME_DIR}" zeppelin_server
   fi
   for server in "$ZEPPELIN_HOST"; do
-    ssh "$server" "mkdir -p ~/snappydata"
-    scp -q ec2-variables.sh "${server}:~/snappydata"
-    scp -q zeppelin-setup.sh "${server}:~/snappydata"
-    scp -q fetch-distribution.sh "${server}:~/snappydata"
+    ssh "$server" -o StrictHostKeyChecking=no "mkdir -p ~/snappydata"
+    scp -q -o StrictHostKeyChecking=no ec2-variables.sh "${server}:~/snappydata"
+    scp -q -o StrictHostKeyChecking=no zeppelin-setup.sh "${server}:~/snappydata"
+    scp -q -o StrictHostKeyChecking=no fetch-distribution.sh "${server}:~/snappydata"
   done
-  ssh "$ZEPPELIN_HOST" -t -t "sh ${DIR}/zeppelin-setup.sh"
+  ssh "$ZEPPELIN_HOST" -t -t -o StrictHostKeyChecking=no "sh ${DIR}/zeppelin-setup.sh"
 fi
 
 popd > /dev/null

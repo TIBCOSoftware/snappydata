@@ -33,18 +33,21 @@ if [[ ${JAR_STATUS} -ne 0 ]]; then
 fi
 
 ZEP_DIR="zeppelin-0.6.1-bin-netinst"
-ZEP_URL="http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
+# ZEP_URL="http://mirror.fibergrid.in/apache/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
 ZEP_URL_MIRROR="http://redrockdigimark.com/apachemirror/zeppelin/zeppelin-0.6.1/${ZEP_DIR}.tgz"
-ZEP_NOTEBOOKS_URL="https://github.com/SnappyDataInc/zeppelin-interpreter/raw/notes/examples/notebook/"
+ZEP_NOTEBOOKS_URL="https://github.com/SnappyDataInc/zeppelin-interpreter/raw/notes/examples/notebook"
 ZEP_NOTEBOOKS_DIR="notebook"
 
 # Download and extract Zeppelin distribution
 if [[ ! -d ${ZEP_DIR} ]]; then
   if [[ ! -e "${ZEP_DIR}.tgz" ]]; then
-    wget "${ZEP_URL}"
-    # Try another mirror if the actual site is down.Faced this issue many times while testing 
+    echo "Downloading Apache Zeppelin distribution..."
+    wget -q "${ZEP_URL_MIRROR}"
+    # Try the same mirror again. Zeppelin website has removed fibergrid mirror.
+    # TODO while loop
     if [ $? -ne 0 ]; then
-      wget "${ZEP_URL_MIRROR}"
+      rm "${ZEP_DIR}.tgz"
+      wget -q "${ZEP_URL_MIRROR}"
     fi
     
   fi
@@ -53,7 +56,8 @@ fi
 
 # Download examples notebook from the github
 if [[ ! -e "${ZEP_NOTEBOOKS_DIR}.tar.gz" ]]; then
-  wget "${ZEP_NOTEBOOKS_URL}/${ZEP_NOTEBOOKS_DIR}.tar.gz"
+  echo "Downloading sample notebooks..."
+  wget -q "${ZEP_NOTEBOOKS_URL}/${ZEP_NOTEBOOKS_DIR}.tar.gz"
 fi
 tar -xzf "${ZEP_NOTEBOOKS_DIR}.tar.gz"
 echo "Copying sample notebooks..."
@@ -65,14 +69,15 @@ if [[ ! -d ${SNAPPY_HOME_DIR} ]]; then
 fi
 
 # Download, extract and place SnappyData interpreter under interpreter/ directory
-# TODO Download this from official-github-release. See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
-INTERPRETER_JAR="snappydata-zeppelin-0.6-SNAPSHOT.jar"
-INTERPRETER_URL="https://github.com/SnappyDataInc/snappy-poc/releases/download/0.6-cf/${INTERPRETER_JAR}"
+# TODO See fetch-distribution.sh:getLatestUrl() on how we can get the latest url.
+INTERPRETER_JAR="snappydata-zeppelin-0.6.jar"
+INTERPRETER_URL="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/download/v0.6/${INTERPRETER_JAR}"
 INTERPRETER_DIR="${ZEP_DIR}/interpreter/snappydata"
 
 if [[ ! -d ${INTERPRETER_DIR} ]] || [[ ! -e interpreter-setting.json.orig ]]; then
   mkdir -p "${INTERPRETER_DIR}"
   if [[ ! -e ${INTERPRETER_JAR} ]]; then
+    echo "Downloading SnappyData interpreter jar..."
     wget -q "${INTERPRETER_URL}"
     mv "${INTERPRETER_JAR}" "${INTERPRETER_DIR}"
   fi
