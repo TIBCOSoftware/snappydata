@@ -23,9 +23,11 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
-import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
@@ -123,6 +125,14 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     // convertible to data source `Filter`s or cannot be handled by `relation`.
     val filterCondition = unhandledPredicates.reduceLeftOption(expressions.And)
 
+    def applyFilter(fullScan: SparkPlan) = {
+      filterCondition.map(execution.FilterExec(_, fullScan)).getOrElse(fullScan)
+    }
+
+    def applyProjection(allColScan: SparkPlan) = {
+      execution.ProjectExec(projects, allColScan)
+    }
+
     // Get the partition column attribute INFO from relation schema
     val sqlContext = relation.relation.sqlContext
 
@@ -154,17 +164,22 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           // Don't request columns that are only referenced by pushed filters.
           .filterNot(handledSet.contains)
 
-      val scan = if (isPartitioned) {
-        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
-          candidatePredicates, pushedFilters)
-        execution.PartitionedPhysicalScan.createFromDataSource(
-          mappedProjects,
+      def createDataSourceScan(dataSource: PartitionedDataSourceScan,
+          dataRDD: RDD[Any], others: Seq[RDD[InternalRow]]) = {
+        execution.PartitionedPhysicalScan.createFromDataSource(mappedProjects,
           numPartition,
           numBuckets,
           joinedCols,
-          rdd,
-          otherRDDs,
-          relation.relation.asInstanceOf[PartitionedDataSourceScan])
+          dataRDD,
+          others,
+          dataSource)
+      }
+
+      val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
+        createDataSourceScan(relation.relation.asInstanceOf[PartitionedDataSourceScan],
+          rdd, otherRDDs)
       } else {
         execution.DataSourceScanExec.create(
           mappedProjects,
@@ -172,23 +187,32 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
-      filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
+
+      buildIndexScanIfRequired(relation.relation, scan,
+        requestedColumns, pushedFilters,
+        createDataSourceScan,
+        applyFilter)
     } else {
       // Don't request columns that are only referenced by pushed filters.
       val requestedColumns = (projectSet ++ filterSet -- handledSet).map(
         relation.attributeMap).toSeq
 
-      val scan = if (isPartitioned) {
-        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
-          candidatePredicates, pushedFilters)
-        execution.PartitionedPhysicalScan.createFromDataSource(
-          requestedColumns,
+      def createDataSourceScan(dataSource: PartitionedDataSourceScan,
+          dataRDD: RDD[Any], others: Seq[RDD[InternalRow]]) = {
+        execution.PartitionedPhysicalScan.createFromDataSource(requestedColumns,
           numPartition,
           numBuckets,
           joinedCols,
-          rdd,
-          otherRDDs,
-          relation.relation.asInstanceOf[PartitionedDataSourceScan])
+          dataRDD,
+          others,
+          dataSource)
+      }
+
+      val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
+        createDataSourceScan(relation.relation.asInstanceOf[PartitionedDataSourceScan],
+          rdd, otherRDDs)
       } else {
         execution.DataSourceScanExec.create(
           requestedColumns,
@@ -196,8 +220,48 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
-      execution.ProjectExec(projects,
-        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+
+      buildIndexScanIfRequired(relation.relation, scan,
+        requestedColumns, pushedFilters,
+        createDataSourceScan,
+        applyFilter, applyProjection)
     }
+  }
+
+  protected def buildIndexScanIfRequired(relation: BaseRelation,
+      scan: SparkPlan,
+      requestedColumns: Seq[Attribute], pushedFilters: Seq[Filter],
+      createDataSourceScan: (PartitionedDataSourceScan, RDD[Any],
+          Seq[RDD[InternalRow]]) => SparkPlan,
+      applyFilter: (SparkPlan) => SparkPlan,
+      applyProject: (SparkPlan) => SparkPlan = p => p) = {
+
+    relation match {
+      case ir: IndexColumnFormatRelation =>
+        val (tableRelation, tableRowBufferRDD) = ir.buildBaseTableRowBufferScan(
+          requestedColumns.map(_.name).toArray,
+          pushedFilters.toArray)
+
+        val tableRowBufferScan = applyProject(applyFilter(
+          createDataSourceScan(tableRelation, tableRowBufferRDD, Nil)))
+
+
+        val tableRowBufferExchange = execution.exchange.ShuffleExchange(scan.outputPartitioning,
+          tableRowBufferScan).execute()
+
+        if(scan.isInstanceOf[ColumnTableScan]) {
+          val colScan = scan.asInstanceOf[ColumnTableScan].
+              copy(otherRDDs = Seq(tableRowBufferExchange))
+          colScan
+        }
+        else {
+          throw new UnsupportedOperationException(
+            s"${ir.table} IndexScan other than column format not supported")
+        }
+
+      case _ =>
+        applyProject(applyFilter(scan))
+    }
+
   }
 }

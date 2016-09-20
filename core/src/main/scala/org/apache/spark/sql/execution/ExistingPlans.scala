@@ -24,7 +24,7 @@ import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.row.RowFormatRelation
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 
@@ -100,8 +100,17 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, relation)
+        if (!rdd.isInstanceOf[RowFormatScanRDD]) {
+          ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
+            partitionColumns, relation)
+        } else {
+          if (otherRDDs.nonEmpty) {
+            throw new UnsupportedOperationException(
+              "Row table scan cannot handle other RDDs")
+          }
+          RowTableScan(output, rdd, numPartitions, numBuckets,
+            partitionColumns, relation)
+        }
       case r: SamplingRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
           partitionColumns, relation)

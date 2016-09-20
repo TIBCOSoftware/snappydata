@@ -442,6 +442,8 @@ class CreateIndexTest extends SnappyFunSuite {
 
 
   test("Test append table joins") {
+    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
@@ -453,13 +455,10 @@ class CreateIndexTest extends SnappyFunSuite {
 
     val index31 = s"${table3}_IdxOne"
 
-    val leftIdx = Seq(1, 2)
-    val rightIdx = Seq(3, 4, 5, 6)
-
     val snContext = SnappyContext(sc)
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
-    snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "2")
+    snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
 
     createBase3Tables(snContext, table1, table2, table3)
 

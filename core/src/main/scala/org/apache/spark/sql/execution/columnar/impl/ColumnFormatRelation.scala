@@ -123,6 +123,17 @@ class BaseColumnFormatRelation(
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
+
+    val zipped = buildRowBufferScan(requiredColumns, filters, true).
+        zipPartitions(rdd) { (leftItr, rightItr) =>
+      Iterator[Any](leftItr, rightItr)
+    }
+
+    (zipped, Nil)
+  }
+
+  def buildRowBufferScan(requiredColumns: Array[String], filters: Array[Filter],
+      useResultSet: Boolean): RDD[Any] = {
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to
@@ -132,9 +143,9 @@ class BaseColumnFormatRelation(
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
     val isPartitioned = region.getPartitionAttributes != null
-    val zipped = connectionType match {
+    connectionType match {
       case ConnectionType.Embedded =>
-        val rowRdd = new RowFormatScanRDD(
+        new RowFormatScanRDD(
           sqlContext.sparkContext,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -142,18 +153,13 @@ class BaseColumnFormatRelation(
           isPartitioned,
           requiredColumns,
           pushProjections = false,
-          useResultSet = true,
+          useResultSet = useResultSet,
           connProperties,
           Array.empty[Filter],
           Array.empty[Partition]
         )
-
-        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
-          Iterator[Any](leftItr, rightItr)
-        }
-
       case _ =>
-        val rowRdd = new SparkShellRowRDD(
+        new SparkShellRowRDD(
           sqlContext.sparkContext,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -163,12 +169,7 @@ class BaseColumnFormatRelation(
           connProperties,
           filters
         )
-
-        rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
-          Iterator[Any](leftItr, rightItr)
-        }
     }
-    (zipped, Nil)
   }
 
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
@@ -601,10 +602,20 @@ class IndexColumnFormatRelation(
       _partitioningColumns,
       _context)
         with DependentRelation {
-
   override def baseTable: Option[String] = Some(baseTableName)
 
   override def name: String = _table
+
+  def buildBaseTableRowBufferScan(requiredColumns: Array[String],
+      filters: Array[Filter]) : (ColumnFormatRelation, RDD[Any]) = {
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    catalog.lookupRelation(catalog.newQualifiedTableName(baseTableName)) match {
+      case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
+        (cr, cr.buildRowBufferScan(requiredColumns, filters, false))
+      case _ =>
+        throw new UnsupportedOperationException("Index scan other than Column table unsupported")
+    }
+  }
 
 }
 

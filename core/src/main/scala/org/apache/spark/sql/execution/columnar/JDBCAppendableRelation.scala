@@ -363,7 +363,9 @@ class ColumnarRelationProvider
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
     val rel = getRelation(sqlContext, options)
-    val relation = rel.createRelation(sqlContext, mode, options, data.schema)
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val relation = rel.createRelation(sqlContext, mode, options,
+      catalog.normalizeSchema(data.schema))
     var success = false
     try {
       relation.insert(data, mode == SaveMode.Overwrite)
