@@ -46,7 +46,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 You can download the latest versions of SnappyData here:
 
 * SnappyData 0.6 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.zip)
-* SnappyData 0.6(hadoop provided) download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.zip)
+* SnappyData 0.6(hadoop provided) download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-without-hadoop-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
