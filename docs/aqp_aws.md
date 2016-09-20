@@ -61,7 +61,7 @@ Note: Ensure that the key pair is created in the region selected.
 12. On the Review page, verify the details and click Create to create a stack. 
 	Note: This operation may take a few minutes to complete.  
 13. The next page lists the existing stacks. Click Refresh to update the list and and the current status of the stack. Ensure that the status of the stack is “Create_Complete”. 
-14. Open a web browser and enter the http://<Public DNS>:<Port Number> to launch Apache Zeppelin. You can find the public DNS by loading the stack’s EC2 home page.
+14. Open a web browser and enter the http://`<Public DNS>:<Port Number>` to launch Apache Zeppelin. You can find the public DNS by loading the stack’s EC2 home page.
 For more information on using Notebooks, refer to Using Predefined Notebooks.	
 ##Deploying the Cluster on AWS using Scripts##
 SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2). 
@@ -69,7 +69,7 @@ Download the script from the [SnappyData Release page.](https://github.com/Snapp
 Using the snappy**-ec2** script, you can identify each of the clusters by it's unique cluster name. The script internally ties members (locators, leads and stores) of the cluster with EC2 security groups. 
 ###Launching SnappyData Cluster###
 To execute the script,  type the following at a command prompt:
-<code> ./ec2/snappy-ec2 -k <your-key-name> -i <your-keyfile-path> --snappydata-version=CUSTOM --with-zeppelin=embedded launch <your-cluster-name> </code>
+` ./ec2/snappy-ec2 -k <your-key-name> -i <your-keyfile-path> --snappydata-version=CUSTOM --with-zeppelin=embedded launch <your-cluster-name> `
 The names and details of the members are automatically derived from the provided cluster name, and one instance of locator, lead and server is started.
 For example, if you launch a cluster named '**my-cluster**', the locator is available in security group named 'my-cluster-locator' and the stores are available in '**my-cluster-stores**'.
 When running the script you can also specify properties like number of stores and region.
@@ -93,10 +93,10 @@ The values are:
 
 **Property** | **Description/Value**
 ---------------|-----------------------------
-table_name |The name of the table
-AWS_SECRET_ACCESS_KEY:AWS_ACCESS_KEY_ID | Security credentials are used to authenticate and authorize calls that you make to AWS. 
-bucket_Name | The name of the bucket where the folder is located. Default value: zeppelindemo 
-folder_name | The folder name where the data is stored. Default value: nytaxifaredata 
+`<table_name>` |The name of the table
+`<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID> `| Security credentials are used to authenticate and authorize calls that you make to AWS. 
+`<bucket_Name> `| The name of the bucket where the folder is located. Default value: zeppelindemo 
+`<folder_name>` | The folder name where the data is stored. Default value: nytaxifaredata 
 
 
 #Logging into Zeppelin#
@@ -209,7 +209,7 @@ Apache Zeppelin or snappy-shell can use the set context level values as below:
 set spark.sql.aqp.error=$error"
 set spark.sql.aqp.confidence=$confidence
 set spark.sql.aqp.behavior=$behavior; </code>
-##Using WITH ERROR <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <string>] Clause##
+##Using WITH ERROR `<fraction>` [CONFIDENCE `<fraction>`] [BEHAVIOR `<string>`] Clause##
 **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
 **BEHAVIOR** - this is optional clause. The values are 'do_nothing', 'local_omit','strict', 'run_on_full_table',’partial_run_on_base_table. Default value is 'run_on_full_table'
@@ -220,7 +220,7 @@ by Month_  with error 0.10 confidence 0.95 behavior ‘local_omit’ </code>
 ##HAC (High-level Accuracy Contract)##
 Approximate queries have HAC support using behavior clause.  HAC recommends that the following action to be taken if the error requirement is not met.
 
-<code>....WITH ERROR <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <behavior>]</code>
+`....WITH ERROR <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <behavior>]`
 HAC options supported as below:
 * **do_nothing**: Report the estimate as is.
 * **local_omit**: For those aggregates not satisfying the error criteria, the value is replaced by a special value. like our "null", which is different from the null ( of the null value used by the system)
