@@ -17,6 +17,7 @@
 package io.snappydata.cluster
 
 import java.io.File
+import java.sql.{DriverManager, Connection}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -167,6 +168,20 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         }
       }
     })
+  }
+
+  def getANetConnection(netPort: Int,
+      useGemXDURL: Boolean = false): Connection = {
+    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    Class.forName(driver).newInstance
+    var url: String = null
+    if (useGemXDURL) {
+      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
+    } else {
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+    }
+
+    DriverManager.getConnection(url)
   }
 }
 

@@ -67,7 +67,8 @@ object TPCHColumnPartitionedTable  {
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL," +
-        "KEY (C_CUSTKEY) USING CLUSTERED COLUMNSTORE)"
+        "KEY (C_CUSTKEY) USING CLUSTERED COLUMNSTORE,"+
+        "SHARD KEY (C_CUSTKEY))"
     )
     println("Created Table CUSTOMER")
   }
@@ -114,8 +115,8 @@ object TPCHColumnPartitionedTable  {
     println("Created Table LINEITEM")
   }
 
-  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+  def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/orders.tbl")
@@ -124,24 +125,22 @@ object TPCHColumnPartitionedTable  {
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
     } else {
       orderDF.createOrReplaceTempView("ORDERS")
       sqlContext.cacheTable("ORDERS")
       sqlContext.table("ORDERS").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime-startTime}")
-
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime - startTime}")
     }
   }
 
-  def createAndPopulateOrder_CustTable(props: Map[String, String], sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+  def createAndPopulateOrder_CustTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/orders.tbl")
@@ -150,19 +149,20 @@ object TPCHColumnPartitionedTable  {
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "o_custkey"),("BUCKETS"-> buckets), ("COLOCATE_WITH"->"CUSTOMER"))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS_CUST", ifExists = true)
       snappyContext.createTable("ORDERS_CUST", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS_CUST")
       val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create ORDERS_CUST Table : ${endTime-startTime}")
+      if (loadPerfPrintStream != null) {
+        loadPerfPrintStream.println(s"Time taken to create ORDERS_CUST Table : ${endTime - startTime}")
+      }
     }
   }
 
 
-  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean,
-      buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+  def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
@@ -175,20 +175,19 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
       lineItemDF.write.insertInto("LINEITEM")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime-startTime}")
-      println("Created Table LINEITEM")
     } else {
       lineItemDF.createOrReplaceTempView("LINEITEM")
       sqlContext.cacheTable("LINEITEM")
       sqlContext.table("LINEITEM").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime - startTime}")
     }
   }
 
-  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, buckets: String,loadPerfPrintStream:PrintStream): Unit = {
+  def createAndPopulateLineItem_partTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
@@ -203,11 +202,13 @@ object TPCHColumnPartitionedTable  {
       snappyContext.createTable("LINEITEM_PART", "column", newSchema, p1)
       lineItemPartDF.write.insertInto("LINEITEM_PART")
       val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create LINEITEM_PART Table : ${endTime-startTime}")
+      if (loadPerfPrintStream != null) {
+        loadPerfPrintStream.println(s"Time taken to create LINEITEM_PART Table : ${endTime - startTime}")
+      }
     }
   }
-  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
+  def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val customerData = sc.textFile(s"$path/customer.tbl")
@@ -220,21 +221,20 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("CUSTOMER", "column", newSchema, p1)
       customerDF.write.insertInto("CUSTOMER")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
-      println("Created Table CUSTOMER")
     } else {
       customerDF.createOrReplaceTempView("CUSTOMER")
       sqlContext.cacheTable("CUSTOMER")
       sqlContext.table("CUSTOMER").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime - startTime}")
     }
   }
 
 
-  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
+  def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val partData = sc.textFile(s"$path/part.tbl")
@@ -247,20 +247,19 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("PART", "column", newSchema, p1)
       partDF.write.insertInto("PART")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
-      println("Created Table PART")
     } else {
       partDF.createOrReplaceTempView("PART")
       sqlContext.cacheTable("PART")
       sqlContext.table("PART").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime - startTime}")
     }
   }
 
-  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, buckets:String,loadPerfPrintStream:PrintStream): Unit = {
+  def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
@@ -270,26 +269,22 @@ object TPCHColumnPartitionedTable  {
 
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets),("COLOCATE_WITH"->"PART"))
-
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-
       snappyContext.createTable("PARTSUPP", "column", newSchema, p1)
       partSuppDF.write.insertInto("PARTSUPP")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
-      println("Created Table PARTSUPP")
     } else {
       partSuppDF.createOrReplaceTempView("PARTSUPP")
       sqlContext.cacheTable("PARTSUPP")
       sqlContext.table("PARTSUPP").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime - startTime}")
     }
   }
 
 
-  def createAndPopulateOrderSampledTable(props: Map[String, String],
-      sc: SparkContext, path: String): Unit = {
+  def createAndPopulateOrderSampledTable(sc: SparkContext, path: String): Unit = {
     val snappyContext = SnappyContext(sc)
     val orderDF = snappyContext.table("ORDERS")
     val orderSampled = orderDF.stratifiedSample(Map(
@@ -302,8 +297,7 @@ object TPCHColumnPartitionedTable  {
       "select count(*) as sample_count from orders_sampled").collectAsList())
   }
 
-  def createAndPopulateLineItemSampledTable(props: Map[String, String],
-      sc: SparkContext, path: String): Unit = {
+  def createAndPopulateLineItemSampledTable(sc: SparkContext, path: String): Unit = {
     val snappyContext = SnappyContext(sc)
     val lineOrderDF = snappyContext.table("LINEITEM")
     val lineOrderSampled = lineOrderDF.stratifiedSample(Map(
@@ -317,8 +311,8 @@ object TPCHColumnPartitionedTable  {
       "select count(*) as sample_count from lineitem_sampled").collectAsList())
   }
 
-  def createAndPopulateNationTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+  def createAndPopulateNationTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
@@ -330,20 +324,19 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("NATION", "column", newSchema, p1)
       nationdf.write.insertInto("NATION")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
-      println("Created Table NATION")
     } else {
       nationdf.createOrReplaceTempView("NATION")
       sqlContext.cacheTable("NATION")
       sqlContext.table("NATION").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime - startTime}")
     }
   }
 
-  def createAndPopulateRegionTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+  def createAndPopulateRegionTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
@@ -355,20 +348,19 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("REGION", "column", newSchema, p1)
       regiondf.write.insertInto("REGION")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
-      println("Created Table REGION")
     } else {
       regiondf.createOrReplaceTempView("REGION")
       sqlContext.cacheTable("REGION")
       sqlContext.table("REGION").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime - startTime}")
     }
   }
 
-  def createAndPopulateSupplierTable(props: Map[String, String], sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+  def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/supplier.tbl")
@@ -380,20 +372,19 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
       suppdf.write.insertInto("SUPPLIER")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
-      println("Created Table SUPPLIER")
     } else {
       suppdf.createOrReplaceTempView("SUPPLIER")
       sqlContext.cacheTable("SUPPLIER")
       sqlContext.table("SUPPLIER").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime - startTime}")
     }
   }
 
-  def testLoadOrderTablePerformance(props: Map[String, String], sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+  def testLoadOrderTablePerformance(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
 
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
@@ -406,8 +397,6 @@ object TPCHColumnPartitionedTable  {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
     } else {
       var newOrderDF : DataFrame = null
       val numPartitions = buckets.toInt
@@ -419,13 +408,15 @@ object TPCHColumnPartitionedTable  {
       newOrderDF.createOrReplaceTempView("ORDERS")
       sqlContext.cacheTable("ORDERS")
       sqlContext.table("ORDERS").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create Order Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime - startTime}")
     }
   }
 
-  def testLoadLineItemTablePerformance(props: Map[String, String], sqlContext: SQLContext, path:String,
-      isSnappy:Boolean, buckets: String, loadPerfPrintStream : PrintStream): Unit = {
+  def testLoadLineItemTablePerformance(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
@@ -439,8 +430,6 @@ object TPCHColumnPartitionedTable  {
       snappyContext.dropTable("LINEITEM", ifExists = true)
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
       lineItemDF.write.insertInto("LINEITEM")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create LineItem Table : ${endTime-startTime}")
     } else {
       var newLineItemDF : DataFrame = null
       val numPartitions = buckets.toInt
@@ -452,8 +441,10 @@ object TPCHColumnPartitionedTable  {
       newLineItemDF.createOrReplaceTempView("LINEITEM")
       sqlContext.cacheTable("LINEITEM")
       sqlContext.table("LINEITEM").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create LineItem Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime - startTime}")
     }
   }
 }

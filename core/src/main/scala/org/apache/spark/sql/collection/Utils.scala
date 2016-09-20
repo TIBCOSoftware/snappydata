@@ -331,6 +331,14 @@ object Utils {
     k
   }
 
+  def parseColumnsAsClob(s: String): (Boolean, Array[String]) = {
+    if (s.trim.equals("*")) {
+      (true, Array.empty[String])
+    } else {
+      (false, s.toUpperCase.split(','))
+    }
+  }
+
   def hasLowerCase(k: String): Boolean = {
     var index = 0
     val len = k.length
@@ -601,7 +609,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
 
   override def getPartitions: Array[Partition] = {
     val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
+        keySet.toList.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {

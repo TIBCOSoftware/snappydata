@@ -27,7 +27,7 @@ import org.apache.spark.unsafe.types.UTF8String
   * column definitions of "CREATE TABLE".
   */
 private[sql] final case class CharType(override val defaultSize: Int,
-    isFixedLength: Boolean) extends AtomicType {
+    baseType: String) extends AtomicType {
 
   private[sql] type InternalType = UTF8String
 

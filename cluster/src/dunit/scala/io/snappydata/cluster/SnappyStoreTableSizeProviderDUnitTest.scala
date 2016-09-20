@@ -21,7 +21,7 @@ import java.sql.DriverManager
 
 import io.snappydata.cluster.TableType.TableType
 import io.snappydata.{Constant, StoreTableSizeProvider, StoreTableValueSizeProviderService}
-import org.apache.spark.HashPartitioner
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
@@ -32,7 +32,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
   bootProps.put("spark.snappy.calcTableSizeInterval", serviceInterval)
   bootProps.put("spark.sql.inMemoryColumnarStorage.batchSize", "10")
 
-  def testPartitionedRowTableSize: Unit = {
+  def testPartitionedRowTableSize(): Unit = {
     val snc = SnappyContext()
     snc.dropTable(tableName, ifExists = true)
     val dataDF = getDF(snc)
@@ -55,13 +55,12 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
   }
 
 
-  def testReplicatedRowTableSize: Unit = {
+  def testReplicatedRowTableSize(): Unit = {
     val snc = SnappyContext()
     snc.dropTable(tableName, ifExists = true)
     val dataDF = getDF(snc)
 
-    val par = new HashPartitioner(2)
-
+    // val par = new HashPartitioner(2)
 
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
         "USING row")
@@ -82,12 +81,12 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
   }
 
 
-  def testColumnTableSize: Unit = {
+  def testColumnTableSize(): Unit = {
     val snc = SnappyContext()
     snc.dropTable(tableName, ifExists = true)
-    val dataDF = getDF(snc)
+    getDF(snc)
 
-    val par = new HashPartitioner(2)
+    // val par = new HashPartitioner(2)
 
 
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
@@ -113,7 +112,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
     snc.sql(s"drop table $tableName")
   }
 
-  def testPartitionedTableSizeForQueryOptimization: Unit = {
+  def testPartitionedTableSizeForQueryOptimization(): Unit = {
 
     def getTableSize: Long =
       StoreTableValueSizeProviderService.getTableSize(tableName).getOrElse(0)
@@ -130,27 +129,26 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
     val result = snc.sql(s"SELECT * FROM $tableName")
     assert(result.collect().length == 100)
 
-    val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
-
+    queryMemoryAnalytics(tableName, TableType.COLUMN)
 
     ClusterManagerTestBase.waitForCriterion({
-      getTableSize == 2800
+      getTableSize == 1540
     },
       s"Comparing StoreTableValueSizeProviderService partitioned table size "
-          + getTableSize + " with expected size 2800",
+          + getTableSize + " with expected size 1540",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)
   }
 
 
-  def testColumnTableSizeForQueryOptimization: Unit = {
+  def testColumnTableSizeForQueryOptimization(): Unit = {
 
     def getTableSize(table: String): Long =
       StoreTableValueSizeProviderService.getTableSize(table).getOrElse(0)
 
     val snc = SnappyContext()
-    val dataDF = getDF(snc)
+    getDF(snc)
 
     snc.sql(s"CREATE TABLE $tableName (a INT, b INT, c INT) " +
         "USING column  options (buckets '3')")
@@ -164,16 +162,16 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
 
     val colBuffer = ColumnFormatRelation.cachedBatchTableName(tableName)
 
-    val ma = queryMemoryAnalytics(tableName, TableType.COLUMN)
+    queryMemoryAnalytics(tableName, TableType.COLUMN)
     ClusterManagerTestBase.waitForCriterion({
-      (getTableSize(colBuffer) == 1548 && getTableSize(tableName) == 360)
+      getTableSize(colBuffer) == 2771 && getTableSize(tableName) == 72
     },
       s"Comparing StoreTableValueSizeProviderService Column table size (ColumnBuffer:RowBuffer) "
-          + getTableSize(colBuffer) + ":" + getTableSize(tableName) + " with expected (1548:360)",
+          + getTableSize(colBuffer) + ":" + getTableSize(tableName) +
+          " with expected (2771:72)",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.dropTable(tableName)
-
   }
 
   private def queryMemoryAnalytics(tableName: String, tableType: TableType):
@@ -196,24 +194,21 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
     if (rs.next()) {
 
       tableType match {
-        case TableType.COLUMN => {
+        case TableType.COLUMN =>
           val columnBufferName = ColumnFormatRelation.cachedBatchTableName(tableName)
           val colDetails = queryMemoryAnalytics(columnBufferName, TableType.ROW)
           totalSize = (rs.getString(1).toDouble * 1024).toLong + colDetails._2
           totalRows = rs.getString(2).toInt + colDetails._3
           valueSize = (rs.getString(3).toDouble * 1024).toLong + colDetails._4
-        }
-        case TableType.REPLICATE => {
+        case TableType.REPLICATE =>
           val host = rs.getInt(4)
           totalSize = (rs.getString(1).toDouble * 1024).toLong / host
           totalRows = rs.getString(2).toInt / host
           valueSize = (rs.getString(3).toDouble * 1024).toLong / host
-        }
-        case TableType.ROW => {
+        case TableType.ROW =>
           totalSize = (rs.getString(1).toDouble * 1024).toLong
           totalRows = rs.getString(2).toInt
           valueSize = (rs.getString(3).toDouble * 1024).toLong
-        }
       }
     }
 
@@ -226,7 +221,7 @@ class SnappyStoreTableSizeProviderDUnitTest(s: String)
   private def getDF(snc: SnappyContext) = {
     val data = for (i <- 1 to 20) yield Seq(i, 2, 3)
     val rdd = sc.parallelize(data, data.length).
-        map(s => new io.snappydata.core.Data(s.head, s(1), s(2)))
+        map(s => io.snappydata.core.Data(s.head, s(1), s(2)))
     snc.createDataFrame(rdd)
   }
 

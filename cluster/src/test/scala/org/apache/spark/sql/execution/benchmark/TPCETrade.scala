@@ -96,7 +96,7 @@ class TPCETrade extends SnappyFunSuite {
       val numSyms = syms.length
       itr.map(id => Trade(syms(rnd.nextInt(numSyms)),
         Decimal(rnd.nextInt(10000000), 8, 2)))
-        //rnd.nextDouble()))
+        // rnd.nextDouble()))
     }
     val dataDF = snappySession.internalCreateDataFrame(
       tradeDF.queryExecution.toRdd,
