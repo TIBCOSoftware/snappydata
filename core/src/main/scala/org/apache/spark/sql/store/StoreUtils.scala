@@ -23,7 +23,6 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
@@ -32,8 +31,7 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext}
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext}
 import org.apache.spark.{Partition, SparkContext}
 
 
@@ -119,19 +117,16 @@ object StoreUtils extends Logging {
       allocateBucketsToPartitions(sc, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
-      val partitions = new Array[Partition](numPartitions)
 
-      for (p <- 0 until numPartitions) {
+      (0 until numPartitions).map { p =>
         val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-        val prefNodes = distMembers.map(
-          m => SnappyContext.storeToBlockMap.get(m.toString)
-        ).filter(_.isDefined)
-        val prefNodeSeq = prefNodes.map(_.get).toSeq
-        var buckets = new mutable.HashSet[Int]()
-        buckets += p
-        partitions(p) = new MultiBucketExecutorPartition(p, buckets, prefNodeSeq)
-      }
-      partitions
+        val prefNodes = distMembers.collect {
+          case m if SnappyContext.containsBlockId(m.toString) =>
+            Utils.getHostExecutorId(SnappyContext.getBlockId(
+              m.toString).get.blockId)
+        }
+        new MultiBucketExecutorPartition(p, Set(p), prefNodes.toSeq)
+      }.toArray[Partition]
     }
   }
 
@@ -146,75 +141,85 @@ object StoreUtils extends Logging {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
-    partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
+    val prefNodes = regionMembers.collect {
+      case m if SnappyContext.containsBlockId(m.toString) =>
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
+    }.toSeq
+    partitions(0) = new MultiBucketExecutorPartition(0, Set.empty, prefNodes)
     partitions
   }
 
   private def allocateBucketsToPartitions(sc: SparkContext,
-                                    region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion): Array[Partition] = {
 
     val numBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = new mutable.HashMap[InternalDistributedMember, mutable.HashSet[Int]]()
-    var totalBuckets = new mutable.HashSet[Int]()
+    val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
+        (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
+    val adviser = region.getRegionAdvisor
     for (p <- 0 until numBuckets) {
-      val owner = region.getBucketPrimary(p)
-      val bucketSet = {
-        if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
-        else new mutable.HashSet[Int]()
+      var prefNode = adviser.getPreferredInitializedNode(p, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
       }
-      bucketSet += p
-      totalBuckets += p
-      serverToBuckets put(owner, bucketSet)
-    }
-    val numPartitions = sc.schedulerBackend.defaultParallelism()
-    val numExecuterNodes = {
-      if (Utils.isLoner(sc)) {
-          SnappyContext.storeToBlockMap.size
-      } else {
-        SnappyContext.storeToBlockMap.size - 1 // ignore driver
+      // prefer another copy if this one does not have an executor
+      val prefBlockId = SnappyContext.getBlockId(prefNode.toString) match {
+        case b@Some(_) => b
+        case None =>
+          prefNode = adviser.getBucketOwners(p).asScala.find(m =>
+            SnappyContext.containsBlockId(m.toString)).getOrElse(prefNode)
+          SnappyContext.getBlockId(prefNode.toString)
       }
-    }
-    val numCores = numPartitions / numExecuterNodes
-    val localCores = Runtime.getRuntime.availableProcessors()
-    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-    val partitions = {
-      if (numBuckets < numPartitions) {
-        new Array[Partition](numBuckets)
-      } else {
-        new Array[Partition](numPartitions)
+      val buckets = serverToBuckets.get(prefNode) match {
+        case Some(b) => b._2
+        case None =>
+          val buckets = new mutable.ArrayBuffer[Int]()
+          serverToBuckets.put(prefNode, prefBlockId -> buckets)
+          buckets
       }
+      buckets += p
     }
-    var partCnt = 0;
-    serverToBuckets foreach (e => {
-      var numCoresPending = numCores
-      var localBuckets = e._2
-      var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
-      assert(maxBucketsPerPart >= 1)
-        while (partCnt <= numPartitions && !localBuckets.isEmpty) {
-          var cntr = 0;
-          val bucketsPerPart = new mutable.HashSet[Int]()
-          maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
-          assert(maxBucketsPerPart >= 1)
-          while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
-            val buck = localBuckets.head
-            bucketsPerPart += buck
-            localBuckets = localBuckets - buck
-            totalBuckets = totalBuckets - buck
-            cntr += 1
-          }
-          val perfNodes = new mutable.HashSet[BlockManagerId]()
-          if (SnappyContext.storeToBlockMap.get(e._1.toString).isDefined) {
-            perfNodes += SnappyContext.storeToBlockMap.get(e._1.toString).get
-          }
-          val prefNodeSeq = perfNodes.toSeq
-          partitions(partCnt) = new MultiBucketExecutorPartition(
-            partCnt, bucketsPerPart, prefNodeSeq)
-          partCnt += 1
-          numCoresPending -= 1
+    // marker array to check that all buckets have been allocated
+    val allocatedBuckets = new Array[Boolean](numBuckets)
+    // group buckets into as many partitions as available cores on each member
+    var partitionIndex = -1
+    val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
+      val numBuckets = buckets.length
+      val numPartitions = math.max(1, math.min(numBuckets,
+        blockId.map(_.executorCores).getOrElse(numBuckets)))
+      val minPartitions = numBuckets / numPartitions
+      val remaining = numBuckets % numPartitions
+      var partitionStart = 0
+      (0 until numPartitions).map { index =>
+        val partitionEnd = partitionStart + (
+            if (index < remaining) minPartitions + 1 else minPartitions)
+        // find any alternative servers for whole bucket group
+        val partBuckets = buckets.slice(partitionStart, partitionEnd)
+        val alternates = partBuckets.map { bucketId =>
+          assert(!allocatedBuckets(bucketId), s"Double allocate for $bucketId")
+          allocatedBuckets(bucketId) = true
+          // remove self from the bucket owners before intersect;
+          // add back at the start before returning the list
+          val owners = adviser.getBucketOwners(bucketId)
+          owners.remove(m)
+          owners.asScala
+        } reduce { (set1, set2) =>
+          // empty check useful only for set on left which is result
+          // of previous intersect
+          if (set1.isEmpty) set1
+          else set1.intersect(set2)
         }
-    })
-    assert(totalBuckets.isEmpty)
+        partitionStart = partitionEnd
+        val preferredLocations = (blockId :: alternates.map(mbr =>
+          SnappyContext.getBlockId(mbr.toString)).toList).collect {
+          case Some(b) => Utils.getHostExecutorId(b.blockId)
+        }
+        partitionIndex += 1
+        new MultiBucketExecutorPartition(partitionIndex, partBuckets.toSet,
+          preferredLocations)
+      }
+    }.toArray[Partition]
+    assert(allocatedBuckets.forall(_ == true),
+      s"Failed to allocate a bucket (${allocatedBuckets.toSeq})")
     partitions
   }
 
