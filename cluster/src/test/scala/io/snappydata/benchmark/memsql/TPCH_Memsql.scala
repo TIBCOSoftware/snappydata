@@ -827,7 +827,7 @@ object TPCH_Memsql {
          " where" +
          "         P_PARTKEY = l_partkey" +
          "         and P_BRAND = 'Brand#23'" +
-         "         and P_CONTAINER = 'MED BOX'" +
+         "         and P_CONTAINER = 'SM PACK'" +
          "         and l_quantity < (" +
          "                 select" +
          "                         0.2 * avg(l_quantity)" +
@@ -955,7 +955,7 @@ object TPCH_Memsql {
          "                                 from" +
          "                                         PART" +
          "                                 where" +
-         "                                         P_NAME like 'forest%'" +
+         "                                         P_NAME like 'khaki%'" +
          "                         )" +
          "                         and PS_AVAILQTY > (" +
          "                                 select" +

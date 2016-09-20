@@ -38,7 +38,6 @@ object BulkLoad_Snappy extends SnappySQLJob{
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"BulkLoadPerf.out"))
     var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
 
-    val props : Map[String, String] = null
     val isSnappy = true
     val dbName = "TPCH"
 
@@ -50,9 +49,9 @@ object BulkLoad_Snappy extends SnappySQLJob{
     snc.sql("DROP TABLE IF EXISTS " + "LINEITEM")
     snc.sql("DROP TABLE IF EXISTS " + "ORDERS")
 
-    TPCHColumnPartitionedTable.testLoadOrderTablePerformance(props, snc, tpchDataPath, isSnappy,
+    TPCHColumnPartitionedTable.testLoadOrderTablePerformance(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem,loadPerfPrintStream)
-    TPCHColumnPartitionedTable.testLoadLineItemTablePerformance(props, snc, tpchDataPath, isSnappy,
+    TPCHColumnPartitionedTable.testLoadLineItemTablePerformance(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem,loadPerfPrintStream)
 
     loadPerfPrintStream.close()
