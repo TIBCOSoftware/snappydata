@@ -60,11 +60,11 @@ We monitor channels listed below for comments/questions.
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
-artifactId: snappy-core_2.10
+artifactId: snappydata-core_2.11
 version: 0.6
 
 groupId: io.snappydata
-artifactId: snappy-cluster_2.10
+artifactId: snappydata-cluster_2.11
 version: 0.6
 ```
 
