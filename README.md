@@ -33,21 +33,21 @@ We monitor channels listed below for comments/questions.
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
-artifactId: snappy-core_2.10
+artifactId: snappydata-core_2.11
 version: 0.6
 
 groupId: io.snappydata
-artifactId: snappy-cluster_2.10
+artifactId: snappydata-cluster_2.11
 version: 0.6
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.6"`
+`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.6"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.6"`
+`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.6"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
