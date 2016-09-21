@@ -66,7 +66,7 @@ One can create multiple sample tables using different sample QCS and sample frac
 
 When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
 
-For example: If query QCS are A, B and C. If samples with QCS  A&B and B&C are available, then choose a sample with large sample size.
+For example: If query QCS are A, B and C. If samples with QCS  A & B and B & C are available, then choose a sample with large sample size.
 
 
 ###Using Error Functions and Confidence Interval in Queries###
@@ -136,8 +136,8 @@ When an error requirement is not met, the action to be taken is defined in the b
 `<do_nothing>`|The SDE engine returns the estimate as is. 
 `<local_omit>`|For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
 `<strict>`|If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-`<run_on_full_table>`|If any of the single output row exceeds the specified error, then the query is re-executed on the base table.
-`<partial_run_on_base_table>`|If the error is more than what is specified in the query, the query is re-executed on the base table for those sub-groups.  This result is then merged with the result derived from the sample table. 
+`<run_on_full_table>`|If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
+`<partial_run_on_base_table>`|If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
 
 In the following example, any one of the above behavior clause can be applied. 
 
@@ -166,7 +166,7 @@ SELECT avg(ArrDelay) as AvgArr ,absolute_error(AvgArr),relative_error(AvgArr),lo
 UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ERROR 0.12 confidence 0.9
 ```
 The `absolute_error` and `relative_error` function values returns 0 if query is executed on the base table. 
-`lower_bound` and `upper_bound` values returns null if query is executed on the base table.
+`lower_bound` and `upper_bound` values returns null if query is executed on the base table. These values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
 
 <!--
 ### Synopsis Data Engine Technique 1: Sampling
