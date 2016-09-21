@@ -20,8 +20,8 @@ package org.apache.spark.sql.internal
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, Alias, Attribute, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
@@ -175,8 +175,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       case LogicalRelation(_: InsertableRelation, _, identifier) =>
         val tblName = identifier.map(_.quotedString).getOrElse("unknown")
         preprocess(i, tblName, Nil)
+
       case other => i
     }
+    case p@PlaceHolderPlan( hidden, _) => p.copy(hiddenChild = this.apply(hidden))
   }
 
   private def preprocess(
@@ -275,5 +277,18 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
       case _ => // OK
     }
+  }
+}
+
+case class PlaceHolderPlan( hiddenChild: LogicalPlan, makeVisible: Boolean) extends LeafNode {
+  override def children: Seq[LogicalPlan] = if(makeVisible) {
+    hiddenChild :: Nil
+  }else{
+    Nil
+  }
+  override  def output = if(makeVisible) {
+    this.hiddenChild.output
+  }else {
+    Seq.empty[Attribute]
   }
 }
