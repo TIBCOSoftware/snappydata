@@ -23,12 +23,12 @@ This section provides a brief description of the key terms used in this document
 To understand the product follow these easy steps that can get you started quickly:
 
 1. [Setting up SnappyData Cluster](#SettingUp)<br>
-		- [Deploying the Cluster with AWS CloudFormation](#DeployingClusterCloudFormation)<br>
-		- [Deploying  the Cluster with AWS using Script](#DeployingClusterScript)
+	* [Deploying the Cluster with AWS CloudFormation](#DeployingClusterCloudFormation)<br>
+	* [Deploying  the Cluster with AWS using Script](#DeployingClusterScript)
 4. [Loading Data from AWS S3](#dataAWSS3)
 5. [Logging into Apache Zeppelin](#LoggingZeppelin)<br>	
-		- [Using Predefined Notebook](#predefinednotebook)<br>
-		- [Creating your own Notebook](#Creatingnotebook)
+	* [Using Predefined Notebook](#predefinednotebook)<br>
+	* [Creating your own Notebook](#Creatingnotebook)
 
 <a id="SettingUp"></a>
 #Setting Up SnappyData Cluster#
@@ -73,7 +73,7 @@ Refer to the Amazon documentation for more information on generating your own ke
  
 4. Enter a value (between 256GB - 1024 GB) in the **EBS Volume Size(gigabytes)** field.  ![STEP4](./Images/aws_ebsvolumesize.png)
  
-	>### Note: Currently only Amazon Elastic Block Storage (EBS) is supported.
+	> Note: Currently only Amazon Elastic Block Storage (EBS) is supported.####
 
 5. Enter your email address.  <br>
  ![STEP4](./Images/aws_email.png)
@@ -82,28 +82,31 @@ Refer to the Amazon documentation for more information on generating your own ke
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. <br>
   ![STEP4](./Images/aws_selectedregion.png)
   
-	> ### Note: 
-	- > ### Ensure	 that the key pair is created in the region selected.
-	- > ### If are not already logged into AWS, you are redirected to the AWS log in page. Enter your credentials to continue.
-	- > ### It may take a few minutes for the cluster to be created. When you launch a cluster, an instance of Apache Zeppelin is also launched, and can be accessed from http://`<zeppelin_host>`:`<port_number>`. 
+	> Note: 
+	
+	> * Ensure that the key pair is created in the region selected.
+	
+	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your credentials to continue.
+	
+	> * It may take a few minutes for the cluster to be created. When you launch a cluster, an instance of Apache Zeppelin is also launched, and can be accessed from http://`<zeppelin_host>`:`<port_number>`. 
 
 8. The **Select Template page**, allows you to select a template that describes the stack you want to create. By default, the URL for the Amazon S3 template is provided. Click **Next**.   <br>
 ![STEP4](./Images/aws_selecttemplate.png)
 
 9. Enter a stack name or continue to use the default value. Click **Next**.
 
-	>### Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
+	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
 
 10. Specify the tags (key-value pairs) for resources in your stack or leave the field empty to use the default values. Click **Next**.
 11. On the **Review** page, verify the details and click **Create** to create a stack. 
 
-	> ###Note: This operation may take a few minutes to complete. 
+	> Note: This operation may take a few minutes to complete. 
 
 12. The next page lists the existing stacks. Click **Refresh** to update the list and to view the current status of the stack. Ensure that the status of the stack is **Create_Complete**. 
 
 13. Open a web browser and enter http://`<Public DNS>`:`<Port Number>` to launch Apache Zeppelin. You can find the public DNS by loading the EC2 home page of the stack.
 
-	> ###Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You can however, not connect to or restart an instance after you've terminated it.
+	> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You can however, not connect to or restart an instance after you've terminated it.
 
 <a id="DeployingClusterScript"></a>
 ##Deploying the Cluster on AWS using Scripts##
@@ -135,11 +138,13 @@ For example, using the following command, you can start a SnappyData cluster nam
 SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). 
 
 
->###Note:
+> Note:
 
->###The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to 	the documentation provided by Amazon S3 for detailed information on creating a bucket, adding files and setting required permissions.
->###You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
->###Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
+> * The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the documentation provided by Amazon S3 for detailed information on creating a bucket, adding files and setting required permissions.
+	
+> * You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
+	
+> * Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
@@ -167,9 +172,11 @@ SnappyData provides predefined notebooks which are displayed on the home page af
 ##Using the Interpreter##
 Snappydata Interpreter group consists of the interpreters `%snappydata.snappydata` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
->### Note:
-* >### The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.
-* >### It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
+
+>  Note:
+
+> *  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.
+> *  It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
 
 ###SQL Interpreter###
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
@@ -197,14 +204,14 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 ```
 ![Example](./Images/DirectivesinApacheZeppelin.png)
 
->###  NOTE: This directive work only for the SQL interpreter and an error may be displayed for the Scala interpreter.
+> Note: This directive work only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
 ###Scala Interpreter###
 The `%snappydata.snappydata code` specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
 SnappyContext is injected in this interpreter and can be accessed using variable **snc**.
 
-###Using Predefined Notebooks
 <a id="predefinednotebook"></a>
+###Using Predefined Notebooks
 SnappyData provides you a predefined notebook **NYCTAXI Analytics** which contains definitions that are stored in a single file. 
 
 When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
