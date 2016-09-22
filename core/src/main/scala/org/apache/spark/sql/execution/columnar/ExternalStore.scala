@@ -24,6 +24,8 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.sources.ConnectionProperties
 
 trait ExternalStore extends Serializable {
@@ -36,7 +38,7 @@ trait ExternalStore extends Serializable {
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch]
 
-  def getConnectedStore(id: String, onExecutor: Boolean) : ConnectedExternalStore
+  def getConnectedExternalStore(tableName: String, onExecutor: Boolean): ConnectedExternalStore
 
   def getConnection(id: String, onExecutor: Boolean): java.sql.Connection
 
@@ -44,9 +46,10 @@ trait ExternalStore extends Serializable {
 
   def tryExecute[T: ClassTag](tableName: String,
       f: Connection => T,
-      closeOnSuccess: Boolean = true, onExecutor: Boolean = false): T = {
-    val conn = getConnection(tableName, onExecutor)
+      closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+    (implicit c: Option[Connection] = None): T = {
     var isClosed = false
+    val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
       f(conn)
     } catch {
@@ -63,38 +66,43 @@ trait ExternalStore extends Serializable {
 
 } // ExternalStore
 
-
 trait ConnectedExternalStore extends ExternalStore {
+
+  private[this] var dependentAction: Option[Connection => Unit] = None
 
   protected[this] val connectedInstance: Connection
 
-  private[this] val preparedStatements = ArrayBuffer.empty[PreparedStatement]
-
-  def prepareStatement(dml: String): java.sql.PreparedStatement = {
-    val ps = connectedInstance.prepareStatement(dml)
-    preparedStatements += ps
-    ps
+  def conn: Connection = {
+    assert(!connectedInstance.isClosed)
+    connectedInstance
   }
 
-  def tryExecuteWithDependents[T: ClassTag](tableName: String,
-      f: (Connection, ArrayBuffer[PreparedStatement]) => T,
-      onExecutor: Boolean = false): T = {
-    val conn = getConnection(tableName, onExecutor)
-    try {
-      f(conn, preparedStatements)
-    } catch {
-      case t: Throwable =>
-        close()
-        throw t
+/*
+  override def getConnection(id: String,
+    onExecutor: Boolean): java.sql.Connection = connectedInstance
+*/
+
+  override def tryExecute[T: ClassTag](tableName: String,
+    f: Connection => T,
+    closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+    (implicit c: Option[Connection]): T = {
+    assert(!connectedInstance.isClosed)
+    val ret = super.tryExecute(tableName, f,
+      closeOnSuccess = false /* responsibility of the user to close later */,
+      onExecutor)(
+      implicitly, Some(connectedInstance))
+
+    if (dependentAction.isDefined) {
+      assert(!connectedInstance.isClosed)
+      dependentAction.get(connectedInstance)
     }
+
+    ret
   }
 
-  def commit(): Unit = connectedInstance.commit()
-
-  def close(): Unit = {
-    preparedStatements.foreach(_.close())
-    preparedStatements.clear()
-    connectedInstance.close()
+  def withDependentAction(f: Connection => Unit): ConnectedExternalStore = {
+    dependentAction = Some(f)
+    this
   }
 
-} // ConnectedExternalStore
+}

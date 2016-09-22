@@ -651,7 +651,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     (CodeGeneration.getGeneratedIndexStatement(indexEntry.entityName,
       indexEntry.schema,
       indexEntry.externalStore.connProperties.dialect),
-        connectedExternalStore.prepareStatement(rowInsertStr))
+        connectedExternalStore.conn.prepareStatement(rowInsertStr))
   }
 }
 

@@ -48,17 +48,21 @@ final class CachedBatchCreator(
           attribute.name, useCompression)
     }.toArray
 
-    val connectedExternalStore = externalStore.getConnectedStore(tableName, onExecutor = true)
+    val connectedExternalStore = externalStore.getConnectedExternalStore(tableName,
+      onExecutor = true)
 
+    var success: Boolean = false
     try {
-
-      def cachedBatchAggregate(batch: CachedBatch): Unit = {
-        connectedExternalStore.storeCachedBatch(tableName, batch,
-          bucketID, Option(batchID))
-      }
 
       val indexStatements = dependents.map(ColumnFormatRelation.getIndexUpdateStruct(_,
         connectedExternalStore))
+
+      def cachedBatchAggregate(batch: CachedBatch): Unit = {
+        connectedExternalStore.withDependentAction { conn =>
+          indexStatements.foreach { case (_, ps) => ps.executeBatch() }
+        }.storeCachedBatch(tableName, batch,
+          bucketID, Option(batchID))
+      }
 
       // adding one variable so that only one cached batch is created
       val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE,
@@ -78,10 +82,13 @@ final class CachedBatchCreator(
         keySet
       } finally {
         sc.close()
+        success = true
       }
     } finally {
-      connectedExternalStore.commit()
-      connectedExternalStore.close()
+      if (success) {
+        connectedExternalStore.conn.commit()
+      }
+      connectedExternalStore.conn.close()
     }
   }
 }
