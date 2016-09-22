@@ -77,7 +77,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    dosetUp()
+    doSetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
@@ -127,10 +127,10 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override def setUp(): Unit = {
     super.setUp()
-    dosetUp()
+    doSetUp()
   }
 
-  private def dosetUp() : Unit = {
+  private def doSetUp() : Unit = {
     val testName = getName
     val testClass = getClass
     // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
