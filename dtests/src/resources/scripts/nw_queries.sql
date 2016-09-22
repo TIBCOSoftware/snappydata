@@ -31,7 +31,7 @@ SELECT FirstName, LastName FROM Employees WHERE Region IS NULL;
 SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N' ORDER BY LastName DESC;
 
 ----- Using the WHERE clause to check for equality or inequality
-SELECT OrderDate, ShippedDate, CustomerID, Freight FROM Orders WHERE OrderDate = '1997-05-19 00:00:00.0';
+SELECT OrderDate, ShippedDate, CustomerID, Freight FROM Orders WHERE OrderDate = Cast('1997-05-19' as TIMESTAMP);
 
 ----- Using WHERE and ORDER BY Together
 SELECT CompanyName, ContactName, Fax FROM Customers WHERE Fax IS NOT NULL ORDER BY CompanyName;
@@ -42,7 +42,7 @@ SELECT TitleOfCourtesy, FirstName, LastName FROM Employees WHERE TitleOfCourtesy
 ----- The LIKE Operator
 SELECT TitleOfCourtesy, FirstName, LastName FROM Employees WHERE TitleOfCourtesy LIKE 'M%';
 
-SELECT FirstName, LastName, BirthDate FROM Employees WHERE BirthDate BETWEEN '1950-01-01 00:00:00.0' AND '1959-12-31 23:59:59';
+SELECT FirstName, LastName, BirthDate FROM Employees WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND Cast('1959-12-31 23:59:59' as TIMESTAMP);
 
 SELECT CONCAT(FirstName, ' ', LastName) FROM Employees;
 
@@ -58,11 +58,11 @@ SELECT COUNT(DISTINCT City) AS NumCities FROM Employees;
 
 SELECT ProductID, AVG(UnitPrice) AS AveragePrice FROM Products GROUP BY ProductID HAVING AVG(UnitPrice) > 70 ORDER BY AveragePrice;
 
----SELECT CompanyName FROM Customers WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290) --GEMFIREXD-PROPERTIES executionEngine=Spark ;
+SELECT CompanyName FROM Customers WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290) --GEMFIREXD-PROPERTIES executionEngine=Spark;
 
-SELECT CompanyName FROM Customers --GEMFIREXD-PROPERTIES executionEngine=Spark WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290);
+SELECT CompanyName FROM Customers WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290);
 
-SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID FROM Orders WHERE OrderDate BETWEEN '1997-01-01 00:00:00.0' AND '1997-12-31 00:00:00.0');
+SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND Cast('1997-12-31' as TIMESTAMP));
 
 SELECT ProductName, SupplierID FROM Products WHERE SupplierID IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'));
 
@@ -74,7 +74,7 @@ SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID FROM P
 
 SELECT Employees.EmployeeID, Employees.FirstName, Employees.LastName, Orders.OrderID, Orders.OrderDate FROM Employees JOIN Orders ON (Employees.EmployeeID = Orders.EmployeeID) ORDER BY Orders.OrderDate;
 
-SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM Orders o JOIN Employees e ON (e.EmployeeID = o.EmployeeID) JOIN Customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1998-01-01 00:00:00.0' ORDER BY c.CompanyName;
+SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM Orders o JOIN Employees e ON (e.EmployeeID = o.EmployeeID) JOIN Customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast ('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName;
 
 SELECT e.FirstName, e.LastName, o.OrderID FROM Employees e JOIN Orders o ON (e.EmployeeID = o.EmployeeID) WHERE o.RequiredDate < o.ShippedDate ORDER BY e.LastName, e.FirstName;
 

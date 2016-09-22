@@ -71,7 +71,7 @@ object NWQueries {
   // Using the WHERE clause to check for equality or inequality
   val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
     " FROM Orders " +
-    " WHERE OrderDate = '1997-05-19'"
+    " WHERE OrderDate = Cast('1997-05-19' as TIMESTAMP)"
 
   // Using WHERE and ORDER BY Together
   val Q14: String = "SELECT CompanyName, ContactName, Fax" +
@@ -91,7 +91,7 @@ object NWQueries {
 
   val Q17: String = "SELECT FirstName, LastName, BirthDate" +
     " FROM Employees" +
-    " WHERE BirthDate BETWEEN '1950-01-01' AND '1959-12-31 23:59:59'"
+    " WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND Cast('1959-12-31 23:59:59' as TIMESTAMP)"
 
   val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
     " FROM Employees"
@@ -128,7 +128,7 @@ object NWQueries {
     "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN '1997-01-01' AND '1997-12-31')"
+    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND Cast('1997-12-31' as TIMESTAMP))"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
     " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
@@ -154,7 +154,7 @@ object NWQueries {
     " FROM Orders o" +
     " JOIN Employees e ON (e.EmployeeID = o.EmployeeID)" +
     " JOIN Customers c ON (c.CustomerID = o.CustomerID)" +
-    " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1998-01-01'" +
+    " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP)" +
     " ORDER BY c.CompanyName"
 
   val Q33: String = "SELECT e.FirstName, e.LastName, o.OrderID" +
@@ -190,7 +190,7 @@ object NWQueries {
     " group by OrderID" +
     ") b on a.OrderID = b.OrderID" +
     " where a.ShippedDate is not null" +
-    " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
+    " and a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
     " order by a.ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
@@ -212,7 +212,7 @@ object NWQueries {
     " order by y.OrderID" +
     " ) c on c.ProductID = b.ProductID" +
     " inner join Orders d on d.OrderID = c.OrderID" +
-    " where d.OrderDate > '1997-01-01' and d.OrderDate < '1997-12-31'" +
+    " where d.OrderDate > Cast('1997-01-01' as TIMESTAMP) and d.OrderDate < Cast('1997-12-31' as TIMESTAMP)" +
     " group by a.CategoryID, a.CategoryName, b.ProductName" +
     " order by a.CategoryName, b.ProductName, ProductSales"
 
@@ -337,7 +337,7 @@ object NWQueries {
     " inner join Products as b on a.CategoryID = b.CategoryID" +
     " inner join Order_Details as c on b.ProductID = c.ProductID" +
     " inner join Orders as d on d.OrderID = c.OrderID" +
-    " where d.ShippedDate > '1997-01-01' and d.ShippedDate < '1997-12-31'" +
+    " where d.ShippedDate > Cast('1997-01-01' as TIMESTAMP)  and d.ShippedDate < Cast('1997-12-31' as TIMESTAMP)" +
     " group by a.CategoryName," +
     " b.ProductName," +
     " concat('Qtr ', quarter(d.ShippedDate))" +

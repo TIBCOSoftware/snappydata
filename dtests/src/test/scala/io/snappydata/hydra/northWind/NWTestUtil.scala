@@ -26,6 +26,9 @@ object NWTestUtil {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
     pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    println(df.show(100))
+    pw.println(df.show(100))
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " Table Type : " + tableType)
@@ -34,6 +37,9 @@ object NWTestUtil {
   def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
     val df = snc.sql(sqlString)
     pw.println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    println(df.show(100))
+    pw.println(df.show(100))
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " Table Type : " + tableType)

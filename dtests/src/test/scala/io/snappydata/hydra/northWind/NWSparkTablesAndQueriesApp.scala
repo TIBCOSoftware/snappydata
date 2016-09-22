@@ -29,8 +29,10 @@ object NWSparkTablesAndQueriesApp {
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val dataFilesLocation = args(0)
     snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
+    NWQueries.dataFilesLocation = dataFilesLocation
     NWTestUtil.dropTables(snc)
     val pw = new PrintWriter(new FileOutputStream(new File("NWSparkTablesAndQueriesApp.out"), true));
     println("Test replicated row tables queries started")
@@ -122,6 +124,8 @@ object NWSparkTablesAndQueriesApp {
         case "Q52" => assertJoin(snc, NWQueries.Q52, "ReplicatedTable", "Q52", pw)
         case "Q53" => assertJoin(snc, NWQueries.Q53, "ReplicatedTable", "Q53", pw)
         case "Q54" => assertJoin(snc, NWQueries.Q54, "ReplicatedTable", "Q54", pw)
+        case "Q55" => assertJoin(snc, NWQueries.Q55, "ReplicatedTable", "Q55", pw)
+        case "Q56" => assertJoin(snc, NWQueries.Q56, "ReplicatedTable", "Q56", pw)
       }
     }
   }
