@@ -6,7 +6,7 @@ iSight uses Apache Zeppelin as the frontend notebook to display results and allo
 The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
 
-In this document, we describe the features provided by SnappyData for analysing your data. It also provides details for deploying a SnappyData cluster on AWS CloudFormation or on AWS using the EC2 script. 
+In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData cluster on AWS CloudFormation or on AWS using the EC2 script. 
 
 Refer to the the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
@@ -66,16 +66,16 @@ Refer to the Amazon documentation for more information on generating your own ke
  ![STEP](./Images/aws_instancetype.png)
  
 4. Enter the size of the EBS storage volume to be used with Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.  
-![STEP4](./Images/aws_ebsvolumesize.png)
+![STEP](./Images/aws_ebsvolumesize.png)
  
 	> Note: Currently only Amazon Elastic Block Storage (EBS) is supported.
 
 5. Enter your email address.  <br>
- ![STEP4](./Images/aws_email.png)
+ ![STEP](./Images/aws_email.png)
  
 6. Click **Generate**. 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. <br>
-  ![STEP4](./Images/aws_selectedregion.png)
+  ![STEP](./Images/aws_selectedregion.png)
   
 	> Note: 
 	
@@ -83,10 +83,10 @@ Refer to the Amazon documentation for more information on generating your own ke
 	
 	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your credentials to continue.
 	
-	> * It may take a few minutes for the cluster to be created. When you launch a cluster, an instance of Apache Zeppelin is also launched, and can be accessed from http://`<Public IP>:8080`. 
+	> * It may take a few minutes for the cluster to be created. 
 
 8. On the **Select Template page**, the URL for the Amazon S3 template is provided. Click **Next** to continue.   <br>
-![STEP4](./Images/aws_selecttemplate.png)
+![STEP](./Images/aws_selecttemplate.png)
 
 9. You can change the stack name or click **Next** to use the default value.
 
@@ -97,12 +97,14 @@ Refer to the Amazon documentation for more information on generating your own ke
 
 	> Note: This operation may take a few minutes to complete. 
 
-12. The next page lists the existing stacks. Click **Refresh** to update the list and to view the current status of the stack. Ensure that the status of the stack is **Create_Complete**. 
+12. The next page lists the existing stacks. Click **Refresh** to update the list and to view the current status of the stack. 
+When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
+![Refresh](./Images/aws_refreshstack.png)
 
-13. Open a web browser and enter http://`<Public IP>:8080` to launch Apache Zeppelin. 
-You can find the Public IP related information  by loading the EC2 home page.
+13. Click on the ** Outputs** tab, to view the links (URLs) required for launching Pulse, Apache Zeppelin and SnappyData Cluster.
+	![Public IP](./Images/aws_links.png)
 
-	> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You can however, not connect to or restart an instance after you have terminated it.
+> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You can however, not connect to or restart an instance after you have terminated it.
 
 <a id="DeployingClusterScript"></a>
 ##Deploying the Cluster on AWS using Scripts##
@@ -189,6 +191,7 @@ The values are:
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
 Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
 SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see [Using Predefined Notebooks](###Using Predefined Notebooks).
+
 ##Using the Interpreter##
 Snappydata Interpreter group consists of the interpreters `%snappydata.snappydata` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
