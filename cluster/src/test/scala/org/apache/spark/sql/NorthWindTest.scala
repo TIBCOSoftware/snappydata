@@ -88,7 +88,7 @@ class NorthWindTest
   private def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int,
       numPartitions: Int, c: Class[_]): Any = {
     val df = snc.sql(sqlString)
-    //df.explain()
+    // df.explain()
     val physical = df.queryExecution.sparkPlan
     val operators = physical.collect {
       // case j: SortBasedAggregate => j
@@ -417,7 +417,7 @@ class NorthWindTest
 //        case "Q35" => assertJoin(snc, NWQueries.Q35, 3, 4, classOf[LocalJoin])
 //        case "Q36" => assertJoin(snc, NWQueries.Q36, 292, 1, classOf[LocalJoin])
 //        case "Q37" => assertJoin(snc, NWQueries.Q37, 0, 1, classOf[LocalJoin]) // 77
-//        //        case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, 1, classOf[LocalJoin]) NPE LocalJoin
+//        case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, 1, classOf[LocalJoin]) NPE LocalJoin
 //        case "Q39" => assertJoin(snc, NWQueries.Q39, 9, 1, classOf[LocalJoin])
 //        case "Q40" => assertJoin(snc, NWQueries.Q40, 830, 1, classOf[LocalJoin])
 //        case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, 1, classOf[LocalJoin])

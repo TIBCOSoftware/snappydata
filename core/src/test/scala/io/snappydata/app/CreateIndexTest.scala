@@ -61,7 +61,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"create index $indexTwo on $tableName (COL2, COL3)")
     snContext.sql(s"create index $indexThree on $tableName (COL1, COL3)")
 
-    val executeQ = QueryExecutor(snContext)
+    val executeQ = QueryExecutor(snContext, false, true)
 
     executeQ(s"select * from $tableName where col1 = 111")
 
