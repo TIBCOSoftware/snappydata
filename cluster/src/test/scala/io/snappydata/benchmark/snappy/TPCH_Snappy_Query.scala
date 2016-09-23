@@ -45,7 +45,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
 //       snc.sql("set " + entryString)
 //     })
 
-     var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
+     var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Snappy_Average.out"))
      var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
 
      for(prop <- sqlSparkProperties) {

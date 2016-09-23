@@ -33,11 +33,9 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
    var nation_Region_Supp_col: Boolean =  _
 
    override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-     val props : Map[String, String] = null
      val isSnappy = true
-     val dbName = "TPCH"
 
-     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"BulkLoadPerf.out"))
+     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
      var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
 
      val usingOptionString = s"""
@@ -57,35 +55,35 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
      snc.dropTable("ORDERS", ifExists = true)
 
      if (nation_Region_Supp_col) {
-       TPCHColumnPartitionedTable.createAndPopulateNationTable(props, snc, tpchDataPath, isSnappy,
+       TPCHColumnPartitionedTable.createAndPopulateNationTable(snc, tpchDataPath, isSnappy,
          buckets_Nation_Region_Supp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateRegionTable(props, snc, tpchDataPath, isSnappy,
+       TPCHColumnPartitionedTable.createAndPopulateRegionTable(snc, tpchDataPath, isSnappy,
          buckets_Nation_Region_Supp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(props, snc, tpchDataPath, isSnappy,
+       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
          buckets_Nation_Region_Supp, loadPerfPrintStream)
      } else {
-       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
          loadPerfPrintStream)
-       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
          loadPerfPrintStream)
-       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath, isSnappy,
          loadPerfPrintStream)
      }
 
-     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy,
+     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
        buckets_Order_Lineitem, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy,
+     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
        buckets_Order_Lineitem, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
        buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
        buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy,
+     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
        buckets_Cust_Part_PartSupp, loadPerfPrintStream)
      if (useIndex) {
-       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(props, snc, tpchDataPath, isSnappy,
+       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(snc, tpchDataPath, isSnappy,
          buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(props, snc, tpchDataPath, isSnappy,
+       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(snc, tpchDataPath, isSnappy,
          buckets_Cust_Part_PartSupp, loadPerfPrintStream)
      }
    }

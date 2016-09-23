@@ -42,8 +42,8 @@ object TPCHReplicatedTable {
     println("Created Table SUPPLIER")
   }
 
-  def createPopulateRegionTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, loadPerfPrintStream : PrintStream): Unit = {
+  def createPopulateRegionTable(usingOptionString: String, sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
@@ -61,20 +61,19 @@ object TPCHReplicatedTable {
       )
       println("Created Table REGION")
       regionDF.write.insertInto("REGION")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
-      println("Created Table REGION")
     } else {
       regionDF.createOrReplaceTempView("REGION")
       sqlContext.cacheTable("REGION")
       sqlContext.table("REGION").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime - startTime}")
     }
   }
 
-  def createPopulateNationTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, loadPerfPrintStream : PrintStream): Unit = {
+  def createPopulateNationTable(usingOptionString: String, sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
@@ -93,19 +92,19 @@ object TPCHReplicatedTable {
       )
       println("Created Table NATION")
       nationDF.write.insertInto("NATION")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
     } else {
       nationDF.createOrReplaceTempView("NATION")
       sqlContext.cacheTable("NATION")
       sqlContext.table("NATION").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime - startTime}")
     }
   }
 
-  def createPopulateSupplierTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext,
-      path: String, isSnappy: Boolean, loadPerfPrintStream : PrintStream): Unit = {
+  def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime=System.currentTimeMillis()
     val supplierData = sc.textFile(s"$path/supplier.tbl")
@@ -127,14 +126,14 @@ object TPCHReplicatedTable {
       )
       println("Created Table SUPPLIER")
       supplierDF.write.insertInto("SUPPLIER")
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
     } else {
       supplierDF.createOrReplaceTempView("SUPPLIER")
       sqlContext.cacheTable("SUPPLIER")
       sqlContext.table("SUPPLIER").count()
-      val endTime = System.currentTimeMillis()
-      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime-startTime}")
+    }
+    val endTime = System.currentTimeMillis()
+    if (loadPerfPrintStream != null) {
+      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime - startTime}")
     }
   }
 
