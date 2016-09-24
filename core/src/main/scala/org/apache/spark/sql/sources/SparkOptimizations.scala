@@ -24,9 +24,9 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.QueryHint
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedAlias, UnresolvedAttribute}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, BinaryComparison, Cast, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, BinaryComparison, Cast, Expression, PredicateHelper, UnresolvedWindowExpression}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -100,17 +100,6 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
       case f@org.apache.spark.sql.catalyst.plans.logical.Filter(cond, child) =>
 
-        val tableToIndexes = child.collect({
-          case l@LogicalRelation(p: ParentRelation, _, _) =>
-            val catalog = snappySession.sessionCatalog
-            (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
-              catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
-          case s@SubqueryAlias(alias, child@LogicalRelation(p: ParentRelation, _, _)) =>
-            val catalog = snappySession.sessionCatalog
-            (s.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
-              catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
-        })
-
         val columnGroups = splitConjunctivePredicates(cond).collect({
           case expressions.EqualTo(l, r) =>
             l.collectFirst({ case a: AttributeReference => a }).orElse({
@@ -126,7 +115,8 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         }
 
         val satisfyingPartitionColumns = for {
-          (table, indexes) <- tableToIndexes
+
+          (table, indexes) <- fetchIndexes(child)
 
           filterCols <- columnGroups.collectFirst { case (t, predicates) if predicates.nonEmpty =>
             table match {
@@ -134,6 +124,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
                 predicates
               case SubqueryAlias(alias, _) if alias.equals(t) =>
                 predicates
+              case _ => Seq.empty
             }
           } if filterCols.nonEmpty
 
@@ -152,7 +143,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         if (satisfyingPartitionColumns.isEmpty) {
           Seq.empty
         } else {
-          Seq(satisfyingPartitionColumns.maxBy({ case (_, idx) => idx.statistics.sizeInBytes}))
+          Seq(satisfyingPartitionColumns.maxBy({ case (_, idx) => idx.statistics.sizeInBytes }))
         }
 
       case _ => Nil
@@ -171,7 +162,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
             case Some(index) => Seq((table, index))
             case _ => Nil
           }
-        case subQuery@SubqueryAlias(alias, child) =>
+        case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
           explicitIndexHint.get(alias) match {
             case Some(index) => Seq((subQuery, SubqueryAlias(alias, index)))
             case _ => Nil
@@ -179,10 +170,22 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         case _ => Nil
       }
     } else {
-      val hasUnresolvedReferences = plan.find(_.references.exists {
-        case UnresolvedAttribute(_) => true
+      def findR(p: Any) = p match {
+        case UnresolvedAttribute(_) |
+             UnresolvedFunction(_, _, _) |
+             UnresolvedAlias(_, _) |
+             UnresolvedWindowExpression(_, _) |
+             UnresolvedGenerator(_, _) |
+             UnresolvedStar(_) => true
         case _ => false
-      }).isDefined
+      }
+
+      val hasUnresolvedReferences = plan.find {l =>
+        l.productIterator.exists(findR) || l.expressions.exists({ e =>
+              findR(e) || e.productIterator.exists(findR) ||
+                  e.references.exists(findR)
+          })
+      }.nonEmpty
 
       if (hasUnresolvedReferences) {
         // try once all references are resolved.
@@ -236,6 +239,17 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     }
   }
 
+  private def fetchIndexes(table: LogicalPlan) = table.collect {
+    case l@LogicalRelation(p: ParentRelation, _, _) =>
+      val catalog = snappySession.sessionCatalog
+      (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
+        catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
+    case s@SubqueryAlias(alias, child@LogicalRelation(p: ParentRelation, _, _)) =>
+      val catalog = snappySession.sessionCatalog
+      (s.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
+        catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
+  }
+
   object HasColocatedEntities {
 
     type ReturnType = (
@@ -248,18 +262,15 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     Option[ReturnType] = {
       val (left, right) = tables
 
-      val leftIndexes = fetchIndexes2(left)
-      val rightIndexes = fetchIndexes2(right)
-
       /** now doing a one-to-one mapping of lefttable and its indexes with
-        * right table and its indexes. Following example explains the mapping
-        * and collect method on the $cols is to pick colocated relations.
+        * right table and its indexes. Following example explains the combination
+        * generator.
         *
         * val l = Seq(1, 2, 3)
         * val r = Seq(4, 5)
         * l.zip(Seq.fill(l.length)(r)).flatMap {
         * case (leftElement, rightList) => rightList.flatMap { e =>
-        * Seq((l, e))
+        * Seq((leftElement, e))
         * }
         * }.foreach(println)
         * will output :
@@ -271,27 +282,63 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         * (3, 5)
         *
         */
-      val (leftPair, rightPair) = leftIndexes.zip(Seq.fill(leftIndexes.length)(rightIndexes)).
-          flatMap { case (l, r) => r.flatMap(e => Seq((l, e))) }.
-          collect {
-            case plans@ExtractBaseColumnFormatRelation(leftEntity, rightEntity)
-              if isColocated(leftEntity, rightEntity) =>
-              val (leftPlan, rightPlan) = plans
-              ((leftEntity, leftPlan), (rightEntity, rightPlan))
-          }.unzip
+      val leftRightEntityMapping = for {
+        (leftTable, leftIndexes) <- fetchIndexes(left)
+        (rightTable, rightIndexes) <- fetchIndexes(right)
+        leftSeq = Seq(leftTable) ++ leftIndexes
+        rightSeq = Seq(rightTable) ++ rightIndexes
+      } yield {
+        leftSeq.zip(Seq.fill(leftSeq.length)(rightSeq)) flatMap {
+          case (leftElement, rightList) => rightList.flatMap(e => Seq((leftElement, e)))
+        }
+      }
 
-      leftPair.nonEmpty match {
-        case true =>
-          val (leftBase, leftEntities) = leftPair.unzip
-          val (rightBase, rightEntities) = rightPair.unzip
-          // Note: fetchIndexes returned with 0th element as the table relation itself.
-          Some((leftBase.zip(rightBase), leftEntities.map(e => (leftIndexes(0), e)),
-              rightEntities.map(e => (rightIndexes(0), e))))
-        case false =>
-          logDebug(s"Nothing is colocated between the tables $leftIndexes and $rightIndexes")
-          None
+      def unwrapBaseColumnRelation(
+          plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
+        case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
+          relation
+        case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _)) =>
+          relation
+      }
+
+      // right now not expecting multiple tables in left & right hand side.
+//      assert(leftRightEntityMapping.size <= 1)
+
+      val mappings = leftRightEntityMapping.flatMap { mappedElements =>
+        val (leftTable, rightTable) = mappedElements(0) // first pairing is always (table, table)
+        for {
+
+          (leftPlan, rightPlan) <- mappedElements
+
+          leftRelation = unwrapBaseColumnRelation(leftPlan) if leftRelation.nonEmpty
+          rightRelation = unwrapBaseColumnRelation(rightPlan) if rightRelation.nonEmpty
+
+          if isColocated(leftRelation.get, rightRelation.get)
+        } yield {
+
+          val leftReplacement = leftTable match {
+            case _: LogicalRelation => (leftTable, leftPlan)
+            case subquery@SubqueryAlias(alias, _) =>
+              (subquery, SubqueryAlias(alias, leftPlan))
+          }
+
+          val rightReplacement = rightTable match {
+            case _: LogicalRelation => (rightTable, rightPlan)
+            case subquery@SubqueryAlias(alias, _) =>
+              (subquery, SubqueryAlias(alias, rightPlan))
+          }
+
+          ((leftRelation.get, rightRelation.get), leftReplacement, rightReplacement)
+        }
+      }
+
+      if (mappings.nonEmpty) {
+        Some(mappings.unzip3)
+      } else {
+        None
       }
     }
+
   }
 
   private def isColocated(left: BaseColumnFormatRelation, right: BaseColumnFormatRelation) = {
@@ -322,31 +369,3 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 }
 
 // end of ResolveIndex
-
-object ExtractBaseColumnFormatRelation {
-
-  type pairOfTables = (BaseColumnFormatRelation, BaseColumnFormatRelation)
-
-  def unapply(arg: (LogicalPlan, LogicalPlan)): Option[pairOfTables] = {
-    (extractBoth _).tupled(arg)
-  }
-
-  def unapply(arg: LogicalPlan): Option[BaseColumnFormatRelation] = {
-    arg collectFirst {
-      case entity@LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
-        relation
-    }
-  }
-
-  private def extractBoth(left: LogicalPlan, right: LogicalPlan) = {
-    unapply(left) match {
-      case Some(v1) => unapply(right) match {
-        case Some(v2) => Some(v1, v2)
-        case _ => None
-      }
-      case _ => None
-    }
-  }
-
-}
-

@@ -63,13 +63,21 @@ class CreateIndexTest extends SnappyFunSuite {
 
     val executeQ = QueryExecutor(snContext, false, true)
 
-    executeQ(s"select * from $tableName where col1 = 111")
+    executeQ(s"select * from $tableName where col1 = 111") {
+      validateIndex(Seq(indexOne))(_)
+    }
 
-    executeQ(s"select * from $tableName where col2 = 'aaa' ")
+    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
+      validateIndex(Seq(indexOne))(_)
+    }
 
-    executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ")
+    executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
+      validateIndex(Seq(indexTwo))(_)
+    }
 
-    executeQ(s"select * from $tableName where col1 = 111 and col3 = 'halo' ")
+    executeQ(s"select * from $tableName where col1 = 111 and col3 = 'halo' ") {
+      validateIndex(Seq(indexTwo))(_)
+    }
 
     snContext.sql(s"drop index $indexOne")
     snContext.sql(s"drop index $indexTwo")
@@ -404,7 +412,7 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql(s"create index $index3 on $table1 " +
         s" (COL4) Options (colocate_with  '$table4')")
 
-    val executeQ = QueryExecutor(snContext, false, false)
+    val executeQ = QueryExecutor(snContext, false, true)
 
     /*
         executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table3 t3 " +
@@ -415,15 +423,21 @@ class CreateIndexTest extends SnappyFunSuite {
     */
 
     executeQ(s"select t1.col2, t4.col3 from $table1 t1, $table4 t4 " +
-        s"where t1.col4 = t4.col4 and t1.col1 = t4.col2 ", true)
+        s"where t1.col4 = t4.col4 and t1.col1 = t4.col2 ") {
+      validateIndex(Seq(index3), table4)(_)
+    }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
-        s"and t1.col4 = t4.col4 ")
+        s"and t1.col4 = t4.col4 ") {
+      validateIndex(Seq(index1), table2, table4)(_)
+    }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table4 t4, $table2 t2 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
-        s"and t1.col4 = t4.col4 ")
+        s"and t1.col4 = t4.col4 ") {
+      validateIndex(Seq(index3), table2, table4)(_)
+    }
 
     /*
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
@@ -605,7 +619,7 @@ class CreateIndexTest extends SnappyFunSuite {
 
   private def validateIndex(index: Seq[String], tables: String*)(df: DataFrame): Unit = {
     val (indexesMatched, indexesUnMatched) = df.queryExecution.optimizedPlan.collect {
-      case l@LogicalRelation(index: IndexColumnFormatRelation, _, _) => index
+      case l@LogicalRelation(idx: IndexColumnFormatRelation, _, _) => idx
     }.partition(rel => index.exists(i => rel.table.indexOf(i.toUpperCase) > 0))
 
     if (indexesMatched.size != index.size) {
