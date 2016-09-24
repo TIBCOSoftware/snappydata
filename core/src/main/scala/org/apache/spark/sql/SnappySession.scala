@@ -152,13 +152,19 @@ class SnappySession(@transient private val sc: SparkContext,
   private val addedClasses =
     new mutable.HashMap[Seq[(DataType, Boolean)], String]
 
-  def getClass(types: Seq[(DataType, Boolean)]): Option[String] =
+  /**
+   * Get code for a previously registered class using [[addClass]].
+   */
+  private[sql] def getClass(types: Seq[(DataType, Boolean)]): Option[String] =
     addedClasses.get(types)
 
-  def addClass(types: Seq[(DataType, Boolean)], name: String): Unit =
-    addedClasses.put(types, name)
+  /**
+   * Register code generated for a new class (for <code>CodegenSupport</code>).
+   */
+  private[sql] def addClass(types: Seq[(DataType, Boolean)],
+      name: String): Unit = addedClasses.put(types, name)
 
-  def clearQueryData(): Unit = {
+  private[sql] def clearQueryData(): Unit = {
     queryHints.clear()
     addedClasses.clear()
   }
