@@ -46,7 +46,7 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -148,6 +148,20 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
+
+  private val addedClasses =
+    new mutable.HashMap[Seq[(DataType, Boolean)], String]
+
+  def getClass(types: Seq[(DataType, Boolean)]): Option[String] =
+    addedClasses.get(types)
+
+  def addClass(types: Seq[(DataType, Boolean)], name: String): Unit =
+    addedClasses.put(types, name)
+
+  def clearQueryData(): Unit = {
+    queryHints.clear()
+    addedClasses.clear()
+  }
 
   def clear(): Unit = {
     snappyContextFunctions.clear()
@@ -914,10 +928,11 @@ class SnappySession(@transient private val sc: SparkContext,
           case _ => // ignore
         }
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        if(sessionCatalog.isTemporaryTable(tableIdent)){ // This is due to temp table
+        if (sessionCatalog.isTemporaryTable(tableIdent)) {
+          // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
-        }else{
+        } else {
           sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
         }
         br match {
