@@ -49,7 +49,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.execution.{BatchConsumer, PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
@@ -319,6 +319,11 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin)
 
+    val batchConsume = parent match {
+      case b: BatchConsumer => b.batchConsume(ctx, columnsInput)
+      case _ => ""
+    }
+
     s"""
        |// Combined iterator for cached batches from column table
        |// and ResultSet from row buffer. Also takes care of otherRDDs
@@ -328,6 +333,7 @@ private[sql] final case class ColumnTableScan(
        |long $numRowsOther = 0L;
        |try {
        |  while ($nextBatch()) {
+       |    $batchConsume
        |    final int numRows = $numBatchRows;
        |    ${bufferInitCode.toString()}
        |    final boolean isRow = $inputIsRow;

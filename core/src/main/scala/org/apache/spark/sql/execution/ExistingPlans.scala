@@ -17,6 +17,7 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
@@ -128,4 +129,18 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def partitionColumns: Seq[String]
 
   def connectionType: ConnectionType.Value
+}
+
+trait BatchConsumer extends CodegenSupport {
+
+  /**
+   * Generate Java source code to do any processing before a batch is consumed
+   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * optimizations, initializations etc).
+   * <p>
+   * Implementations should use this for additional optimizations that can be
+   * done at batch level when a batched scan is being done. They should not
+   * depend on this being invoked since many scans will not be batched.
+   */
+  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
 }

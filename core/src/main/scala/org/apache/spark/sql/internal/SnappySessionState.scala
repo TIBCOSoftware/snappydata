@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
-import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
+import org.apache.spark.sql.{AnalysisException, SnappyAggregation, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -105,17 +105,8 @@ class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
     case _ => Nil
   }
 
-  // TODO temporary flag till we determine every thing works
-  // fine with the optimizations
-  val storeOptimization = conf.getConfString(
-    "snappy.store.optimization", "true").toBoolean
-
-  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization) {
-    Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-  }
-  else {
-    Nil
-  }
+  private val storeOptimizedRules: Seq[Strategy] =
+    Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

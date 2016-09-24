@@ -707,7 +707,7 @@ class SnappyParser(session: SnappySession)
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
-    session.queryHints.clear()
+    session.clearQueryData()
     parseSQL(sqlText, parseRule)
   }
 
