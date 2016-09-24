@@ -97,6 +97,9 @@ abstract class ColumnEncoding {
   def readDouble(columnBytes: AnyRef, cursor: Long): Double =
     throw new UnsupportedOperationException(s"readDouble for $toString")
 
+  def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
+    throw new UnsupportedOperationException(s"nextLongDecimal for $toString")
+
   def readLongDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long): Decimal =
     throw new UnsupportedOperationException(s"readLongDecimal for $toString")
