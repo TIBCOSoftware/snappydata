@@ -26,7 +26,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.execution.python.ExtractPythonUDFFromAggregate
 import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
@@ -200,6 +199,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         preprocess(i, tblName, Nil)
       case other => i
     }
+
   }
 
   private def preprocess(
@@ -300,3 +300,4 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
+
