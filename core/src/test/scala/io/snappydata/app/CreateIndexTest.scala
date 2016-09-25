@@ -68,7 +68,7 @@ class CreateIndexTest extends SnappyFunSuite {
     }
 
     executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-      validateIndex(Seq(indexOne))(_)
+      validateIndex(Seq.empty, tableName)(_)
     }
 
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
@@ -76,7 +76,7 @@ class CreateIndexTest extends SnappyFunSuite {
     }
 
     executeQ(s"select * from $tableName where col1 = 111 and col3 = 'halo' ") {
-      validateIndex(Seq(indexTwo))(_)
+      validateIndex(Seq(indexThree))(_)
     }
 
     snContext.sql(s"drop index $indexOne")

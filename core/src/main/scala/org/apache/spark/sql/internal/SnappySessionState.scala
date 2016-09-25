@@ -21,11 +21,13 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.execution.python.ExtractPythonUDFFromAggregate
+import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
@@ -51,12 +53,33 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          ResolveIndex(snappySession) ::
+          ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
     override val extendedCheckRules = Seq(
       datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
+
+  override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
+    override def batches: Seq[Batch] = {
+      var insertedSnappyOpts = 0
+      val modified = super.batches.map {
+        case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
+          insertedSnappyOpts += 1
+          Batch(batch.name, batch.strategy, batch.rules ++ Seq(
+              ResolveIndex(snappySession)
+          ): _*)
+        case b => b
+      }
+
+      if (insertedSnappyOpts != 1) {
+        throw new AnalysisException("Snappy Optimizations not applied")
+      }
+
+      modified
+    }
+  }
+
 
   /**
     * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.

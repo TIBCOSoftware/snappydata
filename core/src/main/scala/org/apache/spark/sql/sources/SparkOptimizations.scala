@@ -18,6 +18,7 @@
 package org.apache.spark.sql.sources
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -33,10 +34,66 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 
-/** This rule changing table to index relations cannot be done in optimize phase
-  * without intrusive changes to the optimizedPlan. Also, didn't wanted to bypass
-  * checkAnalysis phase after we replace table with index effecting all TreeNode.resolved
-  * references.
+
+/**
+  * Replace table with index hint
+  */
+case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan]
+{
+  lazy val catalog = snappySession.sessionState.catalog
+
+  lazy val analyzer = snappySession.sessionState.analyzer
+
+  override def apply(plan: LogicalPlan): LogicalPlan = {
+
+    val explicitIndexHint = getIndexHints
+
+    if (explicitIndexHint.isEmpty) {
+      return plan
+    }
+
+    plan transformUp {
+        case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
+          explicitIndexHint.get(colRelation.table).getOrElse(table)
+        case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
+          explicitIndexHint.get(alias) match {
+            case Some(index) => SubqueryAlias(alias, index)
+            case _ => subQuery
+          }
+    } transformUp {
+      case q: LogicalPlan =>
+        q transformExpressionsUp {
+          case a: AttributeReference =>
+            q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+              analyzer.resolver).getOrElse(a)
+        }
+    }
+
+  }
+
+  private def getIndexHints = {
+    val indexHint = QueryHint.Index.toString
+    snappySession.queryHints.collect {
+      case (hint, value) if hint.startsWith(indexHint) =>
+        val tableOrAlias = hint.substring(indexHint.length)
+        val key = catalog.lookupRelationOption(
+          catalog.newQualifiedTableName(tableOrAlias)) match {
+          case Some(relation@LogicalRelation(cf: BaseColumnFormatRelation, _, _)) =>
+            cf.table
+          case _ => tableOrAlias
+        }
+
+        val index = catalog.lookupRelation(
+          snappySession.getIndexTable(catalog.newQualifiedTableName(value)))
+
+        (key, index)
+    }
+  }
+
+}
+
+/**
+  * Replace table with index if colocation criteria is satisfied.
   */
 case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
     with PredicateHelper {
@@ -47,14 +104,6 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
   override def apply(plan: LogicalPlan): LogicalPlan = replaceWithIndex(plan, { optimizedPlan =>
 
-    /** Having decided to change the table with index during analysis phase,
-      * we are faced with issues like 'select * from a, b where a.c1 = b.c1'
-      * will have join condition in the Filter. It is the optimizer which does
-      * many such intelligent Predicate push down etc. So, we walkthrough an
-      * optimized plan here to determine whether its possible and beneficial
-      * to replace table with index but we apply the transformation on the
-      * ongoing analysis plan.
-      */
     optimizedPlan.flatMap {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, extraConditions, left, right) =>
         (left, right) match {
@@ -130,8 +179,9 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
           matchedIndexes = indexes.collect {
             case idx@LogicalRelation(ir: IndexColumnFormatRelation, _, _)
-              if ir.partitionColumns.length <= filterCols.length =>
-              // TODO: match column names
+              if ir.partitionColumns.length <= filterCols.length &
+                  ir.partitionColumns.forall(p => filterCols.exists(f =>
+                    f.name.equalsIgnoreCase(p))) =>
               (ir.partitionColumns.length, idx.asInstanceOf[LogicalPlan])
           } if matchedIndexes.nonEmpty
 
@@ -153,23 +203,16 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
   private def replaceWithIndex(plan: LogicalPlan,
       findReplacementCandidates: (LogicalPlan => Seq[(LogicalPlan, LogicalPlan)])) = {
 
-    val explicitIndexHint = getIndexHints
+    val replacementMap = {
 
-    val replacementMap = if (explicitIndexHint.nonEmpty) {
-      plan flatMap {
-        case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
-          explicitIndexHint.get(colRelation.table) match {
-            case Some(index) => Seq((table, index))
-            case _ => Nil
-          }
-        case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
-          explicitIndexHint.get(alias) match {
-            case Some(index) => Seq((subQuery, SubqueryAlias(alias, index)))
-            case _ => Nil
-          }
-        case _ => Nil
+      if (snappySession.queryHints.exists {
+        case (hint, _) if hint.startsWith(QueryHint.Index.toString) =>
+          true
+        case _ => false
+      }) {
+        Seq.empty
       }
-    } else {
+
       def findR(p: Any) = p match {
         case UnresolvedAttribute(_) |
              UnresolvedFunction(_, _, _) |
@@ -191,51 +234,47 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         // try once all references are resolved.
         Seq.empty
       } else {
-        findReplacementCandidates(snappySession.sessionState.optimizer.execute(plan))
+        findReplacementCandidates(plan)
       }
     }
 
     if (replacementMap.isEmpty) {
       plan
     } else {
+
+      val newAttributesMap = new mutable.HashMap[AttributeReference, AttributeReference]()
+
       // now lets modify the analysis plan with index
       val newPlan = plan transformUp {
-        case q: LogicalPlan =>
+        case q: LogicalRelation =>
           val replacement = replacementMap.collect {
             case (plan, replaceWith) if plan.fastEquals(q)
                 && !plan.fastEquals(replaceWith) => replaceWith
           }.reduceLeftOption((acc, p_) => if (!p_.fastEquals(acc)) p_ else acc)
 
-          replacement.getOrElse(q)
+          replacement.map(newP => {
+            val newAttributes = newP.schema.toAttributes
+            q.output.foreach({
+              case f: AttributeReference =>
+                newAttributesMap(f) = newAttributes.find(_.name.equalsIgnoreCase(f.name)).
+                    getOrElse(throw new IllegalStateException(
+                      s"Field $f not found in ${newAttributes}"))
+            })
+
+            newP
+          }).getOrElse(q)
       }
 
-      newPlan transformUp {
-        case q: LogicalPlan =>
-          q transformExpressionsUp {
-            case a: AttributeReference =>
-              q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
-                analyzer.resolver).getOrElse(a)
-          }
-      }
-    }
-  }
-
-  private def getIndexHints = {
-    val indexHint = QueryHint.Index.toString
-    snappySession.queryHints.collect {
-      case (hint, value) if hint.startsWith(indexHint) =>
-        val tableOrAlias = hint.substring(indexHint.length)
-        val key = catalog.lookupRelationOption(
-          catalog.newQualifiedTableName(tableOrAlias)) match {
-          case Some(relation@LogicalRelation(cf: BaseColumnFormatRelation, _, _)) =>
-            cf.table
-          case _ => tableOrAlias
+      if (newAttributesMap.nonEmpty) {
+        newPlan transformUp {
+          case q: LogicalPlan =>
+            q transformExpressionsUp {
+              case a: AttributeReference => newAttributesMap.getOrElse(a, a)
+            }
         }
-
-        val index = catalog.lookupRelation(
-          snappySession.getIndexTable(catalog.newQualifiedTableName(value)))
-
-        (key, index)
+      } else {
+        newPlan
+      }
     }
   }
 
@@ -293,14 +332,6 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         }
       }
 
-      def unwrapBaseColumnRelation(
-          plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
-        case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
-          relation
-        case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _)) =>
-          relation
-      }
-
       // right now not expecting multiple tables in left & right hand side.
 //      assert(leftRightEntityMapping.size <= 1)
 
@@ -339,6 +370,14 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
       }
     }
 
+  }
+
+  private def unwrapBaseColumnRelation(
+      plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
+    case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
+      relation
+    case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _)) =>
+      relation
   }
 
   private def isColocated(left: BaseColumnFormatRelation, right: BaseColumnFormatRelation) = {
