@@ -144,3 +144,11 @@ trait BatchConsumer extends CodegenSupport {
    */
   def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
 }
+
+/**
+ * An extended version of ExprCode to also hold the variables having dictionary
+ * variable and its index when dictionary encoding is being used.
+ */
+class ExprCodeEx(code: String, isNull: String, value: String,
+    val dictionary: String, val dictionaryIndex: String)
+    extends ExprCode(code, isNull, value)
