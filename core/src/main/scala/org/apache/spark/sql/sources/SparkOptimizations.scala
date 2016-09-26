@@ -38,8 +38,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 /**
   * Replace table with index hint
   */
-case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan]
-{
+case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
   lazy val catalog = snappySession.sessionState.catalog
 
   lazy val analyzer = snappySession.sessionState.analyzer
@@ -53,13 +52,13 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
     }
 
     plan transformUp {
-        case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
-          explicitIndexHint.get(colRelation.table).getOrElse(table)
-        case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
-          explicitIndexHint.get(alias) match {
-            case Some(index) => SubqueryAlias(alias, index)
-            case _ => subQuery
-          }
+      case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
+        explicitIndexHint.get(colRelation.table).getOrElse(table)
+      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
+        explicitIndexHint.get(alias) match {
+          case Some(index) => SubqueryAlias(alias, index)
+          case _ => subQuery
+        }
     } transformUp {
       case q: LogicalPlan =>
         q transformExpressionsUp {
@@ -109,13 +108,10 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         (left, right) match {
           case HasColocatedEntities(colocatedEntities, leftReplacements, rightReplacements) =>
 
-            val joinKeys = leftKeys.zip(rightKeys).flatMap { case (leftExp, rightExp) =>
-              val l = leftExp.collectFirst({ case a: AttributeReference => a })
-              val r = rightExp.collectFirst({ case a: AttributeReference => a })
-              (l, r) match {
-                case (Some(x), Some(y)) => Seq((x, y))
-                case _ => Seq.empty[(AttributeReference, AttributeReference)]
-              }
+            val joinKeys = leftKeys.zip(rightKeys).flatMap {
+              case (leftExp: AttributeReference, rightExp: AttributeReference) =>
+                Seq((leftExp, rightExp))
+              case _ => Seq.empty[(AttributeReference, AttributeReference)]
             }
 
             def hasJoinKeys(leftPCol: String, rightPCol: String): Boolean = {
@@ -223,11 +219,11 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
         case _ => false
       }
 
-      val hasUnresolvedReferences = plan.find {l =>
+      val hasUnresolvedReferences = plan.find { l =>
         l.productIterator.exists(findR) || l.expressions.exists({ e =>
-              findR(e) || e.productIterator.exists(findR) ||
-                  e.references.exists(findR)
-          })
+          findR(e) || e.productIterator.exists(findR) ||
+              e.references.exists(findR)
+        })
       }.nonEmpty
 
       if (hasUnresolvedReferences) {
@@ -333,7 +329,7 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
       }
 
       // right now not expecting multiple tables in left & right hand side.
-//      assert(leftRightEntityMapping.size <= 1)
+      //      assert(leftRightEntityMapping.size <= 1)
 
       val mappings = leftRightEntityMapping.flatMap { mappedElements =>
         val (leftTable, rightTable) = mappedElements(0) // first pairing is always (table, table)
