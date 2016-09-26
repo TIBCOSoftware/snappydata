@@ -518,8 +518,12 @@ case class SnappyHashAggregateExec(
     // create grouping key
     ctx.currentVars = input
     ctx.INPUT_ROW = null
-    val keyVars = ctx.generateExpressions(groupingExpressions.map(
+    var keyVars = ctx.generateExpressions(groupingExpressions.map(
       e => BindReferences.bindReference[Expression](e, child.output)))
+    // convert to ExprCodeEx if found
+    keyVars = keyVars.map(ev => input.find(e => e.isInstanceOf[ExprCodeEx] &&
+        e.value == ev.value && e.isNull == ev.isNull)
+        .map(_.copy(code = ev.code)).getOrElse(ev))
 
     // only have DeclarativeAggregate
     val updateExpr = aggregateExpressions.flatMap { e =>

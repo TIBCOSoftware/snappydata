@@ -19,6 +19,8 @@ package org.apache.spark.sql.execution
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 
 /**
  * Provides helper methods for generated code to use ObjectHashSet with a
@@ -80,19 +82,11 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
    */
   private[this] val NULL_NON_PRIM = -2
 
-  private[this] val (className, classVars, numNullVars, singleColumn) =
+  private[this] val (className, classVars, numNullVars) =
     initClass()
 
   private[this] def initClass(): (String, IndexedSeq[(DataType, String,
-      ExprCode, Int)], Int, Boolean) = {
-    // for single column hash table, if the field is a string then avoid
-    // the wrapper class creation and use the string itself as key
-    if (schema.length == 1 && !schema.head.nullable &&
-        schema.head.dataType == StringType) {
-      val javaType = "UTF8String"
-      return (javaType, IndexedSeq((StringType, javaType, ExprCode(
-        "", "false", ""), -1)), 0, true)
-    }
+      ExprCode, Int)], Int) = {
 
     // check for existing class with same schema
     val types = schema.map(f => f.dataType -> f.nullable)
@@ -116,7 +110,11 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
       val f = schema(index)
       val varName = s"field$index"
       val dataType = f.dataType
-      val javaType = ctx.javaType(dataType)
+      val javaType = dataType match {
+        // use raw byte arrays for strings to minimize overhead
+        case StringType => "byte[]"
+        case _ => ctx.javaType(dataType)
+      }
       val (nullVar, nullIndex, isPrimitive) = if (f.nullable) {
         if (isPrimitiveType(dataType)) {
           numNulls += 1
@@ -134,8 +132,8 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
 
       // generate equals code for key columns only
       if (!exists && index < valueIndex) {
-        equalsCode.append(genEqualsCode(varName, nullVar, other, varName,
-          nullVar, nullIndex, isPrimitive)).append("\n&& ")
+        equalsCode.append(genEqualsCode("this", varName, nullVar, other,
+          varName, nullVar, nullIndex, isPrimitive, dataType)).append("\n&& ")
       }
       (dataType, javaType, ExprCode("", nullVar, varName), nullIndex)
     }
@@ -170,7 +168,7 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
       session.addClass(types, newClassName)
     }
 
-    (newClassName, newClassVars, numNulls + 1, false)
+    (newClassName, newClassVars, numNulls + 1)
   }
 
   /** get the generated class name */
@@ -202,8 +200,9 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
           hashSingleInt(s"$colVar.fastHashCode()", nullVar, hashVar)
         // single column types that use murmur hash already,
         // so no need to further apply mixing on top of it
-        case StringType | _: ArrayType | _: StructType =>
-          hashCodeSingleInt(s"$colVar.hashCode()", nullVar, hashVar)
+        case _: StringType | _: ArrayType | _: StructType =>
+          s"final int $hashVar = " +
+              s"${hashCodeSingleInt(s"$colVar.hashCode()", nullVar)};\n"
         case _ =>
           hashSingleInt(s"$colVar.hashCode()", nullVar, hashVar)
       }
@@ -237,8 +236,8 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
   def generateEquals(keyVars: Seq[ExprCode],
       objVar: String): String = classVars.zip(keyVars).map {
     case ((dataType, _, ExprCode(_, nullVar, varName), nullIndex), colVar) =>
-      genEqualsCode(colVar.value, colVar.isNull, objVar, varName,
-        nullVar, nullIndex, isPrimitiveType(dataType))
+      genEqualsCode("", colVar.value, colVar.isNull, objVar, varName,
+        nullVar, nullIndex, isPrimitiveType(dataType), dataType)
   }.mkString("\n&& ")
 
   /**
@@ -264,11 +263,17 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
     val columnVars = vars.map { case (dataType, javaType, ev, nullIndex) =>
       val (localVar, localDeclaration) = {
         if (ev.value.isEmpty) {
-          // single column string case
+          // single column no-wrapper case
           (objVar, "")
-        } else {
-          val lv = ctx.freshName("localField")
-          (lv, s"final $javaType $lv = $objVar.${ev.value};")
+        } else dataType match {
+          case StringType =>
+            // wrap the bytes in UTF8String
+            val lv = ctx.freshName("localField")
+            (lv, s"final UTF8String $lv = UTF8String.fromBytes(" +
+                s"$objVar.${ev.value});")
+          case _ =>
+            val lv = ctx.freshName("localField")
+            (lv, s"final $javaType $lv = $objVar.${ev.value};")
         }
       }
       ExprCode(localDeclaration, nullLocalVars.get(ev.isNull).map(
@@ -309,7 +314,7 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
               delta++;
             }
           } else {
-            ${if (singleColumn) "" else s"$objVar = new $className($hashVar);"}
+            $objVar = new $className($hashVar);
             // initialize the value fields to defaults
             $valueInitCode
             $valueInit
@@ -406,7 +411,7 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
 
   private def genVarAssignCode(objVar: String, resultVar: ExprCode,
       varName: String, dataType: DataType, doCopy: Boolean): String = {
-    // check for single column string case
+    // check for single column no-wrapper case
     val colVar = if (varName.isEmpty) objVar
     else s"$objVar.$varName"
     genVarAssignCode(colVar, resultVar, dataType, doCopy)
@@ -414,10 +419,23 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
 
   private def genVarAssignCode(colVar: String, resultVar: ExprCode,
       dataType: DataType, doCopy: Boolean): String = dataType match {
-    // if doCopy is true, then create a copy of some non-primitives that are
-    // just hold reference to UnsafeRow bytes (and can change under the hood)
+    // if doCopy is true, then create a copy of some non-primitives that just
+    // hold a reference to UnsafeRow bytes (and can change under the hood)
     case StringType if doCopy =>
-      s"$colVar = UTF8String.fromBytes(${resultVar.value}.getBytes());"
+      s"$colVar = ${resultVar.value}.getBytes();"
+    case StringType =>
+      // try to copy just reference of the byte[] if possible
+      val stringVar = resultVar.value
+      val bytes = ctx.freshName("stringBytes")
+      val obj = bytes + "Obj"
+      s"""Object $obj; byte[] $bytes;
+        if ($stringVar.getBaseOffset() == ${Platform.BYTE_ARRAY_OFFSET}
+            && ($obj = $stringVar.getBaseObject()) instanceof byte[]
+            && ($bytes = (byte[])$obj).length == $stringVar.numBytes()) {
+          $colVar = $bytes;
+        } else {
+          $colVar = $stringVar.getBytes();
+        }"""
     case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"
     case _ =>
@@ -456,13 +474,9 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
     }
   }
 
-  private def hashCodeSingleInt(hashExpr: String, nullVar: String,
-      hashVar: String): String = {
-    if (nullVar.isEmpty || nullVar == "false") {
-      s"final int $hashVar = $hashExpr;\n"
-    } else {
-      s"final int $hashVar = ($nullVar) ? -1 : $hashExpr;\n"
-    }
+  private def hashCodeSingleInt(hashExpr: String, nullVar: String): String = {
+    if (nullVar.isEmpty || nullVar == "false") hashExpr
+    else s"($nullVar) ? -1 : $hashExpr"
   }
 
   private def hashSingleLong(colVar: String, nullVar: String,
@@ -518,26 +532,43 @@ final class ObjectHashMapAccessor(session: SnappySession, ctx: CodegenContext,
     }
   }
 
-  private def genEqualsCode(thisColVar: String, thisNullVar: String,
+  private def genEqualsCode(
+      thisVar: String, thisColVar: String, thisNullVar: String,
       otherVar: String, otherColVar: String, otherNullVar: String,
-      nullIndex: Int, isPrimitive: Boolean): String = {
-    // check for single column string case
-    val otherColRef = if (otherColVar.isEmpty) otherVar
+      nullIndex: Int, isPrimitive: Boolean, dataType: DataType): String = {
+    // check for single column no-wrapper case
+    val otherCol = if (otherColVar.isEmpty) otherVar
     else s"$otherVar.$otherColVar"
-    if (nullIndex == -1) {
-      if (isPrimitive) s"($thisColVar == $otherColRef)"
-      else s"$thisColVar.equals($otherColRef)"
-    } else if (nullIndex == NULL_NON_PRIM) {
-      s"""($thisColVar != null ? $thisColVar.equals($otherColRef)
-           : ($otherColRef) == null)
-      """
+    val equalsCode = if (isPrimitive) s"($thisColVar == $otherCol)"
+    else dataType match {
+      // strings are stored as raw byte arrays
+      case StringType =>
+        val byteMethodsClass = classOf[ByteArrayMethods].getName
+        val offset = Platform.BYTE_ARRAY_OFFSET
+        if (thisVar.isEmpty) {
+          // left side is a UTF8String while right side is byte array
+          s"""$thisColVar.numBytes() == $otherCol.length
+            && $byteMethodsClass.arrayEquals($thisColVar.getBaseObject(),
+                $thisColVar.getBaseOffset(), $otherCol, $offset,
+                $otherCol.length)"""
+        } else {
+          // both sides are raw byte arrays
+          s"""$thisColVar.length == $otherCol.length
+            && $byteMethodsClass.arrayEquals($thisColVar, $offset,
+                $otherCol, $offset, $otherCol.length)"""
+        }
+      case _ => s"$thisColVar.equals($otherCol)"
+    }
+    if (nullIndex == -1) equalsCode
+    else if (nullIndex == NULL_NON_PRIM) {
+      s"""($thisColVar != null ? ($otherCol != null && $equalsCode)
+           : ($otherCol) == null)"""
     } else {
       val notNullCode = genNotNullCode(thisNullVar, nullIndex)
-      val otherNotNullCode = genNotNullCode(s"$otherColRef",
+      val otherNotNullCode = genNotNullCode(s"$otherCol",
         nullIndex)
-      s"""($notNullCode ? ($otherNotNullCode ? ($thisColVar ==
-           $otherColRef) : false) : !$otherNotNullCode)
-      """
+      s"""($notNullCode ? ($otherNotNullCode && $equalsCode)
+           : !$otherNotNullCode)"""
     }
   }
 }

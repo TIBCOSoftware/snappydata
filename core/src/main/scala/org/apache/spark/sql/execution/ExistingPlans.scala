@@ -150,5 +150,11 @@ trait BatchConsumer extends CodegenSupport {
  * variable and its index when dictionary encoding is being used.
  */
 class ExprCodeEx(code: String, isNull: String, value: String,
-    val dictionary: String, val dictionaryIndex: String)
-    extends ExprCode(code, isNull, value)
+    val dictionaryCode: String, val dictionary: String,
+    val dictionaryIndex: String) extends ExprCode(code, isNull, value) {
+
+  override def copy(code: String = code, isNull: String = isNull,
+      value: String = value): ExprCodeEx =
+    new ExprCodeEx(code, isNull, value, dictionaryCode,
+      dictionary, dictionaryIndex)
+}
