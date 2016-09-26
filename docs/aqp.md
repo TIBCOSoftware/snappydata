@@ -13,7 +13,7 @@ For example, for research-based companies (like Gallup), for political polls res
 The following diagram provides a general framework of the Synopsis Data Engine:
 
 A small random sample of the rows of the original database table is prepared. Queries are directed against this small sample table, and then approximate results are generated based on the query and error estimation.
-![Example](./Images/sde_architecture.png)
+![SDE_Architecture](./Images/sde_architecture.png)
 
 Thus, there are two components in the architecture, a component for building the synopses from database relations, and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
 
@@ -32,7 +32,14 @@ The two techniques that the SnappyData AQP module uses to accomplish this are, *
 Reservoir Sampling is an algorithm for sampling elements from a stream of data, where a random sample of elements are returned, which are evenly distributed from the original stream.
 
 ####Stratified Sampling ####
-This refers to a type of sampling method where the data is divided into separate groups, called strata. A simple random sample is then drawn from each group. 
+This refers to a type of sampling method where the data is divided into separate groups, called strata. A simple random sample is then drawn from each group. The goal of this sampling method is to guarantee that all groups in the population are adequately represented.
+
+Stratified sampling is a method used when there are different sub-groups in a population. In this method the population is divided into several groups (strata), and subjects are then proportionately  selected from each strata.The members in each of the stratum formed have similar attributes and characteristics. In this method it is critical that random samples are taken from each of the strata created, to increase precision of results. 
+
+For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
+This is illustrated in the following image.
+![Stratified Sampling](./Images/aqp_sampling.png)
+
 
 ###Key Concepts###
 **Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These data base synopses are used when queries are issued to the system, and approximate results are returned.
@@ -56,10 +63,36 @@ CREATE SAMPLE TABLE NYCTAXI_pickup_sample ON NYCTAXI  OPTIONS ( qcs 'hour(pickup
 
 Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. In this case, the results increase as fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
 
-One can create multiple sample tables using different sample QCS and sample fraction for a given base table. Sample selection logic selects most appropriate table based on the following logic:
+One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
+The following examples demonstrate samples with different columns in QCS along with the queries that use those QCS columns. 
+
+**Example 1:** Average trip distance of a taxi
+
+```
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+Query
+select medallion,avg(trip_distance) as avgTripDist,absolute_error(avgTripDist),relative_error(avgTripDist),lower_bound(avgTripDist),upper_bound(avgTripDist) from nyctaxi 
+group by medallion order by medallion desc limit 100
+```
+
+**Example 2:**
+```
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI  OPTIONS (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+Query
+Select  avg(trip_distance) as tripDist , absolute_error(tripDist),relative_error(tripDist),lower_bound(tripDist),upper_bound(tripDist) from nyctaxi  
+group by hack_license order by tripDist desc with error
+```
+**Example 3:** When are drivers most busy? By hour of day, day and month
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Query
+select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
+```
 
 ###Sample Selection:###
+Sample selection logic selects most appropriate table based on the following logic:
+
 * If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected.
 * If exact match is not available, then, if the QCS of the sample is a superset of query QCS, that sample is used.
 * If superset of sample QCS is not available, a sample where the sample QCS is subset of query, QCS is used
@@ -129,15 +162,35 @@ snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).with
 ###High-level Accuracy Contracts (HAC)###
 SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
 
-When an error requirement is not met, the action to be taken is defined in the behavior clause. Approximate queries have HAC support using the following behavior clause. 
+When an error requirement is not met, the action to be taken is defined in the behavior clause. 
 
-**Behaviour Clause** | **Description**
--|-
-`<do_nothing>`|The SDE engine returns the estimate as is. 
-`<local_omit>`|For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
-`<strict>`|If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-`<run_on_full_table>`|If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
-`<partial_run_on_base_table>`|If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
+####Behaviour Clause####
+Approximate queries have HAC support using the following behavior clause. 
+
+##### `<do_nothing>`#####
+The SDE engine returns the estimate as is. 
+![DO NOTHING](./Images/aqp_donothing.png)
+<br>
+
+##### `<local_omit>`#####
+For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
+![LOCAL OMIT](./Images/aqp_localomit.png)
+<br>
+
+##### `<strict>`#####
+If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
+![Strict](./Images/aqp_strict.png)
+<br>
+
+##### `<run_on_full_table>`#####
+If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
+![RUN OF FULL TABLE](./Images/aqp_runonfulltable.png)
+<br>
+
+##### `<partial_run_on_base_table>`#####
+If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
+![PARTIAL RUN ON BASE TABLE](./Images/aqp_partialrunonbasetable.png)
+<br>
 
 In the following example, any one of the above behavior clause can be applied. 
 
