@@ -49,7 +49,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{BatchConsumer, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
@@ -70,7 +70,8 @@ private[sql] final case class ColumnTableScan(
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
     extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation])
+        with CodegenSupport {
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
@@ -204,6 +205,7 @@ private[sql] final case class ColumnTableScan(
       """
     }
 
+    val batchConsumer = getBatchConsumer(parent)
     val columnsInput = output.zipWithIndex.map { case (a, index) =>
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
@@ -321,10 +323,8 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin)
 
-    val batchConsume = parent match {
-      case b: BatchConsumer => b.batchConsume(ctx, columnsInput)
-      case _ => ""
-    }
+    val batchConsume = batchConsumer.map(_.batchConsume(ctx,
+      columnsInput)).mkString("")
 
     s"""
        |// Combined iterator for cached batches from column table
@@ -368,6 +368,17 @@ private[sql] final case class ColumnTableScan(
     """.stripMargin
   }
 
+  private def getBatchConsumer(
+      parent: CodegenSupport): Option[BatchConsumer] = parent match {
+    case null => None
+    case b: BatchConsumer => Some(b)
+    case _ =>
+      // using reflection here since protected parent cannot be accessed
+      val m = parent.getClass.getDeclaredMethod("parent")
+      m.setAccessible(true)
+      getBatchConsumer(m.invoke(parent).asInstanceOf[CodegenSupport])
+  }
+
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, batchOrdinal: String,
       dataType: DataType, notNullVar: String): String = {
@@ -404,6 +415,7 @@ private[sql] final case class ColumnTableScan(
       notNullVar: String): (ExprCode, String) = {
     val col = ctx.freshName("col")
     var bufferInit: String = ""
+    var dictionaryCode: String = ""
     var dictionary: String = ""
     var dictionaryIndex: String = ""
     val sqlType = Utils.getSQLDataType(dataType)
@@ -423,8 +435,10 @@ private[sql] final case class ColumnTableScan(
             final UTF8String[] $dictionary = $decoder.getStringDictionary();
             int $dictionaryIndex = -1;
           """
+        dictionaryCode =
+            s"$dictionaryIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);"
         s"""
-          $dictionaryIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);
+          $dictionaryCode
           $col = $dictionary != null ? $dictionary[$dictionaryIndex]
             : $decoder.readUTF8String($buffer, $cursorVar);"""
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
@@ -472,14 +486,14 @@ private[sql] final case class ColumnTableScan(
       if (dictionary.isEmpty) {
         (ExprCode(code, nullVar, col), bufferInit)
       } else {
-        (new ExprCodeEx(code, nullVar, col, dictionary, dictionaryIndex),
-            bufferInit)
+        (new ExprCodeEx(code, nullVar, col, dictionaryCode, dictionary,
+          dictionaryIndex), bufferInit)
       }
     } else if (dictionary.isEmpty) {
       (ExprCode(s"final $jt $col;\n$colAssign\n", "false", col), bufferInit)
     } else {
       (new ExprCodeEx(s"final $jt $col;\n$colAssign\n", "false", col,
-        dictionary, dictionaryIndex), bufferInit)
+        dictionaryCode, dictionary, dictionaryIndex), bufferInit)
     }
   }
 }
