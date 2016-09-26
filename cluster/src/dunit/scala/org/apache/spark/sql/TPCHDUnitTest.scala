@@ -23,49 +23,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
     validateResult(snc, true)
   }
 
-  def testSnappy1(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-  def testSnappy2(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-  def testSnappy3(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-  def testSnappy4(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-  def testSnappy5(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-  def testSnappy6(): Unit = {
-    val snc = SnappyContext(sc)
-    createAndLoadTables(snc, true)
-    queryExecution(snc, true)
-    validateResult(snc, true)
-  }
-
-
   def _testSpark(): Unit = {
     val snc = SnappyContext(sc)
     createAndLoadTables(snc, false)
