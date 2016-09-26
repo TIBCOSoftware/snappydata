@@ -51,6 +51,69 @@ public class SnappyPrms extends BasePrms {
     public static Long persistenceMode;
 
     /**
+     * Parameter used to get the user specified PARTITION_BY option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for PARTITION_BY option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
+     */
+    public static Long partitionBy;
+
+    /**
+     * Parameter used to get the user specified BUCKETS option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for BUCKETS option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as "113 " in this case.
+     */
+    public static Long numPartitions;
+
+    /**
+     * Parameter used to get the user specified colocation option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for COLOCATE_WITH option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as "none" in this case.
+     */
+    public static Long colocateWith;
+
+    /**
+     * Parameter used to get the user specified REDUNDANCY option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for REDUNDANCY option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
+     */
+    public static Long redundancy;
+
+    /**
+     * Parameter used to get the user specified RECOVER_DELAY option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for RECOVER_DELAY option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
+     */
+    public static Long recoverDelay;
+
+    /**
+     * Parameter used to get the user specified MAX_PART_SIZE option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for MAX_PART_SIZE option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
+     */
+    public static Long maxPartitionSize;
+
+    /**
+     * Parameter used to get the user specified EVICTION_BY option List for the sql scripts.
+     * (VectorsetValues of Strings) A list of values for EVICTION_BY option to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
+     */
+    public static Long evictionBy;
+
+    /**
      * Parameter used to get the user specified snappy job class names.
      * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
@@ -119,6 +182,16 @@ public class SnappyPrms extends BasePrms {
      * (boolean) - whether to enable time statistics. snappy hydra already sets the enable-time-statistics to true.
      */
     public static Long enableTimeStatistics;
+
+    /**
+     * (boolean) - whether to enable closedForm Estimates. snappy hydra already sets the spark.sql.aqp.closedFormEstimates to true.
+     */
+    public static Long closedFormEstimates;
+
+    /**
+     * (boolean) - whether to enable zeppelin Interpreter. snappy hydra already sets the zeppelin.interpreter.enable to false.
+     */
+    public static Long zeppelinInterpreter;
 
     /**
      * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
@@ -218,6 +291,11 @@ public class SnappyPrms extends BasePrms {
     public static Long conserveSockets;
 
     /**
+     * (int) number of BootStrap trials to be used in test
+     */
+    public static Long numBootStrapTrials;
+
+    /**
      * (int) number of shuffle partitions to be used in test
      */
     public static Long shufflePartitions;
@@ -298,6 +376,23 @@ public class SnappyPrms extends BasePrms {
         return timeStatistics;
     }
 
+    public static String getClosedFormEstimates() {
+        boolean enableClosedFormEstimates = tasktab().booleanAt(closedFormEstimates, tab().booleanAt(closedFormEstimates, true));
+        String closedFormEstimates = " -spark.sql.aqp.closedFormEstimates=" + enableClosedFormEstimates;
+        return closedFormEstimates;
+    }
+
+    public static String getZeppelinInterpreter() {
+        boolean enableZeppelinInterpreter = tasktab().booleanAt(zeppelinInterpreter, tab().booleanAt(zeppelinInterpreter, false));
+        String zeppelinInterpreter = " -zeppelin.interpreter.enable=" + enableZeppelinInterpreter;
+        return zeppelinInterpreter;
+    }
+
+    public static int getNumBootStrapTrials() {
+        Long key = numBootStrapTrials;
+        return tasktab().intAt(key, tab().intAt(key, 100));
+    }
+
     public static String getLogLevel() {
         String snappyLogLevel = " -log-level=" + tab().stringAt(logLevel, "config");
         return snappyLogLevel;
@@ -325,6 +420,41 @@ public class SnappyPrms extends BasePrms {
 
     public static Vector getPersistenceModeList() {
         Long key = persistenceMode;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getColocateWithOptionList() {
+        Long key = colocateWith;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getPartitionByOptionList() {
+        Long key = partitionBy;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getNumPartitionsList() {
+        Long key = numPartitions;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getRedundancyOptionList() {
+        Long key = redundancy;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getRecoverDelayOptionList() {
+        Long key = recoverDelay;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getMaxPartitionSizeList() {
+        Long key = maxPartitionSize;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getEvictionByOptionList() {
+        Long key = evictionBy;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
     }
 

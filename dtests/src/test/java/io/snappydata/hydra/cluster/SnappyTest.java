@@ -164,7 +164,7 @@ public class SnappyTest implements Serializable {
 
     protected static String getUserAppJarLocation(final String jarName, String jarPath) {
         String userAppJarPath = null;
-       // String jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep;
+        // String jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep;
         File baseDir = new File(jarPath);
         try {
             IOFileFilter filter = new WildcardFileFilter(jarName);
@@ -290,8 +290,13 @@ public class SnappyTest implements Serializable {
                 break;
             case LEAD:
                 locatorsList = getLocatorsList("locators");
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
-                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyleader.gfs" + SnappyPrms.getLogLevel();
+                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() +
+                        " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port +
+                        " -J-Xmx" + SnappyPrms.getLeadMemory() + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() +
+                        " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
+                        " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
+                        " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyleader.gfs" + SnappyPrms.getLogLevel() +
+                        " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter();
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1184,7 +1189,9 @@ public class SnappyTest implements Serializable {
      * Executes user SQL scripts.
      */
     public static void HydraTask_executeSQLScripts() {
-        Vector scriptNames, dataLocationList = null, persistenceModeList = null;
+        Vector scriptNames, dataLocationList = null, persistenceModeList = null, colocateWithOptionList = null,
+                partitionByOptionList = null, numPartitionsList = null, redundancyOptionList = null,
+                recoverDelayOptionList = null, maxPartitionSizeList = null, evictionByOptionList = null;
         File log = null, logFile = null;
         scriptNames = SnappyPrms.getSQLScriptNames();
         if (scriptNames == null) {
@@ -1194,6 +1201,13 @@ public class SnappyTest implements Serializable {
         try {
             dataLocationList = SnappyPrms.getDataLocationList();
             persistenceModeList = SnappyPrms.getPersistenceModeList();
+            colocateWithOptionList = SnappyPrms.getColocateWithOptionList();
+            partitionByOptionList = SnappyPrms.getPartitionByOptionList();
+            numPartitionsList = SnappyPrms.getNumPartitionsList();
+            redundancyOptionList = SnappyPrms.getRedundancyOptionList();
+            recoverDelayOptionList = SnappyPrms.getRecoverDelayOptionList();
+            maxPartitionSizeList = SnappyPrms.getMaxPartitionSizeList();
+            evictionByOptionList = SnappyPrms.getEvictionByOptionList();
             if (dataLocationList.size() != scriptNames.size()) {
                 Log.getLogWriter().info("Adding \" \" parameter in the dataLocationList for the scripts for which no dataLocation is specified.");
                 while (dataLocationList.size() != scriptNames.size())
@@ -1204,10 +1218,52 @@ public class SnappyTest implements Serializable {
                 while (persistenceModeList.size() != scriptNames.size())
                     persistenceModeList.add("async");
             }
+            if (colocateWithOptionList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \"none\" parameter in the colocateWithOptionList for the scripts for which no COLOCATE_WITH Option is specified.");
+                while (colocateWithOptionList.size() != scriptNames.size())
+                    colocateWithOptionList.add("none");
+            }
+            if (partitionByOptionList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the partitionByOptionList for the scripts for which no PARTITION_BY option is specified.");
+                while (partitionByOptionList.size() != scriptNames.size())
+                    partitionByOptionList.add(" ");
+            }
+            if (numPartitionsList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \"113\" parameter in the partitionByOptionsList for the scripts for which no BUCKETS option is specified.");
+                while (numPartitionsList.size() != scriptNames.size())
+                    numPartitionsList.add("113");
+            }
+            if (redundancyOptionList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the redundancyOptionList for the scripts for which no REDUNDANCY option is specified.");
+                while (redundancyOptionList.size() != scriptNames.size())
+                    redundancyOptionList.add(" ");
+            }
+            if (recoverDelayOptionList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the recoverDelayOptionList for the scripts for which no RECOVER_DELAY option is specified.");
+                while (recoverDelayOptionList.size() != scriptNames.size())
+                    recoverDelayOptionList.add(" ");
+            }
+            if (maxPartitionSizeList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the maxPartitionSizeList for the scripts for which no MAX_PART_SIZE option is specified.");
+                while (maxPartitionSizeList.size() != scriptNames.size())
+                    maxPartitionSizeList.add(" ");
+            }
+            if (evictionByOptionList.size() != scriptNames.size()) {
+                Log.getLogWriter().info("Adding \" \" parameter in the evictionByOptionList for the scripts for which no EVICTION_BY option is specified.");
+                while (evictionByOptionList.size() != scriptNames.size())
+                    evictionByOptionList.add(" ");
+            }
             for (int i = 0; i < scriptNames.size(); i++) {
                 String userScript = (String) scriptNames.elementAt(i);
                 String location = (String) dataLocationList.elementAt(i);
                 String persistenceMode = (String) persistenceModeList.elementAt(i);
+                String colocateWith = (String) colocateWithOptionList.elementAt(i);
+                String partitionBy = (String) partitionByOptionList.elementAt(i);
+                String numPartitions = (String) numPartitionsList.elementAt(i);
+                String redundancy = (String) redundancyOptionList.elementAt(i);
+                String recoverDelay = (String) recoverDelayOptionList.elementAt(i);
+                String maxPartitionSize = (String) maxPartitionSizeList.elementAt(i);
+                String evictionBy = (String) evictionByOptionList.elementAt(i);
                 String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
@@ -1221,7 +1277,12 @@ public class SnappyTest implements Serializable {
                 String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
                 String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
                 //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:dataLocation=" + dataLocation, "-param:persistenceMode=" + persistenceMode, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:dataLocation=" + dataLocation,
+                        "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" + colocateWith,
+                        "-param:partitionBy=" + partitionBy, "-param:numPartitions=" + numPartitions,
+                        "-param:redundancy=" + redundancy, "-param:recoverDelay=" + recoverDelay,
+                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionBy=" + evictionBy,
+                        "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
