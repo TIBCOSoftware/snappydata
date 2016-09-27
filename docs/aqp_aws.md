@@ -36,16 +36,16 @@ This section discusses the steps required for setting up and deploying SnappyDat
 
 <a id="DeployingClusterCloudFormation"></a>
 ##Deploying the Cluster with AWS CloudFormation##
+Watch the following  video to learn how easy it is to use SnappyData Cloudbuilder, which generates an AWS cluster of SnappyData iSight.
+
+[![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
+
+
 ###Prerequisites###
 Before you begin, do the following:
 
 * Ensure you have an existing AWS account with required permissions to launch EC2 resources.
 *  Create an EC2 key pair in the region where you want to launch the SnappyData cluster. 
-
-Watch the following  video to learn how easy it is to use SnappyData Cloudbuilder, which generates an AWS cluster of SnappyData iSight.
-
-[![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
-
 
 SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 

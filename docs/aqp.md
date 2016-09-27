@@ -47,11 +47,29 @@ This is illustrated in the following image.
 
 **Strata**:  A specific procedure for biased sampling, where the database is partitioned into different strata, and each stratum is uniformly sampled at different sampling rates.
 
+<!--
+###Create Sample Tables###
+You can create sample tables using SnappyData datasets or datasets located at an external location . Depending on this, it is determined how the data is loaded, controlled, and managed.
+When a sample table is created for a large external dataset, the dataset is accessed directly from the remote location and is not loaded to the memory. 
+
+In this example, a sample table is created:
+```
+CREATE SAMPLE TABLE NYCTAXI_pickup_isight ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
+CREATE SAMPLE TABLE TAXIFARE_hack_license_isight on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+```
+
+In this example, an external table is created:
+```
+CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://`<AWS_Secret_Access_Key>`<AWS_Access_Key_ID>`/nytaxitripdata_cleaned');
+CREATE EXTERNAL TABLE TAXIFARE USING parquet OPTIONS(path 's3a://AKIAILCUBCGH3HORYNMQ:xBus2ZZHsWaY+ZisLF6UWIGjXLRzGL31kRvQEOeG@zeppelindemo/nyctaxifaredata_cleaned');
+```
+
+-->
 
 ###QCS (Query Column Set) and Sample selection###
 We term the columns used for grouping and filtering in a query (used in GROUP BY/WHERE/HAVING clauses) as the query column set or query QCS. Columns used for stratification during the sampling are termed as sample QCS. One can also use functions as sample QCS column. For example, hour (pickup_datetime)
 
-General guideline to select sample QCS is to look for columns in a table, which are generally used in grouping or filtering of queries. This results in good representation of data in sample for each sub-group of data in query and approximate results are closer to the actual results. Generally, columns which have low cardinality should be provided as QCS columns for good representation data in sample tables.
+General guidelines to select sample QCS is to look for columns in a table, which are generally used in grouping or filtering of queries. This results in good representation of data in sample for each sub-group of data in query and approximate results are closer to the actual results. Generally, columns which have low cardinality should be provided as QCS columns for good representation data in sample tables.
 
 For example, for month of the year (only 12 unique values) or unique-carriers of airlines (limited in number) .
 
@@ -62,7 +80,7 @@ Let us take a look at this example:
 CREATE SAMPLE TABLE NYCTAXI_pickup_sample ON NYCTAXI  OPTIONS ( qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
 ```
 
-Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. In this case, the results increase as fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
+Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. In this case, the results is more accurate as the  fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
@@ -77,7 +95,7 @@ select medallion,avg(trip_distance) as avgTripDist,absolute_error(avgTripDist),r
 group by medallion order by medallion desc limit 100
 ```
 
-**Example 2:**
+**Example 2:** 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI  OPTIONS (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
 Query
@@ -225,12 +243,12 @@ The `absolute_error` and `relative_error` function values returns 0 if query is 
 ###Reserved Keywords ###
 Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
 
-###Using Dynamic Forms###
-Apache Zeppelin allows you to dynamically creates input forms. To create a text input form, use `${formName}`.
-In the following example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
-
-![Dynamic Form](Images/aqp_dynamicform.png)
-
+`sample_` can be used only in case of COUNT aggregate, to find out sample table count 
+```
+select count() rowCount, count() as sample_count from airline with error 0.1
+rowCount will return estimate of no of rows in airline table.
+sample_count will return no of rows in sample table of airline table.
+```
 <!--
 ### Synopsis Data Engine Technique 1: Sampling
 The basic idea behind sampling is the assumption that a representative sample of the base data set can be built such that it can provide answers to aggregate questions like SUM, AVG and COUNT fairly accurately and much more quicker than running the same query against the full data set. We use a combination of techniques to build the sample such that it is representative, random (is not biased) and contains under represented groups.
