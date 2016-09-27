@@ -270,6 +270,11 @@ This section provides you with examples you can use in a paragraph.
 
 ![Example](./Images/sde_exampledatausingSnappyDataScala.png)
 
+* Apache Zeppelin allows you to dynamically creates input fields. To create a text input field, use `${fieldname}`.
+In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
+
+![Dynamic Form](Images/aqp_dynamicform.png)
+
 ##Approximation Technique using Sampling##
 In a database context, the process that derives information that is available in the database is called query processing.
 Efficient processing of data is one of the main issues faced with query processing. In most cases, it can be expensive and time consuming for users to get an exact answer in a short response time. 
