@@ -162,27 +162,27 @@ object NWTestUtil {
     snc.sql(NWQueries.customers_table)
     NWQueries.customers.write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13')")
+    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
+      " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " using row options ( partition_by 'ProductID', buckets '17')")
+      " using row options ( partition_by 'ProductID', buckets '17', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING row options (PARTITION_BY 'SupplierID', buckets '123' )")
+      " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1')")
     NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using row options (partition_by 'TerritoryID', buckets '3')")
+      " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'EmployeeID', buckets '1')")
+      " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
     NWQueries.employee_territories.write.insertInto("employee_territories")
 
   }
@@ -197,33 +197,33 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers.write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table + " using column options()")
+    snc.sql(NWQueries.employees_table + " using column options( redundancy '1')")
     NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
     NWQueries.customers.write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13')")
+    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
+      " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " USING column options ( partition_by 'ProductID,SupplierID', buckets '17')")
+      " USING column options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING column options (PARTITION_BY 'SupplierID', buckets '123' )")
+      " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
     NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using column options (partition_by 'TerritoryID', buckets '3')")
+      " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'EmployeeID', buckets '1')")
+      " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
     NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 
@@ -238,36 +238,36 @@ object NWTestUtil {
     NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
-      " using row options( partition_by 'EmployeeID', buckets '3')")
+      " using row options( partition_by 'EmployeeID', buckets '3', redundancy '1')")
     NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
-      " using column options( partition_by 'CustomerID', buckets '19')")
+      " using column options( partition_by 'CustomerID', buckets '19', redundancy '1')")
     NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
-      " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers')")
+      " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using row options ( partition_by 'ProductID', buckets '329')")
+      " using row options ( partition_by 'ProductID', buckets '329', redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " USING column options ( partition_by 'ProductID', buckets '329'," +
-      " colocate_with 'order_details')")
+      " colocate_with 'order_details', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING column options (PARTITION_BY 'SupplierID', buckets '123')")
+      " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
     NWQueries.suppliers.write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using column options (partition_by 'TerritoryID', buckets '3')")
+      " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories.write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories') ")
+      " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories', redundancy '1') ")
     NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 
