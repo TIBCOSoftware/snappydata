@@ -24,7 +24,7 @@ One commonly-used technique for approximate results is sampling. For many aggreg
 For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
 Sampling provides a solution, where a small sample of data, which represents the entire data is randomly selected. In this case, a query is answered based on the pre-sampled small amount of data, and then scaled up based on the sample rate.
 
-Sampling-based systems have the advantage that they can be implemented as a thin layer of middleware which re-writes queries to run against sample tables stored as ordinary relations in a standard, off-the-shelf database server. 
+Sampling-based systems have the advantage that they can be implemented as a thin layer of middle ware which re-writes queries to run against sample tables stored as ordinary relations in a standard, off-the-shelf database server. 
 
 The two techniques that the SnappyData AQP module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
 
@@ -32,12 +32,13 @@ The two techniques that the SnappyData AQP module uses to accomplish this are, *
 Reservoir Sampling is an algorithm for sampling elements from a stream of data, where a random sample of elements are returned, which are evenly distributed from the original stream.
 
 ####Stratified Sampling ####
-This refers to a type of sampling method where the data is divided into separate groups, called strata. A simple random sample is then drawn from each group. The goal of this sampling method is to guarantee that all groups in the population are adequately represented.
+Stratified sampling refers to a type of sampling method where the data is divided into separate groups, called strata. This method is used when there are different sub-groups in a population. 
 
-Stratified sampling is a method used when there are different sub-groups in a population. In this method the population is divided into several groups (strata), and subjects are then proportionately  selected from each strata.The members in each of the stratum formed have similar attributes and characteristics. In this method it is critical that random samples are taken from each of the strata created, to increase precision of results. 
+The population is divided into several groups (strata), and subjects are then proportionately  selected from each strata.The members in each of the stratum formed have similar attributes and characteristics. In this method, it is critical that random samples are taken from each of the strata created, to increase accuracy of results. The goal of this sampling method is to guarantee that all groups in the population are adequately represented.
 
 For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
 This is illustrated in the following image.
+
 ![Stratified Sampling](./Images/aqp_sampling.png)
 
 
@@ -90,7 +91,7 @@ Query
 select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
 ```
 
-###Sample Selection:###
+####Sample Selection:####
 Sample selection logic selects most appropriate table based on the following logic:
 
 * If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected.
@@ -102,7 +103,7 @@ When multiple stratified samples with subset of QCSs match, sample where most nu
 For example: If query QCS are A, B and C. If samples with QCS  A & B and B & C are available, then choose a sample with large sample size.
 
 
-###Using Error Functions and Confidence Interval in Queries###
+####Using Error Functions and Confidence Interval in Queries####
 Acceptable error fraction and expected confidence interval can be specified in the query projection. 
 A query can end with the clauses **WITH ERROR** and **WITH ERROR `<fraction>`[CONFIDENCE `<fraction>`] [BEHAVIOR` <string>]`**
 ####Using “WITH ERROR “Clause####
@@ -137,7 +138,7 @@ set spark.sql.aqp.behavior=$behavior;
 ```
 
 
-###Using WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]` Clause###
+####Using WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]` Clause####
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
 * **BEHAVIOR** - this is an optional clause. The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
@@ -203,7 +204,7 @@ In addition to this, SnappyData supports error functions that can be specified i
 
 The following four methods are available to be used in query projection when running approximate queries:
 
-* **absolute_error(column alias**) : Indicates absolute error present in the estimate (approx answer) calulated using error estimation method (ClosedForm or Bootstrap) 
+* **absolute_error(column alias**) : Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) 
 
 * **relative_error(column alias)** : Indicates ratio of absolute error to estimate.
 
@@ -220,6 +221,15 @@ UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ER
 ```
 The `absolute_error` and `relative_error` function values returns 0 if query is executed on the base table. 
 `lower_bound` and `upper_bound` values returns null if query is executed on the base table. These values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
+
+###Reserved Keywords ###
+Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
+
+###Using Dynamic Forms###
+Apache Zeppelin allows you to dynamically creates input forms. To create a text input form, use `${formName}`.
+In the following example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
+
+![Dynamic Form](Images/aqp_dynamicform.png)
 
 <!--
 ### Synopsis Data Engine Technique 1: Sampling
@@ -328,7 +338,7 @@ The code above shows how to do the same thing using the SnappyData Scala API.
 	select * from topkTweets order by EstimatedValue desc  
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
-### Approximate TopK analytics for time series data
+### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
 Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
