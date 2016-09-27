@@ -53,10 +53,10 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
 
     plan transformUp {
       case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
-        explicitIndexHint.get(colRelation.table).getOrElse(table)
+        explicitIndexHint.getOrElse(colRelation.table, Some(table)).get
       case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
         explicitIndexHint.get(alias) match {
-          case Some(index) => SubqueryAlias(alias, index)
+          case Some(Some(index)) => SubqueryAlias(alias, index)
           case _ => subQuery
         }
     } transformUp {
@@ -82,8 +82,14 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
           case _ => tableOrAlias
         }
 
-        val index = catalog.lookupRelation(
-          snappySession.getIndexTable(catalog.newQualifiedTableName(value)))
+        val index = if (value.trim.length == 0) { // if blank index mentioned,
+          // we don't validate to find the index instead consider that user is
+          // disabling index choice all together.
+          None
+        } else {
+          Some(catalog.lookupRelation(
+            snappySession.getIndexTable(catalog.newQualifiedTableName(value))))
+        }
 
         (key, index)
     }
@@ -199,16 +205,13 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
   private def replaceWithIndex(plan: LogicalPlan,
       findReplacementCandidates: (LogicalPlan => Seq[(LogicalPlan, LogicalPlan)])) = {
 
-    val replacementMap = {
-
-      if (snappySession.queryHints.exists {
-        case (hint, _) if hint.startsWith(QueryHint.Index.toString) =>
-          true
-        case _ => false
-      }) {
-        Seq.empty
-      }
-
+    val replacementMap = if (snappySession.queryHints.exists {
+      case (hint, _) if hint.startsWith(QueryHint.Index.toString) =>
+        true
+      case _ => false
+    }) {
+      Seq.empty
+    } else {
       def findR(p: Any) = p match {
         case UnresolvedAttribute(_) |
              UnresolvedFunction(_, _, _) |
@@ -390,16 +393,6 @@ case class ResolveIndex(snappySession: SnappySession) extends Rule[LogicalPlan]
 
     leftLeader.equals(rightLeader)
   }
-
-  private def fetchIndexes2(plan: LogicalPlan): Seq[LogicalPlan] =
-    EliminateSubqueryAliases(plan) match {
-      case l@LogicalRelation(p: ParentRelation, _, _) =>
-        val catalog = snappySession.sessionCatalog
-        Seq(l) ++ p.getDependents(catalog).map(idx =>
-          catalog.lookupRelation(catalog.newQualifiedTableName(idx)))
-      case q: LogicalPlan => q.children.flatMap(fetchIndexes2(_))
-      case _ => Nil
-    }
 
 }
 

@@ -250,6 +250,11 @@ class CreateIndexTest extends SnappyFunSuite {
       validateIndex(Seq(index31, index4))(df)
     }
 
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1 /*+ index( ) */ join $table3 t2 on t1.col2" +
+        s" = t2.col2 and t1.col3 = t2.col3 ") { // previous query not picking up index.
+      validateIndex(Seq.empty, table1, table3)(_)
+    }
+
     executeQ(s"select * from $table1 /*+ ${QueryHint.Index}($index1) */, $table3 " +
         s"where $table1.col1 = $table3.col1") {
       validateIndex(Seq(index1), table3)(_)
