@@ -372,7 +372,7 @@ private[sql] final case class ColumnTableScan(
       case StringType =>
         s"$cursorVar = $decoder.nextUTF8String($buffer, $cursorVar);"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
-        s"$cursorVar = $decoder.nextLong($buffer, $cursorVar);"
+        s"$cursorVar = $decoder.nextLongDecimal($buffer, $cursorVar);"
       case _: DecimalType =>
         s"$cursorVar = $decoder.nextDecimal($buffer, $cursorVar);"
       case CalendarIntervalType =>

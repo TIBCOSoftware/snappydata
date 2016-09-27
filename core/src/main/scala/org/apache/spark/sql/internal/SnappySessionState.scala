@@ -20,8 +20,8 @@ package org.apache.spark.sql.internal
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, Alias, Attribute, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
@@ -177,6 +177,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         preprocess(i, tblName, Nil)
       case other => i
     }
+
   }
 
   private def preprocess(
@@ -277,3 +278,4 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
+
