@@ -37,6 +37,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -797,7 +798,8 @@ object SnappyContext extends Logging {
     "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName,
     "raw_socket_stream" -> classOf[RawSocketStreamSource].getCanonicalName,
     "text_socket_stream" -> classOf[TextSocketStreamSource].getCanonicalName,
-    "rabbitmq_stream" -> classOf[RabbitMQStreamSource].getCanonicalName
+    "rabbitmq_stream" -> classOf[RabbitMQStreamSource].getCanonicalName,
+    "com.databricks.spark.csv" -> classOf[CSVFileFormat].getCanonicalName
   ))
 
   private[this] val INVALID_CONF = new SparkConf(loadDefaults = false) {
