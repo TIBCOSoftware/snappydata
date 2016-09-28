@@ -4,6 +4,7 @@ compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
+String aqpVersion = '0.5'
 
 dependencies {
 
@@ -12,7 +13,7 @@ dependencies {
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     testRuntime project(":snappy-aqp_${scalaBinaryVersion}")
   } else {
-    testRuntime "io.snappydata:snappy-aqp_${scalaBinaryVersion}:${version}"
+    testRuntime "io.snappydata:snappy-aqp_${scalaBinaryVersion}:" + aqpVersion
   }
   // below dependency is for top-level product to easily find datanucleus jars
   // in the non-integrated build

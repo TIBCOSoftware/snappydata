@@ -86,11 +86,11 @@ allprojects {
     scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.6.1'
     snappySparkVersion = '1.6.2-6'
-    sparkDistName = "spark-${sparkVersion}-bin-hadoop2.4"
+    sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
-    hadoopVersion = '2.4.1'
+    hadoopVersion = '2.7.1'
     jettyVersion = '8.1.14.v20131031'
     snappyStoreVersion = '1.5.1-01'
     pulseVersion     = '1.5.0'
