@@ -18,6 +18,7 @@ package io.snappydata.hydra.cluster;
 
 import hydra.BasePrms;
 import hydra.HydraVector;
+import hydra.Log;
 
 import java.util.Vector;
 
@@ -261,6 +262,16 @@ public class SnappyPrms extends BasePrms {
     public static Long serverMemory;
 
     /**
+     * (String) criticalHeapPercentage to be used while starting the Server process. Defaults to 90% if not provided.
+     */
+    public static Long criticalHeapPercentage;
+
+    /**
+     * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 80% of critical-heap-percentage if not provided.
+     */
+    public static Long evictionHeapPercentage;
+
+    /**
      * (String) Memory to be used while starting the Lead process. Defaults to 1GB if not provided.
      */
     public static Long leadMemory;
@@ -323,6 +334,23 @@ public class SnappyPrms extends BasePrms {
     public static String getServerMemory() {
         Long key = serverMemory;
         return tab().stringAt(key, "4G");
+    }
+
+    public static String getCriticalHeapPercentage() {
+        String criticalHeapPercentageString = " -critical-heap-percentage=" + tab().stringAt(criticalHeapPercentage, "90");
+        return criticalHeapPercentageString;
+    }
+
+    public static String calculateDefaultEvictionPercentage() {
+        double evictionHeapPercent = (criticalHeapPercentage * 80) / 100;
+        String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
+        Log.getLogWriter().info("SS - evictionHeapPercentString : " + evictionHeapPercentString);
+        return evictionHeapPercentString;
+    }
+
+    public static String getEvictionHeapPercentage() {
+        String evictionHeapPercentageString = " -eviction-heap-percentage=" + tab().stringAt(evictionHeapPercentage, calculateDefaultEvictionPercentage());
+        return evictionHeapPercentageString;
     }
 
     public static String getLeadMemory() {

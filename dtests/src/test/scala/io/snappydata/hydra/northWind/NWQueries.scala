@@ -410,6 +410,8 @@ object NWQueries {
 
   def regions = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/regions.csv")
 
   val regions_table = "create table regions (" +
@@ -418,6 +420,8 @@ object NWQueries {
 
   def categories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/categories.csv")
 
   val categories_table = "create table categories (" +
@@ -428,6 +432,8 @@ object NWQueries {
 
   def shippers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/shippers.csv")
 
   val shippers_table = "create table shippers (" +
@@ -437,6 +443,8 @@ object NWQueries {
 
   def employees = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/employees.csv")
 
   val employees_table = "create table employees(" +
@@ -464,6 +472,8 @@ object NWQueries {
 
   def customers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/customers.csv")
 
   val customers_table = "create table customers(" +
@@ -483,6 +493,8 @@ object NWQueries {
 
   def orders = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/orders.csv")
 
   val orders_table = "create table orders (" +
@@ -504,6 +516,8 @@ object NWQueries {
 
   def order_details = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/order-details.csv")
 
   val order_details_table = "create table order_details (" +
@@ -520,6 +534,8 @@ object NWQueries {
 
   def products = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/products.csv")
 
   val products_table = "create table products(" +
@@ -539,6 +555,8 @@ object NWQueries {
 
   def suppliers = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/suppliers.csv")
 
   val suppliers_table = "create table suppliers(" +
@@ -559,6 +577,8 @@ object NWQueries {
 
   def territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/territories.csv")
 
   val territories_table = "create table territories(" +
@@ -571,6 +591,8 @@ object NWQueries {
 
   def employee_territories = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
     .load(s"${dataFilesLocation}/employee-territories.csv")
 
   val employee_territories_table = "create table employee_territories(" +

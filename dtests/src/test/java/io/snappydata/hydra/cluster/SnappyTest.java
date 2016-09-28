@@ -284,7 +284,10 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyserver.gfs" + SnappyPrms.getLogLevel();
+                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port +
+                        " -heap-size" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
+                        " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
+                        "snappyserver.gfs" + SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
@@ -292,7 +295,7 @@ public class SnappyTest implements Serializable {
                 locatorsList = getLocatorsList("locators");
                 nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() +
                         " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port +
-                        " -J-Xmx" + SnappyPrms.getLeadMemory() + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() +
+                        " -heap-size" + SnappyPrms.getLeadMemory() + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() +
                         " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyleader.gfs" + SnappyPrms.getLogLevel() +
@@ -1249,9 +1252,9 @@ public class SnappyTest implements Serializable {
                     maxPartitionSizeList.add(" ");
             }
             if (evictionByOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the evictionByOptionList for the scripts for which no EVICTION_BY option is specified.");
+                Log.getLogWriter().info("Adding \"LRUHEAPPERCENT\" parameter in the evictionByOptionList for the scripts for which no EVICTION_BY option is specified.");
                 while (evictionByOptionList.size() != scriptNames.size())
-                    evictionByOptionList.add(" ");
+                    evictionByOptionList.add("LRUHEAPPERCENT");
             }
             for (int i = 0; i < scriptNames.size(); i++) {
                 String userScript = (String) scriptNames.elementAt(i);
@@ -1281,7 +1284,7 @@ public class SnappyTest implements Serializable {
                         "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" + colocateWith,
                         "-param:partitionBy=" + partitionBy, "-param:numPartitions=" + numPartitions,
                         "-param:redundancy=" + redundancy, "-param:recoverDelay=" + recoverDelay,
-                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionBy=" + evictionBy,
+                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption=" + evictionBy,
                         "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }
