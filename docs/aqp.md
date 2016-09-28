@@ -47,40 +47,46 @@ This is illustrated in the following image.
 
 **Strata**:  A specific procedure for biased sampling, where the database is partitioned into different strata, and each stratum is uniformly sampled at different sampling rates.
 
-<!--
 ###Create Sample Tables###
-You can create sample tables using SnappyData datasets or datasets located at an external location . Depending on this, it is determined how the data is loaded, controlled, and managed.
-When a sample table is created for a large external dataset, the dataset is accessed directly from the remote location and is not loaded to the memory. 
 
-In this example, a sample table is created:
-```
-CREATE SAMPLE TABLE NYCTAXI_pickup_isight ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
-CREATE SAMPLE TABLE TAXIFARE_hack_license_isight on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
-```
+You can create sample tables using datasets that are available on the local file system or at an external location. Depending on this, it is determined how the data is loaded, controlled, and managed.
 
-In this example, an external table is created:
+In case of local dataset, the data is loaded in the cluster and the time taken to process the query may depend on the memory of the cluster.
+In this example, a sample table is created for a dataset that is available locally:
+
 ```
-CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://`<AWS_Secret_Access_Key>`<AWS_Access_Key_ID>`/nytaxitripdata_cleaned');
-CREATE EXTERNAL TABLE TAXIFARE USING parquet OPTIONS(path 's3a://AKIAILCUBCGH3HORYNMQ:xBus2ZZHsWaY+ZisLF6UWIGjXLRzGL31kRvQEOeG@zeppelindemo/nyctaxifaredata_cleaned');
+CREATE SAMPLE TABLE NYCTAXI_PICKUP_ISIGHT ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
+
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_ISIGHT on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 ```
 
--->
+When a sample table is created on a dataset that is too large to fit in the cluster's memory, you can create an external table, which can then be used to create sample table.
+In this example, a sample table is created for an S3 (external) dataset:
+
+```
+CREATE EXTERNAL TABLE TAXIFARE USING parquet OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_ISIGHT on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+
+```
+
 
 ###QCS (Query Column Set) and Sample selection###
 We term the columns used for grouping and filtering in a query (used in GROUP BY/WHERE/HAVING clauses) as the query column set or query QCS. Columns used for stratification during the sampling are termed as sample QCS. One can also use functions as sample QCS column. For example, hour (pickup_datetime)
 
-General guidelines to select sample QCS is to look for columns in a table, which are generally used in grouping or filtering of queries. This results in good representation of data in sample for each sub-group of data in query and approximate results are closer to the actual results. Generally, columns which have low cardinality should be provided as QCS columns for good representation data in sample tables.
+General guidelines to select sample QCS is to look for columns in a table, which are generally used in grouping or filtering of queries. This results in good representation of data in sample for each sub-group of data in query and approximate results are closer to the actual results. Generally, columns which have low cardinality should be provided as QCS columns for good representation of data in sample tables.
 
 For example, for month of the year (only 12 unique values) or unique-carriers of airlines (limited in number) .
 
-> ###Note: The value of the QCS column should not empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+> ###Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 
 Let us take a look at this example:
 ```
 CREATE SAMPLE TABLE NYCTAXI_pickup_sample ON NYCTAXI  OPTIONS ( qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
 ```
 
-Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. In this case, the results is more accurate as the  fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
+Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. 
+In this case, the results is more accurate as the  fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
@@ -109,6 +115,19 @@ Query
 select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
 ```
 
+**Example 4:**
+In the below example, the QCS should ideally consist of three fields as described below. The general guideline for selecting QCS is "group by columns" followed by any filter condition columns .
+
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Query
+"Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
+```
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi); Query select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
+```
+
+
 ####Sample Selection:####
 Sample selection logic selects most appropriate table based on the following logic:
 
@@ -118,7 +137,8 @@ Sample selection logic selects most appropriate table based on the following log
 
 When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
 
-For example: If query QCS are A, B and C. If samples with QCS  A & B and B & C are available, then choose a sample with large sample size.
+For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. This is illustrated in the following image:
+![QCS](./Images/aqp_qcs.png)
 
 
 ####Using Error Functions and Confidence Interval in Queries####
@@ -237,8 +257,20 @@ For Example:
 SELECT avg(ArrDelay) as AvgArr ,absolute_error(AvgArr),relative_error(AvgArr),lower_bound(AvgArr), upper_bound(AvgArr),
 UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ERROR 0.12 confidence 0.9
 ```
-The `absolute_error` and `relative_error` function values returns 0 if query is executed on the base table. 
-`lower_bound` and `upper_bound` values returns null if query is executed on the base table. These values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
+* The `absolute_error` and `relative_error` function values returns 0 if query is executed on the base table. 
+* `lower_bound` and `upper_bound` values returns null if query is executed on the base table. 
+* The values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
+
+In addition to using SQL syntax in the queries, you can use data frame API as well. 
+For example, if you have a data frame for the airline table, then the below query can equivalently also be written as 
+
+```
+select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay), Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
+```
+
+```
+airlineDataFrame.groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
+```
 
 ###Reserved Keywords ###
 Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
@@ -249,77 +281,6 @@ select count() rowCount, count() as sample_count from airline with error 0.1
 rowCount will return estimate of no of rows in airline table.
 sample_count will return no of rows in sample table of airline table.
 ```
-<!--
-### Synopsis Data Engine Technique 1: Sampling
-The basic idea behind sampling is the assumption that a representative sample of the base data set can be built such that it can provide answers to aggregate questions like SUM, AVG and COUNT fairly accurately and much more quicker than running the same query against the full data set. We use a combination of techniques to build the sample such that it is representative, random (is not biased) and contains under represented groups.
-
-The two techniques that the SnappyData SDE module uses to accomplish this are reservoir sampling as applied to stratified sampling. 
-
-Reservoir sampling is a technique/set of algorithms for randomly choosing a sample of *k* items from a set S containing n items, where k is a small subset of n. While reservoir sampling delivers a uniform random sample, by itself, it does not have the ability to ensure that under represented groups in the data set are represented in the sample.
-
-This is where stratified sampling comes in. Stratified sampling divides the population/data set into different non overlapping subgroups. Once the strata has been defined, we then use reservoir sampling within each subgroup to deliver uniform random samples. This works for large static data sets or streaming data sets. The process of stratification is driven by prior knowledge of the query column sets that are expected in user queries.
-
-
-*The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns* 
-
-	CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS(
-    buckets '5',
-    qcs 'UniqueCarrier, Year_, Month_',
-    fraction '0.03',
-    strataReservoirSize '50') AS (
-    SELECT Year_, Month_ , DayOfMonth,
-      DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
-      UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
-      CRSElapsedTime, AirTime, ArrDelay, DepDelay, Origin,
-      Dest, Distance, TaxiIn, TaxiOut, Cancelled, CancellationCode,
-      Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
-      LateAircraftDelay, ArrDelaySlot
-    FROM AIRLINE);
-    
-   
-*Equivalent Scala API for creating  the same sample table*  	 
-
-```scala
-    String baseTable = "AIRLINE"
-       // Create a sample table sampling parameters.
-      snc.createSampleTable(sampleTable, Some(baseTable),
-        Map("buckets" -> "5",
-          "qcs" -> "UniqueCarrier, Year_, Month_",
-          "fraction" -> "0.03",
-          "strataReservoirSize" -> "50"
-        ))
-        snc.table(baseTable).write.insertInto(sampleTable)
-```
-
-Here is an example of a query that can be run after the sample table has been created.  
-
-	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order
-        by Month_  with error 0.10 confidence 0.95
-	  
-Note how the query specifies the acceptable error fraction and expected confidence interval. The table specified in the query is the base table, however the SnappyData SDE engine figures out that there are one or more appropriate sample tables that can be used to satisfy this query and transparently uses the sample table to satisfy the query.  
-
-Here is the scala API for running the same query     
-
-	snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).withError(0.10, 0.95)  
-	  
-The withError method takes in both the error fraction and the expected confidence interval for the returned result.
-
-In addition to this, SnappyData supports error functions that can be specified in the query projection. Currently these error functions are supported for the SUM and AVG aggregates in the projection. The following four methods are available to be used in query projection when running approximate queries, and their definitions are self explanatory
-
-1. absolute_error(\<Aggregate field used in query>)
-2. relative_error(\<Aggregate field used in query>)
-3. lower_bound(\<Aggregate field used in query>)
-4. upper_bound(\<Aggregate field used in query>)
-
-The query below depicts an example of using error functions in query projections 
- 
-````
-select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay),
-Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95;
-````
-Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specify whether the query should be transparently run against the full data set if available.
--->
-
 
 ## Synopsis Data Engine Technique 2: Synopses##
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
