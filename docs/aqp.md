@@ -108,6 +108,20 @@ Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (bucket
 Query
 select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
 ```
+H1 **Asif**
+**Example 4:** 
+In the below example, the qcs should ideally consist of three fields as described below.
+The general guideline for selecting qcs would be  "group by columns"  followed by any filter condition columns .
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Query
+"Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
+
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Query
+select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
+```
 
 ####Sample Selection:####
 Sample selection logic selects most appropriate table based on the following logic:
@@ -319,6 +333,16 @@ Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
 ````
 Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specify whether the query should be transparently run against the full data set if available.
 -->
+
+H1 **Asif**
+Apart from using sql syntax for querying data , one can query data using data frame api's too.
+for eg you have a data frame for the airline table.
+then below query can equivalently also be written as
+select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay),
+Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
+
+airlineDataFrame.groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"),  absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc)
+For other types of queries, cases, suyog / vivek can help.
 
 
 ## Synopsis Data Engine Technique 2: Synopses##
