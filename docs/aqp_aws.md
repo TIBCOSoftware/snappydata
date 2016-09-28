@@ -64,7 +64,7 @@ The names and details of the members are automatically derived from the provided
 ![STEP](./Images/AWS_clustername.png)
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
-Refer to the Amazon documentation for more information on generating your own key pair. <br>	
+Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html). <br>	
  ![STEP](./Images/aws_ec2keypair.png)
 
  3. Select an instance and storage based on the capacity that you require. <br>
@@ -89,11 +89,11 @@ Refer to the Amazon documentation for more information on generating your own ke
 	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your credentials to continue.
 	
 	> * It may take a few minutes for the cluster to be created. 
-
-8. On the **Select Template page**, the URL for the Amazon S3 template is provided. Click **Next** to continue.   <br>
+	
+8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
 
-9. You can change the stack name or click **Next** to use the default value.
+9. You can change the stack name or click **Next** to use the provided default value.
 
 	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
 
