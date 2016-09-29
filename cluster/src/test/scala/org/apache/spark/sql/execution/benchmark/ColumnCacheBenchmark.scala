@@ -56,7 +56,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         .setAppName("microbenchmark")
     conf.set("snappy.store.optimization", "true")
     conf.set("spark.sql.shuffle.partitions", "1")
-    conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
+    // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("spark.sql.autoBroadcastJoinThreshold", "1")
     if (addOn != null) {
       addOn(conf)
@@ -67,11 +67,11 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private val snappySession = snc.snappySession
 
   ignore("cache with randomized keys - end-to-end") {
-    benchmarkRandomizedKeys(size = 20 << 18, readPathOnly = false)
+    benchmarkRandomizedKeys(size = 20000000, readPathOnly = false)
   }
 
   test("cache with randomized keys - read path only") {
-    benchmarkRandomizedKeys(size = 20 << 20, readPathOnly = true)
+    benchmarkRandomizedKeys(size = 20000000, readPathOnly = true)
   }
 
   /**
@@ -79,7 +79,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
    * This also checks whether the collected result matches the expected answer.
    */
   private def collect(df: DataFrame, expectedAnswer: Seq[Row]): Unit = {
-    QueryTest.checkAnswer(df, expectedAnswer) match {
+    QueryTest.checkAnswer(df, expectedAnswer, checkToRDD = false) match {
       case Some(errMessage) => throw new RuntimeException(errMessage)
       case None => // all good
     }
@@ -151,7 +151,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           val nullableStr = if (nullable) "" else " not null"
           snappySession.sql("drop table if exists test")
           snappySession.sql(s"create table test (id bigint $nullableStr, " +
-              s"k bigint $nullableStr) using column options(buckets '1')")
+              s"k bigint $nullableStr) using column")
           if (readPathOnly) {
             testDF.write.insertInto("test")
             ds = snappySession.sql(query)
@@ -197,32 +197,16 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     snappySession.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
 
     // Benchmark cases:
-    //   (1) No caching
-    //   (2) Caching without compression
-    //   (3) Caching with compression
-    //   (4) Caching with column batches (without compression)
+    //   (1) Caching without compression
+    //   (2) Caching with column batches without compression
     // addBenchmark("cache = F", cache = false)
-    addBenchmark("cache = T compress = F nullable = T", cache = true, Map(
-      // SQLConf.CACHE_CODEGEN.key -> "false",
-      SQLConf.COMPRESS_CACHED.key -> "false"
-    ), nullable = true)
-    /*
     addBenchmark("cache = T compress = F nullable = F", cache = true, Map(
-      // SQLConf.CACHE_CODEGEN.key -> "false",
       SQLConf.COMPRESS_CACHED.key -> "false"
     ), nullable = false)
-    addBenchmark("cache = T columnVector = T nullable = T", cache = true,
-      Map(SQLConf.CACHE_CODEGEN.key -> "true"), nullable = false)
-    */
 
-    addBenchmark("cache = F snappyCompress = F nullable = T", cache = false, Map(
+    addBenchmark("cache = F snappyCompress = F nullable = F", cache = false, Map(
       SQLConf.COMPRESS_CACHED.key -> "false"
-    ), snappy = true, nullable = true)
-    /*
-    addBenchmark("cache = F snappyCompress = T nullable = T", cache = false, Map(
-      SQLConf.COMPRESS_CACHED.key -> "true"
-    ), snappy = true, nullable = true)
-    */
+    ), snappy = true, nullable = false)
 
     benchmark.run()
   }
