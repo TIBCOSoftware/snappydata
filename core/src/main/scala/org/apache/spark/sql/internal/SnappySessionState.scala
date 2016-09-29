@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
-import org.apache.spark.sql.catalyst.optimizer.Optimizer
+import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -74,13 +74,14 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
+      implicit val ss = snappySession
       var insertedSnappyOpts = 0
       val modified = super.batches.map {
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
           insertedSnappyOpts += 1
-          Batch(batch.name, batch.strategy, batch.rules ++ Seq(
-              ResolveIndex(snappySession)
-          ): _*)
+          val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
+          Batch(batch.name, batch.strategy, left ++ Some(ResolveIndex()) ++ right
+              : _*)
         case b => b
       }
 

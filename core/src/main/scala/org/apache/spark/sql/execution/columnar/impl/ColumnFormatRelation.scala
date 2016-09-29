@@ -29,7 +29,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, SortDirection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -42,6 +42,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, GeneratedIndexStatement, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 
 /**

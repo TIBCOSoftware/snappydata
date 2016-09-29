@@ -657,7 +657,7 @@ class SnappyParser(session: SnappySession)
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
-    (FROM ~ relations).? ~
+    (FROM ~ ws ~ relations).? ~
     (WHERE ~ expression).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~
