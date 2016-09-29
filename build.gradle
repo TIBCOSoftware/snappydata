@@ -52,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.5.2'
+  version = '0.5.3'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
