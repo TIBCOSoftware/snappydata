@@ -19,8 +19,6 @@ package io.snappydata.benchmark.snappy
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
 /**
@@ -87,11 +85,6 @@ object TPCH_Snappy {
      try {
        println(s"Started executing $queryNumber")
        if (isResultCollection) {
-         HashedRelationCache.clear()
-         Utils.mapExecutors(sqlContext, () => {
-           HashedRelationCache.clear()
-           Iterator.empty
-         })
          val resultSet = queryExecution(queryNumber, sqlContext, useIndex, true)
          println(s"$queryNumber : ${resultSet.length}")
 
@@ -106,11 +99,6 @@ object TPCH_Snappy {
          var totalTimeForLast5Iterations: Long = 0
          queryPrintStream.println(queryNumber)
          for (i <- 1 to (warmup + runsForAverage)) {
-           HashedRelationCache.clear()
-           Utils.mapExecutors(sqlContext, () => {
-             HashedRelationCache.clear()
-             Iterator.empty
-           })
            val startTime = System.currentTimeMillis()
            var cnts : Array[Row]= null
            if(i == 1 ){
