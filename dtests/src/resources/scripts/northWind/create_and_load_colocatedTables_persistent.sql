@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS staging_employees;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_employees
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/employees.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE employees USING row OPTIONS(partition_by 'EmployeeID', buckets '3', PERSISTENT ':persistenceMode') AS (SELECT EmployeeID, LastName,  FirstName, Title,
+CREATE TABLE employees USING row OPTIONS(partition_by 'EmployeeID', buckets '3', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT EmployeeID, LastName,  FirstName, Title,
  TitleOfCourtesy, BirthDate, HireDate, Address, City, Region, PostalCode, Country, HomePhone, Extension, Photo,
  Notes, ReportsTo, PhotoPath FROM staging_employees);
 
@@ -34,7 +34,7 @@ DROP TABLE IF EXISTS staging_customers;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_customers
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/customers.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE customers USING column OPTIONS(partition_by 'CustomerID', buckets '19', PERSISTENT ':persistenceMode') AS (SELECT CustomerID, CompanyName, ContactName, ContactTitle,
+CREATE TABLE customers USING column OPTIONS(partition_by 'CustomerID', buckets '19', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT CustomerID, CompanyName, ContactName, ContactTitle,
 Address, City, Region, PostalCode, Country, Phone, Fax FROM staging_customers);
 
 DROP TABLE IF EXISTS orders;
@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS staging_orders;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_orders
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/orders.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE orders USING row OPTIONS (partition_by 'CustomerID', buckets '19', colocate_with 'customers', PERSISTENT ':persistenceMode') AS (SELECT OrderID, CustomerID, EmployeeID, OrderDate,
+CREATE TABLE orders USING row OPTIONS (partition_by 'CustomerID', buckets '19', colocate_with 'customers', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT OrderID, CustomerID, EmployeeID, OrderDate,
    RequiredDate, ShippedDate, ShipVia, Freight, ShipName,
    ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry FROM staging_orders);
 
@@ -51,7 +51,7 @@ DROP TABLE IF EXISTS staging_order_details;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_order_details
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE order_details USING row OPTIONS (partition_by 'ProductID', buckets '329', PERSISTENT ':persistenceMode') AS (SELECT OrderID, ProductID, UnitPrice,
+CREATE TABLE order_details USING row OPTIONS (partition_by 'ProductID', buckets '329', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT OrderID, ProductID, UnitPrice,
 Quantity, Discount FROM staging_order_details);
 
 DROP TABLE IF EXISTS products;
@@ -59,7 +59,7 @@ DROP TABLE IF EXISTS staging_products;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_products
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/products.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE products USING column OPTIONS (partition_by 'ProductID', buckets '329', colocate_with 'order_details', PERSISTENT ':persistenceMode') AS (SELECT ProductID, ProductName, SupplierID, CategoryID,
+CREATE TABLE products USING column OPTIONS (partition_by 'ProductID', buckets '329', colocate_with 'order_details', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT ProductID, ProductName, SupplierID, CategoryID,
 QuantityPerUnit, UnitPrice, UnitsInStock, UnitsOnOrder,
 ReorderLevel, Discontinued FROM staging_products);
 
@@ -68,7 +68,7 @@ DROP TABLE IF EXISTS staging_suppliers;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_suppliers
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/suppliers.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE suppliers USING column OPTIONS (PARTITION_BY 'SupplierID', buckets '123', PERSISTENT ':persistenceMode') AS (SELECT SupplierID, CompanyName, ContactName,
+CREATE TABLE suppliers USING column OPTIONS (PARTITION_BY 'SupplierID', buckets '123', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT SupplierID, CompanyName, ContactName,
 ContactTitle, Address, City, Region, PostalCode,
 Country, Phone, Fax, HomePage FROM staging_suppliers);
 
@@ -77,7 +77,7 @@ DROP TABLE IF EXISTS staging_territories;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_territories
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/territories.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE territories USING column OPTIONS (partition_by 'TerritoryID', buckets '3', PERSISTENT ':persistenceMode') AS (SELECT TerritoryID, TerritoryDescription, RegionID
+CREATE TABLE territories USING column OPTIONS (partition_by 'TerritoryID', buckets '3', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT TerritoryID, TerritoryDescription, RegionID
 FROM staging_territories);
 
 
@@ -86,5 +86,5 @@ DROP TABLE IF EXISTS staging_employee_territories;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_employee_territories
     USING com.databricks.spark.csv OPTIONS (path ':dataLocation/employee-territories.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE employee_territories USING row OPTIONS (partition_by 'TerritoryID', buckets '3', colocate_with 'territories', PERSISTENT ':persistenceMode') AS (SELECT EmployeeID, TerritoryID
+CREATE TABLE employee_territories USING row OPTIONS (partition_by 'TerritoryID', buckets '3', colocate_with 'territories', PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT EmployeeID, TerritoryID
 FROM staging_employee_territories);

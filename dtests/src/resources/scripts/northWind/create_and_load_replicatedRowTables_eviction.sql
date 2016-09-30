@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS staging_regions;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_regions
     USING com.databricks.spark.csv OPTIONS(path ':dataLocation/regions.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-CREATE TABLE regions USING row OPTIONS(EVICTION_BY ':eviction') AS (SELECT RegionID, RegionDescription FROM staging_regions);
+CREATE TABLE regions USING row OPTIONS(EVICTION_BY ':evictionByOption') AS (SELECT RegionID, RegionDescription FROM staging_regions);
 
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS staging_categories;
@@ -86,6 +86,5 @@ DROP TABLE IF EXISTS staging_employee_territories;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_employee_territories
     USING com.databricks.spark.csv OPTIONS(path ':dataLocation/employee-territories.csv', header 'true', inferSchema 'true', nullValue 'NULL');
-
 CREATE TABLE employee_territories USING row OPTIONS(EVICTION_BY ':evictionByOption') AS (SELECT EmployeeID, TerritoryID
 FROM staging_employee_territories);

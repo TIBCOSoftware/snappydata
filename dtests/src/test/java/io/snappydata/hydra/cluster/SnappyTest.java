@@ -284,6 +284,7 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
+                //" -J-Xmx=" + SnappyPrms.getServerMemory() +
                 nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port +
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
@@ -329,6 +330,7 @@ public class SnappyTest implements Serializable {
         }
         SnappyBB.getBB().getSharedMap().put(logDir + "_" + RemoteTestModule.getMyVmid() + "_" + snappyTest.getMyTid(), nodeLogDir);
         SnappyBB.getBB().getSharedMap().put("logDir_" + RemoteTestModule.getMyVmid(), dirPath);
+        Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
         logDirExists = true;
     }
 
@@ -1266,7 +1268,7 @@ public class SnappyTest implements Serializable {
                 String redundancy = (String) redundancyOptionList.elementAt(i);
                 String recoverDelay = (String) recoverDelayOptionList.elementAt(i);
                 String maxPartitionSize = (String) maxPartitionSizeList.elementAt(i);
-                String evictionBy = (String) evictionByOptionList.elementAt(i);
+                String evictionByOption = (String) evictionByOptionList.elementAt(i);
                 String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
@@ -1284,7 +1286,7 @@ public class SnappyTest implements Serializable {
                         "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" + colocateWith,
                         "-param:partitionBy=" + partitionBy, "-param:numPartitions=" + numPartitions,
                         "-param:redundancy=" + redundancy, "-param:recoverDelay=" + recoverDelay,
-                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption=" + evictionBy,
+                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption=" + evictionByOption,
                         "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }

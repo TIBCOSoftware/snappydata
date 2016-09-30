@@ -267,7 +267,7 @@ public class SnappyPrms extends BasePrms {
     public static Long criticalHeapPercentage;
 
     /**
-     * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 80% of critical-heap-percentage if not provided.
+     * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 90% of critical-heap-percentage if not provided.
      */
     public static Long evictionHeapPercentage;
 
@@ -342,7 +342,9 @@ public class SnappyPrms extends BasePrms {
     }
 
     public static String calculateDefaultEvictionPercentage() {
-        double evictionHeapPercent = (criticalHeapPercentage * 80) / 100;
+        int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
+        Log.getLogWriter().info("SS - criticalHeapPercent : " + criticalHeapPercent);
+        int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
         String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
         Log.getLogWriter().info("SS - evictionHeapPercentString : " + evictionHeapPercentString);
         return evictionHeapPercentString;
