@@ -43,12 +43,6 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
   }
 
   @Override
-  final public void addOrReplaceJar(Object sc, String jarName, String jarPath) {
-    SnappyUtils.installOrReplaceJar(jarName, jarPath,
-        ((SnappyStreamingContext)sc).sparkContext());
-  }
-
-  @Override
   final public Object runJob(Object sc, Config jobConfig) {
     return runSnappyJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), jobConfig);
   }

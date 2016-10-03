@@ -68,10 +68,6 @@ abstract class SnappySQLJob extends SparkJobBase {
 
   def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
 
-  final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
-    SnappyUtils.installOrReplaceJar(jarName, jarPath, sc.asInstanceOf[SnappyContext].sparkContext)
-  }
-
 }
 
 object SnappyJobValidate {

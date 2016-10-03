@@ -21,8 +21,11 @@ package org.apache.spark
 import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
+
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
-import _root_.io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
+import _root_.io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import org.apache.commons.io.FilenameUtils
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.{Utils => Utility}
 import org.apache.spark.util.Utils
@@ -58,6 +61,45 @@ class DynamicJarInstallationDUnitTest(val s: String)
     assert(countInstances == count)
   }
 
+
+  def testJarDeployedWithSparkContext(): Unit = {
+    val testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
+      classNames = Seq("FakeJobClass", "FakeJobClass1"),
+      toStringValue = "1",
+      Seq.empty, Seq.empty,
+      "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
+
+    var jobCompleted = false
+
+    sc.addJar(testJar.getFile)
+    sc.setLocalProperty("SNAPPY_JOB_SERVER_JAR_NAME", FilenameUtils.getName(testJar.getFile))
+    // verify that jar is loaded at executors
+    val rdd = sc.parallelize(1 to 10, 2)
+
+    sc.runJob(rdd, { iter: Iterator[Int] => {
+      val fakeClass =
+      Thread.currentThread().getContextClassLoader.loadClass("FakeJobClass").newInstance()
+      assert(fakeClass.toString == "1")
+      1
+    }
+    })
+
+    // removeJar
+    val jarToDelete = sc.addedJars.keySet.filter(
+      FilenameUtils.getName(_).equals(FilenameUtils.getName(testJar.getFile))).head
+    sc.addedJars.remove(jarToDelete)
+
+    sc.runJob(rdd, { iter: Iterator[Int] => {
+      org.scalatest.Assertions.intercept[ClassNotFoundException] {
+        Thread.currentThread().getContextClassLoader.loadClass("FakeJobClass1").newInstance()
+      }
+      1
+    }
+    })
+
+  }
+
+
   def testJarDeployementWithThinClient(): Unit = {
     val snc = SnappyContext(sc)
     val sqlJars = DynamicJarInstallationDUnitTest.createJarWithClasses(
@@ -90,6 +132,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
 
     // replace  the jar and check again
     stmt.executeUpdate("call sqlj.replace_jar('" + replaceJars.getPath + "', 'app.sqlJars')")
+
     // look for jar inside the executors
     verifyClassOnExecutors(snc, "FakeClass1", "2", 3)
     verifyClassOnExecutors(snc, "FakeClass2", "2", 3)
@@ -122,6 +165,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
     verifyClassOnExecutors(snc, "FakeClass2", "", 0)
     verifyClassOnExecutors(snc, "FakeClass3", "", 0)
     verifyClassOnExecutors(snc, "FakeClass4", "", 0)
+    conn.close()
   }
 }
 
