@@ -22,7 +22,6 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.util.{SnappyUtils, Utils}
 
 
 class SnappyContextFactory extends SparkContextFactory {
@@ -54,9 +53,6 @@ abstract class SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
-    val parentLoader = Utils.getContextOrSparkClassLoader
-    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
-    Thread.currentThread().setContextClassLoader(currentLoader)
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyContext], config))
   }
 

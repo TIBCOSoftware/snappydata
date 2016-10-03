@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.{Constant, QueryHint}
+import spark.jobserver.util.GlobalJarURLClassLoader
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -46,7 +47,6 @@ import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
@@ -61,8 +61,7 @@ class SparkSQLExecuteImpl(val sql: String,
   // DRDA queries will reach the lead node
 
   if (Thread.currentThread().getContextClassLoader != null) {
-    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
-    Thread.currentThread().setContextClassLoader(loader)
+    Thread.currentThread().setContextClassLoader(GlobalJarURLClassLoader)
   }
 
   private[this] val snc = SnappyContextPerConnection
