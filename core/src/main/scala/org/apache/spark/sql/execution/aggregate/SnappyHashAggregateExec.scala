@@ -107,6 +107,11 @@ case class SnappyHashAggregateExec(
     }
   }
 
+  /**
+   * Optimized attributes for grouping that are non-nullable when the
+   * children are. The case of no results for a group are handled by the fact
+   * that if that happens then no row for the group will be present at all.
+   */
   private def bufferAttributesForGroup(
       aggregate: AggregateFunction): Seq[AttributeReference] = aggregate match {
     case g: GroupAggregate => g.aggBufferAttributesForGroup
@@ -118,6 +123,18 @@ case class SnappyHashAggregateExec(
       val sumAttr = avg.aggBufferAttributes.head
       sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
         sumAttr.isGenerated) :: avg.aggBufferAttributes(1) :: Nil
+    case max: Max if !max.child.nullable =>
+      val maxAttr = max.aggBufferAttributes.head
+      maxAttr.copy(nullable = false)(maxAttr.exprId, maxAttr.qualifier,
+        maxAttr.isGenerated) :: Nil
+    case min: Min if !min.child.nullable =>
+      val minAttr = min.aggBufferAttributes.head
+      minAttr.copy(nullable = false)(minAttr.exprId, minAttr.qualifier,
+        minAttr.isGenerated) :: Nil
+    case last: Last if !last.child.nullable =>
+      val lastAttr = last.aggBufferAttributes.head
+      lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier,
+        lastAttr.isGenerated) :: Nil
     case _ => aggregate.aggBufferAttributes
   }
 
@@ -365,8 +382,8 @@ case class SnappyHashAggregateExec(
 
   // utility to generate class for optimized map, and hash map access methods
   @transient private var keyBufferAccessor: ObjectHashMapAccessor = _
-  @transient private var maskTerm: String = _
   @transient private var mapDataTerm: String = _
+  @transient private var maskTerm: String = _
   @transient private var batchConsumeDone = false
 
   /**
@@ -436,21 +453,24 @@ case class SnappyHashAggregateExec(
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
-    // generate the map accessor to generate key/value class
-    // and get map access methods
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    keyBufferAccessor = new ObjectHashMapAccessor(session, ctx, "KeyBuffer",
-      groupingKeySchema, bufferSchema)
-
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
-    // generate local variables for HashMap mask and data array
-    val entryClass = keyBufferAccessor.getClassName
-    maskTerm = ctx.freshName("hashMapMask")
+    // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
+    maskTerm = ctx.freshName("hashMapMask")
+
+    // generate the map accessor to generate key/value class
+    // and get map access methods
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    keyBufferAccessor = ObjectHashMapAccessor(session, ctx, "KeyBuffer",
+      groupingExpressions, hashMapTerm, mapDataTerm, maskTerm,
+      multiMap = false, StructType(groupingKeySchema ++ bufferSchema),
+      this, this.parent, child.output, child = null)
+
+    val entryClass = keyBufferAccessor.getClassName
 
     val childProduce = child.asInstanceOf[CodegenSupport].produce(ctx, this)
     // if batchConsume has not been done then declare mask/data variables
@@ -515,16 +535,6 @@ case class SnappyHashAggregateExec(
       input: Seq[ExprCode]): String = {
     val keyBufferTerm = ctx.freshName("keyBuffer")
 
-    // create grouping key
-    ctx.currentVars = input
-    ctx.INPUT_ROW = null
-    var keyVars = ctx.generateExpressions(groupingExpressions.map(
-      e => BindReferences.bindReference[Expression](e, child.output)))
-    // convert to ExprCodeEx if found
-    keyVars = keyVars.map(ev => input.find(e => e.isInstanceOf[ExprCodeEx] &&
-        e.value == ev.value && e.isNull == ev.isNull)
-        .map(_.copy(code = ev.code)).getOrElse(ev))
-
     // only have DeclarativeAggregate
     val updateExpr = aggregateExpressions.flatMap { e =>
       e.mode match {
@@ -538,7 +548,6 @@ case class SnappyHashAggregateExec(
     }
 
     // generate class for key, buffer and hash code evaluation of key columns
-    val hashTerm = ctx.freshName("hash")
     val inputAttr = aggregateBufferAttributesForGroup ++ child.output
     val initVars = ctx.generateExpressions(declFunctions.flatMap(
       bufferInitialValuesForGroup(_).map(BindReferences.bindReference(_,
@@ -567,11 +576,8 @@ case class SnappyHashAggregateExec(
     // Finally, sort the spilled aggregate buffers by key, and merge
     // them together for same key.
     s"""
-       |// evaluate the hash code of the lookup key
-       |${keyBufferAccessor.generateHashCode(keyVars, hashTerm)}
-       |
-       |${keyBufferAccessor.generateMapGetOrInsert(hashMapTerm, maskTerm,
-          mapDataTerm, hashTerm, keyBufferTerm, keyVars, initVars, initCode)}
+       |${keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
+            initVars, initCode, input)}
        |
        |// -- Update the buffer with new aggregate results --
        |

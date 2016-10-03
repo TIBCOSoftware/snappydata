@@ -33,9 +33,10 @@ import org.apache.spark.sql.catalyst.expressions.{BindReferences, BoundReference
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.{BinaryExecNode, CodegenSupport, SparkPlan}
+import org.apache.spark.sql.execution.{BinaryExecNode, CodegenSupport, ObjectHashMapAccessor, ObjectHashSet, RowTableScan, SparkPlan}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType}
+import org.apache.spark.sql.{SnappyAggregation, SnappySession}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -56,6 +57,13 @@ case class LocalJoin(leftKeys: Seq[Expression],
     right: SparkPlan)
     extends BinaryExecNode with HashJoin with CodegenSupport {
 
+  @transient private var mapAccessor: ObjectHashMapAccessor = _
+  @transient private var hashMapTerm: String = _
+  @transient private var mapDataTerm: String = _
+  @transient private var maskTerm: String = _
+  @transient private var keyIsUniqueTerm: String = _
+  @transient private var numRowsTerm: String = _
+
   override private[sql] lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
@@ -65,6 +73,15 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   override def requiredChildDistribution: Seq[Distribution] =
     UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+
+  protected lazy val (buildSideKeys, streamSideKeys) = {
+    require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
+      "Join keys from two sides should have same types")
+    buildSide match {
+      case BuildLeft => (leftKeys, rightKeys)
+      case BuildRight => (rightKeys, leftKeys)
+    }
+  }
 
   private lazy val streamRDD = streamedPlan.execute()
   private lazy val (buildRDD, buildPartition) = {
@@ -109,11 +126,96 @@ case class LocalJoin(leftKeys: Seq[Expression],
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-  override def doProduce(ctx: CodegenContext): String =
-    streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
+  override def doProduce(ctx: CodegenContext): String = {
+    if (SnappyAggregation.enableOptimizedAggregation) doProduceOptimized(ctx)
+    else {
+      streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
+    }
+  }
+
+  private def doProduceOptimized(ctx: CodegenContext): String = {
+    val initMap = ctx.freshName("initMap")
+    ctx.addMutableState("boolean", initMap, s"$initMap = false;")
+
+    val createMap = ctx.freshName("createMap")
+
+    // generate variable name for hash map for use here and in consume
+    hashMapTerm = ctx.freshName("hashMap")
+    val hashSetClassName = classOf[ObjectHashSet[_]].getName
+    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+
+    // add reference to the row table RDD directly since it is not possible
+    // to pass to inputRDDs in the general case (when streamPlan already
+    //   has 2 RDDs)
+    val rowTableScan = buildPlan.asInstanceOf[RowTableScan]
+    val rdd = rowTableScan.dataRDD
+    assert(rdd.getNumPartitions == 1)
+    val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
+    val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
+
+    // generate local variables for HashMap data array and mask
+    mapDataTerm = ctx.freshName("mapData")
+    maskTerm = ctx.freshName("hashMapMask")
+    keyIsUniqueTerm = ctx.freshName("keyIsUnique")
+    numRowsTerm = ctx.freshName("numRows")
+    // generate the map accessor to generate key/value class
+    // and get map access methods
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    mapAccessor = ObjectHashMapAccessor(session, ctx, "LocalMap",
+      buildSideKeys, hashMapTerm, mapDataTerm, maskTerm, multiMap = true,
+      buildPlan.schema, this, this.parent, buildPlan.output, buildPlan)
+
+    val entryClass = mapAccessor.getClassName
+    val rowIterator = ctx.freshName("rowIterator")
+    ctx.addNewFunction(createMap,
+      s"""
+        private void $createMap() throws java.io.IOException {
+          final org.apache.spark.TaskContext context =
+            org.apache.spark.TaskContext.get();
+          $hashMapTerm = new $hashSetClassName(128, 0.6,
+             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          int $maskTerm = $hashMapTerm.mask();
+          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+
+          final scala.collection.Iterator $rowIterator = $rowTableRDD.iterator(
+            $rowTablePart, context);
+          ${rowTableScan.produce(ctx, rowIterator, mapAccessor)}
+        }
+       """)
+
+    // The child could change `copyResult` to true, but we had already
+    // consumed all the rows, so `copyResult` should be reset to `false`.
+    ctx.copyResult = false
+
+    val buildTime = metricTerm(ctx, "buildTime")
+    val numOutputRows = metricTerm(ctx, "numOutputRows")
+
+    s"""
+      boolean $keyIsUniqueTerm = true;
+      if (!$initMap) {
+        final long beforeMap = System.nanoTime();
+        $createMap();
+        $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
+        $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
+        $initMap = true;
+      }
+
+      final int $maskTerm = $hashMapTerm.mask();
+      final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      long $numRowsTerm = 0L;
+      try {
+        ${streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)}
+      } finally {
+        $numOutputRows.add($numRowsTerm);
+      }
+    """
+  }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
+    if (SnappyAggregation.enableOptimizedAggregation) {
+      return doConsumeOptimized(ctx, input)
+    }
     // create a name for HashedRelation
     val relationTerm = ctx.freshName("relation")
     val relationIsUnique = ctx.freshName("keyIsUnique")
@@ -135,6 +237,23 @@ case class LocalJoin(leftKeys: Seq[Expression],
       case x =>
         throw new IllegalArgumentException(
           s"BroadcastHashJoin should not take $x as the JoinType")
+    }
+  }
+
+  private def doConsumeOptimized(ctx: CodegenContext,
+      input: Seq[ExprCode]): String = {
+    // variable that holds if relation is unique to optimize iteration
+    val relationIsUnique = ctx.freshName("keyIsUnique")
+    joinType match {
+      case Inner => codeGenInnerOptimized(ctx, input, hashMapTerm)
+      case LeftOuter | RightOuter => codeGenOuter(ctx, input,
+        hashMapTerm, relationIsUnique)
+      case LeftSemi => codeGenSemi(ctx, input, hashMapTerm, relationIsUnique)
+      case LeftAnti => codeGenAnti(ctx, input, hashMapTerm, relationIsUnique)
+      case _: ExistenceJoin => codeGenExistence(ctx, input,
+        hashMapTerm, relationIsUnique)
+      case x => throw new IllegalArgumentException(
+        s"LocalJoin should not take $x as the JoinType")
     }
   }
 
@@ -217,6 +336,29 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   /**
    * Generate the (non-equi) condition used to filter joined rows.
+   * This is used in Inner joins.
+   */
+  private def getInnerJoinCondition(ctx: CodegenContext,
+      input: Seq[ExprCode], buildVars: Seq[ExprCode],
+      buildInit: String): (String, String) = condition match {
+    case Some(expr) =>
+      // evaluate the variables from build side that used by condition
+      val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
+        expr.references)
+      // filter the output via condition
+      ctx.currentVars = input ++ buildVars
+      val ev = BindReferences.bindReference(expr,
+        streamedPlan.output ++ buildPlan.output).genCode(ctx)
+      (s"""
+        $buildInit$eval
+        ${ev.code}
+        if (${ev.isNull} || !${ev.value}) continue;
+      """, "")
+    case None => ("", buildInit)
+  }
+
+  /**
+   * Generate the (non-equi) condition used to filter joined rows.
    * This is used in Inner, Left Semi and Left Anti joins.
    */
   private def getJoinCondition(
@@ -238,7 +380,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
         s"""
            |$eval
            |${ev.code}
-           |if (${ev.isNull}|| !${ev.value}) continue;
+           |if (${ev.isNull} || !${ev.value}) continue;
         """.stripMargin
       val antiCond = if (anti) {
         s"""
@@ -299,6 +441,30 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  }
        |}
      """.stripMargin
+  }
+
+  /**
+   * Generates the code for Inner join.
+   */
+  private def codeGenInnerOptimized(ctx: CodegenContext,
+      input: Seq[ExprCode], relationTerm: String): String = {
+    val entryVar = ctx.freshName("entry")
+    val (keyVars, valueVars, valueInit) = mapAccessor.getMultiMapVars(entryVar)
+    val buildVars = keyVars ++ valueVars
+    val (checkCondition, buildInit) = getInnerJoinCondition(ctx, input,
+      buildVars, valueInit)
+
+    ctx.INPUT_ROW = null
+    ctx.currentVars = input
+    val (resultVars, streamKeys) = buildSide match {
+      case BuildLeft => (buildVars ++ input,
+          streamSideKeys.map(BindReferences.bindReference(_, right.output)))
+      case BuildRight => (input ++ buildVars,
+          streamSideKeys.map(BindReferences.bindReference(_, left.output)))
+    }
+    mapAccessor.generateMapLookup(entryVar, keyIsUniqueTerm, numRowsTerm,
+      checkCondition, streamSideKeys, ctx.generateExpressions(streamKeys),
+      keyVars, buildInit, resultVars)
   }
 
   /**
