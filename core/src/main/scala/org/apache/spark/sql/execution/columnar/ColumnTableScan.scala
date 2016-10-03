@@ -42,6 +42,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
@@ -90,6 +91,9 @@ private[sql] final case class ColumnTableScan(
     baseRelation.table, true).isOffHeap
 
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
+
+  @transient private val session =
+    sqlContext.sparkSession.asInstanceOf[SnappySession]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
@@ -206,7 +210,7 @@ private[sql] final case class ColumnTableScan(
     }
 
     val batchConsumer = getBatchConsumer(parent)
-    val columnsInput = output.zipWithIndex.map { case (a, index) =>
+    val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
@@ -214,7 +218,7 @@ private[sql] final case class ColumnTableScan(
       val decoderVar = s"decoder$index"
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
-      val baseIndex = baseRelation.schema.fieldIndex(a.name)
+      val baseIndex = baseRelation.schema.fieldIndex(attr.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
       val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
@@ -261,11 +265,11 @@ private[sql] final case class ColumnTableScan(
         """
       )
       cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
-      val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
+      val notNullVar = if (attr.nullable) ctx.freshName("notNull") else null
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-        cursorVar, "batchOrdinal", a.dataType, notNullVar)).append('\n')
+        cursorVar, "batchOrdinal", attr.dataType, notNullVar)).append('\n')
       val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
-        cursorVar, a.dataType, notNullVar)
+        cursorVar, attr, notNullVar)
       bufferInitCode.append(bufferInit)
       ev
     }
@@ -411,14 +415,14 @@ private[sql] final case class ColumnTableScan(
   }
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
-      buffer: String, cursorVar: String, dataType: DataType,
+      buffer: String, cursorVar: String, attr: Attribute,
       notNullVar: String): (ExprCode, String) = {
     val col = ctx.freshName("col")
     var bufferInit: String = ""
     var dictionaryCode: String = ""
     var dictionary: String = ""
     var dictionaryIndex: String = ""
-    val sqlType = Utils.getSQLDataType(dataType)
+    val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     val colAssign = sqlType match {
       case DateType => s"$col = $decoder.readDate($buffer, $cursorVar);"
@@ -483,17 +487,17 @@ private[sql] final case class ColumnTableScan(
             }
           }
         """
-      if (dictionary.isEmpty) {
-        (ExprCode(code, nullVar, col), bufferInit)
-      } else {
-        (new ExprCodeEx(code, nullVar, col, dictionaryCode, dictionary,
-          dictionaryIndex), bufferInit)
+      if (!dictionary.isEmpty) {
+        session.addExCode(ctx, col :: Nil, attr :: Nil,
+          ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
       }
-    } else if (dictionary.isEmpty) {
-      (ExprCode(s"final $jt $col;\n$colAssign\n", "false", col), bufferInit)
+      (ExprCode(code, nullVar, col), bufferInit)
     } else {
-      (new ExprCodeEx(s"final $jt $col;\n$colAssign\n", "false", col,
-        dictionaryCode, dictionary, dictionaryIndex), bufferInit)
+      if (!dictionary.isEmpty) {
+        session.addExCode(ctx, col :: Nil, attr :: Nil,
+          ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
+      }
+      (ExprCode(s"final $jt $col;\n$colAssign\n", "false", col), bufferInit)
     }
   }
 }

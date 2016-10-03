@@ -33,15 +33,16 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
-import org.apache.spark.sql.execution.LogicalRDD
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.{ExprCodeEx, HashingUtil, LogicalRDD}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -150,23 +151,60 @@ class SnappySession(@transient private val sc: SparkContext,
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
   private val addedClasses =
-    new mutable.HashMap[Seq[(DataType, Boolean)], String]
+    new mutable.HashMap[(CodegenContext, Seq[(DataType, Boolean)]), String]
+  private val exCodes =
+    new mutable.HashMap[(CodegenContext, Seq[Expr]), ExprCodeEx]()
 
   /**
    * Get code for a previously registered class using [[addClass]].
    */
-  private[sql] def getClass(types: Seq[(DataType, Boolean)]): Option[String] =
-    addedClasses.get(types)
+  def getClass(ctx: CodegenContext,
+      types: Seq[(DataType, Boolean)]): Option[String] =
+    addedClasses.get(ctx -> types)
 
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
-  private[sql] def addClass(types: Seq[(DataType, Boolean)],
-      name: String): Unit = addedClasses.put(types, name)
+  private[sql] def addClass(ctx: CodegenContext,
+      types: Seq[(DataType, Boolean)], name: String): Unit =
+  addedClasses.put(ctx -> types, name)
+
+  private def wrapExpressions(vars: Seq[String],
+      expr: Seq[Expression]): Seq[Expr] =
+    vars.zip(expr).map(p => new Expr(p._1, p._2))
+
+  /**
+   * Get [[ExprCodeEx]] for a previously registered ExprCode variable
+   * using [[addExCode]].
+   */
+  def getExCode(ctx: CodegenContext, vars: Seq[String],
+      expr: Seq[Expression]): Option[ExprCodeEx] =
+    exCodes.get(ctx -> wrapExpressions(vars, expr))
+
+  /**
+   * Register additional [[ExprCodeEx]] for a variable in ExprCode.
+   */
+  private[sql] def addExCode(ctx: CodegenContext, vars: Seq[String],
+      expr: Seq[Expression], exCode: ExprCodeEx): Unit =
+    exCodes.put(ctx -> wrapExpressions(vars, expr), exCode)
+
+  /**
+   * Register additional hash variable in [[ExprCodeEx]].
+   */
+  private[sql] def addExCodeHash(ctx: CodegenContext, vars: Seq[String],
+      hashExpressions: Seq[Expression], hashVar: String): Unit = {
+    val key = ctx -> wrapExpressions(vars, hashExpressions)
+    exCodes.get(key) match {
+      case Some(ev) => ev.hash = Some(hashVar)
+      case None =>
+        exCodes.put(key, ExprCodeEx(Some(hashVar), "", "", ""))
+    }
+  }
 
   private[sql] def clearQueryData(): Unit = {
     queryHints.clear()
     addedClasses.clear()
+    exCodes.clear()
   }
 
   def clear(): Unit = {
@@ -1347,4 +1385,14 @@ object SnappySession {
 
     session.asInstanceOf[SnappySession]
   }
+}
+
+private final class Expr(val name: String, val e: Expression) {
+  override def equals(o: Any): Boolean = o match {
+    case other: Expr => name == other.name && e.semanticEquals(other.e)
+    case _ => false
+  }
+
+  override def hashCode: Int =
+    HashingUtil.finalMix(name.hashCode, e.semanticHash())
 }

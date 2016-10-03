@@ -146,15 +146,9 @@ trait BatchConsumer extends CodegenSupport {
 }
 
 /**
- * An extended version of ExprCode to also hold the variables having dictionary
- * variable and its index when dictionary encoding is being used.
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
  */
-class ExprCodeEx(code: String, isNull: String, value: String,
-    val dictionaryCode: String, val dictionary: String,
-    val dictionaryIndex: String) extends ExprCode(code, isNull, value) {
-
-  override def copy(code: String = code, isNull: String = isNull,
-      value: String = value): ExprCodeEx =
-    new ExprCodeEx(code, isNull, value, dictionaryCode,
-      dictionary, dictionaryIndex)
-}
+final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
+    dictionary: String, dictionaryIndex: String)

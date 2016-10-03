@@ -63,6 +63,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   private[this] var _mask = _capacity - 1
   private[this] var _data: Array[T] = newArray(_capacity)
+  private[this] var _keyIsUnique: Boolean = true
 
   private[this] def newArray(capacity: Int): Array[T] =
     implicitly[ClassTag[T]].newArray(capacity)
@@ -72,6 +73,11 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def mask: Int = _mask
 
   def data: Array[T] = _data
+
+  def keyIsUnique: Boolean = _keyIsUnique
+
+  def setKeyIsUnique(unique: Boolean): Unit =
+    _keyIsUnique = unique
 
   override def iterator: JIterator[T] = new JIterator[T] {
 

@@ -632,8 +632,10 @@ class SnappyParser(session: SnappySession)
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
       val withFilter = w.asInstanceOf[Option[Expression]].map(Filter(_, base))
           .getOrElse(base)
-      val expressions = p.asInstanceOf[Seq[Expression]]
-          .map(UnresolvedAlias(_, None))
+      val expressions = p.asInstanceOf[Seq[Expression]].map {
+        case ne: NamedExpression => ne
+        case e => UnresolvedAlias(e)
+      }
       val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
       val withProjection = gr.map(x => {
         x._3 match {
