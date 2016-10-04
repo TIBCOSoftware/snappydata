@@ -515,7 +515,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           properties = hiveTable.properties - ExternalStoreUtils.INDEX_NAME)
       )
     } else {
-      client.alterTable(currentSchema,
+      client.alterTable(
         hiveTable.copy(properties = hiveTable.properties +
             (ExternalStoreUtils.INDEX_NAME -> newindexes))
       )
