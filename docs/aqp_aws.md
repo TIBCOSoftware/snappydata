@@ -29,6 +29,7 @@ To understand the product follow these easy steps that can get you started quick
 5. [Logging into Apache Zeppelin](#LoggingZeppelin)<br>	
 	* [Using Predefined Notebook](#predefinednotebook)<br>
 	* [Creating your own Notebook](#Creatingnotebook)
+6. [Monitoring the SnappyData Cluster](#Monitoring)
 
 <a id="SettingUp"></a>
 #Setting Up SnappyData Cluster#
@@ -105,7 +106,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 12. The next page lists the existing stacks. Click **Refresh** to update the list and to view the current status of the stack. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
 ![Refresh](./Images/aws_refreshstack.png)
-
+<a id="Stack"></a>
 13. Click on the ** Outputs** tab, to view the links (URLs) required for launching Pulse, Apache Zeppelin and SnappyData Cluster.
 	![Public IP](./Images/aws_links.png)
 
@@ -191,7 +192,7 @@ The values are:
 ```<folder_name>``` | The folder name where the data is stored. Default value: nytaxifaredata 
 
 <a id="LoggingZeppelin"></a>
-#Logging into Zeppelin#
+#Logging into Apache Zeppelin#
 
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
 Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
@@ -218,7 +219,7 @@ In the following example, `spark.sql.shuffle.partitions` allows you to specify t
 ```
 %sql
 set spark.sql.shuffle.partitions=6; 
-select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with er
+select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
 ```
 ####SnappyData Directives in Apache Zeppelin####
 You can execute approximate queries on SnappyData cluster by using the `%sql show-instant-results-first` directive. 
@@ -228,7 +229,7 @@ In the following example, you can see that the query is first executed on the sa
 At the same time, the query is executed on the base table, and the total time required to execute the query on the base table is displayed.
 ```
 %sql show-instant-results-first
-select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude < 40.767588 and pickup_latitude > 40.749775 and pickup_longitude > -74.001632 and  pickup_longitude < -73.974595 and dropoff_latitude > 40.716800 and  dropoff_latitude <  40.717776 and dropoff_longitude >  -74.017682 and dropoff_longitude < -74.000945 group by hour(pickup_datetim
+select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude < 40.767588 and pickup_latitude > 40.749775 and pickup_longitude > -74.001632 and  pickup_longitude < -73.974595 and dropoff_latitude > 40.716800 and  dropoff_latitude <  40.717776 and dropoff_longitude >  -74.017682 and dropoff_longitude < -74.000945 group by hour(pickup_datetime);
 ```
 ![Example](./Images/DirectivesinApacheZeppelin.png)
 
@@ -239,8 +240,9 @@ The `%snappydata.snappydata code` specifies the default Scala interpreter. This 
 SnappyContext is injected in this interpreter and can be accessed using variable **snc**.
 
 <a id="predefinednotebook"></a>
-###Using Predefined Notebooks
-SnappyData provides you a predefined notebook **NYCTAXI Analytics** which contains definitions that are stored in a single file. 
+
+##Using Predefined Notebooks##
+SnappyData provides you a predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
 
 When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
 
@@ -274,6 +276,24 @@ This section provides you with examples you can use in a paragraph.
 In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 
 ![Dynamic Form](Images/aqp_dynamicform.png)
+
+<a id="Monitoring"></a>
+##Monitoring the SnappyData Cluster ##
+ You can monitor the SnappyData cluster using GemFire XD Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.
+
+The GemFire XD Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members and tables. 
+It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
+It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
+
+The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.
+
+####Accessing the Console####
+To access the Pulse or Spark console from the Apache Zeppelin notebook: 
+
+1. Click on the **Pulse** or  **Spark UI** link provided in the paragraph. 
+![Launch Spark ](./Images/aws_pulsespark.png)
+2. For the Pulse console, enter the default login credentials "admin" as both the user name and password.
+3. Once you have logged in, you can start monitoring SnappyData cluster. For console specific information, please refer to the GemFire XD Pulse or Apache Spark documentation.
 
 ##Approximation Technique using Sampling##
 In a database context, the process that derives information that is available in the database is called query processing.

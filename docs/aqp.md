@@ -92,41 +92,74 @@ One can create multiple sample tables using different sample QCS and sample frac
 
 The following examples demonstrate samples with different columns in QCS along with the queries that use those QCS columns. 
 
-**Example 1:** Average trip distance of a taxi
+#####Example 1: #####
+In the below example, create a sample table with qcs 'medallion'
 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
-Query
-select medallion,avg(trip_distance) as avgTripDist,absolute_error(avgTripDist),relative_error(avgTripDist),lower_bound(avgTripDist),upper_bound(avgTripDist) from nyctaxi 
-group by medallion order by medallion desc limit 100
 ```
 
-**Example 2:** 
+**SQL Query:**
 ```
-CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI  OPTIONS (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
-Query
-Select  avg(trip_distance) as tripDist , absolute_error(tripDist),relative_error(tripDist),lower_bound(tripDist),upper_bound(tripDist) from nyctaxi  
-group by hack_license order by tripDist desc with error
+select medallion,avg(trip_distance) as avgTripDist,absolute_error(avgTripDist),relative_error(avgTripDist),lower_bound(avgTripDist),upper_bound(avgTripDist) from nyctaxi group by medallion order by medallion desc limit 100 with error;
 ```
-**Example 3:** When are drivers most busy? By hour of day, day and month
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTripDist"),
+  absolute_error("avgTripDist"),  relative_error("avgTripDist"), lower_bound("avgTripDist"),
+  upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
+```
+
+#####Example 2: #####
+In the below example, create a sample table with qcs 'hack_license'
+```
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
+(buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+```
+
+**SQL Query:**
+```
+select  hack_license, count(*) count from NYCTAXI group by hack_license order by count desc limit 10 with error
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
+```
+
+#####Example 3: #####
+In the below example,  create a sample table using function "hour(pickup_datetime) as QCS
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
-Query
+```
+
+**SQL Query:**
+```
 select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
 ```
 
-**Example 4:**
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
+```
+
+#####Example 4:#####
 In the below example, the QCS should ideally consist of three fields as described below. The general guideline for selecting QCS is "group by columns" followed by any filter condition columns .
 
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
-Query
-"Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
-```
-```
-Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi); Query select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
 ```
 
+**SQL Query:**
+```
+Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
+```
 
 ####Sample Selection:####
 Sample selection logic selects most appropriate table based on the following logic:
@@ -155,10 +188,16 @@ In this clause, context level setting can be overridden by query level settings.
 
 For example: 
 
+SQL Query
 ```
-SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order 
-by Month_ with error 
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ with error 
 ```
+
+DataFrame Query
+```
+snc.table(basetable).groupBy("MonthI").agg(Map("ArrDelay" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
+```
+
 These values can be overridden by setting in the  SnappyData  context below.	
 
 ```
@@ -186,14 +225,14 @@ For example:
 SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc with error 0.10 confidence 0.95 behavior ‘local_omit’
 ```
 
-###DataFrame API###
+DataFrame API
 ```
 def withError(error: Double,
 confidence: Double = Constant.DEFAULT_CONFIDENCE,
 behavior: String = "DO_NOTHING"): DataFrame
 ```
 
-For example:
+Data Frame API Query
 ``` 
 snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
 ```
@@ -269,18 +308,19 @@ select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(
 ```
 
 ```
-airlineDataFrame.groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
+snc.table(basetable).groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
 ```
 
 ###Reserved Keywords ###
 Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
 
-`sample_` can be used only in case of COUNT aggregate, to find out sample table count 
-```
-select count() rowCount, count() as sample_count from airline with error 0.1
-rowCount will return estimate of no of rows in airline table.
-sample_count will return no of rows in sample table of airline table.
-```
+If the aggregate function is aliased in the query as `sample_<any string>`, then what you get is true answers on the sample table, and not the estimates of the base table.
+
+`select count() rowCount, count() as sample_count from airline with error 0.1`
+
+rowCount returns estimate of number of rows in airline table.
+sample_count returns number of rows (true answer) in sample table of airline table.
+
 
 ## Synopsis Data Engine Technique 2: Synopses##
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
