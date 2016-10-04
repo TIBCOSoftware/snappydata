@@ -64,7 +64,7 @@ import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
  */
 class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val snappySession: SnappySession,
-    var client : HiveClient,
+    metadataHive : HiveClient,
     functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
@@ -77,6 +77,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       hadoopConf) with Logging {
 
   val sparkConf = snappySession.sparkContext.getConf
+
+  private var client = metadataHive
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
