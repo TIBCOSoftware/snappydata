@@ -959,7 +959,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   mustRunAfter buildAll
