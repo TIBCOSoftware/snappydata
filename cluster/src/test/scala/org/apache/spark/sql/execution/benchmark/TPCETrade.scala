@@ -197,6 +197,7 @@ object TPCETrade {
       itr.map { id =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
+        cal.set(Calendar.HOUR, rnd.nextInt(8))
         cal.set(Calendar.MINUTE, rnd.nextInt(60))
         cal.set(Calendar.SECOND, rnd.nextInt(60))
         cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
@@ -216,6 +217,7 @@ object TPCETrade {
       itr.map { id =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
+        cal.set(Calendar.HOUR, rnd.nextInt(8))
         cal.set(Calendar.MINUTE, rnd.nextInt(60))
         cal.set(Calendar.SECOND, rnd.nextInt(60))
         cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
