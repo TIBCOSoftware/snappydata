@@ -50,7 +50,7 @@ object SnappyContextFactory {
 }
 
 
-abstract class SnappySQLJob extends SparkJobBase {
+trait SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
@@ -73,6 +73,8 @@ abstract class SnappySQLJob extends SparkJobBase {
   }
 
 }
+
+abstract class JavaSnappySQLJob extends SnappySQLJob
 
 object SnappyJobValidate {
   def validate(status: SnappyJobValidation): SparkJobValidation = {

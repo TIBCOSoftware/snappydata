@@ -39,7 +39,6 @@ package org.apache.spark.sql.execution.aggregate
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
@@ -158,44 +157,9 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  protected override def doExecute(): RDD[InternalRow] = attachTree(this,
-    "execute") {
-    val numOutputRows = longMetric("numOutputRows")
-    val peakMemory = longMetric("peakMemory")
-    val spillSize = longMetric("spillSize")
-
-    child.execute().mapPartitions { iter =>
-
-      val hasInput = iter.hasNext
-      if (!hasInput && groupingExpressions.nonEmpty) {
-        // This is a grouped aggregate and the input iterator is empty,
-        // so return an empty iterator.
-        Iterator.empty
-      } else {
-        val aggregationIterator =
-          new TungstenAggregationIterator(
-            groupingExpressions,
-            aggregateExpressions,
-            aggregateAttributes,
-            initialInputBufferOffset,
-            resultExpressions,
-            (expressions, inputSchema) => newMutableProjection(expressions,
-              inputSchema, subexpressionEliminationEnabled),
-            child.output,
-            iter,
-            testFallbackStartsAt,
-            numOutputRows,
-            peakMemory,
-            spillSize)
-        if (!hasInput && groupingExpressions.isEmpty) {
-          numOutputRows += 1
-          Iterator.single[UnsafeRow](
-            aggregationIterator.outputForEmptyGroupingKeyWithoutInput())
-        } else {
-          aggregationIterator
-        }
-      }
-    }
+  protected override def doExecute(): RDD[InternalRow] = {
+    // code generation should never fail
+    WholeStageCodegenExec(this).execute()
   }
 
   // all the mode of aggregate expressions
@@ -214,6 +178,7 @@ case class SnappyHashAggregateExec(
   }
 
   protected override def doProduce(ctx: CodegenContext): String = {
+    batchConsumeDone = false
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {

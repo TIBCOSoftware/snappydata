@@ -19,14 +19,15 @@ package org.apache.spark.sql.execution.benchmark
 import java.sql.{Date, Timestamp}
 import java.util.{Calendar, GregorianCalendar}
 
+import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, StringType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
+import org.apache.spark.{Logging, SparkConf}
 
 class TPCETrade extends SnappyFunSuite {
 
@@ -48,25 +49,53 @@ class TPCETrade extends SnappyFunSuite {
 
   private lazy val snappySession = snc.snappySession
 
-  ignore("select queries with random data") {
+  test("select queries with random data") {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
+    val numDays = 1
     val numIters = 20
-    TPCETrade.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, queryNumber = 1, numIters, doInit = true)
-    TPCETrade.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, queryNumber = 2, numIters, doInit = false)
-    TPCETrade.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, queryNumber = 3, numIters, doInit = false)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 1, numIters, doInit = true)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 2, numIters, doInit = false)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
 }
 
+class TPCETradeJob extends SnappySQLJob {
+
+  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+    // SCALE OUT case with 10 billion rows
+    val quoteSize = 8500000000L
+    val tradeSize = 1250000000L
+    val numDays = 16
+    val numIters = 10
+    sc.conf.setConfString("spark.sql.shuffle.partitions", "16")
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 1, numIters,
+      doInit = true, runSparkCaching = false)
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 2, numIters,
+      doInit = false, runSparkCaching = false)
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, numDays, queryNumber = 3, numIters,
+      doInit = false, runSparkCaching = false)
+    Boolean.box(true)
+  }
+
+  override def isValidJob(sc: SnappyContext,
+      config: Config): SnappyJobValidation = SnappyJobValid()
+}
+
 case class Quote(sym: String, ex: String, bid: Double, time: Timestamp,
-    date: Date, gid: Int)
+    date: Date)
+
 case class Trade(sym: String, ex: String, price: String, time: Timestamp,
     date: Date, size: Double)
 
-object TPCETrade {
+object TPCETradeTest extends Logging {
+
   val HASH_OPTIMIZED = "spark.sql.hash.optimized"
 
   val EXCHANGES: Array[String] = Array("NYSE", "NASDAQ", "AMEX", "TSE",
@@ -97,8 +126,7 @@ object TPCETrade {
        |   ex VARCHAR(64) NOT NULL,
        |   bid DOUBLE NOT NULL,
        |   time TIMESTAMP NOT NULL,
-       |   date DATE NOT NULL,
-       |   gid INT NOT NULL
+       |   date DATE NOT NULL
        |)
      """.stripMargin
   val sqlTrade: String =
@@ -116,7 +144,7 @@ object TPCETrade {
 
   private val d = "2016-06-06"
   // private val s = "SY23"
-  val cacheQueries = Array (
+  val cacheQueries = Array(
     "select cQuote.sym, last(bid) from cQuote join cS " +
         s"on (cQuote.sym = cS.sym) where date='$d' group by cQuote.sym",
     "select cTrade.sym, ex, last(price) from cTrade join cS " +
@@ -130,7 +158,7 @@ object TPCETrade {
         s"on q.time=(select max(time) from q where time<=t.time and sym='$s') " +
         "where price<bid" */
   )
-  val queries = Array (
+  val queries = Array(
     "select quote.sym, last(bid) from quote join S " +
         s"on (quote.sym = S.sym) where date='$d' group by quote.sym",
     "select trade.sym, ex, last(price) from trade join S " +
@@ -180,8 +208,8 @@ object TPCETrade {
    * Benchmark caching randomized keys created from a range.
    */
   def benchmarkRandomizedKeys(session: SparkSession, quoteSize: Long,
-      tradeSize: Long, queryNumber: Int, numIters: Int,
-      doInit: Boolean): Unit = {
+      tradeSize: Long, numDays: Int, queryNumber: Int, numIters: Int,
+      doInit: Boolean, runSparkCaching: Boolean = true): Unit = {
     import session.implicits._
 
     val benchmark = new Benchmark("Cache random data", quoteSize + tradeSize)
@@ -191,18 +219,30 @@ object TPCETrade {
       val numSyms = syms.length
       val exs = EXCHANGES
       val numExs = exs.length
+      var day = 0
       // month is 0 based
-      val cal = new GregorianCalendar(2016, 5, 6)
-      val date = new Date(cal.getTimeInMillis)
+      var cal = new GregorianCalendar(2016, 5, day + 6)
+      var date = new Date(cal.getTimeInMillis)
+      var dayCounter = 0
       itr.map { id =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
+        if (numDays > 1) {
+          dayCounter += 1
+          // change date after some number of iterations
+          if (dayCounter == 10000) {
+            day = (day + 1) % numDays
+            cal = new GregorianCalendar(2016, 5, day + 6)
+            date = new Date(cal.getTimeInMillis)
+            dayCounter = 0
+          }
+        }
         cal.set(Calendar.HOUR, rnd.nextInt(8))
         cal.set(Calendar.MINUTE, rnd.nextInt(60))
         cal.set(Calendar.SECOND, rnd.nextInt(60))
         cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
         val time = new Timestamp(cal.getTimeInMillis)
-        Quote(sym, ex, rnd.nextDouble() * 100000, time, date, (id % 100).toInt)
+        Quote(sym, ex, rnd.nextDouble() * 100000, time, date)
       }
     }
     val tradeDF = session.range(tradeSize).mapPartitions { itr =>
@@ -211,12 +251,25 @@ object TPCETrade {
       val numSyms = syms.length
       val exs = EXCHANGES
       val numExs = exs.length
+      var day = 0
       // month is 0 based
-      val cal = new GregorianCalendar(2016, 5, 6)
-      val date = new Date(cal.getTimeInMillis)
+      var cal = new GregorianCalendar(2016, 5, day + 6)
+      var date = new Date(cal.getTimeInMillis)
+      var dayCounter = 0
       itr.map { id =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
+        if (numDays > 1) {
+          dayCounter += 1
+          // change date after some number of iterations
+          if (dayCounter == 10000) {
+            // change date
+            day = (day + 1) % numDays
+            cal = new GregorianCalendar(2016, 5, day + 6)
+            date = new Date(cal.getTimeInMillis)
+            dayCounter = 0
+          }
+        }
         cal.set(Calendar.HOUR, rnd.nextInt(8))
         cal.set(Calendar.MINUTE, rnd.nextInt(60))
         cal.set(Calendar.SECOND, rnd.nextInt(60))
@@ -249,7 +302,8 @@ object TPCETrade {
         params: Map[String, String] = Map(), query: String,
         snappy: Boolean, init: Boolean): Unit = {
       val defaults = params.keys.flatMap {
-        k => session.conf.getOption(k).map((k, _)) }
+        k => session.conf.getOption(k).map((k, _))
+      }
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
@@ -300,18 +354,21 @@ object TPCETrade {
     //   (3) Column table compression, optimized group by and local join
     var init = doInit
 
-    addBenchmark(s"Q$queryNumber: cache = T compress = T", cache = true, Map(
-      SQLConf.COMPRESS_CACHED.key -> "true"
-    ), query = cacheQueries(queryNumber - 1), snappy = false, init)
+    if (runSparkCaching) {
+      addBenchmark(s"Q$queryNumber: cache = T compress = T",
+        cache = true, Map(
+          SQLConf.COMPRESS_CACHED.key -> "true"
+        ), query = cacheQueries(queryNumber - 1), snappy = false, init)
+    }
 
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, optimized = F",
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = F",
       cache = false, Map(
         SQLConf.COMPRESS_CACHED.key -> "true",
         HASH_OPTIMIZED -> "false"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
 
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, optimized = T",
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
       cache = false, Map(
         SQLConf.COMPRESS_CACHED.key -> "true",
         HASH_OPTIMIZED -> "true"

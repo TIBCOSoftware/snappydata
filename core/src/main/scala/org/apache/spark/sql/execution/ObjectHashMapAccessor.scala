@@ -296,7 +296,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       // evaluate the key and value expressions
       ${evaluateVariables(keyVars)}${evaluateVariables(valueVars)}
       // skip if any key is null
-      if (${keyVars.map(_.isNull).mkString("\n||")}) continue;
+      if (${keyVars.map(_.isNull).mkString("\n|| ")}) continue;
       // generate hash code
       ${generateHashCode(hashVar, keyVars, keyExpressions)}
       // lookup or insert the grouping key in map
@@ -626,7 +626,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
             $deltaVar++;
           }
         } else {
-          // key not found so filter out the row with entryVar as null
+          // key not found so filter out the row with entry as null
           break;
         }
       }
@@ -729,10 +729,11 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     case StringType =>
       // try to copy just reference of the byte[] if possible
       val stringVar = resultVar.value
+      val platformClass = classOf[Platform].getName
       val bytes = ctx.freshName("stringBytes")
       val obj = bytes + "Obj"
       s"""Object $obj; byte[] $bytes;
-        if ($stringVar.getBaseOffset() == ${Platform.BYTE_ARRAY_OFFSET}
+        if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
             && ($obj = $stringVar.getBaseObject()) instanceof byte[]
             && ($bytes = (byte[])$obj).length == $stringVar.numBytes()) {
           $colVar = $bytes;
@@ -847,18 +848,19 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       // strings are stored as raw byte arrays
       case StringType =>
         val byteMethodsClass = classOf[ByteArrayMethods].getName
-        val offset = Platform.BYTE_ARRAY_OFFSET
+        val platformClass = classOf[Platform].getName
         if (thisVar.isEmpty) {
           // left side is a UTF8String while right side is byte array
           s"""$thisColVar.numBytes() == $otherCol.length
             && $byteMethodsClass.arrayEquals($thisColVar.getBaseObject(),
-                $thisColVar.getBaseOffset(), $otherCol, $offset,
-                $otherCol.length)"""
+               $thisColVar.getBaseOffset(), $otherCol,
+               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         } else {
           // both sides are raw byte arrays
           s"""$thisColVar.length == $otherCol.length
-            && $byteMethodsClass.arrayEquals($thisColVar, $offset,
-                $otherCol, $offset, $otherCol.length)"""
+            && $byteMethodsClass.arrayEquals($thisColVar,
+               $platformClass.BYTE_ARRAY_OFFSET, $otherCol,
+               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         }
       case _ => s"$thisColVar.equals($otherCol)"
     }
