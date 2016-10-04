@@ -545,7 +545,10 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
       case None => synchronized {
         tempTables.getOrElse(tableIdent.table,
-          throw new TableNotFoundException(s"Table '$tableIdent' not found"))
+          throw new TableNotFoundException(s"Table '$tableIdent' not found")) match {
+          case lr:LogicalRelation => lr.copy(metastoreTableIdentifier = Some(tableIdent))
+          case x => x
+        }
       }
     }
   }
