@@ -19,7 +19,15 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
+import com.gemstone.gemfire.cache.Cache;
+import com.gemstone.gemfire.cache.EvictionAlgorithm;
+import com.gemstone.gemfire.internal.cache.BucketRegion;
+import com.gemstone.gemfire.internal.cache.LocalRegion;
+import com.gemstone.gemfire.internal.cache.PartitionedRegion;
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import hydra.*;
+import io.snappydata.Server;
+import io.snappydata.ServerManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -27,6 +35,9 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
+import perffmwk.PerfStatMgr;
+import perffmwk.PerfStatValue;
+import perffmwk.StatSpecTokens;
 import sql.SQLBB;
 import sql.SQLHelper;
 import sql.SQLPrms;
@@ -108,6 +119,10 @@ public class SnappyTest implements Serializable {
     public static final String MASTER_PORT = "7077";
     private static int jobSubmissionCount = 0;
     private static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
+
+    protected static List regionDescriptNames = new ArrayList();
+    protected static Cache theCache;
+    protected static final int HEAVY_OBJECT_SIZE_VAL = 500;
 
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
@@ -1857,7 +1872,9 @@ public class SnappyTest implements Serializable {
             } else if (file.exists()) {
                 if (isStopMode) return;
                 file.setWritable(true);
-                file.delete();
+                //file.delete();
+                Files.delete(Paths.get(path));
+                Log.getLogWriter().info(fileName + " file deleted");
                 file.createNewFile();
             }
         } catch (IOException e) {
@@ -2417,6 +2434,137 @@ public class SnappyTest implements Serializable {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
+    }
+
+    /**
+     * Task to verify PR bucket local destroy eviction.
+     */
+    public static void HydraTask_verifyEvictionLocalDestroy() throws SQLException {
+        Log.getLogWriter().info("SS - started with HydraTask_verifyEvictionLocalDestroy ");
+        snappyTest.verifyEvictionLocalDestroy();
+        Log.getLogWriter().info("SS - Done with HydraTask_verifyEvictionLocalDestroy ");
+    }
+
+    /**
+     * Task to verify PR bucket local destroy eviction.
+     */
+    public synchronized void verifyEvictionLocalDestroy() throws SQLException {
+        Properties locatorProps = new Properties();
+        String locatorsList = getLocatorsList("locators");
+        Log.getLogWriter().info("SS - locatorsList is: " + locatorsList);
+        locatorProps.setProperty("locators", locatorsList);
+        locatorProps.setProperty("mcast-port", "0");
+        Server server = ServerManager.getServerInstance();
+        server.start(locatorProps);
+        Set<LocalRegion> regions = Misc.getGemFireCache().getAllRegions();
+        for (LocalRegion region : regions) {
+            Log.getLogWriter().info("SS - region name is : " + region.getName());
+            if (region instanceof PartitionedRegion) {
+                PartitionedRegion pr = (PartitionedRegion) region;
+                pr.getRegion();
+                verifyEvictionLocalDestroy(pr);
+            }
+        }
+    }
+
+    protected void verifyEvictionLocalDestroy(PartitionedRegion aRegion) {
+        if (aRegion.getLocalMaxMemory() == 0) {
+            Log.getLogWriter().info(
+                    "This is an accessor and hence eviction need not be verified");
+            return;
+        }
+
+        double numEvicted = 0;
+
+        EvictionAlgorithm evicAlgorithm = aRegion.getAttributes()
+                .getEvictionAttributes().getAlgorithm();
+        Log.getLogWriter().info("SS - evicAlgorithm is : " + evicAlgorithm.toString());
+
+        if (evicAlgorithm == EvictionAlgorithm.LRU_HEAP) {
+            Log.getLogWriter().info("Eviction algorithm is HEAP LRU");
+            numEvicted = getNumHeapLRUEvictions();
+            Log.getLogWriter().info("Evicted numbers :" + numEvicted);
+            if (numEvicted == 0) {
+                throw new TestException("No eviction happened in this test");
+            }
+        }
+
+        Set bucketList = aRegion.getDataStore().getAllLocalBuckets();
+        Iterator iterator = bucketList.iterator();
+        long count = 0;
+        while (iterator.hasNext()) {
+            Map.Entry entry = (Map.Entry) iterator.next();
+            BucketRegion localBucket = (BucketRegion) entry.getValue();
+            if (localBucket != null) {
+                Log.getLogWriter().info(
+                        "The entries in the bucket " + localBucket.getName()
+                                + " after eviction " + localBucket.entryCount());
+                if (evicAlgorithm == EvictionAlgorithm.LRU_HEAP
+                        && localBucket.entryCount() == 0) {
+                    // May happen especially with lower heap (Bug 39715)
+                    hydra.Log
+                            .getLogWriter()
+                            .warning(
+                                    "Buckets are empty after evictions with local destroy eviction action");
+                }
+                if (evicAlgorithm == EvictionAlgorithm.LRU_ENTRY
+                        || evicAlgorithm == EvictionAlgorithm.LRU_MEMORY)
+                    count = count + localBucket.getCounter();
+            }
+
+        }
+        if (evicAlgorithm == EvictionAlgorithm.LRU_ENTRY
+                && count != aRegion.getAttributes().getEvictionAttributes()
+                .getMaximum())
+            throw new TestException("After Eviction total entries in region "
+                    + aRegion.getName() + " expected= "
+                    + aRegion.getAttributes().getEvictionAttributes().getMaximum()
+                    + " but found= " + count);
+        else if (evicAlgorithm == EvictionAlgorithm.LRU_MEMORY) {
+            int configuredByteLimit = aRegion.getAttributes().getEvictionAttributes().getMaximum() * 1024 * 1024;
+            final int ALLOWANCE = HEAVY_OBJECT_SIZE_VAL * HEAVY_OBJECT_SIZE_VAL; // allow 1 extra object
+            int upperLimitAllowed = configuredByteLimit + ALLOWANCE;
+            int lowerLimitAllowed = aRegion.getAttributes()
+                    .getEvictionAttributes().getMaximum() * 1024 * 102;
+            Log.getLogWriter().info("memlru, configuredByteLimit: " + configuredByteLimit);
+            Log.getLogWriter().info("upperLimitAllowed (bytes): " + upperLimitAllowed);
+            Log.getLogWriter().info("lowerLimitAllowed (bytes): " + lowerLimitAllowed);
+            Log.getLogWriter().info("actual number of bytes: " + count);
+            if ((count > upperLimitAllowed) || (count < lowerLimitAllowed)) {
+                throw new TestException("After Eviction, configured memLRU bytes = " + configuredByteLimit +
+                        " total number of bytes in region " + count);
+            }
+        }
+    }
+
+    /**
+     * Return the number of HeapLRU evictions that have occurred.
+     *
+     * @return The number of HeapLRU evictions, obtained from stats.
+     */
+    public static double getNumHeapLRUEvictions() {
+        String spec = "* " // search all archives
+                + "HeapLRUStatistics "
+                + "* " // match all instances
+                + "lruEvictions " + StatSpecTokens.FILTER_TYPE
+                + "="
+                + StatSpecTokens.FILTER_NONE + " " + StatSpecTokens.COMBINE_TYPE
+                + "="
+                + StatSpecTokens.COMBINE_ACROSS_ARCHIVES
+                + " "
+                + StatSpecTokens.OP_TYPES + "=" + StatSpecTokens.MAX;
+        List aList = PerfStatMgr.getInstance().readStatistics(spec);
+        if (aList == null) {
+            Log.getLogWriter().info(
+                    "Getting stats for spec " + spec + " returned null");
+            return 0.0;
+        }
+        double totalEvictions = 0;
+        for (int i = 0; i < aList.size(); i++) {
+            PerfStatValue stat = (PerfStatValue) aList.get(i);
+            totalEvictions += stat.getMax();
+        }
+        return totalEvictions;
     }
 
     protected LogWriter log() {
