@@ -371,7 +371,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  private val cachedDataSourceTables: LoadingCache[QualifiedTableName,
+  protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
       LogicalRelation] = {
     val cacheLoader = new CacheLoader[QualifiedTableName, LogicalRelation]() {
       override def load(in: QualifiedTableName): LogicalRelation = {
@@ -402,6 +402,9 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  val cachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalRelation, String)]] = null
+
   private var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
@@ -417,6 +420,27 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       }
 
       cachedDataSourceTables(table)
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    } finally {
+      sync.unlock()
+    }
+  }
+
+  def getCachedSampledRelations(table: QualifiedTableName): Seq[(LogicalRelation, String)] = {
+    val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
+    sync.lock()
+    try {
+      // if a relation has been destroyed (e.g. by another instance of catalog),
+      // then the cached ones can be stale, so check and clear entire cache
+      val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
+      if (globalVersion != this.relationDestroyVersion) {
+        cachedSampleTables.invalidateAll()
+        this.relationDestroyVersion = globalVersion
+      }
+
+      cachedSampleTables(table)
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
         throw e.getCause
@@ -552,6 +576,11 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       }
     }
   }
+
+  final def getSampleRelations(tableIdent: QualifiedTableName ): Seq[(LogicalPlan, String)]
+  = getCachedSampledRelations(tableIdent)
+
+
 
   override def lookupRelation(tableIdent: TableIdentifier,
       alias: Option[String]): LogicalPlan = {
