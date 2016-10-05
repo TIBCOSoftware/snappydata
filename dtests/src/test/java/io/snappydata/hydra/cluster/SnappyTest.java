@@ -35,9 +35,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
-import perffmwk.PerfStatMgr;
-import perffmwk.PerfStatValue;
-import perffmwk.StatSpecTokens;
+import parReg.ColocationAndEvictionTest;
 import sql.SQLBB;
 import sql.SQLHelper;
 import sql.SQLPrms;
@@ -186,7 +184,8 @@ public class SnappyTest implements Serializable {
             List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
             Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
             for (File file1 : files) {
-                if (!file1.getAbsolutePath().contains("/work/")) userAppJarPath = file1.getAbsolutePath();
+                if (!file1.getAbsolutePath().contains("/work/") || !file1.getAbsolutePath().contains("/scala-2.10/"))
+                    userAppJarPath = file1.getAbsolutePath();
             }
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
@@ -281,7 +280,7 @@ public class SnappyTest implements Serializable {
                 int locPort;
                 do locPort = PortHelper.getRandomPort();
                 while (locPort < 0 || locPort > 65535);
-                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + locPortString + locPort + SnappyPrms.getTimeStatistics() + "snappylocator.gfs" + SnappyPrms.getLogLevel();
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + locPortString + locPort + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel();
                 SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(port));
                 SnappyBB.getBB().getSharedMap().put("locatorMcastPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(locPort));
@@ -303,7 +302,7 @@ public class SnappyTest implements Serializable {
                 nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port +
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
-                        "snappyserver.gfs" + SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage();
+                        SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
@@ -314,7 +313,7 @@ public class SnappyTest implements Serializable {
                         " -heap-size=" + SnappyPrms.getLeadMemory() + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() +
                         " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
-                        " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + "snappyleader.gfs" + SnappyPrms.getLogLevel() +
+                        " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter();
                 try {
                     if (leadHost == null) {
@@ -1336,7 +1335,8 @@ public class SnappyTest implements Serializable {
     protected void recordSnappyProcessIDinNukeRun(String pName) {
         Process pr = null;
         try {
-            String command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            //String command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            String command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
             ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
@@ -1375,6 +1375,7 @@ public class SnappyTest implements Serializable {
             throw new TestException(s, e);
         }
     }
+
 
     /**
      * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
@@ -1828,10 +1829,10 @@ public class SnappyTest implements Serializable {
                     for (String name : names) {
                         String[] splitedName = name.split("gemfire");
                         String newName = splitedName[0] + splitedName[1];
-                        if (newName.equals(RemoteTestModule.getMyClientName())) {
-                            RemoteTestModule.Master.recordDir(hd,
-                                    name, fullname);
-                        }
+//                        if (newName.equals(RemoteTestModule.getMyClientName())) {
+                        RemoteTestModule.Master.recordDir(hd,
+                                name, fullname);
+//                        }
                     }
                 } catch (RemoteException e) {
                     String s = "Unable to access master to record directory: " + dir;
@@ -2439,10 +2440,8 @@ public class SnappyTest implements Serializable {
     /**
      * Task to verify PR bucket local destroy eviction.
      */
-    public static void HydraTask_verifyEvictionLocalDestroy() throws SQLException {
-        Log.getLogWriter().info("SS - started with HydraTask_verifyEvictionLocalDestroy ");
+    public static synchronized void HydraTask_verifyEvictionLocalDestroy() throws SQLException {
         snappyTest.verifyEvictionLocalDestroy();
-        Log.getLogWriter().info("SS - Done with HydraTask_verifyEvictionLocalDestroy ");
     }
 
     /**
@@ -2451,14 +2450,13 @@ public class SnappyTest implements Serializable {
     public synchronized void verifyEvictionLocalDestroy() throws SQLException {
         Properties locatorProps = new Properties();
         String locatorsList = getLocatorsList("locators");
-        Log.getLogWriter().info("SS - locatorsList is: " + locatorsList);
         locatorProps.setProperty("locators", locatorsList);
         locatorProps.setProperty("mcast-port", "0");
         Server server = ServerManager.getServerInstance();
         server.start(locatorProps);
         Set<LocalRegion> regions = Misc.getGemFireCache().getAllRegions();
         for (LocalRegion region : regions) {
-            Log.getLogWriter().info("SS - region name is : " + region.getName());
+            Log.getLogWriter().info("region name is : " + region.getName());
             if (region instanceof PartitionedRegion) {
                 PartitionedRegion pr = (PartitionedRegion) region;
                 pr.getRegion();
@@ -2478,11 +2476,10 @@ public class SnappyTest implements Serializable {
 
         EvictionAlgorithm evicAlgorithm = aRegion.getAttributes()
                 .getEvictionAttributes().getAlgorithm();
-        Log.getLogWriter().info("SS - evicAlgorithm is : " + evicAlgorithm.toString());
 
         if (evicAlgorithm == EvictionAlgorithm.LRU_HEAP) {
             Log.getLogWriter().info("Eviction algorithm is HEAP LRU");
-            numEvicted = getNumHeapLRUEvictions();
+            numEvicted = ColocationAndEvictionTest.getNumHeapLRUEvictions();
             Log.getLogWriter().info("Evicted numbers :" + numEvicted);
             if (numEvicted == 0) {
                 throw new TestException("No eviction happened in this test");
@@ -2537,35 +2534,6 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    /**
-     * Return the number of HeapLRU evictions that have occurred.
-     *
-     * @return The number of HeapLRU evictions, obtained from stats.
-     */
-    public static double getNumHeapLRUEvictions() {
-        String spec = "* " // search all archives
-                + "HeapLRUStatistics "
-                + "* " // match all instances
-                + "lruEvictions " + StatSpecTokens.FILTER_TYPE
-                + "="
-                + StatSpecTokens.FILTER_NONE + " " + StatSpecTokens.COMBINE_TYPE
-                + "="
-                + StatSpecTokens.COMBINE_ACROSS_ARCHIVES
-                + " "
-                + StatSpecTokens.OP_TYPES + "=" + StatSpecTokens.MAX;
-        List aList = PerfStatMgr.getInstance().readStatistics(spec);
-        if (aList == null) {
-            Log.getLogWriter().info(
-                    "Getting stats for spec " + spec + " returned null");
-            return 0.0;
-        }
-        double totalEvictions = 0;
-        for (int i = 0; i < aList.size(); i++) {
-            PerfStatValue stat = (PerfStatValue) aList.get(i);
-            totalEvictions += stat.getMax();
-        }
-        return totalEvictions;
-    }
 
     protected LogWriter log() {
         return Log.getLogWriter();

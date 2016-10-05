@@ -402,7 +402,7 @@ public class SnappyPrms extends BasePrms {
 
     public static String getTimeStatistics() {
         boolean enableTimeStats = tasktab().booleanAt(enableTimeStatistics, tab().booleanAt(enableTimeStatistics, true));
-        String timeStatistics = " -enable-time-statistics=" + enableTimeStats + " -statistic-archive-file=";
+        String timeStatistics = " -enable-time-statistics=" + enableTimeStats + " -statistic-archive-file=statArchive.gfs";
         return timeStatistics;
     }
 
