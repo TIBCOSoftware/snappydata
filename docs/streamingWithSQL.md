@@ -38,9 +38,7 @@ We offer the following enhancements over Spark Streaming :
 
 4. __OLAP optimizations__: By integrating and collocating stream processing with our hybrid in-memory storage engine, we leverage our optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with our row store.
 
-5. __Reduced shuffling through co-partitioning__: With SnappyData, the partitioning key used by the input queue (e.g., for Kafka sources), the stream processor and the underlying store can all be the same. This dramatically reduces the need to shuffle records.
-
-6. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
+5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
 
 ## Working with stream tables
@@ -54,9 +52,7 @@ SnappyData supports creation of stream tables from Twitter, Kafka, Files, Socket
      // multiple stream source specific options
     storagelevel '', 
     rowConverter '', 
-    zkQuorum '',
-    groupId '',
-    topics '', 
+    topics '',
     kafkaParams '',
     consumerKey '',
     consumerSecret '',
@@ -89,8 +85,7 @@ For example to create a stream table using kafka source :
         "using kafka_stream options (" +
         "storagelevel 'MEMORY_AND_DISK_SER_2', " +
         "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
-        "zkQuorum 'localhost:2181', " +
-        "groupId 'streamConsumer', " +
+        "kafkaParams 'zookeeper.connect->localhost:2181;auto.offset.reset->smallest;group.id->myGroupId', " +
         "topics 'streamTopic:01')")
 
     // You can get a handle of underlying DStream of the table

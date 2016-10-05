@@ -151,12 +151,12 @@ class SnappyStreamingSuite
     kafkaUtils.createTopic(topic2)
 
     val add = kafkaUtils.zkAddress
-    ssnc.sql("create stream table kafkaStream (" +
+    ssnc.sql("create stream table if not exists kafkaStream (" +
         " publisher string) " +
         " using kafka_stream options(" +
-        " rowConverter 'org.apache.spark.sql.streaming.RowsConverter' ," +
+        " rowConverter 'org.apache.spark.sql.streaming.RowsConverter'," +
         s" kafkaParams 'zookeeper.connect->$add;auto.offset.reset->smallest;group.id->myGroupId'," +
-        s" topics '$topic:1')")
+        s" topics '$topic:1,$topic2:1')")
 
     val stream = ssnc.getSchemaDStream("kafkaStream")
 
