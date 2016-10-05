@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
+import com.google.common.cache.{CacheLoader, CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.conf.Configuration
@@ -181,7 +181,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   val cachedSampleTables: LoadingCache[QualifiedTableName,
-      Seq[(LogicalRelation, String)]] = null
+      Seq[(LogicalRelation, String)]] = SnappyStoreHiveCatalog.cachedSampleTables
 
   private var relationDestroyVersion = 0
 
@@ -231,6 +231,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
+      cachedSampleTables.invalidateAll()
     }
     this.relationDestroyVersion = globalVersion + 1
   }
@@ -304,6 +305,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     cachedDataSourceTables.invalidate(tableIdent)
+    cachedSampleTables.invalidate(tableIdent)
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -410,6 +412,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
 
     cachedDataSourceTables.invalidate(tableIdent)
+    cachedSampleTables.invalidate(tableIdent)
     registerRelationDestroy()
 
     val schemaName = tableIdent.schemaName
@@ -430,6 +433,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
     // invalidate any cached plan for the table
     cachedDataSourceTables.invalidate(tableIdent)
+    cachedSampleTables.invalidate(tableIdent)
 
     val tableProperties = new mutable.HashMap[String, String]
     tableProperties.put(HIVE_PROVIDER, provider)
@@ -532,6 +536,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       withHiveExceptionHandling(addIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
+    cachedSampleTables.invalidate(inTable)
   }
 
   def removeIndexProp(inTable: QualifiedTableName,
@@ -560,6 +565,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       withHiveExceptionHandling(removeIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
+    cachedSampleTables.invalidate(inTable)
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -656,7 +662,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    *
    * This is mainly used for tests.
    */
-  override private[sql] def reset(): Unit = synchronized {
+  override  def reset(): Unit = synchronized {
     setCurrentDatabase(Constant.DEFAULT_SCHEMA)
     listDatabases().map(s => s.toUpperCase).
         filter(_ != Constant.DEFAULT_SCHEMA).
@@ -693,6 +699,14 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
+  val cachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalRelation, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
+    new CacheLoader[QualifiedTableName, Seq[(LogicalRelation, String)]]() {
+      override def load(in: QualifiedTableName): Seq[(LogicalRelation, String)] = {
+        Seq.empty
+      }
+    })
+
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
