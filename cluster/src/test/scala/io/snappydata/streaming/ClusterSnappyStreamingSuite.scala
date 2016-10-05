@@ -18,30 +18,27 @@ package io.snappydata.streaming
 
 import scala.collection.mutable
 
-import io.snappydata.app.streaming.{StreamingSuite, Tweet}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.streaming.SchemaDStream
+import org.apache.spark.sql.streaming.{Tweet, SnappyStreamingSuite, SchemaDStream}
 
 /**
- * Inherit all tests of StreamingSuite to run with snappy-spark
- * (instead of stock spark that StreamingSuite is run with).
- */
-class ClusterStreamingSuite
-    extends StreamingSuite {
-
+  * Inherit all tests of SnappyStreamingSuite to run with snappy-spark
+  * (instead of stock spark that SnappyStreamingSuite is run with).
+  */
+class ClusterSnappyStreamingSuite
+    extends SnappyStreamingSuite {
   /** same test in core does not test for dynamic CQ registration */
   test("stream ad-hoc sql with dynamic CQ") {
     ssnc.sql("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +
         "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+        s"consumerKey '$consumerKey', " +
+        s"consumerSecret '$consumerSecret', " +
+        s"accessToken '$accessToken', " +
+        s"accessTokenSecret '$accessTokenSecret', " +
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToRowsConverter')")
 
     val cqResult = ssnc.registerCQ("SELECT text FROM tweetsTable " +
         "window (duration 10 seconds, slide 10 seconds) where text like '%e%'")

@@ -48,7 +48,7 @@ final class DirectKafkaStreamRelation(
 
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
-    t.split(", ").map { s =>
+    t.split(";").map { s =>
       val a = s.split("->")
       (a(0), a(1))
     }.toMap
