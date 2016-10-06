@@ -111,6 +111,14 @@ class StringAsVarcharDUnitTest(val s: String)
         }
       }
     }
+    s.executeQuery(s"select cast(col_int as string), cast(col_string as clob), " +
+        s"cast(col_char as varchar(100)) from $colTab1 $affix")
+    val rSet = s.getResultSet
+    var count = 0
+    while (rSet.next()) {
+      count += 1
+    }
+    assert(count == 2)
 
     conn.close()
   }
