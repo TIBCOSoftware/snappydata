@@ -181,7 +181,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   val cachedSampleTables: LoadingCache[QualifiedTableName,
-      Seq[(LogicalRelation, String)]] = SnappyStoreHiveCatalog.cachedSampleTables
+      Seq[(LogicalPlan, String)]] = SnappyStoreHiveCatalog.cachedSampleTables
 
   private var relationDestroyVersion = 0
 
@@ -206,7 +206,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  def getCachedSampledRelations(table: QualifiedTableName): Seq[(LogicalRelation, String)] = {
+  def getCachedSampledRelations(table: QualifiedTableName): Seq[(LogicalPlan, String)] = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
     sync.lock()
     try {
@@ -357,8 +357,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  final def getSampleRelations(tableIdent: QualifiedTableName ): Seq[(LogicalPlan, String)]
-  = getCachedSampledRelations(tableIdent)
+
+
+
 
 
 
@@ -700,9 +701,9 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
   val cachedSampleTables: LoadingCache[QualifiedTableName,
-      Seq[(LogicalRelation, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
-    new CacheLoader[QualifiedTableName, Seq[(LogicalRelation, String)]]() {
-      override def load(in: QualifiedTableName): Seq[(LogicalRelation, String)] = {
+      Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
+    new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
+      override def load(in: QualifiedTableName): Seq[(LogicalPlan, String)] = {
         Seq.empty
       }
     })
