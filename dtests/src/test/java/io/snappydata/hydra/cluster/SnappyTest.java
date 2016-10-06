@@ -298,7 +298,6 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
-                //" -J-Xmx=" + SnappyPrms.getServerMemory() +
                 nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port +
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +

@@ -18,7 +18,6 @@ package io.snappydata.hydra.cluster;
 
 import hydra.BasePrms;
 import hydra.HydraVector;
-import hydra.Log;
 
 import java.util.Vector;
 
@@ -343,10 +342,8 @@ public class SnappyPrms extends BasePrms {
 
     public static String calculateDefaultEvictionPercentage() {
         int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
-        Log.getLogWriter().info("SS - criticalHeapPercent : " + criticalHeapPercent);
         int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
         String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
-        Log.getLogWriter().info("SS - evictionHeapPercentString : " + evictionHeapPercentString);
         return evictionHeapPercentString;
     }
 
