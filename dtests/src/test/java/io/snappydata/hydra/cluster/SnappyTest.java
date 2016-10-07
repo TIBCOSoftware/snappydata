@@ -140,7 +140,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
-    public static void HydraTask_initializeSnappyTest() {
+    public static synchronized void HydraTask_initializeSnappyTest() {
         if (snappyTest == null) {
             snappyTest = new SnappyTest();
             snappyTest.getClientHostDescription();
@@ -1198,7 +1198,7 @@ public class SnappyTest implements Serializable {
     /**
      * Executes user SQL scripts.
      */
-    public static void HydraTask_executeSQLScripts() {
+    public static synchronized void HydraTask_executeSQLScripts() {
         Vector scriptNames, dataLocationList = null, persistenceModeList = null, colocateWithOptionList = null,
                 partitionByOptionList = null, numPartitionsList = null, redundancyOptionList = null,
                 recoverDelayOptionList = null, maxPartitionSizeList = null, evictionByOptionList = null;
