@@ -79,9 +79,14 @@ class SnappyParser(session: SnappySession)
     var noDecimalPoint = true
     var index = 0
     val len = s.length
+    val lastChar = s.charAt(len - 1)
     // use double if ending with 'D'
-    if (s.charAt(len - 1) == 'D') {
-      return Literal(s.toDouble, DoubleType)
+    if (lastChar == 'D') {
+      return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)),
+        DoubleType)
+    } else if (lastChar == 'L') {
+      return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)),
+        LongType)
     }
     while (index < len) {
       val c = s.charAt(index)
@@ -128,8 +133,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ 'D'.?) ~ delimiter ~>
-        ((s: String) => toNumericLiteral(s))
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ Consts.numericSuffix.?) ~
+        delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
   protected final def literal: Rule1[Literal] = rule {
