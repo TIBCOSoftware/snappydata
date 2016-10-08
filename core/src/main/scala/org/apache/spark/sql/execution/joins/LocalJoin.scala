@@ -147,8 +147,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // add reference to the row table RDD directly since it is not possible
     // to pass to inputRDDs in the general case (when streamPlan already
     //   has 2 RDDs)
-    val rowTableScan = buildPlan.asInstanceOf[RowTableScan]
-    val rdd = rowTableScan.dataRDD
+    val rowIterator = ctx.freshName("rowIterator")
+    // find the underlying RowTableScan and set it up to use its RDD's direct
+    // iterator for best performance
+    val rdd = buildPlan.find {
+      case scan: RowTableScan if scan.numPartitions == 1 =>
+        scan.input = rowIterator
+        true
+      case _ => false
+    }.map(_.asInstanceOf[RowTableScan].dataRDD).getOrElse(
+      throw new IllegalStateException(
+        s"Failed to find replicated table for LocalJoin in $buildPlan"))
     assert(rdd.getNumPartitions == 1)
     val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
     val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
@@ -166,20 +175,20 @@ case class LocalJoin(leftKeys: Seq[Expression],
       buildPlan.schema, this, this.parent, buildPlan.output, buildPlan)
 
     val entryClass = mapAccessor.getClassName
-    val rowIterator = ctx.freshName("rowIterator")
+    val numKeyColumns = buildSideKeys.length
     ctx.addNewFunction(createMap,
       s"""
         private void $createMap() throws java.io.IOException {
           final org.apache.spark.TaskContext context =
             org.apache.spark.TaskContext.get();
-          $hashMapTerm = new $hashSetClassName(128, 0.6,
-             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
+            scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           int $maskTerm = $hashMapTerm.mask();
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
 
           final scala.collection.Iterator $rowIterator = $rowTableRDD.iterator(
             $rowTablePart, context);
-          ${rowTableScan.produce(ctx, rowIterator, mapAccessor)}
+          ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
         }
        """)
 
@@ -189,6 +198,15 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
+    // initialization of min/max for integral keys
+    val initMinMaxVars = mapAccessor.integralKeys.map { index =>
+      val minVar = mapAccessor.integralKeysMinVars(index)
+      val maxVar = mapAccessor.integralKeysMaxVars(index)
+      s"""
+        final long $minVar = $hashMapTerm.getMinValue($index);
+        final long $maxVar = $hashMapTerm.getMaxValue($index);
+      """
+    }.mkString("\n")
 
     s"""
       boolean $keyIsUniqueTerm = true;
@@ -199,7 +217,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
         $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
         $initMap = true;
       }
-
+      $initMinMaxVars
       final int $maskTerm = $hashMapTerm.mask();
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
       long $numRowsTerm = 0L;
@@ -338,7 +356,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Generate the (non-equi) condition used to filter joined rows.
    * This is used in Inner joins.
    */
-  private def getInnerJoinCondition(ctx: CodegenContext,
+  private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode], buildVars: Seq[ExprCode],
       buildInit: String): (String, String) = condition match {
     case Some(expr) =>
@@ -451,7 +469,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val entryVar = ctx.freshName("entry")
     val (keyVars, valueVars, valueInit) = mapAccessor.getMultiMapVars(entryVar)
     val buildVars = keyVars ++ valueVars
-    val (checkCondition, buildInit) = getInnerJoinCondition(ctx, input,
+    val (checkCondition, buildInit) = getJoinCondition(ctx, input,
       buildVars, valueInit)
 
     ctx.INPUT_ROW = null
@@ -464,7 +482,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     mapAccessor.generateMapLookup(entryVar, keyIsUniqueTerm, numRowsTerm,
       checkCondition, streamSideKeys, ctx.generateExpressions(streamKeys),
-      keyVars, buildInit, resultVars)
+      keyVars, buildInit, resultVars, joinType)
   }
 
   /**

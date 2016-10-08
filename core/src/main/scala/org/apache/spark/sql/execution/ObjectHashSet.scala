@@ -53,9 +53,8 @@ import scala.reflect.ClassTag
  * java interfaces to keep byte code overheads minimal.
  */
 final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
-    loadFactor: Double) extends java.lang.Iterable[T] with Serializable {
-
-  def this(initialCapacity: Int) = this(initialCapacity, 0.6)
+    loadFactor: Double, numColumns: Int)
+    extends java.lang.Iterable[T] with Serializable {
 
   private[this] var _capacity = nextPowerOf2(initialCapacity)
   private[this] var _size = 0
@@ -64,6 +63,8 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] var _mask = _capacity - 1
   private[this] var _data: Array[T] = newArray(_capacity)
   private[this] var _keyIsUnique: Boolean = true
+  private[this] var _minValues: Array[Long] = _
+  private[this] var _maxValues: Array[Long] = _
 
   private[this] def newArray(capacity: Int): Array[T] =
     implicitly[ClassTag[T]].newArray(capacity)
@@ -78,6 +79,44 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   def setKeyIsUnique(unique: Boolean): Unit =
     _keyIsUnique = unique
+
+  private def initArray(values: Array[Long], init: Long): Unit = {
+    var index = 0
+    val len = values.length
+    while (index < len) {
+      values(index) = init
+      index += 1
+    }
+  }
+
+  def updateLimits(v: Long, ordinal: Int): Unit = {
+    if (_minValues == null) {
+      _minValues = new Array[Long](numColumns)
+      initArray(_minValues, Long.MaxValue)
+    }
+    val currentMin = _minValues(ordinal)
+    if (v < currentMin) {
+      _minValues(ordinal) = v
+    }
+    if (_maxValues == null) {
+      _maxValues = new Array[Long](numColumns)
+      initArray(_maxValues, Long.MinValue)
+    }
+    val currentMax = _maxValues(ordinal)
+    if (v > currentMax) {
+      _maxValues(ordinal) = v
+    }
+  }
+
+  def getMinValue(ordinal: Int): Long = _minValues match {
+    case null => Long.MaxValue // no value in map so skip everything
+    case minValues => minValues(ordinal)
+  }
+
+  def getMaxValue(ordinal: Int): Long = _maxValues match {
+    case null => Long.MinValue // no value in map so skip everything
+    case maxValues => maxValues(ordinal)
+  }
 
   override def iterator: JIterator[T] = new JIterator[T] {
 
