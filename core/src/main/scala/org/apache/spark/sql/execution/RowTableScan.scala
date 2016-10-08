@@ -44,19 +44,20 @@ private[sql] final case class RowTableScan(
     extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
-  override def doProduce(ctx: CodegenContext): String = {
-    // PartitionedPhysicalRDD always has one input
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator",
-      input, s"$input = inputs[0];")
-    doProduce(ctx, input)
-  }
+  private[sql] var input: String = _
 
-  private[sql] def doProduce(ctx: CodegenContext, input: String): String = {
+  override def doProduce(ctx: CodegenContext): String = {
+    // a parent plan may set a custom input (e.g. LocalJoin)
+    if (input == null) {
+      // PartitionedPhysicalRDD always has one input
+      input = ctx.freshName("input")
+      ctx.addMutableState("scala.collection.Iterator",
+        input, s"$input = inputs[0];")
+    }
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null
 
-    dataRDD match {
+    val code = dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
         doProduceWithoutProjection(ctx, input, numOutputRows,
           output, baseRelation)
@@ -64,19 +65,8 @@ private[sql] final case class RowTableScan(
         doProduceWithProjection(ctx, input, numOutputRows,
           output, baseRelation)
     }
-  }
-
-  /**
-   * Returns Java source code to process the rows from input RDD.
-   */
-  private[sql] def produce(ctx: CodegenContext, input: String,
-      parent: CodegenSupport): String = executeQuery {
-    this.parent = parent
-    ctx.freshNamePrefix = "rowTableScan"
-    s"""
-       |${ctx.registerComment(s"PRODUCE: ${this.simpleString}")}
-       |${doProduce(ctx, input)}
-    """.stripMargin
+    input = null
+    code
   }
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,

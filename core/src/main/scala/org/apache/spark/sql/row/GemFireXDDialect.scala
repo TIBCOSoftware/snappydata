@@ -119,15 +119,16 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     case StringType =>
       if (md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
           md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
-        if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR")) {
-          Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
-            java.sql.Types.CHAR))
-        } else if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("VARCHAR")) {
-          Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
-            java.sql.Types.VARCHAR))
-        } else {
-          // STRING
-          Some(JdbcType("CLOB", java.sql.Types.CLOB))
+        md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
+          case "CHAR" =>
+            Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
+              java.sql.Types.CHAR))
+          case "VARCHAR" =>
+            Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
+              java.sql.Types.VARCHAR))
+          case _ =>
+            // STRING
+            Some(JdbcType("CLOB", java.sql.Types.CLOB))
         }
       } else {
         Some(JdbcType("CLOB", java.sql.Types.CLOB))

@@ -436,6 +436,7 @@ case class SnappyHashAggregateExec(
       this, this.parent, child.output, child = null)
 
     val entryClass = keyBufferAccessor.getClassName
+    val numKeyColumns = groupingExpressions.length
 
     val childProduce = child.asInstanceOf[CodegenSupport].produce(ctx, this)
     // if batchConsume has not been done then declare mask/data variables
@@ -449,8 +450,8 @@ case class SnappyHashAggregateExec(
     ctx.addNewFunction(doAgg,
       s"""
         private void $doAgg() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName(128, 0.6,
-             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
+            scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           $declareVars
           $childProduce
 

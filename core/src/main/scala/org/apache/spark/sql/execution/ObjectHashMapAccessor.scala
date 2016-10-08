@@ -23,6 +23,7 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, BindReferences, BoundReference, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -86,6 +87,12 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     case (ne: NamedExpression, index) => ne.exprId -> index
   }.toMap
 
+  lazy val (integralKeys, integralKeysMinVars, integralKeysMaxVars) =
+    keyExpressions.zipWithIndex.collect {
+    case (expr, index) if isIntegralType(expr.dataType) =>
+      (index, ctx.freshName("minValue"), ctx.freshName("maxValue"))
+  }.unzip3
+
   private[this] val hashingClass = classOf[HashingUtil].getName
   private[this] val nullsMaskPrefix = "nullsMask"
   /**
@@ -136,7 +143,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         case (dataType, _, ExprCode(_, nullVar, varName), nullIndex) =>
           genEqualsCode("this", varName, nullVar, other,
             varName, nullVar, nullIndex, isPrimitiveType(dataType), dataType)
-      }.mkString("\n&& ")
+      }.mkString(" &&\n")
       val (valueClassCode, extendsCode, nulls, multiValues) =
         if (valueVars.nonEmpty) {
           (s"""
@@ -268,6 +275,10 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     val deltaVar = ctx.freshName("delta")
     val keyVars = getKeyVars(input)
     val valueVars = getValueVars(input)
+    // update min/max for primitive type columns
+    val updateMinMax = integralKeys.map { index =>
+      s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
+    }.mkString("\n")
     val multiValuesUpdateCode = if (valueClassName.isEmpty) "// no value field"
     else {
       s"""
@@ -296,7 +307,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       // evaluate the key and value expressions
       ${evaluateVariables(keyVars)}${evaluateVariables(valueVars)}
       // skip if any key is null
-      if (${keyVars.map(_.isNull).mkString("\n|| ")}) continue;
+      if (${keyVars.map(_.isNull).mkString(" ||\n")}) continue;
       // generate hash code
       ${generateHashCode(hashVar, keyVars, keyExpressions)}
       // lookup or insert the grouping key in map
@@ -330,7 +341,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
             $maskTerm = $hashMapTerm.mask();
             $dataTerm = ($className[])$hashMapTerm.data();
           }
-
+          $updateMinMax
           break;
         }
       }
@@ -416,7 +427,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     case ((dataType, _, ExprCode(_, nullVar, varName), nullIndex), colVar) =>
       genEqualsCode("", colVar.value, colVar.isNull, objVar, varName,
         nullVar, nullIndex, isPrimitiveType(dataType), dataType)
-  }.mkString("\n&& ")
+  }.mkString(" &&\n")
 
   /**
    * Get the ExprCode for the key and/or value columns given a class object
@@ -540,13 +551,14 @@ final case class ObjectHashMapAccessor(session: SnappySession,
   def generateMapLookup(entryVar: String, keyIsUnique: String, numRows: String,
       checkCondition: String, streamKeys: Seq[Expression],
       streamKeyVars: Seq[ExprCode], mapKeyVars: Seq[ExprCode],
-      valueInit: String, resultVars: Seq[ExprCode]): String = {
+      valueInit: String, resultVars: Seq[ExprCode],
+      joinType: JoinType): String = {
     val hashVar = ctx.freshName("hash")
     val posVar = ctx.freshName("pos")
     val deltaVar = ctx.freshName("delta")
 
     // if consumer is a projection that will project away key columns,
-    // then avoid materializing the code for those
+    // then avoid materializing those
     val mapKeyCodes = cParent match {
       case ProjectExec(projection, _) =>
         mapKeyVars.zip(keyExpressions).collect {
@@ -563,6 +575,15 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     // can be re-used by consume if possible
     val streamHashCode = generateHashCode(hashVar, streamKeyVars, streamKeys)
     val consumeResult = consumer.consume(ctx, resultVars)
+    // filter as per min/max if provided; the min/max variables will be
+    // initialized by the caller outside the loop after creating the map
+    val minMaxFilter = integralKeys.map { index =>
+      val keyVar = streamKeyVars(index).value
+      val minVar = integralKeysMinVars(index)
+      val maxVar = integralKeysMaxVars(index)
+      s"$keyVar < $minVar || $keyVar > $maxVar"
+    }.mkString("if (", " ||\n", ") continue;")
+    // code to iterate one or more values for a matching key
     val valuesIterationCode = if (valueClassName.isEmpty) {
       s"""
         $mapKeyCodes
@@ -605,6 +626,10 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     }
 
     s"""
+      // skip if any join key is null
+      if (${streamKeyVars.map(_.isNull).mkString(" ||\n")}) continue;
+      // filter using min/max for integral keys
+      $minMaxFilter
       // generate hash code from stream side key columns
       $streamHashCode
       // Lookup the key in map and consume all values.
@@ -706,6 +731,12 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     }.mkString("\n")
   }
 
+  private def isIntegralType(dataType: DataType): Boolean = dataType match {
+    case ByteType | ShortType | IntegerType | LongType |
+         TimestampType | DateType => true
+    case _ => false
+  }
+
   private def isPrimitiveType(dataType: DataType): Boolean = dataType match {
     case BooleanType | ByteType | ShortType | IntegerType |
          LongType | FloatType | DoubleType | TimestampType | DateType => true
@@ -742,6 +773,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         }"""
     case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"
+    case _: BinaryType if doCopy =>
+      s"$colVar = ${resultVar.value}.clone();"
     case _ =>
       s"$colVar = ${resultVar.value};"
   }
@@ -790,7 +823,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       s"""
         final long $longVar = $colVar;
         final int $hashVar = $hashingClass.hashInt(
-          ($longVar ^ ($longVar >>> 32)));
+          (int)($longVar ^ ($longVar >>> 32)));
       """
     } else {
       s"""
@@ -843,6 +876,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     // check for single column no-wrapper case
     val otherCol = if (otherColVar.isEmpty) otherVar
     else s"$otherVar.$otherColVar"
+    val otherColNull = if (otherColVar.isEmpty) otherNullVar
+    else s"$otherVar.$otherNullVar"
     val equalsCode = if (isPrimitive) s"($thisColVar == $otherCol)"
     else dataType match {
       // strings are stored as raw byte arrays
@@ -869,9 +904,9 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       s"""($thisColVar != null ? ($otherCol != null && $equalsCode)
            : ($otherCol) == null)"""
     } else {
-      val notNullCode = genNotNullCode(thisNullVar, nullIndex)
-      val otherNotNullCode = genNotNullCode(s"$otherCol",
-        nullIndex)
+      val notNullCode = if (thisVar.isEmpty) s"!$thisNullVar"
+      else genNotNullCode(thisNullVar, nullIndex)
+      val otherNotNullCode = genNotNullCode(otherColNull, nullIndex)
       s"""($notNullCode ? ($otherNotNullCode && $equalsCode)
            : !$otherNotNullCode)"""
     }
