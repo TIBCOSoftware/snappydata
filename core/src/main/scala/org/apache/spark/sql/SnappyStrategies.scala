@@ -19,8 +19,8 @@ package org.apache.spark.sql
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -60,41 +60,43 @@ private[sql] trait SnappyStrategies {
 
   object LocalJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, left,
-      CanLocalJoin(right)) => makeLocalHashJoin(leftKeys, rightKeys,
-        left, right, condition, joins.BuildRight)
-      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition,
-      CanLocalJoin(left), right) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right,
-          condition, joins.BuildLeft)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+      left, right) =>
+        if (canBuildRight(joinType) && canLocalJoin(right)) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight)
+        } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft)
+        } else Nil
       case _ => Nil
     }
 
-    object CanLocalJoin {
-      def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
+    private def canBuildRight(joinType: JoinType): Boolean = joinType match {
+      case Inner | LeftOuter | LeftSemi | LeftAnti => true
+      case j: ExistenceJoin => true
+      case _ => false
+    }
+
+    private def canBuildLeft(joinType: JoinType): Boolean = joinType match {
+      case Inner | RightOuter => true
+      case _ => false
+    }
+
+    private def canLocalJoin(plan: LogicalPlan): Boolean = {
+      plan match {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          if (t.numPartitions == 1) Some(plan) else None
+          t.numPartitions == 1
         case PhysicalOperation(projects, filters,
         Join(left, right, _, _)) =>
-          val leftPlan = CanLocalJoin.unapply(left)
-          val rightPlan = CanLocalJoin.unapply(right)
           // If join is a result of join of replicated tables, this
           // join result should also be a local join with any other table
-          leftPlan match {
-            case Some(_) => rightPlan match {
-              case Some(_) => Some(plan)
-              case None => None
-            }
-            case None => None
-          }
+          canLocalJoin(left) && canLocalJoin(right)
         case PhysicalOperation(_, _, node) if node.children.size == 1 =>
-          CanLocalJoin.unapply(node.children.head) match {
-            case Some(_) => Some(plan)
-            case None => None
-          }
+          canLocalJoin(node.children.head)
 
-        case x => None
+        case _ => false
       }
     }
 
@@ -104,11 +106,10 @@ private[sql] trait SnappyStrategies {
         left: LogicalPlan,
         right: LogicalPlan,
         condition: Option[Expression],
+        joinType: JoinType,
         side: joins.BuildSide): Seq[SparkPlan] = {
-
-      val localHashJoin = execution.joins.LocalJoin(leftKeys, rightKeys,
-        side, condition, Inner, planLater(left), planLater(right))
-      condition.map(FilterExec(_, localHashJoin)).getOrElse(localHashJoin) :: Nil
+      joins.LocalJoin(leftKeys, rightKeys, side, condition,
+        joinType, planLater(left), planLater(right)) :: Nil
     }
   }
 

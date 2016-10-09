@@ -261,18 +261,25 @@ case class LocalJoin(leftKeys: Seq[Expression],
   private def doConsumeOptimized(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
     // variable that holds if relation is unique to optimize iteration
-    val relationIsUnique = ctx.freshName("keyIsUnique")
-    joinType match {
-      case Inner => codeGenInnerOptimized(ctx, input, hashMapTerm)
-      case LeftOuter | RightOuter => codeGenOuter(ctx, input,
-        hashMapTerm, relationIsUnique)
-      case LeftSemi => codeGenSemi(ctx, input, hashMapTerm, relationIsUnique)
-      case LeftAnti => codeGenAnti(ctx, input, hashMapTerm, relationIsUnique)
-      case _: ExistenceJoin => codeGenExistence(ctx, input,
-        hashMapTerm, relationIsUnique)
-      case x => throw new IllegalArgumentException(
-        s"LocalJoin should not take $x as the JoinType")
+    val entryVar = ctx.freshName("entry")
+    val (keyVars, valueVars, valueInit) = mapAccessor.getMultiMapVars(
+      entryVar, joinType)
+    val buildVars = keyVars ++ valueVars
+    val (checkCondition, buildInit) = getJoinCondition(ctx, input,
+      buildVars, valueInit)
+
+    ctx.INPUT_ROW = null
+    ctx.currentVars = input
+    val (resultVars, streamKeys) = buildSide match {
+      case BuildLeft => (buildVars ++ input,
+          streamSideKeys.map(BindReferences.bindReference(_, right.output)))
+      case BuildRight => (input ++ buildVars,
+          streamSideKeys.map(BindReferences.bindReference(_, left.output)))
     }
+    val streamKeyVars = ctx.generateExpressions(streamKeys)
+    mapAccessor.generateMapLookup(entryVar, keyIsUniqueTerm, numRowsTerm,
+      buildInit, checkCondition, streamSideKeys, streamKeyVars, buildVars,
+      input, resultVars, joinType)
   }
 
   /**
@@ -358,7 +365,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode], buildVars: Seq[ExprCode],
-      buildInit: String): (String, String) = condition match {
+      buildInit: String): (Option[ExprCode], String) = condition match {
     case Some(expr) =>
       // evaluate the variables from build side that used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
@@ -367,12 +374,12 @@ case class LocalJoin(leftKeys: Seq[Expression],
       ctx.currentVars = input ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      (s"""
-        $buildInit$eval
-        ${ev.code}
-        if (${ev.isNull} || !${ev.value}) continue;
-      """, "")
-    case None => ("", buildInit)
+      (Some(ev.copy(code =
+          s"""
+            $buildInit$eval
+            ${ev.code}
+          """)), "")
+    case None => (None, buildInit)
   }
 
   /**
@@ -459,30 +466,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  }
        |}
      """.stripMargin
-  }
-
-  /**
-   * Generates the code for Inner join.
-   */
-  private def codeGenInnerOptimized(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String): String = {
-    val entryVar = ctx.freshName("entry")
-    val (keyVars, valueVars, valueInit) = mapAccessor.getMultiMapVars(entryVar)
-    val buildVars = keyVars ++ valueVars
-    val (checkCondition, buildInit) = getJoinCondition(ctx, input,
-      buildVars, valueInit)
-
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    val (resultVars, streamKeys) = buildSide match {
-      case BuildLeft => (buildVars ++ input,
-          streamSideKeys.map(BindReferences.bindReference(_, right.output)))
-      case BuildRight => (input ++ buildVars,
-          streamSideKeys.map(BindReferences.bindReference(_, left.output)))
-    }
-    mapAccessor.generateMapLookup(entryVar, keyIsUniqueTerm, numRowsTerm,
-      checkCondition, streamSideKeys, ctx.generateExpressions(streamKeys),
-      keyVars, buildInit, resultVars, joinType)
   }
 
   /**

@@ -23,7 +23,7 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, BindReferences, BoundReference, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -435,7 +435,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
    * in generated code first.
    */
   def getColumnVars(objVar: String, onlyKeyVars: Boolean,
-      onlyValueVars: Boolean): (String, Seq[ExprCode]) = {
+      onlyValueVars: Boolean,
+      separateNullVars: Boolean = false): (String, Seq[ExprCode]) = {
     // Generate initial declarations for null masks to avoid reading those
     // repeatedly. Caller is supposed to insert the code at the start.
     val declarations = new StringBuilder
@@ -458,22 +459,29 @@ final case class ObjectHashMapAccessor(session: SnappySession,
           val (localVar, localDeclaration) = {
             if (ev.value.isEmpty) {
               // single column no-wrapper case
-              (objVar, "")
+              (objVar, new StringBuilder)
             } else dataType match {
               case StringType =>
                 // wrap the bytes in UTF8String
                 val lv = ctx.freshName("localField")
-                (lv, s"final UTF8String $lv = UTF8String.fromBytes(" +
-                    s"$objVar.${ev.value});")
+                (lv, new StringBuilder().append(s"final UTF8String $lv = " +
+                    s"UTF8String.fromBytes($objVar.${ev.value});"))
               case _ =>
                 val lv = ctx.freshName("localField")
-                (lv, s"final $javaType $lv = $objVar.${ev.value};")
+                (lv, new StringBuilder().append(
+                  s"final $javaType $lv = $objVar.${ev.value};"))
             }
           }
-          columnVars += ExprCode(localDeclaration, nullLocalVars.get(ev.isNull)
+          val nullExpr = nullLocalVars.get(ev.isNull)
               .map(genNullCode(_, nullIndex)).getOrElse(
             if (nullIndex == NULL_NON_PRIM) s"($localVar == null)"
-            else "false"), localVar)
+            else "false")
+          val nullVar = if (separateNullVars) {
+            val nv = ctx.freshName("isNull")
+            localDeclaration.append(s"\nboolean $nv = $nullExpr;")
+            nv
+          } else nullExpr
+          columnVars += ExprCode(localDeclaration.toString, nullVar, localVar)
         // if a value field is already a key column, then point to the same
         case Some(i) => columnVars += columnVars(i).copy(code = "")
       }
@@ -537,28 +545,42 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     """
   }
 
-  def getMultiMapVars(entryVar: String): (Seq[ExprCode], Seq[ExprCode],
-      String) = {
+  def getMultiMapVars(entryVar: String,
+      joinType: JoinType): (Seq[ExprCode], Seq[ExprCode], String) = {
+    // for outer join use separate isNull variables that can be set if no match
+    val separateNullVars = joinType match {
+      case LeftOuter | RightOuter | FullOuter => true
+      case _ => false
+    }
     // keys can never be null for this case, hence skip null declarations
     val (_, keyVars) = getColumnVars(entryVar, onlyKeyVars = true,
-      onlyValueVars = false)
+      onlyValueVars = false, separateNullVars)
     val (valueInit, valueVars) = if (valueClassName.isEmpty) ("", Nil)
     else getColumnVars(localValueVar, onlyKeyVars = false,
-      onlyValueVars = true)
+      onlyValueVars = true, separateNullVars)
     (keyVars, valueVars, valueInit)
   }
 
+  private def getConsumeResultCode(numRows: String,
+      resultVars: Seq[ExprCode]): String =
+    s"$numRows++;\n${consumer.consume(ctx, resultVars)}"
+
+  // scalastyle:off
   def generateMapLookup(entryVar: String, keyIsUnique: String, numRows: String,
-      checkCondition: String, streamKeys: Seq[Expression],
-      streamKeyVars: Seq[ExprCode], mapKeyVars: Seq[ExprCode],
-      valueInit: String, resultVars: Seq[ExprCode],
-      joinType: JoinType): String = {
-    val hashVar = ctx.freshName("hash")
-    val posVar = ctx.freshName("pos")
-    val deltaVar = ctx.freshName("delta")
+      valueInit: String, checkCondition: Option[ExprCode],
+      streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
+      buildVars: Seq[ExprCode], input: Seq[ExprCode],
+      resultVars: Seq[ExprCode], joinType: JoinType): String = {
+    // scalastyle:on
+
+    // these are all local variables inside private block, so no ctx.freshName
+    val hashVar = "hash"
+    val posVar = "pos"
+    val deltaVar = "delta"
 
     // if consumer is a projection that will project away key columns,
     // then avoid materializing those
+    val mapKeyVars = buildVars.take(valueIndex)
     val mapKeyCodes = cParent match {
       case ProjectExec(projection, _) =>
         mapKeyVars.zip(keyExpressions).collect {
@@ -574,92 +596,110 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     // invoke generateHashCode before consume so that hash variables
     // can be re-used by consume if possible
     val streamHashCode = generateHashCode(hashVar, streamKeyVars, streamKeys)
-    val consumeResult = consumer.consume(ctx, resultVars)
+    // if a stream-side key is null then skip (or null for outer join)
+    val nullStreamKey = streamKeyVars.map(v => s"!${v.isNull}")
     // filter as per min/max if provided; the min/max variables will be
     // initialized by the caller outside the loop after creating the map
     val minMaxFilter = integralKeys.map { index =>
       val keyVar = streamKeyVars(index).value
       val minVar = integralKeysMinVars(index)
       val maxVar = integralKeysMaxVars(index)
-      s"$keyVar < $minVar || $keyVar > $maxVar"
-    }.mkString("if (", " ||\n", ") continue;")
-    // code to iterate one or more values for a matching key
-    val valuesIterationCode = if (valueClassName.isEmpty) {
-      s"""
-        $mapKeyCodes
-        $numRows++;
+      s"$keyVar >= $minVar && $keyVar <= $maxVar"
+    }
+    // generate the initial filter condition from above two
+    val initFilters = nullStreamKey ++ minMaxFilter
+    val initFilterCode = if (initFilters.isEmpty) ""
+    else initFilters.mkString("if (", " &&\n", ")")
 
-        $consumeResult"""
-    } else {
+    // common multi-value iteration code fragments
+    val declareLocalValueVars =
       s"""
         int valueIndex = -1;
         int numValues = 0;
         $valueClassName[] values = null;
-        $valueClassName $localValueVar = $entryVar;
-        $mapKeyCodes
-        while (true) {
-          // values will be repeatedly reassigned in the loop
-          // while keys will remain the same
-          $valueInit
-          $numRows++;
-
-          $consumeResult
-
-          if ($keyIsUnique) break;
-          if (valueIndex != -1) {
-            if (valueIndex < numValues) {
-              $localValueVar = values[valueIndex];
-              valueIndex++;
-            } else {
-              break;
-            }
+        $valueClassName $localValueVar = $entryVar;"""
+    val moveNextValue =
+      s"""
+        if (valueIndex != -1) {
+          if (valueIndex < numValues) {
+            $localValueVar = values[valueIndex++];
           } else {
-            if ((values = $entryVar.$multiValuesVar) != null) {
-              valueIndex = 1;
-              numValues = values.length;
-              $localValueVar = values[0];
-            } else {
-              break;
-            }
+            break;
+          }
+        } else {
+          if ((values = $entryVar.$multiValuesVar) != null) {
+            valueIndex = 1;
+            numValues = values.length;
+            $localValueVar = values[0];
+          } else {
+            break;
           }
         }"""
+    // Code fragments for different join types.
+    // This is to ensure only a single parent.consume() because the branches
+    // can be taken alternately in the worst case so then it can lead to
+    // large increase in instruction cache misses even though most of the code
+    // will be the common parent's consume call.
+    val (keyConsume, entryConsume) = joinType match {
+      case Inner => genInnerJoinCodes(entryVar, mapKeyCodes, checkCondition,
+        valueInit, numRows, getConsumeResultCode(numRows, resultVars),
+        keyIsUnique, declareLocalValueVars, moveNextValue)
+
+      case LeftOuter | RightOuter => genOuterJoinCodes(entryVar, buildVars,
+        mapKeyCodes, checkCondition, valueInit, numRows,
+        getConsumeResultCode(numRows, resultVars), keyIsUnique,
+        declareLocalValueVars, moveNextValue)
+
+      case LeftSemi => genSemiJoinCodes(entryVar, mapKeyCodes, checkCondition,
+        valueInit, numRows, getConsumeResultCode(numRows, input),
+        keyIsUnique, declareLocalValueVars, moveNextValue)
+
+      case LeftAnti => genAntiJoinCodes(entryVar, mapKeyCodes, checkCondition,
+        valueInit, numRows, getConsumeResultCode(numRows, input),
+        keyIsUnique, declareLocalValueVars, moveNextValue)
+
+      case _: ExistenceJoin =>
+        // declare and add the exists variable to resultVars
+        val existsVar = ctx.freshName("exists")
+        genExistenceJoinCodes(entryVar, existsVar, mapKeyCodes,
+          checkCondition, valueInit, numRows, getConsumeResultCode(numRows,
+            input :+ ExprCode("", "false", existsVar)), keyIsUnique,
+          declareLocalValueVars, moveNextValue)
+
+      case _ => throw new IllegalArgumentException(
+        s"LocalJoin should not take $joinType as the JoinType")
     }
 
     s"""
-      // skip if any join key is null
-      if (${streamKeyVars.map(_.isNull).mkString(" ||\n")}) continue;
-      // filter using min/max for integral keys
-      $minMaxFilter
-      // generate hash code from stream side key columns
-      $streamHashCode
-      // Lookup the key in map and consume all values.
-      // Using inline get call so that equals() is inline using
-      // existing register variables instead of having to fill up
-      // a lookup key fields and compare against those.
-      // Start with the full class object then read the values array.
-      int $posVar = $hashVar & $maskTerm;
-      int $deltaVar = 1;
-      $className $entryVar;
-      while (true) {
-        $entryVar = $dataTerm[$posVar];
-        if ($entryVar != null) {
-          if (${generateEquals(entryVar, streamKeyVars)}) {
-            break;
+      $className $entryVar = null;
+      // check if any join key is null or min/max for integral keys
+      $initFilterCode {
+        // generate hash code from stream side key columns
+        $streamHashCode
+        // Lookup the key in map and consume all values.
+        // Using inline get call so that equals() is inline using
+        // existing register variables instead of having to fill up
+        // a lookup key fields and compare against those.
+        // Start with the full class object then read the values array.
+        int $posVar = $hashVar & $maskTerm;
+        int $deltaVar = 1;
+        while (true) {
+          $entryVar = $dataTerm[$posVar];
+          if ($entryVar != null) {
+            if (${generateEquals(entryVar, streamKeyVars)}) {
+              break;
+            } else {
+              // quadratic probing with position increase by 1, 2, 3, ...
+              $posVar = ($posVar + $deltaVar) & $maskTerm;
+              $deltaVar++;
+            }
           } else {
-            // quadratic probing with position increase by 1, 2, 3, ...
-            $posVar = ($posVar + $deltaVar) & $maskTerm;
-            $deltaVar++;
+            // key not found so filter out the row with entry as null
+            break;
           }
-        } else {
-          // key not found so filter out the row with entry as null
-          break;
         }
       }
-      if ($entryVar != null) {
-        $checkCondition
-        // found the key, so assign and consume all values
-        $valuesIterationCode
-      } else continue;
+      ${if (valueClassName.isEmpty) keyConsume else entryConsume}
     """
   }
 
@@ -729,6 +769,240 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         """
       }
     }.mkString("\n")
+  }
+
+  private def genInnerJoinCodes(entryVar: String, mapKeyCodes: String,
+      checkCondition: Option[ExprCode], valueInit: String,
+      numRows: String, consumeResult: String, keyIsUnique: String,
+      declareLocalValueVars: String,
+      moveNextValue: String): (String, String) = {
+
+    val keyCodes =
+      s"""if ($entryVar == null) continue;
+        $mapKeyCodes"""
+    val consumeCode = checkCondition match {
+      case None => consumeResult
+      case Some(ev) =>
+        s"""${ev.code}
+          if (!${ev.isNull} && ${ev.value}) {
+            $consumeResult
+          }"""
+    }
+    // loop through all the matches with moveNextValue
+    val multiConsumeCode =
+      s"""$keyCodes
+
+        $declareLocalValueVars
+        while (true) {
+          // values will be repeatedly reassigned in the loop (if any)
+          // while keys will remain the same
+          $valueInit
+          $consumeCode
+
+          if ($keyIsUnique) break;
+
+          $moveNextValue
+        }"""
+    (s"$keyCodes\n$consumeCode", multiConsumeCode)
+  }
+
+  private def genOuterJoinCodes(entryVar: String, buildVars: Seq[ExprCode],
+      mapKeyCodes: String, checkCondition: Option[ExprCode],
+      valueInit: String, numRows: String, consumeResult: String,
+      keyIsUnique: String, declareLocalValueVars: String,
+      moveNextValue: String): (String, String) = {
+
+    val keyCodes =
+      s"""if ($entryVar != null) {
+          $mapKeyCodes
+        }"""
+
+    val consumeCode = checkCondition match {
+      case None =>
+        s"""if ($entryVar != null) {
+            $valueInit
+          } else {
+            // set null variables for outer join in failed match
+            ${buildVars.map(ev => s"${ev.isNull} = true;").mkString("\n")}
+          }
+          $consumeResult"""
+
+      case Some(ev) =>
+        // assign null to entryVar if checkCondition fails so that it is
+        // treated like an empty outer join match by subsequent code
+        s"""if ($entryVar != null) {
+            $valueInit
+            ${ev.code}
+            if (${ev.isNull} || !${ev.value}) $entryVar = null;
+          }
+          // set null variables for outer join in failed match
+          if ($entryVar == null) {
+            ${buildVars.map(ev => s"${ev.isNull} = true;").mkString("\n")}
+          }
+          $consumeResult"""
+    }
+    // loop through all the matches with moveNextValue
+    val multiConsumeCode =
+      s"""$keyCodes
+
+        $declareLocalValueVars
+        while (true) {
+          // values will be repeatedly reassigned in the loop (if any)
+          // while keys will remain the same
+          $consumeCode
+
+          if ($entryVar == null || $keyIsUnique) break;
+
+          $moveNextValue
+        }"""
+    (s"$keyCodes\n$consumeCode", multiConsumeCode)
+  }
+
+  private def genSemiJoinCodes(entryVar: String, mapKeyCodes: String,
+      checkCondition: Option[ExprCode], valueInit: String,
+      numRows: String, consumeResult: String, keyIsUnique: String,
+      declareLocalValueVars: String,
+      moveNextValue: String): (String, String) = checkCondition match {
+
+    case None =>
+      // no key/value assignments required
+      val keyConsumeCode = s"if ($entryVar == null) continue;\n$consumeResult"
+      (keyConsumeCode, keyConsumeCode)
+
+    case Some(ev) =>
+      // need the key/value assignments for condition evaluation
+      val keyCodes =
+        s"""if ($entryVar == null) continue;
+          $mapKeyCodes"""
+      val keyConsumeCode =
+        s"""$keyCodes
+          ${ev.code}
+          if (!${ev.isNull} && ${ev.value}) {
+            $consumeResult
+          }"""
+      // loop through all the matches with moveNextValue
+      val multiConsumeCode =
+        s"""$keyCodes
+
+          $declareLocalValueVars
+          while (true) {
+            // values will be repeatedly reassigned in the loop (if any)
+            // while keys will remain the same
+            $valueInit
+            ${ev.code}
+            // consume only one result
+            if (!${ev.isNull} && ${ev.value}) {
+              $consumeResult
+              break;
+            }
+            if ($keyIsUnique) break;
+
+            $moveNextValue
+          }"""
+      (keyConsumeCode, multiConsumeCode)
+  }
+
+  private def genAntiJoinCodes(entryVar: String, mapKeyCodes: String,
+      checkCondition: Option[ExprCode], valueInit: String,
+      numRows: String, consumeResult: String, keyIsUnique: String,
+      declareLocalValueVars: String,
+      moveNextValue: String): (String, String) = checkCondition match {
+
+    case None =>
+      // success if no match for an anti-join (no value iteration)
+      val keyConsumeCode = s"if ($entryVar != null) continue;\n$consumeResult"
+      (keyConsumeCode, keyConsumeCode)
+
+    case Some(ev) =>
+      // need to check all failures for the condition outside the value
+      // iteration loop, hence code layout is bit different from other joins
+      val keyConsumeCode =
+        s"""
+          if ($entryVar != null) {
+            $mapKeyCodes
+            // fail if condition matches for the row
+            ${ev.code}
+            if (!${ev.isNull} && ${ev.value}) continue;
+          }
+          $consumeResult"""
+      val matched = ctx.freshName("matched")
+      // need the key/value assignments for condition evaluation
+      val multiConsumeCode =
+        s"""
+          boolean $matched = false;
+          if ($entryVar != null) {
+            $mapKeyCodes
+
+            $declareLocalValueVars
+            while (true) {
+              // values will be repeatedly reassigned in the loop
+              // while keys will remain the same
+              $valueInit
+              // fail if condition matches for any row
+              ${ev.code}
+              if (!${ev.isNull} && ${ev.value}) {
+                $matched = true;
+                break;
+              }
+              if ($keyIsUnique) break;
+
+              $moveNextValue
+            }
+          }
+          // anti-join failure if there is any match
+          if ($matched) continue;
+
+          $consumeResult"""
+      (keyConsumeCode, multiConsumeCode)
+  }
+
+  private def genExistenceJoinCodes(entryVar: String, existsVar: String,
+      mapKeyCodes: String, checkCondition: Option[ExprCode],
+      valueInit: String, numRows: String, consumeResult: String,
+      keyIsUnique: String, declareLocalValueVars: String,
+      moveNextValue: String): (String, String) = checkCondition match {
+
+    case None =>
+      // only one match needed, so no value iteration
+      val keyConsumeCode =
+        s"""final boolean $existsVar = ($entryVar == null);
+          $consumeResult"""
+      (keyConsumeCode, keyConsumeCode)
+
+    case Some(ev) =>
+      // need the key/value assignments for condition evaluation
+      val keyConsumeCode =
+        s"""boolean $existsVar = false;
+          if ($entryVar != null) {
+            $mapKeyCodes
+            ${ev.code}
+            $existsVar = !${ev.isNull} && ${ev.value};
+          }
+          $consumeResult"""
+      // need the key/value assignments for condition evaluation
+      val multiConsumeCode =
+      s"""boolean $existsVar = false;
+        if ($entryVar != null) {
+          $mapKeyCodes
+
+          $declareLocalValueVars
+          while (true) {
+            // values will be repeatedly reassigned in the loop (if any)
+            // while keys will remain the same
+            $valueInit
+            ${ev.code}
+            if (!${ev.isNull} && ${ev.value}) {
+              // consume only one result
+              $existsVar = true;
+              break;
+            }
+            if ($keyIsUnique) break;
+
+            $moveNextValue
+          }
+        }
+        $consumeResult"""
+      (keyConsumeCode, multiConsumeCode)
   }
 
   private def isIntegralType(dataType: DataType): Boolean = dataType match {
