@@ -219,7 +219,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         cachedSampleTables.invalidateAll()
         this.relationDestroyVersion = globalVersion
       }
-
       cachedSampleTables(table)
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
@@ -233,7 +232,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
-      cachedSampleTables.invalidateAll()
     }
     this.relationDestroyVersion = globalVersion + 1
   }
@@ -307,7 +305,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     cachedDataSourceTables.invalidate(tableIdent)
-    cachedSampleTables.invalidate(tableIdent)
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -539,7 +536,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       withHiveExceptionHandling(addIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
-    cachedSampleTables.invalidate(inTable)
   }
 
   def removeIndexProp(inTable: QualifiedTableName,
@@ -568,7 +564,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       withHiveExceptionHandling(removeIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
-    cachedSampleTables.invalidate(inTable)
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
