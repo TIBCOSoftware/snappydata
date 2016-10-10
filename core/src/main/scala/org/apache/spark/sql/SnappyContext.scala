@@ -1063,12 +1063,12 @@ object SnappyContext extends Logging {
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.
-    getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample),None)
+      getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
     val clazz = org.apache.spark.util.Utils.classForName(
       "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
     val method: Method = clazz.getDeclaredMethod("flushReservior")
-    println(sampleRelations.size)
     for (s <- sampleRelations) {
+      method.setAccessible(true)
       method.invoke(s)
     }
 
