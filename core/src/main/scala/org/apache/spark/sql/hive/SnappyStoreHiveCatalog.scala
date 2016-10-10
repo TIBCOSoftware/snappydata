@@ -181,7 +181,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   val cachedSampleTables: LoadingCache[QualifiedTableName,
-      Seq[(LogicalPlan, String)]] = SnappyStoreHiveCatalog.cachedSampleTables
+      Seq[(LogicalPlan, String)]] = createCachedSampleTables
+
+  def createCachedSampleTables = SnappyStoreHiveCatalog.cachedSampleTables
 
   private var relationDestroyVersion = 0
 
@@ -413,7 +415,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
 
     cachedDataSourceTables.invalidate(tableIdent)
-    cachedSampleTables.invalidate(tableIdent)
+
     registerRelationDestroy()
 
     val schemaName = tableIdent.schemaName
@@ -434,7 +436,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
     // invalidate any cached plan for the table
     cachedDataSourceTables.invalidate(tableIdent)
-    cachedSampleTables.invalidate(tableIdent)
+
 
     val tableProperties = new mutable.HashMap[String, String]
     tableProperties.put(HIVE_PROVIDER, provider)
