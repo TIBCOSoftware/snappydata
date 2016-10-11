@@ -37,11 +37,10 @@ import org.apache.spark.sql.types._
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
+    extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
   override def doProduce(ctx: CodegenContext): String = {

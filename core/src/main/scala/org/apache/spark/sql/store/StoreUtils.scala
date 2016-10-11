@@ -24,6 +24,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -31,8 +32,7 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext}
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 
 
 object StoreUtils extends Logging {
@@ -109,12 +109,12 @@ object StoreUtils extends Logging {
     lookupName
   }
 
-  def getPartitionsPartitionedTable(sc: SparkContext,
+  private[sql] def getPartitionsPartitionedTable(session: SnappySession,
       region: PartitionedRegion): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
-      allocateBucketsToPartitions(sc, region)
+      allocateBucketsToPartitions(session, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
 
@@ -130,13 +130,13 @@ object StoreUtils extends Logging {
     }
   }
 
-  def getPartitionsReplicatedTable(sc: SparkContext,
+  private[sql] def getPartitionsReplicatedTable(session: SnappySession,
       region: CacheDistributionAdvisee): Array[Partition] = {
 
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
 
-    val regionMembers = if (Utils.isLoner(sc)) {
+    val regionMembers = if (Utils.isLoner(session.sparkContext)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
@@ -149,7 +149,7 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  private def allocateBucketsToPartitions(sc: SparkContext,
+  private def allocateBucketsToPartitions(session: SnappySession,
       region: PartitionedRegion): Array[Partition] = {
 
     val numBuckets = region.getTotalNumberOfBuckets

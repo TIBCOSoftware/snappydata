@@ -65,11 +65,10 @@ private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
     otherRDDs: Seq[RDD[InternalRow]],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
+    extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
   private[sql] override lazy val metrics = Map(
