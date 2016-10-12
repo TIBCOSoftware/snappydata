@@ -570,8 +570,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       resultVars: Seq[ExprCode], joinType: JoinType): String = {
     // scalastyle:on
 
+    val hashVar = ctx.freshName("hash")
     // these are all local variables inside private block, so no ctx.freshName
-    val hashVar = "hash"
     val posVar = "pos"
     val deltaVar = "delta"
 
@@ -669,6 +669,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
 
     s"""
       $className $entryVar = null;
+      int $hashVar = 0;
       // check if any join key is null or min/max for integral keys
       $initFilterCode {
         // generate hash code from stream side key columns
