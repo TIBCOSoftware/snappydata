@@ -309,6 +309,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       // skip if any key is null
       if (${keyVars.map(_.isNull).mkString(" ||\n")}) continue;
       // generate hash code
+      int $hashVar;
       ${generateHashCode(hashVar, keyVars, keyExpressions)}
       // lookup or insert the grouping key in map
       // using inline get call so that equals() is inline using
@@ -359,63 +360,58 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       keyExpressions: Seq[Expression]): String = {
     // check if hash has already been generated for keyExpressions
     val vars = keyVars.map(_.value)
-    session.getExCode(ctx, vars, keyExpressions) match {
+    val (prefix, suffix) = session.getExCode(ctx, vars, keyExpressions) match {
       case Some(ExprCodeEx(Some(hash), _, _, _)) =>
-        return s"final int $hashVar = $hash;"
-      case _ =>
+        (s"if (($hashVar = $hash) == 0) {\n", "}\n")
+      case _ => ("", "")
     }
-    val k1 = ctx.freshName("k1")
+
+    // register the hash variable for the key expressions
+    session.addExCodeHash(ctx, vars, keyExpressions, hashVar)
+
+    // optimize for first column to use fast hashing
     val expr = keyVars.head
-    if (keyVars.length == 1) {
-      // optimize for single column to use fast mixing
-      val colVar = expr.value
-      val nullVar = expr.isNull
-      // register the hash variable for the key expressions
-      session.addExCodeHash(ctx, vars, keyExpressions, hashVar)
-      classVars(0)._1 match {
-        case BooleanType =>
-          hashSingleInt(s"($colVar) ? 1 : 0", nullVar, hashVar)
-        case ByteType | ShortType | IntegerType | DateType =>
-          hashSingleInt(colVar, nullVar, hashVar)
-        case LongType | TimestampType =>
-          hashSingleLong(colVar, nullVar, hashVar)
-        case FloatType =>
-          hashSingleInt(s"Float.floatToIntBits($colVar)", nullVar, hashVar)
-        case DoubleType =>
-          hashSingleLong(s"Double.doubleToLongBits($colVar)", nullVar, hashVar)
-        case d: DecimalType =>
-          hashSingleInt(s"$colVar.fastHashCode()", nullVar, hashVar)
-        // single column types that use murmur hash already,
-        // so no need to further apply mixing on top of it
-        case _: StringType | _: ArrayType | _: StructType =>
-          s"final int $hashVar = " +
-              s"${hashCodeSingleInt(s"$colVar.hashCode()", nullVar)};\n"
-        case _ =>
-          hashSingleInt(s"$colVar.hashCode()", nullVar, hashVar)
-      }
-    } else {
-      // register the hash variable for the key expressions
-      session.addExCodeHash(ctx, vars, keyExpressions, hashVar)
-      classVars.zip(keyVars).map {
+    val colVar = expr.value
+    val nullVar = expr.isNull
+    val firstColumnHash = classVars(0)._1 match {
+      case BooleanType =>
+        hashSingleInt(s"($colVar) ? 1 : 0", nullVar, hashVar)
+      case ByteType | ShortType | IntegerType | DateType =>
+        hashSingleInt(colVar, nullVar, hashVar)
+      case LongType | TimestampType =>
+        hashSingleLong(colVar, nullVar, hashVar)
+      case FloatType =>
+        hashSingleInt(s"Float.floatToIntBits($colVar)", nullVar, hashVar)
+      case DoubleType =>
+        hashSingleLong(s"Double.doubleToLongBits($colVar)", nullVar, hashVar)
+      case d: DecimalType =>
+        hashSingleInt(s"$colVar.fastHashCode()", nullVar, hashVar)
+      // single column types that use murmur hash already,
+      // so no need to further apply mixing on top of it
+      case _: StringType | _: ArrayType | _: StructType =>
+        s"$hashVar = ${hashCodeSingleInt(s"$colVar.hashCode()", nullVar)};\n"
+      case _ =>
+        hashSingleInt(s"$colVar.hashCode()", nullVar, hashVar)
+    }
+    if (keyVars.length > 1) {
+      classVars.tail.zip(keyVars.tail).map {
         case ((BooleanType, _, _, _), ev) =>
-          addHashInt(s"${ev.value} ? 1 : 0", ev.isNull, k1, hashVar)
+          addHashInt(s"${ev.value} ? 1 : 0", ev.isNull, hashVar)
         case ((ByteType | ShortType | IntegerType | DateType, _, _, _), ev) =>
-          addHashInt(ev.value, ev.isNull, k1, hashVar)
+          addHashInt(ev.value, ev.isNull, hashVar)
         case ((LongType | TimestampType, _, _, _), ev) =>
-          addHashLong(ev.value, ev.isNull, k1, hashVar)
+          addHashLong(ev.value, ev.isNull, hashVar)
         case ((FloatType, _, _, _), ev) =>
-          addHashInt(s"Float.floatToIntBits(${ev.value})", ev.isNull,
-            k1, hashVar)
+          addHashInt(s"Float.floatToIntBits(${ev.value})", ev.isNull, hashVar)
         case ((DoubleType, _, _, _), ev) =>
           addHashLong(s"Double.doubleToLongBits(${ev.value})", ev.isNull,
-            k1, hashVar)
+            hashVar)
         case ((d: DecimalType, _, _, _), ev) =>
-          addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, k1, hashVar)
+          addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, hashVar)
         case (_, ev) =>
-          addHashInt(s"${ev.value}.hashCode()", ev.isNull, k1, hashVar)
-      }.mkString(s"int $hashVar = 42; int $k1;\n", "",
-        s"$hashVar = $hashingClass.finalMix($hashVar, ${keyVars.length});")
-    }
+          addHashInt(s"${ev.value}.hashCode()", ev.isNull, hashVar)
+      }.mkString(prefix + firstColumnHash, "", suffix)
+    } else prefix + firstColumnHash + suffix
   }
 
   /**
@@ -504,6 +500,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
       // evaluate the key expressions
       ${evaluateVariables(keyVars)}
       // evaluate the hash code of the lookup key
+      int $hashVar;
       ${generateHashCode(hashVar, keyVars, keyExpressions)}
       // lookup or insert the grouping key in map
       // using inline get call so that equals() is inline using
@@ -1079,9 +1076,9 @@ final case class ObjectHashMapAccessor(session: SnappySession,
   private def hashSingleInt(colVar: String, nullVar: String,
       hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
-      s"final int $hashVar = $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = $hashingClass.hashInt($colVar);\n"
     } else {
-      s"final int $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.hashInt($colVar);\n"
     }
   }
 
@@ -1096,49 +1093,48 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
         final long $longVar = $colVar;
-        final int $hashVar = $hashingClass.hashInt(
+        $hashVar = $hashingClass.hashInt(
           (int)($longVar ^ ($longVar >>> 32)));
       """
     } else {
       s"""
         final long $longVar;
-        final int $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt(
+        $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt(
           (int)(($longVar = ($colVar)) ^ ($longVar >>> 32)));
       """
     }
   }
 
   private def addHashInt(hashExpr: String, nullVar: String,
-      k1Var: String, h1Var: String): String = {
+      hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
-        $k1Var = $hashingClass.mixK1($hashExpr);
-        $h1Var = $hashingClass.mixH1($h1Var, $k1Var);
+        $hashVar = ($hashVar ^ 0x9e3779b9) + ($hashExpr) +
+            ($hashVar << 6) + ($hashVar >>> 2);
       """
     } else {
       s"""
-        $k1Var = $hashingClass.mixK1(($nullVar) ? -1
-          : ($hashExpr));
-        $h1Var = $hashingClass.mixH1($h1Var, $k1Var);
+        $hashVar = ($hashVar ^ 0x9e3779b9) + (($nullVar) ? -1 : ($hashExpr)) +
+            ($hashVar << 6) + ($hashVar >>> 2);
       """
     }
   }
 
   private def addHashLong(hashExpr: String, nullVar: String,
-      k1Var: String, h1Var: String): String = {
+      hashVar: String): String = {
     val longVar = ctx.freshName("longVar")
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
         final long $longVar = $hashExpr;
-        $k1Var = $hashingClass.mixK1((int)($longVar ^ ($longVar >>> 32)));
-        $h1Var = $hashingClass.mixH1($h1Var, $k1Var);
+        $hashVar = ($hashVar ^ 0x9e3779b9) + (int)($longVar ^ ($longVar >>> 32)) +
+            ($hashVar << 6) + ($hashVar >>> 2);
       """
     } else {
       s"""
         final long $longVar;
-        $k1Var = $hashingClass.mixK1(($nullVar) ? -1
-          : (int)(($longVar = ($hashExpr)) ^ ($longVar >>> 32)));
-        $h1Var = $hashingClass.mixH1($h1Var, $k1Var);
+        $hashVar = ($hashVar ^ 0x9e3779b9) + (($nullVar) ? -1
+            : (int)(($longVar = ($hashExpr)) ^ ($longVar >>> 32))) +
+            ($hashVar << 6) + ($hashVar >>> 2);
       """
     }
   }
