@@ -46,20 +46,6 @@ class QueryRoutingDUnitTest(val s: String)
     super.tearDown2()
   }
 
-  private def getANetConnection(netPort: Int,
-      useGemXDURL: Boolean = false): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
-    Class.forName(driver).newInstance //scalastyle:ignore
-    var url: String = null
-    if (useGemXDURL) {
-      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
-    } else {
-      url = "jdbc:snappydata://localhost:" + netPort + "/"
-    }
-
-    DriverManager.getConnection(url)
-  }
-
   def testQueryRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

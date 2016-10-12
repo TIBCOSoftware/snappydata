@@ -60,7 +60,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.6-SNAPSHOT'
+  version = '0.6'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -94,7 +94,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.0.0'
-    snappySparkVersion = '2.0.1-1'
+    snappySparkVersion = '2.0.1-2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -106,8 +106,8 @@ allprojects {
     guavaVersion = '14.0.1'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.1-SNAPSHOT'
-    pulseVersion = '1.5.0'
+    snappyStoreVersion = '1.5.1'
+    pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -730,6 +730,17 @@ task product(type: Zip) {
   }
 }
 
+task ec2Tar(type: Tar) {
+     dependsOn ':product'
+     from("cluster/ec2")
+     baseName = 'snappydata-ec2'
+     exclude "deploy/home/ec2-user/snappydata/servers"
+     exclude "deploy/home/ec2-user/snappydata/leads"
+     exclude "deploy/home/ec2-user/snappydata/locators"
+     exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
+     exclude "lib"
+}
+
 if (rootProject.hasProperty('copyToDir')) {
   task copyProduct(type: Copy, dependsOn: product) {
     from snappyProductDir
@@ -763,7 +774,7 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip
+  dependsOn product, distTar, distZip, ec2Tar
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -948,7 +959,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   mustRunAfter buildAll

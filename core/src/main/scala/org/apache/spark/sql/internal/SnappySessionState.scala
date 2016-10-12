@@ -20,13 +20,14 @@ package org.apache.spark.sql.internal
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, Alias, Attribute, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
@@ -41,6 +42,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   protected lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
+
+  lazy val metadataHive = sharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -83,6 +86,7 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val catalog = new SnappyStoreHiveCatalog(
       sharedState.externalCatalog,
       snappySession,
+      metadataHive,
       functionResourceLoader,
       functionRegistry,
       conf,
@@ -177,6 +181,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         preprocess(i, tblName, Nil)
       case other => i
     }
+
   }
 
   private def preprocess(
@@ -277,3 +282,4 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
+
