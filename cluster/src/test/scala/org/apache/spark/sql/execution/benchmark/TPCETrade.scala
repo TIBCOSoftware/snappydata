@@ -54,12 +54,12 @@ class TPCETrade extends SnappyFunSuite {
     val tradeSize = 5000000L
     val numDays = 1
     val numIters = 20
-    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 1, numIters, doInit = true)
-    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 2, numIters, doInit = false)
-    TPCETradeTest.benchmarkRandomizedKeys(snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      tradeSize, numDays, queryNumber = 2, numIters, doInit = false)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
 }
 
@@ -73,13 +73,13 @@ class TPCETradeJob extends SnappySQLJob {
     val numIters = 10
     sc.conf.setConfString("spark.sql.shuffle.partitions", "16")
     TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 1, numIters,
+      quoteSize, tradeSize, quoteSize, numDays, queryNumber = 1, numIters,
       doInit = true, runSparkCaching = false)
     TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 2, numIters,
+      quoteSize, tradeSize, tradeSize, numDays, queryNumber = 2, numIters,
       doInit = false, runSparkCaching = false)
     TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
-      quoteSize, tradeSize, numDays, queryNumber = 3, numIters,
+      quoteSize, tradeSize, tradeSize, numDays, queryNumber = 3, numIters,
       doInit = false, runSparkCaching = false)
     Boolean.box(true)
   }
@@ -208,11 +208,11 @@ object TPCETradeTest extends Logging {
    * Benchmark caching randomized keys created from a range.
    */
   def benchmarkRandomizedKeys(session: SparkSession, quoteSize: Long,
-      tradeSize: Long, numDays: Int, queryNumber: Int, numIters: Int,
-      doInit: Boolean, runSparkCaching: Boolean = true): Unit = {
+      tradeSize: Long, size: Long, numDays: Int, queryNumber: Int,
+      numIters: Int, doInit: Boolean, runSparkCaching: Boolean = true): Unit = {
     import session.implicits._
 
-    val benchmark = new Benchmark("Cache random data", quoteSize + tradeSize)
+    val benchmark = new Benchmark("Cache random data", size)
     val quoteDF = session.range(quoteSize).mapPartitions { itr =>
       val rnd = new XORShiftRandom
       val syms = ALL_SYMBOLS

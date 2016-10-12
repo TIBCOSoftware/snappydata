@@ -24,8 +24,10 @@ public abstract class HashingUtil {
   private static final int C1 = 0xcc9e2d51;
   private static final int C2 = 0x1b873593;
 
-  // Simpler mixing for integer values that are reasonably hashed.
-  // Constant taken from h2 tests (CalculateHashConstant.java).
+  /**
+   * Simpler mixing for integer values that are reasonably hashed.
+   * Constant taken from h2 tests (CalculateHashConstant.java).
+   */
   public static int hashInt(int v) {
     v = ((v >>> 16) ^ v) * 0x45d9f3b;
     v = ((v >>> 16) ^ v) * 0x45d9f3b;
