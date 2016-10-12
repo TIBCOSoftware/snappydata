@@ -1,10 +1,10 @@
-#Overview of iSight#
-iSight is a cloud based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (SDE), users interact with iSight to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
+#Overview of SnappyData iSight-Cloud #
+iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (SDE), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
 
-iSight uses Apache Zeppelin as the frontend notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
+iSight-Cloud uses Apache Zeppelin as the frontend notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
 
-The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
-With iSight, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
+The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
+With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
 
 In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData cluster on AWS CloudFormation or on AWS using the EC2 script. 
 
@@ -22,43 +22,40 @@ This section provides a brief description of the key terms used in this document
 
 To understand the product follow these easy steps that can get you started quickly:
 
-1. [Setting up SnappyData Cluster](#SettingUp)<br>
-	* [Deploying the Cluster with AWS CloudFormation](#DeployingClusterCloudFormation)<br>
-	* [Deploying  the Cluster with AWS using Script](#DeployingClusterScript)
-4. [Loading Data from AWS S3](#dataAWSS3)
-5. [Logging into Apache Zeppelin](#LoggingZeppelin)<br>	
+1. [Setting up SnappyData Cloud Cluster](#SettingUp)<br>
+	* [Deploying SnappyData Cloud Cluster with iSight CloudBuilder](#DeployingClusterCloudFormation)<br>
+	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](#DeployingClusterScript)
+2. [Using Apache Zeppelin](#LoggingZeppelin)<br>	
 	* [Using Predefined Notebook](#predefinednotebook)<br>
 	* [Creating your own Notebook](#Creatingnotebook)
-6. [Monitoring the SnappyData Cluster](#Monitoring)
+3. [Loading Data from AWS S3](#dataAWSS3)
+4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 <a id="SettingUp"></a>
-#Setting Up SnappyData Cluster#
-This section discusses the steps required for setting up and deploying SnappyData cluster on AWS CloudFormation and AWS using script.
+#Setting Up SnappyData Cloud Cluster#
+This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using script.
 
 <a id="DeployingClusterCloudFormation"></a>
-##Deploying the Cluster with AWS CloudFormation##
-Watch the following  video to learn how easy it is to use SnappyData Cloudbuilder, which generates an AWS cluster of SnappyData iSight.
+##Deploying SnappyData Cloud Cluster with iSight CloudBuilder##
+Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
 
 [![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
-
 ###Prerequisites###
-Before you begin, do the following:
+Before you begin, ensure that:
 
-* Ensure you have an existing AWS account with required permissions to launch EC2 resources.
-*  Create an EC2 key pair in the region where you want to launch the SnappyData cluster. 
+* You have an existing AWS account with required permissions to launch EC2 resources
+*  You have created an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
 
-SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
+SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 
 It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running five processes (locator, lead, two data servers and an Apache Zeppelin server) on it.
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
-###Configuring and Launching the Cluster###
+###Configuring and Launching the SnappyData Cloud Cluster###
 
-To configure and launch the cluster:
-
-Go to [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
+Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
 
 1. Enter the name for your cluster. Each cluster is identified by it’s unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
@@ -87,7 +84,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	
 	> * Use the key pair that exists in the region selected.
 	
-	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your credentials to continue.
+	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.
 	
 	> * It may take a few minutes for the cluster to be created. 
 	
@@ -99,21 +96,24 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
 
 10. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
+
 11. On the **Review** page, verify the details and click **Create** to create a stack. 
 
 	> Note: This operation may take a few minutes to complete. 
 
-12. The next page lists the existing stacks. Click **Refresh** to update the list and to view the current status of the stack. 
+12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
 ![Refresh](./Images/aws_refreshstack.png)
+
 <a id="Stack"></a>
-13. Click on the ** Outputs** tab, to view the links (URLs) required for launching Pulse, Apache Zeppelin and SnappyData Cluster.
+13. Click on the **Outputs** tab, to view the links (URLs) required for launching [Apache Zeppelin](#LoggingZeppelin).
 	![Public IP](./Images/aws_links.png)
 
-> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You can however, not connect to or restart an instance after you have terminated it.
+
+Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 <a id="DeployingClusterScript"></a>
-##Deploying the Cluster on AWS using Scripts##
+##Deploying SnappyData Cloud Cluster on AWS using Scripts##
 ###Prerequisites###
 Before you begin, do the following:
 
@@ -168,7 +168,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 
 > Note:
 
-> * The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the documentation provided by Amazon S3 for detailed information on creating a bucket, adding files and setting required permissions.
+> * The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
 	
 > * You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
 	
@@ -196,10 +196,12 @@ The values are:
 
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
 Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
-SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see [Using Predefined Notebooks](###Using Predefined Notebooks).
+SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see [Using Predefined Notebooks](#predefinednotebook).
+
+Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for more information.
 
 ##Using the Interpreter##
-Snappydata Interpreter group consists of the interpreters `%snappydata.snappydata` and `%snappydata.sql`.
+Snappydata Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
 >  Note:
@@ -233,16 +235,16 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 ```
 ![Example](./Images/DirectivesinApacheZeppelin.png)
 
-> Note: This directive work only for the SQL interpreter and an error may be displayed for the Scala interpreter.
+> Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
 ###Scala Interpreter###
-The `%snappydata.snappydata code` specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
+The `%snappydata.spark` code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
 SnappyContext is injected in this interpreter and can be accessed using variable **snc**.
 
 <a id="predefinednotebook"></a>
 
 ##Using Predefined Notebooks##
-SnappyData provides you a predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
+SnappyData provides you predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
 
 When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
 
@@ -250,7 +252,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 ##Creating Notebooks - Try it Yourself!##
 
 1. Log on to Apache Zeppelin, create a notebook and insert a new paragraph.
-2. Use `%snappydata.snappydata` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
+2. Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
 3. Download a dataset you want to use and create tables as mentioned below
 
 ###Examples of Queries and Results###
@@ -272,28 +274,28 @@ This section provides you with examples you can use in a paragraph.
 
 ![Example](./Images/sde_exampledatausingSnappyDataScala.png)
 
-* Apache Zeppelin allows you to dynamically creates input fields. To create a text input field, use `${fieldname}`.
+* Apache Zeppelin allows you to dynamically create input fields. To create a text input field, use `${fieldname}`.
 In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 
 ![Dynamic Form](Images/aqp_dynamicform.png)
 
 <a id="Monitoring"></a>
-##Monitoring the SnappyData Cluster ##
- You can monitor the SnappyData cluster using GemFire XD Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.
+##Monitoring the SnappyData Cloud Cluster ##
+ You can monitor the SnappyData cluster using SnappyData Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.
 
-The GemFire XD Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members and tables. 
+The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members and tables. 
 It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
 It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
 
 The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.
 
 ####Accessing the Console####
-To access the Pulse or Spark console from the Apache Zeppelin notebook: 
+To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
 
 1. Click on the **Pulse** or  **Spark UI** link provided in the paragraph. 
 ![Launch Spark ](./Images/aws_pulsespark.png)
-2. For the Pulse console, enter the default login credentials "admin" as both the user name and password.
-3. Once you have logged in, you can start monitoring SnappyData cluster. For console specific information, please refer to the GemFire XD Pulse or Apache Spark documentation.
+2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the user name and password.
+3. Once you have logged in, you can start monitoring SnappyData cluster. 
 
 ##Approximation Technique using Sampling##
 In a database context, the process that derives information that is available in the database is called query processing.

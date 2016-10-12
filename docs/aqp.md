@@ -1,30 +1,26 @@
-# Overview of Synopsis Data Engine#
+# Overview of Synopsis Data Engine (SDE)#
 Data volumes from transactional and non-transactional sources have grown exponentially, and as a result, conventional data processing and data visualization technologies have struggled to provide real time analysis on these ever increasing data sets. 
 
 Conventional wisdom has relied on iterating over the entire data set to produce complete and accurate results, while experiencing longer wait times to provide those insights. Data scientists and data engineers agree that when it comes to exploratory analytics, the ability to quickly get a directionally correct answer is more important than waiting for long periods of time to get a complete accurate answer. This is partly because in most cases, the decision to pursue a certain hypothesis does not change a whole lot whether you get back a 99% accurate answer or a 100% accurate answer.
 
-The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable solution to the data volume problem. SDE uses statistical sampling techniques and probabilistic data structures to answer aggregate class queries, without needing to store or operate over the entire data set. The approach trades off query accuracy for quicker response times, allowing for queries to be run on large data sets with meaningful and accurate error information. 
+The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable solution to the data volume problem. SDE uses statistical sampling techniques and probabilistic data structures to answer aggregate class queries, without the need to store or operate over the entire data set. The approach trades off query accuracy for quicker response time, allowing for queries to be run on large data sets with meaningful and accurate error information. 
 
 Using SDE, practitioners can populate the engine with synopses of large data sets, and run SQL queries to get answers orders of magnitude faster than querying the complete data set. This approach significantly reduces memory requirements, cuts down I/O by an order of magnitude, requires less CPU overall (especially when compared to dealing with large data sets) and reduces query latencies by an order of magnitude. With these improvements, users can now perform analytics faster without being encumbered by complex infrastructure, massive data load times and long query response times.
 
-
-For example, for research-based companies (like Gallup), for political polls results, a small sample is used to estimate support for a candidate within a small margin of error
+For example, for research-based companies (like Gallup), for political polls results, a small sample is used to estimate support for a candidate within a small margin of error.
 
 The following diagram provides a general framework of the Synopsis Data Engine:
-
 A small random sample of the rows of the original database table is prepared. Queries are directed against this small sample table, and then approximate results are generated based on the query and error estimation.
 ![SDE_Architecture](./Images/sde_architecture.png)
 
-Thus, there are two components in the architecture, a component for building the synopses from database relations, and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
+Thus, there are two components in the architecture, a component for building the synopses from database relations and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
 
-##Synopsis Data Engine Technique 1: Sampling##
+##Synopsis Data Engine Technique: Stratified Sampling##
 ###What is Sampling ?###
 One commonly-used technique for approximate results is sampling. For many aggregation queries, non-uniform (approximate) samples can provide more accurate approximations than a uniform sample. 
 
 For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
 Sampling provides a solution, where a small sample of data, which represents the entire data is randomly selected. In this case, a query is answered based on the pre-sampled small amount of data, and then scaled up based on the sample rate.
-
-Sampling-based systems have the advantage that they can be implemented as a thin layer of middle ware which re-writes queries to run against sample tables stored as ordinary relations in a standard, off-the-shelf database server. 
 
 The two techniques that the SnappyData AQP module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
 
@@ -43,7 +39,7 @@ This is illustrated in the following image.
 
 
 ###Key Concepts###
-**Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These data base synopses are used when queries are issued to the system, and approximate results are returned.
+**Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These database synopses are used when queries are issued to the system, and approximate results are returned.
 
 **Strata**:  A specific procedure for biased sampling, where the database is partitioned into different strata, and each stratum is uniformly sampled at different sampling rates.
 
@@ -52,6 +48,7 @@ This is illustrated in the following image.
 You can create sample tables using datasets that are available on the local file system or at an external location. Depending on this, it is determined how the data is loaded, controlled, and managed.
 
 In case of local dataset, the data is loaded in the cluster and the time taken to process the query may depend on the memory of the cluster.
+
 In this example, a sample table is created for a dataset that is available locally:
 
 ```
@@ -61,6 +58,7 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_ISIGHT on TAXIFARE options  (qcs 'hack
 ```
 
 When a sample table is created on a dataset that is too large to fit in the cluster's memory, you can create an external table, which can then be used to create sample table.
+
 In this example, a sample table is created for an S3 (external) dataset:
 
 ```
@@ -129,7 +127,7 @@ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothin
 ```
 
 #####Example 3: #####
-In the below example,  create a sample table using function "hour(pickup_datetime) as QCS
+In the below example,  create a sample table using function "hour(pickup_datetime) as QCS.
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 ```
@@ -162,15 +160,17 @@ snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_dis
 ```
 
 ####Sample Selection:####
-Sample selection logic selects most appropriate table based on the following logic:
+Sample selection logic selects most appropriate table, based on the following logic:
 
-* If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected.
-* If exact match is not available, then, if the QCS of the sample is a superset of query QCS, that sample is used.
+* If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected
+* If exact match is not available, then, if the QCS of the sample is a superset of query QCS, that sample is used
 * If superset of sample QCS is not available, a sample where the sample QCS is subset of query, QCS is used
 
 When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
 
-For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. This is illustrated in the following image:
+For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. 
+
+This is illustrated in the following image:
 ![QCS](./Images/aqp_qcs.png)
 
 
@@ -290,7 +290,8 @@ The following four methods are available to be used in query projection when run
 * **upper_bound(column alias)**: Upper value of a estimate interval for a given confidence.
 
 Confidence is the probability that the value of a parameter falls within a specified range of values.
-For Example:
+
+For example:
 
 ```
 SELECT avg(ArrDelay) as AvgArr ,absolute_error(AvgArr),relative_error(AvgArr),lower_bound(AvgArr), upper_bound(AvgArr),
@@ -301,7 +302,7 @@ UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ER
 * The values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
 
 In addition to using SQL syntax in the queries, you can use data frame API as well. 
-For example, if you have a data frame for the airline table, then the below query can equivalently also be written as 
+For example, if you have a data frame for the airline table, then the below query can equivalently also be written as :
 
 ```
 select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay), Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
@@ -322,7 +323,7 @@ rowCount returns estimate of number of rows in airline table.
 sample_count returns number of rows (true answer) in sample table of airline table.
 
 
-## Synopsis Data Engine Technique 2: Synopses##
+## Synopsis Data Engine Technique: Sketching##
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
 
 ### Creating TopK tables###
