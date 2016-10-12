@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
+import java.lang.reflect.Method
 
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
@@ -40,8 +41,9 @@ import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
+import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
@@ -1056,6 +1058,20 @@ object SnappyContext extends Logging {
     builtinSources.getOrElse(providerName,
       if (onlyBuiltIn) throw new AnalysisException(
         s"Failed to find a builtin provider $providerName") else providerName)
+  }
+
+
+  def flushSampleTables(): Unit = {
+    val sampleRelations = _anySNContext.sessionState.catalog.
+      getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
+    val clazz = org.apache.spark.util.Utils.classForName(
+      "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
+    val method: Method = clazz.getDeclaredMethod("flushReservior")
+    for (s <- sampleRelations) {
+      method.setAccessible(true)
+      method.invoke(s)
+    }
+
   }
 }
 

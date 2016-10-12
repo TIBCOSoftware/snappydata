@@ -234,6 +234,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
+    SnappyContext.flushSampleTables();
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
