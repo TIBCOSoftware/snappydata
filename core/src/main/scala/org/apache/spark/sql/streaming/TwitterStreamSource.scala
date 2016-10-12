@@ -67,8 +67,13 @@ final class TwitterStreamRelation(
   }
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val encoder = RowEncoder(schema)
     TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-      filters, storageLevel).flatMap(rowConverter.toRows).map(encoder.toRow)
+      filters, storageLevel).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(rowConverter.toRows(_).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

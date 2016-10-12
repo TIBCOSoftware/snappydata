@@ -37,13 +37,18 @@ final class TextSocketStreamRelation(
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val hostname: String = options.get("hostname").get // .getOrElse("localhost")
+  val hostname: String = options("hostname") // .getOrElse("localhost")
 
   val port: Int = options.get("port").map(_.toInt).get // .getOrElse(9999)
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val encoder = RowEncoder(schema)
     context.socketTextStream(hostname, port,
-      storageLevel).flatMap(rowConverter.toRows).map(encoder.toRow)
+      storageLevel).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(rowConverter.toRows(_).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

@@ -66,9 +66,13 @@ final class KafkaStreamRelation(
     val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
     val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
     val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-    val encoder = RowEncoder(schema)
     KafkaUtils.createStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-      kafkaParams, topics, storageLevel)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
-        .map(encoder.toRow)
+      kafkaParams, topics, storageLevel)(ck, cv, ckd, cvd).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(p => rowConverter.toRows(p._2).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

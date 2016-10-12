@@ -45,9 +45,14 @@ final class RawSocketStreamRelation(
   val T = options("T")
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val encoder = RowEncoder(schema)
     val t: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(T))
     context.rawSocketStream[Any](hostname, port,
-      storageLevel)(t).flatMap(rowConverter.toRows).map(encoder.toRow)
+      storageLevel)(t).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(rowConverter.toRows(_).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

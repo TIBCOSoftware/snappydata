@@ -179,36 +179,38 @@ class SnappyStreamingSuite
   test("SnappyData Direct Kafka Streaming with two topics") {
     val topic1 = "direct_kafka_topic1"
     kafkaUtils.createTopic(topic1)
-    val sent1 = Map("da1" -> 1, "db1" -> 1, "dc1" -> 1)
+    val sent1 = Map("da1,pa1" -> 1, "db1,pb1" -> 1, "dc1,pc1" -> 1)
     kafkaUtils.sendMessages(topic1, sent1)
 
     val topic2 = "direct_kafka_topic2"
     kafkaUtils.createTopic(topic2)
-    val sent2 = Map("da2" -> 1, "db2" -> 1, "dc2" -> 1)
+    val sent2 = Map("da2,pa2" -> 1, "db2,pb2" -> 1, "dc2,pc2" -> 1)
     kafkaUtils.sendMessages(topic2, sent2)
 
     val add = kafkaUtils.brokerAddress
     ssnc.sql("create stream table directKafkaStream (" +
-        " publisher string) " +
+        " publisher string, advertiser string)" +
         " using directkafka_stream options(" +
         " rowConverter 'org.apache.spark.sql.streaming.RowsConverter' ," +
         s" kafkaParams 'metadata.broker.list->$add;auto.offset.reset->smallest'," +
         s" topics '$topic1,$topic2')")
 
-    val stream = ssnc.getSchemaDStream("directKafkaStream")
-
     val result = new mutable.HashMap[String, Long]()
-    stream.foreachDataFrame(df => {
-      df.collect().foreach(row => {
+    val cqResults = ssnc.registerCQ("select publisher, advertiser from " +
+        "directKafkaStream window (duration 1 seconds, slide 1 seconds)")
+    cqResults.foreachDataFrame { df =>
+      df.collect().foreach { row =>
         result.synchronized {
-          result.put(row.getString(0), 1)
+          val key = s"${row.getString(0)},${row.getString(1)}"
+          result.put(key, result.getOrElse(key, 0L) + 1)
         }
-      })
-    })
+      }
+    }
+
     ssnc.start()
     val sent = Map(
-      "da1" -> 1, "db1" -> 1, "dc1" -> 1,
-      "da2" -> 1, "db2" -> 1, "dc2" -> 1)
+      "da1,pa1" -> 1, "db1,pb1" -> 1, "dc1,pc1" -> 1,
+      "da2,pa2" -> 1, "db2,pb2" -> 1, "dc2,pc2" -> 1)
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       assert(result.synchronized {
         sent === result
@@ -521,7 +523,7 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
-    val rows = Seq(Row.fromSeq(Seq(log)))
+    val rows = Seq(Row.fromSeq(log.split(",")))
     rows
   }
 }
