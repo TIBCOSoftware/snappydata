@@ -17,7 +17,7 @@ sed -i "s|\"file:.*|\"file:$dataDir\/region.tbl\"|" $memsqlLoader/region.json
 sed -i "s|\"file:.*|\"file:$dataDir\/supplier.tbl\"|" $memsqlLoader/supplier.json
 
 echo "=============================Change host name in josn files=========================="
-sed -i "s|\"host\": .*|\"host\": \"$aggregator\",|" $memsqlLoader/*.json
+sed -i "s|\"host\": .*|\"host\": \"$ip_aggregator\",|" $memsqlLoader/*.json
 sed -i "s|\"port\": .*|\"port\": $port|" $memsqlLoader/*.json
 
 echo "=============================load tables=========================="

@@ -37,7 +37,7 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    //compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
@@ -53,7 +53,7 @@ dependencies {
     compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    //compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -69,7 +69,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    //exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
@@ -82,7 +82,7 @@ dependencies {
   if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.2'
+    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.3-1'
   }
 
   testCompile project(':dunit')

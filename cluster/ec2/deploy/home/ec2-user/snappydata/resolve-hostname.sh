@@ -27,6 +27,10 @@ echo -e "\n# fixed by resolve-hostname.sh \n${PRIVATE_IP} ${PUBLIC_HOSTNAME}\n" 
 sudo mv /home/ec2-user/hosts /etc/hosts
 echo "Updated /etc/hosts of ${PUBLIC_HOSTNAME}"
 
+if [[ -e ~/.ssh/known_hosts ]] && [[ ! -e ~/.ssh/known_hosts.orig ]]; then
+  cp ~/.ssh/known_hosts ~/.ssh/known_hosts.orig
+fi
+
 # Let's make sure that it did not break anything
 ping -c 1 -q "${PUBLIC_HOSTNAME}" > /dev/null 2>&1
 if [ $? -ne 0 ]; then

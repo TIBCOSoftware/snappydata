@@ -119,6 +119,9 @@ abstract class UncompressedBase extends ColumnEncoding {
     else java.lang.Double.longBitsToDouble(java.lang.Long.reverseBytes(
       Platform.getLong(columnBytes, cursor)))
 
+  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
+    cursor + 8
+
   override def readLongDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long): Decimal =
     Decimal.createUnsafe(ColumnEncoding.readLong(columnBytes, cursor),

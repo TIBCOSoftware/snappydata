@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
+import com.google.common.cache.{CacheLoader, CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.conf.Configuration
@@ -42,6 +42,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.StringUtils
@@ -61,8 +62,9 @@ import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
  * Catalog using Hive for persistence and adding Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
  */
-class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
+class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val snappySession: SnappySession,
+    metadataHive : HiveClient,
     functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
@@ -75,6 +77,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       hadoopConf) with Logging {
 
   val sparkConf = snappySession.sparkContext.getConf
+
+  private var client = metadataHive
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -89,71 +93,6 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       ignoreIfNotExists: Boolean): Unit = synchronized {
     snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
   }
-
-  /**
-   * The version of the hive client that will be used to communicate
-   * with the meta-store forL catalog.
-   */
-  protected[sql] val hiveMetastoreVersion: String =
-    sqlConf.getConf(HIVE_METASTORE_VERSION, hiveExecutionVersion)
-
-  /**
-   * The location of the jars that should be used to instantiate the Hive
-   * meta-store client.  This property can be one of three options:
-   *
-   * a classpath in the standard format for both hive and hadoop.
-   *
-   * builtin - attempt to discover the jars that were used to load Spark SQL
-   * and use those. This option is only valid when using the
-   * execution version of Hive.
-   *
-   * maven - download the correct version of hive on demand from maven.
-   */
-  protected[sql] def hiveMetastoreJars(): String =
-    sqlConf.getConf(HIVE_METASTORE_JARS)
-
-  /**
-   * A comma separated list of class prefixes that should be loaded using the
-   * ClassLoader that is shared between Spark SQL and a specific version of
-   * Hive. An example of classes that should be shared is JDBC drivers that
-   * are needed to talk to the meta-store. Other classes that need to be
-   * shared are those that interact with classes that are already shared.
-   * For example, custom appender used by log4j.
-   */
-  protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
-    sqlConf.getConf(HIVE_METASTORE_SHARED_PREFIXES, snappyPrefixes())
-        .filterNot(_ == "")
-
-  /**
-   * Add any other classes which has already been loaded by base loader. As Hive Clients creates
-   * another class loader to load classes , it sometimes can give incorrect behaviour
-   */
-  private def snappyPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
-    "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc", "com.mapr")
-
-  /**
-   * A comma separated list of class prefixes that should explicitly be
-   * reloaded for each version of Hive that Spark SQL is communicating with.
-   * For example, Hive UDFs that are declared in a prefix that typically
-   * would be shared (i.e. org.apache.spark.*)
-   */
-  protected[sql] def hiveMetastoreBarrierPrefixes(): Seq[String] =
-    sqlConf.getConf(HIVE_METASTORE_BARRIER_PREFIXES).filterNot(_ == "")
-
-  /**
-   * Overridden by child classes that need to set configuration before
-   * client init (but after hive-site.xml).
-   */
-  protected def configure(): Map[String, String] = Map.empty
-
-  /**
-   * Hive client that is used to retrieve metadata from the Hive MetaStore.
-   * The version of the Hive client that is used here must match the
-   * meta-store that is configured in the hive-site.xml file.
-   */
-  @transient
-  protected[sql] var client: HiveClient = newClient()
-
 
   protected var currentSchema: String = {
     val defaultName = Constant.DEFAULT_SCHEMA
@@ -208,170 +147,9 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   def getCurrentSchema: String = currentSchema
 
-  // As long as threads using same IsolatedClientLoader, they should
-  // use the cached Hive client and not create a new one. we will be setting the cached client as
-  // soon as the ClientWrapper is initialized, so that any thread accessing Hive client after
-  // that will get the cached client. This change will be redundant after Spark 2.0 merge. But
-  // for the time being it will avoid ThreadLocal access to set SessionState.
-  // protected val internalHiveclient = this.client.client
-
-
-  private def newClient(): HiveClient = synchronized {
-
-    closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
-    val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
-    // We instantiate a HiveConf here to read in the hive-site.xml file and
-    // then pass the options into the isolated client loader
-    val metadataConf = new HiveConf()
-    var warehouse = metadataConf.get(
-      HiveConf.ConfVars.METASTOREWAREHOUSE.varname)
-    if (warehouse == null || warehouse.isEmpty ||
-        warehouse == HiveConf.ConfVars.METASTOREWAREHOUSE.getDefaultExpr) {
-      // append warehouse to current directory
-      warehouse = new java.io.File("./warehouse").getCanonicalPath
-      metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
-    }
-    logInfo("Default warehouse location is " + warehouse)
-    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
-
-    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
-    if (useSnappyStore) {
-      logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        dbDriver)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        HIVE_METASTORE)
-    } else if (dbURL != null) {
-      logInfo(s"Using specified metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      if (dbDriver != null) {
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          dbDriver)
-      } else {
-        metadataConf.unset(
-          HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER.varname)
-      }
-      metadataConf.unset(
-        HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME.varname)
-    } else {
-      logInfo("Using Hive metastore database, dbURL = " +
-          metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
-    }
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
-      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
-
-    val allConfig = metadataConf.asScala.map(e =>
-      e.getKey -> e.getValue).toMap ++ configure
-
-    val hiveMetastoreJars = this.hiveMetastoreJars()
-    if (hiveMetastoreJars == "builtin") {
-      if (hiveExecutionVersion != hiveMetastoreVersion) {
-        throw new IllegalArgumentException("Builtin jars can only be used " +
-            "when hive default version == hive metastore version. Execution: " +
-            s"$hiveExecutionVersion != Metastore: $hiveMetastoreVersion. " +
-            "Specify a vaild path to the correct hive jars using " +
-            s"$HIVE_METASTORE_JARS or change " +
-            s"$HIVE_METASTORE_VERSION to $hiveExecutionVersion.")
-      }
-
-      // We recursively find all jars in the class loader chain,
-      // starting from the given classLoader.
-      def allJars(classLoader: ClassLoader): Array[URL] = classLoader match {
-        case null => Array.empty[URL]
-        case urlClassLoader: URLClassLoader =>
-          urlClassLoader.getURLs ++ allJars(urlClassLoader.getParent)
-        case other => allJars(other.getParent)
-      }
-
-      val classLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-      val jars = allJars(classLoader)
-      if (jars.length == 0) {
-        throw new IllegalArgumentException(
-          "Unable to locate hive jars to connect to metastore. " +
-              "Please set spark.sql.hive.metastore.jars.")
-      }
-
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
-
-      logInfo("Initializing HiveMetastoreConnection version " +
-          s"$hiveMetastoreVersion using Spark classes.")
-      // new ClientWrapper(metaVersion, allConfig, classLoader)
-      new IsolatedClientLoader(
-        version = metaVersion,
-        sparkConf = sparkConf,
-        hadoopConf = hadoopConf,
-        execJars = jars.toSeq,
-        config = allConfig,
-        isolationOn = false,
-        barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
-    } else if (hiveMetastoreJars == "maven") {
-      logInfo("Initializing HiveMetastoreConnection version " +
-          s"$hiveMetastoreVersion using maven.")
-
-      IsolatedClientLoader.forVersion(
-        hiveMetastoreVersion,
-        hadoopVersion = VersionInfo.getVersion,
-        sparkConf = sparkConf,
-        hadoopConf = hadoopConf,
-        config = allConfig,
-        barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
-    } else {
-      // Convert to files and expand any directories.
-      val jars = hiveMetastoreJars.split(File.pathSeparator).flatMap {
-        case path if new File(path).getName == "*" =>
-          val files = new File(path).getParentFile.listFiles()
-          if (files == null) {
-            logWarning(s"Hive jar path '$path' does not exist.")
-            Nil
-          } else {
-            files.filter(_.getName.toLowerCase.endsWith(".jar"))
-          }
-        case path =>
-          new File(path) :: Nil
-      }.map(_.toURI.toURL)
-
-      logInfo("Initializing HiveMetastoreConnection version " +
-          s"$hiveMetastoreVersion using $jars")
-      new IsolatedClientLoader(
-        version = metaVersion,
-        sparkConf = sparkConf,
-        hadoopConf = hadoopConf,
-        execJars = jars.toSeq,
-        config = allConfig,
-        isolationOn = true,
-        barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
-    }
-  }
-
-  private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
-    val sc = snappySession.sparkContext
-    Property.MetastoreDBURL.getOption(sparkConf) match {
-      case Some(url) =>
-        val driver = Property.MetastoreDriver.getOption(sparkConf).orNull
-        (false, url, driver)
-      case None => SnappyContext.getClusterMode(sc) match {
-        case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
-             LocalMode(_, _) =>
-          (true, ExternalStoreUtils.defaultStoreURL(sc) +
-              ";disable-streaming=true;default-persistent=true",
-              Constant.JDBC_EMBEDDED_DRIVER)
-        case SplitClusterMode(_, props) =>
-          (true, Constant.DEFAULT_EMBEDDED_URL +
-              ";host-data=false;disable-streaming=true;default-persistent=true;" +
-              props, Constant.JDBC_EMBEDDED_DRIVER)
-        case ExternalClusterMode(_, _) =>
-          (false, null, null)
-      }
-    }
-  }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  private val cachedDataSourceTables: LoadingCache[QualifiedTableName,
+  protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
       LogicalRelation] = {
     val cacheLoader = new CacheLoader[QualifiedTableName, LogicalRelation]() {
       override def load(in: QualifiedTableName): LogicalRelation = {
@@ -402,6 +180,11 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  val cachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalPlan, String)]] = createCachedSampleTables
+
+  def createCachedSampleTables = SnappyStoreHiveCatalog.cachedSampleTables
+
   private var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
@@ -425,10 +208,32 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     }
   }
 
+  def getCachedSampledRelations(table: QualifiedTableName): Seq[(LogicalPlan, String)] = {
+    val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
+    sync.lock()
+    try {
+      // if a relation has been destroyed (e.g. by another instance of catalog),
+      // then the cached ones can be stale, so check and clear entire cache
+      val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
+      if (globalVersion != this.relationDestroyVersion) {
+        cachedSampleTables.invalidateAll()
+        this.relationDestroyVersion = globalVersion
+      }
+
+      cachedSampleTables(table)
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    } finally {
+      sync.unlock()
+    }
+  }
+
   private def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
+      cachedSampleTables.invalidateAll()
     }
     this.relationDestroyVersion = globalVersion + 1
   }
@@ -502,6 +307,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     cachedDataSourceTables.invalidate(tableIdent)
+    cachedSampleTables.invalidate(tableIdent)
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -545,10 +351,19 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
       case None => synchronized {
         tempTables.getOrElse(tableIdent.table,
-          throw new TableNotFoundException(s"Table '$tableIdent' not found"))
+          throw new TableNotFoundException(s"Table '$tableIdent' not found")) match {
+          case lr:LogicalRelation => lr.copy(metastoreTableIdentifier = Some(tableIdent))
+          case x => x
+        }
       }
     }
   }
+
+
+
+
+
+
 
   override def lookupRelation(tableIdent: TableIdentifier,
       alias: Option[String]): LogicalPlan = {
@@ -578,11 +393,6 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     tempTables += (tableName.table -> plan)
   }
 
-  private def clientDropTable(dbName: String,
-      tableName: String): Unit = client.withHiveState {
-    client.dropTable(dbName, tableName, ignoreIfNotExists = false)
-  }
-
   /**
    * Drops a data source table from Hive's meta-store.
    */
@@ -605,10 +415,11 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     }
 
     cachedDataSourceTables.invalidate(tableIdent)
+
     registerRelationDestroy()
 
     val schemaName = tableIdent.schemaName
-    withHiveExceptionHandling(clientDropTable(schemaName, tableIdent.table))
+    withHiveExceptionHandling(externalCatalog.dropTable(schemaName, tableIdent.table, ignoreIfNotExists = false))
   }
 
   /**
@@ -625,6 +436,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
     // invalidate any cached plan for the table
     cachedDataSourceTables.invalidate(tableIdent)
+
 
     val tableProperties = new mutable.HashMap[String, String]
     tableProperties.put(HIVE_PROVIDER, provider)
@@ -716,7 +528,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       case he: HiveException if isDisconnectException(he) =>
         // stale GemXD connection
         Hive.closeCurrent()
-        client = newClient()
+        client = externalCatalog.client.newSession()
         function
     }
   }
@@ -727,6 +539,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       withHiveExceptionHandling(addIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
+    cachedSampleTables.invalidate(inTable)
   }
 
   def removeIndexProp(inTable: QualifiedTableName,
@@ -755,6 +568,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       withHiveExceptionHandling(removeIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
+    cachedSampleTables.invalidate(inTable)
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -841,65 +655,61 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     }
   }
 
+  // -----------------
+  // | Other methods |
+  // -----------------
+
   /**
-   * Retrieve the metadata of an existing metastore table.
-   * If no database is specified, assume the table is in the current database.
-   * If the specified table is not found in the database then a [[NoSuchTableException]] is thrown.
+   * Drop all existing databases (except "default"), tables, partitions and functions,
+   * and set the current database to "default".
+   *
+   * This is mainly used for tests.
    */
-  override def getTableMetadata(name: TableIdentifier): CatalogTable = {
-    val db = formatDatabaseName(name.database.getOrElse(getCurrentDatabase))
-    val table = formatTableName(name.table)
-    val tid = TableIdentifier(table)
-    if (isTemporaryTable(name)) {
-      CatalogTable(
-        identifier = tid,
-        tableType = CatalogTableType.VIEW,
-        storage = CatalogStorageFormat.empty,
-        schema = tempTables(table).output.map { c =>
-          CatalogColumn(
-            name = c.name,
-            dataType = c.dataType.catalogString,
-            nullable = c.nullable,
-            comment = Option(c.name)
-          )
-        },
-        properties = Map(),
-        viewText = None)
-    } else {
-      requireDbExists(db)
-      tableExists(TableIdentifier(table, Some(db)))
-      client.getTable(db, table)
+  override  def reset(): Unit = synchronized {
+    setCurrentDatabase(Constant.DEFAULT_SCHEMA)
+    listDatabases().map(s => s.toUpperCase).
+        filter(_ != Constant.DEFAULT_SCHEMA).
+        filter(_ != DEFAULT_DATABASE.toUpperCase).foreach { db =>
+      dropDatabase(db, ignoreIfNotExists = false, cascade = true)
+    }
+
+    listTables(Constant.DEFAULT_SCHEMA).foreach { table =>
+      dropTable(table, ignoreIfNotExists = false)
+    }
+    listFunctions(Constant.DEFAULT_SCHEMA).map(_._1).foreach { func =>
+      if (func.database.isDefined) {
+        dropFunction(func, ignoreIfNotExists = false)
+      } else {
+        dropTempFunction(func.funcName, ignoreIfNotExists = false)
+      }
+    }
+    tempTables.clear()
+    functionRegistry.clear()
+    // restore built-in functions
+    FunctionRegistry.builtin.listFunction().foreach { f =>
+      val expressionInfo = FunctionRegistry.builtin.lookupFunction(f)
+      val functionBuilder = FunctionRegistry.builtin.lookupFunctionBuilder(f)
+      require(expressionInfo.isDefined, s"built-in function '$f' is missing expression info")
+      require(functionBuilder.isDefined, s"built-in function '$f' is missing function builder")
+      functionRegistry.registerFunction(f, expressionInfo.get, functionBuilder.get)
     }
   }
-
-  /**
-   * List all matching tables in the specified database, including temporary tables.
-   */
-  override def listTables(db: String, pattern: String): Seq[TableIdentifier] = {
-    val dbName = formatDatabaseName(db)
-    requireDbExists(dbName)
-    val dbTables = getTables(Some(dbName)).map(t => TableIdentifier(t._1))
-    dbTables
-  }
-
 }
 
 object SnappyStoreHiveCatalog {
-
-  /** The version of hive used internally by Spark SQL. */
-  val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
-
-  val HIVE_METASTORE_VERSION = HiveUtils.HIVE_METASTORE_VERSION
-  val HIVE_METASTORE_JARS = HiveUtils.HIVE_METASTORE_JARS
-  val HIVE_METASTORE_SHARED_PREFIXES =
-    HiveUtils.HIVE_METASTORE_SHARED_PREFIXES
-  val HIVE_METASTORE_BARRIER_PREFIXES =
-    HiveUtils.HIVE_METASTORE_BARRIER_PREFIXES
 
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
+  val cachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
+    new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
+      override def load(in: QualifiedTableName): Seq[(LogicalPlan, String)] = {
+        Seq.empty
+      }
+    })
+
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {

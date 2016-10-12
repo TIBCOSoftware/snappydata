@@ -48,6 +48,8 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def nextDouble(columnBytes: AnyRef, cursor: Long): Long = 0L
 
+  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
+
   override def nextDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
 
   override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long = 0L
@@ -81,10 +83,8 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
     holder.row.getDouble(columnIndex)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal = {
-    val longValue = holder.row.getLong(columnIndex)
-    Decimal.createUnsafe(longValue, precision, scale)
-  }
+      cursor: Long): Decimal =
+    holder.row.getDecimal(columnIndex, precision, scale)
 
   override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
       cursor: Long): Decimal =

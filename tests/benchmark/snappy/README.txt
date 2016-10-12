@@ -5,7 +5,7 @@ How to run TPCH queries on snappy cluster
 2> Run 1_cleanJavaOnMachines.
     which stops locators, servers, leads defined. Also you can kill all java process running on these machines
     by uncommenting last few lines of this script file
-3> Run 2.Setup.sh.
+3> Run 2_Setup.sh.
     This script file starts locator, server, leads. Spark properties defined in PerfRun.conf is used while staring lead.
     serverMemory defined in PerfRun.conf is used while starting servers.
     Jar files containing TPCH Code is specified while starting locator,lead, servers

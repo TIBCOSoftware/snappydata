@@ -45,7 +45,7 @@ dependencies {
   provided "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}"
-  provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
+  //provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
@@ -71,14 +71,7 @@ dependencies {
   //compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
   compile 'org.twitter4j:twitter4j-stream:4.0.4'
   provided 'com.rabbitmq:amqp-client:3.5.7'
-
-  compile(group: 'com.databricks', name: 'spark-csv_' + scalaBinaryVersion, version: sparkCSVVersion) {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-    exclude(group: 'com.univocity', module: 'univocity-parsers')
-  }
-
+  
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
