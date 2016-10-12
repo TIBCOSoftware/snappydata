@@ -18,10 +18,11 @@ pages:
 - Connecting using JDBC, Spark: connectingToCluster.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
-- Approximate query processing: aqp.md
+- Synopsis Data Engine (SDE): aqp.md
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
 - API: apidocsintro.md
+- Using iSight-Cloud: aqp_aws.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
