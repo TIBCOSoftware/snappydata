@@ -131,7 +131,7 @@ select c.CategoryName as Product_Category, case when s.Country in ('UK','Spain',
      end  --GEMFIREXD-PROPERTIES executionEngine=Spark
      ;
 
-     select CategoryName, format_number(sum(ProductSales), 2) as CategorySales from (select distinct a.CategoryName, b.ProductName,
+select CategoryName, format_number(sum(ProductSales), 2) as CategorySales from (select distinct a.CategoryName, b.ProductName,
      format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales, concat('Qtr ', quarter(d.ShippedDate))
      as ShippedQuarter from Categories as a inner join Products as b on a.CategoryID = b.CategoryID inner join Order_Details
      as c on b.ProductID = c.ProductID inner join Orders as d on d.OrderID = c.OrderID where d.ShippedDate > Cast('1997-01-01' as TIMESTAMP)  and d.ShippedDate < Cast('1997-12-31' as TIMESTAMP)
@@ -142,15 +142,15 @@ set spark.sql.crossJoin.enabled=true;
 
 SELECT * FROM orders LEFT SEMI JOIN order_details;
 
-SELECT * FROM orders JOIN order_details;
+SELECT count(*) FROM orders JOIN order_details;
 
-SELECT * FROM orders LEFT JOIN order_details;
+SELECT count(*) FROM orders LEFT JOIN order_details;
 
-SELECT * FROM orders RIGHT JOIN order_details;
+SELECT count(*) FROM orders RIGHT JOIN order_details;
 
-SELECT * FROM orders FULL OUTER JOIN order_details;
+SELECT count(*) FROM orders FULL OUTER JOIN order_details;
 
-SELECT * FROM orders FULL JOIN order_details;
+SELECT count(*) FROM orders FULL JOIN order_details;
 
 SELECT * FROM orders JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
 
