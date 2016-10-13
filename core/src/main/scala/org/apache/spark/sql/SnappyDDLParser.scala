@@ -19,6 +19,7 @@ package org.apache.spark.sql
 
 import scala.util.Try
 
+import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -464,8 +465,9 @@ abstract class SnappyDDLParser(session: SnappySession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharType(size, fixed) =>
-          builder.putLong("size", size).putBoolean("fixed", fixed)
+        case CharType(size, baseType) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
           (StringType, false)
         case _ => (t, true)
       }

@@ -18,12 +18,20 @@
 package org.apache.spark.sql.collection
 
 import scala.collection.generic.{CanBuildFrom, Growable}
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
-import org.apache.spark.sql.Row
+import org.apache.spark.Partition
+import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodeAndComment}
+import org.apache.spark.sql.{SnappyContext, Row}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
+import org.apache.spark.sql.execution.{BufferedRowIterator, WholeStageCodegenExec, SparkPlan}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.collection.BitSet
 
 /**
@@ -50,7 +58,9 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     val types: Array[DataType],
     val numColumns: Int,
     val initialCapacity: Int,
-    val loadFactor: Double)
+    val loadFactor: Double,
+
+    val qcsColHandlerOption: Option[ColumnHandler])
     extends Iterable[ReusableRow]
     with IterableLike[ReusableRow, MultiColumnOpenHashSet]
     with Growable[Row]
@@ -68,17 +78,19 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   import MultiColumnOpenHashSet._
 
   def this(columns: Array[Int], types: Array[DataType], initialCapacity: Int) =
-    this(columns, types, columns.length, initialCapacity, 0.7)
+    this(columns, types, columns.length, initialCapacity, 0.7, None)
 
   def this(columns: Array[Int], types: Array[DataType]) =
     this(columns, types, 64)
 
   // for serialization
-  def this() = this(Array.emptyIntArray, Array.empty, 0, 1, 0.1)
+  def this() = this(Array.emptyIntArray, Array.empty, 0, 1, 0.1, None)
 
   private var _columnHandler: ColumnHandler = _
   private var _projectionColumnHandler: ColumnHandler = _
-  _columnHandler = newColumnHandler(columns, types, numColumns)
+
+  _columnHandler =  qcsColHandlerOption.getOrElse(MultiColumnOpenHashSet.newColumnHandler(columns, types, numColumns))
+
   _projectionColumnHandler = newColumnHandler((0 until numColumns).toArray,
     types, numColumns)
 
@@ -88,10 +100,10 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   private var _growThreshold = (loadFactor * _capacity).toInt
 
   private[sql] def getColumnHandler(r: Row) =
-    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
+    if (r.length == numColumns && qcsColHandlerOption.isEmpty) _projectionColumnHandler else _columnHandler
 
   private[sql] def getColumnHandler(r: WrappedInternalRow) =
-    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
+    if (r.length == numColumns  && qcsColHandlerOption.isEmpty) _projectionColumnHandler else _columnHandler
 
   private var _bitset = new BitSet(_capacity)
 
@@ -241,7 +253,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
 
   private def newBuilder(from: MultiColumnOpenHashSet) = {
     new MultiColumnOpenHashSet(from.columns, from.types,
-      from.numColumns, from.capacity, from.loadFactor)
+      from.numColumns, from.capacity, from.loadFactor, qcsColHandlerOption)
   }
 
   override protected[this] def newBuilder = newBuilder(self)
@@ -360,7 +372,7 @@ private[sql] object MultiColumnOpenHashSet {
    * column types for array creation, hashing avoid boxing hash code
    * computation etc.
    */
-  abstract sealed class ColumnHandler extends Serializable {
+   abstract sealed class ColumnHandler extends Serializable {
 
     val columns: Array[Int]
 
@@ -371,6 +383,8 @@ private[sql] object MultiColumnOpenHashSet {
     def initDataContainer(capacity: Int): Array[Any]
 
     def hash(row: Row): Int
+
+    def hash(row: InternalRow): Int
 
     def hash(row: WrappedInternalRow): Int
 
@@ -427,7 +441,11 @@ private[sql] object MultiColumnOpenHashSet {
     }
   }
 
+
+
+
   final class LongHandler(val col: Int) extends ColumnHandler {
+
 
     override val columns = Array[Int](col)
 
@@ -438,6 +456,8 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = hashLong(row.getLong(col))
+
+    override def hash(row: InternalRow): Int = hashLong(row.getLong(col))
 
     override def hash(row: WrappedInternalRow): Int = hashLong(row.getLong(col))
 
@@ -472,6 +492,8 @@ private[sql] object MultiColumnOpenHashSet {
 
     override def hash(row: Row): Int = hashInt(row.getInt(col))
 
+    override def hash(row: InternalRow): Int = hashLong(row.getInt(col))
+
     override def hash(row: WrappedInternalRow): Int = hashInt(row.getInt(col))
 
     override def hash(data: Array[Any], pos: Int): Int =
@@ -494,6 +516,7 @@ private[sql] object MultiColumnOpenHashSet {
 
   final class StringHandler(val col: Int) extends ColumnHandler {
 
+    val scalaConverter: Any => Any = Utils.createScalaConverter(StringType)
     override val columns = Array[Int](col)
 
     override def getMutableValue(index: Int): MutableValue = new MutableAny
@@ -503,6 +526,8 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = hashInt(row.getString(col).##)
+
+    override def hash(row: InternalRow): Int =  hashInt(scalaConverter(row.getString(col)).##)
 
     override def hash(row: WrappedInternalRow): Int = {
       // TODO: avoid conversion from UTF8String to String
@@ -538,6 +563,10 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = {
+      hashLong(java.lang.Double.doubleToRawLongBits(row.getDouble(col)))
+    }
+
+    override def hash(row: InternalRow): Int = {
       hashLong(java.lang.Double.doubleToRawLongBits(row.getDouble(col)))
     }
 
@@ -577,6 +606,9 @@ private[sql] object MultiColumnOpenHashSet {
     override def hash(row: Row): Int =
       hashInt(java.lang.Float.floatToRawIntBits(row.getFloat(col)))
 
+    override def hash(row: InternalRow): Int =
+      hashInt(java.lang.Float.floatToRawIntBits(row.getFloat(col)))
+
     override def hash(row: WrappedInternalRow): Int =
       hashInt(java.lang.Float.floatToRawIntBits(row.getFloat(col)))
 
@@ -609,6 +641,8 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = if (row.getBoolean(col)) 1 else 0
+
+    override def hash(row: InternalRow): Int =  if (row.getBoolean(col)) 1 else 0
 
     override def hash(row: WrappedInternalRow): Int =
       if (row.getBoolean(col)) 1 else 0
@@ -643,6 +677,8 @@ private[sql] object MultiColumnOpenHashSet {
 
     override def hash(row: Row): Int = row.getByte(col)
 
+    override def hash(row: InternalRow): Int = row.getByte(col)
+
     override def hash(row: WrappedInternalRow): Int = row.getByte(col)
 
     override def hash(data: Array[Any], pos: Int): Int =
@@ -675,6 +711,8 @@ private[sql] object MultiColumnOpenHashSet {
 
     override def hash(row: Row): Int = row.getShort(col)
 
+    override def hash(row: InternalRow): Int = row.getShort(col)
+
     override def hash(row: WrappedInternalRow): Int = row.getShort(col)
 
     override def hash(data: Array[Any], pos: Int): Int =
@@ -696,6 +734,7 @@ private[sql] object MultiColumnOpenHashSet {
   }
 
   final class SingleColumnHandler(val col: Int) extends ColumnHandler {
+    val scalaConverter: Any => Any = Utils.createScalaConverter(ObjectType(classOf[Any]))
 
     override val columns = Array[Int](col)
 
@@ -706,6 +745,8 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = hashInt(row(col).##)
+
+    override def hash(row: InternalRow): Int = hashInt(scalaConverter(row.get(col, ObjectType(classOf[Any]))).##)
 
     override def hash(row: WrappedInternalRow): Int = hashInt(row.get(col).##)
 
@@ -804,6 +845,40 @@ private[sql] object MultiColumnOpenHashSet {
           case ShortType => h = MurmurHash3.mix(h, row.getShort(cols(i)))
           case DateType => h = MurmurHash3.mix(h, row.getInt(cols(i)))
           case _ => h = MurmurHash3.mix(h, row.get(cols(i)).##)
+        }
+        i += 1
+      }
+      MurmurHash3.finalizeHash(h, ncols)
+    }
+
+    override def hash(row: InternalRow): Int = {
+      val cols = this.columns
+      val ncols = this.numColumns
+      val types = this.types
+      var h = MurmurHash3.arraySeed
+      var i = 0
+      while (i < ncols) {
+        val col = cols(i)
+        types(i) match {
+          case LongType =>
+            val l = row.getLong(col)
+            h = MurmurHash3.mix(h, l.toInt)
+            h = MurmurHash3.mix(h, (l >>> 32).toInt)
+          case IntegerType => h = MurmurHash3.mix(h, row.getInt(cols(i)))
+          case StringType => h = MurmurHash3.mix(h, row.getString(cols(i)).##)
+          case DoubleType =>
+            val l = java.lang.Double.doubleToRawLongBits(
+              row.getDouble(cols(i)))
+            h = MurmurHash3.mix(h, l.toInt)
+            h = MurmurHash3.mix(h, (l >>> 32).toInt)
+          case FloatType => h = MurmurHash3.mix(h,
+            java.lang.Float.floatToRawIntBits(row.getFloat(cols(i))))
+          case BooleanType => h = MurmurHash3.mix(h,
+            if (row.getBoolean(cols(i))) 1 else 0)
+          case ByteType => h = MurmurHash3.mix(h, row.getByte(cols(i)))
+          case ShortType => h = MurmurHash3.mix(h, row.getShort(cols(i)))
+          case DateType => h = MurmurHash3.mix(h, row.getInt(cols(i)))
+          case _ => h = MurmurHash3.mix(h, row.get(col, ObjectType(classOf[Any])).##)
         }
         i += 1
       }
@@ -1031,4 +1106,150 @@ private[sql] object MultiColumnOpenHashSet {
 
   private val grow = grow1 _
   private val move = move1 _
+}
+
+final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
+    Array[DataType], Array[DataType]), hashColumnHandler: ColumnHandler) extends ColumnHandler {
+  val threadLocalIter = new ThreadLocal[Iterator[InternalRow]]() {
+    override def initialValue: Iterator[InternalRow] = {
+      val iter = {
+        val func: (Int, Iterator[InternalRow]) => Iterator[InternalRow] = {
+          (index, iter) =>
+            val clazz = CodeGenerator.compile(qcsSparkPlan._1)
+            val buffer = clazz.generate(qcsSparkPlan._2.toArray).asInstanceOf[BufferedRowIterator]
+            buffer.init(index, Array(iter))
+            new Iterator[InternalRow] {
+
+              override def hasNext(): Boolean =   buffer.hasNext
+
+              override def next: InternalRow =buffer.next
+            }
+        }
+        func(0, QCSSQLColumnHandler.iter)
+      }
+      iter
+    }
+  }
+  val projectedTypes = qcsSparkPlan._3
+  val baseTypes = qcsSparkPlan._4
+  val rowToInternalRowConverter = baseTypes.map(dt => Utils.createCatalystConverter(dt))
+  val internalRowToRowConverter = projectedTypes.map(dt => Utils.createScalaConverter(dt))
+
+  override val columns = hashColumnHandler.columns
+
+
+  override def getMutableValue(index: Int): MutableValue = hashColumnHandler.getMutableValue(index)
+
+  override def initDataContainer(capacity: Int): Array[Any] = hashColumnHandler.initDataContainer(capacity)
+
+  override def hash(row: Row): Int = {
+    RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      hashColumnHandler.hash(ir)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
+  }
+
+  override def hash(row: InternalRow): Int = {
+    throw new UnsupportedOperationException("Invocation not expected")
+  }
+
+  override def hash(row: WrappedInternalRow): Int = this.hash(row.asInstanceOf[Row])
+
+  override def hash(data: Array[Any], pos: Int): Int =  this.hashColumnHandler.hash(data, pos)
+
+
+  override def equals(data: Array[Any], pos: Int, row: Row): Boolean = this.extractFromRowAndExecuteFunction(
+    this.hashColumnHandler.equals(data, pos, _), row)
+
+
+  override def fillValue(data: Array[Any], pos: Int,
+      row: ReusableRow) = this.hashColumnHandler.fillValue(data, pos, row)
+
+
+  override def setValue(data: Array[Any], pos: Int, row: Row) = this.extractFromRowAndExecuteFunction(
+    this.hashColumnHandler.setValue(data, pos, _), row)
+
+
+  override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
+      newPos: Int) = this.hashColumnHandler.copyValue(data, pos, newData, newPos)
+
+  def extractFromRowAndExecuteFunction[T](f: Row => T, row: Row): T = {
+    RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
+      f(InternalRowToRow)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
+  }
+}
+
+object QCSSQLColumnHandler {
+
+  def newSqlHandler(qcsPlan: (CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType]),
+      hashColHandler: ColumnHandler): ColumnHandler = {
+    new QCSSQLColumnHandler(qcsPlan, hashColHandler)
+  }
+
+  val iter = new Iterator[InternalRow]() {
+    def next: InternalRow =  RowToInternalRow
+    def hasNext = RowToInternalRow.rowHolder.get() != null
+  }
+}
+
+object RowToInternalRow extends BaseGenericInternalRow {
+  val rowHolder = new ThreadLocal[(Row, Array[Any => Any])]()
+
+  override def numFields = rowHolder.get()._2.length
+
+  override protected def genericGet(ordinal: Int): Any = {
+    val (row, converters) = rowHolder.get()
+    converters(ordinal)(row.getAs(ordinal))
+  }
+
+  override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
+
+}
+
+
+object InternalRowToRow extends Row {
+
+  val rowHolder = new ThreadLocal[(InternalRow, Array[Any => Any], Array[DataType])]()
+
+  override def length: Int = rowHolder.get._2.length
+
+  override def isNullAt(ordinal: Int): Boolean = rowHolder.get._1.isNullAt(ordinal)
+
+  override def getBoolean(ordinal: Int): Boolean = rowHolder.get._1.getBoolean(ordinal)
+
+  override def getByte(ordinal: Int): Byte = rowHolder.get._1.getByte(ordinal)
+
+  override def getShort(ordinal: Int): Short = rowHolder.get._1.getShort(ordinal)
+
+  override def getInt(ordinal: Int): Int = rowHolder.get._1.getInt(ordinal)
+
+  override def getLong(ordinal: Int): Long = rowHolder.get._1.getLong(ordinal)
+
+  override def getFloat(ordinal: Int): Float = rowHolder.get._1.getFloat(ordinal)
+
+  override def getDouble(ordinal: Int): Double = rowHolder.get._1.getDouble(ordinal)
+
+  override def getString(ordinal: Int): String = rowHolder.get._1.getString(ordinal)
+
+
+  override def get(ordinal: Int): Any = {
+    val (ir, converter, types) = rowHolder.get
+    converter(ordinal)(ir.get(ordinal, types(ordinal)))
+  }
+
+  override def copy(): WrappedInternalRow = throw new UnsupportedOperationException("Not implemented")
+
 }

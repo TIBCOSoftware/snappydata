@@ -18,8 +18,7 @@
 package io.snappydata.benchmark.snappy
 
 import java.io.{File, FileOutputStream, PrintStream}
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.joins.HashedRelationCache
+
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
 /**
@@ -28,19 +27,27 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 object TPCH_Snappy {
 
   var planFileStream: FileOutputStream = null
-  var planprintStream:PrintStream = null
-
+  var planPrintStream:PrintStream = null
 
   def close(): Unit = {
     if (planFileStream != null) {
-      planprintStream.close
+      planPrintStream.close
       planFileStream.close()
     }
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy:Boolean, itr : Int, useIndex: Boolean, warmup : Integer, runsForAverage :Integer, avgPrintStream:PrintStream): Unit = {
-     var queryFileStream: FileOutputStream = new FileOutputStream(new File(s"$queryNumber.out"))
+      isSnappy:Boolean, itr : Int = 0, useIndex: Boolean = false, warmup : Integer = 0, runsForAverage :Integer=1, avgPrintStream:PrintStream=null): Unit = {
+
+    val planFileName = if(isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
+    val queryFileName = if(isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
+
+    if (planFileStream == null) {
+      planFileStream = new FileOutputStream(new File(planFileName))
+      planPrintStream = new PrintStream(planFileStream)
+    }
+
+     var queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
      var queryPrintStream:PrintStream = new PrintStream(queryFileStream)
 
 
@@ -78,30 +85,27 @@ object TPCH_Snappy {
      try {
        println(s"Started executing $queryNumber")
        if (isResultCollection) {
-         if (planFileStream == null) {
-           planFileStream = new FileOutputStream(new File(s"Plan.out"))
-           planprintStream = new PrintStream(planFileStream)
-         }
-         val cnts = queryExecution(queryNumber, sqlContext, useIndex, true)
-         println(s"$queryNumber : ${cnts.length}")
+         val resultSet = queryExecution(queryNumber, sqlContext, useIndex, true)
+         println(s"$queryNumber : ${resultSet.length}")
 
-         for (s <- cnts) {
-           var output = s.toString()
-           output = output.replace("[", "").replace("]", "").replace(",", "|")
-           queryPrintStream.println(output)
+         for (row <- resultSet) {
+           queryPrintStream.println(row.toSeq.map {
+             case d: Double => "%18.4f".format(d).trim()
+             case v => v
+           }.mkString(","))
          }
-         println(s"$queryNumber Result Collected in file $queryNumber.out")
+         println(s"$queryNumber Result Collected in file $queryFileName")
        } else {
          var totalTimeForLast5Iterations: Long = 0
          queryPrintStream.println(queryNumber)
          for (i <- 1 to (warmup + runsForAverage)) {
-           HashedRelationCache.clear()
-           Utils.mapExecutors(sqlContext, () => {
-             HashedRelationCache.clear()
-             Iterator.empty
-           })
            val startTime = System.currentTimeMillis()
-           val cnts = queryExecution(queryNumber, sqlContext, useIndex)
+           var cnts : Array[Row]= null
+           if(i == 1 ){
+             cnts = queryExecution(queryNumber, sqlContext, useIndex, true)
+           }else{
+             cnts = queryExecution(queryNumber, sqlContext, useIndex)
+           }
            for (s <- cnts) {
              //just iterating over result
            }
@@ -111,7 +115,7 @@ object TPCH_Snappy {
            if (i > warmup) {
              totalTimeForLast5Iterations += iterationTime
            }
-
+           cnts=null
          }
          queryPrintStream.println(s"${totalTimeForLast5Iterations / runsForAverage}")
          avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / runsForAverage}")
@@ -121,7 +125,7 @@ object TPCH_Snappy {
        case e: Exception => {
          e.printStackTrace(queryPrintStream)
          e.printStackTrace(avgPrintStream)
-         println(s" Exception while executing $queryNumber in written to file $queryNumber.out")
+         println(s" Exception while executing $queryNumber in written to file $queryFileName")
        }
      } finally {
          queryPrintStream.close()
@@ -130,8 +134,8 @@ object TPCH_Snappy {
    }
 
   def printPlan(df: DataFrame, query: String): Unit = {
-    planprintStream.println(query)
-    planprintStream.println(df.queryExecution.executedPlan)
+    planPrintStream.println(query)
+    planPrintStream.println(df.queryExecution.executedPlan)
   }
 
   def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean, genPlan: Boolean = false):
@@ -169,7 +173,7 @@ object TPCH_Snappy {
       }
       case "q2" => {
         val result = sqlContext.sql(getTempQuery2())
-        result.registerTempTable("ViewQ2")
+        result.createOrReplaceTempView("ViewQ2")
         val df = sqlContext.sql(getQuery2())
         val res = df.collect()
         if(genPlan) {
@@ -264,7 +268,7 @@ object TPCH_Snappy {
       }
       case "q13" => {
         val result = sqlContext.sql(getTempQuery13(useIndex))
-        result.registerTempTable("ViewQ13")
+        result.createOrReplaceTempView("ViewQ13")
         val df = sqlContext.sql(getQuery13())
         val res = df.collect()
         if(genPlan) {
@@ -282,10 +286,10 @@ object TPCH_Snappy {
       }
       case "q15" => {
         var result = sqlContext.sql(getTempQuery15_1())
-        result.registerTempTable("revenue")
+        result.createOrReplaceTempView("revenue")
 
         result = sqlContext.sql(getTempQuery15_2())
-        result.registerTempTable("ViewQ15")
+        result.createOrReplaceTempView("ViewQ15")
 
         val df = sqlContext.sql(getQuery15())
         val res = df.collect()
@@ -304,7 +308,7 @@ object TPCH_Snappy {
       }
       case "q17" => {
         val result = sqlContext.sql(getTempQuery17(useIndex))
-        result.registerTempTable("ViewQ17")
+        result.createOrReplaceTempView("ViewQ17")
 
         val df = sqlContext.sql(getQuery17(useIndex))
         val res = df.collect()
@@ -331,7 +335,7 @@ object TPCH_Snappy {
       }
       case "q20" => {
         val result = sqlContext.sql(getTempQuery20(useIndex))
-        result.registerTempTable("ViewQ20")
+        result.createOrReplaceTempView("ViewQ20")
         val df = sqlContext.sql(getQuery20())
         val res = df.collect()
         if(genPlan) {
@@ -656,7 +660,7 @@ object TPCH_Snappy {
           "     and s_nationkey = n_nationkey" +
           "     and n_regionkey = r_regionkey" +
           "     and r_name = 'ASIA'" +
-          //"     and p_partkey = v_partkey" +
+          "     and p_partkey = v_partkey" +
           "     and ps_supplycost =  v_supplycost" +
           " order by" +
           "     s_acctbal desc," +
@@ -845,13 +849,13 @@ object TPCH_Snappy {
             "                         n2.n_name as nation" +
             "                 from" +
             "                         LINEITEM," +
-            "                         PART," +
             "                         ORDERS," +
             "                         CUSTOMER," +
             "                         SUPPLIER," +
             "                         NATION n1," +
             "                         REGION," +
-            "                         NATION n2" +
+            "                         NATION n2," +
+            "                         PART" +
             "                 where" +
             "                         p_partkey = l_partkey" +
             "                         and s_suppkey = l_suppkey" +
@@ -1312,7 +1316,8 @@ object TPCH_Snappy {
             " where" +
             "         p_partkey = l_partkey" +
             "         and p_brand = 'Brand#23'" +
-            "         and p_container = 'MED BOX'" +
+            //"         and p_container = 'MED BOX'" +
+            "         and p_container = 'SM PACK'" +
             "         and l_quantity < v_quantity" +
             "         and v_partkey = p_partkey"
       }else{
@@ -1511,7 +1516,7 @@ object TPCH_Snappy {
           "                                 from" +
           "                                         PART" +
           "                                 where" +
-          "                                         p_name like 'forest%'" +
+          "                                         p_name like 'khaki%'" +
           "                         )" +
           "                         and ps_availqty > v_quantity" +
           "                         and v_partkey = ps_partkey" +

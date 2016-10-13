@@ -28,4 +28,18 @@ else
   sh "${SNAPPY_HOME_DIR}/sbin/snappy-stop-all.sh"
 fi
 
+for node in $LOCATORS; do
+  ssh -t "$node" "sudo cp /etc/hosts.orig /etc/hosts; cp ~/.ssh/known_hosts.orig ~/.ssh/known_hosts"
+done
+
+for node in $LEADS; do
+  ssh -t "$node" "sudo cp /etc/hosts.orig /etc/hosts; cp ~/.ssh/known_hosts.orig ~/.ssh/known_hosts"
+done
+
+for node in $SERVERS; do
+  ssh -t "$node" "sudo cp /etc/hosts.orig /etc/hosts; cp ~/.ssh/known_hosts.orig ~/.ssh/known_hosts"
+done
+
+
 popd > /dev/null
+

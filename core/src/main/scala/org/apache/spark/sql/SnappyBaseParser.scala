@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import scala.collection.mutable
 
+import io.snappydata.Constant
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -244,9 +245,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def columnCharType: Rule1[DataType] = rule {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, isFixedLength = false)) |
+      CharType(d.toInt, baseType = "VARCHAR")) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, isFixedLength = true))
+      CharType(d.toInt, baseType = "CHAR")) |
+    STRING ~> (() => CharType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
   }
 
   final def columnDataType: Rule1[DataType] = rule {

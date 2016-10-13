@@ -45,8 +45,8 @@ object BulkLoad_Spark {
     snc.sql("DROP TABLE IF EXISTS " + "LINEITEM")
     snc.sql("DROP TABLE IF EXISTS " + "ORDERS")
 
-    TPCHColumnPartitionedTable.testLoadOrderTablePerformance(props, snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.testLoadLineItemTablePerformance(props, snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.testLoadOrderTablePerformance(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.testLoadLineItemTablePerformance(snc, path, isSnappy, buckets, loadPerfPrintStream)
 
     loadPerfPrintStream.close()
     loadPerfFileStream.close()

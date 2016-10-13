@@ -57,6 +57,12 @@ conf files are consulted when servers are started and also when they are stopped
 
 Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in _SNAPPY_HOME/conf_. 
 
+##### Hadoop Provided settings
+If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without hadoop from the download link.
+This will allow you to provide hadoop at runtime.
+To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh an entry as below.
+
+export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 
 #### Per Component Configuration 
 

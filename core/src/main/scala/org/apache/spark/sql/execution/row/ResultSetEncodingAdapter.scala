@@ -59,6 +59,8 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
 
   override def nextDouble(columnBytes: AnyRef, cursor: Long): Long = 0L
 
+  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
+
   override def nextDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
 
   override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long = 0L
@@ -92,12 +94,6 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long): Decimal = {
-    val longValue = rs.getLong(columnPosition)
-    Decimal.createUnsafe(longValue, precision, scale)
-  }
-
-  override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal = {
     val dec = rs.getBigDecimal(columnPosition)
     if (dec != null) {
       Decimal.apply(dec, precision, scale)
@@ -105,6 +101,10 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
       null
     }
   }
+
+  override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
+      cursor: Long): Decimal =
+    readLongDecimal(columnBytes, precision, scale, cursor)
 
   override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     UTF8String.fromString(rs.getString(columnPosition))

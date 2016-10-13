@@ -30,21 +30,21 @@ object TPCH_Spark {
     var runsForAverage : Integer = args(4).toInt
     var sqlSparkProperties = args(5).split(",")
 
-    var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"BulkLoadPerf.out"))
+    var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_LoadPerf.out"))
     var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
 
-    var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
+    var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_Average.out"))
     var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
 
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, path, isSnappy, buckets,loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, path, isSnappy, buckets,loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, path, isSnappy,loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, path, isSnappy,loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, path, isSnappy,loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, path, isSnappy, buckets,loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, path, isSnappy, buckets,loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, path, isSnappy, buckets,loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
 
 //    snc.sql(s"set spark.sql.shuffle.partitions=83")
 //    snc.sql(s"set spark.sql.inMemoryColumnarStorage.compressed=false")

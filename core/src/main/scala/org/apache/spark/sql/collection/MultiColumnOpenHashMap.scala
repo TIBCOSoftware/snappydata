@@ -18,11 +18,16 @@
 package org.apache.spark.sql.collection
 
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IterableLike, Iterator, mutable}
 import scala.reflect.ClassTag
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.collection.MultiColumnOpenHashSet._
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.DataType
 
 /**
@@ -37,7 +42,8 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     _types: Array[DataType],
     _numColumns: Int,
     _initialCapacity: Int,
-    _loadFactor: Double)
+    _loadFactor: Double,
+    qcsColHandlerOption: Option[ColumnHandler])
     extends SegmentMap[Row, V]
     with mutable.Map[Row, V]
     with mutable.MapLike[Row, V, MultiColumnOpenHashMap[V]]
@@ -49,13 +55,13 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   self =>
 
   def this(columns: Array[Int], types: Array[DataType], initialCapacity: Int) =
-    this(columns, types, columns.length, initialCapacity, 0.7)
+    this(columns, types, columns.length, initialCapacity, 0.7, None)
 
   def this(columns: Array[Int], types: Array[DataType]) =
     this(columns, types, 64)
 
   private val _keySet = new MultiColumnOpenHashSet(_columns, _types,
-    _numColumns, _initialCapacity, _loadFactor)
+    _numColumns, _initialCapacity, _loadFactor, qcsColHandlerOption)
 
   // Init in constructor (instead of in declaration) to work around
   // a Scala compiler specialization bug that would generate two arrays
@@ -241,7 +247,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   override def empty: MultiColumnOpenHashMap[V] = {
     val keySet = _keySet
     new MultiColumnOpenHashMap[V](keySet.columns, keySet.types,
-      keySet.numColumns, 1, keySet.loadFactor)
+      keySet.numColumns, 1, keySet.loadFactor, qcsColHandlerOption)
   }
 
   /**
@@ -419,7 +425,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
   private def newBuilder[B: ClassTag](keySet: MultiColumnOpenHashSet) = {
     new MultiColumnOpenHashMap[B](keySet.columns, keySet.types,
-      keySet.numColumns, keySet.capacity, keySet.loadFactor)
+      keySet.numColumns, keySet.capacity, keySet.loadFactor, qcsColHandlerOption)
   }
 
   override protected[this] def newBuilder = newBuilder[V](self._keySet)

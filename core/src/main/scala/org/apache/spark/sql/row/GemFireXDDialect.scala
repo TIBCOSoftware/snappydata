@@ -82,12 +82,13 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       Some(FloatType)
     } else if (sqlType == Types.VARCHAR && size > 0 &&
         typeName.equalsIgnoreCase("varchar")) {
-      md.putLong("size", size)
+      md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+      md.putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
       Some(StringType)
     } else if (sqlType == Types.CHAR && size > 0 &&
         typeName.equalsIgnoreCase("char")) {
-      md.putLong("size", size)
-      md.putBoolean("fixed", value = true)
+      md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+      md.putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
       Some(StringType)
     } else if (sqlType == Types.BIT && size > 1 &&
         typeName.equalsIgnoreCase("bit")) {
@@ -116,13 +117,17 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def getJDBCType(dt: DataType,
       md: Metadata): Option[JdbcType] = dt match {
     case StringType =>
-      if (md.contains("size")) {
-        if (md.contains("fixed") && md.getBoolean("fixed")) {
-          Some(JdbcType(s"CHAR(${md.getLong("size")})",
+      if (md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
+          md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+        if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR")) {
+          Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.CHAR))
-        } else {
-          Some(JdbcType(s"VARCHAR(${md.getLong("size")})",
+        } else if (md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("VARCHAR")) {
+          Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
             java.sql.Types.VARCHAR))
+        } else {
+          // STRING
+          Some(JdbcType("CLOB", java.sql.Types.CLOB))
         }
       } else {
         Some(JdbcType("CLOB", java.sql.Types.CLOB))

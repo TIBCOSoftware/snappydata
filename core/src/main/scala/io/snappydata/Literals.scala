@@ -80,6 +80,16 @@ object Constant {
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
   val DEFAULT_CACHE_TIMEOUT_SECS = 10
+
+  val CHAR_TYPE_BASE_PROP = "base"
+
+  val CHAR_TYPE_SIZE_PROP = "size"
+
+  val MAX_VARCHAR_SIZE = 32672
+
+  // System property to tell the system whether the String type columns
+  // should be considered as clob or not
+  val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 }
 
 /**
@@ -181,4 +191,18 @@ object QueryHint extends Enumeration {
    * SELECT * FROM t1 --+ complexTypeAsClob(1)
    */
   val ComplexTypeAsClob = Value("complexTypeAsClob")
+
+  /**
+   * Query hint for SQL queries to serialize STRING type as CLOB rather than
+   * as VARCHAR.
+   * <p>
+   * Possible values are valid column names in the tables/schema. Multiple
+   * column names to be comma separated.
+   * One can also provide '*' for serializing all the STRING columns as CLOB.
+   * <p>
+   * Example:<br>
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
+   */
+  val ColumnsAsClob = Value("columnsAsClob")
 }
