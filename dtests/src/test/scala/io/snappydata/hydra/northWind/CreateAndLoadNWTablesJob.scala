@@ -29,7 +29,7 @@ object CreateAndLoadNWTablesJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
     val tableType = jobConfig.getString("tableType")
     Try {
-      snc.sql("set spark.sql.shuffle.partitions=6")
+      snc.sql("set spark.sql.shuffle.partitions=23")
       northWind.NWQueries.snc = snc
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")

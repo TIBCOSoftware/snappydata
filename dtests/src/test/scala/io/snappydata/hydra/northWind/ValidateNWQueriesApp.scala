@@ -28,7 +28,7 @@ object ValidateNWQueriesApp {
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
-    snc.sql("set spark.sql.shuffle.partitions=6")
+    //snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     val tableType = args(0)
     val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueriesApp.out"), true));

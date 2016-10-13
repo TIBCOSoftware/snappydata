@@ -156,10 +156,11 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers.write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table)
+    snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
     NWQueries.employees.write.insertInto("employees")
 
-    snc.sql(NWQueries.customers_table)
+    snc.sql(NWQueries.customers_table +
+      " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
     NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', redundancy '1')")
@@ -170,7 +171,7 @@ object NWTestUtil {
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " using row options ( partition_by 'ProductID', buckets '17', redundancy '1')")
+      " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
@@ -197,10 +198,10 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers.write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table + " using column options( redundancy '1')")
+    snc.sql(NWQueries.employees_table + " using row options(partition_by 'City,Country', redundancy '1')")
     NWQueries.employees.write.insertInto("employees")
 
-    snc.sql(NWQueries.customers_table)
+    snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', COLOCATE_WITH 'employees', redundancy '1')")
     NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13', redundancy '1')")
@@ -211,7 +212,7 @@ object NWTestUtil {
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " USING column options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
+      " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
@@ -238,15 +239,15 @@ object NWTestUtil {
     NWQueries.shippers.write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
-      " using row options( partition_by 'EmployeeID', buckets '3', redundancy '1')")
+      " using row options( partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
     NWQueries.employees.write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
-      " using column options( partition_by 'CustomerID', buckets '19', redundancy '1')")
+      " using column options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
     NWQueries.customers.write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
-      " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers', redundancy '1')")
+      " using row options (partition_by 'CustomerID, OrderID', buckets '19', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
