@@ -302,4 +302,4 @@ In a database context, the process that derives information that is available in
 Efficient processing of data is one of the main issues faced with query processing. In most cases, it can be expensive and time consuming for users to get an exact answer in a short response time. 
 Synopsis Data Engine (SDE) provides an alternative solution that returns an approximate answer using information that is similar to the one from which the query is answered. 
 
-For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](http://snappydatainc.github.io/snappydata/aqp/). 
+For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](https://github.com/SnappyDataInc/snappydata/blob/master/docs/aqp.md/). 
