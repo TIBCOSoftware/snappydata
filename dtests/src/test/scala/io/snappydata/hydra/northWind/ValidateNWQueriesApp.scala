@@ -31,7 +31,9 @@ object ValidateNWQueriesApp {
     //snc.sql("set spark.sql.shuffle.partitions=6")
     NWQueries.snc = snc
     val tableType = args(0)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueriesApp.out"), true));
+    val threadID = Thread.currentThread().getId
+    val outputFile = "ValidateNWQueriesApp_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     pw.println(s"Validate ${tableType} tables Queries Test started")
     NWTestUtil.validateQueries(snc, tableType, pw)
     pw.println(s"Validate ${tableType} tables Queries Test completed successfully")

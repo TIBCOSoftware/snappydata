@@ -27,7 +27,8 @@ import scala.util.{Failure, Success, Try}
 object ValidateNWQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueriesJob.out"), true));
+    val outputFile = "ValidateNWQueries_" + jobConfig.getString("logFileName")
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
@@ -38,7 +39,7 @@ object ValidateNWQueriesJob extends SnappySQLJob {
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/ValidateNWQueriesJob.out"
+        s"See ${getCurrentDirectory}/${outputFile}"
       case Failure(e) => pw.close();
         throw e;
     }
