@@ -320,16 +320,6 @@ public class SnappyTest implements Serializable {
             case WORKER:
                 nodeLogDir = HostHelper.getLocalHost();
                 String sparkLogDir = "SPARK_LOG_DIR=" + hd.getUserDir();
-                if (SnappyBB.getBB().getSharedMap().get("masterHost") == null) {
-                    try {
-                        String masterHost = HostHelper.getIPAddress().getLocalHost().getHostName();
-                        SnappyBB.getBB().getSharedMap().put("masterHost", masterHost);
-                        Log.getLogWriter().info("Master host is: " + SnappyBB.getBB().getSharedMap().get("masterHost"));
-                    } catch (UnknownHostException e) {
-                        String s = "Spark Master host not found";
-                        throw new HydraRuntimeException(s, e);
-                    }
-                }
                 SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
                 break;
         }
@@ -1613,7 +1603,7 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
+                String masterHost = getSparkMasterHost();
                 String locatorsList = getLocatorsList("locators");
                 String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
@@ -2389,6 +2379,24 @@ public class SnappyTest implements Serializable {
         return new Object[]{vmList, stopModeList, vmInfoList};
     }
 
+    protected static String getSparkMasterHost() {
+        String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
+        if (masterHost == null) {
+            try {
+                File log = new File(".");
+                String dest = log.getCanonicalPath();
+                String masterFileName = "spark-*.Master-1-*.out";
+                String masterFilePath = snappyTest.getUserAppJarLocation(masterFileName, dest);
+                masterHost = masterFilePath.substring(masterFilePath.lastIndexOf("Master-1-") + 9, masterFilePath.lastIndexOf(".out"));
+                SnappyBB.getBB().getSharedMap().put("masterHost", masterHost);
+                Log.getLogWriter().info("Master host is : " + SnappyBB.getBB().getSharedMap().get("masterHost"));
+            } catch (Exception e) {
+                String s = "Spark Master host not found";
+                throw new HydraRuntimeException(s, e);
+            }
+        }
+        return masterHost;
+    }
 
     protected void startSnappyServer() {
         File log = null;
