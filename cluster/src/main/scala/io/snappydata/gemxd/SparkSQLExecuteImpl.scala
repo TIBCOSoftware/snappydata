@@ -19,6 +19,7 @@ package io.snappydata.gemxd
 import java.io.DataOutput
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.SecureClassLoader
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -33,7 +34,6 @@ import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.{Constant, QueryHint}
-import spark.jobserver.util.GlobalJarURLClassLoader
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -60,8 +60,8 @@ class SparkSQLExecuteImpl(val sql: String,
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
 
-  if (Thread.currentThread().getContextClassLoader != null) {
-    Thread.currentThread().setContextClassLoader(GlobalJarURLClassLoader)
+  if (Thread.currentThread().getContextClassLoader == null) {
+    Thread.currentThread().setContextClassLoader(getClassLoader)
   }
 
   private[this] val snc = SnappyContextPerConnection
@@ -251,27 +251,31 @@ class SparkSQLExecuteImpl(val sql: String,
         lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
         lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
         if (allAsClob || columnsAsClob.contains(f.name)) {
-            if (hasProp && !base.equals("STRING")) {
-              if (base.equals("VARCHAR")) {
-                (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
-              } else { // CHAR
-                (StoredFormatIds.SQL_CHAR_ID, size, -1)
-              }
-            } else { // STRING and CLOB
-              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+          if (hasProp && !base.equals("STRING")) {
+            if (base.equals("VARCHAR")) {
+              (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+            } else {
+              // CHAR
+              (StoredFormatIds.SQL_CHAR_ID, size, -1)
             }
+          } else {
+            // STRING and CLOB
+            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+          }
         } else if (hasProp) {
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
-          } else { // VARCHAR and STRING
-            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
+          } else {
+            // VARCHAR and STRING
+            if (!SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE) {
               (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
             }
             else {
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
           }
-        } else { // CLOB
+        } else {
+          // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
         }
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
@@ -291,6 +295,22 @@ class SparkSQLExecuteImpl(val sql: String,
 
   def getContextOrCurrentClassLoader: ClassLoader =
     Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
+
+
+  def getClassLoader: ClassLoader = {
+    val parent = getContextOrCurrentClassLoader
+    new SecureClassLoader(parent) {
+      override def loadClass(name: String): Class[_] = {
+        try {
+          parent.loadClass(name)
+        } catch {
+          case cnfe: ClassNotFoundException =>
+            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+        }
+      }
+    }
+  }
+
 }
 
 object SparkSQLExecuteImpl {
@@ -496,7 +516,8 @@ object SparkSQLExecuteImpl {
 
 class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     partitionBlockIds: Array[RDDBlockId],
-    serializeComplexType: Boolean, rowStoreColTypes: Array[(Int, Int, Int)] = null) extends Serializable {
+    serializeComplexType: Boolean, rowStoreColTypes: Array[(Int, Int, Int)] = null)
+    extends Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
     Utils.withNewExecutionId(df.sparkSession, df.queryExecution) {

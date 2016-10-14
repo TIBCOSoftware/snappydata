@@ -19,10 +19,12 @@ package io.snappydata.examples
 
 import java.io.{File, PrintWriter}
 
+import scala.util.{Failure, Success, Try}
+
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Creates and loads Airline data from parquet files in row and column
@@ -40,6 +42,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
+    Try {
       // scalastyle:off println
 
       // Drop tables if already exists
@@ -48,6 +51,54 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       snc.dropTable(rowTable, ifExists = true)
       snc.dropTable(stagingAirline, ifExists = true)
 
+      pw.println(s"****** CreateAndLoadAirlineDataJob ******")
+
+      // Create a DF from the parquet data file and make it a table
+      val airlineDF = snc.createExternalTable(stagingAirline, "parquet",
+        Map("path" -> airlinefilePath))
+      val updatedSchema = replaceReservedWords(airlineDF.schema)
+
+      // Create a table in snappy store
+      snc.createTable(colTable, "column",
+        updatedSchema, Map("buckets" -> "11"))
+
+      // Populate the table in snappy store
+      airlineDF.write.mode(SaveMode.Append).saveAsTable(colTable)
+      pw.println(s"Created and imported data in $colTable table.")
+
+      // Create a DF from the airline ref data file
+      val airlinerefDF = snc.read.load(airlinereftablefilePath)
+
+      // Create a table in snappy store
+      snc.createTable(rowTable, "row",
+        airlinerefDF.schema, Map.empty[String, String])
+
+      // Populate the table in snappy store
+      airlinerefDF.write.mode(SaveMode.Append).saveAsTable(rowTable)
+
+      pw.println(s"Created and imported data in $rowTable table")
+
+      // Create a sample table sampling parameters.
+      snc.createSampleTable(sampleTable, Some("Airline"),
+        Map("buckets" -> "7",
+          "qcs" -> "UniqueCarrier, Year_, Month_",
+          "fraction" -> "0.03",
+          "strataReservoirSize" -> "50"
+        ), allowExisting = false)
+
+      // Initiate the sampling from base table to sample table.
+      snc.table(colTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)
+
+      pw.println(s"Created and imported data in $sampleTable table.")
+
+      pw.println(s"****** Job finished ******")
+
+    } match {
+      case Success(v) => pw.close()
+        s"See ${getCurrentDirectory}/CreateAndLoadAirlineDataJob.out"
+      case Failure(e) => pw.close();
+        throw e;
+    }
     // scalastyle:on println
   }
 
