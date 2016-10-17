@@ -43,7 +43,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         isPartitioned = true,
-        t.numPartitions,
         t.numBuckets,
         t.partitionColumns,
         (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
@@ -54,7 +53,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         isPartitioned = false,
-        0,
         0,
         Seq.empty[String],
         (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
@@ -67,7 +65,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       isPartitioned: Boolean,
-      numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Array[Filter]) =>
@@ -77,7 +74,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects,
       filterPredicates,
       isPartitioned,
-      numPartition,
       numBuckets,
       partitionColumns,
       (requestedColumns, _, pushedFilters) => {
@@ -91,7 +87,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       isPartitioned: Boolean,
-      numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) =>
@@ -130,7 +125,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    val metadata: Map[String, String] = if (numPartition > 0) {
+    val metadata: Map[String, String] = if (numBuckets > 0) {
       Map.empty[String, String]
     } else {
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
@@ -159,7 +154,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           candidatePredicates, pushedFilters)
         execution.PartitionedPhysicalScan.createFromDataSource(
           mappedProjects,
-          numPartition,
           numBuckets,
           joinedCols,
           rdd,
@@ -183,7 +177,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           candidatePredicates, pushedFilters)
         execution.PartitionedPhysicalScan.createFromDataSource(
           requestedColumns,
-          numPartition,
           numBuckets,
           joinedCols,
           rdd,
