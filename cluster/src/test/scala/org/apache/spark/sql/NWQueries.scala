@@ -18,7 +18,9 @@ package org.apache.spark.sql
 
 import io.snappydata.SnappyFunSuite
 
-object NWQueries extends SnappyFunSuite{
+import org.apache.spark.sql.execution._
+
+object NWQueries extends SnappyFunSuite {
 
   val Q1: String = "SELECT * FROM Categories"
 
@@ -218,16 +220,16 @@ object NWQueries extends SnappyFunSuite{
       " group by a.CategoryID, a.CategoryName, b.ProductName" +
       " order by a.CategoryName, b.ProductName, ProductSales"
 
-/*
-  org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
-  val Q38: String = "select distinct ProductName as Ten_Most_Expensive_Products," +
-      " UnitPrice" +
-      " from Products as a" +
-      " where 10 >= (select count(distinct UnitPrice)" +
-      " from Products as b" +
-      " where b.UnitPrice == a.UnitPrice)" +
-      "order by UnitPrice desc"
-*/
+  /*
+    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
+    val Q38: String = "select distinct ProductName as Ten_Most_Expensive_Products," +
+        " UnitPrice" +
+        " from Products as a" +
+        " where 10 >= (select count(distinct UnitPrice)" +
+        " from Products as b" +
+        " where b.UnitPrice == a.UnitPrice)" +
+        "order by UnitPrice desc"
+  */
 
   // A simple query to get detailed information for each sale so that invoice can be issued.
   val Q38: String = "select distinct b.ShipName," +
@@ -410,6 +412,8 @@ object NWQueries extends SnappyFunSuite{
 
   val regions = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/regions.csv").getPath))
   val regions_table = "create table regions (" +
       "RegionID int, " +
@@ -417,6 +421,8 @@ object NWQueries extends SnappyFunSuite{
 
   val categories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/categories.csv").getPath))
   val categories_table = "create table categories (" +
       "CategoryID int, " +
@@ -426,6 +432,8 @@ object NWQueries extends SnappyFunSuite{
 
   val shippers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/shippers.csv").getPath))
   val shippers_table = "create table shippers (" +
       "ShipperID int not null, " +
@@ -434,6 +442,8 @@ object NWQueries extends SnappyFunSuite{
 
   val employees = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/employees.csv").getPath))
   val employees_table = "create table employees(" +
       "EmployeeID int, " +
@@ -457,6 +467,8 @@ object NWQueries extends SnappyFunSuite{
 
   val customers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/customers.csv").getPath))
   val customers_table = "create table customers(" +
       "CustomerID string, " +
@@ -473,6 +485,8 @@ object NWQueries extends SnappyFunSuite{
 
   val orders = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/orders.csv").getPath))
   val orders_table = "create table orders (" +
       "OrderID int, " +
@@ -492,6 +506,8 @@ object NWQueries extends SnappyFunSuite{
 
   val order_details = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/order-details.csv").getPath))
   val order_details_table = "create table order_details (" +
       "OrderID int, " +
@@ -502,6 +518,8 @@ object NWQueries extends SnappyFunSuite{
 
   val products = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/products.csv").getPath))
   val products_table = "create table products(" +
       // "ProductID int not null, " +
@@ -518,6 +536,8 @@ object NWQueries extends SnappyFunSuite{
 
   val suppliers = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/suppliers.csv").getPath))
   val suppliers_table = "create table suppliers(" +
       "SupplierID int, " +
@@ -535,6 +555,8 @@ object NWQueries extends SnappyFunSuite{
 
   val territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/territories.csv").getPath))
   val territories_table = "create table territories(" +
       "TerritoryID string, " +
@@ -543,8 +565,64 @@ object NWQueries extends SnappyFunSuite{
 
   val employee_territories = snc.read.format("com.databricks.spark.csv")
       .option("header", "true")
+      .option("inferSchema", "true")
+      .option("nullValue", "NULL")
       .load((getClass.getResource("/northwind/employee-territories.csv").getPath))
   val employee_territories_table = "create table employee_territories(" +
       "EmployeeID int, " +
       "TerritoryID string)"
+
+  def dropTables(snc: SnappyContext): Unit = {
+    snc.sql("drop table if exists regions")
+    snc.sql("drop table if exists categories")
+    snc.sql("drop table if exists products")
+    snc.sql("drop table if exists order_details")
+    snc.sql("drop table if exists orders")
+    snc.sql("drop table if exists customers")
+    snc.sql("drop table if exists employees")
+    snc.sql("drop table if exists employee_territories")
+    snc.sql("drop table if exists shippers")
+    snc.sql("drop table if exists suppliers")
+    snc.sql("drop table if exists territories")
+  }
+
+  def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, numRows: Int,
+      numPartitions: Int, c: Class[_]): Any = {
+    snc.sql("set spark.sql.crossJoin.enabled = true")
+    val df = snc.sql(sqlString)
+    assert(df.count() == numRows,
+      "Mismatch got df.count ->" + df.count() + " but expected numRows ->"
+          + numRows + " for queryNum= " + queryNum)
+  }
+
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String, numRows: Int,
+      numPartitions: Int, c: Class[_]): Any = {
+    val df = snc.sql(sqlString)
+    val physical = df.queryExecution.sparkPlan
+    val operators = physical.collect {
+      case j: ProjectExec => j
+      case j: PartitionedDataSourceScan => j
+      case j: PartitionedPhysicalScan => j
+      case j: LocalTableScanExec => j
+      case j: CoalesceExec => j
+      case j: FilterExec => j
+      case j: OutputFakerExec => j
+      case j: RangeExec => j
+      case j: SampleExec => j
+      case j: SubqueryExec => j
+      case j: UnionExec => j
+    }
+    if (operators(0).getClass() != c) {
+      throw new IllegalStateException(s"$sqlString expected operator: $c," +
+          s" but got ${operators(0)}\n physical: \n$physical")
+    }
+    assert(df.count() == numRows,
+      "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows
+          + " for queryNum =" + queryNum)
+
+    assert(df.rdd.partitions.length == numPartitions,
+      "Mismatch got df.rdd.partitions.length ->" + df.rdd.partitions.length +
+          " but expected numPartitions ->" + numPartitions + " for queryNum =" + queryNum)
+  }
+
 }

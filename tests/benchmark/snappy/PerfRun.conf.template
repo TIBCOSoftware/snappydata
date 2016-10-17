@@ -1,25 +1,33 @@
-# Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
+#Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
 
 #queries to be run
-queries="\"1,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,22\""
-
+queries="\"1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22\""
+#queries="\"7\""
 
 #spark Properties spefied in lead
 #spark-executor-cores is not specified as it will be equal to the number of workers available
 #spark-executor-cores has nothing to do with CPU cores available.
-sparkProperties="-spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=3"
+sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
 
 #Spark Sql properties are specified while executing query
-sparkSqlProperties="\"spark.sql.shuffle.partitions=4 spark.sql.inMemoryColumnarStorage.compressed=false\""
+#spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
+#spark.sql.inMemoryColumnarStorage.compressed=false
+sparkSqlProperties="\"spark.sql.shuffle.partitions=31,spark.sql.crossJoin.enabled=true\""
 
 #location of checkout
-SnappyData=/home/kishor/snappy/snappy-commons
+SnappyData=/home/kishor/snappy/snappydata/build-artifacts/scala-2.11/snappy
 
-#I have total 32 CPU cores available. hence chose nearest low prime number
-buckets_Order_Lineitem=29
+#number of buckets for order and lineitem tables
+buckets_Order_Lineitem=3
 
-#Cusotmer, PArt, PArtSupp are small column tables. Its bucket count is also set to less no.
-buckets_Cust_Part_PartSupp=7
+#number of buckets for Customer, Part and PartSupplier tables
+buckets_Cust_Part_PartSupp=3
+
+#Are Nation, Region, Supplier tables column tables?
+Nation_Region_Supp_col=false
+
+#number of buckets for Nation, Region, Supplier
+buckets_Nation_Region_Supp=3
 
 #Machine Setup
 locator=localhost
@@ -27,10 +35,23 @@ leads=localhost
 servers=(localhost)
 
 #Server Memmory to be used
-serverMemory="-J-Xmx10g"
+serverMemory="-J-Xmx3g"
+
+#We have provided workaround for index creation in column tables. Actually we have created a colocation chain of other tables than usual
+#on specific column which should act as index
+UseIndex=false
+
+#Whether to collect results.For performance testing this should be false.
+ResultCollection=true
+
+#warmUpIterations
+WarmupRuns=1
+
+#Actual runs whose average will be taken and repordted as performance
+AverageRuns=1
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/snappy/snappy-commons/snappy-cluster/build-artifacts/scala-2.10/libs/snappy-cluster_2.10-0.1.0-SNAPSHOT-tests.jar
+TPCHJar=/home/kishor/snappy/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.6-tests.jar
 
 #Size of the TPCH data. Do not chage format
 dataSize=1GB
@@ -40,6 +61,3 @@ dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
 
 #Location where final output will be collected
 outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/SNAPPY
-
-#Whether to generate query plan
-queryPlan=false
