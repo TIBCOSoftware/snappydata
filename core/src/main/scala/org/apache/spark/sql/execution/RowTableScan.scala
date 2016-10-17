@@ -21,10 +21,11 @@ import java.util.GregorianCalendar
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Attribute, Expression}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation}
 import org.apache.spark.sql.types._
 
 /**
@@ -36,13 +37,24 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
-    dataRDD: RDD[Any],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
+    @transient baseRelation: PartitionedDataSourceScan,
+    requestedColumns: Seq[AttributeReference],
+    pushedFilters: Seq[Filter],
+    allFilters: Seq[Expression],
+    schemaAttributes: Seq[AttributeReference],
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+        (RDD[Any], Seq[RDD[InternalRow]]))
+    extends PartitionedPhysicalScan(output, numPartitions, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation],
+      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
+
+  if (otherRDDs.nonEmpty) {
+    throw new UnsupportedOperationException(
+      "Row table scan cannot handle other RDDs")
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")

@@ -96,7 +96,7 @@ class RowFormatRelation(
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null

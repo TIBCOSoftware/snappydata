@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -287,5 +287,24 @@ trait ExternalSchemaRelationProvider {
 trait PrunedUnsafeFilteredScan {
 
   def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]])
+      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]])
+}
+
+/**
+ * ::Developer API ::
+ * Predicate for stats that are part of cached batches
+ * generatePredicate generates a predicate given a filter expression and schema.
+ * This class is needed because the predicate needs to generated on the executor side.
+ *
+ * @param predicateGenerator
+ * @param filterExpression
+ * @param schema
+ */
+class StatsPredicate(
+    val predicateGenerator: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
+    val filterExpression: Expression,
+    val schema: Seq[Attribute]) extends Serializable {
+
+  def generatePredicate : (InternalRow) => Boolean = predicateGenerator(filterExpression, schema)
+
 }

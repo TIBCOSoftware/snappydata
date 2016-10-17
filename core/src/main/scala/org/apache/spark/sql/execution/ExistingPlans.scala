@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
@@ -25,8 +24,10 @@ import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.dsl.expressions._
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
  * If user knows that the data is partitioned or replicated across
@@ -35,14 +36,84 @@ import org.apache.spark.sql.types._
  * make it inline with the partitioning of the underlying DataSource */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
-    dataRDD: RDD[Any],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient override val relation: BaseRelation,
+    requestedColumns: Seq[AttributeReference],
+    pushedFilters: Seq[Filter],
+    allFilters: Seq[Expression],
+    schemaAttributes: Seq[AttributeReference],
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+        (RDD[Any], Seq[RDD[InternalRow]]),
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
+
+  val cachedBatchStatsSchema = relation.asInstanceOf[BaseColumnFormatRelation].
+      getCachedBatchStatsSchema(schemaAttributes)
+
+  private def statsFor(a: Attribute) = cachedBatchStatsSchema.forAttribute(a)
+
+  // Returned filter predicate should return false iff it is impossible for the input expression
+  // to evaluate to `true' based on statistics collected about this partition batch.
+  @transient val buildFilter: PartialFunction[Expression, Expression] = {
+    case And(lhs: Expression, rhs: Expression)
+      if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
+      (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
+
+    case Or(lhs: Expression, rhs: Expression)
+      if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
+      buildFilter(lhs) || buildFilter(rhs)
+
+    case EqualTo(a: AttributeReference, l: Literal) =>
+      statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+    case EqualTo(l: Literal, a: AttributeReference) =>
+      statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+
+    case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
+    case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
+
+    case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
+    case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
+
+    case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
+    case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
+
+    case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
+    case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
+
+    case IsNull(a: Attribute) => statsFor(a).nullCount > 0
+    case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
+  }
+
+  val partitionFilters: Seq[Expression] = {
+    allFilters.flatMap { p =>
+      val filter = buildFilter.lift(p)
+      val boundFilter =
+        filter.map(
+          BindReferences.bindReference(
+            _,
+            cachedBatchStatsSchema.schema,
+            allowFailures = true))
+
+      boundFilter.foreach(_ =>
+        filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
+
+      // If the filter can't be resolved then we are missing required statistics.
+      boundFilter.filter(_.resolved)
+    }
+  }
+
+  val (dataRDD, otherRDDs) = if (this.isInstanceOf[ColumnTableScan]) {
+    scanBuilder(
+      requestedColumns, pushedFilters, new StatsPredicate(newPredicate,
+        partitionFilters.reduceOption(And).getOrElse(Literal(true)),
+        cachedBatchStatsSchema.schema))
+  } else {
+    scanBuilder(
+      requestedColumns, pushedFilters, new StatsPredicate(newPredicate, null, null))
+  }
 
   private val extraInformation = relation.toString
 
@@ -75,6 +146,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
+
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
@@ -95,23 +167,26 @@ private[sql] object PartitionedPhysicalScan {
       numPartitions: Int,
       numBuckets: Int,
       partitionColumns: Seq[Expression],
-      rdd: RDD[Any],
-      otherRDDs: Seq[RDD[InternalRow]],
-      relation: PartitionedDataSourceScan): PartitionedPhysicalScan =
+      relation: PartitionedDataSourceScan,
+      requestedColumns: Seq[AttributeReference],
+      pushedFilters: Seq[Filter],
+      allFilters: Seq[Expression],
+      schemaAttributes: Seq[AttributeReference],
+      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+          (RDD[Any], Seq[RDD[InternalRow]])): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, relation)
+        ColumnTableScan(output, numPartitions, numBuckets,
+          partitionColumns, relation, requestedColumns,
+          pushedFilters, allFilters, schemaAttributes, scanBuilder)
       case r: SamplingRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
-          partitionColumns, relation)
+        ColumnTableScan(output, numPartitions, numBuckets,
+          partitionColumns, relation, requestedColumns,
+          pushedFilters, allFilters, schemaAttributes, scanBuilder)
       case _: RowFormatRelation =>
-        if (otherRDDs.nonEmpty) {
-          throw new UnsupportedOperationException(
-            "Row table scan cannot handle other RDDs")
-        }
-        RowTableScan(output, rdd, numPartitions, numBuckets,
-          partitionColumns, relation)
+        RowTableScan(output, numPartitions, numBuckets,
+          partitionColumns, relation, requestedColumns,
+          pushedFilters, allFilters, schemaAttributes, scanBuilder)
     }
 }
 

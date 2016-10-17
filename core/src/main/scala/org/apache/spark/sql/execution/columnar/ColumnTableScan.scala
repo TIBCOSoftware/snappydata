@@ -44,13 +44,13 @@ import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLob
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Attribute, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
@@ -63,14 +63,19 @@ import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, T
  */
 private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
-    dataRDD: RDD[Any],
-    otherRDDs: Seq[RDD[InternalRow]],
     numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
+    @transient baseRelation: PartitionedDataSourceScan,
+    requestedColumns: Seq[AttributeReference],
+    pushedFilters: Seq[Filter],
+    allFilters: Seq[Expression],
+    schemaAttributes: Seq[AttributeReference],
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+        (RDD[Any], Seq[RDD[InternalRow]]))
+    extends PartitionedPhysicalScan(output, numPartitions, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation],
+      requestedColumns,pushedFilters, allFilters, schemaAttributes, scanBuilder) {
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,

@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties}
 
 trait ExternalStore extends Serializable {
 
@@ -33,7 +33,7 @@ trait ExternalStore extends Serializable {
       partitionId: Int = -1, batchId: Option[UUID] = None): Unit
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      sparkContext: SparkContext): RDD[CachedBatch]
+      statsPredicate: StatsPredicate, sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String, onExecutor: Boolean): java.sql.Connection
 

@@ -30,7 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, SparkContext, TaskContext}
@@ -43,11 +43,11 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      sparkContext: SparkContext): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicate, sparkContext: SparkContext): RDD[CachedBatch] = {
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
-          tableName, this).asInstanceOf[RDD[CachedBatch]]
+          tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -117,7 +117,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
 }
 
 class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
-    tableName: String,
+    tableName: String, statsPredicate: StatsPredicate,
     store: JDBCSourceAsColumnarStore) extends RDD[Any](_sc, Nil) {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
@@ -127,7 +127,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
       case _ => Set(part.index)
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
-    else new ByteArraysIteratorOnScan(container, bucketIds)
+    else new ByteArraysIteratorOnScan(container, bucketIds,
+      statsPredicate.generatePredicate, statsPredicate.schema.size)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

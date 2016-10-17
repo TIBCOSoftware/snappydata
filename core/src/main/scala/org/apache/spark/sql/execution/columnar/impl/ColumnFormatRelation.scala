@@ -26,7 +26,7 @@ import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -92,6 +92,18 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
+  @transient private[this] var cachedBatchStatsSchema: PartitionStatistics = null
+  @transient private[this] val contextLock = new AnyRef
+  def getCachedBatchStatsSchema(schema: Seq[AttributeReference]) = {
+    if (cachedBatchStatsSchema == null) {
+      contextLock.synchronized {
+        if (cachedBatchStatsSchema == null)
+          cachedBatchStatsSchema = new PartitionStatistics(schema)
+      }
+    }
+    cachedBatchStatsSchema
+  }
+
   override lazy val numPartitions: Int = {
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
@@ -110,16 +122,16 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
-      requiredColumns, filters)
+      requiredColumns, filters, statsPredicate)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (rdd, _) = scanTable(table, requiredColumns, filters)
+      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters, statsPredicate)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to

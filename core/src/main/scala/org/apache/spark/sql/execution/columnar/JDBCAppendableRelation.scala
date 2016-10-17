@@ -106,9 +106,9 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
-      requiredColumns, filters)
+      requiredColumns, filters, statsPredicate)
     val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
@@ -121,7 +121,8 @@ case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicate):
+  (RDD[CachedBatch], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -137,7 +138,7 @@ case class JDBCAppendableRelation(
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
-        sqlContext.sparkContext)
+        statsPredicate, sqlContext.sparkContext)
     }
     (cachedColumnBuffers, requestedColumns)
   }
@@ -172,7 +173,7 @@ case class JDBCAppendableRelation(
       }.toArray
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        cachedBatchAggregate)
+        schema, cachedBatchAggregate)
 
       rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()

@@ -17,13 +17,24 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{UnsafeRow, UnsafeProjection, SpecificMutableRow}
+import org.apache.spark.sql.types.{LongType, IntegerType, StructType}
+import org.apache.spark.unsafe.Platform
 
 private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int,
+    val schema: StructType,
     val batchAggregate: CachedBatch => Unit) extends Serializable {
 
   var columnBuilders = getColumnBuilders
 
+  val statsTypes = schema.flatMap (datatype => {
+    // Stats currently return (lower, upper, count, nullcount, sizeInBytes)
+    // This code will need an update if new stats are added by Spark.
+    Seq(datatype.dataType, datatype.dataType, IntegerType, IntegerType, LongType)
+  }).toArray
+
+  val unsafeStatsProjection = UnsafeProjection.create(statsTypes)
   /**
    * Append a single row to the current CachedBatch (creating a new one
    * if not present or has exceeded its capacity)
@@ -51,11 +62,11 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
     if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
-      // val stats = InternalRow.fromSeq(columnBuilders.map(
-      //  _.columnStats.collectedStatistics).flatMap(_.values))
-      val stats: InternalRow = null
+      val statsRow = unsafeStatsProjection(InternalRow.fromSeq(columnBuilders.map(
+        _.columnStats.collectedStatistics).flatMap(_.values)))
+
       batchAggregate(CachedBatch(rowCount,
-        columnBuilders.map(_.build().array()), stats))
+        columnBuilders.map(_.build().array()), statsRow))
       if (newBuilders) columnBuilders = getColumnBuilders
       rowCount = 0
     }
