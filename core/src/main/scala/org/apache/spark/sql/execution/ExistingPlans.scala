@@ -17,14 +17,16 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning,
+Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{StatsPredicate, Filter,
+BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.dsl.expressions._
@@ -50,13 +52,21 @@ private[sql] abstract class PartitionedPhysicalScan(
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
 
-  val cachedBatchStatsSchema = relation.asInstanceOf[BaseColumnFormatRelation].
-      getCachedBatchStatsSchema(schemaAttributes)
+  private val cachedBatchStatsSchema = if (this.isInstanceOf[ColumnTableScan]) {
+    relation.asInstanceOf[BaseColumnFormatRelation].
+        getCachedBatchStatsSchema(schemaAttributes)
+  } else {
+    null
+  }
+
+  def getCachedBatchStatsSchema: Seq[AttributeReference] =
+    if (cachedBatchStatsSchema != null) cachedBatchStatsSchema.schema else null
 
   private def statsFor(a: Attribute) = cachedBatchStatsSchema.forAttribute(a)
 
   // Returned filter predicate should return false iff it is impossible for the input expression
   // to evaluate to `true' based on statistics collected about this partition batch.
+  // This code is picked up from InMemoryTableScanExec
   @transient val buildFilter: PartialFunction[Expression, Expression] = {
     case And(lhs: Expression, rhs: Expression)
       if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
@@ -87,33 +97,36 @@ private[sql] abstract class PartitionedPhysicalScan(
     case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
   }
 
+  // This code is picked up from InMemoryTableScanExec
+  // This code ideally should have been in the ColumnTableScan class but these
+  // needs to be ready to use during the initialization of the base class and hence
+  // it has to be here.
   val partitionFilters: Seq[Expression] = {
-    allFilters.flatMap { p =>
-      val filter = buildFilter.lift(p)
-      val boundFilter =
-        filter.map(
-          BindReferences.bindReference(
-            _,
-            cachedBatchStatsSchema.schema,
-            allowFailures = true))
+    if (this.isInstanceOf[ColumnTableScan]) {
+      allFilters.flatMap { p =>
+        val filter = buildFilter.lift(p)
+        val boundFilter =
+          filter.map(
+            BindReferences.bindReference(
+              _,
+              cachedBatchStatsSchema.schema,
+              allowFailures = true))
 
-      boundFilter.foreach(_ =>
-        filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
+        boundFilter.foreach(_ =>
+          filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
 
-      // If the filter can't be resolved then we are missing required statistics.
-      boundFilter.filter(_.resolved)
+        // If the filter can't be resolved then we are missing required statistics.
+        boundFilter.filter(_.resolved)
+      }
+    } else {
+      Seq.empty[Expression]
     }
   }
 
-  val (dataRDD, otherRDDs) = if (this.isInstanceOf[ColumnTableScan]) {
-    scanBuilder(
+  val (dataRDD, otherRDDs) = scanBuilder(
       requestedColumns, pushedFilters, new StatsPredicate(newPredicate,
         partitionFilters.reduceOption(And).getOrElse(Literal(true)),
-        cachedBatchStatsSchema.schema))
-  } else {
-    scanBuilder(
-      requestedColumns, pushedFilters, new StatsPredicate(newPredicate, null, null))
-  }
+        getCachedBatchStatsSchema))
 
   private val extraInformation = relation.toString
 

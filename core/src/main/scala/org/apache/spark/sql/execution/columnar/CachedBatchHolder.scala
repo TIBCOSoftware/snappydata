@@ -17,9 +17,8 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{UnsafeRow, UnsafeProjection, SpecificMutableRow}
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.types.{LongType, IntegerType, StructType}
-import org.apache.spark.unsafe.Platform
 
 private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int,

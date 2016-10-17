@@ -230,7 +230,6 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
     s"Unexpected byte[][] iterator call for off-heap $container")
 
   protected var currentVal: Array[Array[Byte]] = _
-  // val statsPredicate = predicateOnStats()
   var rowFormatter: RowFormatter = _
 
   override protected def moveNext(): Unit = {
@@ -243,7 +242,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
           rowFormatter = container.getRowFormatter(currentVal(0))
           val statBytes = rowFormatter.getLob(currentVal, 4)
-           val result = new UnsafeRow(numColsInSchema)
+          val result = new UnsafeRow(numColsInSchema)
           result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
             statBytes.length)
           // Skip the cached batches based on the predicate on stat

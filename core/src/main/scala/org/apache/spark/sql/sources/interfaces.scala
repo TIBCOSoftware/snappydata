@@ -293,7 +293,7 @@ trait PrunedUnsafeFilteredScan {
 /**
  * ::Developer API ::
  * Predicate for stats that are part of cached batches
- * generatePredicate generates a predicate given a filter expression and schema.
+ * generatePredicate generates a predicate for a filter expression and schema.
  * This class is needed because the predicate needs to generated on the executor side.
  *
  * @param predicateGenerator
