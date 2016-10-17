@@ -2,7 +2,7 @@ io.snappydata.hydra.cluster.SnappyPrms-waitTimeBeforeNextCycleVM = 120; //how lo
 io.snappydata.hydra.cluster.SnappyPrms-cycleVms = true;
 
 util.StopStartPrms-stopModes = NICE_KILL;
-util.StopStartPrms-numVMsToStop = RANGE 1 ${redundantCopies} EGNAR;
+util.StopStartPrms-numVMsToStop = RANGE 1 ${numVMsToStop} EGNAR;
 
 INITTASK    taskClass   = util.StopStartVMs  taskMethod = StopStart_initTask
             threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads;

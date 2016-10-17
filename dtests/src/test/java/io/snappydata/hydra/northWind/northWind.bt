@@ -6,6 +6,7 @@ io/snappydata/hydra/northWind/nwReplicatedRowTablesTest.conf
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="ReplicatedRow"
 
+
 io/snappydata/hydra/northWind/nwPartitionedRowTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -37,7 +38,7 @@ io/snappydata/hydra/northWind/nwReplicatedRowTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="ReplicatedRow"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPartitionedRowTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -46,7 +47,7 @@ io/snappydata/hydra/northWind/nwPartitionedRowTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="PartitionedRow"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwColumnTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -55,7 +56,7 @@ io/snappydata/hydra/northWind/nwColumnTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwColocatedTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -64,7 +65,7 @@ io/snappydata/hydra/northWind/nwColocatedTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Colocated"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwReplicatedRowTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -73,7 +74,7 @@ io/snappydata/hydra/northWind/nwReplicatedRowTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="ReplicatedRow"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPartitionedRowTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -82,7 +83,7 @@ io/snappydata/hydra/northWind/nwPartitionedRowTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="PartitionedRow"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwColumnTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -91,7 +92,7 @@ io/snappydata/hydra/northWind/nwColumnTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwColocatedTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -100,7 +101,7 @@ io/snappydata/hydra/northWind/nwColocatedTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Colocated"
-  redundantCopies=1
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentReplicatedRowTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -111,22 +112,6 @@ io/snappydata/hydra/northWind/nwPersistentReplicatedRowTablesTest.conf
   tableType="ReplicatedRow"
 
 io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesTest.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-  tableType="PartitionedRow"
-
-io/snappydata/hydra/northWind/nwPartitionedRowTablesWithEvictionOverflowTest.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-  tableType="PartitionedRow"
-
-io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesWithEvictionOverflowTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -157,6 +142,7 @@ io/snappydata/hydra/northWind/nwPersistentReplicatedRowTablesTestWithServerHA.co
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="ReplicatedRow"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentReplicatedRowTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -165,6 +151,7 @@ io/snappydata/hydra/northWind/nwPersistentReplicatedRowTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="ReplicatedRow"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -173,6 +160,7 @@ io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesTestWithServerHA.c
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="PartitionedRow"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -181,6 +169,7 @@ io/snappydata/hydra/northWind/nwPersistentPartitionedRowTablesTestWithLeadHA.con
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="PartitionedRow"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentColumnTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -189,6 +178,7 @@ io/snappydata/hydra/northWind/nwPersistentColumnTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentColumnTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -197,6 +187,7 @@ io/snappydata/hydra/northWind/nwPersistentColumnTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentColocatedTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -205,6 +196,7 @@ io/snappydata/hydra/northWind/nwPersistentColocatedTablesTestWithServerHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Colocated"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPersistentColocatedTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -213,6 +205,7 @@ io/snappydata/hydra/northWind/nwPersistentColocatedTablesTestWithLeadHA.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Colocated"
+  numVMsToStop=1
 
 io/snappydata/hydra/northWind/nwPartitionedRowTablesWithEvictionTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1

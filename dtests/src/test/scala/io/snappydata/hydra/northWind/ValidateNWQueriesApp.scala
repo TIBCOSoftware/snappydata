@@ -32,7 +32,7 @@ object ValidateNWQueriesApp {
     NWQueries.snc = snc
     val tableType = args(0)
     val threadID = Thread.currentThread().getId
-    val outputFile = "ValidateNWQueriesApp_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     pw.println(s"Validate ${tableType} tables Queries Test started")
     NWTestUtil.validateQueries(snc, tableType, pw)
