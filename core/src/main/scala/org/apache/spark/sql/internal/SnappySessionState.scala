@@ -27,6 +27,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
@@ -41,6 +42,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   protected lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
+
+  lazy val metadataHive = sharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -83,6 +86,7 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val catalog = new SnappyStoreHiveCatalog(
       sharedState.externalCatalog,
       snappySession,
+      metadataHive,
       functionResourceLoader,
       functionRegistry,
       conf,
