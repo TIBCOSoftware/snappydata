@@ -82,6 +82,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	> * Use the key pair that exists in the region selected.
 	
 	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
+	
 ![STEP](./Images/aws_selectedregion.png)
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
