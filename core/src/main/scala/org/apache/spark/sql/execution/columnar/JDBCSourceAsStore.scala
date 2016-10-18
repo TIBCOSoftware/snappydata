@@ -36,6 +36,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties}
 import org.apache.spark.unsafe.Platform
@@ -225,7 +226,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
     bucketIds: scala.collection.Set[Int], predicateOnStats: (InternalRow) => Boolean,
-    numColsInSchema: Int)
+    numColsInSchema: Int, cachedBatchesSeen: SQLMetric, cachedBatchesSkipped: SQLMetric)
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
@@ -248,10 +249,11 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
           result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
             statBytes.length)
           // Skip the cached batches based on the predicate on stat
-          // TODO: Need to record somewhere in stats the number of skipped cached batches.
+          cachedBatchesSeen += 1
           if (predicateOnStats(result)){
-            // println("Processing cached batch: " + rl.getKey)
             return
+          } else {
+            cachedBatchesSkipped += 1
           }
         }
       }

@@ -23,13 +23,13 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.sources.{StatsPredicate, Filter,
 BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.dsl.expressions._
+
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
  * If user knows that the data is partitioned or replicated across
@@ -51,81 +51,22 @@ private[sql] abstract class PartitionedPhysicalScan(
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
 
-  private val cachedBatchStatistics = if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-    relation.asInstanceOf[BaseColumnFormatRelation].
-        getCachedBatchStatistics(schemaAttributes)
-  } else {
-    null
-  }
-
-  def getCachedBatchStatsSchema: Seq[AttributeReference] =
-    if (cachedBatchStatistics != null) cachedBatchStatistics.schema else null
-
-  private def statsFor(a: Attribute) = cachedBatchStatistics.forAttribute(a)
-
-  // Returned filter predicate should return false iff it is impossible for the input expression
-  // to evaluate to `true' based on statistics collected about this partition batch.
-  // This code is picked up from InMemoryTableScanExec
-  @transient val buildFilter: PartialFunction[Expression, Expression] = {
-    case And(lhs: Expression, rhs: Expression)
-      if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
-      (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
-
-    case Or(lhs: Expression, rhs: Expression)
-      if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
-      buildFilter(lhs) || buildFilter(rhs)
-
-    case EqualTo(a: AttributeReference, l: Literal) =>
-      statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-    case EqualTo(l: Literal, a: AttributeReference) =>
-      statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-
-    case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
-    case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
-
-    case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
-    case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
-
-    case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
-    case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
-
-    case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
-    case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
-
-    case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-    case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
-  }
-
-  // This code is picked up from InMemoryTableScanExec
-  // This code ideally should have been in the ColumnTableScan class but these
-  // needs to be ready to use during the initialization of the base class and hence
-  // it has to be here.
-  val partitionFilters: Seq[Expression] = {
-    if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-      allFilters.flatMap { p =>
-        val filter = buildFilter.lift(p)
-        val boundFilter =
-          filter.map(
-            BindReferences.bindReference(
-              _,
-              cachedBatchStatistics.schema,
-              allowFailures = true))
-
-        boundFilter.foreach(_ =>
-          filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
-
-        // If the filter can't be resolved th en we are missing required statistics.
-        boundFilter.filter(_.resolved)
-      }
-    } else {
-      Seq.empty[Expression]
-    }
-  }
+  var metricsCreatedBeforeInit: Map[String, SQLMetric] = Map.empty[String, SQLMetric]
 
   val (dataRDD, otherRDDs) = scanBuilder(
-      requestedColumns, pushedFilters, new StatsPredicate(newPredicate,
-        partitionFilters.reduceOption(And).getOrElse(Literal(true)),
-        getCachedBatchStatsSchema))
+      requestedColumns, pushedFilters, getStatsPredicate())
+
+  private[sql] override lazy val metrics = getMetricsMap
+
+  def getMetricsMap: Map[String, SQLMetric] = {
+    Map(
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows")) ++
+        metricsCreatedBeforeInit
+  }
+
+  def getStatsPredicate(): StatsPredicate = {
+    return new StatsPredicate(newPredicate, Literal(true), null, null, null)
+  }
 
   private val extraInformation = relation.toString
 
@@ -161,8 +102,6 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
 
-  private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +

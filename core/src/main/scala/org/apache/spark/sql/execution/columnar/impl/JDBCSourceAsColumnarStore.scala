@@ -131,7 +131,9 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
     else new ByteArraysIteratorOnScan(container, bucketIds,
       statsPredicate.generatePredicate,
-      statsPredicate.schema.size)
+      statsPredicate.schema.size,
+      statsPredicate.cachedBatchesSeen,
+      statsPredicate.cachedBatchesSkipped)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

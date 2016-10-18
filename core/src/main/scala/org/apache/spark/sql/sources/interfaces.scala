@@ -22,6 +22,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -303,7 +304,9 @@ trait PrunedUnsafeFilteredScan {
 class StatsPredicate(
     val predicateGenerator: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
     val filterExpression: Expression,
-    val schema: Seq[Attribute]) extends Serializable {
+    val schema: Seq[Attribute],
+    val cachedBatchesSeen: SQLMetric,
+    val cachedBatchesSkipped: SQLMetric) extends Serializable {
 
   def generatePredicate : (InternalRow) => Boolean = predicateGenerator(filterExpression, schema)
 
