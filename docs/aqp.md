@@ -11,8 +11,9 @@ For example, for research-based companies (like Gallup), for political polls res
 
 The following diagram provides a general framework of the Synopsis Data Engine:
 A small random sample of the rows of the original database table is prepared. Queries are directed against this small sample table, and then approximate results are generated based on the query and error estimation.
+<div style="text-align:center" markdown="1">
 ![SDE_Architecture](./Images/sde_architecture.png)
-
+</div>
 Thus, there are two components in the architecture, a component for building the synopses from database relations and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
 
 ##Synopsis Data Engine Technique: Stratified Sampling##
@@ -34,9 +35,9 @@ The population is divided into several groups (strata), and subjects are then pr
 
 For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
 This is illustrated in the following image.
-
+<div style="text-align:center" markdown="1">
 ![Stratified Sampling](./Images/aqp_sampling.png)
-
+</div>
 
 ###Key Concepts###
 **Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These database synopses are used when queries are issued to the system, and approximate results are returned.
@@ -171,8 +172,9 @@ When multiple stratified samples with subset of QCSs match, sample where most nu
 For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. 
 
 This is illustrated in the following image:
+<div style="text-align:center" markdown="1">
 ![QCS](./Images/aqp_qcs.png)
-
+</div>
 
 ####Using Error Functions and Confidence Interval in Queries####
 Acceptable error fraction and expected confidence interval can be specified in the query projection. 
@@ -247,27 +249,37 @@ Synopsis Data Engine has HAC support using the following behavior clause.
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 
+<div style="text-align:center" markdown="1">
 ![DO NOTHING](./Images/aqp_donothing.png)
+</div>
 <br>
 
 ##### `<local_omit>`#####
 For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
+<div style="text-align:center" markdown="1">
 ![LOCAL OMIT](./Images/aqp_localomit.png)
+</div>
 <br>
 
 ##### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
+<div style="text-align:center" markdown="1">
 ![Strict](./Images/aqp_strict.png)
+</div>
 <br>
 
 ##### `<run_on_full_table>`#####
 If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
+<div style="text-align:center" markdown="1">
 ![RUN OF FULL TABLE](./Images/aqp_runonfulltable.png)
+</div>
 <br>
 
 ##### `<partial_run_on_base_table>`#####
 If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
+<div style="text-align:center" markdown="1">
 ![PARTIAL RUN ON BASE TABLE](./Images/aqp_partialrunonbasetable.png)
+</div>
 <br>
 
 In the following example, any one of the above behavior clause can be applied. 
@@ -331,13 +343,13 @@ TopK queries are used to rank attributes to answer "best, most interesting, most
  
 *SQL API for creating a TopK table in SnappyData* 
  
-```  
+``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
    
 	
 	val topKOptionMap = Map(
@@ -352,12 +364,13 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-*Querying the TopK table*  
+*Querying the TopK table* 
 	
 	
-	select * from topkTweets order by EstimatedValue desc  
+	select * from topkTweets order by EstimatedValue desc 
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
+
 ### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
@@ -378,10 +391,10 @@ In the example below tweetTime is a field in the incoming dataset which carries 
 ```scala
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
 
 ```scala
     val topKOptionMap = Map(

@@ -59,35 +59,47 @@ Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http
 
 1. Enter the name for your cluster. Each cluster is identified by it’s unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
+<div style="text-align:center" markdown="1">
 ![STEP](./Images/AWS_clustername.png)
+</div>
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
-Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html). <br>	
+Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
+<div style="text-align:center" markdown="1">
  ![STEP](./Images/aws_ec2keypair.png)
-
+</div>
  3. Select an instance based on the capacity that you require. <br>
+ <div style="text-align:center" markdown="1">
  ![STEP](./Images/aws_instancetype.png)
+ </div>
  
-4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.  
+4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
+>Note: Currently only Amazon Elastic Block Storage (EBS) is supported.<br>
+<div style="text-align:center" markdown="1">
 ![STEP](./Images/aws_ebsvolumesize.png)
- 
-	> Note: Currently only Amazon Elastic Block Storage (EBS) is supported.
+</div> 
 
 5. Enter your email address.  <br>
+<div style="text-align:center" markdown="1">
  ![STEP](./Images/aws_email.png)
- 
+</div> 
+
 6. Click **Generate**. 
-7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. <br>
-  ![STEP](./Images/aws_selectedregion.png)
-  
-	> Note: 
+7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. 	
+> Note: 
 	
 	> * Use the key pair that exists in the region selected.
 	
-	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.
+	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
+<div style="text-align:center" markdown="1">
+  ![STEP](./Images/aws_selectedregion.png)
+</div>  
+
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
+<div style="text-align:center" markdown="1">
 ![STEP](./Images/aws_selecttemplate.png)
+</div>
 
 9. You can change the stack name or click **Next** to use the provided default value.
 
@@ -101,11 +113,14 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
+<div style="text-align:center" markdown="1">
 ![Refresh](./Images/aws_refreshstack.png)
-
+</div>
 <a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. 
+13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+<div style="text-align:center" markdown="1">
 	![Public IP](./Images/aws_links.png)
+</div>
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
