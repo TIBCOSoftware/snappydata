@@ -62,29 +62,27 @@ The names and details of the members are automatically derived from the provided
 ![STEP](./Images/AWS_clustername.png)
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
-Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html). <br>	
- ![STEP](./Images/aws_ec2keypair.png)
+Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br> 
+![STEP](./Images/aws_ec2keypair.png)
 
- 3. Select an instance based on the capacity that you require. <br>
- ![STEP](./Images/aws_instancetype.png)
+3. Select an instance based on the capacity that you require. 
+![STEP](./Images/aws_instancetype.png)
  
-4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.  
+4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
 ![STEP](./Images/aws_ebsvolumesize.png)
- 
-	> Note: Currently only Amazon Elastic Block Storage (EBS) is supported.
+>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
 
 5. Enter your email address.  <br>
- ![STEP](./Images/aws_email.png)
- 
+![STEP](./Images/aws_email.png)
+
 6. Click **Generate**. 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. <br>
-  ![STEP](./Images/aws_selectedregion.png)
-  
-	> Note: 
+![STEP](./Images/aws_selectedregion.png)
+> Note: 
 	
 	> * Use the key pair that exists in the region selected.
 	
-	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.
+	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
@@ -104,14 +102,16 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 ![Refresh](./Images/aws_refreshstack.png)
 
 <a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. 
+13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](./Images/aws_links.png)
+
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
-Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
+>Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 <a id="DeployingClusterScript"></a>
 ##Deploying SnappyData Cloud Cluster on AWS using Scripts##
+
 ###Prerequisites###
 Before you begin, do the following:
 
