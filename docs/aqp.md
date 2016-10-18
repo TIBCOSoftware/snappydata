@@ -1,31 +1,31 @@
 # Overview of Synopsis Data Engine (SDE)#
 The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightening fast response time. 
 
-For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
+For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
 
 When accessed via a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds while the full answer CAN BE computed in the background. Depending on the immediate answer, users can opt to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer and if they are no longer interested in seeing the final results based on the initial results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.
 
 While in-memory analytics can be fast, it is still expensive and cumbersome to provision large clusters. Instead, SDE allows you to retain  data in existing databases and disparate sources and only caches a fraction of the data using stratified sampling and other techniques. In many cases, data explorers can use their laptops and run high speed interactive analytics over billions of records. Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for apriori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
 
 ## How does it work?
-The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. Think of these samples much like how a database would continuously update indexes (for optimization). With one difference - the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample.  
+The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. Think of these samples much like how a database utilizes indexes - for optimization. With one difference - the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample.  
 ![SDE_Architecture](./Images/sde_architecture.png)
 
 ## Key Concepts
-SnappyData SDE relies on two methods for approximations - Stratified sampling and Sketching techniques. We provide a brief introduction to these concepts below.
+SnappyData SDE relies on two methods for approximations - Stratified sampling and Sketching. We provide a brief introduction to these concepts below.
 
 ###  Stratified sampling
-Sampling is quite intuitive and commonly used. The common practice is to do 'uniform random sampling' - as the term implies given a data set you simply pick a random fraction of the data. The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any datum being selected in the sample is the same (or uniform).
+Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population( the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling doesn't work well for general purpose querying.
 
 Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick 2 records in random. This is depicted in the figure below. 
 Unfortunately, if we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', our answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. But, if the data distribution along this 'GEO' dimension is very skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
 Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. 
 For instance, as shown in figure x below, a sample stratified on 'Geo' would provide a much better answer. 
 
-(DO WE HAVE ACCESS TO THE BARZAN'S BOOK CHAPTER ONLINE? IF SO, PROVIDE SUFFICIENT LINKS SO FOLKS CAN LEARN MORE)
+If you are interested in understanding these concepts in further detail we suggest reading this [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It goes through different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
 ### Online Sampling
-SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs also to create a uniform random sample over static RDDs. For online sampling, SDE first builds a uniform random reservoir sample (Link) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
 There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 min time window while still ensuring that all GEOs have good representation in the sample. 
 
 ### Sketching
@@ -33,56 +33,121 @@ While stratified sampling ensures that data dimensions with low representation i
 While a Count-min-sketch is well described (Link), SDE extends this with support for providing top-K estimates over time series data. 
 
 
+## Working with Stratified Samples
 
 ###Create Sample Tables###
 
-You can create sample tables using datasets that are available on the local file system or at an external location. Depending on this, it is determined how the data is loaded, controlled, and managed.
+You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. 
 
-In case of local dataset, the data is loaded in the cluster and the time taken to process the query may depend on the memory of the cluster.
-
-In this example, a sample table is created for a dataset that is available locally:
+Here is an SQL based example to create sample on tables locally available in the Snappydata cluster. 
 
 ```
-CREATE SAMPLE TABLE NYCTAXI_PICKUP_ISIGHT ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
+CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
 
-CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_ISIGHT on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 ```
-
-When a sample table is created on a dataset that is too large to fit in the cluster's memory, you can create an external table, which can then be used to create sample table.
-
-In this example, a sample table is created for an S3 (external) dataset:
+Often your data set is too large to also fit in available cluster memory. If so, you can create a external table pointing to the source. 
+In this example below, a sample table is created for an S3 (external) dataset:
 
 ```
 CREATE EXTERNAL TABLE TAXIFARE USING parquet OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
 
-CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_ISIGHT on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 
 ```
 
 
 ###QCS (Query Column Set) and Sample selection###
-We term the columns used for grouping and filtering in a query (used in GROUP BY/WHERE/HAVING clauses) as the query column set or query QCS. Columns used for stratification during the sampling are termed as sample QCS. One can also use functions as sample QCS column. For example, hour (pickup_datetime)
+For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
 
-General guidelines to select sample QCS is to look for columns in a table, which are generally used in grouping or filtering of queries. This results in good representation of data in sample for each sub-group of data in query and approximate results are closer to the actual results. Generally, columns which have low cardinality should be provided as QCS columns for good representation of data in sample tables.
+'QCS', which stands for 'Query Column Set' is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A 'QCS' can also be constructed using SQL expressions - for instance, using a function like 'hour (pickup_datetime)'.
 
-For example, for month of the year (only 12 unique values) or unique-carriers of airlines (limited in number) .
-
-> ###Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
-
-Let us take a look at this example:
-```
-CREATE SAMPLE TABLE NYCTAXI_pickup_sample ON NYCTAXI  OPTIONS ( qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
-```
-
-Here* fraction* represents how much fraction of a base table data goes into the sample table. Higher the fraction, more the memory requirement and larger the query execution time. 
-In this case, the results is more accurate as the  fraction increases, so it is a trade-off the user has to think about, while selecting a fraction based on the applications requirements.
+The parameter *fraction* represents the fraction of the full population that will managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction doesn't drop the error rate. SDE will always attempt to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) will automatically be sampled at a lower rate. The algorithm will always attempt to maintain the overall 1% fraction specified in the 'create sample' statement.  
 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
-The following examples demonstrate samples with different columns in QCS along with the queries that use those QCS columns. 
+Here are some general guidelines to use when creating samples:
+* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine will automatically reject all samples and run the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
+* Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
+* Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
+* Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a timestamp and is not a good candidate given its likelyhood of high cardinality. i.e. there is possibility that each record in the data set has a different timestamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
+* when accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system will automatically pick the appropriate sample. 
+* <more to come >
 
+> #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+
+
+## Running queries
+
+Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
+
+Here is the syntax:
+
+#### SELECT ... FROM .. WHERE .. GROUP BY ...
+    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`####
+    
+* **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
+* **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
+* **BEHAVIOR** - this is an optional clause. The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
+
+These 'behavior' options are fully described in the section below. 
+
+Here are some examples:
+
+```
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc 
+  with error 0.10 
+// tolerate a maximum error of 10% in each row in the answer with a default confidence level of 0.95.
+
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc 
+  with error 
+// tolerate any error in answer. Just give me a quick response.
+
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc with error 0.10 confidence 0.95 behavior ‘local_omit’
+// tolerate a maximum error of 10% in each row in the answer with a confidence interval of 0.95.
+// If the error for any row is greater than 10% omit the answer. i.e. the row is omitted. 
+```
+#### Using the Spark DataFrame API
+
+We extend the Spark DataFrame API with support for approximate queries. Here is 'withError' API on DataFrames.
+```
+def withError(error: Double,
+confidence: Double = Constant.DEFAULT_CONFIDENCE,
+behavior: String = "DO_NOTHING"): DataFrame
+```
+
+Query examples using the DataFrame API ..
+``` 
+snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10) 
+snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
+```
+
+### Supporting BI tools or existing Apps
+To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
+
+```
+snContext.sql(s"spark.sql.aqp.error=$error")
+snContext.sql(s"spark.sql.aqp.confidence=$confidence")
+snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
+```
+These settings will apply to all queries executed via this SQLContext. Application can override this by also using the SQL extensions specified above.
+
+Applications or tools using JDBC/ODBC can set the following properties. 
+For example, when using Apache Zeppelin JDBC interpreter or the snappy-shell you can set the values as below:
+
+```
+set spark.sql.aqp.error=$error;
+set spark.sql.aqp.confidence=$confidence;
+set spark.sql.aqp.behavior=$behavior;
+```
+
+
+
+
+## More Examples
 #####Example 1: #####
-In the below example, create a sample table with qcs 'medallion'
+create a sample table with qcs 'medallion'
 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -101,7 +166,7 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
 ```
 
 #####Example 2: #####
-In the below example, create a sample table with qcs 'hack_license'
+create an additional sample table with qcs 'hack_license'
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
 (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -110,6 +175,7 @@ CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
 **SQL Query:**
 ```
 select  hack_license, count(*) count from NYCTAXI group by hack_license order by count desc limit 10 with error
+// the engine will automically use the HackLicense sample for more accurate answer to this query.
 ```
 
 **DataFrame API Query:**
@@ -118,7 +184,7 @@ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothin
 ```
 
 #####Example 3: #####
-In the below example,  create a sample table using function "hour(pickup_datetime) as QCS.
+Create a sample table using function "hour(pickup_datetime) as QCS.
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 ```
@@ -134,7 +200,7 @@ snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in
 ```
 
 #####Example 4:#####
-In the below example, the QCS should ideally consist of three fields as described below. The general guideline for selecting QCS is "group by columns" followed by any filter condition columns .
+If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
@@ -150,7 +216,7 @@ Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(
 snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
 ```
 
-####Sample Selection:####
+##Sample Selection:##
 Sample selection logic selects most appropriate table, based on the following logic:
 
 * If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected
@@ -164,69 +230,6 @@ For example, If query QCS are A, B and C. If samples with QCS  A and B and B and
 This is illustrated in the following image:
 ![QCS](./Images/aqp_qcs.png)
 
-
-####Using Error Functions and Confidence Interval in Queries####
-Acceptable error fraction and expected confidence interval can be specified in the query projection. 
-A query can end with the clauses **WITH ERROR** and **WITH ERROR `<fraction>`[CONFIDENCE `<fraction>`] [BEHAVIOR` <string>]`**
-####Using “WITH ERROR “Clause####
-In this clause, context level setting can be overridden by query level settings. When this clause is specified, the query is run with the following values:
-
-```
-	ERROR 0.2 
-	CONFIDENCE 0.95 
-	BEHAVIOR 'do_nothing'
-```	
-
-For example: 
-
-SQL Query
-```
-SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ with error 
-```
-
-DataFrame Query
-```
-snc.table(basetable).groupBy("MonthI").agg(Map("ArrDelay" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
-```
-
-These values can be overridden by setting in the  SnappyData  context below.	
-
-```
-snContext.sql(s"spark.sql.aqp.error=$error")
-snContext.sql(s"spark.sql.aqp.confidence=$confidence")
-snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
-```
-
-Apache Zeppelin or snappy-shell can use the set context level values as below:
-
-```
-set spark.sql.aqp.error=$error;
-set spark.sql.aqp.confidence=$confidence;
-set spark.sql.aqp.behavior=$behavior;
-```
-
-
-####Using WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]` Clause####
-* **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
-* **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
-* **BEHAVIOR** - this is an optional clause. The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
-
-For example: 
-```
-SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc with error 0.10 confidence 0.95 behavior ‘local_omit’
-```
-
-DataFrame API
-```
-def withError(error: Double,
-confidence: Double = Constant.DEFAULT_CONFIDENCE,
-behavior: String = "DO_NOTHING"): DataFrame
-```
-
-Data Frame API Query
-``` 
-snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
-```
 
 ###High-level Accuracy Contracts (HAC)###
 SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
