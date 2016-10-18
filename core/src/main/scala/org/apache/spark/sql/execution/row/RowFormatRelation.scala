@@ -85,7 +85,7 @@ class RowFormatRelation(
       while (itr.hasNext) {
         // first column of index has to be present in filter to be usable
         val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-        cols += baseColumns(indexCols(0))
+        cols += baseColumns(indexCols(0) - 1)
       }
     }
     cols
