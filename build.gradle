@@ -296,7 +296,7 @@ subprojects {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '128m'
+    minHeapSize '1g'
     maxHeapSize '1g'
 
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
@@ -959,7 +959,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   mustRunAfter buildAll

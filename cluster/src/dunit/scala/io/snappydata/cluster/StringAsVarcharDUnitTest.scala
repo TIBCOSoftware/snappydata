@@ -38,26 +38,47 @@ class StringAsVarcharDUnitTest(val s: String)
   val varcharSize = 20;
   val charSize = 10;
 
+  /**
+   * Test 'select *' and 'select cast(* as)' queries on a column table, without query hint.
+   */
   def testQueries(): Unit = {
     executeQuery()
   }
 
+  /**
+   * Test 'select *' and 'select cast(* as)' queries on a column table, with query hint with
+   * specific column names.
+   */
   def testQueriesWithHint(): Unit = {
     executeQuery("col_string,col_varchar")
   }
 
+  /**
+   * Test 'select *' and 'select cast(* as)' queries on a column table, with query hint '*'.
+   */
   def testQueriesWithHintAll(): Unit = {
     executeQuery("*")
   }
 
+  /**
+   * Test 'select *' and 'select cast(* as)' queries on a column table, with invalid query hint.
+   */
   def testQueriesWithInvalidHint(): Unit = {
     executeQuery("inv,lid")
   }
 
+  /**
+   * Test select query on join of row table with column table, and 'select cast(* as)' query on a
+   * column table, without query hint.
+   */
   def testJoinQuery(): Unit = {
     executeQuery("FALSE", true)
   }
 
+  /**
+   * Test select query on join of row table with column table, and 'select cast(* as)' query on a
+   * column table, with query hint '*'.
+   */
   def testJoinQueryWithHint(): Unit = {
     executeQuery("*", true)
   }
@@ -69,7 +90,7 @@ class StringAsVarcharDUnitTest(val s: String)
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
-    createTableAndInsertData(conn)
+    createTablesAndInsertData(conn)
 
     val s = conn.createStatement()
 
@@ -111,10 +132,27 @@ class StringAsVarcharDUnitTest(val s: String)
         }
       }
     }
+    s.executeQuery(s"select cast(col_int as string), cast(col_string as clob), " +
+        s"cast(col_char as varchar(100)) from $colTab1 $affix")
+    val rSet = s.getResultSet
+    var count = 0
+    while (rSet.next()) {
+      count += 1
+    }
+    assert(count == 2)
 
     conn.close()
   }
 
+  /**
+   * Verify the metadata of the result set.
+   *
+   * @param rs
+   * @param cols
+   * @param stringType
+   * @param tName
+   * @param join
+   */
   private def verify(rs: java.sql.ResultSet, cols: Int,
       stringType: String, tName: String, join: Boolean = false): Unit = {
     val md = rs.getMetaData
@@ -164,7 +202,13 @@ class StringAsVarcharDUnitTest(val s: String)
     assert(md.getTableName(1).equalsIgnoreCase(tName))
   }
 
-  def createTableAndInsertData(conn: Connection): Unit = {
+  /**
+   * Create a row table and a column table with five columns each. Row table has five entries while
+   * the column table has just two entries.
+   * 
+   * @param conn
+   */
+  def createTablesAndInsertData(conn: Connection): Unit = {
     val snc = SnappyContext(sc)
 
     snc.sql(s"create table $rowTab1 (col_int int, col_string string, " +

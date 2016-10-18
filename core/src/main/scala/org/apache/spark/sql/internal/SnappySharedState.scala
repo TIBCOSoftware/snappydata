@@ -18,7 +18,7 @@ package org.apache.spark.sql.internal
 
 import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.catalog.InMemoryCatalog
+import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
 
 /**
  * Right now we are not overriding anything from Spark's built in SharedState. We need to
@@ -28,6 +28,14 @@ import org.apache.spark.sql.catalyst.catalog.InMemoryCatalog
 private[sql] class SnappySharedState(override val sparkContext: SparkContext)
       extends SharedState(sparkContext) with Logging {
 
-   override lazy val externalCatalog = new InMemoryCatalog(sparkContext.hadoopConfiguration)
+
+  /**
+   * A Hive client used to interact with the metastore.
+   */
+  lazy val metadataHive = new HiveClientUtil(sparkContext).client
+
+
+  override lazy val externalCatalog =
+    new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
 
 }
