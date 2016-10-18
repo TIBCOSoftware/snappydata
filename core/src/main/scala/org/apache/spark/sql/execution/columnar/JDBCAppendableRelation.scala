@@ -139,7 +139,6 @@ case class JDBCAppendableRelation(
       externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
         statsPredicate, sqlContext.sparkSession)
-        )
     }
     (cachedColumnBuffers, requestedColumns)
   }

@@ -26,8 +26,8 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference}
-import org.apache.spark.sql.collection.{ToolsCallbackInit}
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, AttributeReference}
+import org.apache.spark.sql.collection.{Utils, ToolsCallbackInit}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
