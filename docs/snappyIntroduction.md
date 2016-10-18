@@ -1,7 +1,7 @@
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless deep integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics) 
 
-![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
+![SnappyDataOverview](./Images/SnappyDataOverview.png)
 
 
 Conceptually, you could **think of SnappyData as a in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark DataSets. 
@@ -25,8 +25,8 @@ While Spark deserves much of the credit for being the first of its kind to offer
 
 3. __Optimizing Spark application execution times:__ Our goal is to eliminate the need for yet another external store (e.g., a KV store) for Spark applications. With a deeply integrated store, SnappyData improves overall performance by minimizing network traffic and serialization costs. In addition, by promoting colocated schema designs (tables and streams) where related data is colocated in the same process space, SnappyData eliminates the need for shuffling altogether in several scenarios. 
 
-4. __Approximate Query Processing support built into Spark:__ To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art AQP techniques, as well as a number of novel features. 
-SnappyData is the first AQP engine to  
+4. __Synopsis Data Engine support built into Spark:__ To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art SDE techniques, as well as a number of novel features. 
+SnappyData is the first SDE engine to  
   1. Provide automatic bias correction for arbitrarily complex SQL queries  
   2. Provide an intuitive means for end users to express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts  
   3. Provide error estimates for arbitrarily complex queries on streams (Unlike traditional load shedding techniques that are restricted to simple queries)

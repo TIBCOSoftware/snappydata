@@ -250,7 +250,7 @@ SnappyData combines state-of-the-art approximate query processing techniques and
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
 ####Behaviour Clause####
-Approximate queries have HAC support using the following behavior clause. 
+Synopsis Data Engine has HAC support using the following behavior clause. 
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 
@@ -338,13 +338,13 @@ TopK queries are used to rank attributes to answer "best, most interesting, most
  
 *SQL API for creating a TopK table in SnappyData* 
  
-```  
+``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
    
 	
 	val topKOptionMap = Map(
@@ -359,12 +359,13 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-*Querying the TopK table*  
+*Querying the TopK table* 
 	
 	
-	select * from topkTweets order by EstimatedValue desc  
+	select * from topkTweets order by EstimatedValue desc 
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
+
 ### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
@@ -385,10 +386,10 @@ In the example below tweetTime is a field in the incoming dataset which carries 
 ```scala
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
 
 ```scala
     val topKOptionMap = Map(

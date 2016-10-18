@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
@@ -266,7 +267,8 @@ final class ResultSetTraversal(conn: Connection,
     stmt: Statement, val rs: ResultSet, context: TaskContext)
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
-  val defaultCal: GregorianCalendar = new GregorianCalendar()
+  lazy val defaultCal: GregorianCalendar = new GregorianCalendar(
+    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
 
   override protected def getCurrentValue: Void = null
 }
