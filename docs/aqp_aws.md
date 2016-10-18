@@ -62,18 +62,18 @@ The names and details of the members are automatically derived from the provided
 ![STEP](./Images/AWS_clustername.png)
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
-Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
- ![STEP](./Images/aws_ec2keypair.png)
+Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>  
+![STEP](./Images/aws_ec2keypair.png)
 
  3. Select an instance based on the capacity that you require. <br>
- ![STEP](./Images/aws_instancetype.png)
+![STEP](./Images/aws_instancetype.png)
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
->Note: Currently only Amazon Elastic Block Storage (EBS) is supported.<br>
+>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
 ![STEP](./Images/aws_ebsvolumesize.png)
 
 5. Enter your email address.  <br>
- ![STEP](./Images/aws_email.png)
+![STEP](./Images/aws_email.png)
 
 6. Click **Generate**. 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. 	
@@ -82,7 +82,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	> * Use the key pair that exists in the region selected.
 	
 	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
-  ![STEP](./Images/aws_selectedregion.png)
+![STEP](./Images/aws_selectedregion.png)
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
