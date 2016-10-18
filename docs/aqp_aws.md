@@ -69,8 +69,8 @@ Refer to the Amazon documentation for more information on  [generating your own 
 ![STEP](./Images/aws_instancetype.png)
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
->Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
 ![STEP](./Images/aws_ebsvolumesize.png)
+>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
 
 5. Enter your email address.  <br>
 ![STEP](./Images/aws_email.png)
@@ -107,10 +107,11 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
-Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
+>Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 <a id="DeployingClusterScript"></a>
 ##Deploying SnappyData Cloud Cluster on AWS using Scripts##
+
 ###Prerequisites###
 Before you begin, do the following:
 
