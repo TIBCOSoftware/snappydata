@@ -160,7 +160,7 @@ private[sql] final case class ColumnTableScan(
         Map("cachedBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
       "cached batches seen"),
     "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
-      "cached skipped by the predicate"))
+      "cached batches skipped by the predicate"))
 
     new StatsPredicate(newPredicate,
       cachedBatchStatFilters.reduceOption(And).getOrElse(Literal(true)),
