@@ -1,0 +1,2312 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>SnappyStoreAQPHiveCatalog - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog</title>
+          <meta name="description" content="SnappyStoreAQPHiveCatalog - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" />
+          <meta name="keywords" content="SnappyStoreAQPHiveCatalog snappy cluster 2.11 0.6 API org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <a href="SnappyStoreAQPHiveCatalog$.html" title="See companion object"><img alt="Class/Object" src="../../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.hive">hive</a></p>
+        <h1><a href="SnappyStoreAQPHiveCatalog$.html" title="See companion object">SnappyStoreAQPHiveCatalog</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="SnappyStoreAQPHiveCatalog$.html" title="See companion object">object SnappyStoreAQPHiveCatalog</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.hive">package hive</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappyStoreAQPHiveCatalog</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</span>, <span class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog"><span>SnappyStoreAQPHiveCatalog</span></li><li class="in" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog"><span>SnappyStoreHiveCatalog</span></li><li class="in" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog"><span>SessionCatalog</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(externalCatalog:org.apache.spark.sql.hive.SnappyExternalCatalog,snappySession:org.apache.spark.sql.SnappySession,metadataHive:org.apache.spark.sql.hive.client.HiveClient,functionResourceLoader:org.apache.spark.sql.catalyst.catalog.FunctionResourceLoader,functionRegistry:org.apache.spark.sql.catalyst.analysis.FunctionRegistry,sqlConf:org.apache.spark.sql.internal.SQLConf,hadoopConf:org.apache.hadoop.conf.Configuration):org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog"></a>
+      <a id="&lt;init&gt;:SnappyStoreAQPHiveCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappyStoreAQPHiveCatalog</span><span class="params">(<span name="externalCatalog">externalCatalog: <span class="extype" name="org.apache.spark.sql.hive.SnappyExternalCatalog">SnappyExternalCatalog</span></span>, <span name="snappySession">snappySession: <span class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</span></span>, <span name="metadataHive">metadataHive: <span class="extype" name="org.apache.spark.sql.hive.client.HiveClient">HiveClient</span></span>, <span name="functionResourceLoader">functionResourceLoader: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.FunctionResourceLoader">FunctionResourceLoader</span></span>, <span name="functionRegistry">functionRegistry: <span class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</span></span>, <span name="sqlConf">sqlConf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>, <span name="hadoopConf">hadoopConf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@&lt;init&gt;(externalCatalog:org.apache.spark.sql.hive.SnappyExternalCatalog,snappySession:org.apache.spark.sql.SnappySession,metadataHive:org.apache.spark.sql.hive.client.HiveClient,functionResourceLoader:org.apache.spark.sql.catalyst.catalog.FunctionResourceLoader,functionRegistry:org.apache.spark.sql.catalyst.analysis.FunctionRegistry,sqlConf:org.apache.spark.sql.internal.SQLConf,hadoopConf:org.apache.hadoop.conf.Configuration):org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#addSampleDataFrame" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addSampleDataFrame(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,sample:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
+      <a id="addSampleDataFrame(LogicalPlan,LogicalPlan):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addSampleDataFrame</span><span class="params">(<span name="base">base: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>, <span name="sample">sample: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@addSampleDataFrame(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,sample:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterDatabase(dbDefinition:&lt;?&gt;):Unit"></a>
+      <a id="alterDatabase(CatalogDatabase):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterDatabase</span><span class="params">(<span name="dbDefinition">dbDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#alterPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterPartitions(tableName:&lt;?&gt;,parts:&lt;?&gt;):Unit"></a>
+      <a id="alterPartitions(TableIdentifier,Seq[CatalogTablePartition]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="parts">parts: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#alterTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterTable(tableDefinition:&lt;?&gt;):Unit"></a>
+      <a id="alterTable(CatalogTable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterTable</span><span class="params">(<span name="tableDefinition">tableDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#alterTableToAddIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterTableToAddIndexProp(inTable:&lt;?&gt;,index:&lt;?&gt;):Unit"></a>
+      <a id="alterTableToAddIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterTableToAddIndexProp</span><span class="params">(<span name="inTable">inTable: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="index">index: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterTableToAddIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#alterTableToRemoveIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterTableToRemoveIndexProp(inTable:&lt;?&gt;,index:&lt;?&gt;):Unit"></a>
+      <a id="alterTableToRemoveIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterTableToRemoveIndexProp</span><span class="params">(<span name="inTable">inTable: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="index">index: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterTableToRemoveIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#cachedDataSourceTables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,org.apache.spark.sql.execution.datasources.LogicalRelation]"></a>
+      <a id="cachedDataSourceTables:LoadingCache[QualifiedTableName,LogicalRelation]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cachedDataSourceTables</span><span class="result">: <span class="extype" name="com.google.common.cache.LoadingCache">LoadingCache</span>[<span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>, <span class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,org.apache.spark.sql.execution.datasources.LogicalRelation]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#cachedSampleTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cachedSampleTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]]"></a>
+      <a id="cachedSampleTables:LoadingCache[QualifiedTableName,Seq[(LogicalPlan,String)]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cachedSampleTables</span><span class="result">: <span class="extype" name="com.google.common.cache.LoadingCache">LoadingCache</span>[<span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>, <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="scala.Predef.String">String</span>)]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@cachedSampleTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#clearTempTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clearTempTables():Unit"></a>
+      <a id="clearTempTables():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearTempTables</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@clearTempTables():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#compatibleSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compatibleSchema(schema1:&lt;?&gt;,schema2:&lt;?&gt;):Boolean"></a>
+      <a id="compatibleSchema(StructType,StructType):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compatibleSchema</span><span class="params">(<span name="schema1">schema1: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="schema2">schema2: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@compatibleSchema(schema1:org.apache.spark.sql.types.StructType,schema2:org.apache.spark.sql.types.StructType):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#createCachedSampleTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createCachedSampleTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]]"></a>
+      <a id="createCachedSampleTables:LoadingCache[QualifiedTableName,Seq[(LogicalPlan,String)]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createCachedSampleTables</span><span class="result">: <span class="extype" name="com.google.common.cache.LoadingCache">LoadingCache</span>[<span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>, <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="scala.Predef.String">String</span>)]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createCachedSampleTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createDatabase(dbDefinition:&lt;?&gt;,ignoreIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createDatabase(CatalogDatabase,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createDatabase</span><span class="params">(<span name="dbDefinition">dbDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</span></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createFunction(funcDefinition:&lt;?&gt;,ignoreIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createFunction(CatalogFunction,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createFunction</span><span class="params">(<span name="funcDefinition">funcDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogFunction">CatalogFunction</span></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createFunction(funcDefinition:org.apache.spark.sql.catalyst.catalog.CatalogFunction,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createPartitions(tableName:&lt;?&gt;,parts:&lt;?&gt;,ignoreIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createPartitions(TableIdentifier,Seq[CatalogTablePartition],Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="parts">parts: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</span>]</span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition],ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createTable(tableDefinition:&lt;?&gt;,ignoreIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createTable(CatalogTable,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createTable</span><span class="params">(<span name="tableDefinition">tableDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</span></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createTempFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createTempFunction(name:&lt;?&gt;,info:&lt;?&gt;,funcDefinition:&lt;?&gt;,ignoreIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createTempFunction(String,ExpressionInfo,FunctionBuilder,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createTempFunction</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="info">info: <a href="../catalyst/expressions/ExpressionInfo.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionInfo">ExpressionInfo</a></span>, <span name="funcDefinition">funcDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder">FunctionBuilder</span></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createTempFunction(name:String,info:org.apache.spark.sql.catalyst.expressions.ExpressionInfo,funcDefinition:org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createTempView" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createTempView(name:&lt;?&gt;,tableDefinition:&lt;?&gt;,overrideIfExists:&lt;?&gt;):Unit"></a>
+      <a id="createTempView(String,LogicalPlan,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createTempView</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableDefinition">tableDefinition: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>, <span name="overrideIfExists">overrideIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@createTempView(name:String,tableDefinition:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,overrideIfExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#currentDb" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="currentDb:String"></a>
+      <a id="currentDb:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">currentDb</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@currentDb:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#currentSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="currentSchema:String"></a>
+      <a id="currentSchema:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">currentSchema</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@currentSchema:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#databaseExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="databaseExists(db:String):Boolean"></a>
+      <a id="databaseExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">databaseExists</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@databaseExists(db:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#defaultTablePath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultTablePath(tableIdent:&lt;?&gt;):String"></a>
+      <a id="defaultTablePath(TableIdentifier):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultTablePath</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@defaultTablePath(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropDatabase(db:&lt;?&gt;,ignoreIfNotExists:&lt;?&gt;,cascade:&lt;?&gt;):Unit"></a>
+      <a id="dropDatabase(String,Boolean,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropDatabase</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@dropDatabase(db:String,ignoreIfNotExists:Boolean,cascade:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropFunction(name:&lt;?&gt;,ignoreIfNotExists:&lt;?&gt;):Unit"></a>
+      <a id="dropFunction(FunctionIdentifier,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropFunction</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@dropFunction(name:org.apache.spark.sql.catalyst.FunctionIdentifier,ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropPartitions(tableName:&lt;?&gt;,specs:&lt;?&gt;,ignoreIfNotExists:&lt;?&gt;):Unit"></a>
+      <a id="dropPartitions(TableIdentifier,Seq[TablePartitionSpec],Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="specs">specs: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span>]</span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@dropPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,specs:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#dropTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropTable(name:org.apache.spark.sql.catalyst.TableIdentifier,ignoreIfNotExists:Boolean):Unit"></a>
+      <a id="dropTable(TableIdentifier,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropTable</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@dropTable(name:org.apache.spark.sql.catalyst.TableIdentifier,ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropTempFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropTempFunction(name:&lt;?&gt;,ignoreIfNotExists:&lt;?&gt;):Unit"></a>
+      <a id="dropTempFunction(String,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropTempFunction</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@dropTempFunction(name:String,ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#extractRefTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="extractRefTable:(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.hive.QualifiedTableName)=&gt;Option[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.hive.QualifiedTableName)]"></a>
+      <a id="extractRefTable:(LogicalPlan,QualifiedTableName)⇒Option[(LogicalPlan,QualifiedTableName)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">extractRefTable</span><span class="result">: (<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@extractRefTable:(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.hive.QualifiedTableName)=&gt;Option[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.hive.QualifiedTableName)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#failFunctionLookup" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="failFunctionLookup(name:&lt;?&gt;):Nothing"></a>
+      <a id="failFunctionLookup(String):Nothing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">failFunctionLookup</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Nothing">Nothing</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@failFunctionLookup(name:String):Nothing" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#formatDatabaseName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="formatDatabaseName(name:String):String"></a>
+      <a id="formatDatabaseName(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">formatDatabaseName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@formatDatabaseName(name:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#formatTableName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="formatTableName(name:String):String"></a>
+      <a id="formatTableName(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">formatTableName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@formatTableName(name:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="functionExists(name:&lt;?&gt;):Boolean"></a>
+      <a id="functionExists(FunctionIdentifier):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionExists</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@functionExists(name:org.apache.spark.sql.catalyst.FunctionIdentifier):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCachedHiveTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCachedHiveTable(table:&lt;?&gt;):org.apache.spark.sql.execution.datasources.LogicalRelation"></a>
+      <a id="getCachedHiveTable(QualifiedTableName):LogicalRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCachedHiveTable</span><span class="params">(<span name="table">table: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getCachedHiveTable(table:org.apache.spark.sql.hive.QualifiedTableName):org.apache.spark.sql.execution.datasources.LogicalRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCachedSampledRelations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCachedSampledRelations(table:org.apache.spark.sql.hive.QualifiedTableName):Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]"></a>
+      <a id="getCachedSampledRelations(QualifiedTableName):Seq[(LogicalPlan,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCachedSampledRelations</span><span class="params">(<span name="table">table: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getCachedSampledRelations(table:org.apache.spark.sql.hive.QualifiedTableName):Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCurrentDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCurrentDatabase:String"></a>
+      <a id="getCurrentDatabase:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCurrentDatabase</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getCurrentDatabase:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCurrentSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCurrentSchema:String"></a>
+      <a id="getCurrentSchema:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCurrentSchema</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getCurrentSchema:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getDataSourceRelations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDataSourceRelations[T](tableTypes:Seq[org.apache.spark.sql.hive.ExternalTableType],baseTable:Option[String]):Seq[T]"></a>
+      <a id="getDataSourceRelations[T](Seq[ExternalTableType],Option[String]):Seq[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDataSourceRelations</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tableTypes">tableTypes: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.hive.ExternalTableType">ExternalTableType</span>]</span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog.getDataSourceRelations.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getDataSourceRelations[T](tableTypes:Seq[org.apache.spark.sql.hive.ExternalTableType],baseTable:Option[String]):Seq[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getDataSourceTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDataSourceTables(tableTypes:&lt;?&gt;,baseTable:&lt;?&gt;):Seq[org.apache.spark.sql.hive.QualifiedTableName]"></a>
+      <a id="getDataSourceTables(Seq[ExternalTableType],Option[String]):Seq[QualifiedTableName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDataSourceTables</span><span class="params">(<span name="tableTypes">tableTypes: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.hive.ExternalTableType">ExternalTableType</span>]</span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getDataSourceTables(tableTypes:Seq[org.apache.spark.sql.hive.ExternalTableType],baseTable:Option[String]):Seq[org.apache.spark.sql.hive.QualifiedTableName]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getDatabaseMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDatabaseMetadata(db:&lt;?&gt;):org.apache.spark.sql.catalyst.catalog.CatalogDatabase"></a>
+      <a id="getDatabaseMetadata(String):CatalogDatabase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDatabaseMetadata</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getDatabaseMetadata(db:String):org.apache.spark.sql.catalyst.catalog.CatalogDatabase" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getDefaultDBPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDefaultDBPath(db:&lt;?&gt;):String"></a>
+      <a id="getDefaultDBPath(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDefaultDBPath</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getDefaultDBPath(db:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getFunctionMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFunctionMetadata(name:&lt;?&gt;):org.apache.spark.sql.catalyst.catalog.CatalogFunction"></a>
+      <a id="getFunctionMetadata(FunctionIdentifier):CatalogFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFunctionMetadata</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogFunction">CatalogFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getFunctionMetadata(name:org.apache.spark.sql.catalyst.FunctionIdentifier):org.apache.spark.sql.catalyst.catalog.CatalogFunction" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getPartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPartition(tableName:&lt;?&gt;,spec:&lt;?&gt;):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition"></a>
+      <a id="getPartition(TableIdentifier,TablePartitionSpec):CatalogTablePartition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPartition</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="spec">spec: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getPartition(tableName:org.apache.spark.sql.catalyst.TableIdentifier,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#getSamples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getSamples(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="getSamples(LogicalPlan):Seq[LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSamples</span><span class="params">(<span name="base">base: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getSamples(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getTableMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTableMetadata(name:&lt;?&gt;):org.apache.spark.sql.catalyst.catalog.CatalogTable"></a>
+      <a id="getTableMetadata(TableIdentifier):CatalogTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTableMetadata</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getTableMetadata(name:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.catalyst.catalog.CatalogTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getTableMetadataOption" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTableMetadataOption(name:&lt;?&gt;):Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]"></a>
+      <a id="getTableMetadataOption(TableIdentifier):Option[CatalogTable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTableMetadataOption</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getTableMetadataOption(name:org.apache.spark.sql.catalyst.TableIdentifier):Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#getTableType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTableType(relation:org.apache.spark.sql.sources.BaseRelation):org.apache.spark.sql.hive.ExternalTableType"></a>
+      <a id="getTableType(BaseRelation):ExternalTableType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTableType</span><span class="params">(<span name="relation">relation: <span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.ExternalTableType">ExternalTableType</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getTableType(relation:org.apache.spark.sql.sources.BaseRelation):org.apache.spark.sql.hive.ExternalTableType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTables(db:Option[String]):Seq[(String,Boolean)]"></a>
+      <a id="getTables(Option[String]):Seq[(String,Boolean)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTables</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getTables(db:Option[String]):Seq[(String,Boolean)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#getTempTables" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getTempTables:scala.collection.mutable.HashMap[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="getTempTables:HashMap[String,LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTempTables</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getTempTables:scala.collection.mutable.HashMap[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#invalidateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="invalidateTable(tableIdent:&lt;?&gt;):Unit"></a>
+      <a id="invalidateTable(QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">invalidateTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@invalidateTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#isTemporaryTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTemporaryTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Boolean"></a>
+      <a id="isTemporaryTable(QualifiedTableName):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTemporaryTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isTemporaryTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#isTemporaryTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTemporaryTable(name:org.apache.spark.sql.catalyst.TableIdentifier):Boolean"></a>
+      <a id="isTemporaryTable(TableIdentifier):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTemporaryTable</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isTemporaryTable(name:org.apache.spark.sql.catalyst.TableIdentifier):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isTraceEnabled():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listDatabases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listDatabases(pattern:&lt;?&gt;):Seq[String]"></a>
+      <a id="listDatabases(String):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listDatabases</span><span class="params">(<span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listDatabases(pattern:String):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listDatabases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listDatabases():Seq[String]"></a>
+      <a id="listDatabases():Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listDatabases</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listDatabases():Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listFunctions(db:&lt;?&gt;,pattern:&lt;?&gt;):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]"></a>
+      <a id="listFunctions(String,String):Seq[(FunctionIdentifier,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listFunctions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listFunctions(db:String,pattern:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listFunctions(db:&lt;?&gt;):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]"></a>
+      <a id="listFunctions(String):Seq[(FunctionIdentifier,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listFunctions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listFunctions(db:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listPartitions(tableName:&lt;?&gt;,partialSpec:&lt;?&gt;):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
+      <a id="listPartitions(TableIdentifier,Option[TablePartitionSpec]):Seq[CatalogTablePartition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="partialSpec">partialSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listTables(db:&lt;?&gt;,pattern:&lt;?&gt;):Seq[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
+      <a id="listTables(String,String):Seq[TableIdentifier]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listTables</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listTables(db:String,pattern:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listTables(db:&lt;?&gt;):Seq[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
+      <a id="listTables(String):Seq[TableIdentifier]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listTables</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@listTables(db:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#loadFunctionResources" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="loadFunctionResources(resources:&lt;?&gt;):Unit"></a>
+      <a id="loadFunctionResources(Seq[FunctionResource]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadFunctionResources</span><span class="params">(<span name="resources">resources: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.FunctionResource">FunctionResource</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@loadFunctionResources(resources:Seq[org.apache.spark.sql.catalyst.catalog.FunctionResource]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#loadPartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="loadPartition(name:&lt;?&gt;,loadPath:&lt;?&gt;,partition:&lt;?&gt;,isOverwrite:&lt;?&gt;,holdDDLTime:&lt;?&gt;,inheritTableSpecs:&lt;?&gt;,isSkewedStoreAsSubdir:&lt;?&gt;):Unit"></a>
+      <a id="loadPartition(TableIdentifier,String,TablePartitionSpec,Boolean,Boolean,Boolean,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadPartition</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="loadPath">loadPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partition">partition: <span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span></span>, <span name="isOverwrite">isOverwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="holdDDLTime">holdDDLTime: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="inheritTableSpecs">inheritTableSpecs: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isSkewedStoreAsSubdir">isSkewedStoreAsSubdir: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@loadPartition(name:org.apache.spark.sql.catalyst.TableIdentifier,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,isOverwrite:Boolean,holdDDLTime:Boolean,inheritTableSpecs:Boolean,isSkewedStoreAsSubdir:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#loadTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="loadTable(name:&lt;?&gt;,loadPath:&lt;?&gt;,isOverwrite:&lt;?&gt;,holdDDLTime:&lt;?&gt;):Unit"></a>
+      <a id="loadTable(TableIdentifier,String,Boolean,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadTable</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="loadPath">loadPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isOverwrite">isOverwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="holdDDLTime">holdDDLTime: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@loadTable(name:org.apache.spark.sql.catalyst.TableIdentifier,loadPath:String,isOverwrite:Boolean,holdDDLTime:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log:org.slf4j.Logger"></a>
+      <a id="log:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@log:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logDebug(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logError(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String):Unit"></a>
+      <a id="logError(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logInfo(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logName:String"></a>
+      <a id="logName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logName:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logTrace(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String):Unit"></a>
+      <a id="logTrace(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logWarning(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String):Unit"></a>
+      <a id="logWarning(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#lookupFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lookupFunction(name:&lt;?&gt;,children:&lt;?&gt;):org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="lookupFunction(FunctionIdentifier,Seq[Expression]):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupFunction</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span></span>, <span name="children">children: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupFunction(name:org.apache.spark.sql.catalyst.FunctionIdentifier,children:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#lookupFunctionInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lookupFunctionInfo(name:&lt;?&gt;):org.apache.spark.sql.catalyst.expressions.ExpressionInfo"></a>
+      <a id="lookupFunctionInfo(FunctionIdentifier):ExpressionInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupFunctionInfo</span><span class="params">(<span name="name">name: <span class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</span></span>)</span><span class="result">: <a href="../catalyst/expressions/ExpressionInfo.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionInfo">ExpressionInfo</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupFunctionInfo(name:org.apache.spark.sql.catalyst.FunctionIdentifier):org.apache.spark.sql.catalyst.expressions.ExpressionInfo" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lookupRelation(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="lookupRelation(TableIdentifier,Option[String]):LogicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupRelation</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="alias">alias: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupRelation(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lookupRelation(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="lookupRelation(QualifiedTableName):LogicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupRelation</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupRelation(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#lookupTopK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="lookupTopK(topKName:org.apache.spark.sql.hive.QualifiedTableName):Option[(org.apache.spark.sql.execution.TopKWrapper,org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)])]"></a>
+      <a id="lookupTopK(QualifiedTableName):Option[(TopKWrapper,RDD[(Int,TopK)])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupTopK</span><span class="params">(<span name="topKName">topKName: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="../execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a>, <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.execution.TopK">TopK</span>)])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupTopK(topKName:org.apache.spark.sql.hive.QualifiedTableName):Option[(org.apache.spark.sql.execution.TopKWrapper,org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#mainDFToSampleDFs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mainDFToSampleDFs:scala.collection.concurrent.Map[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]]"></a>
+      <a id="mainDFToSampleDFs:Map[LogicalPlan,ArrayBuffer[LogicalPlan]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mainDFToSampleDFs</span><span class="result">: <span class="extype" name="scala.collection.concurrent.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@mainDFToSampleDFs:scala.collection.concurrent.Map[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#makeFunctionBuilder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="makeFunctionBuilder(name:&lt;?&gt;,functionClassName:&lt;?&gt;):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder"></a>
+      <a id="makeFunctionBuilder(String,String):FunctionBuilder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">makeFunctionBuilder</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionClassName">functionClassName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder">FunctionBuilder</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@makeFunctionBuilder(name:String,functionClassName:String):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#newQualifiedTableName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newQualifiedTableName(tableIdent:String):org.apache.spark.sql.hive.QualifiedTableName"></a>
+      <a id="newQualifiedTableName(String):QualifiedTableName"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newQualifiedTableName</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@newQualifiedTableName(tableIdent:String):org.apache.spark.sql.hive.QualifiedTableName" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#newQualifiedTableName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newQualifiedTableName(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.hive.QualifiedTableName"></a>
+      <a id="newQualifiedTableName(TableIdentifier):QualifiedTableName"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newQualifiedTableName</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@newQualifiedTableName(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.hive.QualifiedTableName" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#newQualifiedTempTableName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newQualifiedTempTableName(tableIdent:&lt;?&gt;):org.apache.spark.sql.hive.QualifiedTableName"></a>
+      <a id="newQualifiedTempTableName(String):QualifiedTableName"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newQualifiedTempTableName</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@newQualifiedTempTableName(tableIdent:String):org.apache.spark.sql.hive.QualifiedTableName" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#normalizeSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeSchema(schema:&lt;?&gt;):org.apache.spark.sql.types.StructType"></a>
+      <a id="normalizeSchema(StructType):StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeSchema</span><span class="params">(<span name="schema">schema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@normalizeSchema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#refreshTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="refreshTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):Unit"></a>
+      <a id="refreshTable(TableIdentifier):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">refreshTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@refreshTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#registerDataSourceTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="registerDataSourceTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Array[String],provider:String,options:Map[String,String],relation:org.apache.spark.sql.sources.BaseRelation):Unit"></a>
+      <a id="registerDataSourceTable(QualifiedTableName,Option[StructType],Array[String],String,Map[String,String],BaseRelation):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registerDataSourceTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="relation">relation: <span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@registerDataSourceTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Array[String],provider:String,options:Map[String,String],relation:org.apache.spark.sql.sources.BaseRelation):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#registerTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="registerTable(tableName:&lt;?&gt;,plan:&lt;?&gt;):Unit"></a>
+      <a id="registerTable(QualifiedTableName,LogicalPlan):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registerTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="plan">plan: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@registerTable(tableName:org.apache.spark.sql.hive.QualifiedTableName,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#registerTopK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="registerTopK(topkWrapper:org.apache.spark.sql.execution.TopKWrapper,rdd:org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)],ifExists:Boolean,overwrite:Boolean):Boolean"></a>
+      <a id="registerTopK(TopKWrapper,RDD[(Int,TopK)],Boolean,Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registerTopK</span><span class="params">(<span name="topkWrapper">topkWrapper: <a href="../execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a></span>, <span name="rdd">rdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.execution.TopK">TopK</span>)]</span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@registerTopK(topkWrapper:org.apache.spark.sql.execution.TopKWrapper,rdd:org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)],ifExists:Boolean,overwrite:Boolean):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#removeIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeIndexProp(inTable:&lt;?&gt;,index:&lt;?&gt;):Unit"></a>
+      <a id="removeIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeIndexProp</span><span class="params">(<span name="inTable">inTable: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="index">index: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@removeIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#renamePartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="renamePartitions(tableName:&lt;?&gt;,specs:&lt;?&gt;,newSpecs:&lt;?&gt;):Unit"></a>
+      <a id="renamePartitions(TableIdentifier,Seq[TablePartitionSpec],Seq[TablePartitionSpec]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">renamePartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="specs">specs: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span>]</span>, <span name="newSpecs">newSpecs: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@renamePartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,specs:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],newSpecs:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#renameTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="renameTable(oldName:&lt;?&gt;,newName:&lt;?&gt;):Unit"></a>
+      <a id="renameTable(TableIdentifier,TableIdentifier):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">renameTable</span><span class="params">(<span name="oldName">oldName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>, <span name="newName">newName: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@renameTable(oldName:org.apache.spark.sql.catalyst.TableIdentifier,newName:org.apache.spark.sql.catalyst.TableIdentifier):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#reset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reset():Unit"></a>
+      <a id="reset():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reset</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@reset():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#setCurrentDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setCurrentDatabase(db:String):Unit"></a>
+      <a id="setCurrentDatabase(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setCurrentDatabase</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@setCurrentDatabase(db:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#setSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setSchema(schema:&lt;?&gt;):Unit"></a>
+      <a id="setSchema(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setSchema</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@setSchema(schema:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#snappySession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="snappySession:org.apache.spark.sql.SnappySession"></a>
+      <a id="snappySession:SnappySession"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">snappySession</span><span class="result">: <span class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@snappySession:org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#sparkConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sparkConf:org.apache.spark.SparkConf"></a>
+      <a id="sparkConf:SparkConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sparkConf</span><span class="result">: <span class="extype" name="org.apache.spark.SparkConf">SparkConf</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@sparkConf:org.apache.spark.SparkConf" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(tableName:org.apache.spark.sql.hive.QualifiedTableName):Boolean"></a>
+      <a id="tableExists(QualifiedTableName):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@tableExists(tableName:org.apache.spark.sql.hive.QualifiedTableName):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(tableIdentifier:String):Boolean"></a>
+      <a id="tableExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="tableIdentifier">tableIdentifier: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@tableExists(tableIdentifier:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(tableIdentifier:org.apache.spark.sql.catalyst.TableIdentifier):Boolean"></a>
+      <a id="tableExists(TableIdentifier):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="tableIdentifier">tableIdentifier: <span class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@tableExists(tableIdentifier:org.apache.spark.sql.catalyst.TableIdentifier):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog → SessionCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#tempTables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tempTables:scala.collection.mutable.HashMap[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="tempTables:HashMap[String,LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tempTables</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@tempTables:scala.collection.mutable.HashMap[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SessionCatalog</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#unregisterAllTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unregisterAllTables():Unit"></a>
+      <a id="unregisterAllTables():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unregisterAllTables</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@unregisterAllTables():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#unregisterDataSourceTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unregisterDataSourceTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,relation:Option[org.apache.spark.sql.sources.BaseRelation]):Unit"></a>
+      <a id="unregisterDataSourceTable(QualifiedTableName,Option[BaseRelation]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unregisterDataSourceTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@unregisterDataSourceTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,relation:Option[org.apache.spark.sql.sources.BaseRelation]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> → SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#unregisterTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unregisterTable(tableIdent:&lt;?&gt;):Unit"></a>
+      <a id="unregisterTable(QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unregisterTable</span><span class="params">(<span name="tableIdent">tableIdent: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@unregisterTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#unregisterTopK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="unregisterTopK(topKName:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
+      <a id="unregisterTopK(QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unregisterTopK</span><span class="params">(<span name="topKName">topKName: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@unregisterTopK(topKName:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#withHiveExceptionHandling" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withHiveExceptionHandling[T&lt;:&lt;?&gt;](function:&lt;?&gt;):T"></a>
+      <a id="withHiveExceptionHandling[T](⇒T):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withHiveExceptionHandling</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="function">function: ⇒ <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog.withHiveExceptionHandling.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog.withHiveExceptionHandling.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@withHiveExceptionHandling[T](function:=&gt;T):T" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStoreHiveCatalog</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</span></h3>
+            </div><div class="parent" name="org.apache.spark.internal.Logging">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

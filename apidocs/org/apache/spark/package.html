@@ -1,0 +1,675 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>spark - snappy-cluster_2.11 0.6 API - org.apache.spark</title>
+          <meta name="description" content="spark - snappy - cluster 2.11 0.6 API - org.apache.spark" />
+          <meta name="keywords" content="spark snappy cluster 2.11 0.6 API org.apache.spark" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'org.apache.spark.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="org">org</a>.<a href="../package.html" class="extype" name="org.apache">apache</a></p>
+        <h1>spark</h1><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spark</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark"><span>spark</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.JobExecutionStatus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JobExecutionStatusextendsEnum[org.apache.spark.JobExecutionStatus]"></a>
+      <a id="JobExecutionStatus:JobExecutionStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JobExecutionStatus.html"><span class="name">JobExecutionStatus</span></a><span class="result"> extends <span class="extype" name="java.lang.Enum">Enum</span>[<a href="JobExecutionStatus.html" class="extype" name="org.apache.spark.JobExecutionStatus">JobExecutionStatus</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@JobExecutionStatusextendsEnum[org.apache.spark.JobExecutionStatus]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SnappyJavaUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyJavaUtilsextendsObject"></a>
+      <a id="SnappyJavaUtils:SnappyJavaUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyJavaUtils.html"><span class="name">SnappyJavaUtils</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SnappyJavaUtilsextendsObject" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SparkExecutorInfo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkExecutorInfoextendsSerializable"></a>
+      <a id="SparkExecutorInfo:SparkExecutorInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkExecutorInfo.html"><span class="name">SparkExecutorInfo</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SparkExecutorInfoextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SparkFirehoseListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkFirehoseListenerextendsSparkListenerInterface"></a>
+      <a id="SparkFirehoseListener:SparkFirehoseListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkFirehoseListener.html"><span class="name">SparkFirehoseListener</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.scheduler.SparkListenerInterface">SparkListenerInterface</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SparkFirehoseListenerextendsSparkListenerInterface" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SparkJobInfo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkJobInfoextendsSerializable"></a>
+      <a id="SparkJobInfo:SparkJobInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkJobInfo.html"><span class="name">SparkJobInfo</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SparkJobInfoextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SparkStageInfo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkStageInfoextendsSerializable"></a>
+      <a id="SparkStageInfo:SparkStageInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkStageInfo.html"><span class="name">SparkStageInfo</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SparkStageInfoextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark#SPARK_BRANCH" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_BRANCH:String"></a>
+      <a id="SPARK_BRANCH:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_BRANCH</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_BRANCH:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark#SPARK_BUILD_DATE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_BUILD_DATE:String"></a>
+      <a id="SPARK_BUILD_DATE:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_BUILD_DATE</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_BUILD_DATE:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark#SPARK_BUILD_USER" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_BUILD_USER:String"></a>
+      <a id="SPARK_BUILD_USER:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_BUILD_USER</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_BUILD_USER:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark#SPARK_REPO_URL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_REPO_URL:String"></a>
+      <a id="SPARK_REPO_URL:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_REPO_URL</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_REPO_URL:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark#SPARK_REVISION" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_REVISION:String"></a>
+      <a id="SPARK_REVISION:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_REVISION</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_REVISION:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark#SPARK_VERSION" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SPARK_VERSION:String"></a>
+      <a id="SPARK_VERSION:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SPARK_VERSION</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SPARK_VERSION:String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.SparkCallbacks" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkCallbacks"></a>
+      <a id="SparkCallbacks:SparkCallbacks"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkCallbacks$.html"><span class="name">SparkCallbacks</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@SparkCallbacks" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Calls that are needed to be sent to snappy-cluster classes because the variables are private[spark]
+</p>
+    </li><li name="org.apache.spark.annotation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="annotation"></a>
+      <a id="annotation:annotation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="annotation/package.html"><span class="name">annotation</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@annotation" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.api" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="api"></a>
+      <a id="api:api"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="api/package.html"><span class="name">api</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@api" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.examples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="examples"></a>
+      <a id="examples:examples"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="examples/package.html"><span class="name">examples</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@examples" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executor"></a>
+      <a id="executor:executor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="executor/package.html"><span class="name">executor</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@executor" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.graphx" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="graphx"></a>
+      <a id="graphx:graphx"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="graphx/package.html"><span class="name">graphx</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@graphx" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.io" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="io"></a>
+      <a id="io:io"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="io/package.html"><span class="name">io</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@io" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.launcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="launcher"></a>
+      <a id="launcher:launcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="launcher/package.html"><span class="name">launcher</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@launcher" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.memory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="memory"></a>
+      <a id="memory:memory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="memory/package.html"><span class="name">memory</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@memory" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.network" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="network"></a>
+      <a id="network:network"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="network/package.html"><span class="name">network</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@network" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.scheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="scheduler"></a>
+      <a id="scheduler:scheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="scheduler/package.html"><span class="name">scheduler</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@scheduler" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="serializer"></a>
+      <a id="serializer:serializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="serializer/package.html"><span class="name">serializer</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@serializer" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.shuffle" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="shuffle"></a>
+      <a id="shuffle:shuffle"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="shuffle/package.html"><span class="name">shuffle</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@shuffle" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sql"></a>
+      <a id="sql:sql"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="sql/package.html"><span class="name">sql</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@sql" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.status" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="status"></a>
+      <a id="status:status"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="status/package.html"><span class="name">status</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@status" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.storage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="storage"></a>
+      <a id="storage:storage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="storage/package.html"><span class="name">storage</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@storage" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="streaming"></a>
+      <a id="streaming:streaming"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="streaming/package.html"><span class="name">streaming</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@streaming" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.tags" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tags"></a>
+      <a id="tags:tags"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="tags/package.html"><span class="name">tags</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@tags" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.unsafe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="unsafe"></a>
+      <a id="unsafe:unsafe"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="unsafe/package.html"><span class="name">unsafe</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@unsafe" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.util" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="util"></a>
+      <a id="util:util"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="util/package.html"><span class="name">util</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@util" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

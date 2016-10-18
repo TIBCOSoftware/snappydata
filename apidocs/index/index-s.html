@@ -1,0 +1,938 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>snappy-cluster_2.11 0.6 API</title>
+          <meta name="description" content="snappy - cluster 2.11 0.6 API" />
+          <meta name="keywords" content="snappy cluster 2.11 0.6 API" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
+      <script type="text/javascript" src="../lib/jquery.js"></script>
+    
+        </head>
+        <body><div class="entry">
+      <div class="name">SAMPLE</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyAQPParser.html" class="extype" name="org.apache.spark.sql.SnappyAQPParser">SnappyAQPParser</a> </div>
+    </div><div class="entry">
+      <div class="name">SNAPPY_MEMORY_MANAGER</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator">ExecutorInitiator</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_BRANCH</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_BUILD_DATE</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_BUILD_USER</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_REPO_URL</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_REVISION</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPARK_VERSION</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SPECIAL_SYMBOL</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/HAC$.html" class="extype" name="org.apache.spark.sql.execution.common.HAC">HAC</a> </div>
+    </div><div class="entry">
+      <div class="name">SQLOperation</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/package.html" class="extype" name="org.apache.hive.service.cli.operation">operation</a> </div>
+    </div><div class="entry">
+      <div class="name">SQLUserDefinedType</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/types/package.html" class="extype" name="org.apache.spark.sql.types">types</a> </div>
+    </div><div class="entry">
+      <div class="name">START_TIME_COLUMN</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/approximate/TopKUtil$.html" class="extype" name="org.apache.spark.sql.approximate.TopKUtil">TopKUtil</a> </div>
+    </div><div class="entry">
+      <div class="name">STATE</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/Service.html" class="extype" name="org.apache.hive.service.Service">Service</a> </div>
+    </div><div class="entry">
+      <div class="name">STRING_AS_CLOB</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/SparkSQLExecuteImpl$.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">SampleDataFrameContractImpl</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SampleOptions</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">SamplePartition</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> <a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">SampleTableQuery</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sources/package.html" class="extype" name="org.apache.spark.sql.sources">sources</a> </div>
+    </div><div class="entry">
+      <div class="name">SampledCachedRDD</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SampledRelation</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/package.html" class="extype" name="org.apache.spark.sql.hive">hive</a> </div>
+    </div><div class="entry">
+      <div class="name">SaslClientBootstrap</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">SaslQOP</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/auth/package.html" class="extype" name="org.apache.hive.service.auth">auth</a> </div>
+    </div><div class="entry">
+      <div class="name">SaslServerBootstrap</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">SaveMode</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SchedulingOrder</div>
+      <div class="occurrences"><a href="../io/snappydata/test/hydra/package.html" class="extype" name="io.snappydata.test.hydra">hydra</a> </div>
+    </div><div class="entry">
+      <div class="name">SecretKeyHolder</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">Seed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SerializableCallable</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/package.html" class="extype" name="io.snappydata.test.dunit">dunit</a> </div>
+    </div><div class="entry">
+      <div class="name">SerializableRunnable</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/package.html" class="extype" name="io.snappydata.test.dunit">dunit</a> </div>
+    </div><div class="entry">
+      <div class="name">ServerLauncher</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/package.html" class="extype" name="io.snappydata.tools">tools</a> </div>
+    </div><div class="entry">
+      <div class="name">Service</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> </div>
+    </div><div class="entry">
+      <div class="name">ServiceException</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> </div>
+    </div><div class="entry">
+      <div class="name">ServiceManager</div>
+      <div class="occurrences"><a href="../io/snappydata/package.html" class="extype" name="io.snappydata">snappydata</a> </div>
+    </div><div class="entry">
+      <div class="name">ServiceOperations</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> </div>
+    </div><div class="entry">
+      <div class="name">ServiceStateChangeListener</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> </div>
+    </div><div class="entry">
+      <div class="name">ServiceUtils</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> </div>
+    </div><div class="entry">
+      <div class="name">SessionHandle</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/package.html" class="extype" name="org.apache.hive.service.cli">cli</a> </div>
+    </div><div class="entry">
+      <div class="name">SessionManager</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/package.html" class="extype" name="org.apache.hive.service.cli.session">session</a> </div>
+    </div><div class="entry">
+      <div class="name">ShuffleClient</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/shuffle/package.html" class="extype" name="org.apache.spark.network.shuffle">shuffle</a> </div>
+    </div><div class="entry">
+      <div class="name">ShuffleSecretManager</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">ShuffleServiceHeartbeat</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/shuffle/protocol/mesos/package.html" class="extype" name="org.apache.spark.network.shuffle.protocol.mesos">mesos</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyAQPParser</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyAQPSessionState</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/internal/package.html" class="extype" name="org.apache.spark.sql.internal">internal</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyAQPSqlParser</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyChildFirstURLClassLoader</div>
+      <div class="occurrences"><a href="../org/apache/spark/executor/package.html" class="extype" name="org.apache.spark.executor">executor</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyClusterManager</div>
+      <div class="occurrences"><a href="../org/apache/spark/scheduler/cluster/package.html" class="extype" name="org.apache.spark.scheduler.cluster">cluster</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyCoarseGrainedExecutorBackend</div>
+      <div class="occurrences"><a href="../org/apache/spark/executor/package.html" class="extype" name="org.apache.spark.executor">executor</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyCoarseGrainedSchedulerBackend</div>
+      <div class="occurrences"><a href="../org/apache/spark/scheduler/cluster/package.html" class="extype" name="org.apache.spark.scheduler.cluster">cluster</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyContextAQPFunctions</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyContextFactory</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyContextPerConnection</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/package.html" class="extype" name="io.snappydata.gemxd">gemxd</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyDataVersion</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/package.html" class="extype" name="io.snappydata.gemxd">gemxd</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyEmbeddedModeClusterManager</div>
+      <div class="occurrences"><a href="../org/apache/spark/scheduler/cluster/package.html" class="extype" name="org.apache.spark.scheduler.cluster">cluster</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyExecutor</div>
+      <div class="occurrences"><a href="../org/apache/spark/executor/package.html" class="extype" name="org.apache.spark.executor">executor</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyHashAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/package.html" class="extype" name="org.apache.spark.sql.execution.common">common</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyHiveCatalog</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/package.html" class="extype" name="io.snappydata.impl">impl</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyJavaUtils</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyJobInvalid</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyJobValid</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyJobValidate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyJobValidation</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyKryoRegistrator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/serializer/package.html" class="extype" name="org.apache.spark.sql.execution.serializer">serializer</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyMemoryUtils</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyMutableURLClassLoader</div>
+      <div class="occurrences"><a href="../org/apache/spark/executor/package.html" class="extype" name="org.apache.spark.executor">executor</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyPartialHashAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/package.html" class="extype" name="org.apache.spark.sql.execution.common">common</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyPartialSortedAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/package.html" class="extype" name="org.apache.spark.sql.execution.common">common</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyPoissonGenerator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyPoissonSeed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyQueryExecution</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappySQLJob</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappySortAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/package.html" class="extype" name="org.apache.spark.sql.execution.common">common</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyStoreAQPHiveCatalog</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/package.html" class="extype" name="org.apache.spark.sql.hive">hive</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyStreamingContextFactory</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/streaming/package.html" class="extype" name="org.apache.spark.sql.streaming">streaming</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyStreamingJob</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/streaming/package.html" class="extype" name="org.apache.spark.sql.streaming">streaming</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappySystemAdmin</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/package.html" class="extype" name="io.snappydata.gemxd">gemxd</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyUnifiedMemoryManager</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyUtilLauncher</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/package.html" class="extype" name="io.snappydata.tools">tools</a> </div>
+    </div><div class="entry">
+      <div class="name">SnappyUtils</div>
+      <div class="occurrences"><a href="../org/apache/spark/util/package.html" class="extype" name="org.apache.spark.util">util</a> </div>
+    </div><div class="entry">
+      <div class="name">SortedIterator</div>
+      <div class="occurrences"><a href="../org/apache/spark/util/collection/unsafe/sort/UnsafeInMemorySorter.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeInMemorySorter">UnsafeInMemorySorter</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkAppHandle</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/package.html" class="extype" name="org.apache.spark.launcher">launcher</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkCallbacks</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkExecutorInfo</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkFirehoseListener</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkJobInfo</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkLauncher</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/package.html" class="extype" name="org.apache.spark.launcher">launcher</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkOrcNewRecordReader</div>
+      <div class="occurrences"><a href="../org/apache/hadoop/hive/ql/io/orc/package.html" class="extype" name="org.apache.hadoop.hive.ql.io.orc">orc</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkPoissonSeed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkSQLExecuteImpl</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/package.html" class="extype" name="io.snappydata.gemxd">gemxd</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkSaslClient</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkSaslServer</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/sasl/package.html" class="extype" name="org.apache.spark.network.sasl">sasl</a> </div>
+    </div><div class="entry">
+      <div class="name">SparkStageInfo</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">SparseMutableRow</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SpecializedGetters</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a> </div>
+    </div><div class="entry">
+      <div class="name">SpecificParquetRecordReaderBase</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/datasources/parquet/package.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet">parquet</a> </div>
+    </div><div class="entry">
+      <div class="name">StageStatus</div>
+      <div class="occurrences"><a href="../org/apache/spark/status/api/v1/package.html" class="extype" name="org.apache.spark.status.api.v1">v1</a> </div>
+    </div><div class="entry">
+      <div class="name">StandAloneDUnitEnv</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/standalone/package.html" class="extype" name="io.snappydata.test.dunit.standalone">standalone</a> </div>
+    </div><div class="entry">
+      <div class="name">StatCounterAggregator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/package.html" class="extype" name="org.apache.spark.sql.execution.closedform">closedform</a> </div>
+    </div><div class="entry">
+      <div class="name">StatCounterAggregatorCreator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/package.html" class="extype" name="org.apache.spark.sql.execution.closedform">closedform</a> </div>
+    </div><div class="entry">
+      <div class="name">StatCounterMergerer</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/package.html" class="extype" name="org.apache.spark.sql.execution.closedform">closedform</a> </div>
+    </div><div class="entry">
+      <div class="name">StatCounterUpdater</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/package.html" class="extype" name="org.apache.spark.sql.execution.closedform">closedform</a> </div>
+    </div><div class="entry">
+      <div class="name">StatCounterWithFullCount</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/package.html" class="extype" name="org.apache.spark.sql.execution.closedform">closedform</a> </div>
+    </div><div class="entry">
+      <div class="name">State</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkAppHandle.html" class="extype" name="org.apache.spark.launcher.SparkAppHandle">SparkAppHandle</a> </div>
+    </div><div class="entry">
+      <div class="name">StorageLevels</div>
+      <div class="occurrences"><a href="../org/apache/spark/api/java/package.html" class="extype" name="org.apache.spark.api.java">java</a> </div>
+    </div><div class="entry">
+      <div class="name">Strategy</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSample</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSampleExecute</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSampledRDD</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSampler</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSamplerCached</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSamplerErrorLimit</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratifiedSamplerReservoir</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StratumReservoir</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamCallback</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/client/package.html" class="extype" name="org.apache.spark.network.client">client</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamChunkId</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/protocol/package.html" class="extype" name="org.apache.spark.network.protocol">protocol</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamFailure</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/protocol/package.html" class="extype" name="org.apache.spark.network.protocol">protocol</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamHandle</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/shuffle/protocol/package.html" class="extype" name="org.apache.spark.network.shuffle.protocol">protocol</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamManager</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/server/package.html" class="extype" name="org.apache.spark.network.server">server</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamRequest</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/protocol/package.html" class="extype" name="org.apache.spark.network.protocol">protocol</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamResponse</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/protocol/package.html" class="extype" name="org.apache.spark.network.protocol">protocol</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamSummary</div>
+      <div class="occurrences"><a href="../io/snappydata/util/com/clearspring/analytics/stream/package.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream">stream</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamSummaryAggregation</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/streamsummary/package.html" class="extype" name="org.apache.spark.sql.execution.streamsummary">streamsummary</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamSummaryAggregationKryoSerializer</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/serializer/package.html" class="extype" name="org.apache.spark.sql.execution.serializer">serializer</a> </div>
+    </div><div class="entry">
+      <div class="name">StreamingContextState</div>
+      <div class="occurrences"><a href="../org/apache/spark/streaming/package.html" class="extype" name="org.apache.spark.streaming">streaming</a> </div>
+    </div><div class="entry">
+      <div class="name">Sum</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">Sum_Absolute</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">Sum_Lower</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">Sum_Relative</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">Sum_Upper</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">SuperPoisson</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">SystemPropertyConfigProvider</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/package.html" class="extype" name="org.apache.spark.network.util">util</a> </div>
+    </div><div class="entry">
+      <div class="name">safeLookup</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/map/BytesToBytesMap.html" class="extype" name="org.apache.spark.unsafe.map.BytesToBytesMap">BytesToBytesMap</a> </div>
+    </div><div class="entry">
+      <div class="name">sameRef</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorEstimateAttribute.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorEstimateAttribute">ErrorEstimateAttribute</a> </div>
+    </div><div class="entry">
+      <div class="name">sample</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerCached.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCached">StratifiedSamplerCached</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerErrorLimit.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit">StratifiedSamplerErrorLimit</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir">StratifiedSamplerReservoir</a> </div>
+    </div><div class="entry">
+      <div class="name">sampleRatioAttribute</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/AQPInfo.html" class="extype" name="org.apache.spark.sql.execution.common.AQPInfo">AQPInfo</a> <a href="../org/apache/spark/sql/execution/common/ErrorAndConfidence.html" class="extype" name="org.apache.spark.sql.execution.common.ErrorAndConfidence">ErrorAndConfidence</a> <a href="../org/apache/spark/sql/sources/Masquerader.html" class="extype" name="org.apache.spark.sql.sources.Masquerader">Masquerader</a> <a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> </div>
+    </div><div class="entry">
+      <div class="name">sampleTable</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/ErrorAndConfidence.html" class="extype" name="org.apache.spark.sql.execution.common.ErrorAndConfidence">ErrorAndConfidence</a> <a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> </div>
+    </div><div class="entry">
+      <div class="name">sampleTableQueryHandler</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/ReplaceWithSampleTable$.html" class="extype" name="org.apache.spark.sql.execution.common.ReplaceWithSampleTable">ReplaceWithSampleTable</a> </div>
+    </div><div class="entry">
+      <div class="name">sampling</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">samplingOptions</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">sasl</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/package.html" class="extype" name="org.apache.spark.network">network</a> </div>
+    </div><div class="entry">
+      <div class="name">saslRTTimeoutMs</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>
+    </div><div class="entry">
+      <div class="name">saslServerAlwaysEncrypt</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>
+    </div><div class="entry">
+      <div class="name">sc</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sampling/DummyRDD.html" class="extype" name="org.apache.spark.sql.sampling.DummyRDD">DummyRDD</a> </div>
+    </div><div class="entry">
+      <div class="name">scheduler</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">schedulerBackend</div>
+      <div class="occurrences"><a href="../org/apache/spark/scheduler/cluster/SnappyEmbeddedModeClusterManager.html" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> </div>
+    </div><div class="entry">
+      <div class="name">schema</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/SparkSQLExecuteImpl.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> <a href="../org/apache/spark/sql/execution/SampleOptions.html" class="extype" name="org.apache.spark.sql.execution.SampleOptions">SampleOptions</a> <a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> <a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> <a href="../org/apache/spark/sql/topk/TopKRelation.html" class="extype" name="org.apache.spark.sql.topk.TopKRelation">TopKRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">schemaFromExecutedPlan</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> </div>
+    </div><div class="entry">
+      <div class="name">scriptName</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/SnappyUtilLauncher.html" class="extype" name="io.snappydata.tools.SnappyUtilLauncher">SnappyUtilLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">seed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/CMSParams.html" class="extype" name="org.apache.spark.sql.execution.CMSParams">CMSParams</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparkPoissonSeed.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparkPoissonSeed">SparkPoissonSeed</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> </div>
+    </div><div class="entry">
+      <div class="name">seedName</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/IdentifySampledRelation$.html" class="extype" name="org.apache.spark.sql.hive.IdentifySampledRelation">IdentifySampledRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">segmentEnd</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SamplePartition.html" class="extype" name="org.apache.spark.sql.SamplePartition">SamplePartition</a> </div>
+    </div><div class="entry">
+      <div class="name">segmentStart</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SamplePartition.html" class="extype" name="org.apache.spark.sql.SamplePartition">SamplePartition</a> </div>
+    </div><div class="entry">
+      <div class="name">segments</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SamplePartition.html" class="extype" name="org.apache.spark.sql.SamplePartition">SamplePartition</a> </div>
+    </div><div class="entry">
+      <div class="name">select</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyAQPParser.html" class="extype" name="org.apache.spark.sql.SnappyAQPParser">SnappyAQPParser</a> </div>
+    </div><div class="entry">
+      <div class="name">semanticEquals</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorEstimateAttribute.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorEstimateAttribute">ErrorEstimateAttribute</a> </div>
+    </div><div class="entry">
+      <div class="name">send</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/client/TransportClient.html" class="extype" name="org.apache.spark.network.client.TransportClient">TransportClient</a> </div>
+    </div><div class="entry">
+      <div class="name">sendBuf</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>
+    </div><div class="entry">
+      <div class="name">sendRpc</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/client/TransportClient.html" class="extype" name="org.apache.spark.network.client.TransportClient">TransportClient</a> </div>
+    </div><div class="entry">
+      <div class="name">sendRpcSync</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/client/TransportClient.html" class="extype" name="org.apache.spark.network.client.TransportClient">TransportClient</a> </div>
+    </div><div class="entry">
+      <div class="name">separator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/ErrorAggregate$.html" class="extype" name="org.apache.spark.sql.execution.closedform.ErrorAggregate">ErrorAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">serialize</div>
+      <div class="occurrences"><a href="../io/snappydata/util/com/clearspring/analytics/stream/membership/ICompactSerializer.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream.membership.ICompactSerializer">ICompactSerializer</a> <a href="../org/apache/spark/serializer/DummySerializerInstance.html" class="extype" name="org.apache.spark.serializer.DummySerializerInstance">DummySerializerInstance</a> <a href="../org/apache/spark/sql/collection/BoundedSortedSet.html" class="extype" name="org.apache.spark.sql.collection.BoundedSortedSet">BoundedSortedSet</a> <a href="../org/apache/spark/sql/execution/ApproximateType.html" class="extype" name="org.apache.spark.sql.execution.ApproximateType">ApproximateType</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch$.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/sql/execution/cms/TopKCMS$.html" class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS">TopKCMS</a> </div>
+    </div><div class="entry">
+      <div class="name">serializeRows</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/SparkSQLExecuteImpl.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">serializeStream</div>
+      <div class="occurrences"><a href="../org/apache/spark/serializer/DummySerializerInstance.html" class="extype" name="org.apache.spark.serializer.DummySerializerInstance">DummySerializerInstance</a> </div>
+    </div><div class="entry">
+      <div class="name">serializer</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> <a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">server</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/package.html" class="extype" name="org.apache.hive.service">service</a> <a href="../org/apache/spark/network/package.html" class="extype" name="org.apache.spark.network">network</a> </div>
+    </div><div class="entry">
+      <div class="name">serverThreads</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>
+    </div><div class="entry">
+      <div class="name">service</div>
+      <div class="occurrences"><a href="../org/apache/hive/package.html" class="extype" name="org.apache.hive">hive</a> </div>
+    </div><div class="entry">
+      <div class="name">serviceInit</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/yarn/YarnShuffleService.html" class="extype" name="org.apache.spark.network.yarn.YarnShuffleService">YarnShuffleService</a> </div>
+    </div><div class="entry">
+      <div class="name">serviceStop</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/yarn/YarnShuffleService.html" class="extype" name="org.apache.spark.network.yarn.YarnShuffleService">YarnShuffleService</a> </div>
+    </div><div class="entry">
+      <div class="name">session</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/package.html" class="extype" name="org.apache.hive.service.cli">cli</a> <a href="../org/apache/spark/sql/SampleDataFrameContractImpl.html" class="extype" name="org.apache.spark.sql.SampleDataFrameContractImpl">SampleDataFrameContractImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">set</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/array/LongArray.html" class="extype" name="org.apache.spark.unsafe.array.LongArray">LongArray</a> </div>
+    </div><div class="entry">
+      <div class="name">setAppName</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setAppResource</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setBackgroundHandle</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setBehaviorForcedRoute</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/QueryRoutingRules$.html" class="extype" name="org.apache.spark.sql.execution.common.QueryRoutingRules">QueryRoutingRules</a> </div>
+    </div><div class="entry">
+      <div class="name">setBoolean</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setByte</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setCharacterMaximumLength</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/TypeQualifiers.html" class="extype" name="org.apache.hive.service.cli.TypeQualifiers">TypeQualifiers</a> </div>
+    </div><div class="entry">
+      <div class="name">setClientId</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/client/TransportClient.html" class="extype" name="org.apache.spark.network.client.TransportClient">TransportClient</a> </div>
+    </div><div class="entry">
+      <div class="name">setColumn</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">ColumnarBatch</a> </div>
+    </div><div class="entry">
+      <div class="name">setConf</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setConfOverlay</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/ExecuteStatementOperation.html" class="extype" name="org.apache.hive.service.cli.operation.ExecuteStatementOperation">ExecuteStatementOperation</a> </div>
+    </div><div class="entry">
+      <div class="name">setConfiguration</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setDecimal</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setDefaultHeapSize</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/LeaderLauncher.html" class="extype" name="io.snappydata.tools.LeaderLauncher">LeaderLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setDeployMode</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setDictionary</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/vectorized/ColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnVector">ColumnVector</a> </div>
+    </div><div class="entry">
+      <div class="name">setDoEval</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/AbsoluteError.html" class="extype" name="org.apache.spark.sql.execution.common.AbsoluteError">AbsoluteError</a> <a href="../org/apache/spark/sql/execution/common/ErrorEstimateFunction.html" class="extype" name="org.apache.spark.sql.execution.common.ErrorEstimateFunction">ErrorEstimateFunction</a> <a href="../org/apache/spark/sql/execution/common/LowerBound.html" class="extype" name="org.apache.spark.sql.execution.common.LowerBound">LowerBound</a> <a href="../org/apache/spark/sql/execution/common/RelativeError.html" class="extype" name="org.apache.spark.sql.execution.common.RelativeError">RelativeError</a> <a href="../org/apache/spark/sql/execution/common/UpperBound.html" class="extype" name="org.apache.spark.sql.execution.common.UpperBound">UpperBound</a> </div>
+    </div><div class="entry">
+      <div class="name">setDouble</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setDriverDetails</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$$ExecutorRunnable.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator.ExecutorRunnable">ExecutorRunnable</a> </div>
+    </div><div class="entry">
+      <div class="name">setFailOnInit</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/BreakableService.html" class="extype" name="org.apache.hive.service.BreakableService">BreakableService</a> </div>
+    </div><div class="entry">
+      <div class="name">setFailOnStart</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/BreakableService.html" class="extype" name="org.apache.hive.service.BreakableService">BreakableService</a> </div>
+    </div><div class="entry">
+      <div class="name">setFailOnStop</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/BreakableService.html" class="extype" name="org.apache.hive.service.BreakableService">BreakableService</a> </div>
+    </div><div class="entry">
+      <div class="name">setFloat</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setFlushStatus</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> </div>
+    </div><div class="entry">
+      <div class="name">setHasResultSet</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/OperationHandle.html" class="extype" name="org.apache.hive.service.cli.OperationHandle">OperationHandle</a> <a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setInitializingSparkContext</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl$.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setInt</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setInterceptor</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/util/TransportFrameDecoder.html" class="extype" name="org.apache.spark.network.util.TransportFrameDecoder">TransportFrameDecoder</a> </div>
+    </div><div class="entry">
+      <div class="name">setIpAddress</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/auth/TSetIpAddressProcessor.html" class="extype" name="org.apache.hive.service.auth.TSetIpAddressProcessor">TSetIpAddressProcessor</a> <a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setIsConstant</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/vectorized/ColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnVector">ColumnVector</a> </div>
+    </div><div class="entry">
+      <div class="name">setJavaHome</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setLogicalPlanForQueryRouting</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> </div>
+    </div><div class="entry">
+      <div class="name">setLong</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setMainClass</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setMaster</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setName</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/SerializableRunnable.html" class="extype" name="io.snappydata.test.dunit.SerializableRunnable">SerializableRunnable</a> </div>
+    </div><div class="entry">
+      <div class="name">setNotNullAt</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setNullAt</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/catalyst/expressions/codegen/UnsafeArrayWriter.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter">UnsafeArrayWriter</a> <a href="../org/apache/spark/sql/catalyst/expressions/codegen/UnsafeRowWriter.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeRowWriter">UnsafeRowWriter</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setNumRows</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">ColumnarBatch</a> </div>
+    </div><div class="entry">
+      <div class="name">setObjAndOffset</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/memory/MemoryLocation.html" class="extype" name="org.apache.spark.unsafe.memory.MemoryLocation">MemoryLocation</a> </div>
+    </div><div class="entry">
+      <div class="name">setOffset</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/codegen/UnsafeArrayWriter.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter">UnsafeArrayWriter</a> </div>
+    </div><div class="entry">
+      <div class="name">setOffsetAndSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/codegen/UnsafeRowWriter.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeRowWriter">UnsafeRowWriter</a> </div>
+    </div><div class="entry">
+      <div class="name">setOperationException</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setOperationLogSessionDir</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setOperationManager</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setOperationTimeout</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setPart2</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/MultiTableStatCounterWithFullCount.html" class="extype" name="org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount">MultiTableStatCounterWithFullCount</a> </div>
+    </div><div class="entry">
+      <div class="name">setPartialRoutePlan</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/QueryRoutingRules$.html" class="extype" name="org.apache.spark.sql.execution.common.QueryRoutingRules">QueryRoutingRules</a> </div>
+    </div><div class="entry">
+      <div class="name">setPrecision</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/TypeQualifiers.html" class="extype" name="org.apache.hive.service.cli.TypeQualifiers">TypeQualifiers</a> </div>
+    </div><div class="entry">
+      <div class="name">setPropertiesFile</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setProxySession</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionImplwithUGI.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImplwithUGI">HiveSessionImplwithUGI</a> </div>
+    </div><div class="entry">
+      <div class="name">setQueryExecutor</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> </div>
+    </div><div class="entry">
+      <div class="name">setRetryFlag</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$$ExecutorRunnable.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator.ExecutorRunnable">ExecutorRunnable</a> </div>
+    </div><div class="entry">
+      <div class="name">setScale</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/TypeQualifiers.html" class="extype" name="org.apache.hive.service.cli.TypeQualifiers">TypeQualifiers</a> </div>
+    </div><div class="entry">
+      <div class="name">setSeed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/PoissonGenerator.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PoissonGenerator">PoissonGenerator</a> </div>
+    </div><div class="entry">
+      <div class="name">setSessionManager</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setSessionUGI</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionImplwithUGI.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImplwithUGI">HiveSessionImplwithUGI</a> </div>
+    </div><div class="entry">
+      <div class="name">setShort</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/SparseMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SparseMutableRow">SparseMutableRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setSparkHome</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setStartOffset</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/ColumnBasedSet.html" class="extype" name="org.apache.hive.service.cli.ColumnBasedSet">ColumnBasedSet</a> <a href="../org/apache/hive/service/cli/RowBasedSet.html" class="extype" name="org.apache.hive.service.cli.RowBasedSet">RowBasedSet</a> <a href="../org/apache/hive/service/cli/RowSet.html" class="extype" name="org.apache.hive.service.cli.RowSet">RowSet</a> </div>
+    </div><div class="entry">
+      <div class="name">setState</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">setTotalSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> </div>
+    </div><div class="entry">
+      <div class="name">setTypeQualifiers</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/TypeDescriptor.html" class="extype" name="org.apache.hive.service.cli.TypeDescriptor">TypeDescriptor</a> </div>
+    </div><div class="entry">
+      <div class="name">setUp</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/DistributedTestBase.html" class="extype" name="io.snappydata.test.dunit.DistributedTestBase">DistributedTestBase</a> </div>
+    </div><div class="entry">
+      <div class="name">setUserName</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">setVerbose</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">setWord</div>
+      <div class="occurrences"><a href="../org/apache/spark/examples/streaming/JavaRecord.html" class="extype" name="org.apache.spark.examples.streaming.JavaRecord">JavaRecord</a> </div>
+    </div><div class="entry">
+      <div class="name">shouldRouteToBaseTable</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/QueryRoutingRules$.html" class="extype" name="org.apache.spark.sql.execution.common.QueryRoutingRules">QueryRoutingRules</a> </div>
+    </div><div class="entry">
+      <div class="name">shouldRunAsync</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">shouldStop</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/BufferedRowIterator.html" class="extype" name="org.apache.spark.sql.execution.BufferedRowIterator">BufferedRowIterator</a> </div>
+    </div><div class="entry">
+      <div class="name">showMemoryUsage</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/TaskMemoryManager.html" class="extype" name="org.apache.spark.memory.TaskMemoryManager">TaskMemoryManager</a> </div>
+    </div><div class="entry">
+      <div class="name">shuffle</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/package.html" class="extype" name="org.apache.spark.network">network</a> <a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">shuffleState</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/ImplementSnappyAggregate$.html" class="extype" name="org.apache.spark.sql.execution.common.ImplementSnappyAggregate">ImplementSnappyAggregate</a> </div>
+    </div><div class="entry">
+      <div class="name">shutDownVM</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/standalone/RemoteDUnitVM.html" class="extype" name="io.snappydata.test.dunit.standalone.RemoteDUnitVM">RemoteDUnitVM</a> </div>
+    </div><div class="entry">
+      <div class="name">signCookie</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/CookieSigner.html" class="extype" name="org.apache.hive.service.CookieSigner">CookieSigner</a> </div>
+    </div><div class="entry">
+      <div class="name">simpleString</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Bootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Bootstrap">Bootstrap</a> <a href="../org/apache/spark/sql/execution/bootstrap/Tag.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Tag">Tag</a> </div>
+    </div><div class="entry">
+      <div class="name">size</div>
+      <div class="occurrences"><a href="../io/snappydata/util/com/clearspring/analytics/stream/StreamSummary.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream.StreamSummary">StreamSummary</a> <a href="../io/snappydata/util/com/clearspring/analytics/stream/frequency/IFrequency.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream.frequency.IFrequency">IFrequency</a> <a href="../org/apache/hive/service/cli/Column.html" class="extype" name="org.apache.hive.service.cli.Column">Column</a> <a href="../org/apache/spark/network/buffer/FileSegmentManagedBuffer.html" class="extype" name="org.apache.spark.network.buffer.FileSegmentManagedBuffer">FileSegmentManagedBuffer</a> <a href="../org/apache/spark/network/buffer/ManagedBuffer.html" class="extype" name="org.apache.spark.network.buffer.ManagedBuffer">ManagedBuffer</a> <a href="../org/apache/spark/network/buffer/NettyManagedBuffer.html" class="extype" name="org.apache.spark.network.buffer.NettyManagedBuffer">NettyManagedBuffer</a> <a href="../org/apache/spark/network/buffer/NioManagedBuffer.html" class="extype" name="org.apache.spark.network.buffer.NioManagedBuffer">NioManagedBuffer</a> <a href="../org/apache/spark/sql/execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/unsafe/array/LongArray.html" class="extype" name="org.apache.spark.unsafe.array.LongArray">LongArray</a> <a href="../org/apache/spark/unsafe/memory/MemoryBlock.html" class="extype" name="org.apache.spark.unsafe.memory.MemoryBlock">MemoryBlock</a> </div>
+    </div><div class="entry">
+      <div class="name">sketch</div>
+      <div class="occurrences"><a href="../org/apache/spark/util/package.html" class="extype" name="org.apache.spark.util">util</a> </div>
+    </div><div class="entry">
+      <div class="name">skip</div>
+      <div class="occurrences"><a href="../org/apache/spark/io/LZ4BlockInputStream.html" class="extype" name="org.apache.spark.io.LZ4BlockInputStream">LZ4BlockInputStream</a> <a href="../org/apache/spark/network/util/LimitedInputStream.html" class="extype" name="org.apache.spark.network.util.LimitedInputStream">LimitedInputStream</a> <a href="../org/apache/spark/sql/execution/datasources/parquet/VectorizedPlainValuesReader.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet.VectorizedPlainValuesReader">VectorizedPlainValuesReader</a> <a href="../org/apache/spark/sql/execution/datasources/parquet/VectorizedRleValuesReader.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet.VectorizedRleValuesReader">VectorizedRleValuesReader</a> </div>
+    </div><div class="entry">
+      <div class="name">snappySession</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreAQPHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> </div>
+    </div><div class="entry">
+      <div class="name">snappydata</div>
+      <div class="occurrences"><a href="../io/package.html" class="extype" name="io">io</a> </div>
+    </div><div class="entry">
+      <div class="name">sort</div>
+      <div class="occurrences"><a href="../org/apache/spark/shuffle/package.html" class="extype" name="org.apache.spark.shuffle">shuffle</a> <a href="../org/apache/spark/sql/execution/UnsafeExternalRowSorter.html" class="extype" name="org.apache.spark.sql.execution.UnsafeExternalRowSorter">UnsafeExternalRowSorter</a> <a href="../org/apache/spark/sql/execution/UnsafeKeyValueSorter.html" class="extype" name="org.apache.spark.sql.execution.UnsafeKeyValueSorter">UnsafeKeyValueSorter</a> <a href="../org/apache/spark/util/collection/unsafe/package.html" class="extype" name="org.apache.spark.util.collection.unsafe">unsafe</a> </div>
+    </div><div class="entry">
+      <div class="name">sortedIterator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/UnsafeKVExternalSorter.html" class="extype" name="org.apache.spark.sql.execution.UnsafeKVExternalSorter">UnsafeKVExternalSorter</a> </div>
+    </div><div class="entry">
+      <div class="name">soundex</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">sources</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> </div>
+    </div><div class="entry">
+      <div class="name">spark</div>
+      <div class="occurrences"><a href="../org/apache/package.html" class="extype" name="org.apache">apache</a> </div>
+    </div><div class="entry">
+      <div class="name">spill</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/MemoryConsumer.html" class="extype" name="org.apache.spark.memory.MemoryConsumer">MemoryConsumer</a> <a href="../org/apache/spark/unsafe/map/BytesToBytesMap.html" class="extype" name="org.apache.spark.unsafe.map.BytesToBytesMap">BytesToBytesMap</a> <a href="../org/apache/spark/unsafe/map/BytesToBytesMap$MapIterator.html" class="extype" name="org.apache.spark.unsafe.map.BytesToBytesMap.MapIterator">MapIterator</a> <a href="../org/apache/spark/util/collection/unsafe/sort/UnsafeExternalSorter.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeExternalSorter">UnsafeExternalSorter</a> </div>
+    </div><div class="entry">
+      <div class="name">split</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">sql</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/SparkSQLExecuteImpl.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> <a href="../org/apache/spark/examples/package.html" class="extype" name="org.apache.spark.examples">examples</a> <a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> <a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> </div>
+    </div><div class="entry">
+      <div class="name">sqlConf</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/internal/AQPQueryAnalyzer.html" class="extype" name="org.apache.spark.sql.internal.AQPQueryAnalyzer">AQPQueryAnalyzer</a> </div>
+    </div><div class="entry">
+      <div class="name">sqlContext</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/topk/TopKRelation.html" class="extype" name="org.apache.spark.sql.topk.TopKRelation">TopKRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">sqlParser</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyAQPSqlParser.html" class="extype" name="org.apache.spark.sql.SnappyAQPSqlParser">SnappyAQPSqlParser</a> </div>
+    </div><div class="entry">
+      <div class="name">sqlType</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ApproximateType.html" class="extype" name="org.apache.spark.sql.execution.ApproximateType">ApproximateType</a> </div>
+    </div><div class="entry">
+      <div class="name">stageId</div>
+      <div class="occurrences"><a href="../org/apache/spark/SparkStageInfo.html" class="extype" name="org.apache.spark.SparkStageInfo">SparkStageInfo</a> </div>
+    </div><div class="entry">
+      <div class="name">stageIds</div>
+      <div class="occurrences"><a href="../org/apache/spark/SparkJobInfo.html" class="extype" name="org.apache.spark.SparkJobInfo">SparkJobInfo</a> </div>
+    </div><div class="entry">
+      <div class="name">standalone</div>
+      <div class="occurrences"><a href="../io/snappydata/test/dunit/package.html" class="extype" name="io.snappydata.test.dunit">dunit</a> </div>
+    </div><div class="entry">
+      <div class="name">start</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> <a href="../io/snappydata/impl/LocatorImpl.html" class="extype" name="io.snappydata.impl.LocatorImpl">LocatorImpl</a> <a href="../org/apache/hive/service/AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> <a href="../org/apache/hive/service/BreakableService.html" class="extype" name="org.apache.hive.service.BreakableService">BreakableService</a> <a href="../org/apache/hive/service/CompositeService.html" class="extype" name="org.apache.hive.service.CompositeService">CompositeService</a> <a href="../org/apache/hive/service/FilterService.html" class="extype" name="org.apache.hive.service.FilterService">FilterService</a> <a href="../org/apache/hive/service/Service.html" class="extype" name="org.apache.hive.service.Service">Service</a> <a href="../org/apache/hive/service/cli/CLIService.html" class="extype" name="org.apache.hive.service.cli.CLIService">CLIService</a> <a href="../org/apache/hive/service/cli/operation/OperationManager.html" class="extype" name="org.apache.hive.service.cli.operation.OperationManager">OperationManager</a> <a href="../org/apache/hive/service/cli/session/SessionManager.html" class="extype" name="org.apache.hive.service.cli.session.SessionManager">SessionManager</a> <a href="../org/apache/hive/service/cli/thrift/ThriftCLIService.html" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> <a href="../org/apache/hive/service/server/HiveServer2.html" class="extype" name="org.apache.hive.service.server.HiveServer2">HiveServer2</a> <a href="../org/apache/spark/network/shuffle/OneForOneBlockFetcher.html" class="extype" name="org.apache.spark.network.shuffle.OneForOneBlockFetcher">OneForOneBlockFetcher</a> <a href="../org/apache/spark/network/shuffle/RetryingBlockFetcher.html" class="extype" name="org.apache.spark.network.shuffle.RetryingBlockFetcher">RetryingBlockFetcher</a> <a href="../org/apache/spark/scheduler/cluster/SnappyCoarseGrainedSchedulerBackend.html" class="extype" name="org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend">SnappyCoarseGrainedSchedulerBackend</a> </div>
+    </div><div class="entry">
+      <div class="name">startAdditionalServices</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/LeaderLauncher.html" class="extype" name="io.snappydata.tools.LeaderLauncher">LeaderLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">startApplication</div>
+      <div class="occurrences"><a href="../org/apache/spark/launcher/SparkLauncher.html" class="extype" name="org.apache.spark.launcher.SparkLauncher">SparkLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">startDRDAServer</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">startNetworkServer</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">startOrTransmuteExecutor</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator">ExecutorInitiator</a> </div>
+    </div><div class="entry">
+      <div class="name">startServerVM</div>
+      <div class="occurrences"><a href="../io/snappydata/tools/LeaderLauncher.html" class="extype" name="io.snappydata.tools.LeaderLauncher">LeaderLauncher</a> </div>
+    </div><div class="entry">
+      <div class="name">startThriftServer</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">startsWith</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">stateChanged</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/ServiceStateChangeListener.html" class="extype" name="org.apache.hive.service.ServiceStateChangeListener">ServiceStateChangeListener</a> </div>
+    </div><div class="entry">
+      <div class="name">statistics</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/PlaceHolderPlan.html" class="extype" name="org.apache.spark.sql.execution.common.PlaceHolderPlan">PlaceHolderPlan</a> </div>
+    </div><div class="entry">
+      <div class="name">status</div>
+      <div class="occurrences"><a href="../org/apache/spark/SparkJobInfo.html" class="extype" name="org.apache.spark.SparkJobInfo">SparkJobInfo</a> <a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">stop</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator">ExecutorInitiator</a> <a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> <a href="../io/snappydata/impl/SnappyHiveCatalog.html" class="extype" name="io.snappydata.impl.SnappyHiveCatalog">SnappyHiveCatalog</a> <a href="../org/apache/hive/service/AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> <a href="../org/apache/hive/service/BreakableService.html" class="extype" name="org.apache.hive.service.BreakableService">BreakableService</a> <a href="../org/apache/hive/service/CompositeService.html" class="extype" name="org.apache.hive.service.CompositeService">CompositeService</a> <a href="../org/apache/hive/service/FilterService.html" class="extype" name="org.apache.hive.service.FilterService">FilterService</a> <a href="../org/apache/hive/service/Service.html" class="extype" name="org.apache.hive.service.Service">Service</a> <a href="../org/apache/hive/service/cli/CLIService.html" class="extype" name="org.apache.hive.service.cli.CLIService">CLIService</a> <a href="../org/apache/hive/service/cli/operation/OperationManager.html" class="extype" name="org.apache.hive.service.cli.operation.OperationManager">OperationManager</a> <a href="../org/apache/hive/service/cli/session/SessionManager.html" class="extype" name="org.apache.hive.service.cli.session.SessionManager">SessionManager</a> <a href="../org/apache/hive/service/cli/thrift/ThriftCLIService.html" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> <a href="../org/apache/hive/service/server/HiveServer2.html" class="extype" name="org.apache.hive.service.server.HiveServer2">HiveServer2</a> <a href="../org/apache/spark/launcher/SparkAppHandle.html" class="extype" name="org.apache.spark.launcher.SparkAppHandle">SparkAppHandle</a> <a href="../org/apache/spark/scheduler/cluster/SnappyCoarseGrainedSchedulerBackend.html" class="extype" name="org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend">SnappyCoarseGrainedSchedulerBackend</a> <a href="../org/apache/spark/shuffle/sort/UnsafeShuffleWriter.html" class="extype" name="org.apache.spark.shuffle.sort.UnsafeShuffleWriter">UnsafeShuffleWriter</a> </div>
+    </div><div class="entry">
+      <div class="name">stopAllNetworkServers</div>
+      <div class="occurrences"><a href="../io/snappydata/impl/LeadImpl.html" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">stopApplication</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/yarn/YarnShuffleService.html" class="extype" name="org.apache.spark.network.yarn.YarnShuffleService">YarnShuffleService</a> </div>
+    </div><div class="entry">
+      <div class="name">stopContainer</div>
+      <div class="occurrences"><a href="../org/apache/spark/network/yarn/YarnShuffleService.html" class="extype" name="org.apache.spark.network.yarn.YarnShuffleService">YarnShuffleService</a> </div>
+    </div><div class="entry">
+      <div class="name">stopExecutor</div>
+      <div class="occurrences"><a href="../io/snappydata/gemxd/ClusterCallbacksImpl$.html" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> <a href="../org/apache/spark/SparkCallbacks$.html" class="extype" name="org.apache.spark.SparkCallbacks">SparkCallbacks</a> </div>
+    </div><div class="entry">
+      <div class="name">stopLead</div>
+      <div class="occurrences"><a href="../org/apache/spark/scheduler/cluster/SnappyEmbeddedModeClusterManager.html" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> </div>
+    </div><div class="entry">
+      <div class="name">stopTask</div>
+      <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$$ExecutorRunnable.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator.ExecutorRunnable">ExecutorRunnable</a> </div>
+    </div><div class="entry">
+      <div class="name">storage</div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">strata</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> </div>
+    </div><div class="entry">
+      <div class="name">strataErrorStats</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/closedform/StatCounterAggregator.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterAggregator">StatCounterAggregator</a> </div>
+    </div><div class="entry">
+      <div class="name">strataReservoirSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerCached.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCached">StratifiedSamplerCached</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerErrorLimit.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit">StratifiedSamplerErrorLimit</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir">StratifiedSamplerReservoir</a> </div>
+    </div><div class="entry">
+      <div class="name">stratumSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SampleOptions.html" class="extype" name="org.apache.spark.sql.execution.SampleOptions">SampleOptions</a> </div>
+    </div><div class="entry">
+      <div class="name">stream</div>
+      <div class="occurrences"><a href="../io/snappydata/util/com/clearspring/analytics/package.html" class="extype" name="io.snappydata.util.com.clearspring.analytics">analytics</a> <a href="../org/apache/spark/network/client/TransportClient.html" class="extype" name="org.apache.spark.network.client.TransportClient">TransportClient</a> </div>
+    </div><div class="entry">
+      <div class="name">streamAggregates</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/streamsummary/StreamSummaryAggregation.html" class="extype" name="org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation">StreamSummaryAggregation</a> </div>
+    </div><div class="entry">
+      <div class="name">streaming</div>
+      <div class="occurrences"><a href="../org/apache/spark/examples/sql/package.html" class="extype" name="org.apache.spark.examples.sql">sql</a> <a href="../org/apache/spark/examples/package.html" class="extype" name="org.apache.spark.examples">examples</a> <a href="../org/apache/spark/sql/package.html" class="extype" name="org.apache.spark.sql">sql</a> <a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
+    </div><div class="entry">
+      <div class="name">streamsummary</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">stsummary</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a> </div>
+    </div><div class="entry">
+      <div class="name">subAppend</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/LogDivertAppender.html" class="extype" name="org.apache.hive.service.cli.operation.LogDivertAppender">LogDivertAppender</a> </div>
+    </div><div class="entry">
+      <div class="name">subStringIndex</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">submissionTime</div>
+      <div class="occurrences"><a href="../org/apache/spark/SparkStageInfo.html" class="extype" name="org.apache.spark.SparkStageInfo">SparkStageInfo</a> </div>
+    </div><div class="entry">
+      <div class="name">submitBackgroundOperation</div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/session/SessionManager.html" class="extype" name="org.apache.hive.service.cli.session.SessionManager">SessionManager</a> </div>
+    </div><div class="entry">
+      <div class="name">subqueryChildHandler</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/ReplaceWithSampleTable.html" class="extype" name="org.apache.spark.sql.execution.common.ReplaceWithSampleTable">ReplaceWithSampleTable</a> </div>
+    </div><div class="entry">
+      <div class="name">substring</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">substringSQL</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
+    </div><div class="entry">
+      <div class="name">subsume</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/IntervalTracker$IntervalLink.html" class="extype" name="org.apache.spark.sql.execution.IntervalTracker.IntervalLink">IntervalLink</a> </div>
+    </div><div class="entry">
+      <div class="name">subtract</div>
+      <div class="occurrences"><a href="../org/apache/spark/unsafe/types/CalendarInterval.html" class="extype" name="org.apache.spark.unsafe.types.CalendarInterval">CalendarInterval</a> </div>
+    </div><div class="entry">
+      <div class="name">sumBuffer</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAvgCountPart.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgCountPart">BootstrapAddTrialsAvgCountPart</a> </div>
+    </div><div class="entry">
+      <div class="name">sumType</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAsArray.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray">BootstrapAddTrialsAsArray</a> </div>
+    </div><div class="entry">
+      <div class="name">swap</div>
+      <div class="occurrences"><a href="../org/apache/spark/util/collection/unsafe/sort/UnsafeSortDataFormat.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> </div>
+    </div><div class="entry">
+      <div class="name">symbol</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Bootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Bootstrap">Bootstrap</a> <a href="../org/apache/spark/sql/execution/bootstrap/Seed$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Seed">Seed</a> <a href="../org/apache/spark/sql/execution/bootstrap/Tag.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Tag">Tag</a> <a href="../org/apache/spark/sql/execution/closedform/StatCounterMergerer.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterMergerer">StatCounterMergerer</a> <a href="../org/apache/spark/sql/execution/closedform/StatCounterUpdater.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterUpdater">StatCounterUpdater</a> </div>
+    </div></body>
+      </html>
