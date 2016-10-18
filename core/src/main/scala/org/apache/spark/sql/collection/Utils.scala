@@ -27,10 +27,13 @@ import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
-import io.snappydata.ToolsCallback
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -40,14 +43,14 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
@@ -624,6 +627,30 @@ object Utils {
 
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
+
+  def setDefaultConfProperty(conf: SparkConf, name: String,
+      default: String): Unit = {
+    conf.getOption(name) match {
+      case None =>
+        // set both in configuration and as System property for all
+        // confs created on the fly
+        conf.set(name, default)
+        System.setProperty(name, default)
+      case _ =>
+    }
+  }
+
+  def setDefaultSerializerAndCodec(conf: SparkConf): Unit = {
+    // enable optimized pooled Kryo serializer by default
+    setDefaultConfProperty(conf, "spark.serializer",
+      Constant.DEFAULT_SERIALIZER)
+    setDefaultConfProperty(conf, "spark.closure.serializer",
+      Constant.DEFAULT_SERIALIZER)
+    if (Constant.DEFAULT_CODEC != CompressionCodec.DEFAULT_COMPRESSION_CODEC) {
+      setDefaultConfProperty(conf, "spark.io.compression.codec",
+        Constant.DEFAULT_CODEC)
+    }
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
@@ -704,8 +731,9 @@ class MultiBucketExecutorPartition(override val index: Int,
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
     @transient splitIndex: Int,
-    var split: Partition) extends Serializable {
+    var split: Partition) extends Serializable with KryoSerializable {
 
+  // noinspection ScalaUnusedSymbol
   @throws[java.io.IOException]
   private def writeObject(oos: ObjectOutputStream): Unit =
     org.apache.spark.util.Utils.tryOrIOException {
@@ -713,6 +741,17 @@ private[spark] case class NarrowExecutorLocalSplitDep(
       split = rdd.partitions(splitIndex)
       oos.defaultWriteObject()
     }
+
+  override def write(kryo: Kryo, output: Output): Unit =
+    org.apache.spark.util.Utils.tryOrIOException {
+      // Update the reference to parent split at the time of task serialization
+      split = rdd.partitions(splitIndex)
+      kryo.writeClassAndObject(output, split)
+    }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    split = kryo.readClassAndObject(input).asInstanceOf[Partition]
+  }
 }
 
 /**
@@ -762,4 +801,45 @@ object ToolsCallbackInit extends Logging {
         null
     }
   }
+}
+
+class JobFunction1[T](implicit protected var classTag: ClassTag[T])
+    extends ((Iterator[T]) => Array[T])
+        with Serializable with KryoSerializable {
+
+  override def apply(iter: Iterator[T]): Array[T] =
+    iter.toArray
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClass(output, classTag.runtimeClass)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    classTag = ClassTag[T](kryo.readClass(input).getType)
+  }
+
+  override def toString(): String =
+    s"JobFunction1: Iterator[$classTag] => Array[T]"
+}
+
+class JobFunction2[T, U](protected var f: Iterator[T] => U)
+    extends ((TaskContext, Iterator[T]) => U)
+        with Serializable with KryoSerializable {
+
+  def this() = this(null)
+
+  override def apply(context: TaskContext, iter: Iterator[T]): U =
+    f.apply(iter)
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    // doesn't need to carry ClassTag[U] since its not used
+    kryo.writeClassAndObject(output, f)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    f = kryo.readClassAndObject(input).asInstanceOf[(Iterator[T] => U)]
+  }
+
+  override def toString(): String =
+    s"JobFunction2: Iterator[T] => U"
 }

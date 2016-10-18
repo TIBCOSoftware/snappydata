@@ -111,6 +111,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           setAppName("leaderLauncher").
           set(Property.JobserverEnabled(), "true").
           set("spark.scheduler.mode", "FAIR")
+      Utils.setDefaultSerializerAndCodec(conf)
 
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
@@ -240,7 +241,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       SnappyContext.flushSampleTables()
     }
 
-   assert(sparkContext != null, "Mix and match of LeadService api " +
+    assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()

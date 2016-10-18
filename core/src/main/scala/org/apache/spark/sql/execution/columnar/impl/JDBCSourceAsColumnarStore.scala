@@ -19,8 +19,6 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 
-import scala.reflect.ClassTag
-
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -64,7 +62,7 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         // partition-specific
         val poolProps = _connProperties.poolProps -
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        new SparkShellCachedBatchRDD[CachedBatch](snappySession,
+        new SparkShellCachedBatchRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
@@ -158,7 +156,7 @@ final class ColumnarStorePartitionedRDD(
   }
 }
 
-class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
+class SparkShellCachedBatchRDD(_session: SnappySession,
     tableName: String, requiredColumns: Array[String],
     connProperties: ConnectionProperties, store: ExternalStore)
     extends RDD[CachedBatch](_session.sparkContext, Nil) {
@@ -183,7 +181,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
   }
 }
 
-class SparkShellRowRDD[T: ClassTag](_session: SnappySession,
+class SparkShellRowRDD(_session: SnappySession,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
