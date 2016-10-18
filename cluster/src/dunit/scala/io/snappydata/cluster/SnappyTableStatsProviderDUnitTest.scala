@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStatsCollectorResult
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
 import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -33,10 +34,13 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  val currentLocatorPort = ClusterManagerTestBase.locPort
+  val expectedRowCount = 1888622
+
   override def beforeClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
     bootProps.setProperty("eviction-heap-percentage", "20")
-    bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "300")
+    bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "700")
     super.beforeClass()
   }
 
@@ -47,48 +51,71 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     ClusterManagerTestBase.stopSpark()
   }
 
-
   def testVerifyTableStats(): Unit = {
     val snc = SnappyContext(sc).newSession()
     var table = "TEST.TEST_TABLE"
 
     createTable(snc, table, "row")
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = true,
-      isColumnTable = false, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "R")
+    snc.dropTable(table)
+
 
     createTable(snc, table, "row", Map("PARTITION_BY" -> "col1"))
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = false, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "P")
+    snc.dropTable(table)
+
 
     createTable(snc, table, "row", Map("PARTITION_BY" -> "col1", "PERSISTENT" -> "sync"))
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = false, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "P")
+    snc.dropTable(table)
 
     createTable(snc, table, "column")
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = true, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
+    snc.dropTable(table)
+
 
     createTable(snc, table, "column", Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1"))
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = true, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
+    snc.dropTable(table)
 
     createTable(snc, table, "column", Map("PARTITION_BY" -> "col1", "PERSISTENT" -> "sync"))
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = true, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
+    snc.dropTable(table)
 
     createTable(snc, table, "column", Map("BUCKETS" -> "2",
       "PARTITION_BY" -> "col1", "PERSISTENT" -> "sync"))
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = true, isOverFlow = false)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
+    snc.dropTable(table)
+  }
+
+  def testVerifyTableStatsEvictionAndHA(): Unit = {
+    val props = bootProps
+    val port = currentLocatorPort
+
+    val snc = SnappyContext(sc).newSession()
+    val table = "TEST.TEST_TABLE"
 
     val airlineDataFrame = snc.read.load(getClass.getResource("/2015.parquet").getPath)
     snc.createTable(table, "column", airlineDataFrame.schema, Map.empty[String, String])
     airlineDataFrame.write.format("column").mode(SaveMode.Append).saveAsTable(table)
 
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, isReplicatedTable = false,
-      isColumnTable = true, isOverFlow = true)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
 
+    snc.dropTable(table)
+
+    snc.createTable(table, "column", airlineDataFrame.schema, Map("PERSISTENT" -> "SYNC"))
+    airlineDataFrame.write.format("column").mode(SaveMode.Append).saveAsTable(table)
+
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm1.invoke(new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    })
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
+
+    snc.dropTable(table, true)
   }
+
 
   def createTable(snc: SnappyContext, tableName: String,
       tableType: String, props: Map[String, String] = Map.empty): Unit = {
@@ -169,30 +196,24 @@ object SnappyTableStatsProviderDUnitTest {
 
 
   def verifyResults(snc: SnappyContext, table: String,
-      isReplicatedTable: Boolean, isColumnTable: Boolean,
-      isOverFlow: Boolean): Unit = {
+      tableType: String = "C", expectedRowCount: Int = 700): Unit = {
+    val isColumnTable = if (tableType.equals("C")) true else false
+    val isReplicatedTable = if (tableType.equals("R")) true else false
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
     def actual = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand().get(table).get
 
-    if (isOverFlow) {
-      ClusterManagerTestBase.waitForCriterion(actual.getRowCount == 1888622,
-        "Expected Row count was 1888622 actual rows " + actual.getRowCount, 5000, 1000, true)
-    }
-    else {
-      ClusterManagerTestBase.waitForCriterion(actual.getRowCount == 700,
-        "Expected Row count was 700 actual rows " + actual.getRowCount, 5000, 1000, true)
-    }
 
-    val actualResult = actual
-    val expectedResult = expected
-    assert(actualResult.getRegionName == expectedResult.getRegionName)
-    assert(actualResult.getDataPolicy == expectedResult.getDataPolicy)
-    assert(actualResult.getTotalSize == expectedResult.getTotalSize)
-    assert(actualResult.getSizeInMemory == expectedResult.getSizeInMemory)
-    assert(actualResult.isColumnTable == expectedResult.isColumnTable)
-    assert(actualResult.getRowCount == expectedResult.getRowCount)
+    assert(actual.getRegionName == expected.getRegionName)
+    assert(actual.getDataPolicy == expected.getDataPolicy)
+    assert(actual.isColumnTable == expected.isColumnTable)
 
-    snc.dropTable(table, true)
+    ClusterManagerTestBase.waitForCriterion(actual.getSizeInMemory == expected.getSizeInMemory
+        && actual.getSizeInMemory == expected.getSizeInMemory
+        && actual.getRowCount == expected.getRowCount,
+      s"Expected Size ${expected.getSizeInMemory} Actual size ${actual.getSizeInMemory} \n" +
+      s"Expected Total Size ${expected.getTotalSize} Actual Total size  ${actual.getTotalSize} \n" +
+      s"Expected Count ${expected.getRowCount} Actual Count  ${actual.getRowCount} \n",
+      10000, 1000, true)
   }
 }
