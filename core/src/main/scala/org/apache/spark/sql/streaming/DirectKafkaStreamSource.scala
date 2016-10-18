@@ -44,7 +44,7 @@ final class DirectKafkaStreamRelation(
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options)
-    with Logging with StreamPlan with Serializable {
+    with Logging with Serializable {
 
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
