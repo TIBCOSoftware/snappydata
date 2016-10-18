@@ -11,13 +11,12 @@ For example, for research-based companies (like Gallup), for political polls res
 
 The following diagram provides a general framework of the Synopsis Data Engine:
 A small random sample of the rows of the original database table is prepared. Queries are directed against this small sample table, and then approximate results are generated based on the query and error estimation.
-<div style="text-align:center" markdown="1">
 ![SDE_Architecture](./Images/sde_architecture.png)
-</div>
+
 Thus, there are two components in the architecture, a component for building the synopses from database relations and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
 
 ##Synopsis Data Engine Technique: Stratified Sampling##
-###What is Sampling ?###
+###What is Sampling?###
 One commonly-used technique for approximate results is sampling. For many aggregation queries, non-uniform (approximate) samples can provide more accurate approximations than a uniform sample. 
 
 For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
@@ -35,9 +34,7 @@ The population is divided into several groups (strata), and subjects are then pr
 
 For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
 This is illustrated in the following image.
-<div style="text-align:center" markdown="1">
 ![Stratified Sampling](./Images/aqp_sampling.png)
-</div>
 
 ###Key Concepts###
 **Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These database synopses are used when queries are issued to the system, and approximate results are returned.
@@ -172,9 +169,7 @@ When multiple stratified samples with subset of QCSs match, sample where most nu
 For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. 
 
 This is illustrated in the following image:
-<div style="text-align:center" markdown="1">
 ![QCS](./Images/aqp_qcs.png)
-</div>
 
 ####Using Error Functions and Confidence Interval in Queries####
 Acceptable error fraction and expected confidence interval can be specified in the query projection. 
@@ -249,37 +244,27 @@ Synopsis Data Engine has HAC support using the following behavior clause.
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 
-<div style="text-align:center" markdown="1">
 ![DO NOTHING](./Images/aqp_donothing.png)
-</div>
 <br>
 
 ##### `<local_omit>`#####
 For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
-<div style="text-align:center" markdown="1">
 ![LOCAL OMIT](./Images/aqp_localomit.png)
-</div>
 <br>
 
 ##### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-<div style="text-align:center" markdown="1">
 ![Strict](./Images/aqp_strict.png)
-</div>
 <br>
 
 ##### `<run_on_full_table>`#####
 If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
-<div style="text-align:center" markdown="1">
 ![RUN OF FULL TABLE](./Images/aqp_runonfulltable.png)
-</div>
 <br>
 
 ##### `<partial_run_on_base_table>`#####
 If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
-<div style="text-align:center" markdown="1">
 ![PARTIAL RUN ON BASE TABLE](./Images/aqp_partialrunonbasetable.png)
-</div>
 <br>
 
 In the following example, any one of the above behavior clause can be applied. 
