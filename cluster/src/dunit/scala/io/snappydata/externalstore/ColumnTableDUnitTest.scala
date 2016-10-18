@@ -33,8 +33,6 @@ import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
  */
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val currenyLocatorPort = ClusterManagerTestBase.locPort
-
   def testTableCreation(): Unit = {
     startSparkJob()
   }
@@ -49,7 +47,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     val props = bootProps
-    val port = currenyLocatorPort
+    val port = locatorPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)

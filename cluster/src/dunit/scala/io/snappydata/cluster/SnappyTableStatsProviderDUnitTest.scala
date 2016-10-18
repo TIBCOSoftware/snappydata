@@ -34,8 +34,6 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val currentLocatorPort = ClusterManagerTestBase.locPort
-
   override def beforeClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
     bootProps.setProperty("eviction-heap-percentage", "20")
@@ -89,7 +87,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def testVerifyTableStatsEvictionAndHA(): Unit = {
     val props = bootProps
-    val port = currentLocatorPort
+    val port = locatorPort
     val expectedRowCount = 1888622
 
     val snc = SnappyContext(sc).newSession()
@@ -108,9 +106,13 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
     vm1.invoke(new SerializableRunnable() {
-      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+      override def run(): Unit = {
+        ClusterManagerTestBase.startSnappyServer(port, props)
+      }
     })
+
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
 
     snc.dropTable(table, true)

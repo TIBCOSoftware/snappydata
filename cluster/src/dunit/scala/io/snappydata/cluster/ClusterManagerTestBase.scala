@@ -70,7 +70,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   val locatorNetPort: Int = 0
   val locatorNetProps = new Properties()
-
+  val locatorPort = ClusterManagerTestBase.locatorPort
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
   def sc: SparkContext = SnappyContext.globalSparkContext
@@ -80,7 +80,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     doSetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
-    val locPort = ClusterManagerTestBase.locPort
+    val locPort = locatorPort
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
         val loc: Locator = ServiceManager.getLocatorInstance
@@ -192,7 +192,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 object ClusterManagerTestBase {
   val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
-  final val locPort: Int = locatorPort
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */

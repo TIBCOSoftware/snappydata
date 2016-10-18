@@ -30,8 +30,6 @@ import org.apache.spark.util.Utils
 class DynamicJarInstallationDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
-  val currentLocatorPort = ClusterManagerTestBase.locPort
-
   override def tearDown2(): Unit = {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     bootProps.clear()
@@ -99,7 +97,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     val props = bootProps
-    val port = currentLocatorPort
+    val port = locatorPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
