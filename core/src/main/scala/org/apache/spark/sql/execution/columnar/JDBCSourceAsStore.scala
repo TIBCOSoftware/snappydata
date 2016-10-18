@@ -31,11 +31,12 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, TaskContext}
 
 /*
 Generic class to query column table from SnappyData execution.
@@ -52,8 +53,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
-      sparkContext: SparkContext): RDD[CachedBatch] = {
-    new ExternalStorePartitionedRDD(sparkContext, tableName, requiredColumns,
+      session: SparkSession): RDD[CachedBatch] = {
+    new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
       numPartitions, this)
   }
 
@@ -276,11 +277,11 @@ final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
   }
 }
 
-class ExternalStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
+class ExternalStorePartitionedRDD[T: ClassTag](
+    @transient val session: SparkSession,
     tableName: String, requiredColumns: Array[String],
-    numPartitions: Int,
-    store: JDBCSourceAsStore)
-    extends RDD[CachedBatch](_sc, Nil) {
+    numPartitions: Int, store: JDBCSourceAsStore)
+    extends RDD[CachedBatch](session.sparkContext, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
