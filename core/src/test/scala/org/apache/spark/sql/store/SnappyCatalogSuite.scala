@@ -66,9 +66,6 @@ with BeforeAndAfterAll {
     }
   }
 
-
-
-
   private val utils = new CatalogTestUtils {
     override val tableInputFormat: String = "org.apache.hadoop.mapred.SequenceFileInputFormat"
     override val tableOutputFormat: String = "org.apache.hadoop.mapred.SequenceFileOutputFormat"
