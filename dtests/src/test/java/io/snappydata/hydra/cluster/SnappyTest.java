@@ -50,6 +50,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+//import util.*;
+
 public class SnappyTest implements Serializable {
 
     private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
@@ -76,7 +78,7 @@ public class SnappyTest implements Serializable {
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
     private static Set<File> dirList = new LinkedHashSet<File>();
-    private static String userAppJar = null;
+    public static String userAppJar = null;
     private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
     private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
     public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
@@ -85,7 +87,7 @@ public class SnappyTest implements Serializable {
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
     private static String primaryLocator = null;
-    private static String leadHost = null;
+    public static String leadHost = null;
     public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
     private static Boolean logDirExists = false;
     private static Boolean doneCopying = false;
@@ -107,8 +109,8 @@ public class SnappyTest implements Serializable {
     public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
     public static final String LEAD_PORT = "8090";
     public static final String MASTER_PORT = "7077";
-    private static int jobSubmissionCount = 0;
-    private static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
+    protected static int jobSubmissionCount = 0;
+    protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
     protected static List regionDescriptNames = new ArrayList();
     protected static Cache theCache;
@@ -161,6 +163,23 @@ public class SnappyTest implements Serializable {
         }
     }
 
+    protected String getStoteTestsJar() {
+        String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
+                ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) + "-all.jar";
+        Log.getLogWriter().info("SS - storeTestsJar : " + storeTestsJar);
+        return storeTestsJar;
+    }
+
+    protected String getSnappyTestsJar() {
+        /*String snappyTestsJar = VmDescription.getSnappyJarPath(hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "dtests" + hd.getFileSep() +
+                "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs", "snappydata-store-scala-tests");*/
+        String snappyTestsJar = getUserAppJarLocation("snappydata-store-scala-tests*.jar", hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "dtests" + hd.getFileSep() +
+                "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs");
+        Log.getLogWriter().info("SS - snappyTestsJar : " + snappyTestsJar);
+        return snappyTestsJar;
+    }
+
+
     protected void getClientHostDescription() {
         hd = TestConfig.getInstance()
                 .getClientDescription(RemoteTestModule.getMyClientName())
@@ -202,7 +221,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected String getScriptLocation(String scriptName) {
+    public String getScriptLocation(String scriptName) {
         String scriptPath = null;
         if (new File(scriptName).exists()) return scriptName;
         scriptPath = productSbinDir + scriptName;
@@ -295,6 +314,7 @@ public class SnappyTest implements Serializable {
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+                SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case LEAD:
@@ -305,7 +325,10 @@ public class SnappyTest implements Serializable {
                         " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
-                        " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter();
+                        " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
+                        " -spark.driver.extraClassPath=" + getStoteTestsJar() + " -spark.executor.extraClassPath=" + getStoteTestsJar();
+                Log.getLogWriter().info("SS - nodeLogDir for lead node is: " + nodeLogDir);
+                ;
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1290,7 +1313,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void executeProcess(ProcessBuilder pb, File logFile) {
+    public void executeProcess(ProcessBuilder pb, File logFile) {
         Process p = null;
         try {
             pb.redirectErrorStream(true);
@@ -1322,9 +1345,9 @@ public class SnappyTest implements Serializable {
                     .getVmDescription().getHostDescription();
             ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
             File log = new File(".");
+            pb.redirectErrorStream(true);
             String dest = log.getCanonicalPath() + File.separator + "PIDs.log";
             File logFile = new File(dest);
-            pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             pr = pb.start();
             pr.waitFor();
@@ -1419,7 +1442,7 @@ public class SnappyTest implements Serializable {
         int currentThread = snappyTest.getMyTid();
         String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
         SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile);
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(), jarPath);
     }
 
     /**
@@ -1536,7 +1559,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected String getLeadHost() {
+    public String getLeadHost() {
         if (isLongRunningTest) {
             leadHost = getLeadHostFromFile();
         } else leadHost = (String) SnappyBB.getBB().getSharedMap().get("leadHost");
@@ -1554,10 +1577,10 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void executeSnappyJob(Vector jobClassNames, String logFileName) {
+    public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar, String jarPath) {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         File log = null, logFile = null;
-        userAppJar = SnappyPrms.getUserAppJar();
+//        userAppJar = SnappyPrms.getUserAppJar();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         try {
@@ -1722,7 +1745,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected boolean getSnappyJobsStatus(String snappyJobScript, File logFile) {
+    public boolean getSnappyJobsStatus(String snappyJobScript, File logFile) {
         boolean found = false;
         try {
             String line = null;
@@ -1769,7 +1792,7 @@ public class SnappyTest implements Serializable {
         return found;
     }
 
-    protected synchronized void retrievePrimaryLeadHost() {
+    public synchronized void retrievePrimaryLeadHost() {
         Object[] tmpArr = null;
         tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
         List<ClientVmInfo> vmList;
@@ -1901,7 +1924,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected int getMyTid() {
+    public int getMyTid() {
         int myTid = RemoteTestModule.getCurrentThread().getThreadId();
         return myTid;
     }

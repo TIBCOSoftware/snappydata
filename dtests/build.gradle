@@ -28,6 +28,8 @@ compileScala.options.encoding = 'UTF-8'
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
 //sourceSets.test.resources.srcDirs 'src/resources'
+sourceSets.test.scala.srcDir "src/test/java"
+sourceSets.test.java.srcDirs = []
 
 
 repositories {
@@ -117,13 +119,13 @@ testClasses.doLast {
   copyTestsCommonResources(buildDir)
   if (new File(rootDir, 'store/build.gradle').exists()) {
     copy {
-      from (sourceSets.test.java.srcDirs) {
+      from ("src/test/java") {
           include '**/*.bt'
           include '**/*.conf'
           include '**/*.inc'
           include '**/*.sql'
       }
-      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
     }
   }
 }
