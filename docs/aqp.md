@@ -1,43 +1,38 @@
 # Overview of Synopsis Data Engine (SDE)#
 The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightening fast response time. 
 
-For instance, in exploratory analytics, a data engineer might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
+For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
 
 When accessed via a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds while the full answer CAN BE computed in the background. Depending on the immediate answer, users can opt to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer and if they are no longer interested in seeing the final results based on the initial results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.
 
 While in-memory analytics can be fast, it is still expensive and cumbersome to provision large clusters. Instead, SDE allows you to retain  data in existing databases and disparate sources and only caches a fraction of the data using stratified sampling and other techniques. In many cases, data explorers can use their laptops and run high speed interactive analytics over billions of records. Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for apriori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
 
 ## How does it work?
-The following diagram provides a simplified view how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. Think of these samples much like how a database would continuously update indexes (for optimization). With one difference - the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample.  
+The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. Think of these samples much like how a database would continuously update indexes (for optimization). With one difference - the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample.  
 ![SDE_Architecture](./Images/sde_architecture.png)
 
-##Synopsis Data Engine Technique: Stratified Sampling##
-###What is Sampling ?###
-One commonly-used technique for approximate results is sampling. For many aggregation queries, non-uniform (approximate) samples can provide more accurate approximations than a uniform sample. 
+## Key Concepts
+SnappyData SDE relies on two methods for approximations - Stratified sampling and Sketching techniques. We provide a brief introduction to these concepts below.
 
-For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
-Sampling provides a solution, where a small sample of data, which represents the entire data is randomly selected. In this case, a query is answered based on the pre-sampled small amount of data, and then scaled up based on the sample rate.
+###  Stratified sampling
+Sampling is quite intuitive and commonly used. The common practice is to do 'uniform random sampling' - as the term implies given a data set you simply pick a random fraction of the data. The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any datum being selected in the sample is the same (or uniform).
 
-The two techniques that the SnappyData AQP module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
+Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick 2 records in random. This is depicted in the figure below. 
+Unfortunately, if we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', our answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. But, if the data distribution along this 'GEO' dimension is very skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
+Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. 
+For instance, as shown in figure x below, a sample stratified on 'Geo' would provide a much better answer. 
 
-####Reservoir Sampling ####
-Reservoir Sampling is an algorithm for sampling elements from a stream of data, where a random sample of elements are returned, which are evenly distributed from the original stream.
+(DO WE HAVE ACCESS TO THE BARZAN'S BOOK CHAPTER ONLINE? IF SO, PROVIDE SUFFICIENT LINKS SO FOLKS CAN LEARN MORE)
 
-####Stratified Sampling ####
-Stratified sampling refers to a type of sampling method where the data is divided into separate groups, called strata. This method is used when there are different sub-groups in a population. 
+### Online Sampling
+SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs also to create a uniform random sample over static RDDs. For online sampling, SDE first builds a uniform random reservoir sample (Link) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 min time window while still ensuring that all GEOs have good representation in the sample. 
 
-The population is divided into several groups (strata), and subjects are then proportionately  selected from each strata.The members in each of the stratum formed have similar attributes and characteristics. In this method, it is critical that random samples are taken from each of the strata created, to increase accuracy of results. The goal of this sampling method is to guarantee that all groups in the population are adequately represented.
-
-For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
-This is illustrated in the following image.
-
-![Stratified Sampling](./Images/aqp_sampling.png)
+### Sketching
+While stratified sampling ensures that data dimensions with low representation is captured, it still doesn't work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most retweets in the last 5 mins' may not result in good answers. Instead we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that captures the how often we see an element in a stream for the top-N such elements. 
+While a Count-min-sketch is well described (Link), SDE extends this with support for providing top-K estimates over time series data. 
 
 
-###Key Concepts###
-**Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These database synopses are used when queries are issued to the system, and approximate results are returned.
-
-**Strata**:  A specific procedure for biased sampling, where the database is partitioned into different strata, and each stratum is uniformly sampled at different sampling rates.
 
 ###Create Sample Tables###
 
