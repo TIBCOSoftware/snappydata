@@ -92,16 +92,8 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  @transient private[this] var cachedBatchStatsSchema: PartitionStatistics = null
-  @transient private[this] val contextLock = new AnyRef
-  def getCachedBatchStatsSchema(schema: Seq[AttributeReference]) = {
-    if (cachedBatchStatsSchema == null) {
-      contextLock.synchronized {
-        if (cachedBatchStatsSchema == null)
-          cachedBatchStatsSchema = new PartitionStatistics(schema)
-      }
-    }
-    cachedBatchStatsSchema
+  def getCachedBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
+    new PartitionStatistics(schema)
   }
 
   override lazy val numPartitions: Int = {

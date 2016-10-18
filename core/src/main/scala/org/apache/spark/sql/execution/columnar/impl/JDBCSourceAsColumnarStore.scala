@@ -128,7 +128,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
     else new ByteArraysIteratorOnScan(container, bucketIds,
-      statsPredicate.generatePredicate, statsPredicate.schema.size)
+      statsPredicate.generatePredicate,
+      statsPredicate.schema.size)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

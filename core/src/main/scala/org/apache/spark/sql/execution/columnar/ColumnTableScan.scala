@@ -75,7 +75,7 @@ private[sql] final case class ColumnTableScan(
         (RDD[Any], Seq[RDD[InternalRow]]))
     extends PartitionedPhysicalScan(output, numPartitions, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],
-      requestedColumns,pushedFilters, allFilters, schemaAttributes, scanBuilder) {
+      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
 
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,

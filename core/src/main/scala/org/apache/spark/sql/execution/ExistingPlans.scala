@@ -52,17 +52,17 @@ private[sql] abstract class PartitionedPhysicalScan(
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
 
-  private val cachedBatchStatsSchema = if (this.isInstanceOf[ColumnTableScan]) {
+  private val cachedBatchStatistics = if (relation.isInstanceOf[BaseColumnFormatRelation]) {
     relation.asInstanceOf[BaseColumnFormatRelation].
-        getCachedBatchStatsSchema(schemaAttributes)
+        getCachedBatchStatistics(schemaAttributes)
   } else {
     null
   }
 
   def getCachedBatchStatsSchema: Seq[AttributeReference] =
-    if (cachedBatchStatsSchema != null) cachedBatchStatsSchema.schema else null
+    if (cachedBatchStatistics != null) cachedBatchStatistics.schema else null
 
-  private def statsFor(a: Attribute) = cachedBatchStatsSchema.forAttribute(a)
+  private def statsFor(a: Attribute) = cachedBatchStatistics.forAttribute(a)
 
   // Returned filter predicate should return false iff it is impossible for the input expression
   // to evaluate to `true' based on statistics collected about this partition batch.
@@ -102,20 +102,20 @@ private[sql] abstract class PartitionedPhysicalScan(
   // needs to be ready to use during the initialization of the base class and hence
   // it has to be here.
   val partitionFilters: Seq[Expression] = {
-    if (this.isInstanceOf[ColumnTableScan]) {
+    if (relation.isInstanceOf[BaseColumnFormatRelation]) {
       allFilters.flatMap { p =>
         val filter = buildFilter.lift(p)
         val boundFilter =
           filter.map(
             BindReferences.bindReference(
               _,
-              cachedBatchStatsSchema.schema,
+              cachedBatchStatistics.schema,
               allowFailures = true))
 
         boundFilter.foreach(_ =>
           filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
 
-        // If the filter can't be resolved then we are missing required statistics.
+        // If the filter can't be resolved th en we are missing required statistics.
         boundFilter.filter(_.resolved)
       }
     } else {
