@@ -6,9 +6,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData development team">
+  <meta name="author" content="SnappyData Development Team">
   
-  <title>Connecting using JDBC, Spark - SnappyData Docs - Preview release</title>
+  <title>Connecting using JDBC, Spark - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -45,7 +45,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -137,7 +137,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp/">Approximate query processing</a>
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
         
     </li>
 <li>
@@ -159,6 +159,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
         
     </li>
 <li>
@@ -188,7 +195,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Documentation</a>
       </nav>
 
       
@@ -222,7 +229,7 @@
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
 $ ../../bin/snappy-shell  
-Version 1.5.0-BETA
+Version 2.0-BETA
 snappy&gt; 
 
 //Connect to the cluster as a client  
@@ -261,7 +268,7 @@ scala&gt; val resultset = sqlContext.sql(&quot;select * from airline&quot;)
 <pre><code class="bash"># Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.2.1-PREVIEW.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.6.jar
 
 # The results can be seen on the command line.
 </code></pre>

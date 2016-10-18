@@ -6,9 +6,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData development team">
+  <meta name="author" content="SnappyData Development Team">
   
-  <title>Row and Column tables - SnappyData Docs - Preview release</title>
+  <title>Row and Column tables - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -45,7 +45,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -132,7 +132,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp/">Approximate query processing</a>
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
         
     </li>
 <li>
@@ -154,6 +154,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
         
     </li>
 <li>
@@ -183,7 +190,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Documentation</a>
       </nav>
 
       
@@ -211,8 +218,8 @@
               
                 <h3 id="row-and-column-tables">Row and column tables</h3>
 <p>Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
-<p>Row tables, unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.</p>
-<p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.</p>
+<p>Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.</p>
+<p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.</p>
 <h4 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for tables</h4>
 <pre><code>CREATE TABLE [IF NOT EXISTS] table_name
    (
@@ -242,7 +249,7 @@ DROP TABLE [IF EXISTS] table_name
 <p>But for column table it's restricted to Spark syntax for column definition e.g.</p>
 <pre><code>snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
 </code></pre>
-<p>Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. </p>
+<p>Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition. </p>
 <h5 id="spark-api-for-managing-tables">Spark API for managing tables</h5>
 <p>Get a reference to <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext">SnappyContext</a></p>
 <pre><code>val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
@@ -261,10 +268,10 @@ snc.createTable("row_table", "row", dataDF.schema, props)
 <pre><code>snc.dropTable(tableName, ifExists = true)
 </code></pre>
 <h5 id="ddl-extensions-to-snappystore-tables">DDL extensions to SnappyStore tables</h5>
-<p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified default values are attached. See next section for various restrictions. </p>
+<p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
 <ol>
-<li>COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist</li>
-<li>PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified it will be a replicated table.</li>
+<li>COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</li>
+<li>PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.</li>
 <li>BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.</li>
 <li>REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</li>
 <li>RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.</li>
@@ -274,7 +281,7 @@ snc.createTable("row_table", "row", dataDF.schema, props)
 <li>OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)</li>
 <li>EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.</li>
 </ol>
-<h5 id="restrictions-on-column-tables-in-the-preview-release">Restrictions on column tables in the preview release</h5>
+<h5 id="restrictions-on-column-tables-in-the-06-release">Restrictions on column tables in the 0.6 release</h5>
 <ol>
 <li>Column tables can not specify any primary key, unique key constraints.</li>
 <li>Index on column table is not supported.</li>
@@ -345,7 +352,7 @@ http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../aqp/" class="btn btn-neutral float-right" title="Approximate query processing">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../aqp/" class="btn btn-neutral float-right" title="Synopsis Data Engine (SDE)">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../jobs/" class="btn btn-neutral" title="Developing Apps using the Spark API"><span class="icon icon-circle-arrow-left"></span> Previous</a>

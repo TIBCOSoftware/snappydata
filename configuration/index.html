@@ -6,9 +6,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData development team">
+  <meta name="author" content="SnappyData Development Team">
   
-  <title>Configuring the cluster - SnappyData Docs - Preview release</title>
+  <title>Configuring the cluster - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -45,7 +45,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -134,7 +134,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp/">Approximate query processing</a>
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
         
     </li>
 <li>
@@ -156,6 +156,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
         
     </li>
 <li>
@@ -185,7 +192,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Documentation</a>
       </nav>
 
       
@@ -258,6 +265,11 @@ node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=nod
 </blockquote>
 <h4 id="environment-settings">Environment settings</h4>
 <p>Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in <em>SNAPPY_HOME/conf</em>. </p>
+<h5 id="hadoop-provided-settings">Hadoop Provided settings</h5>
+<p>If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without hadoop from the download link.
+This will allow you to provide hadoop at runtime.
+To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh an entry as below.</p>
+<p>export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)</p>
 <h4 id="per-component-configuration">Per Component Configuration</h4>
 <p>Most of the time, components would be sharing the same properties. For e.g. you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in conf/snappy-env.sh. </p>
 <pre><code class="bash">$ cat conf/snappy-env.sh

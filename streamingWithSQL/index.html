@@ -6,9 +6,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData development team">
+  <meta name="author" content="SnappyData Development Team">
   
-  <title>Stream processing using SQL - SnappyData Docs - Preview release</title>
+  <title>Stream processing using SQL - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -45,7 +45,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -121,7 +121,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp/">Approximate query processing</a>
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
         
     </li>
 <li>
@@ -176,6 +176,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -200,7 +207,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Documentation</a>
       </nav>
 
       
@@ -298,7 +305,7 @@ directory ''
 DROP TABLE [IF EXISTS] table_name
 
 // Initialize StreamingContext
-STREAMING INIT &lt;batchIntervalSeconds&gt;
+STREAMING INIT &lt;batchInterval&gt; [SECS|SECOND|MILLIS|MILLISECOND|MINS|MINUTE]
 
 // Start streaming
 STREAMING START
@@ -333,7 +340,7 @@ STREAMING STOP
 snappy&gt; connect client 'localhost:1527';
 
 // Initialize streaming with batchInterval of 2 seconds
-snappy&gt; streaming init 2;
+snappy&gt; streaming init 2secs;
 
 // Create a stream table
 snappy&gt; create stream table streamTable (id long, text string, fullName string, country string,
@@ -367,7 +374,7 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
 <h2 id="dynamicad-hoc-continuous-queries">Dynamic(ad-hoc) Continuous queries</h2>
 <p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
 <h2 id="what-is-currently-out-of-scope">What is currently out-of-scope?</h2>
-<p>Continuous Queries through command line(Snappy-Shell) </p>
+<p>Continuous Queries through command line(Snappy-Shell)</p>
               
             </div>
           </div>
@@ -378,7 +385,7 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
         <a href="../deployment/" class="btn btn-neutral float-right" title="Deployment topologies">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../aqp/" class="btn btn-neutral" title="Approximate query processing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../aqp/" class="btn btn-neutral" title="Synopsis Data Engine (SDE)"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

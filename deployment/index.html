@@ -6,9 +6,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData development team">
+  <meta name="author" content="SnappyData Development Team">
   
-  <title>Deployment topologies - SnappyData Docs - Preview release</title>
+  <title>Deployment topologies - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -45,7 +45,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -121,7 +121,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp/">Approximate query processing</a>
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
         
     </li>
 <li>
@@ -161,6 +161,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -185,7 +192,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Documentation</a>
       </nav>
 
       
@@ -253,7 +260,7 @@ The rationale for our design is further explored <a href="../architecture/">here
 <h3 id="fully-managed-spark-driver-and-context">Fully managed Spark driver and context</h3>
 <p>Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or manage the Spark context. Applications implement the <em>SnappySQLJob</em> or the <em>SnappyStreamingJob</em> trait as described in the <a href="../jobs/">Building Snappy applications using Spark API</a> section.</p>
 <h3 id="application-managed-spark-driver-and-context">Application managed Spark driver and context</h3>
-<p>While Snappy recommends the use of these above mentioned scala traits to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. </p>
+<p>While Snappy recommends the use of scala traits mentioned above to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. </p>
 <pre><code class="scala">val conf = new SparkConf().
               // here the locator url is passed as part of the master url
               setMasterURL(&quot;snappydata://localhost:10334&quot;).
@@ -264,7 +271,7 @@ val sc = new SparkContext(conf)
 <blockquote>
 <h3 id="note">Note</h3>
 <p>We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
-For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode(describe next). </p>
+For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode described next. </p>
 </blockquote>
 <h2 id="split-cluster-mode">Split cluster mode</h2>
 <p>In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. </p>

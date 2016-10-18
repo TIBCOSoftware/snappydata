@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Development Team">
+  
+  <title>Using iSight-Cloud - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Using iSight-Cloud";
+    var mkdocs_page_input_path = "aqp_aws.md";
+    var mkdocs_page_url = "/aqp_aws/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../build-instructions/">Building from source, project layout</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../snappyIntroduction/">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../features/">Key features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../jobs/">Developing Apps using the Spark API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Deployment topologies</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Using iSight-Cloud</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#overview-of-snappydata-isight-cloud">Overview of SnappyData iSight-Cloud</a></li>
+                
+                    <li><a class="toctree-l4" href="#key-components">Key Components</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#quick-start-steps">Quick Start Steps</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</a></li>
+                
+                    <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></li>
+                
+                    <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></li>
+                
+                    <li><a class="toctree-l4" href="#loading-data-from-aws-s3">Loading Data from AWS S3</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
+                
+                    <li><a class="toctree-l4" href="#using-the-interpreter">Using the Interpreter</a></li>
+                
+                    <li><a class="toctree-l4" href="#using-predefined-notebooks">Using Predefined Notebooks</a></li>
+                
+                    <li><a class="toctree-l4" href="#creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</a></li>
+                
+                    <li><a class="toctree-l4" href="#monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</a></li>
+                
+                    <li><a class="toctree-l4" href="#the-technology-powering-isight-cloud">The Technology Powering iSight Cloud</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Using iSight-Cloud</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="overview-of-snappydata-isight-cloud">Overview of SnappyData iSight-Cloud</h1>
+<p>iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (SDE), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
+<p>iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
+<p>The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
+With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
+<p>In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData Cloud cluster on AWS CloudFormation or on AWS using the EC2 script. </p>
+<p>Refer to the the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.</p>
+<h2 id="key-components">Key Components</h2>
+<p>This section provides a brief description of the key terms used in this document. </p>
+<ul>
+<li><strong>Amazon Web Services (AWS</strong>):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that are important for SnappyData are, Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).</li>
+<li><strong>SnappyData Cluster</strong>:  A database cluster which has three main components - Locator, Server and Lead</li>
+<li><strong>Apache Zeppelin</strong>: Apache Zeppelin is a web-based notebook that enables interactive data analytics. It allows you to make data-driven, interactive and collaborative documents with SQL queries or directly use the Spark API to process data.</li>
+<li><strong>Interpreters</strong>: A software module which is loaded into Apache Zeppelin upon startup. Interpreters allow various third party products including SnappyData to interact with Apache Zeppelin. The SnappyData interpreter gives users the ability to execute SQL queries or use the data frame API to visualize data.</li>
+</ul>
+<h1 id="quick-start-steps">Quick Start Steps</h1>
+<p>To understand the product follow these easy steps that can get you started quickly:</p>
+<ol>
+<li><a href="#SettingUp">Setting up SnappyData Cloud Cluster</a><ul>
+<li><a href="#DeployingClusterCloudFormation">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></li>
+<li><a href="#DeployingClusterScript">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></li>
+</ul>
+</li>
+<li><a href="#LoggingZeppelin">Using Apache Zeppelin</a>    <ul>
+<li><a href="#predefinednotebook">Using Predefined Notebook</a></li>
+<li><a href="#Creatingnotebook">Creating your own Notebook</a></li>
+</ul>
+</li>
+<li><a href="#dataAWSS3">Loading Data from AWS S3</a></li>
+<li><a href="#Monitoring">Monitoring SnappyData Cloud Cluster</a></li>
+</ol>
+<p><a id="SettingUp"></a></p>
+<h1 id="setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</h1>
+<p>This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using script.</p>
+<p><a id="DeployingClusterCloudFormation"></a></p>
+<h2 id="deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</h2>
+<p>Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.</p>
+<p><a href="https://www.youtube.com/watch?v=jbudjTqWsdI&amp;feature=youtu.be"><img alt="Cloudbuilder" src="../Images/aws_cloudbuildervideo.png" /></a></p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Before you begin, ensure that:</p>
+<ul>
+<li>You have an existing AWS account with required permissions to launch EC2 resources</li>
+<li>You have created an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster</li>
+</ul>
+<p>SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.</p>
+<p>It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.</p>
+<p>This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! </p>
+<h3 id="configuring-and-launching-the-snappydata-cloud-cluster">Configuring and Launching the SnappyData Cloud Cluster</h3>
+<p>Launch the iSight CloudBuilder from <a href="http://www.snappydata.io/cloudbuilder">http://www.snappydata.io/cloudbuilder</a>. </p>
+<ol>
+<li>
+<p>Enter the name for your cluster. Each cluster is identified by it’s unique name. 
+The names and details of the members are automatically derived from the provided cluster name. <br>
+<img alt="STEP" src="../Images/AWS_clustername.png" /></p>
+</li>
+<li>
+<p>Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
+Refer to the Amazon documentation for more information on  <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html">generating your own key pair</a>.<br> 
+<img alt="STEP" src="../Images/aws_ec2keypair.png" /></p>
+</li>
+<li>
+<p>Select an instance based on the capacity that you require. 
+<img alt="STEP" src="../Images/aws_instancetype.png" /></p>
+</li>
+<li>
+<p>Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the <strong>EBS Volume Size(gigabytes)</strong> field.<br />
+<img alt="STEP" src="../Images/aws_ebsvolumesize.png" /></p>
+<blockquote>
+<p>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. </p>
+</blockquote>
+</li>
+<li>
+<p>Enter your email address.  <br>
+<img alt="STEP" src="../Images/aws_email.png" /></p>
+</li>
+<li>
+<p>Click <strong>Generate</strong>. </p>
+</li>
+<li>
+<p>On the next page, select the AWS region, and then click <strong>Launch Cluster</strong> to launch your single-node cluster. <br>
+<img alt="STEP" src="../Images/aws_selectedregion.png" /></p>
+<blockquote>
+<p>Note: </p>
+<ul>
+<li>
+<p>Use the key pair that exists in the region selected.</p>
+</li>
+<li>
+<p>If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br></p>
+</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>On the <strong>Select Template page</strong>, the URL for the Amazon S3 template is pre-populated. Click <strong>Next</strong> to continue.   <br>
+<img alt="STEP" src="../Images/aws_selecttemplate.png" /></p>
+</li>
+<li>
+<p>You can change the stack name or click <strong>Next</strong> to use the provided default value.</p>
+<blockquote>
+<p>Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</p>
+</blockquote>
+</li>
+<li>
+<p>Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Review</strong> page, verify the details and click <strong>Create</strong> to create a stack. </p>
+<blockquote>
+<p>Note: This operation may take a few minutes to complete. </p>
+</blockquote>
+</li>
+<li>
+<p>The next page lists the existing stacks. Click <strong>Refresh</strong> to view the updated list and the status of the stack creation. 
+When the cluster has started, the status of the stack changes to <strong>CREATE_COMPLETE</strong>. <br>
+<img alt="Refresh" src="../Images/aws_refreshstack.png" /></p>
+</li>
+</ol>
+<p><a id="Stack"></a>
+13. Click on the <strong>Outputs</strong> tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+    <img alt="Public IP" src="../Images/aws_links.png" /></p>
+<p>For more information, refer to the <a href="#LoggingZeppelin">Apache Zeppelin</a> section or refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>.</p>
+<blockquote>
+<p>Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</p>
+</blockquote>
+<p><a id="DeployingClusterScript"></a></p>
+<h2 id="deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</h2>
+<h3 id="prerequisites_1">Prerequisites</h3>
+<p>Before you begin, do the following:</p>
+<ul>
+<li>
+<p>Ensure you have an existing AWS account with required permissions to launch EC2 resources.</p>
+</li>
+<li>
+<p>EC2 key pair created in the region where you want to launch the SnappyData cluster.</p>
+</li>
+<li>
+<p>Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, <code>AWS_SECRET_ACCESS_KEY</code> and <code>AWS_ACCESS_KEY_ID</code>.</p>
+<p>If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file. You can find this information from the AWS IAM console.</p>
+<p>For example:  <br />
+<code>export   AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112</code>
+<code>export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10</code></p>
+</li>
+<li>
+<p>Ensure Python v 2.7 or later is installed on your local computer.</p>
+</li>
+</ul>
+<p>SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2). </p>
+<p>Download the script from the <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-ec2-0.6.tar.gz">SnappyData Release page</a>. 
+The package is available in compressed files (<strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong>). Extract the contents to a location on your computer.</p>
+<h3 id="launching-snappydata-cluster">Launching SnappyData Cluster</h3>
+<p>To execute the script:</p>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted, and enter the following:</p>
+<p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
+<p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 key pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file, <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>
+<p>By default, the script starts one instance of the locator, lead and server. 
+The script identifies each cluster by it's unique cluster name, and internally ties members (locators, leads and stores/servers) of the cluster with EC2 security groups. </p>
+<p>The  names and details of the members are automatically derived from the provided cluster name. </p>
+<p>For example, if you launch a cluster named <strong>my-cluster</strong>, the locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
+<p>When running the script you can also specify properties like number of stores and region.
+For example, using the following command, you can start a SnappyData cluster named <strong>snappydata-cluster</strong> with 2 stores (or servers) in the default N. Virginia (us-east-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.</p>
+<pre><code>./snappy-ec2 -k ec2-keypair-name -i /path/to/keypair/private/key/file --stores=2 --with-zeppelin=embedded launch snappydata-cluster 
+</code></pre>
+
+<p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>. </p>
+<p>For comprehensive list of command options, run <code>./snappy-ec2</code> in the command prompt.</p>
+<p><a id="dataAWSS3"></a></p>
+<h2 id="loading-data-from-aws-s3">Loading Data from AWS S3</h2>
+<p>SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). </p>
+<blockquote>
+<p>Note:</p>
+<ul>
+<li>
+<p>The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html">documentation provided by Amazon S3</a> for detailed information on creating a bucket, adding files and setting required permissions.</p>
+</li>
+<li>
+<p>You can also find AWS related information on the AWS homepage, from the <strong>Account</strong> &gt; <strong>Security Credentials</strong> &gt; <strong>Access Credentials</strong> option.</p>
+</li>
+<li>
+<p>Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.</p>
+</li>
+</ul>
+</blockquote>
+<p>To define a table that references the data in AWS S3, create a paragraph in the following format:</p>
+<pre><code>%sql
+DROP TABLE IF EXISTS &lt;table_name&gt; ;
+CREATE EXTERNAL TABLE &lt;table_name&gt; USING parquet OPTIONS(path '&lt;AWS_SECRET_ACCESS_KEY&gt;:&lt;AWS_ACCESS_KEY_ID&gt;@&lt;bucket_Name&gt;/&lt;folder_name&gt;');
+</code></pre>
+
+<p>The values are:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Property</strong></th>
+<th><strong>Description/Value</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;table_name&gt;</code></td>
+<td>The name of the table</td>
+</tr>
+<tr>
+<td><code>&lt;AWS_SECRET_ACCESS_KEY&gt;:&lt;AWS_ACCESS_KEY_ID&gt;</code></td>
+<td>Security credentials used to authenticate and authorize calls that you make to AWS.</td>
+</tr>
+<tr>
+<td><code>&lt;bucket_Name&gt;</code></td>
+<td>The name of the bucket where the folder is located. Default value: zeppelindemo</td>
+</tr>
+<tr>
+<td><code>&lt;folder_name&gt;</code></td>
+<td>The folder name where the data is stored. Default value: nytaxifaredata</td>
+</tr>
+</tbody>
+</table>
+<p><a id="LoggingZeppelin"></a></p>
+<h1 id="using-apache-zeppelin">Using Apache Zeppelin</h1>
+<p>Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
+Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://<code>&lt;zeppelin_host&gt;</code>:<code>&lt;port_number&gt;</code>. The welcome page which lists existing notebooks is displayed.<br />
+SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see <a href="#predefinednotebook">Using Predefined Notebooks</a>.</p>
+<p>Refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>, for more information.</p>
+<h2 id="using-the-interpreter">Using the Interpreter</h2>
+<p>Snappydata Interpreter group consists of the interpreters <code>%snappydata.spark</code> and <code>%snappydata.sql</code>.
+To use an interpreter, add the associated interpreter directive with the format, <code>%&lt;Interpreter_name&gt;</code> at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.</p>
+<blockquote>
+<p>Note:</p>
+<ul>
+<li>The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</li>
+<li>It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.</li>
+</ul>
+</blockquote>
+<h3 id="sql-interpreter">SQL Interpreter</h3>
+<p>The <code>%snappydata.sql</code> code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.</p>
+<h4 id="multi-line-statements">Multi-Line Statements</h4>
+<p>Multi-line statements as well as multiple statements on the same line are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.</p>
+<p>SnappyData provides a list of connection-specific SQL properties that can be applied to the paragraph that is executed. </p>
+<p>In the following example, <code>spark.sql.shuffle.partitions</code> allows you to specify the number of partitions to be used for this query:</p>
+<pre><code>%sql
+set spark.sql.shuffle.partitions=6; 
+select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
+</code></pre>
+
+<h4 id="snappydata-directives-in-apache-zeppelin">SnappyData Directives in Apache Zeppelin</h4>
+<p>You can execute approximate queries on SnappyData cluster by using the <code>%sql show-instant-results-first</code> directive. 
+In this case, the query is first executed on the sample table and the approximate result is displayed, after which the query is run on the base table. Once the query is complete, the approximate result is replaced with the actual result.</p>
+<p>In the following example, you can see that the query is first executed on the sample table, and the time required to execute the query is displayed. 
+At the same time, the query is executed on the base table, and the total time required to execute the query on the base table is displayed.</p>
+<pre><code>%sql show-instant-results-first
+select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude &lt; 40.767588 and pickup_latitude &gt; 40.749775 and pickup_longitude &gt; -74.001632 and  pickup_longitude &lt; -73.974595 and dropoff_latitude &gt; 40.716800 and  dropoff_latitude &lt;  40.717776 and dropoff_longitude &gt;  -74.017682 and dropoff_longitude &lt; -74.000945 group by hour(pickup_datetime);
+</code></pre>
+
+<p><img alt="Example" src="../Images/DirectivesinApacheZeppelin.png" /></p>
+<blockquote>
+<p>Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.</p>
+</blockquote>
+<h3 id="scala-interpreter">Scala Interpreter</h3>
+<p>The <code>%snappydata.spark</code> code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
+SnappyContext is injected in this interpreter and can be accessed using variable <strong>snc</strong>.</p>
+<p><a id="predefinednotebook"></a></p>
+<h2 id="using-predefined-notebooks">Using Predefined Notebooks</h2>
+<p>SnappyData provides you predefined notebooks <strong>NYCTAXI Analytics</strong> and <strong>Airline Data Analytics</strong> which contains definitions that are stored in a single file. </p>
+<p>When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. </p>
+<p><a id="Creatingnotebook"></a></p>
+<h2 id="creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</h2>
+<ol>
+<li>Log on to Apache Zeppelin, create a notebook and insert a new paragraph.</li>
+<li>Use <code>%snappydata.spark</code> for SnappyData interpreter or use <code>%snappydata.sql</code> for SQL interpreter.</li>
+<li>Download a dataset you want to use and create tables as mentioned below</li>
+</ol>
+<h3 id="examples-of-queries-and-results">Examples of Queries and Results</h3>
+<p>This section provides you with examples you can use in a paragraph.</p>
+<ul>
+<li>In this example, you can create tables using external dataset from AWS S3.</li>
+</ul>
+<p><img alt="Example" src="../Images/sde_exampleusingexternaldatabase.png" /></p>
+<ul>
+<li>In this example, you can execute a query on a base table using the SQL interpreter. It returns the number of rides per week. </li>
+</ul>
+<p><img alt="Example" src="../Images/sde_exampleSQLnoofridesbase.png" /></p>
+<ul>
+<li>In this example, you can execute a query on a sample table using the SQL interpreter. It returns the number of rides per week</li>
+</ul>
+<p><img alt="Example" src="../Images/sde_exampleSQLnoofridessample.png" /></p>
+<ul>
+<li>In this example, you are processing data using the SnappyData Scala interpreter.</li>
+</ul>
+<p><img alt="Example" src="../Images/sde_exampledatausingSnappyDataScala.png" /></p>
+<ul>
+<li>Apache Zeppelin allows you to dynamically create input fields. To create a text input field, use <code>${fieldname}</code>.
+In this example, the input forms are, <code>${taxiin=60} or taxiout &gt; ${taxiout=60}</code></li>
+</ul>
+<p><img alt="Dynamic Form" src="../Images/aqp_dynamicform.png" /></p>
+<p><a id="Monitoring"></a></p>
+<h2 id="monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</h2>
+<p>You can monitor the SnappyData cluster using SnappyData Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.</p>
+<p>The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members and tables. 
+It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.<br />
+It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.</p>
+<p>The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.</p>
+<h4 id="accessing-the-console">Accessing the Console</h4>
+<p>To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: </p>
+<ol>
+<li>Click on the <strong>Spark UI</strong> or <strong>Pulse</strong> links provided in the paragraph. 
+<img alt="Launch Spark " src="../Images/aws_pulsespark.png" /></li>
+<li>For the SnappyData Pulse console, enter the default login credentials "admin" as both the user name and password.</li>
+<li>Once you have logged in, you can start monitoring SnappyData cluster. </li>
+</ol>
+<h2 id="the-technology-powering-isight-cloud">The Technology Powering iSight Cloud</h2>
+<p>iSight Cloud uses the SnappyData Synopsis Engine to deliver blazing fast responses to queries that have long processing times. Analytic queries typically aim to provide aggregate information and involve full table or partial table scans. The cost of these queries is directly proportional to the amount of data that needs to be scanned. Analytics queries also often involve distributed joins of a dimension table with one or more fact tables. The cost of pruning these queries down to the final result is directly proportional to the size of the data involved. Distributed joins involve lots of data movement making such queries extremely expensive in traditional systems that process the entire data set.</p>
+<p>The Synopsis Data Engine offers a breakthrough solution to these problems by building out stratified samples of the most common columns used in queries, as well as other probabilistic data structures like count-min-sketch, bloom filters etc. The use of these structures, along with extensions to the querying engine allow users to get almost-perfect answers to complex queries in a fraction of the time it used to take to answer these queries.</p>
+<p>For more information on SDE and sampling techniques used by SnappyData, refer to the <a href="../aqp/">SDE documentation</a>. </p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../LICENSE/" class="btn btn-neutral float-right" title="License">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../apidocsintro/" class="btn btn-neutral" title="API"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../apidocsintro/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../LICENSE/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>
