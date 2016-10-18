@@ -25,6 +25,7 @@ import java.util.{Map => JMap, Properties}
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Random
 import scala.util.control.NonFatal
 
@@ -54,13 +55,14 @@ import org.apache.spark.streaming.kafka.{KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
 
+
 class SnappyStreamingSuite
     extends SnappyFunSuite with Eventually
     with BeforeAndAfter with BeforeAndAfterAll{
 
   private var kc: KafkaCluster = null
 
-  private var kafkaUtils: EmbeddedKafkaUtils = _
+  protected var kafkaUtils: EmbeddedKafkaUtils = _
 
   override def beforeAll() {
     kafkaUtils = new EmbeddedKafkaUtils
@@ -176,16 +178,9 @@ class SnappyStreamingSuite
     }
   }
 
-  test("SnappyData Direct Kafka Streaming with two topics") {
+  test("Test stream plan optimizations") {
     val topic1 = "direct_kafka_topic1"
     kafkaUtils.createTopic(topic1)
-    val sent1 = Map("da1,pa1" -> 1, "db1,pb1" -> 1, "dc1,pc1" -> 1)
-    kafkaUtils.sendMessages(topic1, sent1)
-
-    val topic2 = "direct_kafka_topic2"
-    kafkaUtils.createTopic(topic2)
-    val sent2 = Map("da2,pa2" -> 1, "db2,pb2" -> 1, "dc2,pc2" -> 1)
-    kafkaUtils.sendMessages(topic2, sent2)
 
     val add = kafkaUtils.brokerAddress
     ssnc.sql("create stream table directKafkaStream (" +
@@ -193,25 +188,33 @@ class SnappyStreamingSuite
         " using directkafka_stream options(" +
         " rowConverter 'org.apache.spark.sql.streaming.RowsConverter' ," +
         s" kafkaParams 'metadata.broker.list->$add;auto.offset.reset->smallest'," +
-        s" topics '$topic1,$topic2')")
+        s" topics '$topic1')")
 
-    val result = new mutable.HashMap[String, Long]()
-    val cqResults = ssnc.registerCQ("select publisher, advertiser from " +
-        "directKafkaStream window (duration 1 seconds, slide 1 seconds)")
+    val result = new scala.collection.mutable.HashMap[String, Long]()
+
+    val cqResults = ssnc.registerCQ("select publisher from" +
+        " directKafkaStream window (duration 1 seconds, slide 1 seconds)" +
+        " where publisher like '%77%'")
+
     cqResults.foreachDataFrame { df =>
       df.collect().foreach { row =>
         result.synchronized {
-          val key = s"${row.getString(0)},${row.getString(1)}"
+          val key = s"${row.getString(0)}"
           result.put(key, result.getOrElse(key, 0L) + 1)
         }
       }
     }
 
     ssnc.start()
-    val sent = Map(
-      "da1,pa1" -> 1, "db1,pb1" -> 1, "dc1,pc1" -> 1,
-      "da2,pa2" -> 1, "db2,pb2" -> 1, "dc2,pc2" -> 1)
-    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
+    val sent1 = Map("pub1,adv1,1" -> 1, "pub2,adv2,2" -> 1, "pub3,adv3,3" -> 1)
+    kafkaUtils.sendMessages(topic1, sent1)
+    val sent2 = Map("pub4,adv4,4" -> 1, "pub5,adv5,5" -> 1, "pub6,adv6,6" -> 1)
+    kafkaUtils.sendMessages(topic1, sent2)
+    val sent3 = Map("pub7,adv7,7" -> 1, "pub8,adv8,8" -> 1, "pub9,adv9,9" -> 1, "pub77,adv77,77" -> 1)
+    kafkaUtils.sendMessages(topic1, sent3)
+
+    val sent = Map("pub77" -> 1)
+    eventually(timeout(4000 milliseconds), interval(200 milliseconds)) {
       assert(result.synchronized {
         sent === result
       })
@@ -435,7 +438,7 @@ class SnappyStreamingSuite
 
     val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
-    df.registerTempTable("tweetTable")
+    df.createOrReplaceTempView("tweetTable")
 
     val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
         "(duration 2 seconds, slide 1 seconds) " +
@@ -527,7 +530,7 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
     rows
   }
 }
-private class EmbeddedKafkaUtils extends Logging {
+protected class EmbeddedKafkaUtils extends Logging {
 
   // Zookeeper related configurations
   private val zkHost = "localhost"
