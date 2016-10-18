@@ -40,7 +40,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
   override def beforeClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
     bootProps.setProperty("eviction-heap-percentage", "20")
-    bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "700")
+    bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "500")
     super.beforeClass()
   }
 
