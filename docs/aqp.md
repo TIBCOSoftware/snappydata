@@ -42,17 +42,23 @@ You can create sample tables on datasets that can be sourced from any source sup
 Here is an SQL based example to create sample on tables locally available in the Snappydata cluster. 
 
 ```
-CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') AS (SELECT * FROM NYCTAXI);
+CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  
+  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
+  AS (SELECT * FROM NYCTAXI);
 
-CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
+  OPTIONS (qcs 'hack_license', fraction '0.01') 
+  AS (SELECT * FROM TAXIFARE);
 ```
 Often your data set is too large to also fit in available cluster memory. If so, you can create a external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:
 
 ```
-CREATE EXTERNAL TABLE TAXIFARE USING parquet OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
-
-CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+CREATE EXTERNAL TABLE TAXIFARE USING parquet 
+  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+//Next, create the sample sourced from this table ..
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
+  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 
 ```
 
@@ -73,7 +79,7 @@ Here are some general guidelines to use when creating samples:
 * Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
 * Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a timestamp and is not a good candidate given its likelyhood of high cardinality. i.e. there is possibility that each record in the data set has a different timestamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
 * when accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system will automatically pick the appropriate sample. 
-* <more to come >
+* ..more to come..
 
 > #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 
@@ -85,7 +91,7 @@ Queries can be executed directly on sample tables or on the base table. Any quer
 Here is the syntax:
 
 #### SELECT ... FROM .. WHERE .. GROUP BY ...
-    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`####
+####    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
@@ -150,12 +156,18 @@ set spark.sql.aqp.behavior=$behavior;
 create a sample table with qcs 'medallion'
 
 ```
-CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
+  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
 ```
 
 **SQL Query:**
 ```
-select medallion,avg(trip_distance) as avgTripDist,absolute_error(avgTripDist),relative_error(avgTripDist),lower_bound(avgTripDist),upper_bound(avgTripDist) from nyctaxi group by medallion order by medallion desc limit 100 with error;
+select medallion,avg(trip_distance) as avgTripDist,
+  absolute_error(avgTripDist),relative_error(avgTripDist),
+  lower_bound(avgTripDist),upper_bound(avgTripDist) 
+  from nyctaxi group by medallion order by medallion desc limit 100
+  with error;
+  // We explain these built-in error functions in a section below.
 ```
 
 **DataFrame API Query:**
@@ -217,11 +229,12 @@ snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_dis
 ```
 
 ##Sample Selection:##
-Sample selection logic selects most appropriate table, based on the following logic:
 
-* If query QCS is exactly the same as a sample of the given QCS, then, that sample gets selected
-* If exact match is not available, then, if the QCS of the sample is a superset of query QCS, that sample is used
-* If superset of sample QCS is not available, a sample where the sample QCS is subset of query, QCS is used
+Sample selection logic selects most appropriate sample, based on the following logic:
+
+* If query QCS (columns involved in Where/GroupBy/Having is exactly the same as QCS in a sample, then, select that sample
+* If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used
+* If superset of sample QCS is not available, a sample where the sample QCS is subset of query QCS is used
 
 When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
 
@@ -234,7 +247,7 @@ This is illustrated in the following image:
 ###High-level Accuracy Contracts (HAC)###
 SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
 
-When an error requirement is not met, the action to be taken is defined in the behavior clause. 
+When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
 ####Behaviour Clause####
 Approximate queries have HAC support using the following behavior clause. 
@@ -317,8 +330,8 @@ rowCount returns estimate of number of rows in airline table.
 sample_count returns number of rows (true answer) in sample table of airline table.
 
 
-## Synopsis Data Engine Technique: Sketching##
-Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
+## Sketching 
+Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures much more useful. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
 
 ### Creating TopK tables###
 TopK queries are used to rank attributes to answer "best, most interesting, most important" class of questions. TopK structures store elements ranking them based on their relevance to the query. [TopK](http://stevehanov.ca/blog/index.php?id=122) queries aim to retrieve, from a potentially very large resultset, only the *k (k >= 1)* best answers.
