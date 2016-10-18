@@ -53,7 +53,7 @@ object SnappyTableStatsProviderService extends Logging {
         var logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
         override def run2(): Unit = {
-          tableSizeInfo = getAggregatedTableStatsOnDemand()
+          tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
         }
 
         override def getLoggerI18n: LogWriterI18n = {
@@ -96,12 +96,12 @@ object SnappyTableStatsProviderService extends Logging {
   }
 
 
-  def getAggregatedTableStatsOnDemand(): Map[String, SnappyRegionStatsCollectorResult] = {
+  def getAggregatedTableStatsOnDemand(sc: SparkContext):
+  Map[String, SnappyRegionStatsCollectorResult] = {
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = collection.mutable.Map[String, SnappyRegionStatsCollectorResult]()
-    val ss = SnappyContext(SnappyContext.globalSparkContext).sessionState
-    val samples = ss.catalog.getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
-
+    val snc = SnappyContext(sc)
+    val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
       val tableName = stat.getRegionName
       if (!samples.contains(tableName)) {
@@ -114,6 +114,16 @@ object SnappyTableStatsProviderService extends Logging {
       }
     })
     Utils.immutableMap(aggregatedStats)
+  }
+
+  private def getSampleTableList(snc: SnappyContext): Seq[String] = {
+    try {
+      snc.sessionState.catalog
+          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString()).toSeq
+    } catch {
+      case tnfe: org.apache.spark.sql.TableNotFoundException =>
+        Seq.empty[String]
+    }
   }
 
   private def getTableStatsFromAllServers: Seq[SnappyRegionStatsCollectorResult] = {

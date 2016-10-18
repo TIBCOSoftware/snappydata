@@ -25,6 +25,7 @@ import scala.xml.Node
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStatsCollectorResult
 import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
@@ -34,7 +35,8 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   val numFormatter = java.text.NumberFormat.getIntegerInstance
 
   def render(request: HttpServletRequest): Seq[Node] = {
-    val uiDisplayInfo = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand()
+    val uiDisplayInfo = SnappyTableStatsProviderService
+        .getAggregatedTableStatsOnDemand(SnappyContext.globalSparkContext)
 
     val nodes = if (!uiDisplayInfo.isEmpty) {
       <span>
@@ -46,7 +48,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
 
   }
 
-  private def header = Seq("Table Name", "Table Type" , "Memory Used" , "Total Rows")
+  private def header = Seq("Table Name", "Table Type", "Memory Used", "Total Rows")
 
 
   private def rowTable(stats: SnappyRegionStatsCollectorResult) = {
@@ -56,7 +58,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
         {stats.getRegionName}
       </td>
       <td sorttable_customkey={columnTable}>
-        {columnTable }
+        {columnTable}
       </td>
       <td sorttable_customkey={stats.getSizeInMemory.toString}>
         {Utils.bytesToString(stats.getSizeInMemory)}

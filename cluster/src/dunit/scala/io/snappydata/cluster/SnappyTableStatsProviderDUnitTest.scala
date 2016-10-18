@@ -35,7 +35,6 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val currentLocatorPort = ClusterManagerTestBase.locPort
-  val expectedRowCount = 1888622
 
   override def beforeClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
@@ -91,6 +90,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
   def testVerifyTableStatsEvictionAndHA(): Unit = {
     val props = bootProps
     val port = currentLocatorPort
+    val expectedRowCount = 1888622
 
     val snc = SnappyContext(sc).newSession()
     val table = "TEST.TEST_TABLE"
@@ -201,7 +201,8 @@ object SnappyTableStatsProviderDUnitTest {
     val isReplicatedTable = if (tableType.equals("R")) true else false
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
-    def actual = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand().get(table).get
+    def actual = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand(snc.sparkContext).get(table).get
 
 
     assert(actual.getRegionName == expected.getRegionName)
