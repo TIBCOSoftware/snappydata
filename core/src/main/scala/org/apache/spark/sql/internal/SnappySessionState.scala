@@ -20,15 +20,18 @@ package org.apache.spark.sql.internal
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, Alias, Attribute, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.execution.python.ExtractPythonUDFFromAggregate
+import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
+import org.apache.spark.streaming.Duration
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -57,6 +60,45 @@ class SnappySessionState(snappySession: SnappySession)
         datasources.PreWriteCheck(conf, catalog), PrePutCheck)
     }
   }
+
+  override lazy val optimizer: SparkOptimizer = {
+    new SparkOptimizer(catalog, conf, experimentalMethods) {
+      override def batches: Seq[Batch] = super.batches :+
+          Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan)
+    }
+  }
+
+  object PushDownWindowLogicalPlan extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      var duration : Duration = null
+      var slide : Option[Duration] = None
+      var transformed: Boolean = false
+      plan transformDown {
+        case r@WindowLogicalPlan(_, _, LogicalRelation(t: StreamPlan, _, _), false) => r
+        case p@WindowLogicalPlan(_, _, LogicalDStreamPlan(_, _), false) => p
+        case w@WindowLogicalPlan(d, s, child, false) =>
+          duration = d
+          slide = s
+          transformed = true
+          w.child
+        case l@LogicalRelation(t: StreamPlan, _, _) =>
+          if (transformed) {
+            transformed = false
+            WindowLogicalPlan(duration, slide, l, true)
+          } else {
+            l
+          }
+        case y@LogicalDStreamPlan(_, _) =>
+          if (transformed) {
+            transformed = false
+            WindowLogicalPlan(duration, slide, y, true)
+          } else {
+            y
+          }
+      }
+    }
+  }
+
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -278,4 +320,3 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
-
