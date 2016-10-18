@@ -22,7 +22,7 @@ One commonly-used technique for approximate results is sampling. For many aggreg
 For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
 Sampling provides a solution, where a small sample of data, which represents the entire data is randomly selected. In this case, a query is answered based on the pre-sampled small amount of data, and then scaled up based on the sample rate.
 
-The two techniques that the SnappyData AQP module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
+The two techniques that the SnappyData SDE module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
 
 ####Reservoir Sampling ####
 Reservoir Sampling is an algorithm for sampling elements from a stream of data, where a random sample of elements are returned, which are evenly distributed from the original stream.
@@ -243,7 +243,7 @@ SnappyData combines state-of-the-art approximate query processing techniques and
 When an error requirement is not met, the action to be taken is defined in the behavior clause. 
 
 ####Behaviour Clause####
-Approximate queries have HAC support using the following behavior clause. 
+Synopsis Data Engine has HAC support using the following behavior clause. 
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 

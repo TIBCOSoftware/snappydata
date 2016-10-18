@@ -15,7 +15,7 @@ The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are cap
 
 To support replica consistency, fast point updates, and instantaneous detection of failure conditions in the cluster, we use a P2P (peer-to-peer) cluster membership service that ensures view consistency and virtual synchrony in the cluster. Any of the in-memory tables can be synchronously replicated using this P2P cluster.
 
-In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for approximate query processing (AQP) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
+In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for Synopsis Data Engine (SDE)) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
 
 To understand the data flow architecture, we first walk through a real time use case that involves stream processing, ingesting into an in-memory store and interactive analytics. 
 
@@ -39,7 +39,7 @@ The data pipeline involving analytics while streams are being ingested and subse
 
 5. To prevent running out of memory, tables can be configured to evict or overflow to disk using an LRU strategy. For instance, an application may ingest all data into HDFS while preserving the last day’s worth of data in memory.
 
-6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use approximate query processing to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
+6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use Synopsis Data Engine to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
 
 
 ### Hybrid Cluster Manager
