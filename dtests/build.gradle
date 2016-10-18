@@ -61,6 +61,7 @@ dependencies {
        exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
     }
     if (new File(rootDir, 'spark/build.gradle').exists()) {
+        testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
         compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
         compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
         compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
