@@ -62,10 +62,10 @@ The names and details of the members are automatically derived from the provided
 ![STEP](./Images/AWS_clustername.png)
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
-Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>  
+Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br> 
 ![STEP](./Images/aws_ec2keypair.png)
 
- 3. Select an instance based on the capacity that you require. <br>
+3. Select an instance based on the capacity that you require. 
 ![STEP](./Images/aws_instancetype.png)
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
@@ -76,7 +76,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 ![STEP](./Images/aws_email.png)
 
 6. Click **Generate**. 
-7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. 	
+7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. 
 > Note: 
 	
 	> * Use the key pair that exists in the region selected.
