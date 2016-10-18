@@ -237,7 +237,7 @@ snsc.start()
 
 snsc.sql("select count(*) from streamingExample").show()
 ```
-> Note - Currently Snappy dont have Python API's added for continuous queries and AQP/Sampling.
+> Note - Currently Snappy dont have Python API's added for continuous queries and SDE/Sampling.
 
 ### Running Spark programs inside the database
 

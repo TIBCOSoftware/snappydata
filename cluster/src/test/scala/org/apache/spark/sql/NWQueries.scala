@@ -590,14 +590,14 @@ object NWQueries extends SnappyFunSuite {
       numPartitions: Int, c: Class[_]): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
-    assert(df.count() == numRows,
-      "Mismatch got df.count ->" + df.count() + " but expected numRows ->"
-          + numRows + " for queryNum= " + queryNum)
+    val count = df.count()
+    assert(count == numRows,
+      "Mismatch got df.count -> " + count + " but expected numRows -> "
+          + numRows + " for queryNum = " + queryNum)
   }
 
-  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String, numRows: Int,
-      numPartitions: Int, c: Class[_]): Any = {
-    val df = snc.sql(sqlString)
+  private def assertQueryCommon(df: DataFrame, sqlString: String,
+      queryNum: String, numRows: Int, c: Class[_]): Any = {
     val physical = df.queryExecution.sparkPlan
     val operators = physical.collect {
       case j: ProjectExec => j
@@ -612,17 +612,36 @@ object NWQueries extends SnappyFunSuite {
       case j: SubqueryExec => j
       case j: UnionExec => j
     }
-    if (operators(0).getClass() != c) {
+    if (operators.head.getClass != c) {
       throw new IllegalStateException(s"$sqlString expected operator: $c," +
-          s" but got ${operators(0)}\n physical: \n$physical")
+          s" but got ${operators.head}\n physical: \n$physical")
     }
-    assert(df.count() == numRows,
-      "Mismatch got df.count ->" + df.count() + " but expected numRows ->" + numRows
-          + " for queryNum =" + queryNum)
-
-    assert(df.rdd.partitions.length == numPartitions,
-      "Mismatch got df.rdd.partitions.length ->" + df.rdd.partitions.length +
-          " but expected numPartitions ->" + numPartitions + " for queryNum =" + queryNum)
+    val count = df.count()
+    assert(count == numRows,
+      "Mismatch got df.count -> " + count + " but expected numRows -> " +
+          numRows + " for queryNum = " + queryNum)
   }
 
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
+      numRows: Int, numPartitions: Int, c: Class[_]): Any = {
+    val df = snc.sql(sqlString)
+    assertQueryCommon(df, sqlString, queryNum, numRows, c)
+
+    assert(df.rdd.partitions.length == numPartitions,
+      "Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+          " but expected numPartitions -> " + numPartitions +
+          " for queryNum = " + queryNum)
+  }
+
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
+      numRows: Int, numPartitions: Array[Int], c: Class[_]): Any = {
+    val df = snc.sql(sqlString)
+    assertQueryCommon(df, sqlString, queryNum, numRows, c)
+
+    val rddNumPartitions = df.rdd.partitions.length
+    assert(numPartitions.contains(rddNumPartitions),
+      "Mismatch got df.rdd.partitions.length -> " + rddNumPartitions +
+          " but expected one of numPartitions -> " + numPartitions.toSeq +
+          " for queryNum=" + queryNum)
+  }
 }
