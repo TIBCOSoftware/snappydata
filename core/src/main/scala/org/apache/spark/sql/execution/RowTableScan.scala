@@ -37,7 +37,6 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan,
@@ -47,7 +46,7 @@ private[sql] final case class RowTableScan(
     schemaAttributes: Seq[AttributeReference],
     scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
         (RDD[Any], Seq[RDD[InternalRow]]))
-    extends PartitionedPhysicalScan(output, numPartitions, numBuckets,
+    extends PartitionedPhysicalScan(output, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],
       requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
 

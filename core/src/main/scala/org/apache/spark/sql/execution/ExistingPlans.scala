@@ -38,7 +38,6 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
  * make it inline with the partitioning of the underlying DataSource */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient override val relation: BaseRelation,
@@ -130,6 +129,8 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   private val extraInformation = relation.toString
 
+  protected lazy val numPartitions: Int = dataRDD.getNumPartitions
+
   override lazy val schema: StructType = StructType.fromAttributes(output)
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
@@ -177,7 +178,6 @@ private[sql] object PartitionedPhysicalScan {
 
   def createFromDataSource(
       output: Seq[Attribute],
-      numPartitions: Int,
       numBuckets: Int,
       partitionColumns: Seq[Expression],
       relation: PartitionedDataSourceScan,
@@ -189,15 +189,15 @@ private[sql] object PartitionedPhysicalScan {
           (RDD[Any], Seq[RDD[InternalRow]])): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, numPartitions, numBuckets,
+        ColumnTableScan(output, numBuckets,
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
       case r: SamplingRelation =>
-        ColumnTableScan(output, numPartitions, numBuckets,
+        ColumnTableScan(output, numBuckets,
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
       case _: RowFormatRelation =>
-        RowTableScan(output, numPartitions, numBuckets,
+        RowTableScan(output, numBuckets,
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
     }
@@ -208,8 +208,6 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def table: String
 
   def schema: StructType
-
-  def numPartitions: Int
 
   def numBuckets: Int
 

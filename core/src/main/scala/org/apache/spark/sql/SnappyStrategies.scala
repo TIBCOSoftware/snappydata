@@ -69,7 +69,7 @@ private[sql] trait SnappyStrategies {
       def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          if (t.numPartitions == 1) Some(plan) else None
+          if (t.numBuckets == 1) Some(plan) else None
         case PhysicalOperation(projects, filters,
         Join(left, right, _, _)) =>
           val leftPlan = CanLocalJoin.unapply(left)

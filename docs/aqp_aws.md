@@ -49,7 +49,7 @@ Before you begin, ensure that:
 
 SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 
-It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running five processes (locator, lead, two data servers and an Apache Zeppelin server) on it.
+It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
@@ -65,10 +65,10 @@ The names and details of the members are automatically derived from the provided
 Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html). <br>	
  ![STEP](./Images/aws_ec2keypair.png)
 
- 3. Select an instance and storage based on the capacity that you require. <br>
+ 3. Select an instance based on the capacity that you require. <br>
  ![STEP](./Images/aws_instancetype.png)
  
-4. Enter the size of the EBS storage volume to be used with Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.  
+4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.  
 ![STEP](./Images/aws_ebsvolumesize.png)
  
 	> Note: Currently only Amazon Elastic Block Storage (EBS) is supported.
@@ -84,9 +84,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	
 	> * Use the key pair that exists in the region selected.
 	
-	> * If are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.
-	
-	> * It may take a few minutes for the cluster to be created. 
+	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
@@ -302,4 +300,4 @@ In a database context, the process that derives information that is available in
 Efficient processing of data is one of the main issues faced with query processing. In most cases, it can be expensive and time consuming for users to get an exact answer in a short response time. 
 Synopsis Data Engine (SDE) provides an alternative solution that returns an approximate answer using information that is similar to the one from which the query is answered. 
 
-For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](http://snappydatainc.github.io/snappydata/aqp/). 
+For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](https://github.com/SnappyDataInc/snappydata/blob/master/docs/aqp.md). 

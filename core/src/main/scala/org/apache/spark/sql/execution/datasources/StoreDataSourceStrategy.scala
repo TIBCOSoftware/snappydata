@@ -43,7 +43,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         isPartitioned = true,
-        t.numPartitions,
         t.numBuckets,
         t.partitionColumns,
         (a, f, sp) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray, sp)) :: Nil
@@ -54,7 +53,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         isPartitioned = false,
-        0,
         0,
         Seq.empty[String],
         (a, f, sp) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray, sp)) :: Nil
@@ -67,7 +65,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       isPartitioned: Boolean,
-      numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
@@ -77,7 +74,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects,
       filterPredicates,
       isPartitioned,
-      numPartition,
       numBuckets,
       partitionColumns,
       scanBuilder)
@@ -89,7 +85,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
       isPartitioned: Boolean,
-      numPartition: Int,
       numBuckets: Int,
       partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
@@ -128,7 +123,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    val metadata: Map[String, String] = if (numPartition > 0) {
+    val metadata: Map[String, String] = if (numBuckets > 0) {
       Map.empty[String, String]
     } else {
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
@@ -155,7 +150,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val scan = if (isPartitioned) {
         execution.PartitionedPhysicalScan.createFromDataSource(
           mappedProjects,
-          numPartition,
           numBuckets,
           joinedCols,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
@@ -179,7 +173,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val scan = if (isPartitioned) {
         execution.PartitionedPhysicalScan.createFromDataSource(
           requestedColumns,
-          numPartition,
           numBuckets,
           joinedCols,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],

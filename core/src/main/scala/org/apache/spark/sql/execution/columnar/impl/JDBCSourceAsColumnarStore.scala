@@ -33,7 +33,8 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.sql.{SnappySession, SparkSession}
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * Column Store implementation for GemFireXD.
@@ -43,17 +44,18 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      statsPredicate: StatsPredicate, sparkContext: SparkContext): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicate, session: SparkSession): RDD[CachedBatch] = {
+    val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
-        new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
+        new ColumnarStorePartitionedRDD[CachedBatch](snappySession,
           tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
         val poolProps = _connProperties.poolProps -
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        new SparkShellCachedBatchRDD[CachedBatch](sparkContext,
+        new SparkShellCachedBatchRDD[CachedBatch](snappySession,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
@@ -74,7 +76,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
             region.asInstanceOf[AbstractRegion] match {
               case pr: PartitionedRegion =>
                 pr.asInstanceOf[PartitionedRegion]
-                    .getPrStats().incPRNumRowsInCachedBatches(batch.numRows)
+                    .getPrStats.incPRNumRowsInCachedBatches(batch.numRows)
               case _ => // do nothing
             }
           case _ => // do nothing
@@ -116,9 +118,9 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
+class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySession,
     tableName: String, statsPredicate: StatsPredicate,
-    store: JDBCSourceAsColumnarStore) extends RDD[Any](_sc, Nil) {
+    store: JDBCSourceAsColumnarStore) extends RDD[Any](session.sparkContext, Nil) {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
@@ -141,17 +143,16 @@ class ColumnarStorePartitionedRDD[T: ClassTag](_sc: SparkContext,
       val resolvedName = ExternalStoreUtils.lookupName(tableName,
         conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
-      StoreUtils.getPartitionsPartitionedTable(sparkContext,
+      session.sessionState.getTablePartitions(
         region.asInstanceOf[PartitionedRegion])
     })
   }
 }
 
-class SparkShellCachedBatchRDD[T: ClassTag](_sc: SparkContext,
+class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
     tableName: String, requiredColumns: Array[String],
-    connProperties: ConnectionProperties,
-    store: ExternalStore)
-    extends RDD[CachedBatch](_sc, Nil) {
+    connProperties: ConnectionProperties, store: ExternalStore)
+    extends RDD[CachedBatch](_session.sparkContext, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
@@ -173,7 +174,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](_sc: SparkContext,
   }
 }
 
-class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
+class SparkShellRowRDD[T: ClassTag](_session: SnappySession,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
@@ -182,7 +183,7 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends RowFormatScanRDD(_sc, getConnection, schema, tableName,
+    extends RowFormatScanRDD(_session, getConnection, schema, tableName,
       isPartitioned, columns, pushProjections = true, useResultSet = true,
       connProperties, filters, partitions) {
 
@@ -227,6 +228,10 @@ class SparkShellRowRDD[T: ClassTag](_sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
+    // use incoming partitions if provided (e.g. for collocated tables)
+    if (partitions.length > 0) {
+      return partitions
+    }
     val conn = getConnection()
     try {
       SparkShellRDDHelper.getPartitions(tableName, conn)

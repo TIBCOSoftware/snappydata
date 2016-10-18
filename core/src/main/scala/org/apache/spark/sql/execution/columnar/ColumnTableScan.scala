@@ -63,7 +63,6 @@ import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, T
  */
 private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan,
@@ -73,10 +72,9 @@ private[sql] final case class ColumnTableScan(
     schemaAttributes: Seq[AttributeReference],
     scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
         (RDD[Any], Seq[RDD[InternalRow]]))
-    extends PartitionedPhysicalScan(output, numPartitions, numBuckets,
+    extends PartitionedPhysicalScan(output, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],
       requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
-
   private[sql] override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
       "number of output rows"),
