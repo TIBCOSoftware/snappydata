@@ -224,8 +224,7 @@
 <p>This section presents a high level overview of SnappyData’s core components, as well as our data pipeline as streams are ingested into our in-memory store and subsequently interacted with and analyzed.</p>
 <h3 id="core-components">Core components</h3>
 <p>Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
-<!--  <img alt="Core components" src="CoreComponents.png=100x100" /> --></p>
-<p><img src="CoreComponents.png" alt="Core Components" width="400" height="300"></p>
+<img alt="Core components" src="../CoreComponents.png" /> </p>
 <p>The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See <a href="../rowAndColumnTables/">Row/Column table</a> section for details on the syntax and available features. </p>
 <p>We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions to make the language compatible to the SQL standard. One could perceive SnappyData as a SQL database that uses Spark API as its language for stored procedures. Our <a href="../streamingWithSQL/">stream processing</a> is primarily through Spark Streaming, but it is integrated and runs in-situ with our store.</p>
 <p>The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are capable of working with external cluster managers, such as YARN or Mesos (not yet supported). We route all OLTP operations immediately to appropriate data partitions without incurring any scheduling overhead.</p>
@@ -237,12 +236,9 @@
 <p>The global proliferation of mobile devices has created a growing market for location based services. In addition to locality-aware search and navigation, network providers are increasingly relying on location-based advertising, emergency call positioning, road traffic optimization, efficient call routing, triggering preemptive maintenance of cell towers, roaming analytics, and tracking vulnerable people in real time. Telemetry events are delivered as Call Detail Records (CDR), containing hundreds of attributes about each call. Ingested CDRs are cleansed and transformed for consumption by various applications. Not being able to correlate customer support calls with location specific network congestion information is a problem that frustrates customers and network technicians alike. The ability to do this in real time may involve expensive joins to history, tower traffic data and subscriber profiles. Incoming streams generate hundreds of aggregate metrics and KPIs (key performance indicators) grouped by subscriber, cell phone type, cell tower, and location. This requires continuous updates to counters accessed through primary keys (such as the subscriberID). While the generated data is massive, it still needs to be interactively queried by a data analyst for network performance analysis. Location-based services represent another common problem among our customers that involves high concurrency, continuous data updates, complex queries, time series data, and a source that cannot be throttled.</p>
 <h3 id="data-ingestion-pipeline">Data ingestion pipeline</h3>
 <p>The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
-<!-- <img alt="Data Ingestion Pipeline" src="DataIngestionPipeline.png" title="=250x" />  --></p>
-<p><img src="DataIngestionPipeline.png" alt="Data Ingestion pipeline" width="600" height="300"></p>
-<ol>
-<li>
+<img alt="Data Ingestion Pipeline" src="../DataIngestionPipeline.png" />  </p>
 <p>Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.</p>
-</li>
+<ol>
 <li>
 <p>We rely on Spark Streaming’s parallel receivers to consume data from multiple sources. These receivers produce a DStream, whereby the input is batched over small time intervals and emitted as a stream of RDDs. This batched data is typically transformed, enriched and emitted as one or more additional streams. The raw incoming stream may be persisted into HDFS for batch analytics.</p>
 </li>
