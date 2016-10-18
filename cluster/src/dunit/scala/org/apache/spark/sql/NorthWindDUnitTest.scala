@@ -127,8 +127,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[LocalJoin])
         case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 1, classOf[LocalJoin])
         case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1, classOf[LocalJoin])
-        case "Q38" => // NWQueries.assertJoin(snc, NWQueries.Q38, 2155, 1, classOf[LocalJoin])
-        // NPE LocalJoin
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1, classOf[LocalJoin])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 1, classOf[LocalJoin])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 1, classOf[LocalJoin])
         case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 1, classOf[LocalJoin])
@@ -179,11 +178,13 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.sql(NWQueries.customers_table)
     NWQueries.customers.write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13')")
+    snc.sql(NWQueries.orders_table + " using row options (" +
+        "partition_by 'OrderId', buckets '13', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
-    snc.sql(NWQueries.order_details_table +
-        " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
+    snc.sql(NWQueries.order_details_table + " using row options (" +
+        "partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+        "redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
@@ -252,7 +253,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           classOf[BroadcastHashJoinExec])
         case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1,
           classOf[BroadcastHashJoinExec])
-        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q8", 2155, 200,
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 200,
           classOf[SortMergeJoinExec])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 4, classOf[LocalJoin])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 4, classOf[LocalJoin])
@@ -304,15 +305,17 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.sql(NWQueries.customers_table)
     NWQueries.customers.write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13')")
+    snc.sql(NWQueries.orders_table + " using column options (" +
+        "partition_by 'OrderId', buckets '13', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
-    snc.sql(NWQueries.order_details_table +
-        " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
+    snc.sql(NWQueries.order_details_table + " using column options (" +
+        "partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+        "redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
-    snc.sql(NWQueries.products_table +
-        " USING column options ( partition_by 'ProductID,SupplierID', buckets '17')")
+    snc.sql(NWQueries.products_table + " USING column options (" +
+        "partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
@@ -377,7 +380,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[LocalJoin])
         case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 1, classOf[LocalJoin])
         case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1, classOf[LocalJoin])
-        case "Q38" => // NWQueries.assertJoin(snc, NWQueries.Q38, 2155, 1, classOf[LocalJoin]) NPE LocalJoin
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1, classOf[LocalJoin])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 1, classOf[LocalJoin])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 1, classOf[LocalJoin])
         case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 1, classOf[LocalJoin])
@@ -426,21 +429,22 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         " using row options( partition_by 'EmployeeID', buckets '3')")
     NWQueries.employees.write.insertInto("employees")
 
-    snc.sql(NWQueries.customers_table +
-        " using column options( partition_by 'CustomerID', buckets '19')")
+    snc.sql(NWQueries.customers_table + " using column options(" +
+        "partition_by 'CustomerID', buckets '19', redundancy '1')")
     NWQueries.customers.write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table +
-        " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers')")
+    snc.sql(NWQueries.orders_table + " using row options (" +
+        "partition_by 'CustomerID', buckets '19', " +
+        "colocate_with 'customers', redundancy '1')")
     NWQueries.orders.write.insertInto("orders")
 
-    snc.sql(NWQueries.order_details_table +
-        " using row options ( partition_by 'ProductID', buckets '329')")
+    snc.sql(NWQueries.order_details_table + " using row options (" +
+        "partition_by 'ProductID', buckets '329', redundancy '1')")
     NWQueries.order_details.write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
         " USING column options ( partition_by 'ProductID', buckets '329'," +
-        " colocate_with 'order_details')")
+        " colocate_with 'order_details', redundancy '1')")
     NWQueries.products.write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
@@ -451,21 +455,23 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         " using column options (partition_by 'TerritoryID', buckets '3')")
     NWQueries.territories.write.insertInto("territories")
 
-    snc.sql(NWQueries.employee_territories_table +
-        " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories') ")
+    snc.sql(NWQueries.employee_territories_table + " using row options(" +
+        "partition_by 'TerritoryID', buckets '3', colocate_with 'territories')")
     NWQueries.employee_territories.write.insertInto("employee_territories")
-
   }
 
 
   private def validateColocatedTableQueries(snc: SnappyContext): Unit = {
 
+    val partsFor19Buckets = Array(16, 17, 18, 19)
+    val shufflePartitions = snc.sparkContext.schedulerBackend.defaultParallelism()
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
-        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 19,
+        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, partsFor19Buckets,
           classOf[ColumnTableScan])
-        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 19, classOf[RowTableScan])
+        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, partsFor19Buckets,
+          classOf[RowTableScan])
         case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, 3, classOf[RowTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 10, classOf[RowTableScan])
         case "Q6" => NWQueries.assertQuery(snc, NWQueries.Q6, "Q6", 9, 10, classOf[RowTableScan])
@@ -475,13 +481,16 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 3, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 3, classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
-        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 19, classOf[FilterExec])
-        case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 70, classOf[FilterExec])
+        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, partsFor19Buckets,
+          classOf[FilterExec])
+        case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, shufflePartitions,
+          classOf[FilterExec])
         case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 3, classOf[FilterExec])
         case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, 3, classOf[FilterExec])
         case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, 3, classOf[FilterExec])
         case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, 3, classOf[ProjectExec])
-        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 19, classOf[ProjectExec])
+        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, partsFor19Buckets,
+          classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1, classOf[RowTableScan])
         case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 2, classOf[ProjectExec])
@@ -491,29 +500,30 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           classOf[ColumnTableScan])
         case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, 4,
           classOf[BroadcastHashJoinExec])
-        case "Q27" => // NWQueries.assertJoin(snc, NWQueries.Q27, 9, 4, classOf[SortMergeJoinExec])
+        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 4,
+          classOf[SortMergeJoinExec])
         case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, 4,
           classOf[ColumnTableScan])
         case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 4,
           classOf[BroadcastHashJoinExec])
         case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 4,
           classOf[BroadcastHashJoinExec])
-        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, 200,
+        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, shufflePartitions,
           classOf[BroadcastHashJoinExec])
         case "Q32" => NWQueries.assertJoin(snc, NWQueries.Q32, "Q321", 8, 9,
           classOf[BroadcastHashJoinExec])
         case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 10,
           classOf[BroadcastHashJoinExec])
-        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, 200,
+        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, shufflePartitions,
           classOf[BroadcastHashJoinExec])
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4,
           classOf[BroadcastHashJoinExec])
-        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 163,
+        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, shufflePartitions,
           classOf[BroadcastHashJoinExec])
         case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 4,
           classOf[BroadcastHashJoinExec])
-        case "Q38" => // NWQueries.assertJoin(snc, NWQueries.Q38, 2155, 1, classOf[LocalJoin])
-        // NPE LocalJoin
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1,
+          classOf[LocalJoin])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 4,
           classOf[BroadcastHashJoinExec])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 4,
@@ -536,7 +546,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           classOf[BroadcastNestedLoopJoinExec])
         case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 8,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 4, classOf[LocalJoin])
+        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 4,
+          classOf[LocalJoin])
         case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 4,
           classOf[SortMergeJoinExec])
         case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 4,

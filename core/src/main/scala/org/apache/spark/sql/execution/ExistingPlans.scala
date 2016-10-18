@@ -36,7 +36,6 @@ import org.apache.spark.sql.types._
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient override val relation: BaseRelation,
@@ -45,6 +44,8 @@ private[sql] abstract class PartitionedPhysicalScan(
     extends DataSourceScanExec with CodegenSupport {
 
   private val extraInformation = relation.toString
+
+  protected lazy val numPartitions: Int = dataRDD.getNumPartitions
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
 
@@ -92,7 +93,6 @@ private[sql] object PartitionedPhysicalScan {
 
   def createFromDataSource(
       output: Seq[Attribute],
-      numPartitions: Int,
       numBuckets: Int,
       partitionColumns: Seq[Expression],
       rdd: RDD[Any],
@@ -100,18 +100,17 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation)
       case r: SamplingRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numPartitions, numBuckets,
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation)
       case _: RowFormatRelation =>
         if (otherRDDs.nonEmpty) {
           throw new UnsupportedOperationException(
             "Row table scan cannot handle other RDDs")
         }
-        RowTableScan(output, rdd, numPartitions, numBuckets,
-          partitionColumns, relation)
+        RowTableScan(output, rdd, numBuckets, partitionColumns, relation)
     }
 }
 
@@ -120,8 +119,6 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def table: String
 
   def schema: StructType
-
-  def numPartitions: Int
 
   def numBuckets: Int
 
