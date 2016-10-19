@@ -19,7 +19,6 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
-import com.gemstone.gemfire.cache.Cache;
 import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -112,10 +111,6 @@ public class SnappyTest implements Serializable {
     protected static int jobSubmissionCount = 0;
     protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
-    protected static List regionDescriptNames = new ArrayList();
-    protected static Cache theCache;
-    protected static final int HEAVY_OBJECT_SIZE_VAL = 500;
-
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
@@ -131,10 +126,6 @@ public class SnappyTest implements Serializable {
     public SnappyTest(SnappyNode snappyNode) {
         this.snappyNode = snappyNode;
     }
-
-    /*public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
-        return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
-    }*/
 
     public static void HydraTask_stopSnappy() {
         SparkContext sc = SnappyContext.globalSparkContext();
@@ -188,7 +179,6 @@ public class SnappyTest implements Serializable {
 
     protected static String getUserAppJarLocation(final String jarName, String jarPath) {
         String userAppJarPath = null;
-        // String jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep;
         File baseDir = new File(jarPath);
         try {
             IOFileFilter filter = new WildcardFileFilter(jarName);
@@ -229,7 +219,7 @@ public class SnappyTest implements Serializable {
             scriptPath = productBinDir + scriptName;
             if (new File(scriptPath).exists()) return scriptPath;
             else
-                scriptPath = getUserAppJarLocation(scriptName, dtestsScriptLocation);//dtestsScriptLocation + scriptName;
+                scriptPath = getUserAppJarLocation(scriptName, dtestsScriptLocation);
             if (new File(scriptPath).exists()) return scriptPath;
             else
                 scriptPath = quickstartScriptLocation + scriptName;
@@ -1292,14 +1282,8 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult.log";
                 logFile = new File(dest);
-                /*HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
-                Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
-                String clientHost = entry.getKey();
-                int clientPort = entry.getValue();
-                */
                 String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
                 String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
-                //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
                 ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:dataLocation=" + dataLocation,
                         "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" + colocateWith,
                         "-param:partitionBy=" + partitionBy, "-param:numPartitions=" + numPartitions,
@@ -1459,7 +1443,6 @@ public class SnappyTest implements Serializable {
     public static void HydraTask_executeSparkJob() {
         int currentThread = snappyTest.getMyTid();
         String logFile = "sparkJobTaskResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
-//        SnappyBB.getBB().getSharedMap().put("sparkJoblogFilesForTask" + currentThread, logFile);
         snappyTest.executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
     }
 

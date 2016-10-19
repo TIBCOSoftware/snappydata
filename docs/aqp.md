@@ -16,13 +16,13 @@ A small random sample of the rows of the original database table is prepared. Qu
 Thus, there are two components in the architecture, a component for building the synopses from database relations and a component that rewrites an incoming query to use the synopses to answer the query approximately and to report with an estimate of the error in the answer. 
 
 ##Synopsis Data Engine Technique: Stratified Sampling##
-###What is Sampling ?###
+###What is Sampling?###
 One commonly-used technique for approximate results is sampling. For many aggregation queries, non-uniform (approximate) samples can provide more accurate approximations than a uniform sample. 
 
 For example, if you want to find the top selling products in a sales database or the fraction of people who study in a specific area, evaluating the entire product or population would be impractical due to factors like restrictions on time, cost etc.
 Sampling provides a solution, where a small sample of data, which represents the entire data is randomly selected. In this case, a query is answered based on the pre-sampled small amount of data, and then scaled up based on the sample rate.
 
-The two techniques that the SnappyData AQP module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
+The two techniques that the SnappyData SDE module uses to accomplish this are, **reservoir sampling** as applied to **stratified sampling**. 
 
 ####Reservoir Sampling ####
 Reservoir Sampling is an algorithm for sampling elements from a stream of data, where a random sample of elements are returned, which are evenly distributed from the original stream.
@@ -34,9 +34,7 @@ The population is divided into several groups (strata), and subjects are then pr
 
 For example, if the research team wants to do a customer satisfaction survey based on the age group of the customers. The customers are divided into two or more stratas based on the age criteria, and samples are randomly selected from each strata.
 This is illustrated in the following image.
-
 ![Stratified Sampling](./Images/aqp_sampling.png)
-
 
 ###Key Concepts###
 **Data Synopses**: During the pre-processing phase, data synopses (or data structures) are built over the database. These database synopses are used when queries are issued to the system, and approximate results are returned.
@@ -173,7 +171,6 @@ For example, If query QCS are A, B and C. If samples with QCS  A and B and B and
 This is illustrated in the following image:
 ![QCS](./Images/aqp_qcs.png)
 
-
 ####Using Error Functions and Confidence Interval in Queries####
 Acceptable error fraction and expected confidence interval can be specified in the query projection. 
 A query can end with the clauses **WITH ERROR** and **WITH ERROR `<fraction>`[CONFIDENCE `<fraction>`] [BEHAVIOR` <string>]`**
@@ -243,7 +240,7 @@ SnappyData combines state-of-the-art approximate query processing techniques and
 When an error requirement is not met, the action to be taken is defined in the behavior clause. 
 
 ####Behaviour Clause####
-Approximate queries have HAC support using the following behavior clause. 
+Synopsis Data Engine has HAC support using the following behavior clause. 
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 
@@ -331,13 +328,13 @@ TopK queries are used to rank attributes to answer "best, most interesting, most
  
 *SQL API for creating a TopK table in SnappyData* 
  
-```  
+``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
    
 	
 	val topKOptionMap = Map(
@@ -352,12 +349,13 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-*Querying the TopK table*  
+*Querying the TopK table* 
 	
 	
-	select * from topkTweets order by EstimatedValue desc  
+	select * from topkTweets order by EstimatedValue desc 
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
+
 ### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
@@ -378,10 +376,10 @@ In the example below tweetTime is a field in the incoming dataset which carries 
 ```scala
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
 
 ```scala
     val topKOptionMap = Map(
