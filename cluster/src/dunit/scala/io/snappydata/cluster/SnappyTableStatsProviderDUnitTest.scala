@@ -34,12 +34,14 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val currentLocatorPort = ClusterManagerTestBase.locPort
+  val table = "TEST.TEST_TABLE"
 
   override def beforeClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
     bootProps.setProperty("eviction-heap-percentage", "20")
     bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "500")
+    List(vm2, vm1, vm0).foreach(vm =>
+      vm.invoke(classOf[ClusterManagerTestBase], "stopAny"))
     super.beforeClass()
   }
 
@@ -48,11 +50,12 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     super.afterClass()
     // force restart with default properties in subsequent tests
     ClusterManagerTestBase.stopSpark()
+    List(vm2, vm1, vm0).foreach(vm =>
+      vm.invoke(classOf[ClusterManagerTestBase], "stopAny"))
   }
 
   def testVerifyTableStats(): Unit = {
     val snc = SnappyContext(sc).newSession()
-    var table = "TEST.TEST_TABLE"
 
     createTable(snc, table, "row")
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "R")
@@ -89,37 +92,57 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def testVerifyTableStatsEvictionAndHA(): Unit = {
     val props = bootProps
-    val port = currentLocatorPort
-    val expectedRowCount = 1888622
+    val port = ClusterManagerTestBase.locatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
 
     val snc = SnappyContext(sc).newSession()
-    val table = "TEST.TEST_TABLE"
 
-    val airlineDataFrame = snc.read.load(getClass.getResource("/2015.parquet").getPath)
-    snc.createTable(table, "column", airlineDataFrame.schema, Map.empty[String, String])
-    airlineDataFrame.write.format("column").mode(SaveMode.Append).saveAsTable(table)
+    createTable(snc, table, "column", Map("BUCKETS" -> "6"
+      , "PERSISTENT" -> "sync"))
 
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm1.invoke(restartServer)
+
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
 
     snc.dropTable(table)
+  }
 
-    snc.createTable(table, "column", airlineDataFrame.schema, Map("PERSISTENT" -> "SYNC"))
-    airlineDataFrame.write.format("column").mode(SaveMode.Append).saveAsTable(table)
 
-    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
-    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    vm1.invoke(new SerializableRunnable() {
+  def testHeapEvictionHA(): Unit = {
+
+    val props = bootProps
+    val port = ClusterManagerTestBase.locatorPort
+
+    val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
-    })
+    }
+
+    val snc = SnappyContext(sc).newSession()
+    val expectedRowCount = 1888622
+
+    val airlineDataFrame = snc.read.load(getClass.getResource("/2015.parquet").getPath)
+    snc.createTable(table, "column", airlineDataFrame.schema, Map("PERSISTENT" -> "async"))
+    airlineDataFrame.write.format("column").mode(SaveMode.Append).saveAsTable(table)
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
 
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm1.invoke(restartServer)
+
+
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
     snc.dropTable(table, true)
   }
 
 
   def createTable(snc: SnappyContext, tableName: String,
       tableType: String, props: Map[String, String] = Map.empty): Unit = {
-    val data = for (i <- 1 to 700) yield (Seq(i, (i + 1), (i + 2)))
+    val data = for (i <- 1 to 7000) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
       new io.snappydata.externalstore.Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -196,7 +219,7 @@ object SnappyTableStatsProviderDUnitTest {
 
 
   def verifyResults(snc: SnappyContext, table: String,
-      tableType: String = "C", expectedRowCount: Int = 700): Unit = {
+      tableType: String = "C", expectedRowCount: Int = 7000): Unit = {
     val isColumnTable = if (tableType.equals("C")) true else false
     val isReplicatedTable = if (tableType.equals("R")) true else false
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
@@ -212,9 +235,9 @@ object SnappyTableStatsProviderDUnitTest {
     ClusterManagerTestBase.waitForCriterion(actual.getSizeInMemory == expected.getSizeInMemory
         && actual.getSizeInMemory == expected.getSizeInMemory
         && actual.getRowCount == expected.getRowCount,
-      s"Expected Size ${expected.getSizeInMemory} Actual size ${actual.getSizeInMemory} \n" +
-      s"Expected Total Size ${expected.getTotalSize} Actual Total size  ${actual.getTotalSize} \n" +
-      s"Expected Count ${expected.getRowCount} Actual Count  ${actual.getRowCount} \n",
+      s"Expected Size ${expected.getSizeInMemory} Size ${actual.getSizeInMemory} \n" +
+          s"Expected Total Size ${expected.getTotalSize} Total Size ${actual.getTotalSize} \n" +
+          s"Expected Count ${expected.getRowCount} Count  ${actual.getRowCount} \n",
       10000, 1000, true)
   }
 }
