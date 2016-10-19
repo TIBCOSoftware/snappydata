@@ -151,7 +151,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // find the underlying RowTableScan and set it up to use its RDD's direct
     // iterator for best performance
     val rdd = buildPlan.find {
-      case scan: RowTableScan if scan.numPartitions == 1 =>
+      case scan: RowTableScan if scan.numBuckets == 1 =>
         scan.input = rowIterator
         true
       case _ => false

@@ -214,7 +214,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         this.relationDestroyVersion = globalVersion
       }
       cachedSampleTables(table)
->>>>>>> origin/SNAP-1136
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
         throw e.getCause

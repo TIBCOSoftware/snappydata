@@ -575,24 +575,6 @@ object Utils {
     case _ => false
   }
 
-  /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
-   */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
-  }
-
-  /**
-   * Return true if the plan overrides executeCollect to provide a more
-   * efficient version which should be preferred over execute().
-   */
-  def useExecuteCollect(plan: SparkPlan): Boolean = plan match {
-    case _: CollectLimitExec | _: ExecutedCommandExec |
-         _: LocalTableScanExec | _: TakeOrderedAndProjectExec => true
-    case _ => false
-  }
-
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
     private[this] val map = m
