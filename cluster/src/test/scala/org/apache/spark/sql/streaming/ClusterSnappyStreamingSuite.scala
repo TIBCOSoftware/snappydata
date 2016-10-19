@@ -14,22 +14,22 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.streaming
+package org.apache.spark.sql.streaming
+
+import java.util.{Map => JMap}
 
 import scala.collection.mutable
-
-import io.snappydata.app.streaming.{StreamingSuite, Tweet}
+import scala.language.postfixOps
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.streaming.SchemaDStream
 
 /**
- * Inherit all tests of StreamingSuite to run with snappy-spark
- * (instead of stock spark that StreamingSuite is run with).
- */
-class ClusterStreamingSuite
-    extends StreamingSuite {
+  * Inherit all tests of SnappyStreamingSuite to run with snappy-spark
+  * (instead of stock spark that SnappyStreamingSuite is run with).
+  */
+class ClusterSnappyStreamingSuite
+    extends SnappyStreamingSuite {
 
   /** same test in core does not test for dynamic CQ registration */
   test("stream ad-hoc sql with dynamic CQ") {
@@ -41,7 +41,7 @@ class ClusterStreamingSuite
         "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
         "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
         "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToRowsConverter')")
 
     val cqResult = ssnc.registerCQ("SELECT text FROM tweetsTable " +
         "window (duration 10 seconds, slide 10 seconds) where text like '%e%'")
@@ -107,7 +107,7 @@ class ClusterStreamingSuite
 
     val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
-    df.registerTempTable("tweetTable")
+    df.createOrReplaceTempView("tweetTable")
 
     ssnc.start()
 
