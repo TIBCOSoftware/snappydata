@@ -194,7 +194,7 @@ class SnappyStreamingSuite
 
     val cqResults = ssnc.registerCQ("select publisher from" +
         " directKafkaStream window (duration 1 seconds, slide 1 seconds)" +
-        " where publisher like '%77%'")
+        " where publisher like '%77%' order by publisher")
 
     cqResults.foreachDataFrame { df =>
       df.collect().foreach { row =>
@@ -210,7 +210,8 @@ class SnappyStreamingSuite
     kafkaUtils.sendMessages(topic1, sent1)
     val sent2 = Map("pub4,adv4,4" -> 1, "pub5,adv5,5" -> 1, "pub6,adv6,6" -> 1)
     kafkaUtils.sendMessages(topic1, sent2)
-    val sent3 = Map("pub7,adv7,7" -> 1, "pub8,adv8,8" -> 1, "pub9,adv9,9" -> 1, "pub77,adv77,77" -> 1)
+    val sent3 = Map("pub7,adv7,7" -> 1, "pub8,adv8,8" -> 1, "pub9,adv9,9" -> 1,
+      "pub77,adv77,77" -> 1)
     kafkaUtils.sendMessages(topic1, sent3)
 
     val sent = Map("pub77" -> 1)
@@ -480,7 +481,7 @@ class SnappyStreamingSuite
     }
 
     // TODO:  This currently fails as join results are not proper
-    //expectedValues.foreach(v => assert(r.contains(v)))
+    expectedValues.foreach(v => assert(r.contains(v)))
     assert(r.length > 0)
     ssnc.sql("drop table joinDataColumnTable")
   }
