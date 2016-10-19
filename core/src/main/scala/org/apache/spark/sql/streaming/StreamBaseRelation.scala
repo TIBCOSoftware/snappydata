@@ -18,7 +18,6 @@ package org.apache.spark.sql.streaming
 
 import scala.collection.mutable
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
@@ -28,7 +27,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
 import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, StreamingContextState, Time}
-import org.apache.spark.util
+import org.apache.spark.{Logging, util}
 
 abstract class StreamBaseRelation(options: Map[String, String])
     extends ParentRelation with StreamPlan with TableScan

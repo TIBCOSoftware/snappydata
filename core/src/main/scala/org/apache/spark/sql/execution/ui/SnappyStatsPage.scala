@@ -25,7 +25,7 @@ import scala.xml.Node
 
 import io.snappydata.{StoreTableSizeProvider, UIAnalytics}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 

@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
 
 import kafka.serializer.Decoder
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder

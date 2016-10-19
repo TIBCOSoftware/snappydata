@@ -111,6 +111,15 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           set(Property.JobserverEnabled(), "true").
           set("spark.scheduler.mode", "FAIR")
 
+      // enable optimized pooled Kryo serializer by default
+      conf.set("spark.serializer", Constant.DEFAULT_SERIALIZER)
+      conf.set("spark.closure.serializer", Constant.DEFAULT_SERIALIZER)
+
+      // disable somewhat expensive CallSite.longForm
+      if (System.getProperty("spark.callstack.depth") == null) {
+        System.setProperty("spark.callstack.depth", "1")
+      }
+
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
       // if input prop key is found in io.snappydata.Property,

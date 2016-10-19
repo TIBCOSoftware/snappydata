@@ -23,8 +23,9 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps
 
 /**
-  * Calls that are needed to be sent to snappy-cluster classes because the variables are private[spark]
-  */
+ * Calls that are needed to be sent to snappy-cluster classes
+ * because the variables are private[spark].
+ */
 object SparkCallbacks {
 
   def createExecutorEnv(
@@ -70,9 +71,8 @@ object SparkCallbacks {
     SparkConf.isExecutorStartupConf(key)
   }
 
-  def isDriver() : Boolean = {
-    SparkEnv.get != null &&
-        SparkEnv.get.executorId == SparkContext.DRIVER_IDENTIFIER
+  def isDriver: Boolean = {
+    val env = SparkEnv.get
+    env != null && env.executorId == SparkContext.DRIVER_IDENTIFIER
   }
-
 }
