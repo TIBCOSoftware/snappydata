@@ -1144,10 +1144,14 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
 
   override def hash(row: Row): Int = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
-    threadLocalIter.get.hasNext
-    val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.remove()
-    hashColumnHandler.hash(ir)
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      hashColumnHandler.hash(ir)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
   }
 
   override def hash(row: InternalRow): Int = {
@@ -1176,11 +1180,15 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
 
   def extractFromRowAndExecuteFunction[T](f: Row => T, row: Row): T = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
-    threadLocalIter.get.hasNext
-    val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.remove()
-    InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
-    f(InternalRowToRow)
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
+      f(InternalRowToRow)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
   }
 }
 

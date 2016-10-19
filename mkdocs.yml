@@ -1,7 +1,7 @@
-site_name: SnappyData Docs - Preview release
+site_name: SnappyData Documentation
 site_url: http://www.snappydata.io
 site_description: Project documentation with Markdown.
-site_author: SnappyData development team
+site_author: SnappyData Development Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
@@ -18,10 +18,11 @@ pages:
 - Connecting using JDBC, Spark: connectingToCluster.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
-- Approximate query processing: aqp.md
+- Synopsis Data Engine (SDE): aqp.md
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
 - API: apidocsintro.md
+- Using iSight-Cloud: aqp_aws.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md

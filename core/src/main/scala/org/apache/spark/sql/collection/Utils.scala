@@ -27,6 +27,8 @@ import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
@@ -40,8 +42,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
@@ -573,6 +575,24 @@ object Utils {
     case _ => false
   }
 
+  /**
+   * Wrap a DataFrame action to track all Spark jobs in the body so that
+   * we can connect them with an execution.
+   */
+  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
+    df.withNewExecutionId(body)
+  }
+
+  /**
+   * Return true if the plan overrides executeCollect to provide a more
+   * efficient version which should be preferred over execute().
+   */
+  def useExecuteCollect(plan: SparkPlan): Boolean = plan match {
+    case _: CollectLimitExec | _: ExecutedCommandExec |
+         _: LocalTableScanExec | _: TakeOrderedAndProjectExec => true
+    case _ => false
+  }
+
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
     private[this] val map = m
@@ -704,8 +724,9 @@ class MultiBucketExecutorPartition(override val index: Int,
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
     @transient splitIndex: Int,
-    var split: Partition) extends Serializable {
+    var split: Partition) extends Serializable with KryoSerializable {
 
+  // noinspection ScalaUnusedSymbol
   @throws[java.io.IOException]
   private def writeObject(oos: ObjectOutputStream): Unit =
     org.apache.spark.util.Utils.tryOrIOException {
@@ -713,6 +734,17 @@ private[spark] case class NarrowExecutorLocalSplitDep(
       split = rdd.partitions(splitIndex)
       oos.defaultWriteObject()
     }
+
+  override def write(kryo: Kryo, output: Output): Unit =
+    org.apache.spark.util.Utils.tryOrIOException {
+      // Update the reference to parent split at the time of task serialization
+      split = rdd.partitions(splitIndex)
+      kryo.writeClassAndObject(output, split)
+    }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    split = kryo.readClassAndObject(input).asInstanceOf[Partition]
+  }
 }
 
 /**
