@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
-import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, BaseRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 import org.apache.spark.sql.catalyst.dsl.expressions._
@@ -72,7 +72,7 @@ private[sql] final case class ColumnTableScan(
     pushedFilters: Seq[Filter],
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
         (RDD[Any], Seq[RDD[InternalRow]]))
     extends PartitionedPhysicalScan(output, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],
@@ -87,7 +87,7 @@ private[sql] final case class ColumnTableScan(
 
   }
 
-  override def getStatsPredicate(): StatsPredicate = {
+  override def getStatsPredicate(): StatsPredicateCompiler = {
 
     val cachedBatchStatistics = if (relation.isInstanceOf[BaseColumnFormatRelation]) {
       relation.asInstanceOf[BaseColumnFormatRelation].
@@ -162,7 +162,7 @@ private[sql] final case class ColumnTableScan(
     "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
       "cached batches skipped by the predicate"))
 
-    new StatsPredicate(newPredicate,
+    new StatsPredicateCompiler(newPredicate,
       cachedBatchStatFilters.reduceOption(And).getOrElse(Literal(true)),
       getCachedBatchStatsSchema,
       metricsCreatedBeforeInit("cachedBatchesSeen"),

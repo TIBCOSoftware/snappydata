@@ -30,7 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -44,7 +44,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      statsPredicate: StatsPredicate, session: SparkSession): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -119,7 +119,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
 }
 
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySession,
-    tableName: String, statsPredicate: StatsPredicate,
+    tableName: String, statsPredicate: StatsPredicateCompiler,
     store: JDBCSourceAsColumnarStore) extends RDD[Any](session.sparkContext, Nil) {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
@@ -130,7 +130,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
     else new ByteArraysIteratorOnScan(container, bucketIds,
-      statsPredicate.generatePredicate,
+      statsPredicate.compilePredicate,
       //  pass dummy value if no schema
       if (statsPredicate.schema != null) statsPredicate.schema.size else 1,
       statsPredicate.cachedBatchesSeen,

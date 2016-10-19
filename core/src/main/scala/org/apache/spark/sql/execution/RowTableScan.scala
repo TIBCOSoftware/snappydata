@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Attribute, Expression}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
-import org.apache.spark.sql.sources.{StatsPredicate, Filter, BaseRelation}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, BaseRelation}
 import org.apache.spark.sql.types._
 
 /**
@@ -44,7 +44,7 @@ private[sql] final case class RowTableScan(
     pushedFilters: Seq[Filter],
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
         (RDD[Any], Seq[RDD[InternalRow]]))
     extends PartitionedPhysicalScan(output, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],

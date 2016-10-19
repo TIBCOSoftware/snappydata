@@ -106,7 +106,7 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
       requiredColumns, filters, statsPredicate)
     val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
@@ -121,7 +121,7 @@ case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicate):
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler):
   (RDD[CachedBatch], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {

@@ -38,7 +38,7 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.sources.{StatsPredicate, ConnectionProperties}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
@@ -57,7 +57,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
-      statsPredicate: StatsPredicate, session: SparkSession): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
     new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
         numPartitions, this)
   }

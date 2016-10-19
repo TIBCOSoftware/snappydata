@@ -288,7 +288,8 @@ trait ExternalSchemaRelationProvider {
 trait PrunedUnsafeFilteredScan {
 
   def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicate): (RDD[Any], Seq[RDD[InternalRow]])
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler):
+  (RDD[Any], Seq[RDD[InternalRow]])
 }
 
 /**
@@ -297,17 +298,19 @@ trait PrunedUnsafeFilteredScan {
  * generatePredicate generates a predicate for a filter expression and schema.
  * This class is needed because the predicate needs to generated on the executor side.
  *
- * @param predicateGenerator
- * @param filterExpression
- * @param schema
+ * @param predicateCompiler Function that compiles the filter expression to byte code
+ * @param filterExpression filter expression that will be compiled
+ * @param schema schema of the stats row
+ * @param cachedBatchesSeen metrics that is used to track the cached batches
+ * @param cachedBatchesSkipped metrics that is used to track the skipped cached batches
  */
-class StatsPredicate(
-    val predicateGenerator: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
+class StatsPredicateCompiler(
+    val predicateCompiler: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
     val filterExpression: Expression,
     val schema: Seq[Attribute],
     val cachedBatchesSeen: SQLMetric,
     val cachedBatchesSkipped: SQLMetric) extends Serializable {
 
-  def generatePredicate : (InternalRow) => Boolean = predicateGenerator(filterExpression, schema)
+  def compilePredicate : (InternalRow) => Boolean = predicateCompiler(filterExpression, schema)
 
 }

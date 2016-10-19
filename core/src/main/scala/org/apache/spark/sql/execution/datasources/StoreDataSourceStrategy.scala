@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
 import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
-import org.apache.spark.sql.sources.{StatsPredicate, Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
@@ -67,7 +67,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       isPartitioned: Boolean,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
           (RDD[Any], Seq[RDD[InternalRow]])) = {
     pruneFilterProjectRaw(
       relation,
@@ -87,7 +87,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       isPartitioned: Boolean,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
           (RDD[Any], Seq[RDD[InternalRow]])) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
@@ -153,9 +153,9 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           numBuckets,
           joinedCols,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          requestedColumns,
-          pushedFilters,
-          filterPredicates,
+          requestedColumns, // projected columns
+          pushedFilters, // filters that are pushed for row table scan
+          filterPredicates, // filter predicates for cached batch screening
           relation.output,
           scanBuilder)
       } else {
@@ -176,9 +176,9 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           numBuckets,
           joinedCols,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          requestedColumns,
-          pushedFilters,
-          filterPredicates,
+          requestedColumns, // projected columns
+          pushedFilters, // filters that are pushed for row table scan
+          filterPredicates, // filter predicates for cached batch screening
           relation.output,
           scanBuilder)
 

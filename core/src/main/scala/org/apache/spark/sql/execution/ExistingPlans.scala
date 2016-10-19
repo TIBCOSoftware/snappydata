@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{StatsPredicate, Filter,
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter,
 BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.expressions._
@@ -45,7 +45,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     pushedFilters: Seq[Filter],
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
         (RDD[Any], Seq[RDD[InternalRow]]),
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
@@ -64,8 +64,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         metricsCreatedBeforeInit
   }
 
-  def getStatsPredicate(): StatsPredicate = {
-    return new StatsPredicate(newPredicate, Literal(true), null, null, null)
+  def getStatsPredicate(): StatsPredicateCompiler = {
+    return new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
   }
 
   private val extraInformation = relation.toString
@@ -124,7 +124,7 @@ private[sql] object PartitionedPhysicalScan {
       pushedFilters: Seq[Filter],
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicate) =>
+      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
           (RDD[Any], Seq[RDD[InternalRow]])): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
