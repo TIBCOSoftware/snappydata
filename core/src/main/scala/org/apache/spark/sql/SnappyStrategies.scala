@@ -87,7 +87,7 @@ private[sql] trait SnappyStrategies {
       plan match {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          t.numPartitions == 1
+          if (t.numBuckets == 1) Some(plan) else None
         case PhysicalOperation(projects, filters,
         Join(left, right, _, _)) =>
           // If join is a result of join of replicated tables, this

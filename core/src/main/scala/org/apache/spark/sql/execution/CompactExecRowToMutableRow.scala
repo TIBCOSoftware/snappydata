@@ -226,6 +226,9 @@ class ResultNullHolder extends ResultWasNull {
 
   final var wasNull: Boolean = _
 
+  final lazy val defaultCal = new GregorianCalendar(
+    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
+
   override final def setWasNull(): Unit = {
     wasNull = true
   }

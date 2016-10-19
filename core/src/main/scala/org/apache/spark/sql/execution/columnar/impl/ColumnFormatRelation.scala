@@ -22,12 +22,12 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
-import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -38,7 +38,6 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql._
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -92,15 +91,6 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
-      _context.sparkContext.schedulerBackend.defaultParallelism()
-    } else {
-      numBuckets
-    }
-  }
-
   override lazy val numBuckets: Int = {
     region.getTotalNumberOfBuckets
   }
@@ -129,10 +119,11 @@ class BaseColumnFormatRelation(
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
     val isPartitioned = region.getPartitionAttributes != null
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val zipped = connectionType match {
       case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
@@ -142,7 +133,8 @@ class BaseColumnFormatRelation(
           useResultSet = true,
           connProperties,
           Array.empty[Filter],
-          Array.empty[Partition]
+          // use same partitions as the column store (SNAP-1083)
+          rdd.partitions
         )
 
         rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>
@@ -151,14 +143,16 @@ class BaseColumnFormatRelation(
 
       case _ =>
         val rowRdd = new SparkShellRowRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
           connProperties,
-          filters
+          filters,
+          // use same partitions as the column store (SNAP-1083)
+          rdd.partitions
         )
 
         rowRdd.zipPartitions(rdd) { (leftItr, rightItr) =>

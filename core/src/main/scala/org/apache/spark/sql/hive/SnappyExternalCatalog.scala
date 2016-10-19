@@ -23,17 +23,16 @@ import scala.util.control.NonFatal
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.hive.ql.metadata.HiveException
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.thrift.TException
 
-import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.hive.client.HiveClient
 
-private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Configuration)
+private[spark] class SnappyExternalCatalog(val client :HiveClient, hadoopConf: Configuration)
     extends ExternalCatalog with Logging {
 
   import CatalogTypes.TablePartitionSpec
@@ -42,6 +41,9 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   private val clientExceptions = Set(
     classOf[HiveException].getCanonicalName,
     classOf[TException].getCanonicalName)
+
+
+
 
   /**
     * Whether this is an exception thrown by the hive client that should be wrapped.
@@ -364,11 +366,9 @@ private[spark] class SnappyExternalCatalog(client: HiveClient, hadoopConf: Confi
   override def listFunctions(db: String, pattern: String): Seq[String] = withClient {
     client.listFunctions(db, pattern)
   }
-}
 
-object SnappyExternalCatalog {
-
-  def newHiveClient(sparkContext: SparkContext): HiveClient = {
-    HiveUtils.newClientForMetadata(sparkContext.conf, sparkContext.hadoopConfiguration)
+  def closeCurrent(): Unit = {
+    Hive.closeCurrent()
   }
+
 }

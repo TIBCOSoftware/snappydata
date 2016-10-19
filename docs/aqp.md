@@ -1,25 +1,350 @@
-## Approximate Query processing (AQP)
-### Overview
-Data volumes from transactional and non transactional sources have been growing exponentially. Cleansing, transforming and storing such large data sets present significant challenges in itself. Querying large data sets in real time using optimizations like columnar storage, compression and horizontal scaling, while necessary, are simply linear improvements to an exponential problem and discourages practitioners from exploring large data sets through querying, because query response times are very large. 
+# Overview of Synopsis Data Engine (SDE)#
+The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightening fast response time. 
 
-Approximate query processing offers an exponential solution to the data volume problem. The basic idea behind approximate query processing is that one can use statistical sampling techniques and probabilistic data structures to answer aggregate class queries without needing to store or operate over the entire data set. The approach trades off query accuracy for quicker response times, allowing for queries to be run on large data sets with meaningful and accurate error information. A real world example here would be the use of political polls run by Gallup and others where a small sample is used to estimate support for a candidate within a small margin of error. 
+For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
 
-It's important to note that not all SQL queries can be answered through AQP, but by moving a subset of queries hitting the database to the AQP module, the system as a whole becomes more responsive and usable.
-### Approximations Technique 1: Synopses
-Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
+When accessed via a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds while the full answer CAN BE computed in the background. Depending on the immediate answer, users can opt to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer and if they are no longer interested in seeing the final results based on the initial results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.
 
-#### Creating TopK tables
+While in-memory analytics can be fast, it is still expensive and cumbersome to provision large clusters. Instead, SDE allows you to retain  data in existing databases and disparate sources and only caches a fraction of the data using stratified sampling and other techniques. In many cases, data explorers can use their laptops and run high speed interactive analytics over billions of records. Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for apriori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
+
+## How does it work?
+The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. Think of these samples much like how a database utilizes indexes - for optimization. With one difference - the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample.  
+![SDE_Architecture](./Images/sde_architecture.png)
+
+## Key Concepts
+SnappyData SDE relies on two methods for approximations - Stratified sampling and Sketching. We provide a brief introduction to these concepts below.
+
+###  Stratified sampling
+Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population( the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling doesn't work well for general purpose querying.
+
+Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick 2 records in random. This is depicted in the figure below. 
+Unfortunately, if we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', our answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. But, if the data distribution along this 'GEO' dimension is very skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
+Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. 
+For instance, as shown in figure x below, a sample stratified on 'Geo' would provide a much better answer. 
+
+If you are interested in understanding these concepts in further detail we suggest reading this [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It goes through different sampling strategies, error estimation mechanisms, and various types of data synopses.
+
+### Online Sampling
+SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 min time window while still ensuring that all GEOs have good representation in the sample. 
+
+### Sketching
+While stratified sampling ensures that data dimensions with low representation is captured, it still doesn't work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most retweets in the last 5 mins' may not result in good answers. Instead we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that captures the how often we see an element in a stream for the top-N such elements. 
+While a Count-min-sketch is well described (Link), SDE extends this with support for providing top-K estimates over time series data. 
+
+
+## Working with Stratified Samples
+
+###Create Sample Tables###
+
+You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. 
+
+Here is an SQL based example to create sample on tables locally available in the Snappydata cluster. 
+
+```
+CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  
+  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
+  AS (SELECT * FROM NYCTAXI);
+
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
+  OPTIONS (qcs 'hack_license', fraction '0.01') 
+  AS (SELECT * FROM TAXIFARE);
+```
+Often your data set is too large to also fit in available cluster memory. If so, you can create a external table pointing to the source. 
+In this example below, a sample table is created for an S3 (external) dataset:
+
+```
+CREATE EXTERNAL TABLE TAXIFARE USING parquet 
+  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+//Next, create the sample sourced from this table ..
+CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
+  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+
+```
+
+
+###QCS (Query Column Set) and Sample selection###
+For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
+
+'QCS', which stands for 'Query Column Set' is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A 'QCS' can also be constructed using SQL expressions - for instance, using a function like 'hour (pickup_datetime)'.
+
+The parameter *fraction* represents the fraction of the full population that will managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction doesn't drop the error rate. SDE will always attempt to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) will automatically be sampled at a lower rate. The algorithm will always attempt to maintain the overall 1% fraction specified in the 'create sample' statement.  
+
+One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
+
+Here are some general guidelines to use when creating samples:
+* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine will automatically reject all samples and run the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
+* Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
+* Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
+* Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a timestamp and is not a good candidate given its likelyhood of high cardinality. i.e. there is possibility that each record in the data set has a different timestamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
+* when accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system will automatically pick the appropriate sample. 
+* ..more to come..
+
+> #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+
+
+## Running queries
+
+Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
+
+Here is the syntax:
+
+#### SELECT ... FROM .. WHERE .. GROUP BY ...
+####    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+    
+* **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
+* **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
+* **BEHAVIOR** - this is an optional clause. The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
+
+These 'behavior' options are fully described in the section below. 
+
+Here are some examples:
+
+```
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc 
+  with error 0.10 
+// tolerate a maximum error of 10% in each row in the answer with a default confidence level of 0.95.
+
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc 
+  with error 
+// tolerate any error in answer. Just give me a quick response.
+
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc with error 0.10 confidence 0.95 behavior ‘local_omit’
+// tolerate a maximum error of 10% in each row in the answer with a confidence interval of 0.95.
+// If the error for any row is greater than 10% omit the answer. i.e. the row is omitted. 
+```
+#### Using the Spark DataFrame API
+
+We extend the Spark DataFrame API with support for approximate queries. Here is 'withError' API on DataFrames.
+```
+def withError(error: Double,
+confidence: Double = Constant.DEFAULT_CONFIDENCE,
+behavior: String = "DO_NOTHING"): DataFrame
+```
+
+Query examples using the DataFrame API ..
+``` 
+snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10) 
+snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
+```
+
+### Supporting BI tools or existing Apps
+To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
+
+```
+snContext.sql(s"spark.sql.aqp.error=$error")
+snContext.sql(s"spark.sql.aqp.confidence=$confidence")
+snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
+```
+These settings will apply to all queries executed via this SQLContext. Application can override this by also using the SQL extensions specified above.
+
+Applications or tools using JDBC/ODBC can set the following properties. 
+For example, when using Apache Zeppelin JDBC interpreter or the snappy-shell you can set the values as below:
+
+```
+set spark.sql.aqp.error=$error;
+set spark.sql.aqp.confidence=$confidence;
+set spark.sql.aqp.behavior=$behavior;
+```
+
+
+
+
+## More Examples
+#####Example 1: #####
+create a sample table with qcs 'medallion'
+
+```
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
+  OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+```
+
+**SQL Query:**
+```
+select medallion,avg(trip_distance) as avgTripDist,
+  absolute_error(avgTripDist),relative_error(avgTripDist),
+  lower_bound(avgTripDist),upper_bound(avgTripDist) 
+  from nyctaxi group by medallion order by medallion desc limit 100
+  with error;
+  // We explain these built-in error functions in a section below.
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTripDist"),
+  absolute_error("avgTripDist"),  relative_error("avgTripDist"), lower_bound("avgTripDist"),
+  upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
+```
+
+#####Example 2: #####
+create an additional sample table with qcs 'hack_license'
+```
+CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
+(buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
+```
+
+**SQL Query:**
+```
+select  hack_license, count(*) count from NYCTAXI group by hack_license order by count desc limit 10 with error
+// the engine will automically use the HackLicense sample for more accurate answer to this query.
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
+```
+
+#####Example 3: #####
+Create a sample table using function "hour(pickup_datetime) as QCS.
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+```
+
+**SQL Query:**
+```
+select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
+```
+
+#####Example 4:#####
+If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
+
+```
+Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+```
+
+**SQL Query:**
+```
+Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
+```
+
+**DataFrame API Query:**
+```
+snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
+```
+
+##Sample Selection:##
+
+Sample selection logic selects most appropriate sample, based on the following logic:
+
+* If query QCS (columns involved in Where/GroupBy/Having is exactly the same as QCS in a sample, then, select that sample
+* If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used
+* If superset of sample QCS is not available, a sample where the sample QCS is subset of query QCS is used
+
+When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
+
+For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. 
+
+This is illustrated in the following image:
+![QCS](./Images/aqp_qcs.png)
+
+
+###High-level Accuracy Contracts (HAC)###
+SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
+
+When an error constraint is not met, the action to be taken is defined in the behavior clause. 
+
+####Behaviour Clause####
+Synopsis Data Engine has HAC support using the following behavior clause. 
+
+##### `<do_nothing>`#####
+The SDE engine returns the estimate as is. 
+![DO NOTHING](./Images/aqp_donothing.png)
+<br>
+
+##### `<local_omit>`#####
+For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
+![LOCAL OMIT](./Images/aqp_localomit.png)
+<br>
+
+##### `<strict>`#####
+If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
+![Strict](./Images/aqp_strict.png)
+<br>
+
+##### `<run_on_full_table>`#####
+If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
+![RUN OF FULL TABLE](./Images/aqp_runonfulltable.png)
+<br>
+
+##### `<partial_run_on_base_table>`#####
+If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
+![PARTIAL RUN ON BASE TABLE](./Images/aqp_partialrunonbasetable.png)
+<br>
+
+In the following example, any one of the above behavior clause can be applied. 
+
+```
+SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <behavior>]
+```
+
+###Error Functions###
+In addition to this, SnappyData supports error functions that can be specified in the query projection. These error functions are supported for the SUM, AVG and COUNT aggregates in the projection. 
+
+The following four methods are available to be used in query projection when running approximate queries:
+
+* **absolute_error(column alias**) : Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) 
+
+* **relative_error(column alias)** : Indicates ratio of absolute error to estimate.
+
+* **lower_bound(column alias)** : Lower value of a estimate interval for a given confidence.
+
+* **upper_bound(column alias)**: Upper value of a estimate interval for a given confidence.
+
+Confidence is the probability that the value of a parameter falls within a specified range of values.
+
+For example:
+
+```
+SELECT avg(ArrDelay) as AvgArr ,absolute_error(AvgArr),relative_error(AvgArr),lower_bound(AvgArr), upper_bound(AvgArr),
+UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ERROR 0.12 confidence 0.9
+```
+* The `absolute_error` and `relative_error` function values returns 0 if query is executed on the base table. 
+* `lower_bound` and `upper_bound` values returns null if query is executed on the base table. 
+* The values are seen in case behavior is set to `<run_on_full_table>` or`<partial_run_on_base_table>`
+
+In addition to using SQL syntax in the queries, you can use data frame API as well. 
+For example, if you have a data frame for the airline table, then the below query can equivalently also be written as :
+
+```
+select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay), Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
+```
+
+```
+snc.table(basetable).groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
+```
+
+###Reserved Keywords ###
+Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
+
+If the aggregate function is aliased in the query as `sample_<any string>`, then what you get is true answers on the sample table, and not the estimates of the base table.
+
+`select count() rowCount, count() as sample_count from airline with error 0.1`
+
+rowCount returns estimate of number of rows in airline table.
+sample_count returns number of rows (true answer) in sample table of airline table.
+
+
+## Sketching 
+Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures much more useful. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
+
+### Creating TopK tables###
 TopK queries are used to rank attributes to answer "best, most interesting, most important" class of questions. TopK structures store elements ranking them based on their relevance to the query. [TopK](http://stevehanov.ca/blog/index.php?id=122) queries aim to retrieve, from a potentially very large resultset, only the *k (k >= 1)* best answers.
  
 *SQL API for creating a TopK table in SnappyData* 
  
-```  
+``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
    
 	
 	val topKOptionMap = Map(
@@ -34,16 +359,17 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-*Querying the TopK table*  
+*Querying the TopK table* 
 	
 	
-	select * from topkTweets order by EstimatedValue desc  
+	select * from topkTweets order by EstimatedValue desc 
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
-### Approximate TopK analytics for time series data
+
+### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
-Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData AQP module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
+Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
 	
 	
 	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where 
@@ -60,10 +386,10 @@ In the example below tweetTime is a field in the incoming dataset which carries 
 ```scala
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
-```  
+``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
-*Scala API for creating a TopK table*  
+*Scala API for creating a TopK table* 
 
 ```scala
     val topKOptionMap = Map(
@@ -82,79 +408,5 @@ The code above shows how to do the same thing using the SnappyData Scala API.
 
 It is worth noting that the user has the ability to disable time as a dimension if desired. This is done by not providing the *timeInterval* attribute when creating the TopK table.
 
-
-### Approximations Technique 2: Sampling
-The basic idea behind sampling is the assumption that a representative sample of the base data set can be built such that it can provide answers to aggregate questions like SUM, AVG and COUNT fairly accurately and much more quicker than running the same query against the full data set. We use a combination of techniques to build the sample such that it is representative, random (is not biased) and contains under represented groups.
-
-The two techniques that the SnappyData AQP module uses to accomplish this are reservoir sampling as applied to stratified sampling. 
-
-Reservoir sampling is a technique/set of algorithms for randomly choosing a sample of *k* items from a set S containing n items, where k is a small subset of n. While reservoir sampling delivers a uniform random sample, by itself, it does not have the ability to ensure that under represented groups in the data set are represented in the sample.
-
-This is where stratified sampling comes in. Stratified sampling divides the population/data set into different non overlapping subgroups. Once the strata has been defined, we then use reservoir sampling within each subgroup to deliver uniform random samples. This works for large static data sets or streaming data sets. The process of stratification is driven by apriori knowledge of the query column sets that are expected in user queries.
-
-
-*The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns* 
-
-	CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS(
-    buckets '5',
-    qcs 'UniqueCarrier, Year_, Month_',
-    fraction '0.03',
-    strataReservoirSize '50') AS (
-    SELECT Year_, Month_ , DayOfMonth,
-      DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
-      UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
-      CRSElapsedTime, AirTime, ArrDelay, DepDelay, Origin,
-      Dest, Distance, TaxiIn, TaxiOut, Cancelled, CancellationCode,
-      Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
-      LateAircraftDelay, ArrDelaySlot
-    FROM AIRLINE);
-    
-   
-*Equivalent Scala API for creating  the same sample table*  	 
-
-```scala
-    String baseTable = "AIRLINE"
-       // Create a sample table sampling parameters.
-      snc.createSampleTable(sampleTable, Some(baseTable),
-        Map("buckets" -> "5",
-          "qcs" -> "UniqueCarrier, Year_, Month_",
-          "fraction" -> "0.03",
-          "strataReservoirSize" -> "50"
-        ))
-        snc.table(baseTable).write.insertInto(sampleTable)
-```
-
-Here is an example of a query that can be run after the sample table has been created.  
-
-	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order
-        by Month_  with error 0.10 confidence 0.95
-	  
-Note how the query specifies the acceptable error fraction and expected confidence interval. The table specified in the query is the base table, however the SnappyData AQP engine figures out that there are one or more appropriate sample tables that can be used to satisfy this query and transparently uses the sample table to satisfy the query.  
-
-Here is the scala API for running the same query     
-
-	snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).withError(0.10, 0.95)  
-	  
-The withError method takes in both the error fraction and the expected confidence interval for the returned result.
-
-In addition to this, SnappyData supports error functions that can be specified in the query projection. Currently these error functions are supported for the SUM and AVG aggregates in the projection. The following four methods are available to be used in query projection when running approximate queries, and their definitions are self explanatory
-
-1. absolute_error(\<Aggregate field used in query>)
-2. relative_error(\<Aggregate field used in query>)
-3. lower_bound(\<Aggregate field used in query>)
-4. upper_bound(\<Aggregate field used in query>)
-
-The query below depicts an example of using error functions in query projections 
- 
-````
-select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay),
-Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95;
-````
-Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specify whether the query should be transparently run against the full data set if available.
-
-#### Using AQP	
-Approximate query processing offers the potential for order of magnitude improvements in big data query processing but it is by no means a panacea to all big data queries. The use of AQP is predicated on proper strata selection for sample generation and that in turn is a function of the queries that the system is expected to handle. Using regions or states as strata for queries involving customers offers the potential for providing manageable subgroups (50 states) with the potential for enough sample data in each subgroup to allow sampling to work. Using customer id as the strata in the same scenario would simply not be feasible. 
-
-In the current release AQP queries only work for SUM, AVG and COUNT aggregations not involving joins. The SnappyData AQP module will gradually expand the scope of queries that can be serviced through it. But the overarching goal here is to make enough of a dent in query processing by diverting at least some queries to the sampling subsystem and allowing better data exploration. 
-
-
+##Using SDE##
+In the current release SDE queries only work for SUM, AVG and COUNT aggregations. Joins are only supported to non-samples in this release. The SnappyData SDE module will gradually expand the scope of queries that can be serviced through it. But the overarching goal here is to dramatically cut down on the load on current systems by diverting at least some queries to the sampling subsystem and increasing productivity through fast response times. 
