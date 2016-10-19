@@ -131,7 +131,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
     else new ByteArraysIteratorOnScan(container, bucketIds,
       statsPredicate.generatePredicate,
-      statsPredicate.schema.size,
+      //  pass dummy value if no schema
+      if (statsPredicate.schema != null) statsPredicate.schema.size else 1,
       statsPredicate.cachedBatchesSeen,
       statsPredicate.cachedBatchesSkipped)
   }
