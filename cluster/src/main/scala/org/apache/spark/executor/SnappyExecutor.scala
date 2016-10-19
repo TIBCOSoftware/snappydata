@@ -21,11 +21,8 @@ import java.net.URL
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.SparkEnv
-import org.apache.spark.internal.Logging
-import org.apache.spark.util.SparkUncaughtExceptionHandler._
-import org.apache.spark.util.{SparkExitCode, ShutdownHookManager,
-ChildFirstURLClassLoader, MutableURLClassLoader, Utils}
+import org.apache.spark.util.{ChildFirstURLClassLoader, MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
+import org.apache.spark.{Logging, SparkEnv}
 
 class SnappyExecutor(
     executorId: String,
@@ -46,7 +43,7 @@ class SnappyExecutor(
     // Bootstrap the list of jars with the user class path.
     val now = System.currentTimeMillis()
     userClassPath.foreach { url =>
-      currentJars(url.getPath().split("/").last) = now
+      currentJars(url.getPath.split("/").last) = now
     }
 
     val currentLoader = Utils.getContextOrSparkClassLoader
@@ -56,7 +53,8 @@ class SnappyExecutor(
     val urls = userClassPath.toArray ++ currentJars.keySet.map { uri =>
       new File(uri.split("/").last).toURI.toURL
     }
-    if (env.conf.getBoolean("spark.executor.userClassPathFirst", false)) {
+    if (env.conf.getBoolean("spark.executor.userClassPathFirst",
+      defaultValue = false)) {
       new SnappyChildFirstURLClassLoader(urls, currentLoader)
     } else {
       new SnappyMutableURLClassLoader(urls, currentLoader)

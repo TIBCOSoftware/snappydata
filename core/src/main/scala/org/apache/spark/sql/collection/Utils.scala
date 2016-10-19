@@ -32,7 +32,6 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -49,7 +48,7 @@ import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 

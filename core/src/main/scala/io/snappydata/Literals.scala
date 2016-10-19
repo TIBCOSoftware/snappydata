@@ -87,6 +87,8 @@ object Constant {
 
   val MAX_VARCHAR_SIZE = 32672
 
+  val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
+
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"

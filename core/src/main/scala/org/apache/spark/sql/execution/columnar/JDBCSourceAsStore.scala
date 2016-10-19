@@ -29,14 +29,13 @@ import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEn
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Logging, Partition, TaskContext}
 
 /*
 Generic class to query column table from SnappyData execution.

@@ -29,6 +29,7 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.Constant
 import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
@@ -175,6 +176,14 @@ object ExecutorInitiator extends Logging {
                     driverConf.set("spark.memory.manager",
                       driverConf.get("spark.memory.manager", SNAPPY_MEMORY_MANAGER))
 
+                    // enable optimized pooled Kryo serializer by default
+                    driverConf.get("spark.serializer",
+                      driverConf.get("spark.serializer",
+                        Constant.DEFAULT_SERIALIZER))
+                    driverConf.get("spark.closure.serializer",
+                      driverConf.get("spark.closure.serializer",
+                        Constant.DEFAULT_SERIALIZER))
+
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)
 
@@ -250,7 +259,7 @@ object ExecutorInitiator extends Logging {
     // Avoid creation of executor inside the Gem accessor
     // that is a Spark driver but has joined the gem system
     // in the non embedded mode
-    if (SparkCallbacks.isDriver()) {
+    if (SparkCallbacks.isDriver) {
       logInfo("Executor cannot be instantiated in this " +
           "VM as a Spark driver is already running. ")
       return

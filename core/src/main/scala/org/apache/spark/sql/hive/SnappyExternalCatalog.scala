@@ -26,13 +26,13 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.thrift.TException
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.sql._
+import org.apache.spark.Logging
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.hive.client.HiveClient
 
-private[spark] class SnappyExternalCatalog(val client :HiveClient, hadoopConf: Configuration)
+private[spark] class SnappyExternalCatalog(val client: HiveClient, hadoopConf: Configuration)
     extends ExternalCatalog with Logging {
 
   import CatalogTypes.TablePartitionSpec
@@ -76,7 +76,7 @@ private[spark] class SnappyExternalCatalog(val client :HiveClient, hadoopConf: C
   }
 
   private def requireDbMatches(db: String, table: CatalogTable): Unit = {
-    if (table.identifier.database != Some(db)) {
+    if (!table.identifier.database.contains(db)) {
       throw new AnalysisException(
         s"Provided database '$db' does not match the one specified in the " +
             s"table definition (${table.identifier.database.getOrElse("n/a")})")
