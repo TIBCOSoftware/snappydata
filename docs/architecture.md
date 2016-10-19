@@ -3,9 +3,7 @@ This section presents a high level overview of SnappyData’s core components, a
 
 ### Core components
 Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
-<!--  ![Core components](CoreComponents.png=100x100) -->
-
-<img src="CoreComponents.png" alt="Core Components" width="400" height="300">
+![Core components](CoreComponents.png) 
 
 The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](rowAndColumnTables.md) section for details on the syntax and available features. 
 
@@ -15,7 +13,7 @@ The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are cap
 
 To support replica consistency, fast point updates, and instantaneous detection of failure conditions in the cluster, we use a P2P (peer-to-peer) cluster membership service that ensures view consistency and virtual synchrony in the cluster. Any of the in-memory tables can be synchronously replicated using this P2P cluster.
 
-In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for approximate query processing (AQP) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
+In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for Synopsis Data Engine (SDE)) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
 
 To understand the data flow architecture, we first walk through a real time use case that involves stream processing, ingesting into an in-memory store and interactive analytics. 
 
@@ -25,11 +23,9 @@ The global proliferation of mobile devices has created a growing market for loca
 
 ### Data ingestion pipeline
 The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
-<!-- ![Data Ingestion Pipeline](DataIngestionPipeline.png =250x)  -->
+![Data Ingestion Pipeline](DataIngestionPipeline.png)  
 
-<img src="DataIngestionPipeline.png" alt="Data Ingestion pipeline" width="600" height="300">
-
-1. Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
+Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
 
 2. We rely on Spark Streaming’s parallel receivers to consume data from multiple sources. These receivers produce a DStream, whereby the input is batched over small time intervals and emitted as a stream of RDDs. This batched data is typically transformed, enriched and emitted as one or more additional streams. The raw incoming stream may be persisted into HDFS for batch analytics.
 
@@ -39,7 +35,7 @@ The data pipeline involving analytics while streams are being ingested and subse
 
 5. To prevent running out of memory, tables can be configured to evict or overflow to disk using an LRU strategy. For instance, an application may ingest all data into HDFS while preserving the last day’s worth of data in memory.
 
-6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use approximate query processing to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
+6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use Synopsis Data Engine to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
 
 
 ### Hybrid Cluster Manager

@@ -21,6 +21,7 @@ import java.util.GregorianCalendar
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, ResultWasNull}
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -221,7 +222,8 @@ class ResultNullHolder extends ResultWasNull {
 
   final var wasNull: Boolean = _
 
-  final val defaultCal = new GregorianCalendar()
+  final lazy val defaultCal = new GregorianCalendar(
+    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
 
   override final def setWasNull(): Unit = {
     wasNull = true
