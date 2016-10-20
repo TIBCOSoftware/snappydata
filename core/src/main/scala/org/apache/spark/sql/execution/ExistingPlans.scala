@@ -76,7 +76,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
-  private[sql] override lazy val metrics = Map(
+  override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
