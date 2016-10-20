@@ -1,5 +1,5 @@
 # Overview of Synopsis Data Engine (SDE)#
-The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightening fast response time. 
+The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightning fast response time. 
 
 For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. A near perfect answer that can be rendered in seconds (visually, it is identical to the 100% correct rendering) instead of minutes would increase productivity - the engineer continues to slice and dice the data sets with no interruptons to his/her train of thought. 
 
