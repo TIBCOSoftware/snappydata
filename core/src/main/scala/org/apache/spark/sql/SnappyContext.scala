@@ -1025,7 +1025,6 @@ object SnappyContext extends Logging {
     if (_globalSNContextInitialized) {
       // then on the driver
       clearStaticArtifacts()
-      //SnappyContext.flushSampleTables();
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {

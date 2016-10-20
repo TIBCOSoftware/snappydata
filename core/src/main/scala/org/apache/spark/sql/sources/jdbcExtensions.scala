@@ -79,7 +79,7 @@ object JdbcExtendedUtils extends Logging {
   val ALLOW_EXISTING_PROPERTY = "allowexisting"
   val BASETABLE_PROPERTY = "basetable"
 
-  val TABLETYPE_PROPERTY = "EXTERNAL"
+  val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
     val stmt = conn.createStatement()
