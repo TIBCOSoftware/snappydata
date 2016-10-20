@@ -17,17 +17,26 @@
 
 package org.apache.spark.sql.internal
 
+import scala.collection.concurrent.TrieMap
+
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+
+import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
+import org.apache.spark.internal.config.ConfigEntry
 import org.apache.spark.sql.aqp.SnappyContextFunctions
+import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner, datasources}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 
 
@@ -57,6 +66,15 @@ class SnappySessionState(snappySession: SnappySession)
         datasources.PreWriteCheck(conf, catalog), PrePutCheck)
     }
   }
+
+  override lazy val conf: SnappyConf = new SnappyConf(snappySession)
+
+  /**
+   * The partition mapping selected for the lead partitioned region in
+   * a collocated chain for current execution
+   */
+  private[this] val leaderPartitions = new TrieMap[PartitionedRegion,
+      Array[Partition]]()
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -92,8 +110,64 @@ class SnappySessionState(snappySession: SnappySession)
     experimentalMethods.extraStrategies)
 
 
-  override def executePlan(plan: LogicalPlan): QueryExecution =
+  override def executePlan(plan: LogicalPlan): QueryExecution = {
+    conf.refreshNumShufflePartitions()
+    leaderPartitions.clear()
     contextFunctions.executePlan(snappySession, plan)
+  }
+
+  def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
+    val leaderRegion = ColocationHelper.getLeaderRegion(region)
+    leaderPartitions.getOrElseUpdate(leaderRegion,
+      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion))
+  }
+
+  def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
+    StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+}
+
+private[sql] class SnappyConf(@transient val session: SnappySession)
+    extends SQLConf with Serializable with CatalystConf with Logging {
+
+  /**
+   * Records the number of shuffle partitions to be used determined on runtime
+   * from available cores on the system. A value <= 0 indicates that it was set
+   * explicitly by user and should not use a dynamic value.
+   */
+  @volatile private[this] var dynamicShufflePartitions: Int = SQLConf
+      .SHUFFLE_PARTITIONS.defaultValue match {
+    case _ if session == null => -1
+    case Some(d) => if (super.numShufflePartitions == d) {
+      session.sparkContext.schedulerBackend.defaultParallelism()
+    } else -1
+    case None => session.sparkContext.schedulerBackend.defaultParallelism()
+  }
+
+  private[this] def checkShufflePartitionsKey(key: String): Unit = {
+    if (key == SQLConf.SHUFFLE_PARTITIONS.key) dynamicShufflePartitions = -1
+  }
+
+  private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
+    if (dynamicShufflePartitions != -1 && session != null) {
+      dynamicShufflePartitions = session.sparkContext.schedulerBackend
+          .defaultParallelism()
+    }
+  }
+
+  override def numShufflePartitions: Int = {
+    val partitions = this.dynamicShufflePartitions
+    if (partitions > 0) partitions else super.numShufflePartitions
+  }
+
+  override def setConfString(key: String, value: String): Unit = {
+    checkShufflePartitionsKey(key)
+    super.setConfString(key, value)
+  }
+
+  override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
+    checkShufflePartitionsKey(entry.key)
+    super.setConf[T](entry, value)
+  }
 }
 
 class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
