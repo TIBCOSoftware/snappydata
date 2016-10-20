@@ -25,7 +25,7 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
+import io.snappydata.{SnappyTableStatsProviderService, Constant, Property}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -1000,18 +1000,18 @@ object SnappyContext extends Logging {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        StoreTableValueSizeProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        StoreTableValueSizeProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        StoreTableValueSizeProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        StoreTableValueSizeProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc)
       case _ => // ignore
     }
   }
