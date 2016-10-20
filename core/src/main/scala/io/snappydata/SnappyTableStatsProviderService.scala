@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorResult, SnappyRegionStatsCollectorFunction, SnappyRegionStats}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
@@ -42,7 +42,7 @@ import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
   @volatile
-  private var tableSizeInfo = Map[String, SnappyRegionStatsCollectorResult]()
+  private var tableSizeInfo = Map[String, SnappyRegionStats]()
 
   def start(sc: SparkContext): Unit = {
     val delay =
@@ -53,7 +53,13 @@ object SnappyTableStatsProviderService extends Logging {
         var logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
         override def run2(): Unit = {
-          tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+          try {
+            tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+          } catch {
+            case (e: Exception) => {
+              logger.warning(e)
+            }
+          }
         }
 
         override def getLoggerI18n: LogWriterI18n = {
@@ -64,7 +70,7 @@ object SnappyTableStatsProviderService extends Logging {
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
-  Option[SnappyRegionStatsCollectorResult] = {
+  Option[SnappyRegionStats] = {
     if (tableSizeInfo == null || !tableSizeInfo.contains(fullyQualifiedTableName)) {
       None
     } else tableSizeInfo.get(fullyQualifiedTableName)
@@ -97,9 +103,9 @@ object SnappyTableStatsProviderService extends Logging {
 
 
   def getAggregatedTableStatsOnDemand(sc: SparkContext):
-  Map[String, SnappyRegionStatsCollectorResult] = {
+  Map[String, SnappyRegionStats] = {
     val serverStats = getTableStatsFromAllServers
-    val aggregatedStats = collection.mutable.Map[String, SnappyRegionStatsCollectorResult]()
+    val aggregatedStats = collection.mutable.Map[String, SnappyRegionStats]()
     val snc = SnappyContext(sc)
     val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
@@ -126,13 +132,14 @@ object SnappyTableStatsProviderService extends Logging {
     }
   }
 
-  private def getTableStatsFromAllServers: Seq[SnappyRegionStatsCollectorResult] = {
+  private def getTableStatsFromAllServers: Seq[SnappyRegionStats] = {
     val result = FunctionService.onMembers(GfxdMessage.getAllDataStores)
         .withCollector(new GfxdListResultCollector())
         .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-        asInstanceOf[java.util.ArrayList[java.util.ArrayList[SnappyRegionStatsCollectorResult]]]
+        asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
         .asScala
-    result.flatMap(_.asScala)
+
+    result.flatMap(_.getRegionStats.asScala)
   }
 
 }

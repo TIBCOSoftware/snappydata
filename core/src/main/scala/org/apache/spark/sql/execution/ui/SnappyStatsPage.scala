@@ -22,7 +22,7 @@ package org.apache.spark.sql.execution.ui
 import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
-import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStatsCollectorResult
+import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SnappyContext
@@ -51,7 +51,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   private def header = Seq("Table Name", "Table Type", "Memory Used", "Total Rows")
 
 
-  private def rowTable(stats: SnappyRegionStatsCollectorResult) = {
+  private def rowTable(stats: SnappyRegionStats) = {
     val columnTable = if (stats.isColumnTable) " COLUMN " else " ROW "
     <tr>
       <td sorttable_customkey={stats.getRegionName}>

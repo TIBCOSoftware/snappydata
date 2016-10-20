@@ -17,13 +17,15 @@
 
 package io.snappydata.cluster
 
+import java.util.Properties
+
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.gemstone.gemfire.management.{ManagementService, RegionMXBean}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStatsCollectorResult
+import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.test.dunit.SerializableRunnable
@@ -37,21 +39,23 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
   val table = "TEST.TEST_TABLE"
 
   override def beforeClass(): Unit = {
-    ClusterManagerTestBase.stopSpark()
-    bootProps.setProperty("eviction-heap-percentage", "20")
     bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "500")
-    List(vm2, vm1, vm0).foreach(vm =>
-      vm.invoke(classOf[ClusterManagerTestBase], "stopAny"))
+    ClusterManagerTestBase.stopSpark()
     super.beforeClass()
   }
-
 
   override def afterClass(): Unit = {
     super.afterClass()
     // force restart with default properties in subsequent tests
     ClusterManagerTestBase.stopSpark()
-    List(vm2, vm1, vm0).foreach(vm =>
-      vm.invoke(classOf[ClusterManagerTestBase], "stopAny"))
+
+  }
+
+  def nodeShutDown: Unit = {
+    ClusterManagerTestBase.stopSpark()
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
   }
 
   def testVerifyTableStats(): Unit = {
@@ -92,7 +96,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def testVerifyTableStatsEvictionAndHA(): Unit = {
     val props = bootProps
-    val port = ClusterManagerTestBase.locatorPort
+    val port = ClusterManagerTestBase.locPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
@@ -113,18 +117,25 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     snc.dropTable(table)
   }
 
-
   def testHeapEvictionHA(): Unit = {
 
-    val props = bootProps
-    val port = ClusterManagerTestBase.locatorPort
+    var props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
 
-    val restartServer = new SerializableRunnable() {
+    props.setProperty("eviction-heap-percentage", "20")
+
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
     val snc = SnappyContext(sc).newSession()
     val expectedRowCount = 1888622
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
+    vm1.invoke(restartServer(props))
+    vm2.invoke(restartServer(props))
 
     val airlineDataFrame = snc.read.load(getClass.getResource("/2015.parquet").getPath)
     snc.createTable(table, "column", airlineDataFrame.schema, Map("PERSISTENT" -> "async"))
@@ -132,8 +143,12 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    vm1.invoke(restartServer)
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
+    props = bootProps
+
+    vm1.invoke(restartServer(props))
+    vm2.invoke(restartServer(props))
 
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "C", expectedRowCount)
     snc.dropTable(table, true)
@@ -155,10 +170,9 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 object SnappyTableStatsProviderDUnitTest {
 
   def getPartitionedRegionStats(tableName: String, isColumnTable: Boolean):
-  SnappyRegionStatsCollectorResult = {
+  SnappyRegionStats = {
     val region = Misc.getRegionForTable(tableName, true).asInstanceOf[PartitionedRegion]
-    var result = new SnappyRegionStatsCollectorResult(tableName,
-      region.asInstanceOf[LocalRegion].getDataPolicy)
+    var result = new SnappyRegionStats(tableName)
     if (isColumnTable) {
       result.setColumnTable(true)
       val cachedBatchTableName = ColumnFormatRelation.cachedBatchTableName(tableName)
@@ -168,7 +182,7 @@ object SnappyTableStatsProviderDUnitTest {
   }
 
   def getDetailsForPR(table: String, isCachedBatchTable: Boolean,
-      stats: SnappyRegionStatsCollectorResult): SnappyRegionStatsCollectorResult = {
+      stats: SnappyRegionStats): SnappyRegionStats = {
     val region = Misc.getRegionForTable(table, true).asInstanceOf[PartitionedRegion]
     val managementService = ManagementService.getManagementService(Misc.getGemFireCache).
         asInstanceOf[SystemManagementService]
@@ -177,15 +191,16 @@ object SnappyTableStatsProviderDUnitTest {
         foldLeft(0L)(_ + _.getTotalBytes)
     stats.setTotalSize(stats.getTotalSize + totalSize)
     stats.setSizeInMemory(stats.getSizeInMemory + regionBean.getEntrySize)
+    stats.setReplicatedTable(false)
     val size = if (isCachedBatchTable) regionBean.getRowsInCachedBatches
     else regionBean.getEntryCount
     stats.setRowCount(stats.getRowCount + size)
     stats
   }
 
-  def getReplicatedRegionStats(tableName: String): SnappyRegionStatsCollectorResult = {
+  def getReplicatedRegionStats(tableName: String): SnappyRegionStats = {
     val region = Misc.getRegionForTable(tableName, true).asInstanceOf[DistributedRegion]
-    val result = new SnappyRegionStatsCollectorResult(tableName, region.getDataPolicy)
+    val result = new SnappyRegionStats(tableName)
     val managementService =
       ManagementService.getManagementService(Misc.getGemFireCache)
           .asInstanceOf[SystemManagementService]
@@ -193,6 +208,7 @@ object SnappyTableStatsProviderDUnitTest {
         foldLeft(0L)(_ + GemFireXDInstrumentation.getInstance.sizeof(_))
     val regionBean = managementService.getLocalRegionMBean(region.getFullPath)
     result.setSizeInMemory(totalSize)
+    result.setReplicatedTable(true)
     result.setColumnTable(false)
     result.setRowCount(regionBean.getEntryCount)
     result
@@ -200,17 +216,17 @@ object SnappyTableStatsProviderDUnitTest {
 
   def getExpectedResult(snc: SnappyContext, tableName: String,
       isReplicatedTable: Boolean = false, isColumnTable: Boolean = false):
-  SnappyRegionStatsCollectorResult = {
-    def aggregateResults(left: SnappyRegionStatsCollectorResult,
-        right: SnappyRegionStatsCollectorResult):
-    SnappyRegionStatsCollectorResult = {
+  SnappyRegionStats = {
+    def aggregateResults(left: SnappyRegionStats,
+        right: SnappyRegionStats):
+    SnappyRegionStats = {
       left.getCombinedStats(right)
     }
 
-    val expected = Utils.mapExecutors[SnappyRegionStatsCollectorResult](snc, () => {
+    val expected = Utils.mapExecutors[SnappyRegionStats](snc, () => {
       val result = if (isReplicatedTable) getReplicatedRegionStats(tableName)
       else getPartitionedRegionStats(tableName, isColumnTable)
-      Iterator[SnappyRegionStatsCollectorResult](result)
+      Iterator[SnappyRegionStats](result)
     }).collect()
 
     expected.reduce(aggregateResults(_, _))
@@ -229,7 +245,6 @@ object SnappyTableStatsProviderDUnitTest {
 
 
     assert(actual.getRegionName == expected.getRegionName)
-    assert(actual.getDataPolicy == expected.getDataPolicy)
     assert(actual.isColumnTable == expected.isColumnTable)
 
     ClusterManagerTestBase.waitForCriterion(actual.getSizeInMemory == expected.getSizeInMemory
@@ -238,6 +253,6 @@ object SnappyTableStatsProviderDUnitTest {
       s"Expected Size ${expected.getSizeInMemory} Size ${actual.getSizeInMemory} \n" +
           s"Expected Total Size ${expected.getTotalSize} Total Size ${actual.getTotalSize} \n" +
           s"Expected Count ${expected.getRowCount} Count  ${actual.getRowCount} \n",
-      10000, 1000, true)
+      20000, 1000, true)
   }
 }
