@@ -230,18 +230,13 @@ snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_dis
 
 ##Sample Selection:##
 
-Sample selection logic selects most appropriate sample, based on the following logic:
+Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
-* If query QCS (columns involved in Where/GroupBy/Having is exactly the same as QCS in a sample, then, select that sample
+* If the query is not an aggregation query (based on COUNT, AVG, SUM) then reject the use of any samples. The query is executed on the base table. Else,
+* If query QCS (columns involved in Where/GroupBy/Having matches the sample QCS, then, select that sample
 * If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used
 * If superset of sample QCS is not available, a sample where the sample QCS is subset of query QCS is used
-
-When multiple stratified samples with subset of QCSs match, sample where most number of columns match with query QCS is used. Largest size of sample gets selected if multiple such samples are available. 
-
-For example, If query QCS are A, B and C. If samples with QCS  A and B and B and C are available, then choose a sample with large sample size. 
-
-This is illustrated in the following image:
-![QCS](./Images/aqp_qcs.png)
+* When multiple stratified samples with subset of QCSs match, sample with most matching columns is used. Largest size of sample gets selected if multiple such samples are available. 
 
 
 ###High-level Accuracy Contracts (HAC)###
