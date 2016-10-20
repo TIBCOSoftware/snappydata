@@ -105,7 +105,7 @@ object SnappyTableStatsProviderService extends Logging {
   def getAggregatedTableStatsOnDemand(sc: SparkContext):
   Map[String, SnappyRegionStats] = {
     val serverStats = getTableStatsFromAllServers
-    val aggregatedStats = collection.mutable.Map[String, SnappyRegionStats]()
+    val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     val snc = SnappyContext(sc)
     val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
