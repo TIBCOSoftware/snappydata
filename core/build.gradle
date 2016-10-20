@@ -45,7 +45,7 @@ dependencies {
   provided "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}"
-  provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
+  //provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
