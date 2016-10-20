@@ -1,0 +1,194 @@
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = []
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
+                                  'src/dunit/java', 'src/dunit/scala' ]
+ext {
+  PRODUCT_NAME = 'SnappyData AQP'
+  createdBy = System.getProperty('user.name')
+  osArch = System.getProperty('os.arch')
+  osName = org.gradle.internal.os.OperatingSystem.current()
+  osVersion = System.getProperty('os.version')
+  buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
+  buildNumber = new Date().format('MMddyy')
+  jdkVersion = System.getProperty('java.version')
+  gitCmd = "git --git-dir=${project.projectDir}/.git --work-tree=${project.projectDir}"
+  gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
+  commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
+  sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
+}
+
+dependencies {
+  compile 'org.scala-lang:scala-library:' + scalaVersion
+  compile 'org.scala-lang:scala-reflect:' + scalaVersion
+  compile 'org.scala-lang:scala-compiler:' + scalaVersion
+  compile(group: 'com.databricks', name: 'spark-csv_' + scalaBinaryVersion, version: sparkCSVVersion) {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  runtime project(':snappy-cluster_' + scalaBinaryVersion)
+  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+  if (new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+  } else {
+    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+  }
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    testCompile project(':snappy-store:gemfirexd-client')
+    testCompile project(':snappy-store:gemfirexd-core')
+    testCompile project(':snappy-store:gemfirexd-tools')
+    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+  } else {
+    testCompile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+    testCompile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+    testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
+    testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
+  }
+  testRuntime project(':snappy-core_' + scalaBinaryVersion)
+  testCompile project(':snappy-cluster_' + scalaBinaryVersion)
+  testCompile project(':dunit')
+  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile project(path: ':snappy-cluster_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+
+  compile group: 'org.twitter4j', name: 'twitter4j-stream', version:'4.0.4'
+}
+
+// Creates the version properties file and writes it to the resources dir
+task createVersionPropertiesFile(dependsOn: 'processResources') {
+  def propertiesDir = file("${buildDir}/resources/main/io/snappydata")
+  outputs.file "${propertiesDir}/SnappyAQPVersion.properties"
+  inputs.dir compileJava.destinationDir
+
+  doLast {
+
+    def props = [
+      'Product-Name'      : PRODUCT_NAME,
+      'Product-Version'   : version,
+      'Build-Id'          : System.env.USER + ' ' + buildNumber,
+      'Build-Date'        : buildDate,
+      'Build-Platform'    : osName.getName() + osVersion + osArch,
+      'Build-Java-Version': jdkVersion,
+      'Source-Date'       : sourceDate,
+      'Source-Revision'   : commitId,
+      'Source-Repository' : gitBranch,
+    ]
+
+    writeProperties(propertiesDir, 'SnappyAQPVersion.properties',
+        "Properties that control what version ${PRODUCT_NAME} will think it is. Changing these values may cause ${PRODUCT_NAME} to no longer function.", props)
+  }
+}
+
+compileJava.dependsOn createVersionPropertiesFile
+
+
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    copy {
+      from (sourceSets.test.java.srcDirs) {
+        include '**/*.bt'
+        include '**/*.conf'
+        include '**/*.sql'
+      }
+      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+    }
+  }
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+
+test.dependsOn ':cleanJUnit'
+check.dependsOn.clear()
+check.dependsOn test, scalaTest, dunitTest
+
+scalaStyle {
+  configLocation = "${projectDir}/scalastyle-config.xml"
+  inputEncoding = 'UTF-8'
+  outputEncoding = 'UTF-8'
+  outputFile = "${buildDir}/scalastyle-output.xml"
+  includeTestSourceDirectory = false
+  source = 'src/main/scala'
+  testSource = 'src/test/scala'
+  failOnViolation = true
+  failOnWarning = false
+}
+
+archivesBaseName = 'snappydata-aqp_' + scalaBinaryVersion
+
+if (rootProject.hasProperty('enablePublish')) {
+  uploadArchives {
+    repositories {
+      mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+        repository(url: 'http://repository.snappydata.io:8089/repository/internal/') {
+          authentication(userName: archivaUsername, password: archivaPassword)
+        }
+        snapshotRepository(url: 'http://repository.snappydata.io:8089/repository/snapshots/') {
+          authentication(userName: archivaUsername, password: archivaPassword)
+        }
+
+        pom.project {
+          name 'SnappyData'
+          packaging 'jar'
+          // optionally artifactId can be defined here
+          description 'SnappyData distributed data store and execution engine'
+          url 'http://www.snappydata.io'
+
+          scm {
+            connection 'scm:git:https://github.com/SnappyDataInc/snappy-aqp.git'
+            developerConnection 'scm:git:https://github.com/SnappyDataInc/snappy-aqp.git'
+            url 'https://github.com/SnappyDataInc/snappy-aqp'
+          }
+
+          licenses {
+            license {
+              name 'SnappyData Inc, EULA'
+              url 'https://github.com/SnappyDataInc/snappy-aqp/blob/master/EULA.txt'
+            }
+          }
+
+          developers {
+            developer {
+              id 'ashahid'
+              name 'Asif Shahid'
+              email 'ashahid@snappydata.io'
+            }
+          }
+        }
+      }
+    }
+  }
+}
