@@ -223,14 +223,24 @@ object SnappyTableStatsProviderDUnitTest {
       left.getCombinedStats(right)
     }
 
-    val expected = Utils.mapExecutors[SnappyRegionStats](snc, () => {
+    val expected = Utils.mapExecutors[RegionStat](snc, () => {
       val result = if (isReplicatedTable) getReplicatedRegionStats(tableName)
       else getPartitionedRegionStats(tableName, isColumnTable)
-      Iterator[SnappyRegionStats](result)
+      Iterator[RegionStat](convertToSerializableForm(result))
     }).collect()
 
-    expected.reduce(aggregateResults(_, _))
+    expected.map(getRegionStat).reduce(aggregateResults(_, _))
 
+  }
+
+  def convertToSerializableForm(stat: SnappyRegionStats): RegionStat = {
+    RegionStat(stat.getRegionName, stat.getTotalSize, stat.getSizeInMemory,
+      stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable)
+  }
+
+  def getRegionStat(stat: RegionStat): SnappyRegionStats = {
+    new SnappyRegionStats(stat.regionName, stat.totalSize,
+      stat.memSize, stat.rowCount, stat.isColumnType, stat.isReplicated)
   }
 
 
@@ -256,3 +266,6 @@ object SnappyTableStatsProviderDUnitTest {
       20000, 1000, true)
   }
 }
+
+case class RegionStat(regionName: String, totalSize: Long,
+      memSize: Long, rowCount: Long, isColumnType: Boolean, isReplicated: Boolean)
