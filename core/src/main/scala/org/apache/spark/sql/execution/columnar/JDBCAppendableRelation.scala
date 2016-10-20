@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 
-import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
+import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
@@ -73,8 +73,12 @@ case class JDBCAppendableRelation(
     ExternalStoreUtils.lookupName(table, conn.getSchema)
   })
 
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table,
-    isColumnTable = true).getOrElse(super.sizeInBytes)
+  override def sizeInBytes: Long = {
+    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
+    if (stats.isDefined) stats.get.getTotalSize
+    else super.sizeInBytes
+  }
+
 
   protected final def dialect = connProperties.dialect
 
