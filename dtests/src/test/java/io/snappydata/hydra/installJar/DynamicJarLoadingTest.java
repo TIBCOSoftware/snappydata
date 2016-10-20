@@ -111,8 +111,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "    @Override\n" +
                 "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
                 "        try (PrintWriter pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\"))), true)){\n" +
+                "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
+                "            pw.println(\"****** DynamicJarLoadingJob started ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
-                "            io.snappydata.hydra.installJar. TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw);\n" +
+                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers);\n" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
                 "            StringWriter sw = new StringWriter();\n" +

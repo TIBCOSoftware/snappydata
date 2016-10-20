@@ -39,7 +39,7 @@ object SnappyTestUtils {
       }).count
 
     assert(countInstances == count)
-    pw.println("SS - countInstances is same as number of servers : " + countInstances);
+    pw.println("SS - countInstances is same as number of servers : " + countInstances + " class version: " + version);
     }
 
 

@@ -25,26 +25,26 @@ import org.apache.spark.sql.SnappySQLJob;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 
 public class DynamicJarLoadingJob extends SnappySQLJob {
     @Override
     public Object runSnappyJob(SnappyContext snc, Config jobConfig) {
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)){
-//            PrintWriter pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
+        PrintWriter pw = null;
+        try {
+            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
+            int numServers = Integer.parseInt(jobConfig.getString("numServers"));
             pw.println("****** DynamicJarLoadingJob started ******");
+            pw.println("\nnumServers : " + numServers);
             String currentDirectory = new File(".").getCanonicalPath();
-            TestUtils.verify(snc, jobConfig.getString("classVersion"), pw);
+            TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers);
             pw.println("****** DynamicJarLoadingJob finished ******");
-//            pw.close();
-            return String.format("See %s/" + jobConfig.getString("logFileName"),
-                    currentDirectory);
+            return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory);
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter spw = new PrintWriter(sw);
-            spw.println("ERROR: failed with " + e);
-            e.printStackTrace(spw);
-            return spw.toString();
+            pw.println("ERROR: failed with " + e);
+            e.printStackTrace(pw);
+            return pw.toString();
+        } finally {
+            pw.close();
         }
     }
 

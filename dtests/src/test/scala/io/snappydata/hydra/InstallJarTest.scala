@@ -16,35 +16,34 @@
  */
 package io.snappydata.hydra
 
-import java.io.{File, FileOutputStream, PrintWriter, StringWriter}
+import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.installJar.TestUtils
 import org.apache.spark.sql._
 
+import scala.util.{Failure, Success, Try}
+
 class InstallJarTest extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    //DynamicJarLoadingTest.verify(snc, jobConfig.getString("classVersion"))
-      val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
-      try {
-        pw.println("****** DynamicJarLoadingJob started ******")
-        val currentDirectory: String = new File(".").getCanonicalPath
-        TestUtils.verify(snc, jobConfig.getString("classVersion"), pw)
-        pw.println("****** DynamicJarLoadingJob finished ******")
-        return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory)
-      }
-      catch {
-        case e: Exception => {
-          val sw: StringWriter = new StringWriter
-          val spw: PrintWriter = new PrintWriter(sw)
-          spw.println("ERROR: failed with " + e)
-          e.printStackTrace(spw)
-          return spw.toString
-        }
-      } finally {
-        if (pw != null) pw.close()
-      }
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+    val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
+    Try {
+      pw.println("****** DynamicJarLoadingJob started ******")
+      val currentDirectory: String = new File(".").getCanonicalPath
+      val numServers: Int = jobConfig.getString("numServers").toInt
+      TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers)
+      pw.println("****** DynamicJarLoadingJob finished ******")
+      return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory)
+
+    } match {
+      case Success(v) => pw.close()
+        s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
+      case Failure(e) => pw.close();
+        throw e;
     }
+  }
+
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }

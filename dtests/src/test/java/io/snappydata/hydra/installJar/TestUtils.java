@@ -10,12 +10,8 @@ import java.io.PrintWriter;
  */
 public class TestUtils {
 
-    public static void verify(SnappyContext snc, String version, PrintWriter pw) throws Exception {
-        /*int numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
-        pw.println("SS - SnappyBB.numServers : " + numServers);*/
-        int numServers = 3;
+    public static void verify(SnappyContext snc, String version, PrintWriter pw, int numServers) throws Exception {
         pw.println("SS - version : " + version);
-        //pw.println(new TestException("Here---------------"));
         if (version.equalsIgnoreCase("1")) {
             SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass0", "1", numServers, pw);
             SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass1", "1", numServers, pw);
