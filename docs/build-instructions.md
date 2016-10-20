@@ -4,7 +4,7 @@ Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.or
 
 Latest release branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.6 --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.6.1 --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -22,7 +22,7 @@ If you want to build only the top-level snappydata project but pull in jars for 
 
 Latest release branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.6
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.6.1
 > cd snappydata
 > ./gradlew product
 ```

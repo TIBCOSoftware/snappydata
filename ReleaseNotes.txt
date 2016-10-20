@@ -8,6 +8,17 @@
 ####################################################################################################
 
 
+Release 0.6.1
+
+  [SNAP-1075] Added a service to publish store table size that is used for query plan generation.
+    These stats are also published on Snappy store UI tab.
+
+  [SNAP-1060] [SNAP-1141] [SNAP-1115] Fixes for streaming related issues after Spark 2.0 merge.
+
+  [SNAP-1083] Fixing multiple issues in RDD de-linking feature.
+
+  [SNAP-1113] Fix broken CAST in queries involving String type.
+
 
 Release 0.6
 
