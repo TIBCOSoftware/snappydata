@@ -34,18 +34,19 @@ public class DynamicJarLoadingJob extends SnappySQLJob {
             pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
             int numServers = Integer.parseInt(jobConfig.getString("numServers"));
             pw.println("****** DynamicJarLoadingJob started ******");
-            pw.println("\nnumServers : " + numServers);
+            pw.println("numServers in test : " + numServers);
             String currentDirectory = new File(".").getCanonicalPath();
             TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers);
             pw.println("****** DynamicJarLoadingJob finished ******");
             return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory);
         } catch (Exception e) {
-            pw.println("ERROR: failed with " + e);
+            pw.println("ERROR: failed with " + e.getMessage());
             e.printStackTrace(pw);
-            return pw.toString();
         } finally {
+            pw.flush();
             pw.close();
         }
+        return null;
     }
 
     @Override

@@ -157,7 +157,6 @@ public class SnappyTest implements Serializable {
     protected String getStoteTestsJar() {
         String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
                 ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) + "-all.jar";
-        Log.getLogWriter().info("SS - storeTestsJar : " + storeTestsJar);
         return storeTestsJar;
     }
 
@@ -166,7 +165,6 @@ public class SnappyTest implements Serializable {
                 "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs", "snappydata-store-scala-tests");*/
         String snappyTestsJar = getUserAppJarLocation("snappydata-store-scala-tests*.jar", hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "dtests" + hd.getFileSep() +
                 "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs");
-        Log.getLogWriter().info("SS - snappyTestsJar : " + snappyTestsJar);
         return snappyTestsJar;
     }
 
@@ -318,7 +316,6 @@ public class SnappyTest implements Serializable {
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
                         " -classpath=" + getSnappyTestsJar() + ":" + getStoteTestsJar();
-                Log.getLogWriter().info("SS - nodeLogDir for lead node is: " + nodeLogDir);
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();

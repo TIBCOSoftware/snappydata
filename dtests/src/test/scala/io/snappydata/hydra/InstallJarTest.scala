@@ -39,11 +39,12 @@ class InstallJarTest extends SnappySQLJob {
     } match {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
-      case Failure(e) => pw.close();
+      case Failure(e) =>
+        pw.println(e.getMessage)
+        pw.close();
         throw e;
     }
   }
-
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }

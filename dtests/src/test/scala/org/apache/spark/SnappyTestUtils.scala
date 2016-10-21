@@ -39,7 +39,7 @@ object SnappyTestUtils {
       }).count
 
     assert(countInstances == count)
-    pw.println("SS - countInstances is same as number of servers : " + countInstances + " class version: " + version);
+    pw.println("Class is available on all executors : numExecutors having the class loaded is same as numServers in test = " + countInstances + " class version: " + version);
     }
 
 
