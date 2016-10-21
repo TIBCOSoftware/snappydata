@@ -1,10 +1,22 @@
+
+group 'io.snappydata'
+version '0.1.0-SNAPSHOT'
+
 apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir 'src/main/scala/aqp'
 sourceSets.main.java.srcDirs = []
+//sourceSets.test.resources.srcDirs 'src/resources'
+sourceSets.test.scala.srcDir "src/test/scala/aqp"
+sourceSets.test.java.srcDirs = []
+
+
+/*sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = []
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
-                                  'src/dunit/java', 'src/dunit/scala' ]
+                                  'src/dunit/java', 'src/dunit/scala' ]*/
 ext {
   PRODUCT_NAME = 'SnappyData AQP'
   createdBy = System.getProperty('user.name')
@@ -101,13 +113,29 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
 
 compileJava.dependsOn createVersionPropertiesFile
 
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  //from scaladoc
+  from sourceSets.test.scala
+  include '**/aqp/**/*'
+}
 
+artifacts {
+  archives packageTests
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+archivesBaseName = 'snappydata-aqp-scala-tests'
 
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (new File(rootDir, 'store/build.gradle').exists()) {
     copy {
-      from (sourceSets.test.java.srcDirs) {
+      from ("src/test/java"){
         include '**/*.bt'
         include '**/*.conf'
         include '**/*.sql'
