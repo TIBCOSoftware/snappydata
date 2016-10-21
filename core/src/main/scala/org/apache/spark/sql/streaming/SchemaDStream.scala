@@ -22,6 +22,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.collection.WrappedInternalRow
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.storage.StorageLevel
@@ -187,13 +188,28 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     case _ => queryExecution.logical
   }
 
+  private val _cachedField = {
+    val f = classOf[ShuffleExchange].getDeclaredFields.find(
+      _.getName.contains("cachedShuffleRDD")).get
+    f.setAccessible(true)
+    f
+  }
+
+  private def executionPlan: SparkPlan = {
+    queryExecution.executedPlan.foreach {
+      case s: ShuffleExchange => _cachedField.set(s, null)
+      case _ =>
+    }
+    queryExecution.executedPlan
+  }
+
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
     StreamBaseRelation.setValidTime(validTime)
     val schema = this.schema
-    Some(queryExecution.executedPlan.execute().mapPartitionsInternal { itr =>
+    Some(executionPlan.execute().mapPartitionsInternal { itr =>
       val wrappedRow = new WrappedInternalRow(schema)
-      itr.map(row => wrappedRow.internalRow = row)
+      itr.map(row => wrappedRow.internalRow = row )
     })
   }
 

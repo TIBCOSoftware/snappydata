@@ -196,6 +196,9 @@ public class ProcessManager {
       "-Dgemfire.DEFAULT_MAX_OPLOG_SIZE=10",
       "-Dgemfire.disallowMcastDefaults=true",
       "-Djava.net.preferIPv4Stack=true",
+      "-Dsun.rmi.dgc.client.gcInterval=600000 ",
+      "-Dsun.rmi.dgc.server.gcInterval=600000",
+      "-Dsun.rmi.transport.tcp.handshakeTimeout=3600000",
       "-ea",
       agent,
       "io.snappydata.test.dunit.standalone.ChildVM"

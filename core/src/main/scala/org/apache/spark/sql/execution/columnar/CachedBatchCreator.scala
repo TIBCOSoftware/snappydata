@@ -51,7 +51,7 @@ final class CachedBatchCreator(
     }.toArray
 
     // adding one variable so that only one cached batch is created
-    val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE,
+    val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE, schema,
       cachedBatchAggregate)
 
     val memHeapScanController = sc.asInstanceOf[MemHeapScanController]

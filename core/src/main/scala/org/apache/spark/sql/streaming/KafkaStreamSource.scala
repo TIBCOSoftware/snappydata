@@ -44,26 +44,17 @@ final class KafkaStreamRelation(
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  // Zookeeper quorum (hostname:port,hostname:port,..)
-  val ZK_QUORUM = "zkquorum"
+  val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
+    t.split(";").map { s =>
+      val a = s.split("->")
+      (a(0), a(1))
+    }.toMap
+  }.getOrElse(Map())
 
-  // The group id for this consumer
-  val GROUP_ID = "groupid"
-
-  // Map of (topic_name -> numPartitions) to consume
-  val TOPICS = "topics"
-
-  val zkQuorum: String = options(ZK_QUORUM)
-  val groupId: String = options(GROUP_ID)
-
-  val topics: Map[String, Int] = options(TOPICS).split(",").map { s =>
+  val topics: Map[String, Int] = options("topics").split(",").map { s =>
     val a = s.split(":")
     (a(0), a(1).toInt)
   }.toMap
-
-  val kafkaParams = Map[String, String](
-    "zookeeper.connect" -> zkQuorum, "group.id" -> groupId,
-    "zookeeper.connection.timeout.ms" -> "10000")
 
   val K = options.getOrElse("K", "java.lang.String")
   val V = options.getOrElse("V", "java.lang.String")
@@ -75,9 +66,13 @@ final class KafkaStreamRelation(
     val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
     val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
     val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-    val encoder = RowEncoder(schema)
     KafkaUtils.createStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-      kafkaParams, topics, storageLevel)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
-        .map(encoder.toRow)
+      kafkaParams, topics, storageLevel)(ck, cv, ckd, cvd).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(p => rowConverter.toRows(p._2).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

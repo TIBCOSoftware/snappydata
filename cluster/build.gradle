@@ -60,7 +60,7 @@ dependencies {
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
-                version: snappySparkVersion, classfier: 'tests'
+                version: snappySparkVersion, classifier: 'tests'
   }
   compile (project(':snappy-core_' + scalaBinaryVersion)) {
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)

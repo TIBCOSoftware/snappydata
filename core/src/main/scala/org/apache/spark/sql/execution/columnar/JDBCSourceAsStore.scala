@@ -31,12 +31,16 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties}
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /*
 Generic class to query column table from SnappyData execution.
@@ -53,9 +57,9 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
     new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
-      numPartitions, this)
+        numPartitions, this)
   }
 
   override def storeCachedBatch(tableName: String, batch: CachedBatch,
@@ -78,10 +82,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         stmt.setString(1, batchId.toString)
         stmt.setInt(2, partitionId)
         stmt.setInt(3, batch.numRows)
-        // TODO: set to null since stats are currently not being used
-        // Need to use them for partition/CachedBatch pruning.
         // Use UnsafeRow for efficient serialization else shows perf impact.
-        stmt.setNull(4, java.sql.Types.BLOB)
+        stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
         var columnIndex = 5
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
@@ -223,14 +225,14 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: scala.collection.Set[Int], predicateOnStats: (InternalRow) => Boolean,
+    numColsInSchema: Int, cachedBatchesSeen: SQLMetric, cachedBatchesSkipped: SQLMetric)
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
     s"Unexpected byte[][] iterator call for off-heap $container")
 
   protected var currentVal: Array[Array[Byte]] = _
-
   var rowFormatter: RowFormatter = _
 
   override protected def moveNext(): Unit = {
@@ -242,7 +244,17 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
         if (v ne null) {
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
           rowFormatter = container.getRowFormatter(currentVal(0))
-          return
+          val statBytes = rowFormatter.getLob(currentVal, 4)
+          val result = new UnsafeRow(numColsInSchema)
+          result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
+            statBytes.length)
+          // Skip the cached batches based on the predicate on stat
+          cachedBatchesSeen += 1
+          if (predicateOnStats(result)){
+            return
+          } else {
+            cachedBatchesSkipped += 1
+          }
         }
       }
     }
