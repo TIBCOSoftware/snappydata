@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
@@ -30,13 +31,13 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -44,7 +45,7 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
  * Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
  * as JDBCRDD has a lot of methods as private.
  */
-class RowFormatScanRDD(_sc: SparkContext,
+class RowFormatScanRDD(@transient val session: SnappySession,
     getConnection: () => Connection,
     schema: StructType,
     tableName: String,
@@ -55,7 +56,7 @@ class RowFormatScanRDD(_sc: SparkContext,
     connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition])
-    extends RDD[Any](_sc, Nil) {
+    extends RDD[Any](session.sparkContext, Nil) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -235,6 +236,10 @@ class RowFormatScanRDD(_sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
+    // use incoming partitions if provided (e.g. for collocated tables)
+    if (partitions.length > 0) {
+      return partitions
+    }
     val conn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,
       connProperties.connProps, connProperties.hikariCP)
@@ -244,9 +249,8 @@ class RowFormatScanRDD(_sc: SparkContext,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          StoreUtils.getPartitionsPartitionedTable(sparkContext, pr)
-        case dr =>
-          StoreUtils.getPartitionsReplicatedTable(sparkContext, dr)
+          session.sessionState.getTablePartitions(pr)
+        case dr => session.sessionState.getTablePartitions(dr)
       }
     } finally {
       conn.close()
@@ -263,7 +267,8 @@ final class ResultSetTraversal(conn: Connection,
     stmt: Statement, val rs: ResultSet, context: TaskContext)
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
-  val defaultCal: GregorianCalendar = new GregorianCalendar()
+  lazy val defaultCal: GregorianCalendar = new GregorianCalendar(
+    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
 
   override protected def getCurrentValue: Void = null
 }

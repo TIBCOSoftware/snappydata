@@ -877,7 +877,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * createExternalTable or registerTempTable.
    *
    * @param tableIdent table to be dropped
-   * @param ifExists  attempt drop only if the table exists
+   * @param ifExists   attempt drop only if the table exists
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
@@ -914,20 +914,20 @@ class SnappySession(@transient private val sc: SparkContext,
           case _ => // ignore
         }
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        if(sessionCatalog.isTemporaryTable(tableIdent)){ // This is due to temp table
+        if (sessionCatalog.isTemporaryTable(tableIdent)) {
+          // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
-        }else{
+        } else {
           sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
         }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
         }
-      case _ => { // This is a temp table with no relation as source
+      case _ => // This is a temp table with no relation as source
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
         sessionCatalog.unregisterTable(tableIdent)
-      }
     }
   }
 

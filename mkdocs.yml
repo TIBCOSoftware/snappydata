@@ -1,7 +1,7 @@
-site_name: SnappyData Docs - Preview release
+site_name: SnappyData Documentation
 site_url: http://www.snappydata.io
 site_description: Project documentation with Markdown.
-site_author: SnappyData development team
+site_author: SnappyData Development Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
