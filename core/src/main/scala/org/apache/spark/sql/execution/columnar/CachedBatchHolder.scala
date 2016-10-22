@@ -16,29 +16,36 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.PreparedStatement
-
-import scala.collection.mutable.ArrayBuffer
-
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.types.{IntegerType, LongType, StructType}
 
 
 private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int,
+    val schema: StructType,
     val batchAggregate: CachedBatch => Unit,
     val indexes: Seq[ColumnFormatRelation.IndexUpdateStruct] = Seq.empty
 ) extends Serializable {
 
   var columnBuilders = getColumnBuilders
 
+  val statsTypes = schema.flatMap(datatype => {
+    // Stats currently return (lower, upper, count, nullcount, sizeInBytes)
+    // This code will need an update if new stats are added by Spark.
+    Seq(datatype.dataType, datatype.dataType, IntegerType, IntegerType, LongType)
+  }).toArray
+
+  val unsafeStatsProjection = UnsafeProjection.create(statsTypes)
+
   /**
-   * Append a single row to the current CachedBatch (creating a new one
-   * if not present or has exceeded its capacity)
-   * later it can be shifted to REPLICATED Table in gemfireXD
-   */
+    * Append a single row to the current CachedBatch (creating a new one
+    * if not present or has exceeded its capacity)
+    * later it can be shifted to REPLICATED Table in gemfireXD
+    */
   private def appendRow_(newBuilders: Boolean, row: InternalRow,
-    flush: Boolean): Unit = {
+      flush: Boolean): Unit = {
     val rowLength = if (row ne null) row.numFields else 0
     if (rowLength > 0) {
       // Added for SPARK-6082. This assertion can be useful for scenarios when
@@ -54,17 +61,17 @@ private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBui
         columnBuilders(i).appendFrom(row, i)
         i += 1
       }
-      indexes.foreach { case (indexUpdater, prepStmt) => indexUpdater(prepStmt, row)}
+      indexes.foreach { case (indexUpdater, prepStmt) => indexUpdater(prepStmt, row) }
       rowCount += 1
     }
     if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
-      // val stats = InternalRow.fromSeq(columnBuilders.map(
-      //  _.columnStats.collectedStatistics).flatMap(_.values))
-      val stats: InternalRow = null
+      val statsRow = unsafeStatsProjection(InternalRow.fromSeq(columnBuilders.map(
+        _.columnStats.collectedStatistics).flatMap(_.values)))
+
       batchAggregate(CachedBatch(rowCount,
-        columnBuilders.map(_.build().array()), stats))
+        columnBuilders.map(_.build().array()), statsRow))
       if (newBuilders) columnBuilders = getColumnBuilders
       rowCount = 0
     }

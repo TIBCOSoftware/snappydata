@@ -27,8 +27,9 @@ import io.snappydata.Constant
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -95,13 +96,8 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  override lazy val numPartitions: Int = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
-      _context.sparkContext.schedulerBackend.defaultParallelism()
-    } else {
-      numBuckets
-    }
+  def getCachedBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
+    new PartitionStatistics(schema)
   }
 
   override lazy val numBuckets: Int = {
@@ -113,26 +109,29 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
-      requiredColumns, filters)
+      requiredColumns, filters, statsPredicate)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (rdd, _) = scanTable(table, requiredColumns, filters)
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters, statsPredicate)
 
-    val zipped = buildRowBufferScan(requiredColumns, filters, true).
+    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters, true).
         zipPartitions(rdd) { (leftItr, rightItr) =>
-      Iterator[Any](leftItr, rightItr)
-    }
+          Iterator[Any](leftItr, rightItr)
+        }
 
     (zipped, Nil)
   }
 
-  def buildRowBufferScan(requiredColumns: Array[String], filters: Array[Filter],
+  def buildRowBufferRDD(partitions: Array[Partition],
+      requiredColumns: Array[String], filters: Array[Filter],
       useResultSet: Boolean): RDD[Any] = {
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
@@ -143,10 +142,11 @@ class BaseColumnFormatRelation(
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
     val isPartitioned = region.getPartitionAttributes != null
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
@@ -156,18 +156,21 @@ class BaseColumnFormatRelation(
           useResultSet = useResultSet,
           connProperties,
           Array.empty[Filter],
-          Array.empty[Partition]
+          // use same partitions as the column store (SNAP-1083)
+          partitions
         )
       case _ =>
         new SparkShellRowRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
           connProperties,
-          filters
+          filters,
+          // use same partitions as the column store (SNAP-1083)
+          partitions
         )
     }
   }
@@ -345,7 +348,7 @@ class BaseColumnFormatRelation(
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer, numRows integer not null, stats blob, " +
         schema.fields.map(structField => externalStore.columnPrefix +
-        structField.name + " blob").mkString(", ") +
+            structField.name + " blob").mkString(", ") +
         s", $primaryKey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)
@@ -606,12 +609,13 @@ class IndexColumnFormatRelation(
 
   override def name: String = _table
 
-  def buildBaseTableRowBufferScan(requiredColumns: Array[String],
-      filters: Array[Filter]) : (ColumnFormatRelation, RDD[Any]) = {
+  def buildBaseTableRowRDD(requiredColumns: Array[String],
+      filters: Array[Filter]): (ColumnFormatRelation, RDD[Any]) = {
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.lookupRelation(catalog.newQualifiedTableName(baseTableName)) match {
       case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
-        (cr, cr.buildRowBufferScan(requiredColumns, filters, false))
+        (cr, cr.buildRowBufferRDD(Array.empty, // we will shuffle.
+          requiredColumns, filters, false))
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
     }
@@ -728,8 +732,8 @@ final class DefaultSource extends ColumnarRelationProvider {
 
       StoreCallbacksImpl.registerExternalStoreAndSchema(
         ExecutorCatalogEntry(table, schema, externalStore,
-        sqlContext.conf.columnBatchSize,
-        sqlContext.conf.useCompression,
+          sqlContext.conf.columnBatchSize,
+          sqlContext.conf.useCompression,
           baseTable, ArrayBuffer(relation.rowInsertStr)))
 
       connProperties.dialect match {

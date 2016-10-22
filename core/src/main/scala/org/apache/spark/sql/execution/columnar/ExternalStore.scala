@@ -16,17 +16,14 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement, SQLException}
+import java.sql.Connection
 import java.util.UUID
 
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
-import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.sources.{ConnectionProperties, StatsPredicateCompiler}
 
 trait ExternalStore extends Serializable {
 
@@ -36,7 +33,7 @@ trait ExternalStore extends Serializable {
       partitionId: Int = -1, batchId: Option[UUID] = None): Unit
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      sparkContext: SparkContext): RDD[CachedBatch]
+      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch]
 
   def getConnectedExternalStore(tableName: String, onExecutor: Boolean): ConnectedExternalStore
 
