@@ -28,7 +28,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     private val initialSize: Int,
     val loadFactor: Double,
     val concurrency: Int,
-    val segmentCreator: (Int, Double) => M,
+    val segmentCreator: (Int, Double, Int, Int) => M,
     val hasher: K => Int) extends Serializable {
 
   /** maximum size of batches in bulk insert API */
@@ -38,7 +38,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
    * A default constructor creates a concurrent hash map with initial size `32`
    * and concurrency `16`.
    */
-  def this(concurrency: Int, segmentCreator: (Int, Double) => M,
+  def this(concurrency: Int, segmentCreator: (Int, Double, Int, Int) => M,
       hasher: K => Int) =
     this(32, SegmentMap.DEFAULT_LOAD_FACTOR, concurrency,
       segmentCreator, hasher)
@@ -59,8 +59,8 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val nsegs = math.min(concurrency, 1 << 16)
     val segs = new Array[M](nsegs)
     // calculate the initial capacity of each segment
-    segs.indices.foreach(segs(_) = segmentCreator(initSegmentCapacity(nsegs),
-      loadFactor))
+    segs.indices.foreach(i => {segs(i) = segmentCreator(initSegmentCapacity(nsegs),
+      loadFactor, i, nsegs)})
     segs
   }
   private val _size = new AtomicLong(0)
@@ -320,9 +320,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def clear(): Unit = writeLockAllSegments { segments =>
-    segments.indices.foreach(i=> {
+    val nsegments = segments.length
+    segments.indices.foreach(i => {
       segments(i).valid_=(false)
-      segments(i) = segmentCreator(initSegmentCapacity(segments.length), loadFactor)
+      segments(i) = segmentCreator(initSegmentCapacity(segments.length), loadFactor, i, nsegments)
     })
   }
 
