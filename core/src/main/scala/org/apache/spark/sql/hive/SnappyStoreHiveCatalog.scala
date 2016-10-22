@@ -318,6 +318,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
+    tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
   }
 
@@ -442,6 +443,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ => // nothing for others
     }
 
+    tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
 
     registerRelationDestroy()
@@ -464,6 +466,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       relation: BaseRelation): Unit = {
 
     // invalidate any cached plan for the table
+    tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
 
 
@@ -567,6 +570,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     alterTableLock.synchronized {
       withHiveExceptionHandling(addIndexProp(inTable, index))
     }
+    inTable.invalidate()
     cachedDataSourceTables.invalidate(inTable)
   }
 
@@ -595,6 +599,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     alterTableLock.synchronized {
       withHiveExceptionHandling(removeIndexProp(inTable, index))
     }
+    inTable.invalidate()
     cachedDataSourceTables.invalidate(inTable)
   }
 
@@ -812,6 +817,8 @@ final class QualifiedTableName(val schemaName: String, _tableIdent: String)
     _table
   }.getOrElse(throw new TableNotFoundException(
     s"Table '$schemaName.$table' not found"))
+
+  def invalidate(): Unit = _table = None
 
   override def toString: String = schemaName + '.' + table
 }

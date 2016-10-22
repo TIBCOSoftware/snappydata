@@ -17,17 +17,14 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning,
-Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter,
-BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
-
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation, StatsPredicateCompiler}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.expressions._
 
@@ -135,7 +132,8 @@ private[sql] object PartitionedPhysicalScan {
         ColumnTableScan(output, numBuckets,
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
-      case (_: RowFormatRelation) | forceRowTableScan =>
+      case p =>
+        assert(p.isInstanceOf[RowFormatRelation] || forceRowTableScan)
         RowTableScan(output, numBuckets,
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
