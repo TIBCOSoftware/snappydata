@@ -229,7 +229,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         case Some(i) => classVars += classVars(i)
       }
     }
-    (classVars, (numNulls / 64) + 1, nullMaskDeclarations.toString())
+    val numNullVars = if (numNulls >= 0) (numNulls / 64) + 1 else 0
+    (classVars, numNullVars, nullMaskDeclarations.toString())
   }
 
   private def getKeyRefForValue(index: Int, onlyValue: Boolean): Option[Int] = {
@@ -287,8 +288,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         $valueClassName[] values = $entryVar.$multiValuesVar;
         if (values != null) {
           valueIndex = values.length;
-          $valueClassName newValues = new $valueClassName[valueIndex + 1];
-          System.arrayCopy(values, 0, newValues, 0, valueIndex);
+          $valueClassName[] newValues = new $valueClassName[valueIndex + 1];
+          java.lang.System.arrayCopy(values, 0, newValues, 0, valueIndex);
           values = newValues;
         } else {
           valueIndex = 0;
