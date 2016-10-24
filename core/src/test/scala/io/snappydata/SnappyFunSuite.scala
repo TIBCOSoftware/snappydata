@@ -24,7 +24,7 @@ import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+import org.scalatest.{Retries, BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -36,7 +36,7 @@ abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
     with BeforeAndAfterAll
     with Serializable
-    with Logging {
+    with Logging with Retries {
 
   InitializeRun.setUp()
 
@@ -101,10 +101,17 @@ abstract class SnappyFunSuite
         replaceAll("org.apache.spark", "o.a.s")
     try {
       logInfo(s"\n\n===== TEST OUTPUT FOR $shortSuiteName: '$testName' =====\n")
-      test()
+      if (isRetryable(test))
+        withRetry { super.withFixture(test) }
+      else
+        super.withFixture(test)
     } finally {
       logInfo(s"\n\n===== FINISHED $shortSuiteName: '$testName' =====\n")
     }
+
+
+
+
   }
 
   def deleteDir(dir: String): Boolean = {

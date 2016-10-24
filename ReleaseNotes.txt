@@ -7,11 +7,117 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
-  [SNAP-735] By default, STRING type will be serialized as VARCHAR with max size.
-    To serialize it instead as CLOB, use the query hint as 
-    '--+ columnsAsClob(*)' or '--+ columnsAsClob(col1_name,col4_name)'.
 
-  [SNAP-864] Script to launch SnappyData cluster on AWS
+
+Release 0.6
+
+  [SNAP-735] Supporting VARCHAR with size and processing STRING as VARCHAR(32762), by default.
+    Provided query hint (--+ columnsAsClob(*)) to force processing STRING as CLOB. Changes to render
+    CHAR as CHAR and VARCHAR as VARCHAR. Added a system property to stop treating STRING as max size
+    VARCHAR but as CLOB.
+
+  [SNAP-1049] IllegalArgumentException: requirement failed: partitions(1).partition == 5, but it
+    should equal 1
+
+  [SNAP-1050] Query execution from JDBC waits infinitely for external table if column name in query
+    is wrong
+
+  [SNAP-1036] Optimize access to row store using raw region iterators
+
+  [SNAP-1000] Perf improvement for localjoin through code generation
+
+  [SNAP-1034] Optimized generated code iteration for Column tables
+
+  [SNAP-1047] Fix column table row count in UI
+
+  [SNAP-1044] Support for describe table and show table using snappycontext
+
+  [SNAP-846] Ensuring that Spark Uncaught exceptions are handled in the Snappy side and do not cause
+    a system.exit
+
+  [SNAP-1025] Stream tables return duplicate rows
+
+  [SNAP-959] create table as select not working as expected if row table is source table
+
+  [SNAP-845] Atomicity of DDLs across catalogs
+
+  [SNAP-981] Support Snappy with multiple Hadoop version
+
+  [SNAP-979] Correct table size and count shown on the Snappy UI tab 
+
+  [SNAP-936] Automatic selection of execution engine based on query type. Query hint also provided
+    to select a particular engine for execution
+
+  [SNAP-653] Cleanup relation artifacts when it is altered/dropped/... from external cluster
+
+  [SNAP-654] If the Lead is running and an application runs a program that points to the Snappy
+    cluster as the Master, then, the client program perpetually hangs.
+
+  [SNAP-174] No ssh required for starting cluster through scripts if only localhost is being used
+
+  [SNAP-910] DELETE / UPDATE FROM COLUMN TABLE throws proper exception now
+
+  [SNAP-293] Single install/replace jar utility. User can install a jar using install jar utility
+    and it will be available to all executors, store and driver node the jar uploaded via the job
+    server also follows the same norm.
+
+  [SNAP-824] Support for CUBE/ROLLUP/GROUPING SETS through sql. Support for window clauses and 
+    partition/distribute by
+
+  SPARK 2.0 merge
+
+  [SNAP-861] Zeppelin interpreter for SnappyData
+
+  [SNAP-947] Unable to restart cluster with 0.5 version with columnar persistent tables
+
+  [SNAP-961] Fix passing of some DDL extension clauses like OFFHEAP PERSISTENT etc.
+
+  [SNAP-734] Support for EXISTS from sql
+
+  [SNAP-835] Drop table from default schema with fully qualified name throws "Table Not Found" Error
+
+  [SNAP-784] Fully qualified table name access fails with "Table Not Found" Error
+
+  [SNAP-864] Script to launch SnappyData cluster on Amazon Web Services EC2 instances.
+
+  [AQP-77] exception " STRATIFIED_SAMPLER_WEIGHTAGE#411L missing 
+
+  [AQP-94] Class cast exception if aggregate is on string column 
+
+  [AQP-107] scala.MatchError,while using reserved word sample_ in the query 
+
+  [AQP-143] Unexpected error for query on empty table
+
+  [AQP-154] Actual sample count varies with varying number of columns in QCS. 
+
+  [AQP-177] Unable to drop the sample table 
+
+  [AQP-190] Relative Error estimates are wildly OFF 
+
+  [AQP-199] Use of alias in FROM clause results in Sample not being selected
+
+  [AQP-203] COUNT(DISTINCT) queries 'with error' clause fails with No plan for ErrorDefaults
+
+  [AQP-204] Inconsistent results ,each time the same bootStrap query is executed multiple times.
+
+  [AQP-205] Bug in abortSegment implementation of stratum cache/ concurrent segment hashmap causes
+    count to be inocrrect
+
+  [AQP-206] Exception while using error_functions in HAVING clause 
+
+  [AQP-207] Join query fails with error while evaluating an expression 
+
+  [AQP-210] Mathematical expression involving error estimates not working 
+
+  [AQP-212] HAC behavior 'local_omit' doesnot work as expected. 
+
+  [AQP-213] Exception when using errorFuntion in HAVING clause with HAC behavior 'run_on_full_table'
+    and 'partial_run_on_base_table'
+
+  [AQP-214] Need support for functions in sample creation 
+
+  [AQP-216] Cannot use float datatype for sample creted on row table 
+
 
 Release 0.5
 

@@ -24,7 +24,7 @@ import scala.util.hashing.MurmurHash3
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodeAndComment}
+import org.apache.spark.sql.catalyst.expressions.codegen.{GeneratedClass, CodeGenerator, CodeAndComment}
 import org.apache.spark.sql.{SnappyContext, Row}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
@@ -1108,28 +1108,13 @@ private[sql] object MultiColumnOpenHashSet {
   private val move = move1 _
 }
 
-final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
+final class QCSSQLColumnHandler(qcsSparkPlan: (GeneratedClass, ArrayBuffer[Any],
     Array[DataType], Array[DataType]), hashColumnHandler: ColumnHandler) extends ColumnHandler {
+
   val threadLocalIter = new ThreadLocal[Iterator[InternalRow]]() {
-    override def initialValue: Iterator[InternalRow] = {
-      val iter = {
-        val func: (Int, Iterator[InternalRow]) => Iterator[InternalRow] = {
-          (index, iter) =>
-            val clazz = CodeGenerator.compile(qcsSparkPlan._1)
-            val buffer = clazz.generate(qcsSparkPlan._2.toArray).asInstanceOf[BufferedRowIterator]
-            buffer.init(index, Array(iter))
-            new Iterator[InternalRow] {
+    override def initialValue: Iterator[InternalRow] = QCSSQLColumnHandler.func(0, QCSSQLColumnHandler.iter,
+      qcsSparkPlan._1, qcsSparkPlan._2)  }
 
-              override def hasNext(): Boolean =   buffer.hasNext
-
-              override def next: InternalRow =buffer.next
-            }
-        }
-        func(0, QCSSQLColumnHandler.iter)
-      }
-      iter
-    }
-  }
   val projectedTypes = qcsSparkPlan._3
   val baseTypes = qcsSparkPlan._4
   val rowToInternalRowConverter = baseTypes.map(dt => Utils.createCatalystConverter(dt))
@@ -1144,10 +1129,14 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
 
   override def hash(row: Row): Int = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
-    threadLocalIter.get.hasNext
-    val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.remove()
-    hashColumnHandler.hash(ir)
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      hashColumnHandler.hash(ir)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
   }
 
   override def hash(row: InternalRow): Int = {
@@ -1176,11 +1165,15 @@ final class QCSSQLColumnHandler(qcsSparkPlan: (CodeAndComment, ArrayBuffer[Any],
 
   def extractFromRowAndExecuteFunction[T](f: Row => T, row: Row): T = {
     RowToInternalRow.rowHolder.set((row, rowToInternalRowConverter))
-    threadLocalIter.get.hasNext
-    val ir = threadLocalIter.get.next()
-    RowToInternalRow.rowHolder.remove()
-    InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
-    f(InternalRowToRow)
+    try {
+      threadLocalIter.get.hasNext
+      val ir = threadLocalIter.get.next()
+      RowToInternalRow.rowHolder.remove()
+      InternalRowToRow.rowHolder.set((ir, internalRowToRowConverter, projectedTypes))
+      f(InternalRowToRow)
+    }finally {
+      RowToInternalRow.rowHolder.remove()
+    }
   }
 }
 
@@ -1188,7 +1181,19 @@ object QCSSQLColumnHandler {
 
   def newSqlHandler(qcsPlan: (CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType]),
       hashColHandler: ColumnHandler): ColumnHandler = {
-    new QCSSQLColumnHandler(qcsPlan, hashColHandler)
+    new QCSSQLColumnHandler( (CodeGenerator.compile(qcsPlan._1), qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
+  }
+
+  val func: (Int, Iterator[InternalRow], GeneratedClass, ArrayBuffer[Any]) => Iterator[InternalRow] = {
+    (index, iter, clazz, bufferArr) =>
+      val buffer = clazz.generate(bufferArr.toArray).asInstanceOf[BufferedRowIterator]
+      buffer.init(index, Array(iter))
+      new Iterator[InternalRow] {
+
+        override def hasNext(): Boolean =   buffer.hasNext
+
+        override def next: InternalRow =buffer.next
+      }
   }
 
   val iter = new Iterator[InternalRow]() {

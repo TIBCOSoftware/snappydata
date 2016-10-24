@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.StoreTableValueSizeProviderService
+import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
@@ -59,8 +59,12 @@ case class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService
-      .getTableSize(table).getOrElse(super.sizeInBytes)
+
+  override def sizeInBytes: Long = {
+    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
+    if (stats.isDefined) stats.get.getTotalSize
+    else super.sizeInBytes
+  }
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 
@@ -151,7 +155,7 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-    filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val rdd = new JDBCRDD(
       sqlContext.sparkContext,
       executorConnector,

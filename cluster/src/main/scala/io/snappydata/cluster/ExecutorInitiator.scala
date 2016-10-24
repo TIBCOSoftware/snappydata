@@ -23,6 +23,7 @@ import java.util
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
@@ -215,8 +216,13 @@ object ExecutorInitiator extends Logging {
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
-        GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-            .removeMembershipListener(membershipListener)
+        try {
+          Misc.getGemFireCache
+          GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+              .removeMembershipListener(membershipListener)
+        } catch {
+          case (cce: CacheClosedException) => // do nothing
+        }
       }
     }
 

@@ -44,6 +44,7 @@ final class WrappedInternalRow(override val schema: StructType,
 
   def internalRow_=(row: InternalRow): WrappedInternalRow = {
     if (_internalRow ne null) {
+      val cache = this.cache
       val len = cache.length
       var i = 0
       while (i < len) {
