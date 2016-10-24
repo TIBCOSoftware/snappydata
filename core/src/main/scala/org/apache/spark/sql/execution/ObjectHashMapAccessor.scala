@@ -229,7 +229,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         case Some(i) => classVars += classVars(i)
       }
     }
-    (classVars, numNulls + 1, nullMaskDeclarations.toString())
+    (classVars, (numNulls / 64) + 1, nullMaskDeclarations.toString())
   }
 
   private def getKeyRefForValue(index: Int, onlyValue: Boolean): Option[Int] = {
