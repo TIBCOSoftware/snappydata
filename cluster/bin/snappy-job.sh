@@ -21,9 +21,9 @@
 
 usage=$'Usage: 
        # Create a new context using the provided context factory
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream]
+       snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>]
        # Get status of the job with the given job-id
        snappy-job.sh status --lead <hostname:port> --job-id <job-id>
        # Stop a job with the given job-id
@@ -48,6 +48,7 @@ contextName=
 contextFactory=
 newContext=
 TOK_EMPTY="EMPTY"
+APP_PROPS=$APP_PROPS
 
 while (( "$#" )); do
   param="$1"
@@ -93,6 +94,14 @@ while (( "$#" )); do
     --context)
       shift
       contextName="${1:-$TOK_EMPTY}"
+    ;;
+    --conf)
+      shift
+      if [[ -z "$APP_PROPS" ]]; then
+        APP_PROPS="${1:-$TOK_EMPTY}"
+      else
+        APP_PROPS=$APP_PROPS",""${1:-$TOK_EMPTY}"
+      fi
     ;;
     --stream)
       if [[ $contextName != "" || $cmd != "jobs" ]]; then

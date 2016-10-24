@@ -17,6 +17,7 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.{Connection, ResultSet, Statement}
+import java.util.GregorianCalendar
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -266,7 +267,8 @@ final class ResultSetTraversal(conn: Connection,
     stmt: Statement, val rs: ResultSet, context: TaskContext)
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
-  lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
+  lazy val defaultCal: GregorianCalendar =
+    ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
 }
