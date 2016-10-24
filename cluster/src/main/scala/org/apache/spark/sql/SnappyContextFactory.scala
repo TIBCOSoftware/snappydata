@@ -22,6 +22,7 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
+import org.apache.spark.util.SnappyUtils
 
 
 class SnappyContextFactory extends SparkContextFactory {
@@ -40,6 +41,7 @@ object SnappyContextFactory {
 
   protected def newSession(): SnappyContext with ContextLike =
     new SnappyContext(snappyContextLike.snappySession) with ContextLike {
+
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
       override def stop(): Unit = {
@@ -53,11 +55,20 @@ abstract class SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
+    Thread.currentThread().setContextClassLoader(currentLoader)
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyContext], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    runSnappyJob(sc.asInstanceOf[SnappyContext], jobConfig)
+    val snc = sc.asInstanceOf[SnappyContext]
+    try {
+      runSnappyJob(snc, jobConfig)
+    }
+    finally {
+      SnappyUtils.removeJobJar(snc.sparkContext)
+    }
   }
 
   def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation

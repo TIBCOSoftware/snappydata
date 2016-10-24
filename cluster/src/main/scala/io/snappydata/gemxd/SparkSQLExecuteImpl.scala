@@ -19,7 +19,6 @@ package io.snappydata.gemxd
 import java.io.DataOutput
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.security.SecureClassLoader
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -46,7 +45,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
@@ -57,12 +56,13 @@ class SparkSQLExecuteImpl(val sql: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
 
+
+  Thread.currentThread().setContextClassLoader(
+    SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader))
+
+
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
-
-  if (Thread.currentThread().getContextClassLoader == null) {
-    Thread.currentThread().setContextClassLoader(getClassLoader)
-  }
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
@@ -295,21 +295,6 @@ class SparkSQLExecuteImpl(val sql: String,
 
   def getContextOrCurrentClassLoader: ClassLoader =
     Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
-
-
-  def getClassLoader: ClassLoader = {
-    val parent = getContextOrCurrentClassLoader
-    new SecureClassLoader(parent) {
-      override def loadClass(name: String): Class[_] = {
-        try {
-          parent.loadClass(name)
-        } catch {
-          case cnfe: ClassNotFoundException =>
-            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
-        }
-      }
-    }
-  }
 
 }
 

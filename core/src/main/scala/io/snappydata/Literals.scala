@@ -90,6 +90,8 @@ object Constant {
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
+
+  final val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
 }
 
 /**

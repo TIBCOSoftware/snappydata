@@ -22,6 +22,7 @@ import org.apache.spark.sql.SnappyJobValidate;
 import org.apache.spark.sql.SnappyJobValidation;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 
+import org.apache.spark.util.SnappyUtils;
 import spark.jobserver.SparkJobBase;
 import spark.jobserver.SparkJobValidation;
 
@@ -34,12 +35,20 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
 
   @Override
   final public SparkJobValidation validate(Object sc, Config config) {
+    ClassLoader parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader();
+    ClassLoader currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader);
+    Thread.currentThread().setContextClassLoader(currentLoader);
     return SnappyJobValidate.validate(isValidJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), config));
   }
 
   @Override
   final public Object runJob(Object sc, Config jobConfig) {
-    return runSnappyJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), jobConfig);
+    JavaSnappyStreamingContext context = new JavaSnappyStreamingContext((SnappyStreamingContext)sc);
+    try {
+      return runSnappyJob(context, jobConfig);
+    } finally {
+      SnappyUtils.removeJobJar(context.snsc().sparkContext());
+    }
   }
 
 }

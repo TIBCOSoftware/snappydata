@@ -20,9 +20,12 @@ import java.net.URL
 import java.util.Properties
 
 import io.snappydata.SnappyFunSuite
+import io.snappydata.core.Data
 
 import org.apache.spark.DynamicJarInstallationDUnitTest
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.collection.{Utils => Utility}
+import org.apache.spark.util.SnappyUtils
 
 class SnappyMutableClassLoaderTest extends SnappyFunSuite {
   val testJar1 = DynamicJarInstallationDUnitTest.createJarWithClasses(
@@ -56,6 +59,19 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
     val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
+  }
+
+  test (" test this scenario ") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    sc.setLocalProperty("SNAPPY_JOB_SERVER_JAR_NAME", "/home/namrata/snappy-commons/build-artifacts/scala-2.11/snappy/examples/jars/quickstart-0.6.jar")
+    sc.addJar("/home/namrata/snappy-commons/build-artifacts/scala-2.11/snappy/examples/jars/quickstart-0.6.jar")
+    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    var result = snc.sql("SELECT * FROM MY_SCHEMA.MY_TABLE").collect().length
+
+    SnappyUtils.removeJobJar(sc)
+
   }
 
   test("remove Jar from the MutableClassLoader") {

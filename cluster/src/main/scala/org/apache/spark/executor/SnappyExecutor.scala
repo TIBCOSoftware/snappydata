@@ -65,25 +65,33 @@ class SnappyExecutor(
   override def updateDependencies(newFiles: HashMap[String, Long],
       newJars: HashMap[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
+    def getName(path: String) = new File(path).getName
     val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
-    val addedUrls = classloader.getAddedURLs.toList
-    val urlstoRemove = addedUrls.diff(newJars.keys.map(_.split("/").last).toList)
-    urlstoRemove.foreach(classloader.removeURL(_))
+    val addedJarFiles = classloader.getAddedURLs.toList
+    val newJarFiles = newJars.keys.map(getName(_)).toList
+    addedJarFiles.diff(newJarFiles).foreach(classloader.removeURL(_))
   }
 }
 
 class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) {
-  protected val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
-  private final val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+  protected val jobJars = scala.collection.mutable.Map[String, Tuple2[String , URLClassLoader]]()
 
-  protected def getJobName = Executor.taskDeserializationProps.
-      get().getProperty(JOB_SERVER_JAR_NAME, "")
+  protected def getJobName = {
+    val jobFile = Executor.taskDeserializationProps.
+        get().getProperty(io.snappydata.Constant.JOB_SERVER_JAR_NAME, "")
+    new File(jobFile).getName
+  }
 
   override def addURL(url: URL): Unit = {
     val jobName = getJobName
-    if (jobName.isEmpty) super.addURL(url)
-    else jobJars.put(jobName, new URLClassLoader(Array(url)))
+    if (jobName.isEmpty) {
+      super.addURL(url)
+    }
+    else {
+      jobJars.put(jobName,
+        Tuple2(url.getPath, new URLClassLoader(Array(url))))
+    }
   }
 
   def getAddedURLs: Array[String] = {
@@ -91,11 +99,15 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
   }
 
   def removeURL(jar: String): Unit = {
-    val urlLoader = jobJars.get(jar)
-    jobJars.remove(jar)
-    if (urlLoader.isDefined) {
-      val file = new File(urlLoader.get.getURLs.head.toURI)
-      if (file.exists()) file.delete()
+    if (jobJars.contains(jar)) {
+      val urlLoader = jobJars.get(jar)
+      if (urlLoader.isDefined) {
+        val file = new File(urlLoader.get._1)
+        jobJars.remove(jar)
+        if (file.exists()) {
+          file.delete()
+        }
+      }
     }
   }
 
@@ -117,7 +129,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
   def loadClassFromJobJar(className: String): Class[_] = {
     val jobName = getJobName
     if (!jobName.isEmpty && jobJars.get(jobName).isDefined) {
-      jobJars.get(jobName).get.loadClass(className)
+      jobJars.get(jobName).get._2.loadClass(className)
     }
     else throw new ClassNotFoundException(className)
   }
@@ -125,8 +137,8 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
 }
 
 /**
-  * The default uncaught exception handler for Executors
-  */
+ * The default uncaught exception handler for Executors
+ */
 private class SnappyUncaughtExceptionHandler(
     val executorBackend: SnappyCoarseGrainedExecutorBackend)
     extends Thread.UncaughtExceptionHandler with Logging {
