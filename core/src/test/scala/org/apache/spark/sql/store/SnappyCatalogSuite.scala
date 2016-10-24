@@ -54,20 +54,21 @@ class SnappyCatalogSuite extends SnappyFunSuite
 with BeforeAndAfter
 with BeforeAndAfterAll {
 
-  val snappySession = new SnappySession(snc.sparkContext)
+  var snappySession : SnappySession = null
 
-  private def sessionCatalog: SessionCatalog = snappySession.sessionState.catalog
+  private var sessionCatalog: SessionCatalog = null
 
   before {
     try {
-      sessionCatalog.reset()
+      if(sessionCatalog != null) {
+        sessionCatalog.reset
+      }
+      snappySession = new SnappySession(snc.sparkContext)
+      sessionCatalog = snappySession.sessionState.catalog
     } finally {
       //super.afterEach()
     }
   }
-
-
-
 
   private val utils = new CatalogTestUtils {
     override val tableInputFormat: String = "org.apache.hadoop.mapred.SequenceFileInputFormat"
