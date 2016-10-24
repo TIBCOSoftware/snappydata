@@ -17,6 +17,8 @@
 package io.snappydata.hydra.installJar;
 
 import hydra.FileUtil;
+import hydra.Log;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.spark.SnappyTestUtils;
@@ -104,14 +106,13 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "            pw.println(\"****** DynamicJarLoadingJob finished ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
-                "            pw.println(\"ERROR: failed with \" + e.getMessage());\n" +
-                "            e.printStackTrace(pw);\n" +
-                "        } finally {\n" +
-                "            pw.flush();\n" +
-                "            pw.close();\n" +
+                "            StringWriter sw = new StringWriter();\n" +
+                "            PrintWriter spw = new PrintWriter(sw);\n" +
+                "            spw.println(\"ERROR: failed with \" + e);\n" +
+                "            e.printStackTrace(spw);\n" +
+                "            return spw.toString();\n" +
                 "        }\n" +
-                "        return null;\n" +
-                "    }" +
+                "    }\n" +
                 "\n" +
                 "    @Override\n" +
                 "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
@@ -122,6 +123,38 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 new File(destDir),
                 SnappyTestUtils.getJavaSourceFromString(className, generalClassText),
                 new scala.collection.mutable.ArrayBuffer<URL>());
+    }
+
+    /**
+     * Executes gfxd install-jar command using specified jar file.
+     */
+    public static synchronized void HydraTask_executeInstallJarCommand() {
+        File log = null, logFile = null;
+        String jarName = SnappyPrms.getUserAppJar();
+        String jarIdentifier = SnappyPrms.getJarIdentifier();
+        if (jarName == null) {
+            String s = "No jarName name provided for executing install-jar command in Hydra TASK";
+            throw new TestException(s);
+        }
+        if (jarIdentifier == null) {
+            jarIdentifier = "APP.myjar";
+        }
+        try {
+            String jarFilePath = snappyTest.getUserAppJarLocation(jarName, jarPath);
+            Log.getLogWriter().info("SS - jarFilePath is : " + jarFilePath);
+            Log.getLogWriter().info("SS - jarIdentifier is : " + jarIdentifier);
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "installJarResult.log";
+            logFile = new File(dest);
+            String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
+            String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+            ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "install-jar", "-file=" + jarFilePath, "-name=" + jarIdentifier,
+                    "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+            Log.getLogWriter().info("SS - pb command is : " + pb.command() + ":" + pb.toString());
+            snappyTest.executeProcess(pb, logFile);
+        } catch (IOException e) {
+            throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+        }
     }
 
 }

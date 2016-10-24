@@ -65,7 +65,7 @@ public class SnappyTest implements Serializable {
     private static String productLibsDir = productDir + "lib" + sep;
     private static String productSbinDir = productDir + "sbin" + sep;
     private static String productBinDir = productDir + "bin" + sep;
-    private static String SnappyShellPath = productBinDir + "snappy-shell";
+    protected static String SnappyShellPath = productBinDir + "snappy-shell";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
     private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
@@ -109,7 +109,7 @@ public class SnappyTest implements Serializable {
     public static final String LEAD_PORT = "8090";
     public static final String MASTER_PORT = "7077";
     private static int jobSubmissionCount = 0;
-    private static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
+    protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
