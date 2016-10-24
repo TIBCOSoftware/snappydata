@@ -1057,3 +1057,45 @@ task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }
+
+task deleteDocsDir(type: Delete) {
+  delete "${rootProject.buildDir}/docs"
+}
+
+task docs(type: ScalaDoc) {
+  apply plugin: 'scala'
+  dependsOn deleteDocsDir
+  Set<String> allSource = []
+  def docProjects = rootProject.subprojects.collectMany { project ->
+    if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
+            // jobserver depends on Apache Spark 1.5.x which causes conflicts
+            !project.path.contains('snappy-store') &&
+            !project.name.contains('jobserver') &&
+            // below three will get filtered with the snappy-store path check itself
+            // but still keeping it as when we would remove the snappy-store path filter
+            // still the below three sub prejects should not be built.
+            !project.name.contains('jgroups') &&
+            !project.name.contains('gemfire-examples') &&
+            !project.name.contains('trove') &&
+            !project.name.contains('kafka') &&
+            // exclude tests
+            !project.name.contains('tests')) {
+      allSource.addAll(project.sourceSets.main.allJava.findAll {
+        !it.getPath().matches('.*/internal/.*') && !it.getPath().contains('com/gemstone/gemfire/cache/operations/')
+      })
+
+      if (project.plugins.hasPlugin('scala')) {
+        allSource.addAll(project.sourceSets.main.allScala.findAll {
+          !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') &&
+          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*')
+        })
+      }
+      [ project ]
+    } else []
+  }
+  source = allSource
+  classpath = files(docProjects.collect { project ->
+   project.sourceSets.main.compileClasspath   
+  })
+  destinationDir = file("${rootProject.buildDir}/docs")
+}
