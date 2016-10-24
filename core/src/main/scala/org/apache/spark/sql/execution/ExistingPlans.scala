@@ -54,7 +54,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   val (dataRDD, otherRDDs) = scanBuilder(
     requestedColumns, pushedFilters, getStatsPredicate())
 
-  private[sql] override lazy val metrics = getMetricsMap
+  override lazy val metrics = getMetricsMap
 
   def getMetricsMap: Map[String, SQLMetric] = {
     Map(
@@ -98,7 +98,6 @@ private[sql] abstract class PartitionedPhysicalScan(
       }
     } else super.outputPartitioning
   }
-
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +

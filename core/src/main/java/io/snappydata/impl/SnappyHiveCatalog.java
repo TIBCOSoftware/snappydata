@@ -275,7 +275,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private String getType(HiveMetaStoreClient hmc) throws SQLException {
       Table t = getTable(hmc, this.dbName, this.tableName);
       if (t != null) {
-        return t.getParameters().get("EXTERNAL");
+        return t.getParameters().get("EXTERNAL_SNAPPY");
       } else {
         // assume ROW type in GemFireXD
         return ExternalTableType.Row().toString();
@@ -283,7 +283,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private boolean isTableInStoreDD(Table t) {
-      String type = t.getParameters().get("EXTERNAL");
+      String type = t.getParameters().get("EXTERNAL_SNAPPY");
       return type.equalsIgnoreCase(ExternalTableType.Row().toString()) ||
           type.equalsIgnoreCase(ExternalTableType.Column().toString()) ||
           type.equalsIgnoreCase(ExternalTableType.Sample().toString());
