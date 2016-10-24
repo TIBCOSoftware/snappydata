@@ -17,8 +17,6 @@
 
 package org.apache.spark.sql.execution
 
-import java.util.GregorianCalendar
-
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.shared.ClientSharedData
@@ -42,11 +40,9 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
   protected final val fieldTypes = StoreUtils.mapCatalystTypes(
     schema, dataTypes)
 
-  final lazy val defaultCal = new GregorianCalendar(
-    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
+  final lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
 
-  final lazy val defaultTZ =
-    ClientSharedData.DEFAULT_TIMEZONE.clone().asInstanceOf[java.util.TimeZone]
+  final lazy val defaultTZ = defaultCal.getTimeZone
 
   protected final def createInternalRow(execRow: AbstractCompactExecRow,
       mutableRow: SpecificMutableRow): InternalRow = {
@@ -239,9 +235,7 @@ class ResultNullHolder extends ResultWasNull {
 
 final class ResultSetNullHolder extends ResultNullHolder {
 
-  val defaultCal = new GregorianCalendar(
-    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
+  lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
 
-  val defaultTZ =
-    ClientSharedData.DEFAULT_TIMEZONE.clone().asInstanceOf[java.util.TimeZone]
+  lazy val defaultTZ = defaultCal.getTimeZone
 }

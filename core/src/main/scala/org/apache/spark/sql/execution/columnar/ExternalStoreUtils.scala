@@ -517,7 +517,7 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
 
   def getCachedBatchHolder: CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,
-      Int.MaxValue, (c: CachedBatch) =>
+      Int.MaxValue, schema, (c: CachedBatch) =>
         externalStore.storeCachedBatch(colTableName, c))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {

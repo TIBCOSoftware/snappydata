@@ -29,7 +29,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -96,14 +95,16 @@ class RowFormatRelation(
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
@@ -112,13 +113,12 @@ class RowFormatRelation(
           pushProjections = false,
           useResultSet = false,
           connProperties,
-          handledFilters,
-          parts
+          handledFilters
         )
 
       case _ =>
         new SparkShellRowRDD(
-          sqlContext.sparkContext,
+          session,
           executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
@@ -131,39 +131,10 @@ class RowFormatRelation(
     (rdd, Nil)
   }
 
-  /**
-   * We need to set num partitions just to cheat Exchange of Spark.
-   * This partition is not used for actual scan operator which depends on the
-   * actual RDD.
-   * Spark ClusteredDistribution is pretty simplistic to consider numShufflePartitions for
-   * its partitioning scheme as Spark always uses shuffle.
-   * Ideally it should consider child Spark plans partitioner.
-   *
-   */
-  override lazy val numPartitions: Int = {
-    region match {
-      case pr: PartitionedRegion =>
-        getNumPartitions
-      case _ =>
-        1
-    }
-  }
-
-  def getNumPartitions: Int = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
-      _context.sparkContext.schedulerBackend.defaultParallelism()
-    } else {
-      numBuckets
-    }
-  }
-
   override lazy val numBuckets: Int = {
     region match {
-      case pr: PartitionedRegion =>
-        pr.getTotalNumberOfBuckets
-      case _ =>
-        1
+      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
+      case _ => 1
     }
   }
 
@@ -183,7 +154,6 @@ class RowFormatRelation(
    * inserted into the table represented by this relation
    *
    * @param data the DataFrame to be upserted
-   *
    * @return number of rows upserted
    */
   def put(data: DataFrame): Unit = {
@@ -196,7 +166,6 @@ class RowFormatRelation(
    * inserted into the table represented by this relation
    *
    * @param rows the rows to be upserted
-   *
    * @return number of rows upserted
    */
   override def put(rows: Seq[Row]): Int = {
@@ -221,14 +190,14 @@ class RowFormatRelation(
   }
 
   private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
-    colWithDirection._1 + " " + (colWithDirection._2 match
-    {
+    colWithDirection._1 + " " + (colWithDirection._2 match {
       case Some(Ascending) => "ASC"
       case Some(Descending) => "DESC"
       case None => ""
     })
 
   }
+
   override protected def constructSQL(indexName: String,
       baseTable: String,
       indexColumns: Map[String, Option[SortDirection]],

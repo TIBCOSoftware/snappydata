@@ -44,14 +44,16 @@ import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLob
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.dsl.expressions._
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
-import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{BaseRelation, Filter, StatsPredicateCompiler}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
@@ -64,24 +66,108 @@ import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, T
  */
 private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
-    dataRDD: RDD[Any],
-    otherRDDs: Seq[RDD[InternalRow]],
-    numPartitions: Int,
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan)
-    extends PartitionedPhysicalScan(output, dataRDD, numPartitions, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation])
+    @transient baseRelation: PartitionedDataSourceScan,
+    requestedColumns: Seq[AttributeReference],
+    pushedFilters: Seq[Filter],
+    allFilters: Seq[Expression],
+    schemaAttributes: Seq[AttributeReference],
+    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
+        (RDD[Any], Seq[RDD[InternalRow]]))
+    extends PartitionedPhysicalScan(output, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation],
+      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder)
         with CodegenSupport {
 
-  private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows"),
-    "numRowsBufferOutput" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows from row buffer")) ++ (
-      if (otherRDDs.isEmpty) Map.empty
-      else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
-        "number of output rows from other RDDs")))
+  override def getMetricsMap: Map[String, SQLMetric] = {
+    super.getMetricsMap ++ Map("numRowsBufferOutput" -> SQLMetrics.createMetric(
+      sparkContext, "number of output rows from row buffer")) ++ (
+        if (otherRDDs.isEmpty) Map.empty
+        else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
+          "number of output rows from other RDDs")))
+  }
+
+  override def getStatsPredicate: StatsPredicateCompiler = {
+
+    val cachedBatchStatistics = relation match {
+      case columnRelation: BaseColumnFormatRelation =>
+        columnRelation.getCachedBatchStatistics(schemaAttributes)
+      case _ => null
+    }
+    def getCachedBatchStatsSchema: Seq[AttributeReference] =
+      if (cachedBatchStatistics != null) cachedBatchStatistics.schema else null
+
+    def statsFor(a: Attribute) = cachedBatchStatistics.forAttribute(a)
+
+    // Returned filter predicate should return false iff it is impossible for the input expression
+    // to evaluate to `true' based on statistics collected about this partition batch.
+    // This code is picked up from InMemoryTableScanExec
+    @transient def buildFilter: PartialFunction[Expression, Expression] = {
+      case And(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
+        (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
+
+      case Or(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
+        buildFilter(lhs) || buildFilter(rhs)
+
+      case EqualTo(a: AttributeReference, l: Literal) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(l: Literal, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+
+      case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
+      case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
+
+      case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
+      case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
+
+      case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
+      case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
+
+      case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
+      case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
+
+      case IsNull(a: Attribute) => statsFor(a).nullCount > 0
+      case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
+    }
+
+    // This code is picked up from InMemoryTableScanExec
+    val cachedBatchStatFilters: Seq[Expression] = {
+      if (relation.isInstanceOf[BaseColumnFormatRelation]) {
+        allFilters.flatMap { p =>
+          val filter = buildFilter.lift(p)
+          val boundFilter =
+            filter.map(
+              BindReferences.bindReference(
+                _,
+                cachedBatchStatistics.schema,
+                allowFailures = true))
+
+          boundFilter.foreach(_ =>
+            filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
+
+          // If the filter can't be resolved th en we are missing required statistics.
+          boundFilter.filter(_.resolved)
+        }
+      } else {
+        Seq.empty[Expression]
+      }
+    }
+
+    metricsCreatedBeforeInit = metricsCreatedBeforeInit ++
+        Map("cachedBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
+          "cached batches seen"),
+          "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
+            "cached batches skipped by the predicate"))
+
+    new StatsPredicateCompiler(newPredicate,
+      cachedBatchStatFilters.reduceOption(And).getOrElse(Literal(true)),
+      getCachedBatchStatsSchema,
+      metricsCreatedBeforeInit("cachedBatchesSeen"),
+      metricsCreatedBeforeInit("cachedBatchesSkipped"))
+  }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
@@ -470,8 +556,7 @@ private[sql] final case class ColumnTableScan(
       // and nonNull() should be invoked before get (and get not invoked
       //   at all if nonNull was false). Hence notNull uses tri-state to
       // indicate (true/false/use wasNull) and code below is a tri-switch.
-      val code =
-        s"""
+      val code = s"""
           final $jt $col;
           final boolean $nullVar;
           if ($notNullVar == 1) {

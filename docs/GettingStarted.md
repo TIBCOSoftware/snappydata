@@ -17,7 +17,7 @@
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data)
     * [OLAP and OLTP queries](#olap-and-oltp-queries-explanation)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-explanation)
+    * [Synopsis Data Engine (SDE)](#approximate-query-processing-aqp-explanation)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
     * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming-explanation)
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation)
@@ -27,7 +27,7 @@
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
     * [OLAP and OLTP Store](#olap-and-oltp-store-explanation)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries-1)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-explanation-1)
+    * [Synopsis Data Engine (SDE)](#approximate-query-processing-aqp-explanation-1)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
     * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming-explanation)
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation-1)
@@ -40,7 +40,7 @@
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). 
 
-![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
+![SnappyDataOverview](./Images/SnappyDataOverview.png)
 
 ## Download binary distribution
 You can download the latest versions of SnappyData here:
@@ -107,7 +107,7 @@ More detail on passwordless ssh can be found [here](https://www.digitalocean.com
 - **In-memory row and column store**: Run the store collocated in Spark executors (i.e. a single compute and data cluster) or in its own process space (i.e. separate compute and data cluster)
 - **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
 - **SQL based extensions for streaming processing**: Use native Spark streaming, Dataframe APIs or declaratively specify your streams and how you want it processed. No need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
-- **Interactive analytics using Approximate Query Processing (AQP)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and are completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions. 
+- **Interactive analytics using Synopsis Data Engine (SDE)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and are completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions. 
 - **Mutate, transact on data in Spark**: Use SQL to insert, update, delete data in tables. We also provide extensions to Spark’s context so you can mutate data in your spark programs. Any tables in SnappyData are visible as DataFrames without having to maintain multiples copies of your data. 
 - **Optimizations**: Use indexes to improve query performance in the row store (the GemFire SQL optimizer automatically uses in-memory indexes when available) 
 - **High availability not just Fault tolerance**: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.
@@ -123,7 +123,7 @@ Each header under "Getting Started" that contains a conceptual explanation meant
 
 - **In-memory Column and Row tables**: Illustrate both SQL syntax and the Spark API to create and manage column tables for large data and illustrate how row tables can be used for reference data and can be replicated to each node in the cluster. 
 - **OLAP, OLTP operations**: We run analytic class SQL queries (full scan with aggregations) on column tables and fully distributed join queries and observe the space requirements as well as the performance of these queries. For OLTP, we run simple update queries - you can note the Spark API extensions to support mutations in Spark. 
-- **AQP**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
+- **SDE**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. What SnappyData demonstrates here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
 In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
@@ -156,7 +156,7 @@ The first step is to configure SNAPPY_HOME in your environment:
 
 ``` export SNAPPY_HOME=/path/to/snappy/root ```
 
-The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````/snappy/```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recomended for the approximate query processing portion of "Getting Started," but not necessary. Note that to run the above script, you need curl installed. [Here](http://askubuntu.com/questions/259681/the-program-curl-is-currently-not-installed) is one way to install it on ubuntu.
+The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````/snappy/```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recommended for the Synopsis Data Engine portion of "Getting Started," but not necessary. Note that to run the above script, you need curl installed. [Here](http://askubuntu.com/questions/259681/the-program-curl-is-currently-not-installed) is one way to install it on ubuntu.
 
 ##### Passwordless ssh
 The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with ````sudo apt-get install ssh````. By default, ssh requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable [passwordless ssh](http://stackoverflow.com/questions/7134535/setup-passphraseless-ssh-to-localhost-on-os-x). Otherwise, set up ssh for localhost with ````ssh localhost````
@@ -269,7 +269,9 @@ To see the status of the system:
 ```
 snappy> run './quickstart/scripts/status_queries.sql'
 ```
-You can see the memory consumed in the [Spark Console](http://localhost:4040/storage/). 
+<br>
+You can see the memory consumed in the Spark Console, http://`<the-lead-host-name`>`:4040/Snappy Store. 
+
 
 #### OLAP and OLTP queries (explanation)
 SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if the query is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to run the query in parallel. In this case, our column table was created using _5 partitions (buckets)_ and hence will use 5 concurrent tasks. 
@@ -317,11 +319,11 @@ You can now re-run olap_queries.sql to see the updated join result set.
 > In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 > You can execute transactions using commands _autocommit off_ and _commit_.  
 
-#### Approximate query processing (AQP) (explanation)
+#### Synopsis Data Engine (SDE) (explanation)
 
-> If you downloaded the full airline data (52 million records) set in [Step 1](#step-1---start-the-snappydata-cluster), edit the `'create_and_load_column_table.sql'` script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. Make sure you copy + paste the starting quote mark to the end after you change `airlineParquetData` to enclose the statement. If you enter a quote mark directly from your keyboard it may break the script.  This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline. You need to load the table again using `run './quickstart/scripts/create_and_load_column_table.sql';` Ideally, you'd re-run the olap queries script as well to see the speedup between non-AQP and AQP. 
+> If you downloaded the full airline data (52 million records) set in [Step 1](#step-1---start-the-snappydata-cluster), edit the `'create_and_load_column_table.sql'` script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. Make sure you copy + paste the starting quote mark to the end after you change `airlineParquetData` to enclose the statement. If you enter a quote mark directly from your keyboard it may break the script.  This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline. You need to load the table again using `run './quickstart/scripts/create_and_load_column_table.sql';` Ideally, you'd re-run the olap queries script as well to see the speedup between non-SDE and SDE. 
 
-OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
+OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like SDE.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
 The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ clauses make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries that are executed on the base table are analyzed for appropriate sample selection. 
@@ -342,7 +344,7 @@ You can run queries directly on the sample table (stored in columnar format) or 
 -- What is the average arrival delay for all airlines for each month?;
 snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0 
     group by Month_
-    with error .1 ;
+    with error;
 -- The above query will consult the sample and return an answer if the estimated answer 
 -- is at least 90% accurate (here, by default we use a 95% confidence interval).
 
@@ -350,7 +352,7 @@ snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0
 snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_ 
     from Airline where ArrDelay >0 
     group by Month_
-    with error .1 ;
+    with error;
 ```
 #### Step 4 - Create, Load and Query Sample Table
 
@@ -400,7 +402,7 @@ Later, in the Spark API section we further enhance this concept to showcase ["co
 
 Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, the top-100 pages on a popular website in the last 10 mins, the top-10 sales regions in the last week, etc. As you can see, if the query is on an arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events in use cases in the Internet of Things, for example. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found here:
 
-[Detailed AQP Documentation](./aqp.md)
+[Detailed SDE Documentation](./aqp.md)
 
 SnappyData provides DDL extensions to create Top-k structures. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as data arrives. The Top-k structures can be queried using regular SQL queries. 
 
@@ -568,8 +570,8 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
 ```
 The output of the job can be found in `AirlineDataJob.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.
 
-#### Approximate query processing (AQP) (explanation)
-OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
+#### Synopsis Data Engine (SDE) (explanation)
+OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like SDE.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
 > #### Note
@@ -636,7 +638,7 @@ retweetStream.foreachDataFrame(df => {
 
 Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures. More details about SnappyData's implementation of top-k can be found here:
 
-[SnappyData's AQP Docs](./aqp.md)
+[SnappyData's SDE Docs](./aqp.md)
 
 SnappyData provides an API in the [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
 

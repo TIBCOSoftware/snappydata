@@ -27,6 +27,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
 
+
 /**
  * This trait is an extension to SparkPlanner and introduces number of
  * enhancements specific to SnappyData.
@@ -43,17 +44,16 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
-  object StreamQueryStrategy extends Strategy {
+    object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
-      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _)) =>
-        val child = PhysicalDStreamPlan(l.output, t.rowStream)
-        WindowPhysicalPlan(d, s, child) :: Nil
-      case WindowLogicalPlan(d, s, child) =>
-        WindowPhysicalPlan(d, s, planLater(child)) :: Nil
-      /* case l@LogicalRelation(t: StreamPlan, _) =>
-        PhysicalDStreamPlan(l.output, t.rowStream) :: Nil */
+      case WindowLogicalPlan(d, s, LogicalDStreamPlan(output, rowStream), _) =>
+        WindowPhysicalPlan(d, s, PhysicalDStreamPlan(output, rowStream)) :: Nil
+      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _), _) =>
+        WindowPhysicalPlan(d, s, PhysicalDStreamPlan(l.output, t.rowStream)) :: Nil
+      case WindowLogicalPlan(d, s, child, _) => throw new AnalysisException(
+        s"Unexpected child $child for WindowLogicalPlan")
       case _ => Nil
     }
   }
@@ -87,7 +87,7 @@ private[sql] trait SnappyStrategies {
       plan match {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          t.numPartitions == 1
+          t.numBuckets == 1
         case PhysicalOperation(projects, filters,
         Join(left, right, _, _)) =>
           // If join is a result of join of replicated tables, this

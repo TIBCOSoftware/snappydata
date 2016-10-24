@@ -24,7 +24,8 @@ import org.apache.spark.streaming.Duration
 case class WindowLogicalPlan(
     windowDuration: Duration,
     slideDuration: Option[Duration],
-    child: LogicalPlan)
+    var child: LogicalPlan,
+    val transformed: Boolean = false)
     extends logical.UnaryNode {
 
   override def output: Seq[Attribute] = child.output
