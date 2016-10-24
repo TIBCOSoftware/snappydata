@@ -267,8 +267,8 @@ final class ResultSetTraversal(conn: Connection,
     stmt: Statement, val rs: ResultSet, context: TaskContext)
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
-  lazy val defaultCal: GregorianCalendar = new GregorianCalendar(
-    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
+  lazy val defaultCal: GregorianCalendar =
+    ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
 }
