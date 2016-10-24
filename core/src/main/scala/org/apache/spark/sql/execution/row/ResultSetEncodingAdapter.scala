@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.ResultSet
-import java.util.GregorianCalendar
 
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 
@@ -35,8 +34,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
     extends ColumnEncoding {
 
-  private[this] val defaultCal = new GregorianCalendar(
-    ClientSharedData.DEFAULT_TIMEZONE, ClientSharedData.DEFAULT_LOCALE)
+  private[this] val defaultCal = ClientSharedData.getDefaultCleanCalendar
 
   override def typeId: Int = -1
 
