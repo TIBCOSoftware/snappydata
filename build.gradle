@@ -1053,10 +1053,7 @@ distTar.mustRunAfter clean, cleanAll
 distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
-task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
-  dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
-}
+
 
 task deleteDocsDir(type: Delete) {
   delete "${rootProject.buildDir}/docs"
@@ -1098,4 +1095,9 @@ task docs(type: ScalaDoc) {
    project.sourceSets.main.compileClasspath   
   })
   destinationDir = file("${rootProject.buildDir}/docs")
+}
+
+task precheckin {
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn ':snappy-spark:scalaStyle', docs
 }
