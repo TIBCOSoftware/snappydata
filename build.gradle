@@ -207,11 +207,6 @@ task cleanQuickstart << {
   file(workingDir).mkdirs()
 }
 
-task publishDocs(type:Exec) {
-  dependsOn docs
-  //on linux
-  commandLine './publish-site.sh'
-}
 
 subprojects {
   // the run task for a selected sub-project
@@ -1096,6 +1091,12 @@ task docs(type: ScalaDoc) {
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
+task publishDocs(type:Exec) {
+  dependsOn docs
+  //on linux
+  commandLine './publish-site.sh'
+}
+
 
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
