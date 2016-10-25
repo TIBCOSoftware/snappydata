@@ -257,7 +257,7 @@ SnappyData combines state-of-the-art approximate query processing techniques and
 
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
-####Behaviour Clause####
+####Behavior Clause####
 Synopsis Data Engine has HAC support using the following behavior clause. 
 
 ##### `<do_nothing>`#####
