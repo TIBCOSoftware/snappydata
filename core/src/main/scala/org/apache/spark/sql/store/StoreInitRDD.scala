@@ -66,7 +66,8 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
             val resolvedBaseName = ExternalStoreUtils.lookupName(table, Constant.DEFAULT_SCHEMA)
             val reservoirName = Misc.getReservoirRegionNameForSampleTable(Constant.DEFAULT_SCHEMA,
               resolvedBaseName)
-            val childRegion = Misc.createReservoirRegionForSampleTable(reservoirName, resolvedBaseName)
+            val childRegion = Misc.createReservoirRegionForSampleTable(reservoirName,
+              resolvedBaseName)
             assert(childRegion != null)
           case _ =>
         }
