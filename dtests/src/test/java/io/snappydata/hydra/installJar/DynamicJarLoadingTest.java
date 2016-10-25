@@ -53,9 +53,35 @@ public class DynamicJarLoadingTest extends SnappyTest {
         for (int i = 0; i <= numClasses; i++) {
             files.add(createSupportiveClasses("FakeClass" + i, classVersion, dir));
         }
+//        files = createJarWithOnlyClasses(numClasses, classVersion);
         files.add(createJobClass("DynamicJarLoadingJob", dir));
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
+
+    protected static String createJarWithOnlyClasses(int numClasses, String classVersion) {
+        String dir = getTempDir();
+        List files = new ArrayList();
+        for (int i = 0; i <= numClasses; i++) {
+            files.add(createSupportiveClasses("FakeClass" + i, classVersion, dir));
+        }
+        return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
+    }
+
+    protected static String createJarFileWithOnlyJobClass() {
+        String dir = getTempDir();
+        List files = new ArrayList();
+        files.add(createJobClass("DynamicJarLoadingJob", dir));
+        return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
+    }
+
+ /*   protected static String createJarFileWithOnlyClasses(int numClasses, String classVersion) {
+        String dir = getTempDir();
+        List files = new ArrayList();
+        for (int i = 0; i <= numClasses; i++) {
+            files.add(createSupportiveClasses("FakeClass" + i, classVersion, dir));
+        }
+       return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
+    }*/
 
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_installJar() {
         String appJar = createJarFile(3, "1");
@@ -98,7 +124,9 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "public class DynamicJarLoadingJob extends SnappySQLJob {\n" +
                 "    @Override\n" +
                 "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
-                "        try (PrintWriter pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\"))), true)){\n" +
+                "        PrintWriter pw = null;\n" +
+                "        try {\n" +
+                "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob started ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
@@ -106,13 +134,14 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "            pw.println(\"****** DynamicJarLoadingJob finished ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
-                "            StringWriter sw = new StringWriter();\n" +
-                "            PrintWriter spw = new PrintWriter(sw);\n" +
-                "            spw.println(\"ERROR: failed with \" + e);\n" +
-                "            e.printStackTrace(spw);\n" +
-                "            return spw.toString();\n" +
+                "            pw.println(\"ERROR: failed with \" + e.getMessage());\n" +
+                "            e.printStackTrace(pw);\n" +
+                "        } finally {\n" +
+                "            pw.flush();\n" +
+                "            pw.close();\n" +
                 "        }\n" +
-                "    }\n" +
+                "        return null;\n" +
+                "    }" +
                 "\n" +
                 "    @Override\n" +
                 "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
@@ -129,9 +158,37 @@ public class DynamicJarLoadingTest extends SnappyTest {
      * Executes gfxd install-jar command using specified jar file.
      */
     public static synchronized void HydraTask_executeInstallJarCommand() {
-        File log = null, logFile = null;
         String jarName = SnappyPrms.getUserAppJar();
         String jarIdentifier = SnappyPrms.getJarIdentifier();
+        executeCommand(jarName, jarIdentifier, "install-jar");
+    }
+
+    /**
+     * Executes gfxd install-jar command using dynamically created jar file.
+     */
+    public static synchronized void HydraTask_executeInstallJarCommand_DynamicJarLoading() {
+        String jarName = createJarWithOnlyClasses(3, "1");
+        executeCommand(jarName, null, "install-jar");
+    }
+
+    /**
+     * Executes gfxd modify-jar command using dynamically created jar file.
+     */
+    public static synchronized void HydraTask_executeReplaceJarCommand_DynamicJarLoading() {
+        String jarName = createJarWithOnlyClasses(2, "2");
+        executeCommand(jarName, null, "replace-jar");
+    }
+
+    /**
+     * Executes dynamically created snappy job which uses the classes loaded through gfxd install-jar/replace-jar command.
+     */
+    public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading() {
+        String jarName = createJarFileWithOnlyJobClass();
+        executeSnappyJobWithDynamicJarLoading(jarName, "snappyJob_InstallJarResult_thread_");
+    }
+
+    protected static synchronized void executeCommand(String jarName, String jarIdentifier, String command) {
+        File log = null, logFile = null;
         if (jarName == null) {
             String s = "No jarName name provided for executing install-jar command in Hydra TASK";
             throw new TestException(s);
@@ -141,6 +198,8 @@ public class DynamicJarLoadingTest extends SnappyTest {
         }
         try {
             String jarFilePath = snappyTest.getUserAppJarLocation(jarName, jarPath);
+            if (jarFilePath == null)
+                jarFilePath = snappyTest.getUserAppJarLocation(jarName, getTempDir());
             Log.getLogWriter().info("SS - jarFilePath is : " + jarFilePath);
             Log.getLogWriter().info("SS - jarIdentifier is : " + jarIdentifier);
             log = new File(".");
@@ -148,7 +207,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
             logFile = new File(dest);
             String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
             String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
-            ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "install-jar", "-file=" + jarFilePath, "-name=" + jarIdentifier,
+            ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, command, "-file=" + jarFilePath, "-name=" + jarIdentifier,
                     "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
             Log.getLogWriter().info("SS - pb command is : " + pb.command() + ":" + pb.toString());
             snappyTest.executeProcess(pb, logFile);
@@ -156,5 +215,4 @@ public class DynamicJarLoadingTest extends SnappyTest {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
     }
-
 }
