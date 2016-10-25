@@ -56,7 +56,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     right: SparkPlan)
     extends BinaryExecNode with HashJoin with CodegenSupport {
 
-  override private[sql] lazy val metrics = Map(
+  override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
     "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
