@@ -45,6 +45,8 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
+  val keepReservoirInRegion = sqlContext.conf.getConfString("spark.sql.aqp.reservoirNotInTable",
+    "false").toBoolean
   GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
     Constant.COLUMN_MIN_BATCH_SIZE)
 
@@ -61,15 +63,17 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
         val store = new JDBCSourceAsColumnarStore(connProperties, partitions)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
           schema, store, columnBatchSize, userCompression)
-        schema.fields.last match {
-          case StructField("SNAPPY_SAMPLER_WEIGHTAGE", LongType, _, _) =>
-            val resolvedBaseName = ExternalStoreUtils.lookupName(table, Constant.DEFAULT_SCHEMA)
-            val reservoirName = Misc.getReservoirRegionNameForSampleTable(Constant.DEFAULT_SCHEMA,
-              resolvedBaseName)
-            val childRegion = Misc.createReservoirRegionForSampleTable(reservoirName,
-              resolvedBaseName)
-            assert(childRegion != null)
-          case _ =>
+        if (keepReservoirInRegion) {
+          schema.fields.last match {
+            case StructField("SNAPPY_SAMPLER_WEIGHTAGE", LongType, _, _) =>
+              val resolvedBaseName = ExternalStoreUtils.lookupName(table, Constant.DEFAULT_SCHEMA)
+              val reservoirName = Misc.getReservoirRegionNameForSampleTable(Constant.DEFAULT_SCHEMA,
+                resolvedBaseName)
+              val childRegion = Misc.createReservoirRegionForSampleTable(reservoirName,
+                resolvedBaseName)
+              assert(childRegion != null)
+            case _ =>
+          }
         }
       case None => // row table case
         val region = Misc.getRegionForTable(table, false)
