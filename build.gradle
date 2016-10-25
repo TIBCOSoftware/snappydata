@@ -208,7 +208,7 @@ task cleanQuickstart << {
 }
 
 task publishDocs(type:Exec) {
-  dependsOn ':snappy-cluster_' + scalaBinaryVersion + ':docs'
+  dependsOn docs
   //on linux
   commandLine './publish-site.sh'
 }
