@@ -39,14 +39,12 @@ object SnappyTestUtils {
       }).count
 
     assert(countInstances == count)
-    pw.println("Class is available on all executors : numExecutors having the class loaded is same as numServers in test = " + countInstances + " class version: " + version);
-    }
-
+    pw.println("Class is available on all executors : numExecutors (" + countInstances + ") having the class " + className + " loaded, is same as numServers (" + count + ") in test" + " and the class version is: " + version);
+  }
 
   def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
     new JavaSourceFromString(name, code)
   }
-
 
   def createCompiledClass(className: String,
                           destDir: File,
@@ -54,12 +52,11 @@ object SnappyTestUtils {
                           classpathUrls: Seq[URL] = Seq()): File = {
 
     TestUtils.createCompiledClass(className, destDir, sourceFile, classpathUrls)
-
   }
 
   def createJarFile(files: Seq[File],
                     tempDir: String
-                    ) = {
+                     ) = {
     val jarFile = new File(tempDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
     jarFile.getName
