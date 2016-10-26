@@ -22,6 +22,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
+import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.cluster.ExecutorInitiator
@@ -77,16 +78,15 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
 
-  override def readDVDArray(dvds: Array[DataValueDescriptor],
-      types: Array[Int], in: ByteArrayDataInput, numEightColGroups: Int,
-      numPartialCols: Int): Unit = {
-    SparkSQLExecuteImpl.readDVDArray(dvds, types, in, numEightColGroups,
-      numPartialCols)
+  override def getRowIterator(dvds: Array[DataValueDescriptor],
+      types: Array[Int], precisions: Array[Int], scales: Array[Int],
+      in: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
+    SparkSQLExecuteImpl.getRowIterator(dvds, types, precisions, scales, in)
   }
 
-  override def clearSnappyContextForConnection(
+  override def clearSnappySessionForConnection(
       connectionId: java.lang.Long): Unit = {
-    SnappyContextPerConnection.removeSnappyContext(connectionId)
+    SnappySessionPerConnection.removeSnappySession(connectionId)
   }
 
   override def publishColumnTableStats(): Unit = {

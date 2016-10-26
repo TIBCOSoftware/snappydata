@@ -129,8 +129,6 @@ class BaseColumnFormatRelation(
       case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -149,8 +147,6 @@ class BaseColumnFormatRelation(
       case _ =>
         val rowRdd = new SparkShellRowRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,

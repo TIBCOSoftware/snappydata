@@ -22,11 +22,15 @@ import java.sql.Types
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
 
+import org.apache.spark.sql.PartitionResult
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 
 
-private[spark] class ExternalizableResolverSerializer[T <: Externalizable](
-    readResolve: T => T) extends KryoClassSerializer[T] {
+private[spark] class ExternalizableOnlySerializer[T <: Externalizable]
+    extends KryoClassSerializer[T] {
 
   private var objectInput: KryoObjectInput = _
   private var objectOutput: KryoObjectOutput = _
@@ -44,7 +48,7 @@ private[spark] class ExternalizableResolverSerializer[T <: Externalizable](
     try {
       val obj = kryo.newInstance(c)
       obj.readExternal(getObjectInput(kryo, input))
-      readResolve(obj)
+      obj
     } catch {
       case e@(_: ClassCastException | _: ClassNotFoundException |
               _: IOException) => throw new KryoException(e)
@@ -70,8 +74,15 @@ private[spark] class ExternalizableResolverSerializer[T <: Externalizable](
   }
 }
 
-private[spark] class StructTypeSerializer
-    extends KryoClassSerializer[StructType] {
+private[spark] final class ExternalizableResolverSerializer[T <: Externalizable](
+    readResolve: T => T) extends ExternalizableOnlySerializer[T] {
+
+  override def read(kryo: Kryo, input: Input, c: Class[T]): T = {
+    readResolve(super.read(kryo, input, c))
+  }
+}
+
+object StructTypeSerializer extends KryoClassSerializer[StructType] {
 
   def writeType(kryo: Kryo, output: Output, dataType: DataType): Unit = {
     dataType match {
@@ -150,12 +161,7 @@ private[spark] class StructTypeSerializer
       output.writeString(field.name)
       writeType(kryo, output, field.dataType)
       output.writeBoolean(field.nullable)
-      if (field.metadata eq Metadata.empty) {
-        output.writeBoolean(true)
-      } else {
-        output.writeBoolean(false)
-        kryo.writeClassAndObject(output, field.metadata)
-      }
+      TypeUtils.writeMetadata(field.metadata, kryo, output)
       i += 1
     }
   }
@@ -169,11 +175,95 @@ private[spark] class StructTypeSerializer
       val name = input.readString()
       val dataType = readType(kryo, input)
       val nullable = input.readBoolean()
-      val metadata = if (input.readBoolean()) Metadata.empty
-      else kryo.readClassAndObject(input).asInstanceOf[Metadata]
+      val metadata = TypeUtils.readMetadata(kryo, input)
       fields(i) = StructField(name, dataType, nullable, metadata)
       i += 1
     }
     StructType(fields)
+  }
+}
+
+object PartitionResultSerializer extends KryoClassSerializer[PartitionResult] {
+
+  override def write(kryo: Kryo, output: Output, obj: PartitionResult): Unit = {
+    val data = obj._1
+    val len = data.length
+    output.writeInt(len)
+    output.writeBytes(data, 0, len)
+    output.writeVarInt(obj._2, true)
+  }
+
+  override def read(kryo: Kryo, input: Input,
+      c: Class[PartitionResult]): PartitionResult = {
+    val len = input.readInt()
+    val data = input.readBytes(len)
+    new PartitionResult(data, input.readVarInt(true))
+  }
+}
+
+object ConnectionPropertiesSerializer
+    extends KryoClassSerializer[ConnectionProperties] {
+
+  override def write(kryo: Kryo, output: Output,
+      connProps: ConnectionProperties): Unit = {
+    output.writeString(connProps.url)
+    output.writeString(connProps.driver)
+    connProps.dialect match {
+      case GemFireXDDialect => output.writeByte(0)
+      case GemFireXDClientDialect => output.writeByte(1)
+      case d => output.writeByte(2)
+        kryo.writeClassAndObject(output, d)
+    }
+    val poolProps = connProps.poolProps
+    if (poolProps ne null) {
+      val numProps = poolProps.size
+      output.writeVarInt(numProps, true)
+      if (numProps > 0) {
+        for ((key, value) <- poolProps) {
+          output.writeString(key)
+          output.writeString(value)
+        }
+      }
+    } else {
+      output.writeVarInt(0, true)
+    }
+    // write only executor properties if available since on target side
+    // that is the one which will be used
+    if (connProps.executorConnProps.isEmpty) {
+      TypeUtils.writeProperties(connProps.connProps, output)
+    } else {
+      TypeUtils.writeProperties(connProps.executorConnProps, output)
+    }
+    output.writeBoolean(connProps.hikariCP)
+  }
+
+  override def read(kryo: Kryo, input: Input,
+      c: Class[ConnectionProperties]): ConnectionProperties = {
+    read(kryo, input)
+  }
+
+  def read(kryo: Kryo, input: Input): ConnectionProperties = {
+    val url = input.readString()
+    val driver = input.readString()
+    val dialect = input.readByte() match {
+      case 0 => GemFireXDDialect
+      case 1 => GemFireXDClientDialect
+      case _ => kryo.readClassAndObject(input).asInstanceOf[JdbcDialect]
+    }
+    var numProps = input.readVarInt(true)
+    var poolProps: Map[String, String] = Map.empty
+    if (numProps > 0) {
+      val propsBuilder = Map.newBuilder[String, String]
+      while (numProps > 0) {
+        val key = input.readString()
+        propsBuilder += key -> input.readString()
+        numProps -= 1
+      }
+      poolProps = propsBuilder.result
+    }
+    val connProps = TypeUtils.readProperties(input)
+    val hikariCP = input.readBoolean()
+    ConnectionProperties(url, driver, dialect, poolProps, connProps,
+      connProps, hikariCP)
   }
 }

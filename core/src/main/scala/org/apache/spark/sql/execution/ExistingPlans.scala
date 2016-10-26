@@ -63,9 +63,7 @@ private[sql] abstract class PartitionedPhysicalScan(
         metricsCreatedBeforeInit
   }
 
-  def getStatsPredicate: StatsPredicateCompiler = {
-    new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
-  }
+  def getStatsPredicate: StatsPredicateCompiler = null
 
   private val extraInformation = relation.toString
 
@@ -100,7 +98,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
-  override def simpleString: String = "Partitioned Scan " + extraInformation +
+  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
       " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
       " numBuckets= " + numBuckets +

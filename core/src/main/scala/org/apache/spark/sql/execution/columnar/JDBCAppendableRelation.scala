@@ -84,9 +84,6 @@ case class JDBCAppendableRelation(
 
   val schemaFields = Utils.getSchemaFields(schema)
 
-  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
-    connProperties, forExecutor = true)
-
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */

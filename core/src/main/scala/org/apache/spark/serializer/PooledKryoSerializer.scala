@@ -16,26 +16,32 @@
  */
 package org.apache.spark.serializer
 
-import java.io.{EOFException, InputStream}
+import java.io.{EOFException, IOException, InputStream, OutputStream}
 import java.lang.ref.SoftReference
 import java.nio.ByteBuffer
 
 import scala.reflect.ClassTag
 
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.pool.KryoFactory
+import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{BlockStatusesAccumulator, InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
-import org.apache.spark.scheduler.{DirectTaskResult, IndirectTaskResult, ResultTask, ShuffleMapTask, Task, TaskDescription}
+import org.apache.spark.network.util.ByteUnit
+import org.apache.spark.rdd.ZippedPartitionsPartition
+import org.apache.spark.scheduler._
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.collection.NarrowExecutorLocalSplitDep
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
+import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.metric.SQLMetric
+import org.apache.spark.sql.execution.row.RowFormatScanRDD
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.{BlockManagerId, StorageLevel}
+import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
+import org.apache.spark.storage.BlockManagerMessages.UpdateBlockInfo
+import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.{CollectionAccumulator, DoubleAccumulator, LongAccumulator, SerializableBuffer, Utils}
 import org.apache.spark.{Logging, SparkConf, SparkEnv}
@@ -68,19 +74,33 @@ final class PooledKryoSerializer(conf: SparkConf)
     // specific serialization implementations in Spark and commonly used classes
     kryo.register(classOf[UnsafeRow], new KryoSerializableSerializer)
     kryo.register(classOf[UTF8String], new KryoSerializableSerializer)
-    kryo.register(classOf[DirectTaskResult[_]], new ExternalizableSerializer)
+    kryo.register(classOf[UpdateBlockInfo], new ExternalizableOnlySerializer)
+    kryo.register(classOf[CompressedMapStatus], new ExternalizableOnlySerializer)
+    kryo.register(classOf[HighlyCompressedMapStatus],
+      new ExternalizableOnlySerializer)
     kryo.register(classOf[IndirectTaskResult[_]])
+    kryo.register(classOf[RDDBlockId])
+    kryo.register(classOf[ShuffleBlockId])
+    kryo.register(classOf[ShuffleDataBlockId])
+    kryo.register(classOf[ShuffleIndexBlockId])
+    kryo.register(classOf[BroadcastBlockId])
+    kryo.register(classOf[TaskResultBlockId])
+    kryo.register(classOf[StreamBlockId])
     kryo.register(classOf[TorrentBroadcast[_]])
-    kryo.register(classOf[TaskDescription])
 
     // other classes having specific implementations in snappy-spark but for
     // spark compatibility, the serializer is not mentioned explicitly
-    kryo.register(classOf[Task[_]])
     kryo.register(classOf[ResultTask[_, _]])
     kryo.register(classOf[ShuffleMapTask])
+    kryo.register(classOf[DirectTaskResult[_]])
     kryo.register(classOf[SerializableBuffer])
     kryo.register(Utils.classForName(
       "org.apache.spark.rpc.netty.NettyRpcEndpointRef"))
+    kryo.register(Utils.classForName(
+      "org.apache.spark.rpc.netty.RequestMessage"))
+    kryo.register(classOf[LaunchTask])
+    kryo.register(classOf[TaskDescription])
+    kryo.register(classOf[StatusUpdate])
     kryo.register(classOf[TaskMetrics])
     kryo.register(classOf[InputMetrics])
     kryo.register(classOf[OutputMetrics])
@@ -91,62 +111,94 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[DoubleAccumulator])
     kryo.register(classOf[CollectionAccumulator[_]])
     kryo.register(classOf[SQLMetric])
+    kryo.register(classOf[ZippedPartitionsPartition])
 
     kryo.register(classOf[BlockManagerId], new ExternalizableResolverSerializer(
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
-    kryo.register(classOf[StructType], new StructTypeSerializer)
+    kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
+    kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
       new KryoSerializableSerializer)
+    kryo.register(CachedDataFrame.getClass, new KryoSerializableSerializer)
+    kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
+    kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
+    kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
+    kryo.register(classOf[MultiBucketExecutorPartition],
+      new KryoSerializableSerializer)
+    kryo.register(classOf[PartitionResult], PartitionResultSerializer)
 
     kryo
   }
 
-  override def newInstance(): SerializerInstance = {
+  override def newInstance(): PooledKryoSerializerInstance = {
     new PooledKryoSerializerInstance(this)
+  }
+
+  private[spark] override lazy val supportsRelocationOfSerializedObjects: Boolean = {
+    // If auto-reset is disabled, then Kryo may store references to duplicate
+    // occurrences of objects in the stream rather than writing those objects'
+    // serialized bytes, breaking relocation. See
+    // https://groups.google.com/d/msg/kryo-users/6ZUSyfjjtdo/FhGG1KHDXPgJ for more details.
+    newInstance().getAutoReset
   }
 }
 
-// TODO: SW: pool must be per SparkContext or SnappyConf
-private[spark] object KryoSerializerPool {
+private[spark] final class PooledObject(serializer: PooledKryoSerializer,
+    bufferSize: Int) {
+  val kryo: Kryo = serializer.newKryo()
+  val output: Output = new Output(bufferSize, -1)
+  val input: Input = new KryoInputStringFix(0)
+  lazy val streamInput: Input = new KryoInputStringFix(bufferSize)
+}
 
-  private val serializer: PooledKryoSerializer = {
-    val sparkConf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf())
-    new PooledKryoSerializer(sparkConf)
+// TODO: SW: pool must be per SparkContext
+object KryoSerializerPool {
+
+  private[serializer] val autoResetField =
+    classOf[Kryo].getDeclaredField("autoReset")
+  autoResetField.setAccessible(true)
+
+  private[serializer] val zeroBytes = new Array[Byte](0)
+
+  private val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
+    val conf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf())
+    val bufferSizeKb = conf.getSizeAsKb("spark.kryoserializer.buffer", "4k")
+    val bufferSize = ByteUnit.KiB.toBytes(bufferSizeKb).toInt
+    (new PooledKryoSerializer(conf), bufferSize)
   }
 
-  private val factory = new KryoFactory() {
-    def create(): Kryo = {
-      serializer.newKryo()
-    }
-  }
+  private[this] val pool = new java.util.ArrayDeque[SoftReference[PooledObject]]()
 
-  // not using KryoPool.Builder to use a deque for inserting at head
-  private[this] val pool = new java.util.ArrayDeque[SoftReference[Kryo]]()
-
-  def borrow(): Kryo = {
-    var ref: SoftReference[Kryo] = null
+  def borrow(): PooledObject = {
+    var ref: SoftReference[PooledObject] = null
     pool.synchronized {
       ref = pool.pollFirst()
     }
     while (ref != null) {
-      val kryo = ref.get()
-      if (kryo != null) {
-        return kryo
+      val poolObject = ref.get()
+      if (poolObject != null) {
+        return poolObject
       }
       pool.synchronized {
         ref = pool.pollFirst()
       }
     }
-    factory.create()
+    new PooledObject(serializer, bufferSize)
   }
 
-  def release(kryo: Kryo): Unit = {
+  def release(poolObject: PooledObject,
+      clearInputBuffer: Boolean = false): Unit = {
     // Call reset() to clear any Kryo state that might have been modified
     // by the last operation to borrow this instance (SPARK-7766).
-    kryo.reset()
-    val ref = new SoftReference[Kryo](kryo)
+    poolObject.kryo.reset()
+    if (clearInputBuffer) {
+      poolObject.input.setBuffer(zeroBytes)
+    } else {
+      poolObject.output.clear()
+    }
+    val ref = new SoftReference[PooledObject](poolObject)
     pool.synchronized {
       pool.addFirst(ref)
     }
@@ -157,32 +209,11 @@ private[spark] object KryoSerializerPool {
       pool.clear()
     }
   }
-
-  /**
-   * Search for the private readResolve() method which must be present
-   * to be passed to [[ExternalizableResolverSerializer]].
-   */
-  def getPrivateReadResolve[T](c: Class[T]): T => T = { (obj: T) =>
-    val m = c.getDeclaredMethod("readResolve")
-    m.setAccessible(true)
-    m.invoke(obj).asInstanceOf[T]
-  }
 }
 
 private[spark] final class PooledKryoSerializerInstance(
     pooledSerializer: PooledKryoSerializer)
-    extends KryoSerializerInstance(pooledSerializer) with Logging {
-
-  private lazy val stringFixInput = new KryoInputStringFix(0)
-
-  // get rid of the cachedKryo of super class (unfortunate overhead)
-  KryoSerializerPool.release(super.borrowKryo())
-
-  override private[serializer] def borrowKryo(): Kryo =
-    KryoSerializerPool.borrow()
-
-  override private[serializer] def releaseKryo(kryo: Kryo): Unit =
-    KryoSerializerPool.release(kryo)
+    extends SerializerInstance with Logging {
 
   private def readByteBufferAsInput(bb: ByteBuffer, input: Input): Unit = {
     if (bb.hasArray) {
@@ -196,118 +227,119 @@ private[spark] final class PooledKryoSerializerInstance(
     }
   }
 
-  /*
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
-    var start = System.nanoTime()
-    val buffer = super.serialize(t)
-    var end = System.nanoTime()
-    if (t != null) {
-      logInfo(s"SW: time taken to serialize ${t.getClass.getName} " +
-          s"object = ${(end - start) / 1000000.0}ms size = ${buffer.remaining()}")
+    val poolObject = KryoSerializerPool.borrow()
+    val output = poolObject.output
+    try {
+      poolObject.kryo.writeClassAndObject(output, t)
+      val result = ByteBuffer.wrap(output.toBytes)
+      result
+    } finally {
+      KryoSerializerPool.release(poolObject)
     }
-    t match {
-      case (p1, p2) =>
-        start = System.nanoTime()
-        val r1 = super.serialize(p1)
-        end = System.nanoTime()
-        val p1Str = p1 match {
-          case rdd: RDD[_] => rdd.toDebugString
-          case _ => p1
-        }
-        logInfo(s"SW:T1: time taken to serialize [$p1Str] " +
-            s"= ${(end - start) / 1000000.0}ms size = ${r1.remaining()}")
-
-        start = System.nanoTime()
-        val r2 = super.serialize(p2)
-        end = System.nanoTime()
-        logInfo(s"SW:T2: time taken to serialize [$p2] " +
-            s"= ${(end - start) / 1000000.0}ms size = ${r2.remaining()}")
-      case _ =>
-    }
-    buffer
   }
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer): T = {
-    val start = System.nanoTime()
-    var SW_t: T = null.asInstanceOf[T]
-    val kryo = borrowKryo()
+    val poolObject = KryoSerializerPool.borrow()
+    val input = poolObject.input
     try {
-      readByteBufferAsInput(buffer, stringFixInput)
-      SW_t = kryo.readClassAndObject(stringFixInput).asInstanceOf[T]
-      SW_t
+      readByteBufferAsInput(buffer, input)
+      val result = poolObject.kryo.readClassAndObject(input).asInstanceOf[T]
+      result
     } finally {
-      releaseKryo(kryo)
-      val end = System.nanoTime()
-      if (SW_t != null) {
-        logInfo(s"SW: time taken to deserialize ${SW_t.getClass.getName} " +
-            s"object = ${(end - start) / 1000000.0}ms size = ${stringFixInput.limit()}")
-      }
+      KryoSerializerPool.release(poolObject, clearInputBuffer = true)
     }
   }
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer,
       loader: ClassLoader): T = {
-    val start = System.nanoTime()
-    var SW_t: T = null.asInstanceOf[T]
-    val kryo = borrowKryo()
+    val poolObject = KryoSerializerPool.borrow()
+    val kryo = poolObject.kryo
+    val input = poolObject.input
     val oldClassLoader = kryo.getClassLoader
     try {
       kryo.setClassLoader(loader)
-      readByteBufferAsInput(buffer, stringFixInput)
-      SW_t = kryo.readClassAndObject(stringFixInput).asInstanceOf[T]
-      SW_t
+      readByteBufferAsInput(buffer, input)
+      val result = kryo.readClassAndObject(input).asInstanceOf[T]
+      result
     } finally {
       kryo.setClassLoader(oldClassLoader)
-      releaseKryo(kryo)
-      val end = System.nanoTime()
-      if (SW_t != null) {
-        logInfo(s"SW:2: time taken to deserialize ${SW_t.getClass.getName} " +
-            s"object = ${(end - start) / 1000000.0}ms size = ${stringFixInput.limit()}")
+      KryoSerializerPool.release(poolObject, clearInputBuffer = true)
+    }
+  }
+
+  override def serializeStream(stream: OutputStream): SerializationStream = {
+    new KryoReuseSerializationStream(stream)
+  }
+
+  override def deserializeStream(stream: InputStream): DeserializationStream = {
+    new KryoStringFixDeserializationStream(stream)
+  }
+
+  /**
+   * Returns true if auto-reset is on. The only reason this would be false is
+   * if the user-supplied registrator explicitly turns auto-reset off.
+   */
+  def getAutoReset: Boolean = {
+    val poolObject = KryoSerializerPool.borrow()
+    try {
+      val result = KryoSerializerPool.autoResetField.get(
+        poolObject.kryo).asInstanceOf[Boolean]
+      result
+    } finally {
+      KryoSerializerPool.release(poolObject)
+    }
+  }
+}
+
+private[serializer] class KryoReuseSerializationStream(
+    stream: OutputStream) extends SerializationStream {
+
+  private[this] val poolObject = KryoSerializerPool.borrow()
+
+  // use incoming stream itself if it is an output
+  private[this] var output = stream match {
+    case out: Output => out
+    case _ => poolObject.output.setOutputStream(stream); poolObject.output
+  }
+
+  override def writeObject[T: ClassTag](t: T): SerializationStream = {
+    poolObject.kryo.writeClassAndObject(output, t)
+    this
+  }
+
+  override def flush() {
+    if (output != null) {
+      output.flush()
+    } else {
+      throw new IOException("Stream is closed")
+    }
+  }
+
+  override def close() {
+    if (output != null) {
+      try {
+        output.close()
+      } finally {
+        output = null
+        poolObject.output.setOutputStream(null)
+        KryoSerializerPool.release(poolObject)
       }
     }
-  }
-  */
-
-  override def deserialize[T: ClassTag](buffer: ByteBuffer): T = {
-    val kryo = borrowKryo()
-    try {
-      readByteBufferAsInput(buffer, stringFixInput)
-      kryo.readClassAndObject(stringFixInput).asInstanceOf[T]
-    } finally {
-      releaseKryo(kryo)
-    }
-  }
-
-  override def deserialize[T: ClassTag](buffer: ByteBuffer,
-      loader: ClassLoader): T = {
-    val kryo = borrowKryo()
-    val oldClassLoader = kryo.getClassLoader
-    try {
-      kryo.setClassLoader(loader)
-      readByteBufferAsInput(buffer, stringFixInput)
-      kryo.readClassAndObject(stringFixInput).asInstanceOf[T]
-    } finally {
-      kryo.setClassLoader(oldClassLoader)
-      releaseKryo(kryo)
-    }
-  }
-
-  override def deserializeStream(s: InputStream): DeserializationStream = {
-    new KryoStringFixDeserializationStream(this, s)
   }
 }
 
 private[spark] class KryoStringFixDeserializationStream(
-    serInstance: PooledKryoSerializerInstance,
-    inStream: InputStream) extends DeserializationStream {
+    stream: InputStream) extends DeserializationStream {
 
-  private[this] var input: Input = new KryoInputStringFix(4096)
-  input.setInputStream(inStream)
-  private[this] var kryo: Kryo = serInstance.borrowKryo()
+  private[this] val poolObject = KryoSerializerPool.borrow()
+
+  private[this] var input = poolObject.streamInput
+  input.setInputStream(stream)
 
   override def readObject[T: ClassTag](): T = {
     try {
-      kryo.readClassAndObject(input).asInstanceOf[T]
+      poolObject.kryo.readClassAndObject(input).asInstanceOf[T]
     } catch {
       // DeserializationStream uses the EOF exception to indicate
       // stopping condition.
@@ -323,9 +355,9 @@ private[spark] class KryoStringFixDeserializationStream(
         // Kryo's Input automatically closes the input stream it is using.
         input.close()
       } finally {
-        serInstance.releaseKryo(kryo)
-        kryo = null
+        input.setInputStream(null)
         input = null
+        KryoSerializerPool.release(poolObject)
       }
     }
   }

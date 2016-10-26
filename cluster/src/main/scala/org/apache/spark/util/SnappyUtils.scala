@@ -28,18 +28,10 @@ import org.apache.spark.SparkContext
 
 object SnappyUtils {
 
-  def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader =
-    new SecureClassLoader(parent) {
-      override def loadClass(name: String): Class[_] = {
-        try {
-          parent.loadClass(name)
-        } catch {
-          case cnfe: ClassNotFoundException =>
-            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
-        }
-      }
-    }
-
+  def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader = parent match {
+    case _: SnappyContextLoader => parent // no double wrap
+    case _ => new SnappyContextLoader(parent)
+  }
 
   def installOrReplaceJar(jarName: String, jarPath: String, sc: SparkContext): Unit = {
     // for now using this approach as quickFix, later the add/replace should be called based on
@@ -52,7 +44,6 @@ object SnappyUtils {
 
   private def executeCall(sql: String, jarName: String, jarPath: String,
       sc: SparkContext): Boolean = {
-    val jar = new java.io.File(jarPath).toURI.toURL.toExternalForm
     var jarExistsException = false
     val conn = DriverManager.getConnection(ServiceUtils.getLocatorJDBCURL(sc))
     try {
@@ -60,15 +51,29 @@ object SnappyUtils {
       cs.setBytes(1, FileUtils.readFileToByteArray(new File(jarPath)))
       cs.setString(2, jarName)
       cs.executeUpdate()
-      cs.close
+      cs.close()
     } catch {
       case se: SQLException => if (!se.getSQLState.equals("X0Y32")) throw se
       else jarExistsException = true
     }
     finally {
-      conn.close
+      conn.close()
     }
 
     jarExistsException
+  }
+}
+
+class SnappyContextLoader(parent: ClassLoader)
+    extends SecureClassLoader(parent) {
+
+  @throws(classOf[ClassNotFoundException])
+  override def loadClass(name: String): Class[_] = {
+    try {
+      parent.loadClass(name)
+    } catch {
+      case cnfe: ClassNotFoundException =>
+        Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+    }
   }
 }

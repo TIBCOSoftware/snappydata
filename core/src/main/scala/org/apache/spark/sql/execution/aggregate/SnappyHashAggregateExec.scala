@@ -559,7 +559,7 @@ case class SnappyHashAggregateExec(
 
   override def verboseString: String = toString(verbose = true)
 
-  override def simpleString: String = toString(verbose = false)
+  override lazy val simpleString: String = toString(verbose = false)
 
   private def toString(verbose: Boolean): String = {
     val allAggregateExpressions = aggregateExpressions

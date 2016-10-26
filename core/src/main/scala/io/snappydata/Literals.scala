@@ -89,6 +89,10 @@ object Constant {
 
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 
+  // LZF gives best balance between speed and compression ratio
+  // (LZ4 JNI is slightly faster but LZF compression is higher)
+  val DEFAULT_CODEC = "lz4"
+
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
