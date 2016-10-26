@@ -87,6 +87,7 @@ object ExternalStoreUtils {
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
+      props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
     }
     props
@@ -517,7 +518,7 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
 
   def getCachedBatchHolder: CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,
-      Int.MaxValue, (c: CachedBatch) =>
+      Int.MaxValue, schema, (c: CachedBatch) =>
         externalStore.storeCachedBatch(colTableName, c))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {

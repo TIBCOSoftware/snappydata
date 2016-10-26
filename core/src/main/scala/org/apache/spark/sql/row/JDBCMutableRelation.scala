@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.StoreTableValueSizeProviderService
+import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -58,8 +58,12 @@ case class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService
-      .getTableSize(table).getOrElse(super.sizeInBytes)
+
+  override def sizeInBytes: Long = {
+    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
+    if (stats.isDefined) stats.get.getTotalSize
+    else super.sizeInBytes
+  }
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 
@@ -150,17 +154,16 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-    filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val rdd = new JDBCRDD(
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
-      executorConnector,
-      ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
+      schema,
+      connProperties.url,
+      connProperties.executorConnProps,
       table,
       requiredColumns,
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
-      parts,
-      connProperties.url,
-      connProperties.executorConnProps).asInstanceOf[RDD[Any]]
+      parts).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
 

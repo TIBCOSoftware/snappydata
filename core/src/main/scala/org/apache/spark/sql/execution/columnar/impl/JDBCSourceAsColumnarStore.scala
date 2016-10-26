@@ -30,7 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -44,12 +44,12 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
+      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD[CachedBatch](snappySession,
-          tableName, this).asInstanceOf[RDD[CachedBatch]]
+          tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -118,10 +118,9 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](
-    @transient val session: SnappySession,
-    tableName: String, store: JDBCSourceAsColumnarStore)
-    extends RDD[Any](session.sparkContext, Nil) {
+class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySession,
+    tableName: String, statsPredicate: StatsPredicateCompiler,
+    store: JDBCSourceAsColumnarStore) extends RDD[Any](session.sparkContext, Nil) {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
@@ -130,7 +129,12 @@ class ColumnarStorePartitionedRDD[T: ClassTag](
       case _ => Set(part.index)
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
-    else new ByteArraysIteratorOnScan(container, bucketIds)
+    else new ByteArraysIteratorOnScan(container, bucketIds,
+      statsPredicate.compilePredicate,
+      //  pass dummy value if no schema
+      if (statsPredicate.schema != null) statsPredicate.schema.size else 1,
+      statsPredicate.cachedBatchesSeen,
+      statsPredicate.cachedBatchesSkipped)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
