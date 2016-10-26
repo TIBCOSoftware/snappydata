@@ -41,10 +41,10 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def changeValue(k: K, hash: Int, change: ChangeValue[K, V]): java.lang.Boolean
 
-  //This flag is toggled only under write lock of clear
-   var valid: Boolean = true
+  def preferBucketId: Boolean
 
-
+  // This flag is toggled only under write lock of clear
+  var valid: Boolean = true
 }
 
 trait ChangeValue[K, V] {

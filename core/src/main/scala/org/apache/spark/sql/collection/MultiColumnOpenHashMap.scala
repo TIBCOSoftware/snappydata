@@ -572,4 +572,6 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   protected var move = (oldPos: Int, newPos: Int) => {
     _values(newPos) = _oldValues(oldPos)
   }
+
+  override def preferBucketId: Boolean = false
 }
