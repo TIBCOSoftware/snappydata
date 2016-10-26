@@ -17,7 +17,7 @@
 package io.snappydata.hydra.northwind
 
 import org.apache.spark.SparkFiles
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{DataFrame, SnappyContext}
 
 object NWQueries {
   var snc: SnappyContext = _
@@ -91,7 +91,8 @@ object NWQueries {
 
   val Q17: String = "SELECT FirstName, LastName, BirthDate" +
     " FROM Employees" +
-    " WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND Cast('1959-12-31 23:59:59' as TIMESTAMP)"
+    " WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND " +
+      "Cast('1959-12-31 23:59:59' as TIMESTAMP)"
 
   val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
     " FROM Employees"
@@ -128,7 +129,8 @@ object NWQueries {
     "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND Cast('1997-12-31' as TIMESTAMP))"
+    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND " +
+      "Cast('1997-12-31' as TIMESTAMP))"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
     " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
@@ -190,7 +192,8 @@ object NWQueries {
     " group by OrderID" +
     ") b on a.OrderID = b.OrderID" +
     " where a.ShippedDate is not null" +
-    " and a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
+    " and a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
+      "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
     " order by a.ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
@@ -212,7 +215,8 @@ object NWQueries {
     " order by y.OrderID" +
     " ) c on c.ProductID = b.ProductID" +
     " inner join Orders d on d.OrderID = c.OrderID" +
-    " where d.OrderDate > Cast('1997-01-01' as TIMESTAMP) and d.OrderDate < Cast('1997-12-31' as TIMESTAMP)" +
+    " where d.OrderDate > Cast('1997-01-01' as TIMESTAMP) and " +
+      "d.OrderDate < Cast('1997-12-31' as TIMESTAMP)" +
     " group by a.CategoryID, a.CategoryName, b.ProductName" +
     " order by a.CategoryName, b.ProductName, ProductSales"
 
@@ -337,7 +341,8 @@ object NWQueries {
     " inner join Products as b on a.CategoryID = b.CategoryID" +
     " inner join Order_Details as c on b.ProductID = c.ProductID" +
     " inner join Orders as d on d.OrderID = c.OrderID" +
-    " where d.ShippedDate > Cast('1997-01-01' as TIMESTAMP)  and d.ShippedDate < Cast('1997-12-31' as TIMESTAMP)" +
+    " where d.ShippedDate > Cast('1997-01-01' as TIMESTAMP) and " +
+      "d.ShippedDate < Cast('1997-12-31' as TIMESTAMP)" +
     " group by a.CategoryName," +
     " b.ProductName," +
     " concat('Qtr ', quarter(d.ShippedDate))" +
@@ -406,23 +411,25 @@ object NWQueries {
     "Q55" -> Q55,
     "Q56" -> Q56
   )
+  // scalastyle:off
   println(s"Resources path : ${SparkFiles.get("regions.csv")}")
+  // scalastyle:on
 
-  def regions = snc.read.format("com.databricks.spark.csv")
+  def regions: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/regions.csv")
+    .load(s"$dataFilesLocation/regions.csv")
 
   val regions_table = "create table regions (" +
     "RegionID int, " +
     "RegionDescription string)"
 
-  def categories = snc.read.format("com.databricks.spark.csv")
+  def categories: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/categories.csv")
+    .load(s"$dataFilesLocation/categories.csv")
 
   val categories_table = "create table categories (" +
     "CategoryID int, " +
@@ -430,22 +437,22 @@ object NWQueries {
     "Description string, " +
     "Picture blob)"
 
-  def shippers = snc.read.format("com.databricks.spark.csv")
+  def shippers: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/shippers.csv")
+    .load(s"$dataFilesLocation/shippers.csv")
 
   val shippers_table = "create table shippers (" +
     "ShipperID int not null, " +
     "CompanyName string not null, " +
     "Phone string)"
 
-  def employees = snc.read.format("com.databricks.spark.csv")
+  def employees: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/employees.csv")
+    .load(s"$dataFilesLocation/employees.csv")
 
   val employees_table = "create table employees(" +
     //    "EmployeeID int not null , " +
@@ -470,11 +477,11 @@ object NWQueries {
     "ReportsTo int, " +
     "PhotoPath string)"
 
-  def customers = snc.read.format("com.databricks.spark.csv")
+  def customers: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/customers.csv")
+    .load(s"$dataFilesLocation/customers.csv")
 
   val customers_table = "create table customers(" +
     //    "CustomerID string not null, " +
@@ -491,14 +498,14 @@ object NWQueries {
     "Phone string, " +
     "Fax string)"
 
-  def orders = snc.read.format("com.databricks.spark.csv")
+  def orders: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/orders.csv")
+    .load(s"$dataFilesLocation/orders.csv")
 
   val orders_table = "create table orders (" +
-    //"OrderID int not null, " +
+    // "OrderID int not null, " +
     "OrderID int, " +
     "CustomerID string, " +
     "EmployeeID int, " +
@@ -514,11 +521,11 @@ object NWQueries {
     "ShipPostalCode string, " +
     "ShipCountry string)"
 
-  def order_details = snc.read.format("com.databricks.spark.csv")
+  def order_details: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/order-details.csv")
+    .load(s"$dataFilesLocation/order-details.csv")
 
   val order_details_table = "create table order_details (" +
     //    "OrderID int not null, " +
@@ -532,14 +539,14 @@ object NWQueries {
     "Quantity smallint, " +
     "Discount double)"
 
-  def products = snc.read.format("com.databricks.spark.csv")
+  def products: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/products.csv")
+    .load(s"$dataFilesLocation/products.csv")
 
   val products_table = "create table products(" +
-    //"ProductID int not null, " +
+    // "ProductID int not null, " +
     "ProductID int, " +
     "ProductName string, " +
     //    "SupplierID int not null, " +
@@ -553,11 +560,11 @@ object NWQueries {
     "ReorderLevel smallint, " +
     "Discontinued smallint) "
 
-  def suppliers = snc.read.format("com.databricks.spark.csv")
+  def suppliers: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/suppliers.csv")
+    .load(s"$dataFilesLocation/suppliers.csv")
 
   val suppliers_table = "create table suppliers(" +
     //    "SupplierID int not null, " +
@@ -575,11 +582,11 @@ object NWQueries {
     "Fax string, " +
     "HomePage string) "
 
-  def territories = snc.read.format("com.databricks.spark.csv")
+  def territories: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/territories.csv")
+    .load(s"$dataFilesLocation/territories.csv")
 
   val territories_table = "create table territories(" +
     //    "TerritoryID string not null, " +
@@ -589,17 +596,16 @@ object NWQueries {
     "TerritoryDescription string, " +
     "RegionID string)"
 
-  def employee_territories = snc.read.format("com.databricks.spark.csv")
+  def employee_territories: DataFrame = snc.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
-    .load(s"${dataFilesLocation}/employee-territories.csv")
+    .load(s"$dataFilesLocation/employee-territories.csv")
 
   val employee_territories_table = "create table employee_territories(" +
     //    "EmployeeID int not null, " +
     //    "TerritoryID int not null)"
     "EmployeeID int, " +
-    //"TerritoryID int)"
+    // "TerritoryID int)"
     "TerritoryID string)"
-
 }

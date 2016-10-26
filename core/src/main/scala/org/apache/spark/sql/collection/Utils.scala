@@ -19,6 +19,7 @@ package org.apache.spark.sql.collection
 import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
+import java.util.TimeZone
 
 import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
@@ -38,8 +39,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
-import org.apache.spark.sql.execution.{QueryExecution, SQLExecution}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
@@ -553,9 +555,22 @@ object Utils {
     driver
   }
 
-  def withNewExecutionId[T](session: SparkSession,
-      queryExecution: QueryExecution)(body: => T): T = {
-    SQLExecution.withNewExecutionId(session, queryExecution)(body)
+  /**
+   * Wrap a DataFrame action to track all Spark jobs in the body so that
+   * we can connect them with an execution.
+   */
+  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
+    df.withNewExecutionId(body)
+  }
+
+  /**
+   * Return true if the plan overrides executeCollect to provide a more
+   * efficient version which should be preferred over execute().
+   */
+  def useExecuteCollect(plan: SparkPlan): Boolean = plan match {
+    case _: CollectLimitExec | _: ExecutedCommandExec |
+         _: LocalTableScanExec | _: TakeOrderedAndProjectExec => true
+    case _ => false
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -596,6 +611,14 @@ object Utils {
 
   def createCatalystConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToCatalystConverter(dataType)
+
+  // we should use the exact day as Int, for example, (year, month, day) -> day
+  def millisToDays(millisUtc: Long, tz: TimeZone): Int = {
+    // SPARK-6785: use Math.floor so negative number of days (dates before 1970)
+    // will correctly work as input for function toJavaDate(Int)
+    val millisLocal = millisUtc + tz.getOffset(millisUtc)
+    Math.floor(millisLocal.toDouble / DateTimeUtils.MILLIS_PER_DAY).toInt
+  }
 
   def getGenericRowValues(row: GenericRow): Array[Any] = row.values
 

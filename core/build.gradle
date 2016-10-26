@@ -134,7 +134,7 @@ task getApacheSparkDist {
       // gradle tarTree does not preserve symlinks (GRADLE-2844)
       exec {
         executable 'tar'
-        args 'xfz', "${sparkDistDir}/${sparkDistName}.tgz"
+        args 'xzf', "${sparkDistName}.tgz"
         workingDir = sparkDistDir
       }
     }

@@ -26,8 +26,8 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{SortDirection, AttributeReference}
-import org.apache.spark.sql.collection.{Utils, ToolsCallbackInit}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -104,15 +104,16 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
       requiredColumns, filters, statsPredicate)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
-  override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+  override def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters, statsPredicate)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
@@ -166,11 +167,13 @@ class BaseColumnFormatRelation(
     (zipped, Nil)
   }
 
+  private[this] val forceFlush = java.lang.Boolean.getBoolean(
+    "snappydata.testForceFlush")
+
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE ||
-        java.lang.Boolean.getBoolean("forceFlush")) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
