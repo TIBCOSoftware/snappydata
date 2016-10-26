@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.benchmark
 
-import java.sql.{Date, Timestamp}
+import java.sql.{Date, DriverManager, Timestamp}
 import java.util.{Calendar, GregorianCalendar}
 
 import com.typesafe.config.Config
@@ -41,6 +41,8 @@ class TPCETrade extends SnappyFunSuite {
     // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
       addOn(conf)
     }
@@ -49,7 +51,7 @@ class TPCETrade extends SnappyFunSuite {
 
   private lazy val snappySession = snc.snappySession
 
-  test("select queries with random data") {
+  ignore("select queries with random data") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
@@ -61,11 +63,56 @@ class TPCETrade extends SnappyFunSuite {
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
+
+  test("basic query performance with JDBC") {
+    val numRuns = 1000
+    val numIters = 1000
+    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
+    val stmt = conn.createStatement()
+    val rs = stmt.executeQuery("values dsid()")
+    rs.next()
+    logInfo(s"Connected to server ${rs.getString(1)}")
+    rs.close()
+    for (i <- 1 to numRuns) {
+      val start = System.nanoTime()
+      for (j <- 1 to numIters) {
+        val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
+            "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        var count = 0
+        while (rs.next()) {
+          count += 1
+        }
+        assert(count == 1)
+      }
+      val end = System.nanoTime()
+      val millis = (end - start) / 1000000.0
+      logInfo(s"Time taken for $numIters runs = ${millis}ms, average = ${millis / numIters}ms")
+    }
+    stmt.close()
+    conn.close()
+  }
 }
 
-class TPCETradeJob extends SnappySQLJob {
+class TPCETradeJob extends SnappySQLJob with Logging {
 
   override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+    val numRuns = 1000
+    val numIters = 1000
+    val session = sc.snappySession
+    for (i <- 1 to numRuns) {
+      val start = System.nanoTime()
+      for (j <- 1 to numIters) {
+        session.sql("select * from citi_order where id=1000 " +
+            "--GEMFIREXD-PROPERTIES executionEngine=Spark").collectInternal()
+      }
+      val end = System.nanoTime()
+      val millis = (end - start) / 1000000.0
+      logInfo(s"Time taken for $numIters runs = ${millis}ms, average = ${millis / numIters}ms")
+    }
+    Boolean.box(true)
+  }
+
+  def runSnappyJob2(sc: SnappyContext, jobConfig: Config): Any = {
     // SCALE OUT case with 10 billion rows
     val quoteSize = 8500000000L
     val tradeSize = 1250000000L

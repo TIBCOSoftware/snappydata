@@ -713,8 +713,9 @@ class SnappyParser(session: SnappySession)
         ddl | set | cache | uncache | show | desc
   }
 
-  def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
+  def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
+    session.sessionState.clearExecutionData()
     parseSQL(sqlText, parseRule)
   }
 

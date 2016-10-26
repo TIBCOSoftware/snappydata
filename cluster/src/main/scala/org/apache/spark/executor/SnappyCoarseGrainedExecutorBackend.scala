@@ -17,11 +17,12 @@
 package org.apache.spark.executor
 
 import java.net.URL
+import java.nio.ByteBuffer
 
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ExecutorInitiator
 
-import org.apache.spark.SparkEnv
+import org.apache.spark.{SparkEnv, TaskState}
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.sql.SnappyContext
@@ -49,6 +50,16 @@ class SnappyCoarseGrainedExecutorBackend(
     new SnappyExecutor(executorId, hostName, env,
       userClassPath, new SnappyUncaughtExceptionHandler(this),
       isLocal = false)
+
+  /**
+   * Avoid sending any message for TaskState.RUNNING which serves no purpose.
+   */
+  override def statusUpdate(taskId: Long, state: TaskState.TaskState,
+      data: ByteBuffer): Unit = {
+    if ((state ne TaskState.RUNNING) || data.hasRemaining) {
+      super.statusUpdate(taskId, state, data)
+    }
+  }
 
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have

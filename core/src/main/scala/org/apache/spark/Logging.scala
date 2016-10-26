@@ -49,8 +49,8 @@ trait Logging {
     log_
   }
 
-  protected val debugEnabled = log.isDebugEnabled
-  protected val traceEnabled = log.isTraceEnabled
+  protected lazy val debugEnabled = log.isDebugEnabled
+  protected lazy val traceEnabled = log.isTraceEnabled
 
   // Log methods that take only a String
   protected def logInfo(msg: => String) {

@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
@@ -42,7 +43,6 @@ import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
-import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
@@ -810,6 +810,7 @@ object SnappyContext extends Logging {
 
   private[this] val storeToBlockMap: TrieMap[String, BlockAndExecutorId] =
     TrieMap.empty[String, BlockAndExecutorId]
+  private[spark] val totalCoreCount = new AtomicInteger(0)
 
   def containsBlockId(executorId: String): Boolean = {
     storeToBlockMap.get(executorId) match {
@@ -830,17 +831,30 @@ object SnappyContext extends Logging {
     storeToBlockMap.get(executorId)
 
   private[spark] def addBlockId(executorId: String,
-      blockId: BlockAndExecutorId): Option[BlockAndExecutorId] =
+      blockId: BlockAndExecutorId): Unit = {
     storeToBlockMap.put(executorId, blockId)
+    totalCoreCount.addAndGet(blockId.numProcessors)
+    SnappySession.clearCache()
+  }
 
-  private[spark] def removeBlockId(executorId: String): Option[BlockAndExecutorId] =
-    storeToBlockMap.remove(executorId)
+  private[spark] def removeBlockId(
+      executorId: String): Option[BlockAndExecutorId] = {
+    storeToBlockMap.remove(executorId) match {
+      case s@Some(id) => totalCoreCount.addAndGet(-id.numProcessors)
+        SnappySession.clearCache(); s
+      case None => None
+    }
+  }
 
   def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
     storeToBlockMap.filter(_._2.blockId != null)
   }
 
-  private[spark] def clearBlockIds(): Unit = storeToBlockMap.clear()
+  private[spark] def clearBlockIds(): Unit = {
+    storeToBlockMap.clear()
+    totalCoreCount.set(0)
+    SnappySession.clearCache()
+  }
 
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
@@ -861,9 +875,13 @@ object SnappyContext extends Logging {
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
-      storeToBlockMap(cache.getMyId.toString) =
-          new BlockAndExecutorId(SparkEnv.get.blockManager.blockManagerId,
-            sc.schedulerBackend.defaultParallelism())
+      val blockId = new BlockAndExecutorId(
+        SparkEnv.get.blockManager.blockManagerId,
+        sc.schedulerBackend.defaultParallelism(),
+        Runtime.getRuntime.availableProcessors())
+      storeToBlockMap(cache.getMyId.toString) = blockId
+      totalCoreCount.addAndGet(blockId.numProcessors)
+      SnappySession.clearCache()
     }
   }
 
@@ -991,7 +1009,7 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      stopSnappyContext
+      stopSnappyContext()
     }
   }
 
@@ -1082,11 +1100,14 @@ abstract class ClusterMode {
 }
 
 final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
-    private[spark] var _executorCores: Int) extends Externalizable {
+    private[spark] var _executorCores: Int,
+    private[spark] var _numProcessors: Int) extends Externalizable {
 
   def blockId: BlockManagerId = _blockId
 
   def executorCores: Int = _executorCores
+
+  def numProcessors: Int = math.max(2, _numProcessors)
 
   override def hashCode: Int = if (blockId != null) blockId.hashCode() else 0
 
@@ -1099,16 +1120,19 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
   override def writeExternal(out: ObjectOutput): Unit = {
     _blockId.writeExternal(out)
     out.writeInt(_executorCores)
+    out.writeInt(_numProcessors)
   }
 
   override def readExternal(in: ObjectInput): Unit = {
     _blockId.readExternal(in)
     _executorCores = in.readInt()
+    _numProcessors = in.readInt()
   }
 
   override def toString: String = if (blockId != null) {
-    s"BlockAndExecutorId(${blockId.executorId}," +
-        s" ${blockId.host}, ${blockId.port}, cores=$executorCores)"
+    s"BlockAndExecutorId(${blockId.executorId}, " +
+        s"${blockId.host}, ${blockId.port}, executorCores=$executorCores, " +
+        s"processors=$numProcessors)"
   } else "BlockAndExecutor()"
 }
 

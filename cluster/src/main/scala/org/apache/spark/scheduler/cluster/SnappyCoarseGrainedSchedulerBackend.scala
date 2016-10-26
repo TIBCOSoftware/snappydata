@@ -19,6 +19,7 @@ package org.apache.spark.scheduler.cluster
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.SparkContext
@@ -96,10 +97,16 @@ class BlockManagerIdListener(sc: SparkContext)
 
   override def onExecutorAdded(
       msg: SparkListenerExecutorAdded): Unit = synchronized {
+    val executorCores = msg.executorInfo.totalCores
+    val profile = Misc.getMemStore.getDistributionAdvisor
+        .getProfile(msg.executorId)
+    val numProcessors = if (profile != null) profile.getNumProcessors
+    else executorCores
     SnappyContext.getBlockId(msg.executorId) match {
       case None => SnappyContext.addBlockId(msg.executorId,
-        new BlockAndExecutorId(null, msg.executorInfo.totalCores))
-      case Some(b) => b._executorCores = msg.executorInfo.totalCores
+        new BlockAndExecutorId(null, executorCores, numProcessors))
+      case Some(b) => b._executorCores = executorCores
+        b._numProcessors = numProcessors
     }
   }
 
@@ -109,7 +116,8 @@ class BlockManagerIdListener(sc: SparkContext)
     SnappyContext.getBlockIdIfNull(executorId) match {
       case None => SnappyContext.addBlockId(executorId,
         new BlockAndExecutorId(msg.blockManagerId,
-          sc.schedulerBackend.defaultParallelism()))
+          sc.schedulerBackend.defaultParallelism(),
+          Runtime.getRuntime.availableProcessors()))
       case Some(b) => b._blockId = msg.blockManagerId
     }
   }

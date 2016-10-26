@@ -30,12 +30,12 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import io.snappydata.Constant
 import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
@@ -148,12 +148,14 @@ object ExecutorInitiator extends Logging {
 
                     // Fetch the driver's Spark properties.
                     val executorConf = new SparkConf
+                    Utils.setDefaultSerializerAndCodec(executorConf)
 
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val props = SparkCallbacks.fetchDriverProperty(executorHost,
                       executorConf, port, url)
 
-                    val driverConf = new SparkConf()
+                    val driverConf = new SparkConf
+                    Utils.setDefaultSerializerAndCodec(driverConf)
                     // Specify a default directory for executor, if the local directory for executor
                     // is set via the executor conf,
                     // it will override this property later in the code
@@ -174,16 +176,8 @@ object ExecutorInitiator extends Logging {
                     // TODO: conf to this conf that was received from driver.
 
                     // If memory manager is not set, use Snappy unified memory manager
-                    driverConf.set("spark.memory.manager",
-                      driverConf.get("spark.memory.manager", SNAPPY_MEMORY_MANAGER))
-
-                    // enable optimized pooled Kryo serializer by default
-                    driverConf.get("spark.serializer",
-                      driverConf.get("spark.serializer",
-                        Constant.DEFAULT_SERIALIZER))
-                    driverConf.get("spark.closure.serializer",
-                      driverConf.get("spark.closure.serializer",
-                        Constant.DEFAULT_SERIALIZER))
+                    driverConf.setIfMissing("spark.memory.manager",
+                      SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)

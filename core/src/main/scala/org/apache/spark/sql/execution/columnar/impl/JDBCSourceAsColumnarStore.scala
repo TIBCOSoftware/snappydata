@@ -32,7 +32,6 @@ import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -177,18 +176,16 @@ class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
   }
 }
 
-class SparkShellRowRDD[T: ClassTag](_session: SnappySession,
-    getConnection: () => Connection,
-    schema: StructType,
-    tableName: String,
-    isPartitioned: Boolean,
-    columns: Array[String],
-    connProperties: ConnectionProperties,
-    filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition])
-    extends RowFormatScanRDD(_session, getConnection, schema, tableName,
-      isPartitioned, columns, pushProjections = true, useResultSet = true,
-      connProperties, filters, partitions) {
+class SparkShellRowRDD(_session: SnappySession,
+    _tableName: String,
+    _isPartitioned: Boolean,
+    _columns: Array[String],
+    _connProperties: ConnectionProperties,
+    _filters: Array[Filter] = Array.empty[Filter],
+    _partitions: Array[Partition] = Array.empty[Partition])
+    extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
+      pushProjections = true, useResultSet = true, _connProperties,
+      _filters, _partitions) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -197,8 +194,6 @@ class SparkShellRowRDD[T: ClassTag](_session: SnappySession,
       connProperties, thePart)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
-    // TODO: this will fail if no network server is available unless SNAP-365 is
-    // fixed with the approach of having an iterator that can fetch from remote
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
@@ -235,7 +230,8 @@ class SparkShellRowRDD[T: ClassTag](_session: SnappySession,
     if (partitions.length > 0) {
       return partitions
     }
-    val conn = getConnection()
+    val conn = ExternalStoreUtils.getConnection(tableName, connProperties,
+      forExecutor = true)
     try {
       SparkShellRDDHelper.getPartitions(tableName, conn)
     } finally {

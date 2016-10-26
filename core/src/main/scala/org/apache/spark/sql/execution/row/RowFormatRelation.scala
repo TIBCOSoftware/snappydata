@@ -105,8 +105,6 @@ class RowFormatRelation(
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -119,8 +117,6 @@ class RowFormatRelation(
       case _ =>
         new SparkShellRowRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
