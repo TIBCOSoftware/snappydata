@@ -1499,7 +1499,6 @@ object CachedDataFrame
     val buffer = new Array[Byte](4 << 10) // 4K
     // final output is written to this buffer
     val output = new Output(4 << 10, -1)
-    output.writeByte(0x0) // indicator byte (used by clients)
     // holds intermediate bytes which are compressed and flushed to output
     val maxOutputBufferSize = 64 << 10 // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
@@ -1579,7 +1578,6 @@ object CachedDataFrame
 
     val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
     val input = new Input(data, offset, dataLen)
-    input.readByte() // indicator byte ignored
     var decompressedLen = input.readVarInt(true)
     var inputLen = input.readVarInt(true)
     val inputPosition = input.position()
