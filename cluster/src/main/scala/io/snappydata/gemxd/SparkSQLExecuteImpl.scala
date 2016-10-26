@@ -67,7 +67,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val df = session.sql(sql)
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
-    Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
+    Misc.getMemStore.thresholdListener(), sql, false, senderVersion)
 
   private[this] val querySchema = df.schema
 
@@ -106,7 +106,7 @@ class SparkSQLExecuteImpl(val sql: String,
     // null cachedRDD means a local command or similar with only local results
     // which will be handled as a single partition
     if (cachedRDD == null) {
-      writeMetaData()
+      writeMetaData(snappyResultHolder)
       val data = CachedDataFrame(null, df.collectInternal())
       hdos.write(data._1)
       if (isLocalExecution) {
@@ -147,7 +147,7 @@ class SparkSQLExecuteImpl(val sql: String,
         logTrace("Sending data for partition id = " + p)
         val partitionData = Utils.getPartitionData(p, bm)
         if (!metaDataSent) {
-          writeMetaData()
+          writeMetaData(srh)
           metaDataSent = true
         }
         hdos.write(partitionData)
@@ -164,10 +164,9 @@ class SparkSQLExecuteImpl(val sql: String,
           logTrace(s"Sent one batch for result, current partition $p.")
           hdos.clearForReuse()
           assert(metaDataSent)
-          // 0 indicator is now written in the block itself (by
-          //   CachedDataFrame.apply) to allow ByteBuffer to be passed as is
-          // in the chunks list of GfxdHeapDataOutputStream and avoid a copy
-          // hdos.writeByte(0x00)
+          // 0 indicator is now written in serializeRows itself to allow
+          // ByteBuffer to be passed as is in the chunks list of
+          // GfxdHeapDataOutputStream and avoid a copy
         }
 
         // clear persisted block
@@ -176,7 +175,7 @@ class SparkSQLExecuteImpl(val sql: String,
       blockReadSuccess = true
 
       if (!metaDataSent) {
-        writeMetaData()
+        writeMetaData(srh)
       }
       if (isLocalExecution) {
         handleLocalExecution(srh, hdos.size())
@@ -191,10 +190,12 @@ class SparkSQLExecuteImpl(val sql: String,
     }
   }
 
-  override def serializeRows(out: DataOutput): Unit = {
+  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {
     val numBytes = hdos.size
     if (numBytes > 0) {
-      InternalDataSerializer.writeArrayLength(numBytes, out)
+      InternalDataSerializer.writeArrayLength(numBytes + 1, out)
+      // byte 1 will indicate that the metainfo is being packed too
+      out.writeByte(if (hasMetadata) 0x1 else 0x0)
       hdos.sendTo(out)
     } else {
       InternalDataSerializer.writeArrayLength(0, out)
@@ -223,10 +224,10 @@ class SparkSQLExecuteImpl(val sql: String,
     (tables, nullables)
   }
 
-  private def writeMetaData(): Unit = {
+  private def writeMetaData(srh: SnappyResultHolder): Unit = {
     val hdos = this.hdos
-    // byte 1 will indicate that the metainfo is being packed too
-    hdos.writeByte(0x01)
+    // indicates that the metainfo is being packed too
+    srh.setHasMetadata()
     DataSerializer.writeStringArray(tableNames, hdos)
     DataSerializer.writeStringArray(getColumnNames, hdos)
     DataSerializer.writeBooleanArray(nullability, hdos)
