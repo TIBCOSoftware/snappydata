@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 
-import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
+import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -73,8 +73,12 @@ case class JDBCAppendableRelation(
     ExternalStoreUtils.lookupName(table, conn.getSchema)
   })
 
-  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table,
-    isColumnTable = true).getOrElse(super.sizeInBytes)
+  override def sizeInBytes: Long = {
+    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
+    if (stats.isDefined) stats.get.getTotalSize
+    else super.sizeInBytes
+  }
+
 
   protected final def dialect = connProperties.dialect
 
@@ -106,9 +110,9 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
-      requiredColumns, filters)
+      requiredColumns, filters, statsPredicate)
     val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
@@ -121,7 +125,8 @@ case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter], statsPredicate: StatsPredicateCompiler):
+  (RDD[CachedBatch], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -137,7 +142,7 @@ case class JDBCAppendableRelation(
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
-        sqlContext.sparkSession)
+        statsPredicate, sqlContext.sparkSession)
     }
     (cachedColumnBuffers, requestedColumns)
   }
@@ -172,7 +177,7 @@ case class JDBCAppendableRelation(
       }.toArray
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        cachedBatchAggregate)
+        schema, cachedBatchAggregate)
 
       rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()

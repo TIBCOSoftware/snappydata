@@ -44,11 +44,11 @@ final class DirectKafkaStreamRelation(
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options)
-    with Logging with StreamPlan with Serializable {
+    with Logging with Serializable {
 
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
-    t.split(", ").map { s =>
+    t.split(";").map { s =>
       val a = s.split("->")
       (a(0), a(1))
     }.toMap
@@ -64,9 +64,13 @@ final class DirectKafkaStreamRelation(
     val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
     val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
     val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-    val encoder = RowEncoder(schema)
     KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-      kafkaParams, topicsSet)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
-        .map(encoder.toRow)
+      kafkaParams, topicsSet)(ck, cv, ckd, cvd).mapPartitions { iter =>
+      val encoder = RowEncoder(schema)
+      // need to call copy() below since there are builders at higher layers
+      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
+      iter.flatMap(p => rowConverter.toRows(p._2).iterator.map(
+        encoder.toRow(_).copy()))
+    }
   }
 }

@@ -45,7 +45,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 
 /**
@@ -335,12 +334,8 @@ case class SnappyHashAggregateExec(
   }
 
   private val groupingAttributes = groupingExpressions.map(_.toAttribute)
-  private val groupingKeySchema = StructType.fromAttributes(groupingAttributes)
   private val declFunctions = aggregateExpressions.map(_.aggregateFunction)
-      .filter(_.isInstanceOf[DeclarativeAggregate])
-      .map(_.asInstanceOf[DeclarativeAggregate])
-  private val bufferSchema = StructType.fromAttributes(
-    aggregateBufferAttributesForGroup)
+      .collect { case d: DeclarativeAggregate => d }
 
   // The name for UnsafeRow HashMap
   private var hashMapTerm: String = _
@@ -431,9 +426,8 @@ case class SnappyHashAggregateExec(
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     keyBufferAccessor = ObjectHashMapAccessor(session, ctx, "KeyBuffer",
-      groupingExpressions, hashMapTerm, mapDataTerm, maskTerm,
-      multiMap = false, StructType(groupingKeySchema ++ bufferSchema),
-      this, this.parent, child.output, child = null)
+      groupingExpressions, aggregateBufferAttributesForGroup, hashMapTerm,
+      mapDataTerm, maskTerm, multiMap = false, this, this.parent, child)
 
     val entryClass = keyBufferAccessor.getClassName
     val numKeyColumns = groupingExpressions.length
@@ -461,10 +455,10 @@ case class SnappyHashAggregateExec(
 
     // generate code for output
     val keyBufferTerm = ctx.freshName("keyBuffer")
-    val (initCode, keyBufferVars) = keyBufferAccessor.getColumnVars(
-      keyBufferTerm, onlyKeyVars = false, onlyValueVars = false)
-    val outputCode = generateResultCode(ctx,
-      keyBufferVars, keyBufferAccessor.valueIndex)
+    val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
+      keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false)
+    val outputCode = generateResultCode(ctx, keyBufferVars,
+      groupingExpressions.length)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
     // The child could change `copyResult` to true, but we had already
@@ -519,8 +513,8 @@ case class SnappyHashAggregateExec(
       bufferInitialValuesForGroup(_).map(BindReferences.bindReference(_,
         inputAttr))))
     val initCode = evaluateVariables(initVars)
-    val (bufferInit, bufferVars) = keyBufferAccessor.getColumnVars(
-      keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
+    val (bufferInit, bufferVars, _) = keyBufferAccessor.getColumnVars(
+      keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
     val bufferEval = evaluateVariables(bufferVars)
 
     ctx.currentVars = bufferVars ++ input

@@ -64,7 +64,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
 
-  override private[sql] lazy val metrics = Map(
+  override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
     "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
@@ -150,14 +150,12 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val rowIterator = ctx.freshName("rowIterator")
     // find the underlying RowTableScan and set it up to use its RDD's direct
     // iterator for best performance
-    val rdd = buildPlan.find {
+    val rowTableScan = buildPlan.collectFirst {
       case scan: RowTableScan if scan.numBuckets == 1 =>
-        scan.input = rowIterator
-        true
-      case _ => false
-    }.map(_.asInstanceOf[RowTableScan].dataRDD).getOrElse(
-      throw new IllegalStateException(
-        s"Failed to find replicated table for LocalJoin in $buildPlan"))
+        scan.input = rowIterator; scan
+    }.getOrElse(throw new IllegalStateException(
+      s"Failed to find replicated table for LocalJoin in $buildPlan"))
+    val rdd = rowTableScan.dataRDD
     assert(rdd.getNumPartitions == 1)
     val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
     val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
@@ -171,26 +169,34 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     mapAccessor = ObjectHashMapAccessor(session, ctx, "LocalMap",
-      buildSideKeys, hashMapTerm, mapDataTerm, maskTerm, multiMap = true,
-      buildPlan.schema, this, this.parent, buildPlan.output, buildPlan)
+      buildSideKeys, buildPlan.output, hashMapTerm, mapDataTerm, maskTerm,
+      multiMap = true, this, this.parent, buildPlan)
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
+    ctx.addMutableState("scala.collection.Iterator", rowIterator,
+      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, " +
+          "org.apache.spark.TaskContext.get());")
     ctx.addNewFunction(createMap,
       s"""
         private void $createMap() throws java.io.IOException {
-          final org.apache.spark.TaskContext context =
-            org.apache.spark.TaskContext.get();
           $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           int $maskTerm = $hashMapTerm.mask();
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
 
-          final scala.collection.Iterator $rowIterator = $rowTableRDD.iterator(
-            $rowTablePart, context);
           ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
         }
        """)
+    // clear the input of RowTableScan
+    rowTableScan.input = null
+
+    // TODO: temporary workaround to clear parent field of buildPlan
+    // because of plan objects being sent across by StatsPredicateCompiler
+    val parentSetter = buildPlan.getClass.getMethod("parent_$eq",
+      classOf[CodegenSupport])
+    parentSetter.setAccessible(true)
+    parentSetter.invoke(buildPlan, null)
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
@@ -262,11 +268,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
       input: Seq[ExprCode]): String = {
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
-    val (keyVars, valueVars, valueInit) = mapAccessor.getMultiMapVars(
-      entryVar, joinType)
-    val buildVars = keyVars ++ valueVars
-    val (checkCondition, buildInit) = getJoinCondition(ctx, input,
-      buildVars, valueInit)
+    val localValueVar = ctx.freshName("value")
+    val checkNullObj = joinType match {
+      case LeftOuter | RightOuter | FullOuter => true
+      case _ => false
+    }
+    val (initCode, keyValueVars, nullMaskVars) = mapAccessor.getColumnVars(
+      entryVar, localValueVar, onlyKeyVars = false, onlyValueVars = false,
+      checkNullObj)
+    val buildKeyVars = keyValueVars.take(buildSideKeys.length)
+    val buildVars = keyValueVars.drop(buildSideKeys.length)
+    val checkCondition = getJoinCondition(ctx, input, buildVars)
 
     ctx.INPUT_ROW = null
     ctx.currentVars = input
@@ -277,9 +289,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
           streamSideKeys.map(BindReferences.bindReference(_, left.output)))
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
-    mapAccessor.generateMapLookup(entryVar, keyIsUniqueTerm, numRowsTerm,
-      buildInit, checkCondition, streamSideKeys, streamKeyVars, buildVars,
-      input, resultVars, joinType)
+    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
+      numRowsTerm, nullMaskVars, initCode, checkCondition,
+      streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
+      resultVars, joinType)
   }
 
   /**
@@ -364,8 +377,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * This is used in Inner joins.
    */
   private def getJoinCondition(ctx: CodegenContext,
-      input: Seq[ExprCode], buildVars: Seq[ExprCode],
-      buildInit: String): (Option[ExprCode], String) = condition match {
+      input: Seq[ExprCode],
+      buildVars: Seq[ExprCode]): Option[ExprCode] = condition match {
     case Some(expr) =>
       // evaluate the variables from build side that used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
@@ -374,12 +387,12 @@ case class LocalJoin(leftKeys: Seq[Expression],
       ctx.currentVars = input ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      (Some(ev.copy(code =
+      Some(ev.copy(code =
           s"""
-            $buildInit$eval
+            $eval
             ${ev.code}
-          """)), "")
-    case None => (None, buildInit)
+          """))
+    case None => None
   }
 
   /**
