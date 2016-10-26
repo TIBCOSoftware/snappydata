@@ -25,20 +25,20 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, AbstractCompactExecRow, GemFireContainer}
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
+
 import org.apache.spark.SparkException
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.{SparkSession, SplitClusterMode, SnappySession, SnappyContext, SQLContext}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.store.{StoreUtils, CodeGeneration, StoreHashFunction}
+import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SQLContext, SnappyContext, SnappySession, SplitClusterMode}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -141,7 +141,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
     HashedRelationCache.clear()
   }
-  
+
   override def cachedBatchTableName(table: String): String = {
     ColumnFormatRelation.cachedBatchTableName(table)
   }
@@ -169,12 +169,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       mode match {
         case SplitClusterMode(_, _) =>
           StoreUtils.removeCachedObjects(
-            SnappySession.getOrCreate(sc).sqlContext, table, true
-          )
+            SnappySession.getOrCreate(sc).sqlContext, table,
+            registerDestroy = true)
 
         case _ =>
           throw new SparkException("Clean up expected to be invoked on" +
-            " external cluster driver. Current cluster mode is " + mode)
+              " external cluster driver. Current cluster mode is " + mode)
       }
     }
   }
