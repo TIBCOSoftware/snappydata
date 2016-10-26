@@ -150,24 +150,25 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
-  private val addedClasses =
-    new mutable.HashMap[(CodegenContext, Seq[(DataType, Boolean)]), String]
-  private val exCodes =
-    new mutable.HashMap[(CodegenContext, Seq[Expr]), ExprCodeEx]()
+  private val addedClasses = new mutable.HashMap[(CodegenContext,
+      Seq[(DataType, Boolean)], Seq[(DataType, Boolean)]), (String, String)]
+  private val exCodes = new mutable.HashMap[(CodegenContext,
+      Seq[Expr]), ExprCodeEx]()
 
   /**
-   * Get code for a previously registered class using [[addClass]].
+   * Get name of a previously registered class using [[addClass]].
    */
-  def getClass(ctx: CodegenContext,
-      types: Seq[(DataType, Boolean)]): Option[String] =
-    addedClasses.get(ctx -> types)
+  def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)]): Option[(String, String)] =
+    addedClasses.get((ctx, baseTypes, types))
 
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
   private[sql] def addClass(ctx: CodegenContext,
-      types: Seq[(DataType, Boolean)], name: String): Unit =
-  addedClasses.put(ctx -> types, name)
+      baseTypes: Seq[(DataType, Boolean)], types: Seq[(DataType, Boolean)],
+      baseClassName: String, className: String): Unit =
+  addedClasses.put((ctx, baseTypes, types), baseClassName -> className)
 
   private def wrapExpressions(vars: Seq[String],
       expr: Seq[Expression]): Seq[Expr] =

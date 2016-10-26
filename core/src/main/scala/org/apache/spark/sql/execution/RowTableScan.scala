@@ -59,21 +59,24 @@ private[sql] final case class RowTableScan(
 
   override def doProduce(ctx: CodegenContext): String = {
     // a parent plan may set a custom input (e.g. LocalJoin)
+    // for that case no need to add the "shouldStop()" calls
+    var builderInput = true
     if (input == null) {
       // PartitionedPhysicalRDD always has one input
       input = ctx.freshName("input")
       ctx.addMutableState("scala.collection.Iterator",
         input, s"$input = inputs[0];")
+      builderInput = false
     }
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null
 
     val code = dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
-        doProduceWithoutProjection(ctx, input, numOutputRows,
+        doProduceWithoutProjection(ctx, input, builderInput, numOutputRows,
           output, baseRelation)
       case _ =>
-        doProduceWithProjection(ctx, input, numOutputRows,
+        doProduceWithProjection(ctx, input, builderInput, numOutputRows,
           output, baseRelation)
     }
     input = null
@@ -81,11 +84,12 @@ private[sql] final case class RowTableScan(
   }
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
-      numOutputRows: String, output: Seq[Attribute],
+      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
+    val iterator = ctx.freshName("localIterator")
     val holder = ctx.freshName("nullHolder")
     val holderClass = classOf[ResultSetNullHolder].getName
     val compactRowClass = classOf[AbstractCompactExecRow].getName
@@ -93,14 +97,15 @@ private[sql] final case class RowTableScan(
     val columnsRowInput = output.map(a => genCodeCompactRowColumn(ctx,
       row, holder, baseSchema.fieldIndex(a.name), a.dataType, a.nullable))
     s"""
+       |final scala.collection.Iterator $iterator = $input;
        |final $holderClass $holder = new $holderClass();
        |long $numRows = 0L;
        |try {
-       |  while ($input.hasNext()) {
-       |    final $compactRowClass $row = ($compactRowClass)$input.next();
+       |  while ($iterator.hasNext()) {
+       |    final $compactRowClass $row = ($compactRowClass)$iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    if (shouldStop()) return;
+       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
@@ -113,7 +118,7 @@ private[sql] final case class RowTableScan(
   }
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
-      numOutputRows: String, output: Seq[Attribute],
+      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
@@ -132,7 +137,7 @@ private[sql] final case class RowTableScan(
        |    $iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    if (shouldStop()) return;
+       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
