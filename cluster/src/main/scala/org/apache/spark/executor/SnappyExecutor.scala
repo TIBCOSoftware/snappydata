@@ -23,7 +23,7 @@ import scala.collection.mutable.HashMap
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.SparkEnv
+import org.apache.spark.{SparkFiles, SparkEnv}
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 
@@ -75,7 +75,7 @@ class SnappyExecutor(
 
 class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) {
-  protected val jobJars = scala.collection.mutable.Map[String, Tuple2[String , URLClassLoader]]()
+  protected val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
 
   protected def getJobName = {
     val jobFile = Executor.taskDeserializationProps.
@@ -89,8 +89,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
       super.addURL(url)
     }
     else {
-      jobJars.put(jobName,
-        Tuple2(url.getPath, new URLClassLoader(Array(url))))
+      jobJars.put(jobName, new URLClassLoader(Array(url)))
     }
   }
 
@@ -102,7 +101,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     if (jobJars.contains(jar)) {
       val urlLoader = jobJars.get(jar)
       if (urlLoader.isDefined) {
-        val file = new File(urlLoader.get._1)
+        val file = new File(SparkFiles.getRootDirectory() , jar)
         jobJars.remove(jar)
         if (file.exists()) {
           file.delete()
@@ -129,7 +128,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
   def loadClassFromJobJar(className: String): Class[_] = {
     val jobName = getJobName
     if (!jobName.isEmpty && jobJars.get(jobName).isDefined) {
-      jobJars.get(jobName).get._2.loadClass(className)
+      jobJars.get(jobName).get.loadClass(className)
     }
     else throw new ClassNotFoundException(className)
   }
