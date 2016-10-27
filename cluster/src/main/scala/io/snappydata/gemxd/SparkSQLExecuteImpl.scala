@@ -41,14 +41,14 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.{JobFunction2, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -523,10 +523,11 @@ class InternalRowHandler(private var sql: String,
     private var schema: StructType,
     private var serializeComplexType: Boolean,
     private var rowStoreColTypes: Array[(Int, Int, Int)] = null)
-    extends JobFunction2[InternalRow, Array[Byte]]
+    extends ((TaskContext, Iterator[InternalRow]) => Array[Byte])
     with Serializable with KryoSerializable {
 
-  final def serializeRows(itr: Iterator[InternalRow]): Array[Byte] = {
+  override def apply(context: TaskContext,
+      itr: Iterator[InternalRow]): Array[Byte] = {
     var numCols = -1
     var numEightColGroups = -1
     var numPartCols = -1

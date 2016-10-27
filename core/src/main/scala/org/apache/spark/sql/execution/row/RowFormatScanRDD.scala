@@ -264,13 +264,13 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
     output.writeBoolean(useResultSet)
-    ConnectionPropertiesSerializer.write(kryo, output, connProperties)
 
+    output.writeString(columnList)
     val filterArgs = filterWhereArgs
-    if ((filterArgs eq null) || filterArgs.isEmpty) {
+    val len = if (filterArgs eq null) 0 else filterArgs.size
+    if (len == 0) {
       output.writeVarInt(0, true)
     } else {
-      val len = filterArgs.size
       var i = 0
       output.writeVarInt(len, true)
       output.writeString(filterWhereClause)
@@ -278,6 +278,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         kryo.writeClassAndObject(output, filterArgs(i))
         i += 1
       }
+    }
+    // need connection properties only if computing ResultSet
+    if (pushProjections || useResultSet || !isPartitioned || len > 0) {
+      ConnectionPropertiesSerializer.write(kryo, output, connProperties)
     }
   }
 
@@ -288,19 +292,24 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
     useResultSet = input.readBoolean()
-    connProperties = ConnectionPropertiesSerializer.read(kryo, input)
 
-    var numFilters = input.readVarInt(true)
+    columnList = input.readString()
+    val numFilters = input.readVarInt(true)
     if (numFilters == 0) {
       filterWhereClause = ""
       filterWhereArgs = null
     } else {
       filterWhereClause = input.readString()
       filterWhereArgs = new ArrayBuffer[Any](numFilters)
-      while (numFilters > 0) {
+      var i = 0
+      while (i < numFilters) {
         filterWhereArgs += kryo.readClassAndObject(input)
-        numFilters -= 1
+        i += 1
       }
+    }
+    // read connection properties only if computing ResultSet
+    if (pushProjections || useResultSet || !isPartitioned || numFilters > 0) {
+      connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     }
   }
 }
