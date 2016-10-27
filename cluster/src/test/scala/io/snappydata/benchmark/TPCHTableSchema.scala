@@ -21,9 +21,7 @@ import java.sql.Date
 
 import org.apache.spark.sql.types.{StructField, StructType}
 
-/**
- * Created by kishor on 26/8/16.
- */
+
 object TPCHTableSchema {
   case class StreamMessageRegionObject(
       r_regionkey: Int,

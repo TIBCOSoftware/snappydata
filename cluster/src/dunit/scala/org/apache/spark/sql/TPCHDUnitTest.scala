@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintStream}
@@ -8,10 +24,6 @@ import io.snappydata.cluster.ClusterManagerTestBase
 
 import org.apache.spark.SparkContext
 
-
-/**
- * Created by kishor on 14/9/16.
- */
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
   val queries= Array("q1","q2","q3","q4","q5","q6","q7","q8","q9","q10","q11","q12","q13","q14","q15","q16","q17","q18","q19","q20","q21","q22")
@@ -99,8 +111,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
     val resultOutputFile = sc.textFile(fineName)
     // assertion disabled for now due to failures (SNAP-1145)
     // enable this and remove warning below once fixed
-    // assert(resultOutputFile.count() == 0,
-    //   s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
+    assert(resultOutputFile.count() == 0,
+       s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
     if (resultOutputFile.count() != 0) {
       ClusterManagerTestBase.logger.warn(
         s"QUERY MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
