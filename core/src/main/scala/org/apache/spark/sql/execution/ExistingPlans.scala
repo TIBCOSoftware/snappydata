@@ -135,6 +135,9 @@ private[sql] object PartitionedPhysicalScan {
           partitionColumns, relation, requestedColumns,
           pushedFilters, allFilters, schemaAttributes, scanBuilder)
     }
+
+  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
+    SparkPlanInfo.fromSparkPlan(plan)
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {

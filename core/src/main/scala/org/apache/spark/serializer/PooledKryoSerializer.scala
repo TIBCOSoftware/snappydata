@@ -40,7 +40,7 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
-import org.apache.spark.storage.BlockManagerMessages.UpdateBlockInfo
+import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.{CollectionAccumulator, DoubleAccumulator, LongAccumulator, SerializableBuffer, Utils}
@@ -112,6 +112,10 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[CollectionAccumulator[_]])
     kryo.register(classOf[SQLMetric])
     kryo.register(classOf[ZippedPartitionsPartition])
+    kryo.register(classOf[RemoveBlock])
+    kryo.register(classOf[RemoveBroadcast])
+    kryo.register(classOf[RemoveRdd])
+    kryo.register(classOf[RemoveShuffle])
 
     kryo.register(classOf[BlockManagerId], new ExternalizableResolverSerializer(
       BlockManagerId.getCachedBlockManagerId))
