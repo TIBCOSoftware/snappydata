@@ -82,7 +82,7 @@ case class SnappyHashAggregateExec(
         aggregateExpressions.flatMap(_.aggregateFunction
             .inputAggBufferAttributes)
 
-  override private[sql] lazy val metrics = Map(
+  override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
       "number of output rows"),
     "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),

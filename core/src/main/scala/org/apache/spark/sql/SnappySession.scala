@@ -31,29 +31,26 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
-import com.gemstone.gemfire.i18n.LogWriterI18n
-import com.gemstone.gemfire.internal.SystemTimer.SystemTimerTask
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.FinalizeObject
-import com.gemstone.gnu.trove.TIntArrayList
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.rdd.{RDD, ReliableRDDCheckpointData}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, LazilyGeneratedOrdering}
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
@@ -68,7 +65,7 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv, TaskContext}
 
 
 class SnappySession(@transient private val sc: SparkContext,
@@ -1373,14 +1370,14 @@ class SnappySession(@transient private val sc: SparkContext,
 }
 
 class CachedDataFrame(df: Dataset[Row],
-    val cachedRDD: RDD[InternalRow])
+    val cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int])
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) {
 
   private val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
     sparkSession.sessionState.analyzer)
 
   private lazy val queryExecutionString = queryExecution.toString
-  private lazy val queryPlanInfo = SparkPlanInfo.fromSparkPlan(
+  private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     queryExecution.executedPlan)
 
   /**
@@ -1422,6 +1419,17 @@ class CachedDataFrame(df: Dataset[Row],
       resultHandler: (Int, U) => R,
       decodeResult: R => Iterator[InternalRow]): Iterator[R] = {
     val sc = sparkSession.sparkContext
+    sc.cleaner match {
+      case Some(cleaner) =>
+        val numShuffleDeps = shuffleDependencies.length
+        var i = 0
+        while (i < numShuffleDeps) {
+          cleaner.doCleanupShuffle(shuffleDependencies(i), blocking = false)
+          i += 1
+        }
+      case None =>
+    }
+
     val hasLocalCallSite = sc.getLocalProperties.containsKey(CallSite.LONG_FORM)
     val callSite = sc.getCallSite()
     if (!hasLocalCallSite) {
@@ -1430,15 +1438,15 @@ class CachedDataFrame(df: Dataset[Row],
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, callSite, queryExecutionString, queryPlanInfo) {
       val results = queryExecution.executedPlan match {
+        /* TODO: SW:
         case plan: CollectLimitExec =>
           CachedDataFrame.executeTake(cachedRDD, plan.limit, processPartition,
             resultHandler, decodeResult, schema, sparkSession)
-        /* TODO: SW:
       case plan: TakeOrderedAndProjectExec =>
         CachedDataFrame.executeCollect(plan,
           cachedRDD.asInstanceOf[RDD[InternalRow]])
           */
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec) =>
+        case plan@(_: CollectLimitExec | _: ExecutedCommandExec | _: LocalTableScanExec) =>
           Iterator(resultHandler(0, processPartition(TaskContext.get(),
             plan.executeCollect().iterator)._1))
         case _ =>
@@ -1528,7 +1536,7 @@ object CachedDataFrame
     }
   }
 
-  private val nextExecutionIdMethod = {
+  @transient private val nextExecutionIdMethod = {
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
@@ -1694,6 +1702,7 @@ object CachedDataFrame
     }
   }
 
+  /*
   def executeCollect(plan: TakeOrderedAndProjectExec,
       rdd: RDD[InternalRow]): Array[InternalRow] = {
     val child = plan.child
@@ -1706,6 +1715,7 @@ object CachedDataFrame
       data
     }
   }
+  */
 
   override def toString(): String =
     s"CachedDataFrame: Iterator[InternalRow] => Array[Byte]"
@@ -1751,6 +1761,40 @@ object SnappySession extends Logging {
     }
   }
 
+  private def findShuffleDependencies(rdd: RDD[_]): Seq[Int] = {
+    rdd.dependencies.flatMap {
+      case s: ShuffleDependency[_, _, _] =>
+        s.shuffleId +: findShuffleDependencies(s.rdd)
+      case d => findShuffleDependencies(d.rdd)
+    }
+  }
+
+  private def evaluatePlan(df: DataFrame,
+      session: SnappySession): (CachedDataFrame, Map[String, String]) = {
+    val plan = df.queryExecution.executedPlan
+    val cachedRDD: RDD[InternalRow] = plan match {
+      case _: ExecutedCommandExec =>
+        throw new EntryExistsException("uncached plan", df) // don't cache
+      case _: LocalTableScanExec => null // cache plan but no cached RDD
+      case _ =>
+        val rdd = plan.execute()
+        // add profile listener for all regions that are using cached
+        // partitions of their "leader" region
+        if (rdd.getNumPartitions > 0) {
+          session.sessionState.leaderPartitions.keysIterator.foreach(
+            addBucketProfileListener)
+        }
+        rdd
+    }
+    val shuffleDeps = findShuffleDependencies(cachedRDD).toArray
+    val queryHints = session.synchronized {
+      val hints = session.queryHints.toMap
+      session.clearQueryData()
+      hints
+    }
+    (new CachedDataFrame(df, cachedRDD, shuffleDeps), queryHints)
+  }
+
   private[this] val planCache = {
     val loader = new CacheLoader[(SnappySession, String),
         (CachedDataFrame, Map[String, String])] {
@@ -1759,26 +1803,13 @@ object SnappySession extends Logging {
         val session = key._1
         val df = session.executeSQL(key._2)
         val plan = df.queryExecution.executedPlan
-        val cachedRDD: RDD[InternalRow] = plan match {
-          case _: ExecutedCommandExec =>
-            throw new EntryExistsException("uncached plan", df) // don't cache
-          case _: LocalTableScanExec => null // cache plan but no cached RDD
-          case _ =>
-            val rdd = plan.execute()
-            // add profile listener for all regions that are using cached
-            // partitions of their "leader" region
-            if (rdd.getNumPartitions > 0) {
-              session.sessionState.leaderPartitions.keysIterator.foreach(
-                addBucketProfileListener)
-            }
-            rdd
+        // if this has in-memory caching then don't cache the first time
+        // since plan can change once caching is done (due to size stats)
+        if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
+          (null, null)
+        } else {
+          evaluatePlan(df, session)
         }
-        val queryHints = session.synchronized {
-          val hints = session.queryHints.toMap
-          session.clearQueryData()
-          hints
-        }
-        (new CachedDataFrame(df, cachedRDD), queryHints)
       }
     }
     CacheBuilder.newBuilder().maximumSize(300).build(loader)
@@ -1794,56 +1825,35 @@ object SnappySession extends Logging {
 
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
-      val (df, queryHints) = planCache.getUnchecked(session -> sqlText)
-      // clear transient cached fields from all RDDs
-      clearRDDTransientData(df.cachedRDD, session)
+      val key = session -> sqlText
+      val evaluation = planCache.getUnchecked(key)
+      var cachedDF = evaluation._1
+      var queryHints = evaluation._2
+      // if null has been returned, then evaluate
+      if (cachedDF eq null) {
+        val df = session.executeSQL(sqlText)
+        val evaluation = evaluatePlan(df, session)
+        if (queryHints eq null) {
+          // put token to cache from next call
+          planCache.put(key, (null, Map.empty))
+        } else {
+          planCache.put(key, evaluation)
+        }
+        cachedDF = evaluation._1
+        queryHints = evaluation._2
+      }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
         session.queryHints ++= queryHints
       }
-      df
+      cachedDF
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
         case ee: EntryExistsException => new CachedDataFrame(
-          ee.getOldValue.asInstanceOf[DataFrame], null)
+          ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty)
         case _ => throw e
       }
-    }
-  }
-
-  private def getRDDCheckpoints(rdd: RDD[_],
-      session: SnappySession, rddIds: TIntArrayList): TIntArrayList = {
-    var ids = rddIds
-    rdd.checkpointData match {
-      case Some(d: ReliableRDDCheckpointData[_]) =>
-        rdd.checkpointData = None
-        if (ids == null) {
-          ids = new TIntArrayList(2)
-        }
-        ids.add(rdd.id)
-      case _ =>
-    }
-    rdd.dependencies.foreach(d => ids = getRDDCheckpoints(d.rdd, session, ids))
-    ids
-  }
-
-  private def clearRDDTransientData(rdd: RDD[_],
-      session: SnappySession): Unit = {
-    val rddIds = getRDDCheckpoints(rdd, session, null)
-    if (rddIds != null) {
-      // register cleanup in background since file deletion can take a while
-      val cache = GemFireCacheImpl.getExisting
-      cache.getCCPTimer.schedule(new SystemTimerTask {
-        override def run2(): Unit = {
-          for (i <- 0 until rddIds.size()) {
-            ReliableRDDCheckpointData.cleanCheckpoint(
-              session.sparkContext, rddIds.getQuick(i))
-          }
-        }
-
-        override def getLoggerI18n: LogWriterI18n = cache.getLoggerI18n
-      }, 0L)
     }
   }
 
