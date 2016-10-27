@@ -1029,7 +1029,7 @@ object TPCH_Memsql {
          "                         and l3.l_receiptdate > l3.l_commitdate" +
          "         )" +
          "         and S_NATIONKEY = N_NATIONKEY" +
-         "         and N_NAME = \"SAUDI ARABIA\"" +
+         "         and N_NAME = \"VIETNAM\"" +
          " group by" +
          "         S_NAME" +
          " order by" +
