@@ -125,6 +125,9 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     override def hasNext: Boolean =
       throw new UnsupportedOperationException("not expected to be invoked")
 
+    override def remove : Unit =
+      throw new UnsupportedOperationException("not expected to be invoked")
+
     override def next(): T = {
       val data = _data
       val size = data.length
