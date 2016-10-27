@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyEmbeddedModeClusterManager - snappy-cluster_2.11 0.6 API - org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager</title>
-          <meta name="description" content="SnappyEmbeddedModeClusterManager - snappy - cluster 2.11 0.6 API - org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager" />
-          <meta name="keywords" content="SnappyEmbeddedModeClusterManager snappy cluster 2.11 0.6 API org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager" />
+          <title>SnappyEmbeddedModeClusterManager - snappydata_2.11 0.6 API - org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager</title>
+          <meta name="description" content="SnappyEmbeddedModeClusterManager - snappydata 2.11 0.6 API - org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager" />
+          <meta name="keywords" content="SnappyEmbeddedModeClusterManager snappydata 2.11 0.6 API org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -53,7 +53,7 @@
 scheduler and scheduler backend.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.scheduler.ExternalClusterManager">ExternalClusterManager</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.scheduler.ExternalClusterManager">ExternalClusterManager</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -200,7 +200,9 @@ scheduler and scheduler backend.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
+      <p class="shortcomment cmt">Check if this cluster manager instance can create scheduler components
+for a certain master URL.</p><div class="fullcomment"><div class="comment cmt"><p>Check if this cluster manager instance can create scheduler components
+for a certain master URL.</p></div><dl class="paramcmts block"><dt class="param">masterURL</dt><dd class="cmt"><p>the master URL</p></dd><dt>returns</dt><dd class="cmt"><p>True if the cluster manager can create scheduler backend/</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -210,7 +212,7 @@ scheduler and scheduler backend.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager@clone():Object" title="Permalink" target="_top">
@@ -233,14 +235,15 @@ scheduler and scheduler backend.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createSchedulerBackend</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="masterURL">masterURL: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="scheduler">scheduler: <span class="extype" name="org.apache.spark.scheduler.TaskScheduler">TaskScheduler</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.scheduler.SchedulerBackend">SchedulerBackend</span></span>
+        <span class="name">createSchedulerBackend</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="masterURL">masterURL: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="scheduler">scheduler: <span class="extype" name="org.apache.spark.scheduler.TaskScheduler">TaskScheduler</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.scheduler.SchedulerBackend">SchedulerBackend</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager@createSchedulerBackend(sc:org.apache.spark.SparkContext,masterURL:String,scheduler:org.apache.spark.scheduler.TaskScheduler):org.apache.spark.scheduler.SchedulerBackend" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
+      <p class="shortcomment cmt">Create a scheduler backend for the given SparkContext and scheduler.</p><div class="fullcomment"><div class="comment cmt"><p>Create a scheduler backend for the given SparkContext and scheduler. This is
+called after task scheduler is created using <span class="extype" name="ExternalClusterManager.createTaskScheduler()">ExternalClusterManager.createTaskScheduler()</span>.</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>SparkContext</p></dd><dt class="param">masterURL</dt><dd class="cmt"><p>the master URL</p></dd><dt class="param">scheduler</dt><dd class="cmt"><p>TaskScheduler that will be used with the scheduler backend.</p></dd><dt>returns</dt><dd class="cmt"><p>SchedulerBackend that works with a TaskScheduler</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
     </li><li name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager#createTaskScheduler" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createTaskScheduler(sc:org.apache.spark.SparkContext,masterURL:String):org.apache.spark.scheduler.TaskScheduler"></a>
       <a id="createTaskScheduler(SparkContext,String):TaskScheduler"></a>
@@ -250,14 +253,14 @@ scheduler and scheduler backend.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createTaskScheduler</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="masterURL">masterURL: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.scheduler.TaskScheduler">TaskScheduler</span></span>
+        <span class="name">createTaskScheduler</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="masterURL">masterURL: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.scheduler.TaskScheduler">TaskScheduler</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager@createTaskScheduler(sc:org.apache.spark.SparkContext,masterURL:String):org.apache.spark.scheduler.TaskScheduler" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
+      <p class="shortcomment cmt">Create a task scheduler instance for the given SparkContext</p><div class="fullcomment"><div class="comment cmt"><p>Create a task scheduler instance for the given SparkContext</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>SparkContext</p></dd><dt class="param">masterURL</dt><dd class="cmt"><p>the master URL</p></dd><dt>returns</dt><dd class="cmt"><p>TaskScheduler that will be responsible for task handling</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -267,7 +270,7 @@ scheduler and scheduler backend.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -365,7 +368,8 @@ scheduler and scheduler backend.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
+      <p class="shortcomment cmt">Initialize task scheduler and backend scheduler.</p><div class="fullcomment"><div class="comment cmt"><p>Initialize task scheduler and backend scheduler. This is called after the
+scheduler components are created</p></div><dl class="paramcmts block"><dt class="param">scheduler</dt><dd class="cmt"><p>TaskScheduler that will be responsible for task handling</p></dd><dt class="param">backend</dt><dd class="cmt"><p>SchedulerBackend that works with a TaskScheduler</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager">SnappyEmbeddedModeClusterManager</a> → ExternalClusterManager</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -409,7 +413,7 @@ scheduler and scheduler backend.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -600,7 +604,7 @@ scheduler and scheduler backend.
         <div class="parent" name="org.apache.spark.scheduler.ExternalClusterManager">
               <h3>Inherited from <span class="extype" name="org.apache.spark.scheduler.ExternalClusterManager">ExternalClusterManager</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

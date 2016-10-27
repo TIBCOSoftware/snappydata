@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>RowWithWeight - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight</title>
-          <meta name="description" content="RowWithWeight - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight" />
-          <meta name="keywords" content="RowWithWeight snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight" />
+          <title>RowWithWeight - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight</title>
+          <meta name="description" content="RowWithWeight - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight" />
+          <meta name="keywords" content="RowWithWeight snappydata 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">RowWithWeight</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>
+        <span class="name">RowWithWeight</span><span class="result"> extends <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.Row">Row</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -97,7 +97,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RowWithWeight</span><span class="params">(<span name="baseRow">baseRow: <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>)</span>
+        <span class="name">RowWithWeight</span><span class="params">(<span name="baseRow">baseRow: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@&lt;init&gt;(baseRow:org.apache.spark.sql.Row):StratifiedSampler.this.RowWithWeight" title="Permalink" target="_top">
@@ -181,7 +181,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns true if there are any NULL values in this row.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if there are any NULL values in this row.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(i:Int):Any"></a>
       <a id="apply(Int):Any"></a>
@@ -198,7 +198,23 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i. If the value is null, null is returned. The following
+is a mapping between Spark SQL types and return types:</p><pre>BooleanType -&gt; java.lang.<span class="std">Boolean</span>
+ByteType -&gt; java.lang.<span class="std">Byte</span>
+ShortType -&gt; java.lang.<span class="std">Short</span>
+IntegerType -&gt; java.lang.Integer
+FloatType -&gt; java.lang.<span class="std">Float</span>
+DoubleType -&gt; java.lang.<span class="std">Double</span>
+StringType -&gt; <span class="std">String</span>
+DecimalType -&gt; java.math.BigDecimal
+
+DateType -&gt; java.sql.Date
+TimestampType -&gt; java.sql.Timestamp
+
+BinaryType -&gt; byte array
+ArrayType -&gt; scala.collection.<span class="std">Seq</span> (use getList <span class="kw">for</span> java.util.<span class="std">List</span>)
+MapType -&gt; scala.collection.<span class="std">Map</span> (use getJavaMap <span class="kw">for</span> java.util.<span class="std">Map</span>)
+StructType -&gt; org.apache.spark.sql.Row</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -225,7 +241,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@clone():Object" title="Permalink" target="_top">
@@ -248,14 +264,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">copy</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>
+        <span class="name">copy</span><span class="params">()</span><span class="result">: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@copy():org.apache.spark.sql.Row" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Make a copy of the current <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object.</p><div class="fullcomment"><div class="comment cmt"><p>Make a copy of the current <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -265,7 +282,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -289,7 +306,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#fieldIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fieldIndex(name:String):Int"></a>
       <a id="fieldIndex(String):Int"></a>
@@ -306,7 +323,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the index of a given field name.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the index of a given field name.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when a field <code>name</code> does not exist.</p></span><span class="cmt"><p><span class="extype" name="UnsupportedOperationException"><code>UnsupportedOperationException</code></span> when schema is not defined.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -346,9 +364,25 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i. If the value is null, null is returned. The following
+is a mapping between Spark SQL types and return types:</p><pre>BooleanType -&gt; java.lang.<span class="std">Boolean</span>
+ByteType -&gt; java.lang.<span class="std">Byte</span>
+ShortType -&gt; java.lang.<span class="std">Short</span>
+IntegerType -&gt; java.lang.Integer
+FloatType -&gt; java.lang.<span class="std">Float</span>
+DoubleType -&gt; java.lang.<span class="std">Double</span>
+StringType -&gt; <span class="std">String</span>
+DecimalType -&gt; java.math.BigDecimal
+
+DateType -&gt; java.sql.Date
+TimestampType -&gt; java.sql.Timestamp
+
+BinaryType -&gt; byte array
+ArrayType -&gt; scala.collection.<span class="std">Seq</span> (use getList <span class="kw">for</span> java.util.<span class="std">List</span>)
+MapType -&gt; scala.collection.<span class="std">Map</span> (use getJavaMap <span class="kw">for</span> java.util.<span class="std">Map</span>)
+StructType -&gt; org.apache.spark.sql.Row</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#getAs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getAs[T&lt;:&lt;?&gt;](fieldName:&lt;?&gt;):T"></a>
+      <a id="getAs[T](fieldName:String):T"></a>
       <a id="getAs[T](String):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -363,9 +397,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value of a given fieldName.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value of a given fieldName.
+For primitive types if value is null it returns 'zero value' specific for primitive
+ie. 0 for Int - use isNullAt to ensure that value is not null
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when fieldName do not exist.</p></span><span class="cmt"><p><span class="extype" name="UnsupportedOperationException"><code>UnsupportedOperationException</code></span> when schema is not defined.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#getAs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getAs[T&lt;:&lt;?&gt;](i:&lt;?&gt;):T"></a>
+      <a id="getAs[T](i:Int):T"></a>
       <a id="getAs[T](Int):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -380,7 +417,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i.
+For primitive types if value is null it returns 'zero value' specific for primitive
+ie. 0 for Int - use isNullAt to ensure that value is not null
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getBoolean" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getBoolean(i:Int):Boolean"></a>
       <a id="getBoolean(Int):Boolean"></a>
@@ -397,7 +437,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive boolean.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive boolean.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getByte(i:Int):Byte"></a>
       <a id="getByte(Int):Byte"></a>
@@ -414,7 +455,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive byte.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive byte.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -448,7 +490,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of date type as java.sql.Date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of date type as java.sql.Date.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getDecimal(i:Int):java.math.BigDecimal"></a>
       <a id="getDecimal(Int):BigDecimal"></a>
@@ -465,7 +508,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of decimal type as java.math.BigDecimal.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of decimal type as java.math.BigDecimal.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getDouble(i:Int):Double"></a>
       <a id="getDouble(Int):Double"></a>
@@ -482,7 +526,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive double.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive double.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getFloat(i:Int):Float"></a>
       <a id="getFloat(Int):Float"></a>
@@ -499,7 +544,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive float.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive float.
+Throws an exception if the type mismatches or if the value is null.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getInt(i:Int):Int"></a>
       <a id="getInt(Int):Int"></a>
@@ -516,9 +563,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive int.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive int.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#getJavaMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getJavaMap[K&lt;:&lt;?&gt;,V&lt;:&lt;?&gt;](i:&lt;?&gt;):java.util.Map[K,V]"></a>
+      <a id="getJavaMap[K,V](i:Int):java.util.Map[K,V]"></a>
       <a id="getJavaMap[K,V](Int):Map[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -533,9 +581,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of array type as a <span class="extype" name="java.util.Map">java.util.Map</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of array type as a <span class="extype" name="java.util.Map">java.util.Map</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#getList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getList[T&lt;:&lt;?&gt;](i:&lt;?&gt;):java.util.List[T]"></a>
+      <a id="getList[T](i:Int):java.util.List[T]"></a>
       <a id="getList[T](Int):List[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -550,7 +599,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of array type as <span class="extype" name="java.util.List">java.util.List</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of array type as <span class="extype" name="java.util.List">java.util.List</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getLong(i:Int):Long"></a>
       <a id="getLong(Int):Long"></a>
@@ -567,7 +617,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive long.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive long.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getMap[K,V](i:Int):scala.collection.Map[K,V]"></a>
       <a id="getMap[K,V](Int):Map[K,V]"></a>
@@ -584,7 +635,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of map type as a Scala Map.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of map type as a Scala Map.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getSeq[T](i:Int):Seq[T]"></a>
       <a id="getSeq[T](Int):Seq[T]"></a>
@@ -594,14 +646,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getSeq</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight.getSeq.T">T</span>]</span>
+        <span class="name">getSeq</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight.getSeq.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@getSeq[T](i:Int):Seq[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of array type as a Scala Seq.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of array type as a Scala Seq.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getShort(i:Int):Short"></a>
       <a id="getShort(Int):Short"></a>
@@ -618,7 +671,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a primitive short.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a primitive short.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="NullPointerException"><code>NullPointerException</code></span> when value is null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getString(i:Int):String"></a>
       <a id="getString(Int):String"></a>
@@ -635,7 +689,8 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i as a String object.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i as a String object.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getStruct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStruct(i:Int):org.apache.spark.sql.Row"></a>
       <a id="getStruct(Int):Row"></a>
@@ -645,14 +700,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStruct</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>
+        <span class="name">getStruct</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@getStruct(i:Int):org.apache.spark.sql.Row" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of struct type as a <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of struct type as a <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#getTimestamp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTimestamp(i:Int):java.sql.Timestamp"></a>
       <a id="getTimestamp(Int):Timestamp"></a>
@@ -669,9 +725,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns the value at position i of date type as java.sql.Timestamp.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value at position i of date type as java.sql.Timestamp.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#getValuesMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getValuesMap[T&lt;:&lt;?&gt;](fieldNames:&lt;?&gt;):Map[String,T]"></a>
+      <a id="getValuesMap[T](fieldNames:Seq[String]):Map[String,T]"></a>
       <a id="getValuesMap[T](Seq[String]):Map[String,T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -679,14 +736,19 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getValuesMap</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="fieldNames">fieldNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.Row.getValuesMap.T">T</span>]</span>
+        <span class="name">getValuesMap</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="fieldNames">fieldNames: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.Row.getValuesMap.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@getValuesMap[T](fieldNames:Seq[String]):Map[String,T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Returns a Map(name -&gt; value) for the requested fieldNames
+For primitive types if value is null it returns 'zero value' specific for primitive
+ie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Map(name -&gt; value) for the requested fieldNames
+For primitive types if value is null it returns 'zero value' specific for primitive
+ie. 0 for Int - use isNullAt to ensure that value is not null
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when fieldName do not exist.</p></span><span class="cmt"><p><span class="extype" name="UnsupportedOperationException"><code>UnsupportedOperationException</code></span> when schema is not defined.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -703,7 +765,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -737,7 +799,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Checks whether the value at position i is null.</p><div class="fullcomment"><div class="comment cmt"><p>Checks whether the value at position i is null.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight#length" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="length:Int"></a>
       <a id="length:Int"></a>
@@ -754,9 +816,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → Row</dd></dl></div>
+      <p class="shortcomment cmt">Number of elements in the Row.</p><div class="fullcomment"><div class="comment cmt"><p>Number of elements in the Row.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> → <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mkString(start:&lt;?&gt;,sep:&lt;?&gt;,end:&lt;?&gt;):String"></a>
+      <a id="mkString(start:String,sep:String,end:String):String"></a>
       <a id="mkString(String,String,String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -771,9 +833,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Displays all elements of this traversable or iterator in a string using
+start, end, and separator strings.</p><div class="fullcomment"><div class="comment cmt"><p>Displays all elements of this traversable or iterator in a string using
+start, end, and separator strings.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mkString(sep:&lt;?&gt;):String"></a>
+      <a id="mkString(sep:String):String"></a>
       <a id="mkString(String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -788,7 +853,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Displays all elements of this sequence in a string using a separator string.</p><div class="fullcomment"><div class="comment cmt"><p>Displays all elements of this sequence in a string using a separator string.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mkString:String"></a>
       <a id="mkString:String"></a>
@@ -805,7 +870,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Displays all elements of this sequence in a string (without a separator).</p><div class="fullcomment"><div class="comment cmt"><p>Displays all elements of this sequence in a string (without a separator).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -815,7 +880,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -866,14 +931,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">schema</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">schema</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Schema for the row.</p><div class="fullcomment"><div class="comment cmt"><p>Schema for the row.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#size" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="size:Int"></a>
       <a id="size:Int"></a>
@@ -890,7 +956,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Number of elements in the Row.</p><div class="fullcomment"><div class="comment cmt"><p>Number of elements in the Row.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -917,14 +983,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toSeq</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">toSeq</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler$RowWithWeight@toSeq:Seq[Any]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row</dd></dl></div>
+      <p class="shortcomment cmt">Return a Scala Seq representing the row.</p><div class="fullcomment"><div class="comment cmt"><p>Return a Scala Seq representing the row. Elements are placed in the same order in the Seq.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.Row#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -941,7 +1008,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Row → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1021,13 +1088,13 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.Row">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.Row">Row</span></h3>
+              <h3>Inherited from <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

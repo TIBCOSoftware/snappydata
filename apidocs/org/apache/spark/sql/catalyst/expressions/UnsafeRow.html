@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>UnsafeRow - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeRow</title>
-          <meta name="description" content="UnsafeRow - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeRow" />
-          <meta name="keywords" content="UnsafeRow snappy cluster 2.11 0.6 API org.apache.spark.sql.catalyst.expressions.UnsafeRow" />
+          <title>UnsafeRow - snappydata_2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeRow</title>
+          <meta name="description" content="UnsafeRow - snappydata 2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeRow" />
+          <meta name="keywords" content="UnsafeRow snappydata 2.11 0.6 API org.apache.spark.sql.catalyst.expressions.UnsafeRow" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">UnsafeRow</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</span> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+        <span class="name">UnsafeRow</span><span class="result"> extends <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <span class="extype" name="java.io.Externalizable">Externalizable</span>, <span class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</span>, <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <span class="extype" name="java.io.Externalizable">Externalizable</span>, <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>, <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -198,7 +198,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → InternalRow</dd></dl></div>
+      <p class="shortcomment cmt">Returns true if there are any NULL values in this row.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if there are any NULL values in this row.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -225,7 +225,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@clone():Object" title="Permalink" target="_top">
@@ -255,7 +255,8 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → InternalRow</dd></dl></div>
+      <p class="shortcomment cmt">Make a copy of the current <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object.</p><div class="fullcomment"><div class="comment cmt"><p>Make a copy of the current <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#copyFrom" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="copyFrom(row:org.apache.spark.sql.catalyst.expressions.UnsafeRow):Unit"></a>
       <a id="copyFrom(UnsafeRow):Unit"></a>
@@ -282,7 +283,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -339,7 +340,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">get</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="dataType">dataType: <span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span></span>)</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">get</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@get(ordinal:Int,dataType:org.apache.spark.sql.types.DataType):Object" title="Permalink" target="_top">
@@ -373,7 +374,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getBaseObject</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">getBaseObject</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@getBaseObject():Object" title="Permalink" target="_top">
@@ -492,7 +493,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getDecimal</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</span></span>
+        <span class="name">getDecimal</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@getDecimal(ordinal:Int,precision:Int,scale:Int):org.apache.spark.sql.types.Decimal" title="Permalink" target="_top">
@@ -652,7 +653,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>InternalRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#getStruct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStruct(ordinal:Int,numFields:Int):org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
       <a id="getStruct(Int,Int):UnsafeRow"></a>
@@ -747,7 +748,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -805,7 +806,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → InternalRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#pointTo" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="pointTo(buf:Array[Byte],sizeInBytes:Int):Unit"></a>
       <a id="pointTo(Array[Byte],Int):Unit"></a>
@@ -890,7 +891,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setByte(ordinal:Int,value:Byte):Unit"></a>
       <a id="setByte(Int,Byte):Unit"></a>
@@ -907,7 +908,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setDecimal(ordinal:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit"></a>
       <a id="setDecimal(Int,Decimal,Int):Unit"></a>
@@ -917,14 +918,16 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setDecimal</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setDecimal</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <a href="../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@setDecimal(ordinal:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <p class="shortcomment cmt">Update the decimal column at <code>i</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Update the decimal column at <code>i</code>.</p><p>Note: In order to support update decimal with precision &gt; 18 in UnsafeRow,
+CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, null, precision).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setDouble(ordinal:Int,value:Double):Unit"></a>
       <a id="setDouble(Int,Double):Unit"></a>
@@ -941,7 +944,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setFloat(ordinal:Int,value:Float):Unit"></a>
       <a id="setFloat(Int,Float):Unit"></a>
@@ -958,7 +961,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setInt(ordinal:Int,value:Int):Unit"></a>
       <a id="setInt(Int,Int):Unit"></a>
@@ -975,7 +978,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setLong(ordinal:Int,value:Long):Unit"></a>
       <a id="setLong(Int,Long):Unit"></a>
@@ -992,7 +995,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setNotNullAt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setNotNullAt(i:Int):Unit"></a>
       <a id="setNotNullAt(Int):Unit"></a>
@@ -1026,7 +1029,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setShort(ordinal:Int,value:Short):Unit"></a>
       <a id="setShort(Int,Short):Unit"></a>
@@ -1043,7 +1046,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#setTotalSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setTotalSize(sizeInBytes:Int):Unit"></a>
       <a id="setTotalSize(Int):Unit"></a>
@@ -1087,14 +1090,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toSeq</span><span class="params">(<span name="schema">schema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">toSeq</span><span class="params">(<span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@toSeq(schema:org.apache.spark.sql.types.StructType):Seq[Any]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>InternalRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.InternalRow#toSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toSeq(fieldTypes:Seq[org.apache.spark.sql.types.DataType]):Seq[Any]"></a>
       <a id="toSeq(Seq[DataType]):Seq[Any]"></a>
@@ -1104,14 +1107,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toSeq</span><span class="params">(<span name="fieldTypes">fieldTypes: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">toSeq</span><span class="params">(<span name="fieldTypes">fieldTypes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeRow@toSeq(fieldTypes:Seq[org.apache.spark.sql.types.DataType]):Seq[Any]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>InternalRow</dd></dl></div>
+      <p class="shortcomment cmt">Return a Scala Seq representing the row.</p><div class="fullcomment"><div class="comment cmt"><p>Return a Scala Seq representing the row. Elements are placed in the same order in the Seq.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeRow#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -1145,7 +1149,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → MutableRow</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> → <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1331,9 +1335,9 @@
             </div><div class="parent" name="java.io.Externalizable">
               <h3>Inherited from <span class="extype" name="java.io.Externalizable">Externalizable</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.MutableRow">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</span></h3>
+              <h3>Inherited from <a href="MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.InternalRow">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span></h3>
+              <h3>Inherited from <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
@@ -1341,7 +1345,7 @@
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">
               <h3>Inherited from <a href="SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

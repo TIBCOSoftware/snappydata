@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnVector - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.vectorized.ColumnVector</title>
-          <meta name="description" content="ColumnVector - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.vectorized.ColumnVector" />
-          <meta name="keywords" content="ColumnVector snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.vectorized.ColumnVector" />
+          <title>ColumnVector - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.vectorized.ColumnVector</title>
+          <meta name="description" content="ColumnVector - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.vectorized.ColumnVector" />
+          <meta name="keywords" content="ColumnVector snappydata 2.11 0.6 API org.apache.spark.sql.execution.vectorized.ColumnVector" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -51,7 +51,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="java.lang.AutoCloseable">AutoCloseable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="java.lang.AutoCloseable">AutoCloseable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="OffHeapColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.OffHeapColumnVector">OffHeapColumnVector</a>, <a href="OnHeapColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.OnHeapColumnVector">OnHeapColumnVector</a></div>
@@ -100,7 +100,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnVector</span><span class="params">(<span name="capacity">capacity: <span class="extype" name="scala.Int">Int</span></span>, <span name="type">type: <span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span></span>, <span name="memMode">memMode: <a href="../../../memory/MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span>
+        <span class="name">ColumnVector</span><span class="params">(<span name="capacity">capacity: <span class="extype" name="scala.Int">Int</span></span>, <span name="type">type: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="memMode">memMode: <a href="../../../memory/MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@&lt;init&gt;(capacity:Int,type:org.apache.spark.sql.types.DataType,memMode:org.apache.spark.memory.MemoryMode):org.apache.spark.sql.execution.vectorized.ColumnVector" title="Permalink" target="_top">
@@ -1438,7 +1438,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@clone():Object" title="Permalink" target="_top">
@@ -1461,7 +1461,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dataType</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span></span>
+        <span class="name">dataType</span><span class="params">()</span><span class="result">: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@dataType():org.apache.spark.sql.types.DataType" title="Permalink" target="_top">
@@ -1478,7 +1478,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -1603,7 +1603,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getDecimal</span><span class="params">(<span name="rowId">rowId: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</span></span>
+        <span class="name">getDecimal</span><span class="params">(<span name="rowId">rowId: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@getDecimal(rowId:Int,precision:Int,scale:Int):org.apache.spark.sql.types.Decimal" title="Permalink" target="_top">
@@ -1654,7 +1654,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getMap</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</span></span>
+        <span class="name">getMap</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../catalyst/util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@getMap(ordinal:Int):org.apache.spark.sql.catalyst.util.MapData" title="Permalink" target="_top">
@@ -1790,7 +1790,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -1875,7 +1875,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">putDecimal</span><span class="params">(<span name="rowId">rowId: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">putDecimal</span><span class="params">(<span name="rowId">rowId: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <a href="../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.vectorized.ColumnVector@putDecimal(rowId:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit" title="Permalink" target="_top">
@@ -2083,7 +2083,7 @@
         <div class="parent" name="java.lang.AutoCloseable">
               <h3>Inherited from <span class="extype" name="java.lang.AutoCloseable">AutoCloseable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

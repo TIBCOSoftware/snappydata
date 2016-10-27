@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JavaCustomReceiver - snappy-cluster_2.11 0.6 API - org.apache.spark.examples.streaming.JavaCustomReceiver</title>
-          <meta name="description" content="JavaCustomReceiver - snappy - cluster 2.11 0.6 API - org.apache.spark.examples.streaming.JavaCustomReceiver" />
-          <meta name="keywords" content="JavaCustomReceiver snappy cluster 2.11 0.6 API org.apache.spark.examples.streaming.JavaCustomReceiver" />
+          <title>JavaCustomReceiver - snappydata_2.11 0.6 API - org.apache.spark.examples.streaming.JavaCustomReceiver</title>
+          <meta name="description" content="JavaCustomReceiver - snappydata 2.11 0.6 API - org.apache.spark.examples.streaming.JavaCustomReceiver" />
+          <meta name="keywords" content="JavaCustomReceiver snappydata 2.11 0.6 API org.apache.spark.examples.streaming.JavaCustomReceiver" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">JavaCustomReceiver</span><span class="result"> extends <span class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</span>[<span class="extype" name="java.lang.String">String</span>]</span>
+        <span class="name">JavaCustomReceiver</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="java.lang.String">String</span>]</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</span>[<span class="extype" name="java.lang.String">String</span>], <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="java.lang.String">String</span>], <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -191,7 +191,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@clone():Object" title="Permalink" target="_top">
@@ -214,7 +214,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -329,7 +329,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Check if the receiver has started or not.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the receiver has started or not.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#isStopped" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isStopped():Boolean"></a>
       <a id="isStopped():Boolean"></a>
@@ -346,7 +346,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Check if receiver has been marked for stopping.</p><div class="fullcomment"><div class="comment cmt"><p>Check if receiver has been marked for stopping. Use this to identify when
+the receiving of data should be stopped.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -356,7 +358,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -414,7 +416,17 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.examples.streaming.JavaCustomReceiver">JavaCustomReceiver</a> → Receiver</dd></dl></div>
+      <p class="shortcomment cmt">This method is called by the system when the receiver is started.</p><div class="fullcomment"><div class="comment cmt"><p>This method is called by the system when the receiver is started. This function
+must initialize all resources (threads, buffers, etc.) necessary for receiving data.
+This function must be non-blocking, so receiving the data must occur on a different
+thread. Received data can be stored with Spark by calling <code>store(data)</code>.</p><p>If there are errors in threads started here, then following options can be done
+(i) <code>reportError(...)</code> can be called to report the error to the driver.
+The receiving of data will continue uninterrupted.
+(ii) <code>stop(...)</code> can be called to stop receiving data. This will call <code>onStop()</code> to
+clear up all resources allocated (threads, buffers, etc.) during <code>onStart()</code>.
+(iii) <code>restart(...)</code> can be called to restart the receiver. This will call <code>onStop()</code>
+immediately, and then <code>onStart()</code> after a delay.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.examples.streaming.JavaCustomReceiver">JavaCustomReceiver</a> → <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.examples.streaming.JavaCustomReceiver#onStop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="onStop():Unit"></a>
       <a id="onStop():Unit"></a>
@@ -431,7 +443,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.examples.streaming.JavaCustomReceiver">JavaCustomReceiver</a> → Receiver</dd></dl></div>
+      <p class="shortcomment cmt">This method is called by the system when the receiver is stopped.</p><div class="fullcomment"><div class="comment cmt"><p>This method is called by the system when the receiver is stopped. All resources
+(threads, buffers, etc.) set up in <code>onStart()</code> must be cleaned up in this method.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.examples.streaming.JavaCustomReceiver">JavaCustomReceiver</a> → <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#preferredLocation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="preferredLocation:Option[String]"></a>
       <a id="preferredLocation:Option[String]"></a>
@@ -448,9 +462,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Override this to specify a preferred location (hostname).</p><div class="fullcomment"><div class="comment cmt"><p>Override this to specify a preferred location (hostname).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#reportError" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="reportError(message:&lt;?&gt;,throwable:&lt;?&gt;):Unit"></a>
+      <a id="reportError(message:String,throwable:Throwable):Unit"></a>
       <a id="reportError(String,Throwable):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -458,16 +472,16 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">reportError</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">reportError</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@reportError(message:String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Report exceptions in receiving data.</p><div class="fullcomment"><div class="comment cmt"><p>Report exceptions in receiving data.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#restart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="restart(message:&lt;?&gt;,error:&lt;?&gt;,millisecond:&lt;?&gt;):Unit"></a>
+      <a id="restart(message:String,error:Throwable,millisecond:Int):Unit"></a>
       <a id="restart(String,Throwable,Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -475,16 +489,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">restart</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <span class="extype" name="scala.Throwable">Throwable</span></span>, <span name="millisecond">millisecond: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">restart</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>, <span name="millisecond">millisecond: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@restart(message:String,error:Throwable,millisecond:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Restart the receiver.</p><div class="fullcomment"><div class="comment cmt"><p>Restart the receiver. This method schedules the restart and returns
+immediately. The stopping and subsequent starting of the receiver
+(by calling <code>onStop()</code> and <code>onStart()</code>) is performed asynchronously
+in a background thread.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#restart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="restart(message:&lt;?&gt;,error:&lt;?&gt;):Unit"></a>
+      <a id="restart(message:String,error:Throwable):Unit"></a>
       <a id="restart(String,Throwable):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -492,16 +510,22 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">restart</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">restart</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@restart(message:String,error:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Restart the receiver.</p><div class="fullcomment"><div class="comment cmt"><p>Restart the receiver. This method schedules the restart and returns
+immediately. The stopping and subsequent starting of the receiver
+(by calling <code>onStop()</code> and <code>onStart()</code>) is performed asynchronously
+in a background thread. The delay between the stopping and the starting
+is defined by the Spark configuration <code>spark.streaming.receiverRestartDelay</code>.
+The <code>message</code> and <code>exception</code> will be reported to the driver.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#restart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="restart(message:&lt;?&gt;):Unit"></a>
+      <a id="restart(message:String):Unit"></a>
       <a id="restart(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -516,9 +540,15 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Restart the receiver.</p><div class="fullcomment"><div class="comment cmt"><p>Restart the receiver. This method schedules the restart and returns
+immediately. The stopping and subsequent starting of the receiver
+(by calling <code>onStop()</code> and <code>onStart()</code>) is performed asynchronously
+in a background thread. The delay between the stopping and the starting
+is defined by the Spark configuration <code>spark.streaming.receiverRestartDelay</code>.
+The <code>message</code> will be reported to the driver.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="stop(message:&lt;?&gt;,error:&lt;?&gt;):Unit"></a>
+      <a id="stop(message:String,error:Throwable):Unit"></a>
       <a id="stop(String,Throwable):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -526,16 +556,16 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">stop</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">stop</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="error">error: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@stop(message:String,error:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Stop the receiver completely due to an exception</p><div class="fullcomment"><div class="comment cmt"><p>Stop the receiver completely due to an exception</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="stop(message:&lt;?&gt;):Unit"></a>
+      <a id="stop(message:String):Unit"></a>
       <a id="stop(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -550,7 +580,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Stop the receiver completely.</p><div class="fullcomment"><div class="comment cmt"><p>Stop the receiver completely.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#storageLevel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="storageLevel:org.apache.spark.storage.StorageLevel"></a>
       <a id="storageLevel:StorageLevel"></a>
@@ -560,16 +590,16 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">storageLevel</span><span class="result">: <span class="extype" name="org.apache.spark.storage.StorageLevel">StorageLevel</span></span>
+        <span class="name">storageLevel</span><span class="result">: <a href="../../storage/StorageLevel.html" class="extype" name="org.apache.spark.storage.StorageLevel">StorageLevel</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@storageLevel:org.apache.spark.storage.StorageLevel" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(bytes:&lt;?&gt;,metadata:&lt;?&gt;):Unit"></a>
+      <a id="store(bytes:java.nio.ByteBuffer,metadata:Any):Unit"></a>
       <a id="store(ByteBuffer,Any):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -584,9 +614,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store the bytes of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store the bytes of received data as a data block into Spark's memory.
+The metadata will be associated with this block of data
+for being used in the corresponding InputDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(bytes:&lt;?&gt;):Unit"></a>
+      <a id="store(bytes:java.nio.ByteBuffer):Unit"></a>
       <a id="store(ByteBuffer):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -601,9 +634,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store the bytes of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store the bytes of received data as a data block into Spark's memory. Note
+that the data in the ByteBuffer must be serialized using the same serializer
+that Spark is configured to use.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataIterator:&lt;?&gt;,metadata:&lt;?&gt;):Unit"></a>
+      <a id="store(dataIterator:Iterator[T],metadata:Any):Unit"></a>
       <a id="store(Iterator[String],Any):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -611,16 +647,19 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="params">(<span name="dataIterator">dataIterator: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="java.lang.String">String</span>]</span>, <span name="metadata">metadata: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">store</span><span class="params">(<span name="dataIterator">dataIterator: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="java.lang.String">String</span>]</span>, <span name="metadata">metadata: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@store(dataIterator:Iterator[T],metadata:Any):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an iterator of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an iterator of received data as a data block into Spark's memory.
+The metadata will be associated with this block of data
+for being used in the corresponding InputDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataIterator:&lt;?&gt;):Unit"></a>
+      <a id="store(dataIterator:java.util.Iterator[T]):Unit"></a>
       <a id="store(Iterator[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -635,9 +674,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an iterator of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an iterator of received data as a data block into Spark's memory.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataIterator:&lt;?&gt;,metadata:&lt;?&gt;):Unit"></a>
+      <a id="store(dataIterator:java.util.Iterator[T],metadata:Any):Unit"></a>
       <a id="store(Iterator[String],Any):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -652,9 +691,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an iterator of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an iterator of received data as a data block into Spark's memory.
+The metadata will be associated with this block of data
+for being used in the corresponding InputDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataIterator:&lt;?&gt;):Unit"></a>
+      <a id="store(dataIterator:Iterator[T]):Unit"></a>
       <a id="store(Iterator[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -662,16 +704,16 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="params">(<span name="dataIterator">dataIterator: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="java.lang.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">store</span><span class="params">(<span name="dataIterator">dataIterator: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="java.lang.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.streaming.JavaCustomReceiver@store(dataIterator:Iterator[T]):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an iterator of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an iterator of received data as a data block into Spark's memory.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataBuffer:&lt;?&gt;,metadata:&lt;?&gt;):Unit"></a>
+      <a id="store(dataBuffer:scala.collection.mutable.ArrayBuffer[T],metadata:Any):Unit"></a>
       <a id="store(ArrayBuffer[String],Any):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -686,9 +728,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an ArrayBuffer of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an ArrayBuffer of received data as a data block into Spark's memory.
+The metadata will be associated with this block of data
+for being used in the corresponding InputDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataBuffer:&lt;?&gt;):Unit"></a>
+      <a id="store(dataBuffer:scala.collection.mutable.ArrayBuffer[T]):Unit"></a>
       <a id="store(ArrayBuffer[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -703,9 +748,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store an ArrayBuffer of received data as a data block into Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store an ArrayBuffer of received data as a data block into Spark's memory.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store(dataItem:&lt;?&gt;):Unit"></a>
+      <a id="store(dataItem:T):Unit"></a>
       <a id="store(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -720,7 +765,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Store a single item of received data to Spark's memory.</p><div class="fullcomment"><div class="comment cmt"><p>Store a single item of received data to Spark's memory.
+These single items will be aggregated together into data blocks before
+being pushed into Spark's memory.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.receiver.Receiver#streamId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="streamId:Int"></a>
       <a id="streamId:Int"></a>
@@ -737,7 +785,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Receiver</dd></dl></div>
+      <p class="shortcomment cmt">Get the unique identifier the receiver input stream that this
+receiver is associated with.</p><div class="fullcomment"><div class="comment cmt"><p>Get the unique identifier the receiver input stream that this
+receiver is associated with.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -851,13 +902,13 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.streaming.receiver.Receiver">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</span>[<span class="extype" name="java.lang.String">String</span>]</h3>
+              <h3>Inherited from <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="java.lang.String">String</span>]</h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

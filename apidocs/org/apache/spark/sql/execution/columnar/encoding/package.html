@@ -1,0 +1,478 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>encoding - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.columnar.encoding</title>
+          <meta name="description" content="encoding - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.columnar.encoding" />
+          <meta name="keywords" content="encoding snappydata 2.11 0.6 API org.apache.spark.sql.execution.columnar.encoding" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.columnar.encoding.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution.columnar">columnar</a></p>
+        <h1>encoding</h1><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">encoding</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BooleanBitSetEncodingextendsBooleanBitSetEncodingBasewithNotNullColumn"></a>
+      <a id="BooleanBitSetEncoding:BooleanBitSetEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BooleanBitSetEncoding.html"><span class="name">BooleanBitSetEncoding</span></a><span class="result"> extends <a href="BooleanBitSetEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncodingBase">BooleanBitSetEncodingBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@BooleanBitSetEncodingextendsBooleanBitSetEncodingBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncodingBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BooleanBitSetEncodingBaseextendsColumnEncoding"></a>
+      <a id="BooleanBitSetEncodingBase:BooleanBitSetEncodingBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BooleanBitSetEncodingBase.html"><span class="name">BooleanBitSetEncodingBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@BooleanBitSetEncodingBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncodingNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BooleanBitSetEncodingNullableextendsBooleanBitSetEncodingBasewithNullableColumn"></a>
+      <a id="BooleanBitSetEncodingNullable:BooleanBitSetEncodingNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BooleanBitSetEncodingNullable.html"><span class="name">BooleanBitSetEncodingNullable</span></a><span class="result"> extends <a href="BooleanBitSetEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncodingBase">BooleanBitSetEncodingBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@BooleanBitSetEncodingNullableextendsBooleanBitSetEncodingBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ColumnEncodingextendsAnyRef"></a>
+      <a id="ColumnEncoding:ColumnEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnEncoding.html"><span class="name">ColumnEncoding</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnEncodingextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.DictionaryEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DictionaryEncodingextendsDictionaryEncodingBasewithNotNullColumn"></a>
+      <a id="DictionaryEncoding:DictionaryEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryEncoding.html"><span class="name">DictionaryEncoding</span></a><span class="result"> extends <a href="DictionaryEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DictionaryEncodingBase">DictionaryEncodingBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@DictionaryEncodingextendsDictionaryEncodingBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.DictionaryEncodingBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DictionaryEncodingBaseextendsColumnEncoding"></a>
+      <a id="DictionaryEncodingBase:DictionaryEncodingBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryEncodingBase.html"><span class="name">DictionaryEncodingBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@DictionaryEncodingBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.DictionaryEncodingNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DictionaryEncodingNullableextendsDictionaryEncodingBasewithNullableColumn"></a>
+      <a id="DictionaryEncodingNullable:DictionaryEncodingNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryEncodingNullable.html"><span class="name">DictionaryEncodingNullable</span></a><span class="result"> extends <a href="DictionaryEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DictionaryEncodingBase">DictionaryEncodingBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@DictionaryEncodingNullableextendsDictionaryEncodingBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.IntDeltaEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IntDeltaEncodingextendsIntDeltaEncodingBasewithNotNullColumn"></a>
+      <a id="IntDeltaEncoding:IntDeltaEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntDeltaEncoding.html"><span class="name">IntDeltaEncoding</span></a><span class="result"> extends <a href="IntDeltaEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.IntDeltaEncodingBase">IntDeltaEncodingBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@IntDeltaEncodingextendsIntDeltaEncodingBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.IntDeltaEncodingBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="IntDeltaEncodingBaseextendsColumnEncoding"></a>
+      <a id="IntDeltaEncodingBase:IntDeltaEncodingBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntDeltaEncodingBase.html"><span class="name">IntDeltaEncodingBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@IntDeltaEncodingBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.IntDeltaEncodingNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IntDeltaEncodingNullableextendsIntDeltaEncodingBasewithNullableColumn"></a>
+      <a id="IntDeltaEncodingNullable:IntDeltaEncodingNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntDeltaEncodingNullable.html"><span class="name">IntDeltaEncodingNullable</span></a><span class="result"> extends <a href="IntDeltaEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.IntDeltaEncodingBase">IntDeltaEncodingBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@IntDeltaEncodingNullableextendsIntDeltaEncodingBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.LongDeltaEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LongDeltaEncodingextendsLongDeltaEncodingBasewithNotNullColumn"></a>
+      <a id="LongDeltaEncoding:LongDeltaEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LongDeltaEncoding.html"><span class="name">LongDeltaEncoding</span></a><span class="result"> extends <a href="LongDeltaEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.LongDeltaEncodingBase">LongDeltaEncodingBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@LongDeltaEncodingextendsLongDeltaEncodingBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.LongDeltaEncodingBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="LongDeltaEncodingBaseextendsColumnEncoding"></a>
+      <a id="LongDeltaEncodingBase:LongDeltaEncodingBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LongDeltaEncodingBase.html"><span class="name">LongDeltaEncodingBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@LongDeltaEncodingBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.LongDeltaEncodingNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LongDeltaEncodingNullableextendsLongDeltaEncodingBasewithNullableColumn"></a>
+      <a id="LongDeltaEncodingNullable:LongDeltaEncodingNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LongDeltaEncodingNullable.html"><span class="name">LongDeltaEncodingNullable</span></a><span class="result"> extends <a href="LongDeltaEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.LongDeltaEncodingBase">LongDeltaEncodingBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@LongDeltaEncodingNullableextendsLongDeltaEncodingBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="NotNullColumnextendsColumnEncoding"></a>
+      <a id="NotNullColumn:NotNullColumn"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="NotNullColumn.html"><span class="name">NotNullColumn</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@NotNullColumnextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="NullableColumnextendsColumnEncoding"></a>
+      <a id="NullableColumn:NullableColumn"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="NullableColumn.html"><span class="name">NullableColumn</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@NullableColumnextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.RunLengthEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RunLengthEncodingextendsRunLengthEncodingBasewithNotNullColumn"></a>
+      <a id="RunLengthEncoding:RunLengthEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RunLengthEncoding.html"><span class="name">RunLengthEncoding</span></a><span class="result"> extends <a href="RunLengthEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.RunLengthEncodingBase">RunLengthEncodingBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@RunLengthEncodingextendsRunLengthEncodingBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.RunLengthEncodingBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RunLengthEncodingBaseextendsColumnEncoding"></a>
+      <a id="RunLengthEncodingBase:RunLengthEncodingBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RunLengthEncodingBase.html"><span class="name">RunLengthEncodingBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@RunLengthEncodingBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.RunLengthEncodingNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RunLengthEncodingNullableextendsRunLengthEncodingBasewithNullableColumn"></a>
+      <a id="RunLengthEncodingNullable:RunLengthEncodingNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RunLengthEncodingNullable.html"><span class="name">RunLengthEncodingNullable</span></a><span class="result"> extends <a href="RunLengthEncodingBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.RunLengthEncodingBase">RunLengthEncodingBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@RunLengthEncodingNullableextendsRunLengthEncodingBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.Uncompressed" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UncompressedextendsUncompressedBasewithNotNullColumn"></a>
+      <a id="Uncompressed:Uncompressed"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Uncompressed.html"><span class="name">Uncompressed</span></a><span class="result"> extends <a href="UncompressedBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UncompressedBase">UncompressedBase</a> with <a href="NotNullColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullColumn">NotNullColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@UncompressedextendsUncompressedBasewithNotNullColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.UncompressedBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UncompressedBaseextendsColumnEncoding"></a>
+      <a id="UncompressedBase:UncompressedBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UncompressedBase.html"><span class="name">UncompressedBase</span></a><span class="result"> extends <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@UncompressedBaseextendsColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UncompressedNullableextendsUncompressedBasewithNullableColumn"></a>
+      <a id="UncompressedNullable:UncompressedNullable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UncompressedNullable.html"><span class="name">UncompressedNullable</span></a><span class="result"> extends <a href="UncompressedBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UncompressedBase">UncompressedBase</a> with <a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@UncompressedNullableextendsUncompressedBasewithNullableColumn" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnEncoding"></a>
+      <a id="ColumnEncoding:ColumnEncoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnEncoding$.html"><span class="name">ColumnEncoding</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnEncoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

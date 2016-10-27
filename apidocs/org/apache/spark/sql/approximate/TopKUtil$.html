@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>TopKUtil - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.approximate.TopKUtil</title>
-          <meta name="description" content="TopKUtil - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.approximate.TopKUtil" />
-          <meta name="keywords" content="TopKUtil snappy cluster 2.11 0.6 API org.apache.spark.sql.approximate.TopKUtil" />
+          <title>TopKUtil - snappydata_2.11 0.6 API - org.apache.spark.sql.approximate.TopKUtil</title>
+          <meta name="description" content="TopKUtil - snappydata 2.11 0.6 API - org.apache.spark.sql.approximate.TopKUtil" />
+          <meta name="keywords" content="TopKUtil snappydata 2.11 0.6 API org.apache.spark.sql.approximate.TopKUtil" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -51,7 +51,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -205,7 +205,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@clone():Object" title="Permalink" target="_top">
@@ -228,7 +228,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">col</span><span class="params">(<span name="context">context: <span class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">col</span><span class="params">(<span name="context">context: <a href="../SnappyContext.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@col(context:org.apache.spark.sql.SnappyContext,name:String):String" title="Permalink" target="_top">
@@ -245,7 +245,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createTopKRDD</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="context">context: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.execution.TopK">TopK</span>)]</span>
+        <span class="name">createTopKRDD</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="context">context: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../execution/TopK.html" class="extype" name="org.apache.spark.sql.execution.TopK">TopK</a>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@createTopKRDD(name:String,context:org.apache.spark.SparkContext):org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)]" title="Permalink" target="_top">
@@ -262,7 +262,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -336,7 +336,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getSchema</span><span class="params">(<span name="context">context: <span class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</span></span>, <span name="key">key: <span class="extype" name="org.apache.spark.sql.types.StructField">StructField</span></span>, <span name="isStreamSummary">isStreamSummary: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">getSchema</span><span class="params">(<span name="context">context: <a href="../SnappyContext.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a></span>, <span name="key">key: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="isStreamSummary">isStreamSummary: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@getSchema(context:org.apache.spark.sql.SnappyContext,key:org.apache.spark.sql.types.StructField,isStreamSummary:Boolean):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
@@ -387,7 +387,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -438,7 +438,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">populateTopK</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="rows">rows: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>, <span name="topkWrapper">topkWrapper: <a href="../execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a></span>, <span name="session">session: <span class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</span></span>, <span name="name">name: <span class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</span></span>, <span name="topKRDD">topKRDD: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.execution.TopK">TopK</span>)]</span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.approximate.TopKUtil.populateTopK.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">populateTopK</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="rows">rows: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="topkWrapper">topkWrapper: <a href="../execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="name">name: <a href="../hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="topKRDD">topKRDD: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../execution/TopK.html" class="extype" name="org.apache.spark.sql.execution.TopK">TopK</a>)]</span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.approximate.TopKUtil.populateTopK.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.approximate.TopKUtil$@populateTopK[T](rows:org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],topkWrapper:org.apache.spark.sql.execution.TopKWrapper,session:org.apache.spark.sql.SnappySession,name:org.apache.spark.sql.hive.QualifiedTableName,topKRDD:org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)],time:Long)(implicitevidence$3:scala.reflect.ClassTag[T]):Unit" title="Permalink" target="_top">
@@ -559,7 +559,7 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

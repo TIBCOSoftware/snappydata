@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>TopKCMS - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.cms.TopKCMS</title>
-          <meta name="description" content="TopKCMS - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.cms.TopKCMS" />
-          <meta name="keywords" content="TopKCMS snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.cms.TopKCMS" />
+          <title>TopKCMS - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.cms.TopKCMS</title>
+          <meta name="description" content="TopKCMS - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.cms.TopKCMS" />
+          <meta name="keywords" content="TopKCMS snappydata 2.11 0.6 API org.apache.spark.sql.execution.cms.TopKCMS" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -53,7 +53,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS.T">T</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS.T">T</span>], <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -308,15 +308,14 @@
 Returns a new CountMinSketch that has half the width of this CMS.</p><div class="fullcomment"><div class="comment cmt"><p>TODO Should this compress in place?
 Returns a new CountMinSketch that has half the width of this CMS.
 Each of the w/2 columns of the new CMS has the combined counts of the
-ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.</p><p>TODO I think there is a bug: If w == 2, then it doesn't really compress? w+newWidth = 2!
-      But then not much use of one that small?
+ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.
 </p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>A new CountMinSketch that is the compressed version of this</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="classOf[CountMinSketch.CMSCompressException]">...</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="CMSCompressException"><code>CMSCompressException</code></span> if this CMS's width is not a power of two, or is too small.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.cms.CountMinSketch#confidence" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="confidence:Double"></a>
       <a id="confidence:Double"></a>
@@ -377,7 +376,7 @@ ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.</p><p>T
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.cms.TopKCMS@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -607,7 +606,7 @@ with probability 'confidence'.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getTopKKeys</span><span class="result">: <span class="extype" name="org.apache.spark.util.collection.OpenHashSet">OpenHashSet</span>[<span class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS.T">T</span>]</span>
+        <span class="name">getTopKKeys</span><span class="result">: <a href="../../../util/collection/OpenHashSet.html" class="extype" name="org.apache.spark.util.collection.OpenHashSet">OpenHashSet</a>[<span class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.cms.TopKCMS@getTopKKeys:org.apache.spark.util.collection.OpenHashSet[T]" title="Permalink" target="_top">
@@ -709,7 +708,7 @@ with probability 'confidence'.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.cms.TopKCMS@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -1002,7 +1001,7 @@ with probability 'confidence'.
         <div class="parent" name="org.apache.spark.sql.execution.cms.CountMinSketch">
               <h3>Inherited from <a href="CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS.T">T</span>]</h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

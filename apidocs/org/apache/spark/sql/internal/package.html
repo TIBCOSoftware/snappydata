@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>internal - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.internal</title>
-          <meta name="description" content="internal - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.internal" />
-          <meta name="keywords" content="internal snappy cluster 2.11 0.6 API org.apache.spark.sql.internal" />
+          <title>internal - snappydata_2.11 0.6 API - org.apache.spark.sql.internal</title>
+          <meta name="description" content="internal - snappydata 2.11 0.6 API - org.apache.spark.sql.internal" />
+          <meta name="keywords" content="internal snappydata 2.11 0.6 API org.apache.spark.sql.internal" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,9 +47,11 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>All classes in this package are considered an internal API to Spark and
+are subject to change between minor releases.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -97,7 +99,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="AQPQueryAnalyzer.html"><span class="name">AQPQueryAnalyzer</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</span> with <a href="AnalyzerInvocation.html" class="extype" name="org.apache.spark.sql.internal.AnalyzerInvocation">AnalyzerInvocation</a></span>
+        <a href="AQPQueryAnalyzer.html"><span class="name">AQPQueryAnalyzer</span></a><span class="result"> extends <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> with <a href="AnalyzerInvocation.html" class="extype" name="org.apache.spark.sql.internal.AnalyzerInvocation">AnalyzerInvocation</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@AQPQueryAnalyzerextendsAnalyzerwithAnalyzerInvocation" title="Permalink" target="_top">
@@ -114,10 +116,61 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="AnalyzerInvocation.html"><span class="name">AnalyzerInvocation</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a href="AnalyzerInvocation.html"><span class="name">AnalyzerInvocation</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@AnalyzerInvocationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CatalogImplextendsCatalog"></a>
+      <a id="CatalogImpl:CatalogImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CatalogImpl.html"><span class="name">CatalogImpl</span></a><span class="result"> extends <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@CatalogImplextendsCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Internal implementation of the user-facing <span class="extype" name="Catalog">Catalog</span>.</p>
+    </li><li name="org.apache.spark.sql.internal.DefaultPlanner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DefaultPlannerextendsSparkPlannerwithSnappyStrategies"></a>
+      <a id="DefaultPlanner:DefaultPlanner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultPlanner.html"><span class="name">DefaultPlanner</span></a><span class="result"> extends <a href="../execution/SparkPlanner.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanner">SparkPlanner</a> with <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@DefaultPlannerextendsSparkPlannerwithSnappyStrategies" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.HiveSerDe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveSerDeextendsProductwithSerializable"></a>
+      <a id="HiveSerDe:HiveSerDe"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveSerDe.html"><span class="name">HiveSerDe</span></a><span class="params">(<span name="inputFormat">inputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>, <span name="outputFormat">outputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>, <span name="serde">serde: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@HiveSerDeextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -131,10 +184,88 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyAQPSessionState.html"><span class="name">SnappyAQPSessionState</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</span></span>
+        <a href="SnappyAQPSessionState.html"><span class="name">SnappyAQPSessionState</span></a><span class="result"> extends <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappyAQPSessionStateextendsSnappySessionState" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySessionStateextendsSessionState"></a>
+      <a id="SnappySessionState:SnappySessionState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySessionState.html"><span class="name">SnappySessionState</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SessionState">SessionState</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappySessionStateextendsSessionState" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.VariableSubstitution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="VariableSubstitutionextendsAnyRef"></a>
+      <a id="VariableSubstitution:VariableSubstitution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VariableSubstitution.html"><span class="name">VariableSubstitution</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@VariableSubstitutionextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A helper class that enables substitution using syntax like
+<code>${var}</code>, <code>${system:var}</code> and <code>${env:var}</code>.</p><div class="fullcomment"><div class="comment cmt"><p>A helper class that enables substitution using syntax like
+<code>${var}</code>, <code>${system:var}</code> and <code>${env:var}</code>.</p><p>Variable substitution is controlled by <span class="extype" name="SQLConf.variableSubstituteEnabled">SQLConf.variableSubstituteEnabled</span>.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.internal.HiveSerDe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveSerDe"></a>
+      <a id="HiveSerDe:HiveSerDe"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveSerDe$.html"><span class="name">HiveSerDe</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@HiveSerDe" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.SQLConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SQLConf"></a>
+      <a id="SQLConf:SQLConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLConf$.html"><span class="name">SQLConf</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SQLConf" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -145,15 +276,11 @@
         
 
         
-
-        
-
-        
         </div>
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

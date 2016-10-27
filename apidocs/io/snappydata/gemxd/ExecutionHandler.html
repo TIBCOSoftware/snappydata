@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ExecutionHandler - snappy-cluster_2.11 0.6 API - io.snappydata.gemxd.ExecutionHandler</title>
-          <meta name="description" content="ExecutionHandler - snappy - cluster 2.11 0.6 API - io.snappydata.gemxd.ExecutionHandler" />
-          <meta name="keywords" content="ExecutionHandler snappy cluster 2.11 0.6 API io.snappydata.gemxd.ExecutionHandler" />
+          <title>ExecutionHandler - snappydata_2.11 0.6 API - io.snappydata.gemxd.ExecutionHandler</title>
+          <meta name="description" content="ExecutionHandler - snappydata 2.11 0.6 API - io.snappydata.gemxd.ExecutionHandler" />
+          <meta name="keywords" content="ExecutionHandler snappydata 2.11 0.6 API io.snappydata.gemxd.ExecutionHandler" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -41,17 +41,17 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ExecutionHandler</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ExecutionHandler</span><span class="result"> extends <a href="InternalRowHandler.html" class="extype" name="io.snappydata.gemxd.InternalRowHandler">InternalRowHandler</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="InternalRowHandler.html" class="extype" name="io.snappydata.gemxd.InternalRowHandler">InternalRowHandler</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="io.snappydata.gemxd.ExecutionHandler"><span>ExecutionHandler</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="io.snappydata.gemxd.ExecutionHandler"><span>ExecutionHandler</span></li><li class="in" name="io.snappydata.gemxd.InternalRowHandler"><span>InternalRowHandler</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -97,7 +97,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ExecutionHandler</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="partitionBlockIds">partitionBlockIds: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.storage.RDDBlockId">RDDBlockId</span>]</span>, <span name="serializeComplexType">serializeComplexType: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="rowStoreColTypes">rowStoreColTypes: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>)] = <span class="symbol">null</span></span>)</span>
+        <span class="name">ExecutionHandler</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../../org/apache/spark/sql/types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="partitionBlockIds">partitionBlockIds: <span class="extype" name="scala.Array">Array</span>[<a href="../../../org/apache/spark/storage/RDDBlockId.html" class="extype" name="org.apache.spark.storage.RDDBlockId">RDDBlockId</a>]</span>, <span name="serializeComplexType">serializeComplexType: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="rowStoreColTypes">rowStoreColTypes: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>)] = <span class="symbol">null</span></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@&lt;init&gt;(sql:String,schema:org.apache.spark.sql.types.StructType,rddId:Int,partitionBlockIds:Array[org.apache.spark.storage.RDDBlockId],serializeComplexType:Boolean,rowStoreColTypes:Array[(Int,Int,Int)]):io.snappydata.gemxd.ExecutionHandler" title="Permalink" target="_top">
@@ -174,7 +174,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="resultsRdd">resultsRdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>, <span name="df">df: <a href="../../../org/apache/spark/sql/package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">apply</span><span class="params">(<span name="resultsRdd">resultsRdd: <a href="../../../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../../org/apache/spark/sql/catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="df">df: <a href="../../../org/apache/spark/sql/package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@apply(resultsRdd:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow],df:org.apache.spark.sql.DataFrame):Unit" title="Permalink" target="_top">
@@ -208,7 +208,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@clone():Object" title="Permalink" target="_top">
@@ -231,7 +231,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -339,7 +339,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -381,6 +381,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="io.snappydata.gemxd.InternalRowHandler#serializeRows" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serializeRows(itr:Iterator[org.apache.spark.sql.catalyst.InternalRow]):Array[Byte]"></a>
+      <a id="serializeRows(Iterator[InternalRow]):Array[Byte]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serializeRows</span><span class="params">(<span name="itr">itr: <a href="../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../../../org/apache/spark/sql/catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.ExecutionHandler@serializeRows(itr:Iterator[org.apache.spark.sql.catalyst.InternalRow]):Array[Byte]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InternalRowHandler.html" class="extype" name="io.snappydata.gemxd.InternalRowHandler">InternalRowHandler</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -493,12 +510,14 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
+        <div class="parent" name="io.snappydata.gemxd.InternalRowHandler">
+              <h3>Inherited from <a href="InternalRowHandler.html" class="extype" name="io.snappydata.gemxd.InternalRowHandler">InternalRowHandler</a></h3>
+            </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

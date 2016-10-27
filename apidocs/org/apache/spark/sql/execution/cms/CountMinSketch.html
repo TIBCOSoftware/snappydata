@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CountMinSketch - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.cms.CountMinSketch</title>
-          <meta name="description" content="CountMinSketch - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.cms.CountMinSketch" />
-          <meta name="keywords" content="CountMinSketch snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.cms.CountMinSketch" />
+          <title>CountMinSketch - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.cms.CountMinSketch</title>
+          <meta name="description" content="CountMinSketch - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.cms.CountMinSketch" />
+          <meta name="keywords" content="CountMinSketch snappydata 2.11 0.6 API org.apache.spark.sql.execution.cms.CountMinSketch" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,13 +47,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">CountMinSketch</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">CountMinSketch</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="TopKCMS.html" class="extype" name="org.apache.spark.sql.execution.cms.TopKCMS">TopKCMS</a></div>
@@ -327,15 +327,14 @@
 Returns a new CountMinSketch that has half the width of this CMS.</p><div class="fullcomment"><div class="comment cmt"><p>TODO Should this compress in place?
 Returns a new CountMinSketch that has half the width of this CMS.
 Each of the w/2 columns of the new CMS has the combined counts of the
-ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.</p><p>TODO I think there is a bug: If w == 2, then it doesn't really compress? w+newWidth = 2!
-      But then not much use of one that small?
+ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.
 </p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>A new CountMinSketch that is the compressed version of this</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="classOf[CountMinSketch.CMSCompressException]">...</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="CMSCompressException"><code>CMSCompressException</code></span> if this CMS's width is not a power of two, or is too small.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.cms.CountMinSketch#confidence" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="confidence:Double"></a>
       <a id="confidence:Double"></a>
@@ -396,7 +395,7 @@ ith and ith+w/2 columns of this CMS.  See the Hokusai paper for details.</p><p>T
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.cms.CountMinSketch@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -658,7 +657,7 @@ with probability 'confidence'.</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.cms.CountMinSketch@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -898,7 +897,7 @@ with probability 'confidence'.</p>
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

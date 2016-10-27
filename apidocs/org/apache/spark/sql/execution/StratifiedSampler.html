@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>StratifiedSampler - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler</title>
-          <meta name="description" content="StratifiedSampler - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler" />
-          <meta name="keywords" content="StratifiedSampler snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampler" />
+          <title>StratifiedSampler - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler</title>
+          <meta name="description" content="StratifiedSampler - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampler" />
+          <meta name="keywords" content="StratifiedSampler snappydata 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampler" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -53,7 +53,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="StratifiedSamplerCached.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCached">StratifiedSamplerCached</a>, <a href="StratifiedSamplerErrorLimit.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit">StratifiedSamplerErrorLimit</a>, <a href="StratifiedSamplerReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir">StratifiedSamplerReservoir</a></div>
@@ -124,7 +124,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">ReservoirSegment</span><span class="result"> = <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</span>[<a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>]</span>
+        <span class="name">ReservoirSegment</span><span class="result"> = <a href="../collection/MultiColumnOpenHashMap.html" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</a>[<a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" title="Permalink" target="_top">
@@ -141,7 +141,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StratifiedSampler$RowWithWeight.html"><span class="name">RowWithWeight</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>
+        <a href="StratifiedSampler$RowWithWeight.html"><span class="name">RowWithWeight</span></a><span class="result"> extends <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@RowWithWeightextendsRow" title="Permalink" target="_top">
@@ -163,7 +163,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span>, <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <span class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>
+        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.append.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row]):U" title="Permalink" target="_top">
@@ -180,7 +180,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flushReservior</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span>, <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>
+        <span class="name">flushReservior</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.flushReservior.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@flushReservior[U](init:U,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U):U" title="Permalink" target="_top">
@@ -197,7 +197,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sample</span><span class="params">(<span name="items">items: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>, <span name="rowEncoder">rowEncoder: <span class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>, <span name="flush">flush: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">sample</span><span class="params">(<span name="items">items: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="flush">flush: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@sample(items:Iterator[org.apache.spark.sql.catalyst.InternalRow],rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],flush:Boolean):Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
@@ -304,7 +304,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@clone():Object" title="Permalink" target="_top">
@@ -344,7 +344,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -401,7 +401,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldDrainSegment</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span>, <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>)</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>, <span name="seg">seg: <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSampler.ReservoirSegment">ReservoirSegment</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>
+        <span class="name">foldDrainSegment</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>)</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>, <span name="seg">seg: <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSampler.ReservoirSegment">ReservoirSegment</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@foldDrainSegment[U](prevReservoirSize:Int,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(init:U,seg:StratifiedSampler.this.ReservoirSegment):U" title="Permalink" target="_top">
@@ -418,7 +418,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldReservoir</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span>, <span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="params">(<span name="sr">sr: <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>
+        <span class="name">foldReservoir</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="params">(<span name="sr">sr: <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@foldReservoir[U](prevReservoirSize:Int,doReset:Boolean,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(sr:org.apache.spark.sql.execution.StratumReservoir,init:U):U" title="Permalink" target="_top">
@@ -520,7 +520,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterator</span><span class="params">(<span name="segmentStart">segmentStart: <span class="extype" name="scala.Int">Int</span></span>, <span name="segmentEnd">segmentEnd: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">iterator</span><span class="params">(<span name="segmentStart">segmentStart: <span class="extype" name="scala.Int">Int</span></span>, <span name="segmentEnd">segmentEnd: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@iterator(segmentStart:Int,segmentEnd:Int):Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
@@ -554,7 +554,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -588,7 +588,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -622,7 +622,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -673,7 +673,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -707,7 +707,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -775,7 +775,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -792,7 +792,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newMutableRow</span><span class="params">(<span name="row">row: <span class="extype" name="org.apache.spark.sql.Row">Row</span></span>, <span name="rowEncoder">rowEncoder: <span class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>)</span><span class="result">: <a href="../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
+        <span class="name">newMutableRow</span><span class="params">(<span name="row">row: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>)</span><span class="result">: <a href="../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@newMutableRow(row:org.apache.spark.sql.Row,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row]):org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
@@ -860,7 +860,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">pendingBatch</span><span class="result">: <span class="extype" name="java.util.concurrent.atomic.AtomicReference">AtomicReference</span>[<span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]]</span>
+        <span class="name">pendingBatch</span><span class="result">: <span class="extype" name="java.util.concurrent.atomic.AtomicReference">AtomicReference</span>[<span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@pendingBatch:java.util.concurrent.atomic.AtomicReference[scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.catalyst.InternalRow]]" title="Permalink" target="_top">
@@ -899,7 +899,7 @@ buffer replaced if required. This should happen only inside flushCache.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">qcsSparkPlan</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</span>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>])]</span>
+        <span class="name">qcsSparkPlan</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="../catalyst/expressions/codegen/CodeAndComment.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</a>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>])]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@qcsSparkPlan:Option[(org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment,scala.collection.mutable.ArrayBuffer[Any],Int,Array[org.apache.spark.sql.types.DataType])]" title="Permalink" target="_top">
@@ -933,7 +933,7 @@ buffer replaced if required. This should happen only inside flushCache.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">schema</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">schema</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
@@ -967,7 +967,7 @@ buffer replaced if required. This should happen only inside flushCache.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">strata</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.ConcurrentSegmentedHashMap">ConcurrentSegmentedHashMap</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>, <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>, <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSampler.ReservoirSegment">ReservoirSegment</a>]</span>
+        <span class="name">strata</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.ConcurrentSegmentedHashMap">ConcurrentSegmentedHashMap</span>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>, <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSampler.ReservoirSegment">ReservoirSegment</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampler@strata:org.apache.spark.sql.collection.ConcurrentSegmentedHashMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir,StratifiedSampler.this.ReservoirSegment]" title="Permalink" target="_top">
@@ -1117,7 +1117,7 @@ in qcs) to related metadata and reservoir
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

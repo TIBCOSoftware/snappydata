@@ -272,9 +272,6 @@ Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streami
 <p><strong>OLAP optimizations</strong>: By integrating and collocating stream processing with our hybrid in-memory storage engine, we leverage our optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with our row store.</p>
 </li>
 <li>
-<p><strong>Reduced shuffling through co-partitioning</strong>: With SnappyData, the partitioning key used by the input queue (e.g., for Kafka sources), the stream processor and the underlying store can all be the same. This dramatically reduces the need to shuffle records.</p>
-</li>
-<li>
 <p><strong>Approximate stream analytics</strong>: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.</p>
 </li>
 </ol>
@@ -288,9 +285,7 @@ OPTIONS (
  // multiple stream source specific options
 storagelevel '', 
 rowConverter '', 
-zkQuorum '',
-groupId '',
-topics '', 
+topics '',
 kafkaParams '',
 consumerKey '',
 consumerSecret '',
@@ -322,8 +317,7 @@ STREAMING STOP
         &quot;using kafka_stream options (&quot; +
         &quot;storagelevel 'MEMORY_AND_DISK_SER_2', &quot; +
         &quot;rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', &quot; +
-        &quot;zkQuorum 'localhost:2181', &quot; +
-        &quot;groupId 'streamConsumer', &quot; +
+        &quot;kafkaParams 'zookeeper.connect-&gt;localhost:2181;auto.offset.reset-&gt;smallest;group.id-&gt;myGroupId', &quot; +
         &quot;topics 'streamTopic:01')&quot;)
 
     // You can get a handle of underlying DStream of the table

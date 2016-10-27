@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>UnsafeMapData - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeMapData</title>
-          <meta name="description" content="UnsafeMapData - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeMapData" />
-          <meta name="keywords" content="UnsafeMapData snappy cluster 2.11 0.6 API org.apache.spark.sql.catalyst.expressions.UnsafeMapData" />
+          <title>UnsafeMapData - snappydata_2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeMapData</title>
+          <meta name="description" content="UnsafeMapData - snappydata 2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.UnsafeMapData" />
+          <meta name="keywords" content="UnsafeMapData snappydata 2.11 0.6 API org.apache.spark.sql.catalyst.expressions.UnsafeMapData" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">UnsafeMapData</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</span></span>
+        <span class="name">UnsafeMapData</span><span class="result"> extends <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -191,7 +191,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeMapData@clone():Object" title="Permalink" target="_top">
@@ -221,7 +221,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → MapData</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -231,7 +231,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeMapData@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -280,7 +280,7 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.MapData#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="foreach(keyType:&lt;?&gt;,valueType:&lt;?&gt;,f:&lt;?&gt;):Unit"></a>
+      <a id="foreach(keyType:org.apache.spark.sql.types.DataType,valueType:org.apache.spark.sql.types.DataType,f:(Any,Any)=&gt;Unit):Unit"></a>
       <a id="foreach(DataType,DataType,(Any,Any)⇒Unit):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -288,14 +288,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foreach</span><span class="params">(<span name="keyType">keyType: <span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span></span>, <span name="valueType">valueType: <span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span></span>, <span name="f">f: (<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">foreach</span><span class="params">(<span name="keyType">keyType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="valueType">valueType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="f">f: (<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeMapData@foreach(keyType:org.apache.spark.sql.types.DataType,valueType:org.apache.spark.sql.types.DataType,f:(Any,Any)=&gt;Unit):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>MapData</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData#getBaseObject" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getBaseObject():Object"></a>
       <a id="getBaseObject():AnyRef"></a>
@@ -305,7 +305,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getBaseObject</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">getBaseObject</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeMapData@getBaseObject():Object" title="Permalink" target="_top">
@@ -414,7 +414,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → MapData</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -424,7 +424,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.UnsafeMapData@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -482,7 +482,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → MapData</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData#pointTo" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="pointTo(baseObject:Any,baseOffset:Long,sizeInBytes:Int):Unit"></a>
       <a id="pointTo(Any,Long,Int):Unit"></a>
@@ -550,7 +550,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → MapData</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> → <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -664,13 +664,13 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.catalyst.util.MapData">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</span></h3>
+              <h3>Inherited from <a href="../util/MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

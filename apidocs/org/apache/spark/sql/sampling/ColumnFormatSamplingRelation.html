@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnFormatSamplingRelation - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.sampling.ColumnFormatSamplingRelation</title>
-          <meta name="description" content="ColumnFormatSamplingRelation - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.sampling.ColumnFormatSamplingRelation" />
-          <meta name="keywords" content="ColumnFormatSamplingRelation snappy cluster 2.11 0.6 API org.apache.spark.sql.sampling.ColumnFormatSamplingRelation" />
+          <title>ColumnFormatSamplingRelation - snappydata_2.11 0.6 API - org.apache.spark.sql.sampling.ColumnFormatSamplingRelation</title>
+          <meta name="description" content="ColumnFormatSamplingRelation - snappydata 2.11 0.6 API - org.apache.spark.sql.sampling.ColumnFormatSamplingRelation" />
+          <meta name="keywords" content="ColumnFormatSamplingRelation snappydata 2.11 0.6 API org.apache.spark.sql.sampling.ColumnFormatSamplingRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnFormatSamplingRelation</span><span class="params">(<span name="schema">schema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="baseRelation">baseRelation: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</span></span>, <span name="sqlContext">sqlContext: <span class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</span></span>, <span name="samplingOptions">samplingOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sampleTable">sampleTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseSchema">baseSchema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span> with <span class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</span> with <span class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</span> with <span class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</span> with <span class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="scala.Product">Product</span></span>
+        <span class="name">ColumnFormatSamplingRelation</span><span class="params">(<span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="baseRelation">baseRelation: <a href="../execution/columnar/impl/BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></span>, <span name="sqlContext">sqlContext: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>, <span name="samplingOptions">samplingOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sampleTable">sampleTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseSchema">baseSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a> with <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a> with <a href="../sources/SchemaInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="scala.Product">Product</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</span>, <span class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</span>, <span class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</span>, <span class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</span>, <span class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</span>, <span class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</span>, <span class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</span>, <span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a>, <a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a>, <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a>, <a href="../sources/SchemaInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</a>, <a href="../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a>, <a href="../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a>, <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -97,7 +97,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnFormatSamplingRelation</span><span class="params">(<span name="schema">schema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="baseRelation">baseRelation: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</span></span>, <span name="sqlContext">sqlContext: <span class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</span></span>, <span name="samplingOptions">samplingOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sampleTable">sampleTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseSchema">baseSchema: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">ColumnFormatSamplingRelation</span><span class="params">(<span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="baseRelation">baseRelation: <a href="../execution/columnar/impl/BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></span>, <span name="sqlContext">sqlContext: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>, <span name="samplingOptions">samplingOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sampleTable">sampleTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseSchema">baseSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@&lt;init&gt;(schema:org.apache.spark.sql.types.StructType,baseRelation:org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation,sqlContext:org.apache.spark.sql.SQLContext,samplingOptions:Map[String,String],sampleTable:String,baseSchema:org.apache.spark.sql.types.StructType,baseTable:Option[String]):org.apache.spark.sql.sampling.ColumnFormatSamplingRelation" title="Permalink" target="_top">
@@ -174,14 +174,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">append</span><span class="params">(<span name="rows">rows: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">append</span><span class="params">(<span name="rows">rows: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@append(rows:org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],time:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → SchemaInsertableRelation</dd></dl></div>
+      <p class="shortcomment cmt">Append a given RDD or rows into the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Append a given RDD or rows into the relation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/SchemaInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -208,14 +209,15 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">baseRelation</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</span></span>
+        <span class="name">baseRelation</span><span class="result">: <a href="../execution/columnar/impl/BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@baseRelation:org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → SamplingRelation</dd></dl></div>
+      <p class="shortcomment cmt">The underlying column table used to store data.</p><div class="fullcomment"><div class="comment cmt"><p>The underlying column table used to store data.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#baseSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="baseSchema:org.apache.spark.sql.types.StructType"></a>
       <a id="baseSchema:StructType"></a>
@@ -225,7 +227,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">baseSchema</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">baseSchema</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@baseSchema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
@@ -249,24 +251,24 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → DependentRelation</dd></dl></div>
+      <p class="shortcomment cmt">Base table of this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Base table of this relation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#buildUnsafeScan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
-      <a id="buildUnsafeScan(Array[String],Array[Filter]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
+      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],statsPredicate:org.apache.spark.sql.sources.StatsPredicateCompiler):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
+      <a id="buildUnsafeScan(Array[String],Array[Filter],StatsPredicateCompiler):(RDD[Any],Seq[RDD[InternalRow]])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.sources.Filter">Filter</span>]</span>)</span><span class="result">: (<span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]])</span>
+        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="statsPredicate">statsPredicate: <a href="../sources/StatsPredicateCompiler.html" class="extype" name="org.apache.spark.sql.sources.StatsPredicateCompiler">StatsPredicateCompiler</a></span>)</span><span class="result">: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],statsPredicate:org.apache.spark.sql.sources.StatsPredicateCompiler):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PrunedUnsafeFilteredScan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -276,7 +278,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@clone():Object" title="Permalink" target="_top">
@@ -299,14 +301,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">connectionType</span><span class="result">: <span class="extype" name="scala.Enumeration.Value">execution.columnar.ConnectionType.Value</span></span>
+        <span class="name">connectionType</span><span class="result">: <a href="../execution/columnar/ConnectionType$.html#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="org.apache.spark.sql.execution.columnar.ConnectionType.Value">execution.columnar.ConnectionType.Value</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@connectionType:org.apache.spark.sql.execution.columnar.ConnectionType.Value" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PartitionedDataSourceScan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#destroy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="destroy(ifExists:Boolean):Unit"></a>
       <a id="destroy(Boolean):Unit"></a>
@@ -325,7 +327,7 @@
     </span>
       <p class="shortcomment cmt">Destroy and cleanup this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Destroy and cleanup this relation. It may include, but not limited to,
 dropping the external table that this relation represents.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → DestroyRelation</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -335,7 +337,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -433,7 +435,7 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → InsertableRelation</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#insertableRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="insertableRelation(sourceSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):Option[org.apache.spark.sql.sources.InsertableRelation]"></a>
       <a id="insertableRelation(Seq[Attribute]):Option[InsertableRelation]"></a>
@@ -443,14 +445,17 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">insertableRelation</span><span class="params">(<span name="sourceSchema">sourceSchema: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</span>]</span>
+        <span class="name">insertableRelation</span><span class="params">(<span name="sourceSchema">sourceSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@insertableRelation(sourceSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):Option[org.apache.spark.sql.sources.InsertableRelation]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → SchemaInsertableRelation</dd></dl></div>
+      <p class="shortcomment cmt">Return the actual relation to be used for insertion into the relation
+or None if <code>sourceSchema</code> cannot be inserted.</code></p><div class="fullcomment"><div class="comment cmt"><p>Return the actual relation to be used for insertion into the relation
+or None if <code>sourceSchema</code> cannot be inserted.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/SchemaInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -511,7 +516,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -545,7 +550,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -579,7 +584,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -630,7 +635,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -664,7 +669,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -705,7 +710,7 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → DependentRelation</dd></dl></div>
+      <p class="shortcomment cmt">Name of this relation in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Name of this relation in the catalog.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -715,7 +720,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -739,7 +744,13 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → BaseRelation</dd></dl></div>
+      <p class="shortcomment cmt">Whether does it need to convert the objects in Row to internal representation, for example:
+ java.lang.String -&gt; UTF8String
+ java.lang.Decimal -&gt; Decimal</p><div class="fullcomment"><div class="comment cmt"><p>Whether does it need to convert the objects in Row to internal representation, for example:
+ java.lang.String -&gt; UTF8String
+ java.lang.Decimal -&gt; Decimal</p><p>If <code>needConversion</code> is <code>false</code>, buildScan() should return an <span class="extype" name="RDD">RDD</span> of <span class="extype" name="InternalRow">InternalRow</span></p><p>Note: The internal representation is not stable across releases and thus data sources outside
+of Spark SQL should leave this as true.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -790,7 +801,7 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PartitionedDataSourceScan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#options" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="options:org.apache.spark.sql.execution.SampleOptions"></a>
       <a id="options:SampleOptions"></a>
@@ -817,14 +828,14 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">partitionColumns</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">partitionColumns</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@partitionColumns:Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PartitionedDataSourceScan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#qcs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="qcs:Array[String]"></a>
       <a id="qcs:Array[String]"></a>
@@ -841,7 +852,8 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → SamplingRelation</dd></dl></div>
+      <p class="shortcomment cmt">The QCS columns for the sample.</p><div class="fullcomment"><div class="comment cmt"><p>The QCS columns for the sample.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#sampleTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sampleTable:String"></a>
       <a id="sampleTable:String"></a>
@@ -875,7 +887,8 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → SamplingRelation</dd></dl></div>
+      <p class="shortcomment cmt">Options set for this sampling relation.</p><div class="fullcomment"><div class="comment cmt"><p>Options set for this sampling relation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -885,14 +898,14 @@ dropping the external table that this relation represents.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">schema</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">schema</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PartitionedDataSourceScan → BaseRelation</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a> → <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.BaseRelation#sizeInBytes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sizeInBytes:Long"></a>
       <a id="sizeInBytes:Long"></a>
@@ -909,7 +922,13 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>BaseRelation</dd></dl></div>
+      <p class="shortcomment cmt">Returns an estimated size of this relation in bytes.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an estimated size of this relation in bytes. This information is used by the planner
+to decide when it is safe to broadcast a relation and can be overridden by sources that
+know the size ahead of time. By default, the system will assume that tables are too
+large to broadcast. This method will be called multiple times during query planning
+and thus should not perform expensive operations for each invocation.</p><p>Note that it is always better to overestimate size than underestimate, because underestimation
+could lead to execution plans that are suboptimal (i.e. broadcasting a very large table).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#sqlContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sqlContext:org.apache.spark.sql.SQLContext"></a>
       <a id="sqlContext:SQLContext"></a>
@@ -919,14 +938,14 @@ dropping the external table that this relation represents.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">sqlContext</span><span class="result">: <span class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</span></span>
+        <span class="name">sqlContext</span><span class="result">: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@sqlContext:org.apache.spark.sql.SQLContext" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → BaseRelation</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -960,7 +979,7 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → PartitionedDataSourceScan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tableExists:Boolean"></a>
       <a id="tableExists:Boolean"></a>
@@ -977,7 +996,8 @@ dropping the external table that this relation represents.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → DestroyRelation</dd></dl></div>
+      <p class="shortcomment cmt">Return true if table already existed when the relation object was created.</p><div class="fullcomment"><div class="comment cmt"><p>Return true if table already existed when the relation object was created.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation#truncate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="truncate():Unit"></a>
       <a id="truncate():Unit"></a>
@@ -995,9 +1015,9 @@ dropping the external table that this relation represents.
       </a>
     </span>
       <p class="shortcomment cmt">Truncate the table represented by this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Truncate the table represented by this relation.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → DestroyRelation</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> → <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.BaseRelation#unhandledFilters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unhandledFilters(filters:&lt;?&gt;):Array[org.apache.spark.sql.sources.Filter]"></a>
+      <a id="unhandledFilters(filters:Array[org.apache.spark.sql.sources.Filter]):Array[org.apache.spark.sql.sources.Filter]"></a>
       <a id="unhandledFilters(Array[Filter]):Array[Filter]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1005,14 +1025,19 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unhandledFilters</span><span class="params">(<span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.sources.Filter">Filter</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.sources.Filter">Filter</span>]</span>
+        <span class="name">unhandledFilters</span><span class="params">(<span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sampling.ColumnFormatSamplingRelation@unhandledFilters(filters:Array[org.apache.spark.sql.sources.Filter]):Array[org.apache.spark.sql.sources.Filter]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>BaseRelation</dd></dl></div>
+      <p class="shortcomment cmt">Returns the list of <a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>s that this datasource may not be able to handle.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the list of <a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>s that this datasource may not be able to handle.
+These returned <a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>s will be evaluated by Spark SQL after data is output by a scan.
+By default, this function will return all filters, as it is always safe to
+double evaluate a <a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>. However, specific implementations can override this function to
+avoid double filtering when they are capable of processing a filter internally.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1102,23 +1127,23 @@ dropping the external table that this relation represents.
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.DestroyRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</span></h3>
+              <h3>Inherited from <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</span></h3>
+              <h3>Inherited from <a href="../execution/PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</span></h3>
+              <h3>Inherited from <a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.SamplingRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</span></h3>
+              <h3>Inherited from <a href="../sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.SchemaInsertableRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</span></h3>
+              <h3>Inherited from <a href="../sources/SchemaInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SchemaInsertableRelation">SchemaInsertableRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.InsertableRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</span></h3>
+              <h3>Inherited from <a href="../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.DependentRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</span></h3>
+              <h3>Inherited from <a href="../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.BaseRelation">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</span></h3>
+              <h3>Inherited from <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

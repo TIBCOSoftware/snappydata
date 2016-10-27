@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>StratifiedSampleExecute - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampleExecute</title>
-          <meta name="description" content="StratifiedSampleExecute - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampleExecute" />
-          <meta name="keywords" content="StratifiedSampleExecute snappy cluster 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampleExecute" />
+          <title>StratifiedSampleExecute - snappydata_2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampleExecute</title>
+          <meta name="description" content="StratifiedSampleExecute - snappydata 2.11 0.6 API - org.apache.spark.sql.execution.StratifiedSampleExecute" />
+          <meta name="keywords" content="StratifiedSampleExecute snappydata 2.11 0.6 API org.apache.spark.sql.execution.StratifiedSampleExecute" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StratifiedSampleExecute</span><span class="params">(<span name="child">child: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>, <span name="output">output: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span> with <span class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">StratifiedSampleExecute</span><span class="params">(<span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -54,7 +54,7 @@ can also use a fixed fraction to be sampled instead of fixed number of
 total samples since it is also designed to be used with streaming data.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>], <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -100,7 +100,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StratifiedSampleExecute</span><span class="params">(<span name="child">child: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>, <span name="output">output: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span>
+        <span class="name">StratifiedSampleExecute</span><span class="params">(<span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@&lt;init&gt;(child:org.apache.spark.sql.execution.SparkPlan,output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],options:Map[String,Any],qcs:Array[Int]):org.apache.spark.sql.execution.StratifiedSampleExecute" title="Permalink" target="_top">
@@ -177,14 +177,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">allAttributes</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSeq">AttributeSeq</span></span>
+        <span class="name">allAttributes</span><span class="result">: <a href="../catalyst/expressions/package$$AttributeSeq.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSeq">AttributeSeq</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@allAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSeq" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">All the attributes that are used for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the attributes that are used for this plan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(number:Int):BaseType"></a>
       <a id="apply(Int):SparkPlan"></a>
@@ -194,14 +195,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@apply(number:Int):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns the tree node at the specified number.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number.
+Numbers for each node can be found in the <a href="../catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#argString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="argString:String"></a>
       <a id="argString:String"></a>
@@ -218,7 +221,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a string representing the arguments to this node, minus any children</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representing the arguments to this node, minus any children</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#asCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asCode:String"></a>
       <a id="asCode:String"></a>
@@ -235,7 +238,11 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a 'scala code' representation of this <code>TreeNode</code> and its children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a 'scala code' representation of this <code>TreeNode</code> and its children.  Intended for use
+when debugging where the prettier toString function is obfuscating the actual structure. In the
+case of 'pure' <code>TreeNodes</code> that only contain primitives and other TreeNodes, the result can be
+pasted in the REPL to build an equivalent Tree.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -262,14 +269,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">canonicalized</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">canonicalized</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@canonicalized:PlanType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="child:org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="child:SparkPlan"></a>
@@ -279,14 +287,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">child</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">child</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@child:org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → UnaryExecNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.UnaryExecNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.execution.SparkPlan]"></a>
       <a id="children:Seq[SparkPlan]"></a>
@@ -296,14 +304,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">children</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>
+        <span class="name">children</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@children:Seq[org.apache.spark.sql.execution.SparkPlan]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnaryExecNode → TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a Seq of the children of this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq of the children of this node.
+Children should not change. Immutability required for containsChild optimization
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#cleanArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cleanArgs:Seq[Any]"></a>
       <a id="cleanArgs:Seq[Any]"></a>
@@ -313,14 +323,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">cleanArgs</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">cleanArgs</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@cleanArgs:Seq[Any]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Args that have cleaned such that differences in expression id should not affect equality</p><div class="fullcomment"><div class="comment cmt"><p>Args that have cleaned such that differences in expression id should not affect equality</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -330,7 +340,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@clone():Object" title="Permalink" target="_top">
@@ -353,14 +363,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collect</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>
+        <span class="name">collect</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@collect[B](pf:PartialFunction[BaseType,B]):Seq[B]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a Seq containing the result of applying a partial function to all elements in this
+tree on which the function is defined.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the result of applying a partial function to all elements in this
+tree on which the function is defined.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectFirst" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="collectFirst[B](pf:PartialFunction[BaseType,B]):Option[B]"></a>
       <a id="collectFirst[B](PartialFunction[SparkPlan,B]):Option[B]"></a>
@@ -370,14 +383,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collectFirst</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>
+        <span class="name">collectFirst</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@collectFirst[B](pf:PartialFunction[BaseType,B]):Option[B]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Finds and returns the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
+is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
+is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#constraints" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet"></a>
       <a id="constraints:ExpressionSet"></a>
@@ -387,14 +403,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">constraints</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionSet">ExpressionSet</span></span>
+        <span class="name">constraints</span><span class="result">: <a href="../catalyst/expressions/ExpressionSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionSet">ExpressionSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">An <span class="extype" name="ExpressionSet">ExpressionSet</span> that contains invariants about the rows output by this operator.</p><div class="fullcomment"><div class="comment cmt"><p>An <span class="extype" name="ExpressionSet">ExpressionSet</span> that contains invariants about the rows output by this operator. For
+example, if this set contains the expression <code>a = 2</code> then that expression is guaranteed to
+evaluate to <code>true</code> for all rows produced.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#containsChild" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
       <a id="containsChild:Set[TreeNode[_]]"></a>
@@ -404,14 +423,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">containsChild</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[_]]</span>
+        <span class="name">containsChild</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="doExecute():RDD[InternalRow]"></a>
@@ -421,14 +440,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">doExecute</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">doExecute</span><span class="params">()</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@doExecute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
+Produces the result of the query as an RDD[InternalRow]
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doExecuteBroadcast" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="doExecuteBroadcast[T]():Broadcast[T]"></a>
@@ -438,14 +459,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">doExecuteBroadcast</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.broadcast.Broadcast">Broadcast</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan.doExecuteBroadcast.T">T</span>]</span>
+        <span class="name">doExecuteBroadcast</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">()</span><span class="result">: <a href="../../broadcast/Broadcast.html" class="extype" name="org.apache.spark.broadcast.Broadcast">Broadcast</a>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan.doExecuteBroadcast.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
+Produces the result of the query as a broadcast variable.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doPrepare" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doPrepare():Unit"></a>
       <a id="doPrepare():Unit"></a>
@@ -462,7 +485,11 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan. It is guaranteed to run before any
+<code>execute</code> of SparkPlan. This is helpful if we want to set up some state before executing the
+query, e.g., <code>BroadcastHashJoin</code> uses it to broadcast asynchronously.</p><p>Note: the prepare method has already walked down the tree, so the implementation doesn't need
+to call children's prepare methods.</p><p>This will only be called once, protected by <code>this</code>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -472,7 +499,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -489,14 +516,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">execute</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">execute</span><span class="params">()</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@execute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of this query as an RDD[InternalRow] by delegating to <code>doExecute</code> after
+preparations.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of this query as an RDD[InternalRow] by delegating to <code>doExecute</code> after
+preparations.</p><p>Concrete implementations of SparkPlan should override <code>doExecute</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeBroadcast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="executeBroadcast[T]():Broadcast[T]"></a>
@@ -506,14 +536,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeBroadcast</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.broadcast.Broadcast">Broadcast</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan.executeBroadcast.T">T</span>]</span>
+        <span class="name">executeBroadcast</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">()</span><span class="result">: <a href="../../broadcast/Broadcast.html" class="extype" name="org.apache.spark.broadcast.Broadcast">Broadcast</a>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan.executeBroadcast.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@executeBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of this query as a broadcast variable by delegating to <code>doExecuteBroadcast</code>
+after preparations.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of this query as a broadcast variable by delegating to <code>doExecuteBroadcast</code>
+after preparations.</p><p>Concrete implementations of SparkPlan should override <code>doExecuteBroadcast</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeCollect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeCollect():Array[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="executeCollect():Array[InternalRow]"></a>
@@ -523,14 +556,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeCollect</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">executeCollect</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@executeCollect():Array[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs this query returning the result as an array.</p><div class="fullcomment"><div class="comment cmt"><p>Runs this query returning the result as an array.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeCollectPublic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeCollectPublic():Array[org.apache.spark.sql.Row]"></a>
       <a id="executeCollectPublic():Array[Row]"></a>
@@ -540,14 +574,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeCollectPublic</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.Row">Row</span>]</span>
+        <span class="name">executeCollectPublic</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@executeCollectPublic():Array[org.apache.spark.sql.Row]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs this query returning the result as an array, using external Row format.</p><div class="fullcomment"><div class="comment cmt"><p>Runs this query returning the result as an array, using external Row format.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeQuery" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeQuery[T](query:=&gt;T):T"></a>
       <a id="executeQuery[T](⇒T):T"></a>
@@ -564,7 +599,10 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Execute a query after preparing the query and adding query plan information to created RDDs
+for visualization.</p><div class="fullcomment"><div class="comment cmt"><p>Execute a query after preparing the query and adding query plan information to created RDDs
+for visualization.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeTake" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeTake(n:Int):Array[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="executeTake(Int):Array[InternalRow]"></a>
@@ -574,14 +612,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeTake</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">executeTake</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@executeTake(n:Int):Array[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs this query returning the first <code>n</code> rows as an array.</p><div class="fullcomment"><div class="comment cmt"><p>Runs this query returning the first <code>n</code> rows as an array.</p><p>This is modeled after RDD.take but never runs any job locally on the driver.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#executeToIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToIterator():Iterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="executeToIterator():Iterator[InternalRow]"></a>
@@ -591,14 +630,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeToIterator</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">executeToIterator</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@executeToIterator():Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs this query returning the result as an iterator of InternalRow.</p><div class="fullcomment"><div class="comment cmt"><p>Runs this query returning the result as an iterator of InternalRow.</p><p>Note: this will trigger multiple jobs (one for each partition).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#expressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="expressions:Seq[Expression]"></a>
@@ -608,14 +648,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">expressions</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>
+        <span class="name">expressions</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns all of the expressions present in this query plan operator.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all of the expressions present in this query plan operator.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#fastEquals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean"></a>
       <a id="fastEquals(TreeNode[_]):Boolean"></a>
@@ -625,14 +665,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fastEquals</span><span class="params">(<span name="other">other: <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">fastEquals</span><span class="params">(<span name="other">other: <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Faster version of equality which short-circuits when two treeNodes are the same instance.</p><div class="fullcomment"><div class="comment cmt"><p>Faster version of equality which short-circuits when two treeNodes are the same instance.
+We don't just override Object.equals, as doing so prevents the scala compiler from
+generating case class <code>equals</code> methods
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -665,14 +708,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">find</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>
+        <span class="name">find</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@find(f:BaseType=&gt;Boolean):Option[BaseType]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Find the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> that satisfies the condition specified by <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Find the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> that satisfies the condition specified by <code>f</code>.
+The condition is recursively applied to this node and all of its children (pre-order).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="flatMap[A](f:BaseType=&gt;TraversableOnce[A]):Seq[A]"></a>
       <a id="flatMap[A]((SparkPlan)⇒TraversableOnce[A]):Seq[A]"></a>
@@ -682,14 +727,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMap</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>
+        <span class="name">flatMap</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <a href="../../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@flatMap[A](f:BaseType=&gt;TraversableOnce[A]):Seq[A]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a Seq by applying a function to all nodes in this tree and using the elements of the
+resulting collections.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq by applying a function to all nodes in this tree and using the elements of the
+resulting collections.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreach(f:BaseType=&gt;Unit):Unit"></a>
       <a id="foreach((SparkPlan)⇒Unit):Unit"></a>
@@ -699,14 +747,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foreach</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">foreach</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@foreach(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Runs the given function on this node and then recursively on <a href="../catalyst/trees/TreeNode.html#children:Seq[BaseType]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#children">children</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Runs the given function on this node and then recursively on <a href="../catalyst/trees/TreeNode.html#children:Seq[BaseType]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#children">children</a>.</p></div><dl class="paramcmts block"><dt class="param">f</dt><dd class="cmt"><p>the function to be applied to each node in the tree.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#foreachUp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreachUp(f:BaseType=&gt;Unit):Unit"></a>
       <a id="foreachUp((SparkPlan)⇒Unit):Unit"></a>
@@ -716,14 +764,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foreachUp</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">foreachUp</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@foreachUp(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Runs the given function recursively on <a href="../catalyst/trees/TreeNode.html#children:Seq[BaseType]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#children">children</a> then on this node.</p><div class="fullcomment"><div class="comment cmt"><p>Runs the given function recursively on <a href="../catalyst/trees/TreeNode.html#children:Seq[BaseType]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#children">children</a> then on this node.</p></div><dl class="paramcmts block"><dt class="param">f</dt><dd class="cmt"><p>the function to be applied to each node in the tree.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#generateTreeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generateTreeString(depth:Int,lastChildren:Seq[Boolean],builder:StringBuilder,verbose:Boolean,prefix:String):StringBuilder"></a>
       <a id="generateTreeString(Int,Seq[Boolean],StringBuilder,Boolean,String):StringBuilder"></a>
@@ -733,14 +781,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateTreeString</span><span class="params">(<span name="depth">depth: <span class="extype" name="scala.Int">Int</span></span>, <span name="lastChildren">lastChildren: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>, <span name="builder">builder: <span class="extype" name="scala.StringBuilder">StringBuilder</span></span>, <span name="verbose">verbose: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.StringBuilder">StringBuilder</span></span>
+        <span class="name">generateTreeString</span><span class="params">(<span name="depth">depth: <span class="extype" name="scala.Int">Int</span></span>, <span name="lastChildren">lastChildren: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>, <span name="builder">builder: <a href="../../../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>, <span name="verbose">verbose: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@generateTreeString(depth:Int,lastChildren:Seq[Boolean],builder:StringBuilder,verbose:Boolean,prefix:String):StringBuilder" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Appends the string represent of this node and its children to the given StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Appends the string represent of this node and its children to the given StringBuilder.</p><p>The <code>i</code>-th element in <code>lastChildren</code> indicates whether the ancestor of the current node at
+depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
+<code>lastChildren</code> for the root node should be empty.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -767,14 +818,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">MutableInt</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">MutableInt</span></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#getRelevantConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="getRelevantConstraints(Set[Expression]):Set[Expression]"></a>
@@ -784,14 +835,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getRelevantConstraints</span><span class="params">(<span name="constraints">constraints: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>
+        <span class="name">getRelevantConstraints</span><span class="params">(<span name="constraints">constraints: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Extracts the relevant constraints from a given set of constraints based on the attributes that
+appear in the <a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet">outputSet</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Extracts the relevant constraints from a given set of constraints based on the attributes that
+appear in the <a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet">outputSet</a>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -808,7 +862,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -835,14 +889,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">innerChildren</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</span>[_]]</span>
+        <span class="name">innerChildren</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[_]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan → TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
+For example, this can be used to show sub-queries.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#inputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="inputSet:AttributeSet"></a>
@@ -852,14 +908,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">inputSet</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</span></span>
+        <span class="name">inputSet</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">The set of all attributes that are input to this operator by its children.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are input to this operator by its children.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -903,14 +960,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">jsonFields</span><span class="result">: <span class="extype" name="scala.List">List</span>[<span class="extype" name="org.json4s.JsonAST.JField">JField</span>]</span>
+        <span class="name">jsonFields</span><span class="result">: <a href="../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.json4s.JsonAST.JField">JField</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@jsonFields:List[org.json4s.JsonAST.JField]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -937,7 +994,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -971,7 +1028,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -1005,7 +1062,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -1056,7 +1113,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -1090,7 +1147,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -1115,6 +1172,24 @@ total samples since it is also designed to be used with streaming data.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlan#longMetric" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="longMetric(name:String):org.apache.spark.sql.execution.metric.SQLMetric"></a>
+      <a id="longMetric(String):SQLMetric"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">longMetric</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="metric/SQLMetric.html" class="extype" name="org.apache.spark.sql.execution.metric.SQLMetric">SQLMetric</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@longMetric(name:String):org.apache.spark.sql.execution.metric.SQLMetric" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return a LongSQLMetric according to the name.</p><div class="fullcomment"><div class="comment cmt"><p>Return a LongSQLMetric according to the name.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#makeCopy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="makeCopy(newArgs:Array[AnyRef]):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="makeCopy(Array[AnyRef]):SparkPlan"></a>
@@ -1124,14 +1199,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">makeCopy</span><span class="params">(<span name="newArgs">newArgs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">makeCopy</span><span class="params">(<span name="newArgs">newArgs: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@makeCopy(newArgs:Array[AnyRef]):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan → TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Overridden make copy also propagates sqlContext to copied plan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden make copy also propagates sqlContext to copied plan.</p></div><dl class="paramcmts block"><dt class="param">newArgs</dt><dd class="cmt"><p>the new product arguments.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="map[A](f:BaseType=&gt;A):Seq[A]"></a>
       <a id="map[A]((SparkPlan)⇒A):Seq[A]"></a>
@@ -1141,14 +1216,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span>]</span>
+        <span class="name">map</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@map[A](f:BaseType=&gt;A):Seq[A]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a Seq containing the result of applying the given function to each
+node in this tree in a preorder traversal.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the result of applying the given function to each
+node in this tree in a preorder traversal.</p></div><dl class="paramcmts block"><dt class="param">f</dt><dd class="cmt"><p>the function to be applied.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#mapChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapChildren(f:BaseType=&gt;BaseType):BaseType"></a>
       <a id="mapChildren((SparkPlan)⇒SparkPlan):SparkPlan"></a>
@@ -1158,14 +1235,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapChildren</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">mapChildren</span><span class="params">(<span name="f">f: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>) ⇒ <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@mapChildren(f:BaseType=&gt;BaseType):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node where <code>f</code> has been applied to all the nodes children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>f</code> has been applied to all the nodes children.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#mapProductIterator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapProductIterator[B](f:Any=&gt;B)(implicitevidence$1:scala.reflect.ClassTag[B]):Array[B]"></a>
       <a id="mapProductIterator[B]((Any)⇒B)(ClassTag[B]):Array[B]"></a>
@@ -1182,7 +1260,44 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Efficient alternative to <code>productIterator.map(f).toArray</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Efficient alternative to <code>productIterator.map(f).toArray</code>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlan#metadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="metadata:Map[String,String]"></a>
+      <a id="metadata:Map[String,String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metadata</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@metadata:Map[String,String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return all metadata that describes more details of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metadata that describes more details of this SparkPlan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlan#metrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="metrics:Map[String,org.apache.spark.sql.execution.metric.SQLMetric]"></a>
+      <a id="metrics:Map[String,SQLMetric]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metrics</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="metric/SQLMetric.html" class="extype" name="org.apache.spark.sql.execution.metric.SQLMetric">SQLMetric</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@metrics:Map[String,org.apache.spark.sql.execution.metric.SQLMetric]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return all metrics containing metrics of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metrics containing metrics of this SparkPlan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#missingInput" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="missingInput:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="missingInput:AttributeSet"></a>
@@ -1192,14 +1307,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">missingInput</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</span></span>
+        <span class="name">missingInput</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@missingInput:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Attributes that are referenced by expressions but not provided by this nodes children.</p><div class="fullcomment"><div class="comment cmt"><p>Attributes that are referenced by expressions but not provided by this nodes children.
+Subclasses should override this method if they produce attributes internally as it is used by
+assertions designed to prevent the construction of invalid plans.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1209,7 +1327,7 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -1226,14 +1344,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newMutableProjection</span><span class="params">(<span name="expressions">expressions: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>, <span name="inputSchema">inputSchema: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>, <span name="useSubexprElimination">useSubexprElimination: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</span></span>
+        <span class="name">newMutableProjection</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="inputSchema">inputSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="useSubexprElimination">useSubexprElimination: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="../catalyst/expressions/package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@newMutableProjection(expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],useSubexprElimination:Boolean):org.apache.spark.sql.catalyst.expressions.MutableProjection" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#newNaturalAscendingOrdering" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="newNaturalAscendingOrdering(dataTypes:Seq[org.apache.spark.sql.types.DataType]):Ordering[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="newNaturalAscendingOrdering(Seq[DataType]):Ordering[InternalRow]"></a>
@@ -1243,14 +1361,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newNaturalAscendingOrdering</span><span class="params">(<span name="dataTypes">dataTypes: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Ordering">Ordering</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">newNaturalAscendingOrdering</span><span class="params">(<span name="dataTypes">dataTypes: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@newNaturalAscendingOrdering(dataTypes:Seq[org.apache.spark.sql.types.DataType]):Ordering[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Creates a row ordering for the given schema, in natural ascending order.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a row ordering for the given schema, in natural ascending order.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#newOrdering" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="newOrdering(order:Seq[org.apache.spark.sql.catalyst.expressions.SortOrder],inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):Ordering[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="newOrdering(Seq[SortOrder],Seq[Attribute]):Ordering[InternalRow]"></a>
@@ -1260,14 +1379,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newOrdering</span><span class="params">(<span name="order">order: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</span>]</span>, <span name="inputSchema">inputSchema: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Ordering">Ordering</span>[<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>]</span>
+        <span class="name">newOrdering</span><span class="params">(<span name="order">order: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>]</span>, <span name="inputSchema">inputSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@newOrdering(order:Seq[org.apache.spark.sql.catalyst.expressions.SortOrder],inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):Ordering[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#newPredicate" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean"></a>
       <a id="newPredicate(Expression,Seq[Attribute]):(InternalRow)⇒Boolean"></a>
@@ -1277,14 +1396,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newPredicate</span><span class="params">(<span name="expression">expression: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="inputSchema">inputSchema: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>)</span><span class="result">: (<span class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">newPredicate</span><span class="params">(<span name="expression">expression: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputSchema">inputSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: (<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
@@ -1301,7 +1420,9 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
+Note that we remove the &quot;Exec&quot; suffix for physical operators here.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1352,7 +1473,9 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
+The numbers can be used with <a href="../catalyst/trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute#options" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="options:Map[String,Any]"></a>
       <a id="options:Map[String,Any]"></a>
@@ -1379,14 +1502,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">origin</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.trees.Origin">Origin</span></span>
+        <span class="name">origin</span><span class="result">: <a href="../catalyst/trees/Origin.html" class="extype" name="org.apache.spark.sql.catalyst.trees.Origin">Origin</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@origin:org.apache.spark.sql.catalyst.trees.Origin" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#otherCopyArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="otherCopyArgs:Seq[AnyRef]"></a>
       <a id="otherCopyArgs:Seq[AnyRef]"></a>
@@ -1396,14 +1519,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">otherCopyArgs</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]</span>
+        <span class="name">otherCopyArgs</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@otherCopyArgs:Seq[AnyRef]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
+These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
       <a id="output:Seq[Attribute]"></a>
@@ -1413,14 +1537,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">output</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</span>]</span>
+        <span class="name">output</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → QueryPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#outputOrdering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputOrdering:Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]"></a>
       <a id="outputOrdering:Seq[SortOrder]"></a>
@@ -1430,14 +1554,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">outputOrdering</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</span>]</span>
+        <span class="name">outputOrdering</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@outputOrdering:Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Specifies how data is ordered in each partition.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is ordered in each partition.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.UnaryExecNode#outputPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputPartitioning:org.apache.spark.sql.catalyst.plans.physical.Partitioning"></a>
       <a id="outputPartitioning:Partitioning"></a>
@@ -1447,14 +1571,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">outputPartitioning</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</span></span>
+        <span class="name">outputPartitioning</span><span class="result">: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@outputPartitioning:org.apache.spark.sql.catalyst.plans.physical.Partitioning" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnaryExecNode → SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Specifies how data is partitioned across different nodes in the cluster.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is partitioned across different nodes in the cluster.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>
@@ -1464,14 +1588,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">outputSet</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</span></span>
+        <span class="name">outputSet</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns the set of attributes that are output by this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the set of attributes that are output by this node.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#prepare" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prepare():Unit"></a>
       <a id="prepare():Unit"></a>
@@ -1488,7 +1613,8 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Prepare a SparkPlan for execution.</p><div class="fullcomment"><div class="comment cmt"><p>Prepare a SparkPlan for execution. It's idempotent.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#prepareSubqueries" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prepareSubqueries():Unit"></a>
       <a id="prepareSubqueries():Unit"></a>
@@ -1505,7 +1631,9 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Finds scalar subquery expressions in this plan node and starts evaluating them.</p><div class="fullcomment"><div class="comment cmt"><p>Finds scalar subquery expressions in this plan node and starts evaluating them.
+The list of subqueries are added to <span class="extype" name="subqueryResults">subqueryResults</span>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1522,7 +1650,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#printSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="printSchema():Unit"></a>
       <a id="printSchema():Unit"></a>
@@ -1539,7 +1667,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Prints out the schema in the tree format</p><div class="fullcomment"><div class="comment cmt"><p>Prints out the schema in the tree format</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#producedAttributes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="producedAttributes:AttributeSet"></a>
@@ -1549,14 +1677,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">producedAttributes</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</span></span>
+        <span class="name">producedAttributes</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">The set of all attributes that are produced by this node.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are produced by this node.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute#qcs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="qcs:Array[Int]"></a>
       <a id="qcs:Array[Int]"></a>
@@ -1583,14 +1712,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">references</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</span></span>
+        <span class="name">references</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@references:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">All Attributes that appear in expressions from this operator.</p><div class="fullcomment"><div class="comment cmt"><p>All Attributes that appear in expressions from this operator.  Note that this set does not
+include attributes that are implicitly referenced by being passed through to the output tuple.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#requiredChildDistribution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="requiredChildDistribution:Seq[org.apache.spark.sql.catalyst.plans.physical.Distribution]"></a>
       <a id="requiredChildDistribution:Seq[Distribution]"></a>
@@ -1600,14 +1731,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">requiredChildDistribution</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Distribution">Distribution</span>]</span>
+        <span class="name">requiredChildDistribution</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/physical/Distribution.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Distribution">Distribution</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@requiredChildDistribution:Seq[org.apache.spark.sql.catalyst.plans.physical.Distribution]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Specifies any partition requirements on the input data for this operator.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies any partition requirements on the input data for this operator.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#requiredChildOrdering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="requiredChildOrdering:Seq[Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]]"></a>
       <a id="requiredChildOrdering:Seq[Seq[SortOrder]]"></a>
@@ -1617,14 +1748,32 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">requiredChildOrdering</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</span>]]</span>
+        <span class="name">requiredChildOrdering</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@requiredChildOrdering:Seq[Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Specifies sort order for each partition requirements on the input data for this operator.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies sort order for each partition requirements on the input data for this operator.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlan#resetMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetMetrics():Unit"></a>
+      <a id="resetMetrics():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetMetrics</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@resetMetrics():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Reset all the metrics.</p><div class="fullcomment"><div class="comment cmt"><p>Reset all the metrics.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#sameResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sameResult(plan:PlanType):Boolean"></a>
       <a id="sameResult(SparkPlan):Boolean"></a>
@@ -1634,14 +1783,21 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sameResult</span><span class="params">(<span name="plan">plan: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">sameResult</span><span class="params">(<span name="plan">plan: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@sameResult(plan:PlanType):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns true when the given query plan will return the same results as this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true when the given query plan will return the same results as this query plan.</p><p>Since its likely undecidable to generally determine if two given plans will produce the same
+results, it is okay for this function to return false, even if the results are actually
+the same.  Such behavior will not affect correctness, only the application of performance
+enhancements like caching.  However, it is not acceptable to return true if the results could
+possibly be different.</p><p>By default this function performs a modified version of equality that is tolerant of cosmetic
+differences like attribute naming and or expression id differences. Operators that
+can do better should override this function.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -1651,14 +1807,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">schema</span><span class="result">: <span class="extype" name="org.apache.spark.sql.types.StructType">StructType</span></span>
+        <span class="name">schema</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#schemaString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schemaString:String"></a>
       <a id="schemaString:String"></a>
@@ -1675,7 +1831,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns the output schema in the tree format.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the output schema in the tree format.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="simpleString:String"></a>
       <a id="simpleString:String"></a>
@@ -1692,7 +1848,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan → TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#sparkContext" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sparkContext:org.apache.spark.SparkContext"></a>
       <a id="sparkContext:SparkContext"></a>
@@ -1702,14 +1858,14 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sparkContext</span><span class="result">: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>
+        <span class="name">sparkContext</span><span class="result">: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@sparkContext:org.apache.spark.SparkContext" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#sqlContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sqlContext:org.apache.spark.sql.SQLContext"></a>
       <a id="sqlContext:SQLContext"></a>
@@ -1719,14 +1875,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">sqlContext</span><span class="result">: <span class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</span></span>
+        <span class="name">sqlContext</span><span class="result">: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@sqlContext:org.apache.spark.sql.SQLContext" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">A handle to the SQL Context that was used to create this plan.</p><div class="fullcomment"><div class="comment cmt"><p>A handle to the SQL Context that was used to create this plan.   Since many operators need
+access to the sqlContext for RDD operations or configuration this field is automatically
+populated by the query planning infrastructure.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#statePrefix" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="statePrefix:String"></a>
       <a id="statePrefix:String"></a>
@@ -1743,7 +1902,8 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">A prefix string used when printing the plan.</p><div class="fullcomment"><div class="comment cmt"><p>A prefix string used when printing the plan.</p><p>We use &quot;!&quot; to indicate an invalid plan, and &quot;'&quot; to indicate an unresolved plan.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#stringArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stringArgs:Iterator[Any]"></a>
       <a id="stringArgs:Iterator[Any]"></a>
@@ -1753,14 +1913,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">stringArgs</span><span class="result">: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">stringArgs</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@stringArgs:Iterator[Any]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">The arguments that should be included in the arg string.</p><div class="fullcomment"><div class="comment cmt"><p>The arguments that should be included in the arg string.  Defaults to the <code>productIterator</code>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#subexpressionEliminationEnabled" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subexpressionEliminationEnabled:Boolean"></a>
       <a id="subexpressionEliminationEnabled:Boolean"></a>
@@ -1777,7 +1938,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#subqueries" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subqueries:Seq[PlanType]"></a>
       <a id="subqueries:Seq[SparkPlan]"></a>
@@ -1787,14 +1948,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subqueries</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>
+        <span class="name">subqueries</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@subqueries:Seq[PlanType]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">All the subqueries of current plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the subqueries of current plan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1828,7 +1990,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -1845,7 +2007,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transform(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transform(PartialFunction[SparkPlan,SparkPlan]):SparkPlan"></a>
@@ -1855,14 +2017,18 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transform</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">transform</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transform(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to the tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to the tree.
+When <code>rule</code> does not apply to a given node it is left unchanged.
+Users should not expect a specific directionality. If a specific directionality is needed,
+transformDown or transformUp should be used.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function use to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformAllExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformAllExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
       <a id="transformAllExpressions(PartialFunction[Expression,Expression]):StratifiedSampleExecute.this.type"></a>
@@ -1872,14 +2038,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformAllExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
+        <span class="name">transformAllExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformAllExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of running <a href="../catalyst/plans/QueryPlan.html#transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions">transformExpressions</a> on this node
+and all its children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of running <a href="../catalyst/plans/QueryPlan.html#transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions">transformExpressions</a> on this node
+and all its children.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType"></a>
       <a id="transformChildren(PartialFunction[SparkPlan,SparkPlan],(SparkPlan,PartialFunction[SparkPlan,SparkPlan])⇒SparkPlan):SparkPlan"></a>
@@ -1889,14 +2058,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>, <span name="nextOperation">nextOperation: (<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]) ⇒ <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>, <span name="nextOperation">nextOperation: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]) ⇒ <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
+this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
+this node.  When <code>rule</code> does not apply to a given node it is left unchanged.</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformDown(PartialFunction[SparkPlan,SparkPlan]):SparkPlan"></a>
@@ -1906,14 +2077,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">transformDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to it and all of its
+children (pre-order).</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to it and all of its
+children (pre-order). When <code>rule</code> does not apply to a given node it is left unchanged.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
       <a id="transformExpressions(PartialFunction[Expression,Expression]):StratifiedSampleExecute.this.type"></a>
@@ -1923,14 +2097,17 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
+        <span class="name">transformExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs <a href="../catalyst/plans/QueryPlan.html#transform(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transform">transform</a> with <code>rule</code> on all expressions present in this query operator.</p><div class="fullcomment"><div class="comment cmt"><p>Runs <a href="../catalyst/plans/QueryPlan.html#transform(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transform">transform</a> with <code>rule</code> on all expressions present in this query operator.
+Users should not expect a specific directionality. If a specific directionality is needed,
+transformExpressionsDown or transformExpressionsUp should be used.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the rule to be applied to every expression in this operator.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressionsDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressionsDown(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
       <a id="transformExpressionsDown(PartialFunction[Expression,Expression]):StratifiedSampleExecute.this.type"></a>
@@ -1940,14 +2117,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressionsDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
+        <span class="name">transformExpressionsDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformExpressionsDown(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs <a href="../catalyst/plans/QueryPlan.html#transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformDown">transformDown</a> with <code>rule</code> on all expressions present in this query operator.</p><div class="fullcomment"><div class="comment cmt"><p>Runs <a href="../catalyst/plans/QueryPlan.html#transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformDown">transformDown</a> with <code>rule</code> on all expressions present in this query operator.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the rule to be applied to every expression in this operator.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressionsUp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressionsUp(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
       <a id="transformExpressionsUp(PartialFunction[Expression,Expression]):StratifiedSampleExecute.this.type"></a>
@@ -1957,14 +2135,15 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressionsUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
+        <span class="name">transformExpressionsUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSampleExecute">StratifiedSampleExecute</a>.this.type</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformExpressionsUp(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">Runs <a href="../catalyst/plans/QueryPlan.html#transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformUp">transformUp</a> with <code>rule</code> on all expressions present in this query operator.</p><div class="fullcomment"><div class="comment cmt"><p>Runs <a href="../catalyst/plans/QueryPlan.html#transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformUp">transformUp</a> with <code>rule</code> on all expressions present in this query operator.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the rule to be applied to every expression in this operator.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformUp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformUp(PartialFunction[SparkPlan,SparkPlan]):SparkPlan"></a>
@@ -1974,14 +2153,18 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>, <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">transformUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied first to all of its
+children and then itself (post-order).</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied first to all of its
+children and then itself (post-order). When <code>rule</code> does not apply to a given node, it is left
+unchanged.
+</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function use to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#treeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="treeString(verbose:Boolean):String"></a>
       <a id="treeString(Boolean):String"></a>
@@ -1998,7 +2181,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#treeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="treeString:String"></a>
       <a id="treeString:String"></a>
@@ -2015,7 +2198,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a string representation of the nodes in this tree</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#validConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="validConstraints:Set[Expression]"></a>
@@ -2025,14 +2208,19 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">validConstraints</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>]</span>
+        <span class="name">validConstraints</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>QueryPlan</dd></dl></div>
+      <p class="shortcomment cmt">This method can be overridden by any child class of QueryPlan to specify a set of constraints
+based on the given operator's constraint propagation logic.</p><div class="fullcomment"><div class="comment cmt"><p>This method can be overridden by any child class of QueryPlan to specify a set of constraints
+based on the given operator's constraint propagation logic. These constraints are then
+canonicalized and filtered automatically to contain only those attributes that appear in the
+<a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet">outputSet</a>.</p><p>See <span class="extype" name="Canonicalize">Canonicalize</span> for more details.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#verboseString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="verboseString:String"></a>
       <a id="verboseString:String"></a>
@@ -2049,7 +2237,7 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>QueryPlan → TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">ONE line description of this node with more information</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node with more information</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -2135,7 +2323,8 @@ total samples since it is also designed to be used with streaming data.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkPlan</dd></dl></div>
+      <p class="shortcomment cmt">Blocks the thread until all subqueries finish evaluation and update the results.</p><div class="fullcomment"><div class="comment cmt"><p>Blocks the thread until all subqueries finish evaluation and update the results.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#withNewChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="withNewChildren(newChildren:Seq[BaseType]):BaseType"></a>
       <a id="withNewChildren(Seq[SparkPlan]):SparkPlan"></a>
@@ -2145,14 +2334,16 @@ total samples since it is also designed to be used with streaming data.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">withNewChildren</span><span class="params">(<span name="newChildren">newChildren: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></span>
+        <span class="name">withNewChildren</span><span class="params">(<span name="newChildren">newChildren: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSampleExecute@withNewChildren(newChildren:Seq[BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
+      <p class="shortcomment cmt">Returns a copy of this node with the children replaced.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node with the children replaced.
+TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -2163,9 +2354,9 @@ total samples since it is also designed to be used with streaming data.
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.execution.UnaryExecNode">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</span></h3>
+              <h3>Inherited from <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.SparkPlan">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span></h3>
+              <h3>Inherited from <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
@@ -2173,15 +2364,15 @@ total samples since it is also designed to be used with streaming data.
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.plans.QueryPlan">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</h3>
+              <h3>Inherited from <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.trees.TreeNode">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[<span class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</span>]</h3>
+              <h3>Inherited from <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</h3>
             </div><div class="parent" name="scala.Product">
               <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

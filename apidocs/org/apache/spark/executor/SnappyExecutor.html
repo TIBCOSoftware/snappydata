@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyExecutor - snappy-cluster_2.11 0.6 API - org.apache.spark.executor.SnappyExecutor</title>
-          <meta name="description" content="SnappyExecutor - snappy - cluster 2.11 0.6 API - org.apache.spark.executor.SnappyExecutor" />
-          <meta name="keywords" content="SnappyExecutor snappy cluster 2.11 0.6 API org.apache.spark.executor.SnappyExecutor" />
+          <title>SnappyExecutor - snappydata_2.11 0.6 API - org.apache.spark.executor.SnappyExecutor</title>
+          <meta name="description" content="SnappyExecutor - snappydata 2.11 0.6 API - org.apache.spark.executor.SnappyExecutor" />
+          <meta name="keywords" content="SnappyExecutor snappydata 2.11 0.6 API org.apache.spark.executor.SnappyExecutor" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -51,7 +51,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.executor.Executor">Executor</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.executor.Executor">Executor</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -97,7 +97,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyExecutor</span><span class="params">(<span name="executorId">executorId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="executorHostname">executorHostname: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="env">env: <span class="extype" name="org.apache.spark.SparkEnv">SparkEnv</span></span>, <span name="userClassPath">userClassPath: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="java.net.URL">URL</span>] = <span class="symbol">Nil</span></span>, <span name="exceptionHandler">exceptionHandler: <span class="extype" name="org.apache.spark.executor.SnappyUncaughtExceptionHandler">SnappyUncaughtExceptionHandler</span></span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
+        <span class="name">SnappyExecutor</span><span class="params">(<span name="executorId">executorId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="executorHostname">executorHostname: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="env">env: <a href="../SparkEnv.html" class="extype" name="org.apache.spark.SparkEnv">SparkEnv</a></span>, <span name="userClassPath">userClassPath: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="java.net.URL">URL</span>] = <span class="symbol">Nil</span></span>, <span name="exceptionHandler">exceptionHandler: <span class="extype" name="org.apache.spark.executor.SnappyUncaughtExceptionHandler">SnappyUncaughtExceptionHandler</span></span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@&lt;init&gt;(executorId:String,executorHostname:String,env:org.apache.spark.SparkEnv,userClassPath:Seq[java.net.URL],exceptionHandler:org.apache.spark.executor.SnappyUncaughtExceptionHandler,isLocal:Boolean):org.apache.spark.executor.SnappyExecutor" title="Permalink" target="_top">
@@ -211,7 +211,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@clone():Object" title="Permalink" target="_top">
@@ -241,7 +241,11 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
+      <p class="shortcomment cmt">Create a ClassLoader for use in tasks, adding any JARs specified by the user or any classes
+created by the interpreter to the search path
+</p><div class="fullcomment"><div class="comment cmt"><p>Create a ClassLoader for use in tasks, adding any JARs specified by the user or any classes
+created by the interpreter to the search path
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#currentJars" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="currentJars:scala.collection.mutable.HashMap[String,Long]"></a>
       <a id="currentJars:HashMap[String,Long]"></a>
@@ -268,7 +272,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -417,9 +421,11 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Executor</dd></dl></div>
+      <p class="shortcomment cmt">Function to kill the running tasks in an executor.</p><div class="fullcomment"><div class="comment cmt"><p>Function to kill the running tasks in an executor.
+This can be called by executor back-ends to kill the
+tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt class="param">interruptThread</dt><dd class="cmt"><p>whether to interrupt the task thread</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#killTask" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="killTask(taskId:&lt;?&gt;,interruptThread:&lt;?&gt;):Unit"></a>
+      <a id="killTask(taskId:Long,interruptThread:Boolean):Unit"></a>
       <a id="killTask(Long,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -436,7 +442,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#launchTask" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="launchTask(context:&lt;?&gt;,taskId:&lt;?&gt;,attemptNumber:&lt;?&gt;,taskName:&lt;?&gt;,serializedTask:&lt;?&gt;):Unit"></a>
+      <a id="launchTask(context:org.apache.spark.executor.ExecutorBackend,taskId:Long,attemptNumber:Int,taskName:String,serializedTask:java.nio.ByteBuffer):Unit"></a>
       <a id="launchTask(ExecutorBackend,Long,Int,String,ByteBuffer):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -478,7 +484,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -512,7 +518,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -546,7 +552,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -597,7 +603,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -631,7 +637,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
@@ -665,7 +671,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -841,7 +847,7 @@
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>serializer - snappy-cluster_2.11 0.6 API - org.apache.spark.serializer</title>
-          <meta name="description" content="serializer - snappy - cluster 2.11 0.6 API - org.apache.spark.serializer" />
-          <meta name="keywords" content="serializer snappy cluster 2.11 0.6 API org.apache.spark.serializer" />
+          <title>serializer - snappydata_2.11 0.6 API - org.apache.spark.serializer</title>
+          <meta name="description" content="serializer - snappydata 2.11 0.6 API - org.apache.spark.serializer" />
+          <meta name="keywords" content="serializer snappydata 2.11 0.6 API org.apache.spark.serializer" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,9 +47,10 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Pluggable serializers for RDD and shuffle data.
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="Serializer.html" class="extype" name="org.apache.spark.serializer.Serializer">org.apache.spark.serializer.Serializer</a></p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -88,7 +89,30 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.serializer.DummySerializerInstance" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.serializer.DeserializationStream" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="DeserializationStreamextendsAnyRef"></a>
+      <a id="DeserializationStream:DeserializationStream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DeserializationStream.html"><span class="name">DeserializationStream</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@DeserializationStreamextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A stream for reading serialized objects.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A stream for reading serialized objects.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.serializer.DummySerializerInstance" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DummySerializerInstanceextendsSerializerInstance"></a>
       <a id="DummySerializerInstance:DummySerializerInstance"></a>
       <h4 class="signature">
@@ -97,7 +121,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DummySerializerInstance.html"><span class="name">DummySerializerInstance</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.serializer.SerializerInstance">SerializerInstance</span></span>
+        <a href="DummySerializerInstance.html"><span class="name">DummySerializerInstance</span></a><span class="result"> extends <a href="SerializerInstance.html" class="extype" name="org.apache.spark.serializer.SerializerInstance">SerializerInstance</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.serializer.package@DummySerializerInstanceextendsSerializerInstance" title="Permalink" target="_top">
@@ -105,6 +129,145 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.serializer.JavaSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JavaSerializerextendsSerializerwithExternalizable"></a>
+      <a id="JavaSerializer:JavaSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JavaSerializer.html"><span class="name">JavaSerializer</span></a><span class="result"> extends <a href="Serializer.html" class="extype" name="org.apache.spark.serializer.Serializer">Serializer</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@JavaSerializerextendsSerializerwithExternalizable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A Spark serializer that uses Java's built-in serialization.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A Spark serializer that uses Java's built-in serialization.</p><p>Note that this serializer is not guaranteed to be wire-compatible across different versions of
+Spark. It is intended to be used to serialize/de-serialize data within a single
+Spark application.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.serializer.KryoRegistrator" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="KryoRegistratorextendsAnyRef"></a>
+      <a id="KryoRegistrator:KryoRegistrator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="KryoRegistrator.html"><span class="name">KryoRegistrator</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@KryoRegistratorextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Interface implemented by clients to register their classes with Kryo when using Kryo
+serialization.</p>
+    </li><li name="org.apache.spark.serializer.KryoSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KryoSerializerextendsSerializerwithLoggingwithSerializable"></a>
+      <a id="KryoSerializer:KryoSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KryoSerializer.html"><span class="name">KryoSerializer</span></a><span class="result"> extends <a href="Serializer.html" class="extype" name="org.apache.spark.serializer.Serializer">Serializer</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@KryoSerializerextendsSerializerwithLoggingwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A Spark serializer that uses the <a href="https://code.google.com/p/kryo/" target="_blank">Kryo serialization library</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A Spark serializer that uses the <a href="https://code.google.com/p/kryo/" target="_blank">Kryo serialization library</a>.</p><p>Note that this serializer is not guaranteed to be wire-compatible across different versions of
+Spark. It is intended to be used to serialize/de-serialize data within a single
+Spark application.
+</p></div></div>
+    </li><li name="org.apache.spark.serializer.SerializationStream" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SerializationStreamextendsAnyRef"></a>
+      <a id="SerializationStream:SerializationStream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializationStream.html"><span class="name">SerializationStream</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@SerializationStreamextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A stream for writing serialized objects.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A stream for writing serialized objects.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.serializer.Serializer" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SerializerextendsAnyRef"></a>
+      <a id="Serializer:Serializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Serializer.html"><span class="name">Serializer</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@SerializerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A serializer.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A serializer. Because some serialization libraries are not thread safe, this class is used to
+create <a href="SerializerInstance.html" class="extype" name="org.apache.spark.serializer.SerializerInstance">org.apache.spark.serializer.SerializerInstance</a> objects that do the actual
+serialization and are guaranteed to only be called from one thread at a time.</p><p>Implementations of this trait should implement:</p><p>1. a zero-arg constructor or a constructor that accepts a <a href="../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">org.apache.spark.SparkConf</a>
+as parameter. If both constructors are defined, the latter takes precedence.</p><p>2. Java serialization interface.</p><p>Note that serializers are not required to be wire-compatible across different versions of Spark.
+They are intended to be used to serialize/de-serialize data within a single Spark application.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.serializer.SerializerInstance" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SerializerInstanceextendsAnyRef"></a>
+      <a id="SerializerInstance:SerializerInstance"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializerInstance.html"><span class="name">SerializerInstance</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@SerializerInstanceextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+An instance of a serializer, for use by one thread at a time.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+An instance of a serializer, for use by one thread at a time.</p><p>It is legal to create multiple serialization / deserialization streams from the same
+SerializerInstance as long as those streams are all used within the same thread.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@NotThreadSafe</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li></ol>
             </div>
 
@@ -119,7 +282,7 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>
