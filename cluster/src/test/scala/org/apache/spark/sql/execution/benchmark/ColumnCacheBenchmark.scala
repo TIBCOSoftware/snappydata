@@ -54,7 +54,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[1]")
         .setAppName("microbenchmark")
-    conf.set("snappy.store.optimization", "true")
     conf.set("spark.sql.shuffle.partitions", "1")
     // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("spark.sql.autoBroadcastJoinThreshold", "1")

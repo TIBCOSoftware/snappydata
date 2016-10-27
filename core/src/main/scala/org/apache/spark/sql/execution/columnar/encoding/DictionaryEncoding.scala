@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, TimestampType}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
 final class DictionaryEncoding
@@ -77,6 +78,16 @@ abstract class DictionaryEncodingBase extends ColumnEncoding {
   override final def readUTF8String(columnBytes: AnyRef,
       cursor: Long): UTF8String =
     stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
+
+  override def getStringDictionary: Array[UTF8String] =
+    stringDictionary
+
+  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
+    if (ColumnEncoding.littleEndian) {
+      Platform.getShort(columnBytes, cursor)
+    } else {
+      java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
+    }
 
   override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2

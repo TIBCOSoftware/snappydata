@@ -17,18 +17,17 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning,
-Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter,
-BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation, StatsPredicateCompiler}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.expressions._
 
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -54,7 +53,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   var metricsCreatedBeforeInit: Map[String, SQLMetric] = Map.empty[String, SQLMetric]
 
   val (dataRDD, otherRDDs) = scanBuilder(
-      requestedColumns, pushedFilters, getStatsPredicate())
+      requestedColumns, pushedFilters, getStatsPredicate)
 
   override lazy val metrics = getMetricsMap
 
@@ -64,8 +63,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         metricsCreatedBeforeInit
   }
 
-  def getStatsPredicate(): StatsPredicateCompiler = {
-    return new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
+  def getStatsPredicate: StatsPredicateCompiler = {
+    new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
   }
 
   private val extraInformation = relation.toString
@@ -152,3 +151,25 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def connectionType: ConnectionType.Value
 }
+
+trait BatchConsumer extends CodegenSupport {
+
+  /**
+   * Generate Java source code to do any processing before a batch is consumed
+   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * optimizations, initializations etc).
+   * <p>
+   * Implementations should use this for additional optimizations that can be
+   * done at batch level when a batched scan is being done. They should not
+   * depend on this being invoked since many scans will not be batched.
+   */
+  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
+}
+
+/**
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
+ */
+final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
+    dictionary: String, dictionaryIndex: String)

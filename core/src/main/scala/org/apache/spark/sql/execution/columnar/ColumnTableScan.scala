@@ -42,19 +42,20 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, BaseRelation}
+import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, StatsPredicateCompiler}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
-import org.apache.spark.sql.catalyst.dsl.expressions._
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -76,24 +77,23 @@ private[sql] final case class ColumnTableScan(
         (RDD[Any], Seq[RDD[InternalRow]]))
     extends PartitionedPhysicalScan(output, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation],
-      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
+      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        with CodegenSupport {
 
   override def getMetricsMap: Map[String, SQLMetric] = {
-    super.getMetricsMap ++ Map("numRowsBufferOutput" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows from row buffer")) ++ (
+    super.getMetricsMap ++ Map("numRowsBufferOutput" -> SQLMetrics.createMetric(
+      sparkContext, "number of output rows from row buffer")) ++ (
         if (otherRDDs.isEmpty) Map.empty
         else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
           "number of output rows from other RDDs")))
-
   }
 
-  override def getStatsPredicate(): StatsPredicateCompiler = {
+  override def getStatsPredicate: StatsPredicateCompiler = {
 
-    val cachedBatchStatistics = if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-      relation.asInstanceOf[BaseColumnFormatRelation].
-          getCachedBatchStatistics(schemaAttributes)
-    } else {
-      null
+    val cachedBatchStatistics = relation match {
+      case columnRelation: BaseColumnFormatRelation =>
+        columnRelation.getCachedBatchStatistics(schemaAttributes)
+      case _ => null
     }
     def getCachedBatchStatsSchema: Seq[AttributeReference] =
       if (cachedBatchStatistics != null) cachedBatchStatistics.schema else null
@@ -158,9 +158,9 @@ private[sql] final case class ColumnTableScan(
 
     metricsCreatedBeforeInit = metricsCreatedBeforeInit ++
         Map("cachedBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
-      "cached batches seen"),
-    "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
-      "cached batches skipped by the predicate"))
+          "cached batches seen"),
+          "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
+            "cached batches skipped by the predicate"))
 
     new StatsPredicateCompiler(newPredicate,
       cachedBatchStatFilters.reduceOption(And).getOrElse(Literal(true)),
@@ -177,6 +177,9 @@ private[sql] final case class ColumnTableScan(
     baseRelation.table, true).isOffHeap
 
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
+
+  @transient private val session =
+    sqlContext.sparkSession.asInstanceOf[SnappySession]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
@@ -292,7 +295,8 @@ private[sql] final case class ColumnTableScan(
       """
     }
 
-    val columnsInput = output.zipWithIndex.map { case (a, index) =>
+    val batchConsumer = getBatchConsumer(parent)
+    val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
@@ -300,7 +304,7 @@ private[sql] final case class ColumnTableScan(
       val decoderVar = s"decoder$index"
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
-      val baseIndex = baseRelation.schema.fieldIndex(a.name)
+      val baseIndex = baseRelation.schema.fieldIndex(attr.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
       val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
@@ -347,11 +351,13 @@ private[sql] final case class ColumnTableScan(
         """
       )
       cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
-      val notNullVar = if (a.nullable) ctx.freshName("notNull") else null
+      val notNullVar = if (attr.nullable) ctx.freshName("notNull") else null
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-        cursorVar, "batchOrdinal", a.dataType, notNullVar)).append('\n')
-      genCodeColumnBuffer(ctx, decoderVar, bufferVar, cursorVar,
-        a.dataType, notNullVar)
+        cursorVar, "batchOrdinal", attr.dataType, notNullVar)).append('\n')
+      val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
+        cursorVar, attr, notNullVar)
+      bufferInitCode.append(bufferInit)
+      ev
     }
 
     val batchInit = if (!isEmbedded) {
@@ -407,6 +413,9 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin)
 
+    val batchConsume = batchConsumer.map(_.batchConsume(ctx,
+      columnsInput)).mkString("")
+
     s"""
        |// Combined iterator for cached batches from column table
        |// and ResultSet from row buffer. Also takes care of otherRDDs
@@ -416,8 +425,9 @@ private[sql] final case class ColumnTableScan(
        |long $numRowsOther = 0L;
        |try {
        |  while ($nextBatch()) {
-       |    final int numRows = $numBatchRows;
        |    ${bufferInitCode.toString()}
+       |    $batchConsume
+       |    final int numRows = $numBatchRows;
        |    final boolean isRow = $inputIsRow;
        |    for (int batchOrdinal = $batchIndex; batchOrdinal < numRows;
        |         batchOrdinal++) {
@@ -446,6 +456,17 @@ private[sql] final case class ColumnTableScan(
        |  $incrementOtherRows
        |}
     """.stripMargin
+  }
+
+  private def getBatchConsumer(
+      parent: CodegenSupport): Option[BatchConsumer] = parent match {
+    case null => None
+    case b: BatchConsumer => Some(b)
+    case _ =>
+      // using reflection here since protected parent cannot be accessed
+      val m = parent.getClass.getDeclaredMethod("parent")
+      m.setAccessible(true)
+      getBatchConsumer(m.invoke(parent).asInstanceOf[CodegenSupport])
   }
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
@@ -480,32 +501,53 @@ private[sql] final case class ColumnTableScan(
   }
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
-      buffer: String, cursorVar: String, dataType: DataType,
-      notNullVar: String): ExprCode = {
-    val sqlType = Utils.getSQLDataType(dataType)
+      buffer: String, cursorVar: String, attr: Attribute,
+      notNullVar: String): (ExprCode, String) = {
+    val col = ctx.freshName("col")
+    var bufferInit: String = ""
+    var dictionaryCode: String = ""
+    var dictionary: String = ""
+    var dictionaryIndex: String = ""
+    val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
-    val extract = sqlType match {
-      case DateType => s"$decoder.readDate($buffer, $cursorVar)"
-      case TimestampType => s"$decoder.readTimestamp($buffer, $cursorVar)"
+    val colAssign = sqlType match {
+      case DateType => s"$col = $decoder.readDate($buffer, $cursorVar);"
+      case TimestampType =>
+        s"$col = $decoder.readTimestamp($buffer, $cursorVar);"
       case _ if ctx.isPrimitiveType(jt) =>
-        s"$decoder.read${ctx.primitiveTypeName(jt)}($buffer, $cursorVar)"
-      case StringType => s"$decoder.readUTF8String($buffer, $cursorVar)"
+        val typeName = ctx.primitiveTypeName(jt)
+        s"$col = $decoder.read$typeName($buffer, $cursorVar);"
+      case StringType =>
+        dictionary = ctx.freshName("dictionary")
+        dictionaryIndex = ctx.freshName("dictionaryIndex")
+        bufferInit =
+          s"""
+            final UTF8String[] $dictionary = $decoder.getStringDictionary();
+            int $dictionaryIndex = -1;
+          """
+        dictionaryCode =
+            s"$dictionaryIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);"
+        s"""
+          $dictionaryCode
+          $col = $dictionary != null ? $dictionary[$dictionaryIndex]
+            : $decoder.readUTF8String($buffer, $cursorVar);"""
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
-        s"$decoder.readLongDecimal($buffer, ${d.precision}, ${d.scale}, " +
-            s"$cursorVar)"
+        s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
+            s"${d.scale}, $cursorVar);"
       case d: DecimalType =>
-        s"$decoder.readDecimal($buffer, ${d.precision}, ${d.scale}, $cursorVar)"
-      case BinaryType => s"$decoder.readBinary($buffer, $cursorVar)"
-      case CalendarIntervalType => s"$decoder.readInterval($buffer, $cursorVar)"
-      case _: ArrayType => s"$decoder.readArray($buffer, $cursorVar)"
-      case _: MapType => s"$decoder.readMap($buffer, $cursorVar)"
+        s"$col = $decoder.readDecimal($buffer, ${d.precision}, " +
+            s"${d.scale}, $cursorVar);"
+      case BinaryType => s"$col = $decoder.readBinary($buffer, $cursorVar);"
+      case CalendarIntervalType =>
+        s"$col = $decoder.readInterval($buffer, $cursorVar);"
+      case _: ArrayType => s"$col = $decoder.readArray($buffer, $cursorVar);"
+      case _: MapType => s"$col = $decoder.readMap($buffer, $cursorVar);"
       case t: StructType =>
-        s"$decoder.readStruct($buffer, ${t.size}, $cursorVar)"
-      case NullType => "null"
+        s"$col = $decoder.readStruct($buffer, ${t.size}, $cursorVar);"
+      case NullType => s"$col = null;"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
-    val col = ctx.freshName("col")
     if (notNullVar != null) {
       val nullVar = ctx.freshName("nullVal")
       // For ResultSets wasNull() is always a post-facto operation
@@ -514,26 +556,33 @@ private[sql] final case class ColumnTableScan(
       // and nonNull() should be invoked before get (and get not invoked
       //   at all if nonNull was false). Hence notNull uses tri-state to
       // indicate (true/false/use wasNull) and code below is a tri-switch.
-      val code =
-        s"""
+      val code = s"""
           final $jt $col;
           final boolean $nullVar;
           if ($notNullVar == 1) {
-            $col = $extract;
+            $colAssign
             $nullVar = false;
           } else {
             if ($notNullVar == 0) {
               $col = ${ctx.defaultValue(jt)};
               $nullVar = true;
             } else {
-              $col = $extract;
+              $colAssign
               $nullVar = $decoder.wasNull();
             }
           }
         """
-      ExprCode(code, nullVar, col)
+      if (!dictionary.isEmpty) {
+        session.addExCode(ctx, col :: Nil, attr :: Nil,
+          ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
+      }
+      (ExprCode(code, nullVar, col), bufferInit)
     } else {
-      ExprCode(s"final $jt $col = $extract;", "false", col)
+      if (!dictionary.isEmpty) {
+        session.addExCode(ctx, col :: Nil, attr :: Nil,
+          ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
+      }
+      (ExprCode(s"final $jt $col;\n$colAssign\n", "false", col), bufferInit)
     }
   }
 }
