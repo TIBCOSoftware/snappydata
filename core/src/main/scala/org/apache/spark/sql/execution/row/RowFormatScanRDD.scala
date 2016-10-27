@@ -268,6 +268,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     output.writeBoolean(useResultSet)
     ConnectionPropertiesSerializer.write(kryo, output, connProperties)
 
+    output.writeString(columnList)
     val filterArgs = filterWhereArgs
     if ((filterArgs eq null) || filterArgs.isEmpty) {
       output.writeVarInt(0, true)
@@ -293,6 +294,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     useResultSet = input.readBoolean()
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
 
+    columnList = input.readString()
     var numFilters = input.readVarInt(true)
     if (numFilters == 0) {
       filterWhereClause = ""
