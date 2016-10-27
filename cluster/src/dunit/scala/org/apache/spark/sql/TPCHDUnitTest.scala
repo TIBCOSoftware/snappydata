@@ -24,7 +24,6 @@ import io.snappydata.cluster.ClusterManagerTestBase
 
 import org.apache.spark.SparkContext
 
-
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
   val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
@@ -105,7 +104,9 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
       if (!actualLineSet.equals(expectedLineSet)) {
         if (!(expectedLineSet.size == actualLineSet.size)) {
-          resultOutputStream.println(s"For $query result count mismatched observed")
+          resultOutputStream.println(s"For $query " +
+            s"result count mismatched observed with " +
+            s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
         } else {
           for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
             if (!expectedLine.equals(actualLine)) {
@@ -123,10 +124,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
     resultFileStream.close()
 
     val resultOutputFile = sc.textFile(fineName)
-    // assertion disabled for now due to failures (SNAP-1145)
-    // enable this and remove warning below once fixed
-    // assert(resultOutputFile.count() == 0,
-    //   s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
+    assert(resultOutputFile.count() == 0,
+       s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
     if (resultOutputFile.count() != 0) {
       ClusterManagerTestBase.logger.warn(
         s"QUERY MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
