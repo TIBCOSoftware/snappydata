@@ -104,7 +104,9 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
       if (!actualLineSet.equals(expectedLineSet)) {
         if (!(expectedLineSet.size == actualLineSet.size)) {
-          resultOutputStream.println(s"For $query result count mismatched observed")
+          resultOutputStream.println(s"For $query " +
+            s"result count mismatched observed with " +
+            s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
         } else {
           for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
             if (!expectedLine.equals(actualLine)) {
