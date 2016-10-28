@@ -972,16 +972,16 @@ class SnappySession(@transient private val sc: SparkContext,
             }
           case _ => // ignore
         }
-        cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        if (sessionCatalog.isTemporaryTable(tableIdent)) {
-          // This is due to temp table
-          // can be made from a backing relation like Parquet or Hadoop
-          sessionCatalog.unregisterTable(tableIdent)
-        } else {
-          sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
-        }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
+            cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
+            if (sessionCatalog.isTemporaryTable(tableIdent)) {
+              // This is due to temp table
+              // can be made from a backing relation like Parquet or Hadoop
+              sessionCatalog.unregisterTable(tableIdent)
+            } else {
+              sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+            }
           case _ => // Do nothing
         }
       case _ => // This is a temp table with no relation as source

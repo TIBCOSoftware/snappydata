@@ -443,7 +443,7 @@ class ColumnFormatRelation(
     _externalStore,
     partitioningColumns,
     _context)
-  with ParentRelation {
+  with ParentRelation with DependentRelation {
 
   recoverDependentsRelation()
 
@@ -548,6 +548,12 @@ class ColumnFormatRelation(
         throw e
     }
   }
+
+  /** Base table of this relation. */
+  override def baseTable: Option[String] = _origOptions.get("COLOCATE_WITH")
+
+  /** Name of this relation in the catalog. */
+  override def name: String = _table
 }
 
 /**
