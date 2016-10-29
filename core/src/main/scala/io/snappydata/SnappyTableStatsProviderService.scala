@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorResult, SnappyRegionStatsCollectorFunction, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
@@ -41,32 +41,40 @@ import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
-  @volatile
-  private var tableSizeInfo = Map[String, SnappyRegionStats]()
+
+  @volatile private var tableSizeInfo = Map[String, SnappyRegionStats]()
+
+  private var _snc: Option[SnappyContext] = None
+
+  private def snc: SnappyContext = synchronized {
+    _snc.getOrElse {
+      val context = SnappyContext()
+      _snc = Option(context)
+      context
+    }
+  }
 
   def start(sc: SparkContext): Unit = {
-    val delay =
-      sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
-          .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
+    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
     Misc.getGemFireCache.getCCPTimer.schedule(
       new SystemTimer.SystemTimerTask {
-        var logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
-
         override def run2(): Unit = {
           try {
-            tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+            tableSizeInfo = getAggregatedTableStatsOnDemand
           } catch {
-            case (e: Exception) => {
-              logger.warning(e)
-            }
+            case (e: Exception) => getLoggerI18n.warning(e)
           }
         }
 
-        override def getLoggerI18n: LogWriterI18n = {
-          logger
-        }
+        override def getLoggerI18n: LogWriterI18n =
+          Misc.getGemFireCache.getLoggerI18n
       },
       delay, delay)
+  }
+
+  def stop(): Unit = synchronized {
+    _snc = None
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
@@ -92,7 +100,7 @@ object SnappyTableStatsProviderService extends Logging {
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
             while (itr.hasNext) {
-              pr.getPrStats().incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
+              pr.getPrStats.incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
                   .getRow(container).getColumn(colPos).getInt)
             }
           }
@@ -102,11 +110,12 @@ object SnappyTableStatsProviderService extends Logging {
   }
 
 
-  def getAggregatedTableStatsOnDemand(sc: SparkContext):
-  Map[String, SnappyRegionStats] = {
+  def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
+    val snc = this.snc
+    if (snc == null) return Map.empty
+
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
-    val snc = SnappyContext(sc)
     val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
       val tableName = stat.getRegionName
@@ -125,7 +134,7 @@ object SnappyTableStatsProviderService extends Logging {
   private def getSampleTableList(snc: SnappyContext): Seq[String] = {
     try {
       snc.sessionState.catalog
-          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString()).toSeq
+          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
     } catch {
       case tnfe: org.apache.spark.sql.TableNotFoundException =>
         Seq.empty[String]
