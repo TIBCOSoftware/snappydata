@@ -149,7 +149,7 @@ final class PooledKryoSerializer(conf: SparkConf)
   }
 }
 
-private[spark] final class PooledObject(serializer: PooledKryoSerializer,
+final class PooledObject(serializer: PooledKryoSerializer,
     bufferSize: Int) {
   val kryo: Kryo = serializer.newKryo()
   val output: Output = new Output(bufferSize, -1)

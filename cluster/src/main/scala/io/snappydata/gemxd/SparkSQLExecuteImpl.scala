@@ -17,7 +17,6 @@
 package io.snappydata.gemxd
 
 import java.io.DataOutput
-import java.nio.ByteBuffer
 
 import scala.collection.JavaConverters._
 
@@ -39,7 +38,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
-import org.apache.spark.storage.{RDDBlockId, StorageLevel}
+import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
@@ -66,8 +65,10 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val df = session.sql(sql)
 
+  private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
+
   private[this] val hdos = new GfxdHeapDataOutputStream(
-    Misc.getMemStore.thresholdListener(), sql, false, senderVersion)
+    thresholdListener, sql, true, senderVersion)
 
   private[this] val querySchema = df.schema
 
@@ -101,56 +102,37 @@ class SparkSQLExecuteImpl(val sql: String,
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
 
-    val cachedRDD = df.cachedRDD
-
-    // null cachedRDD means a local command or similar with only local results
-    // which will be handled as a single partition
-    if (cachedRDD == null) {
-      writeMetaData(snappyResultHolder)
-      val data = CachedDataFrame(null, df.collectInternal())
-      hdos.write(data._1)
-      if (isLocalExecution) {
-        handleLocalExecution(srh, hdos.size())
-      }
-      msg.lastResult(srh)
-      return
-    }
-
     val bm = SparkEnv.get.blockManager
-    val partitionBlockIds = new Array[RDDBlockId](cachedRDD.partitions.length)
-
-    def resultHandler(partitionId: Int, block: Array[Byte]): RDDBlockId = {
-      if (block.length != 0) {
-        val bm = SparkEnv.get.blockManager
-        val blockId = RDDBlockId(cachedRDD.id, partitionId)
-        bm.putBytes(blockId, Utils.newChunkedByteBuffer(Array(ByteBuffer.wrap(
-          block))), StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
-        partitionBlockIds(partitionId) = blockId
-        blockId
-      } else null
-    }
-
+    val rddId = df.rddId
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
       // TODO: can optimize to ship immediately if plan is not ordered
-      df.collectWithHandler(CachedDataFrame, resultHandler, { id: RDDBlockId =>
-        val data = Utils.getPartitionData(id, bm)
-        // will be added back again after doing the take if required, so remove
-        bm.removeBlock(id, tellMaster = false)
-        CachedDataFrame.decodeUnsafeRows(querySchema.length, data.array(),
-          data.position(), data.remaining())
-      })
+      // TODO: can ship CollectAggregateExec processing to the server node
+      // which is supported vial the "skipLocalCollectProcessing" flag to the
+      // call below (but that has additional overheads of plan
+      //   shipping/compilation etc and lack of proper BlockManager usage in
+      //   messaging + server-side final processing, so do it selectively)
+      val partitionBlocks = df.collectWithHandler(CachedDataFrame,
+        CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
+        CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
       hdos.clearForReuse()
-      var metaDataSent = false
-      for (p <- partitionBlockIds if p != null) {
-        logTrace("Sending data for partition id = " + p)
-        val partitionData = Utils.getPartitionData(p, bm)
-        if (!metaDataSent) {
-          writeMetaData(srh)
-          metaDataSent = true
+      writeMetaData(srh)
+
+      var id = 0
+      for (block <- partitionBlocks) {
+        block match {
+          case null => // skip but still id has to be incremented
+          case data: Array[Byte] => if (data.length > 0) {
+            hdos.write(data)
+          }
+          case p: RDDBlockId =>
+            val partitionData = Utils.getPartitionData(p, bm)
+            // remove the block once a local handle to it has been obtained
+            bm.removeBlock(p, tellMaster = false)
+            hdos.write(partitionData)
         }
-        hdos.write(partitionData)
+        logTrace(s"Writing data for partition ID = $id: $block")
         val dosSize = hdos.size()
         if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
           if (isLocalExecution) {
@@ -161,22 +143,32 @@ class SparkSQLExecuteImpl(val sql: String,
           } else {
             msg.sendResult(srh)
           }
-          logTrace(s"Sent one batch for result, current partition $p.")
+          logTrace(s"Sent one batch for result, current partition ID = $id")
           hdos.clearForReuse()
-          assert(metaDataSent)
-          // 0 indicator is now written in serializeRows itself to allow
+          // 0/1 indicator is now written in serializeRows itself to allow
           // ByteBuffer to be passed as is in the chunks list of
           // GfxdHeapDataOutputStream and avoid a copy
-        }
 
-        // clear persisted block
-        bm.removeBlock(p, tellMaster = false)
+          // throttle sending if CRITICAL_UP
+          val targetMember = msg.getSender
+          if (thresholdListener.isCritical ||
+              thresholdListener.isCriticalUp(targetMember)) {
+            try {
+              var throttle = true
+              for (tries <- 1 to 5 if throttle) {
+                Thread.sleep(4)
+                throttle = thresholdListener.isCritical ||
+                    thresholdListener.isCriticalUp(targetMember)
+              }
+            } catch {
+              case ie: InterruptedException => Misc.checkIfCacheClosing(ie)
+            }
+          }
+        }
+        id += 1
       }
       blockReadSuccess = true
 
-      if (!metaDataSent) {
-        writeMetaData(srh)
-      }
       if (isLocalExecution) {
         handleLocalExecution(srh, hdos.size())
       }
@@ -184,8 +176,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
     } finally {
       if (!blockReadSuccess) {
-        // remove cached results from block manager
-        bm.removeRdd(cachedRDD.id)
+        // remove any cached results from block manager
+        bm.removeRdd(rddId)
       }
     }
   }
