@@ -480,9 +480,9 @@ final case class ObjectHashMapAccessor(session: SnappySession,
         declarations.append(s"final long $nullMaskVar = " +
             s"$keyObjVar != null ? $keyObjVar.$nullVar : -1L;\n")
       } else {
-        declarations.append(s"final long $nullMaskVar = $keyObjVar.$nullVar;")
+        declarations.append(s"final long $nullMaskVar = $keyObjVar.$nullVar;\n")
       }
-      declarations.append(s"long $nullValMaskVar = $nullMaskVar;")
+      declarations.append(s"long $nullValMaskVar = $nullMaskVar;\n")
       nullValMaskVars(index) = nullValMaskVar
       nullVar -> (nullMaskVar, nullValMaskVar)
     }.toMap

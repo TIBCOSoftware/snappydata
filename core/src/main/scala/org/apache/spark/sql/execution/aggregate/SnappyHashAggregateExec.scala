@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 /*
- * Adapted from Spark's HashAggregateExec having the license below.
+ * Some code adapted from Spark's HashAggregateExec having the license below.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,7 +37,6 @@
 package org.apache.spark.sql.execution.aggregate
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
@@ -45,6 +44,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.{SnappyAggregation, SnappySession}
 import org.apache.spark.util.Utils
 
 /**
@@ -65,6 +65,8 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan)
     extends UnaryExecNode with BatchConsumer {
+
+  override def nodeName: String = "SnappyHashAggregate"
 
   @transient lazy val resultExpressions = __resultExpressions
 
@@ -88,6 +90,9 @@ case class SnappyHashAggregateExec(
     "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
     "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"),
     "aggTime" -> SQLMetrics.createTimingMetric(sparkContext, "aggregate time"))
+
+  // this is a var to allow CollectAggregateExec to switch temporarily
+  protected var childProducer = child
 
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 
@@ -156,7 +161,7 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  protected override def doExecute(): RDD[InternalRow] = {
+  override protected def doExecute(): RDD[InternalRow] = {
     // code generation should never fail
     WholeStageCodegenExec(this).execute()
   }
@@ -166,17 +171,14 @@ case class SnappyHashAggregateExec(
 
   override def usedInputs: AttributeSet = inputSet
 
-  override def supportCodegen: Boolean = {
-    // ImperativeAggregate is not supported right now
-    !aggregateExpressions.exists(_.aggregateFunction
-        .isInstanceOf[ImperativeAggregate])
-  }
+  override def supportCodegen: Boolean =
+    SnappyAggregation.supportCodegen(aggregateExpressions)
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     child.asInstanceOf[CodegenSupport].inputRDDs()
   }
 
-  protected override def doProduce(ctx: CodegenContext): String = {
+  override protected def doProduce(ctx: CodegenContext): String = {
     batchConsumeDone = false
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
@@ -270,7 +272,7 @@ case class SnappyHashAggregateExec(
          |  // initialize aggregation buffer
          |  $initBufVar
          |
-         |  ${child.asInstanceOf[CodegenSupport].produce(ctx, this)}
+         |  ${childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
          |}
        """.stripMargin)
 
@@ -432,7 +434,8 @@ case class SnappyHashAggregateExec(
     val entryClass = keyBufferAccessor.getClassName
     val numKeyColumns = groupingExpressions.length
 
-    val childProduce = child.asInstanceOf[CodegenSupport].produce(ctx, this)
+    val childProduce =
+      childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     // if batchConsume has not been done then declare mask/data variables
     val declareVars = if (batchConsumeDone) ""
     else {
@@ -562,6 +565,7 @@ case class SnappyHashAggregateExec(
   override lazy val simpleString: String = toString(verbose = false)
 
   private def toString(verbose: Boolean): String = {
+    val name = nodeName
     val allAggregateExpressions = aggregateExpressions
 
     testFallbackStartsAt match {
@@ -572,13 +576,13 @@ case class SnappyHashAggregateExec(
           "[", ", ", "]")
         val outputString = Utils.truncatedString(output, "[", ", ", "]")
         if (verbose) {
-          s"SnappyHashAggregate(keys=$keyString, functions=$functionString, " +
+          s"$name(keys=$keyString, functions=$functionString, " +
               s"output=$outputString)"
         } else {
-          s"SnappyHashAggregate(keys=$keyString, functions=$functionString)"
+          s"$name(keys=$keyString, functions=$functionString)"
         }
       case Some(fallbackStartsAt) =>
-        s"SnappyHashAggregateWithControlledFallback $groupingExpressions " +
+        s"${name}WithControlledFallback $groupingExpressions " +
             s"$allAggregateExpressions $resultExpressions " +
             s"fallbackStartsAt=$fallbackStartsAt"
     }

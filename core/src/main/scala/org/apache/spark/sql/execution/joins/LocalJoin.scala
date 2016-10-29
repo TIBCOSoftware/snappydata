@@ -57,6 +57,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     right: SparkPlan)
     extends BinaryExecNode with HashJoin with CodegenSupport {
 
+  override def nodeName: String = "LocalJoin"
+
   @transient private var mapAccessor: ObjectHashMapAccessor = _
   @transient private var hashMapTerm: String = _
   @transient private var mapDataTerm: String = _
