@@ -1048,6 +1048,7 @@ object SnappyContext extends Logging {
         ServiceUtils.invokeStopFabricServer(sc)
       }
     }
+    SnappyTableStatsProviderService.stop()
     _clusterMode = null
     _anySNContext = null
     _globalSNContextInitialized = false

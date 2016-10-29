@@ -27,7 +27,6 @@ import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
@@ -38,7 +37,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
 
   def render(request: HttpServletRequest): Seq[Node] = {
     val uiDisplayInfo = SnappyTableStatsProviderService
-        .getAggregatedTableStatsOnDemand(SnappyContext.globalSparkContext)
+        .getAggregatedTableStatsOnDemand
 
     val nodes = if (uiDisplayInfo.nonEmpty) {
       <span>
