@@ -25,6 +25,7 @@ import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.{SparkEnv, TaskState}
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
+import org.apache.spark.scheduler.cluster.LaunchTasks
 import org.apache.spark.sql.SnappyContext
 
 class SnappyCoarseGrainedExecutorBackend(
@@ -37,6 +38,7 @@ class SnappyCoarseGrainedExecutorBackend(
     env: SparkEnv)
     extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
       executorId, hostName, cores, userClassPath, env) {
+
   override def onStop() {
     SnappyContext.clearStaticArtifacts()
     exitWithoutRestart()
@@ -50,6 +52,24 @@ class SnappyCoarseGrainedExecutorBackend(
     new SnappyExecutor(executorId, hostName, env,
       userClassPath, new SnappyUncaughtExceptionHandler(this),
       isLocal = false)
+
+  override def receive: PartialFunction[Any, Unit] =
+    receiveMessage orElse super.receive
+
+  private def receiveMessage: PartialFunction[Any, Unit] = {
+    case LaunchTasks(tasks, taskDataList) =>
+      if (executor ne null) {
+        logDebug("Got assigned tasks " + tasks.map(_.taskId).mkString(","))
+        for (task <- tasks) {
+          val ref = task.taskDataReference
+          executor.launchTask(this, taskId = task.taskId,
+            attemptNumber = task.attemptNumber, task.name, task.serializedTask,
+            if (ref >= 0) taskDataList(ref) else task.taskData)
+        }
+      } else {
+        exitExecutor(1, "Received LaunchTasks command but executor was null")
+      }
+  }
 
   /**
    * Avoid sending any message for TaskState.RUNNING which serves no purpose.
