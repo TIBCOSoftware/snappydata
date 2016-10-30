@@ -511,7 +511,9 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     colTableName: String,
     schema: StructType,
     useCompression: Boolean,
-    bufferSize: Int) {
+    bufferSize: Int,
+    baseIsPartitioned: Boolean,
+    reservoirInRegion: Boolean) {
 
   var holder = getCachedBatchHolder
 
