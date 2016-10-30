@@ -16,10 +16,14 @@
  */
 package org.apache.spark.sql.sources
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, Predicate}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -298,19 +302,71 @@ trait PrunedUnsafeFilteredScan {
  * generatePredicate generates a predicate for a filter expression and schema.
  * This class is needed because the predicate needs to generated on the executor side.
  *
- * @param predicateCompiler Function that compiles the filter expression to byte code
- * @param filterExpression filter expression that will be compiled
- * @param schema schema of the stats row
- * @param cachedBatchesSeen metrics that is used to track the cached batches
+ * @param source               Generated java code for the filter expression
+ * @param numStatsFields       number of fields in the statistics row
+ * @param references           any reference objects to be passed when compiling code
+ *                             using [[CodeGenerator]]
+ * @param cachedBatchesSeen    metrics that is used to track the cached batches
  * @param cachedBatchesSkipped metrics that is used to track the skipped cached batches
  */
-class StatsPredicateCompiler(
-    val predicateCompiler: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
-    val filterExpression: Expression,
-    val schema: Seq[Attribute],
-    val cachedBatchesSeen: SQLMetric,
-    val cachedBatchesSkipped: SQLMetric) extends Serializable {
+final class StatsPredicateCompiler(
+    private[this] var source: CodeAndComment,
+    private[this] var numStatsFields: Int,
+    private[this] var references: Array[Any],
+    private[this] var cachedBatchesSeen: SQLMetric,
+    private[this] var cachedBatchesSkipped: SQLMetric)
+    extends Serializable with KryoSerializable {
 
-  def compilePredicate : (InternalRow) => Boolean = predicateCompiler(filterExpression, schema)
+  def compilePredicate: Predicate =
+    CodeGenerator.compile(source).generate(references).asInstanceOf[Predicate]
 
+  def numStatisticsFields: Int = numStatsFields
+
+  def cachedBatchesSeenMetric: SQLMetric = cachedBatchesSeen
+
+  def cachedBatchesSkippedMetric: SQLMetric = cachedBatchesSkipped
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeString(source.body)
+    output.writeVarInt(source.comment.size, true)
+    for ((k, v) <- source.comment) {
+      output.writeString(k)
+      output.writeString(v)
+    }
+    output.writeVarInt(numStatsFields, true)
+    val numReferences = references.length
+    output.writeVarInt(numReferences, true)
+    if (numReferences > 0) {
+      for (reference <- references) {
+        kryo.writeClassAndObject(output, reference)
+      }
+    }
+    kryo.writeClassAndObject(output, cachedBatchesSeen)
+    kryo.writeClassAndObject(output, cachedBatchesSkipped)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    val body = input.readString()
+    var numComments = input.readVarInt(true)
+    val comments = Map.newBuilder[String, String]
+    while (numComments > 0) {
+      val k = input.readString()
+      comments += k -> input.readString()
+      numComments -= 1
+    }
+
+    numStatsFields = input.readVarInt(true)
+    val numReferences = input.readVarInt(true)
+    val references = new Array[Any](numReferences)
+    var i = 0
+    while (i < numReferences) {
+      references(i) = kryo.readClassAndObject(input)
+      i += 1
+    }
+
+    this.source = new CodeAndComment(body, comments.result())
+    this.references = references
+    cachedBatchesSeen = kryo.readClassAndObject(input).asInstanceOf[SQLMetric]
+    cachedBatchesSkipped = kryo.readClassAndObject(input).asInstanceOf[SQLMetric]
+  }
 }

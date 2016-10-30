@@ -127,13 +127,14 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
+    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds,
+      statsPredicate.compilePredicate, statsPredicate.numStatisticsFields,
+      statsPredicate.cachedBatchesSeenMetric,
+      statsPredicate.cachedBatchesSkippedMetric)
     else new ByteArraysIteratorOnScan(container, bucketIds,
-      statsPredicate.compilePredicate,
-      //  pass dummy value if no schema
-      if (statsPredicate.schema != null) statsPredicate.schema.size else 1,
-      statsPredicate.cachedBatchesSeen,
-      statsPredicate.cachedBatchesSkipped)
+      statsPredicate.compilePredicate, statsPredicate.numStatisticsFields,
+      statsPredicate.cachedBatchesSeenMetric,
+      statsPredicate.cachedBatchesSkippedMetric)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

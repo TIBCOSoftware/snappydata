@@ -31,8 +31,8 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.codegen.Predicate
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
@@ -223,8 +223,9 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], predicateOnStats: (InternalRow) => Boolean,
-    numColsInSchema: Int, cachedBatchesSeen: SQLMetric, cachedBatchesSkipped: SQLMetric)
+    bucketIds: java.util.Set[Integer], predicateOnStats: Predicate,
+    numStatsFields: Int, cachedBatchesSeen: SQLMetric,
+    cachedBatchesSkipped: SQLMetric)
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
@@ -243,12 +244,12 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
           rowFormatter = container.getRowFormatter(currentVal(0))
           val statBytes = rowFormatter.getLob(currentVal, 4)
-          val result = new UnsafeRow(numColsInSchema)
+          val result = new UnsafeRow(numStatsFields)
           result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
             statBytes.length)
           // Skip the cached batches based on the predicate on stat
           cachedBatchesSeen += 1
-          if (predicateOnStats(result)){
+          if (predicateOnStats.eval(result)) {
             return
           } else {
             cachedBatchesSkipped += 1
@@ -261,7 +262,9 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 }
 
 final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
+    bucketIds: java.util.Set[Integer], predicateOnStats: Predicate,
+    numStatsFields: Int, cachedBatchesSeen: SQLMetric,
+    cachedBatchesSkipped: SQLMetric)
     extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
       bucketIds) {
 
@@ -279,7 +282,17 @@ final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
         val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
         if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
           v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
-          return
+          val statBytes = currentVal.getRowBytes(4)
+          val result = new UnsafeRow(numStatsFields)
+          result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
+            statBytes.length)
+          // Skip the cached batches based on the predicate on stat
+          cachedBatchesSeen += 1
+          if (predicateOnStats.eval(result)) {
+            return
+          } else {
+            cachedBatchesSkipped += 1
+          }
         }
       }
     }

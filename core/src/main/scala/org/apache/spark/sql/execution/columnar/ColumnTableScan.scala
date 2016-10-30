@@ -46,7 +46,7 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext, ExprCode, ExpressionCanonicalizer, Predicate}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
@@ -95,8 +95,9 @@ private[sql] final case class ColumnTableScan(
         columnRelation.getCachedBatchStatistics(schemaAttributes)
       case _ => null
     }
+
     def getCachedBatchStatsSchema: Seq[AttributeReference] =
-      if (cachedBatchStatistics != null) cachedBatchStatistics.schema else null
+      if (cachedBatchStatistics ne null) cachedBatchStatistics.schema else Nil
 
     def statsFor(a: Attribute) = cachedBatchStatistics.forAttribute(a)
 
@@ -156,17 +157,54 @@ private[sql] final case class ColumnTableScan(
       }
     }
 
+    val cachedBatchesSeen = SQLMetrics.createMetric(sparkContext,
+      "cached batches seen")
+    val cachedBatchesSkipped = SQLMetrics.createMetric(sparkContext,
+      "cached batches skipped by the predicate")
     metricsCreatedBeforeInit = metricsCreatedBeforeInit ++
-        Map("cachedBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
-          "cached batches seen"),
-          "cachedBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
-            "cached batches skipped by the predicate"))
+        Map("cachedBatchesSeen" -> cachedBatchesSeen,
+          "cachedBatchesSkipped" -> cachedBatchesSkipped)
 
-    new StatsPredicateCompiler(newPredicate,
-      cachedBatchStatFilters.reduceOption(And).getOrElse(Literal(true)),
-      getCachedBatchStatsSchema,
-      metricsCreatedBeforeInit("cachedBatchesSeen"),
-      metricsCreatedBeforeInit("cachedBatchesSkipped"))
+    val cachedBatchStatsSchema = getCachedBatchStatsSchema
+    val (source, references) = createCode(cachedBatchStatFilters
+        .reduceOption(And).getOrElse(Literal(true)), cachedBatchStatsSchema)
+    new StatsPredicateCompiler(source, cachedBatchStatsSchema.length,
+      references, cachedBatchesSeen, cachedBatchesSkipped)
+  }
+
+  private def createCode(expression: Expression,
+      schema: Seq[Attribute]): (CodeAndComment, Array[Any]) = {
+    val predicate = ExpressionCanonicalizer.execute(
+      BindReferences.bindReference(expression, schema))
+    val ctx = new CodegenContext
+    val eval = predicate.genCode(ctx)
+    val codeBody =
+      s"""
+      public SpecificPredicate generate(Object[] references) {
+        return new SpecificPredicate(references);
+      }
+
+      class SpecificPredicate extends ${classOf[Predicate].getName} {
+        private final Object[] references;
+        ${ctx.declareMutableStates()}
+        ${ctx.declareAddedFunctions()}
+
+        public SpecificPredicate(Object[] references) {
+          this.references = references;
+          ${ctx.initMutableStates()}
+        }
+
+        public boolean eval(InternalRow ${ctx.INPUT_ROW}) {
+          ${eval.code}
+          return !${eval.isNull} && ${eval.value};
+        }
+      }"""
+
+    val code = CodeFormatter.stripOverlappingComments(
+      new CodeAndComment(codeBody, ctx.getPlaceHolderToComments()))
+    logDebug(s"Generated predicate '$predicate':\n${CodeFormatter.format(code)}")
+
+    (code, ctx.references.toArray)
   }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd

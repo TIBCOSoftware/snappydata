@@ -193,13 +193,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // clear the input of RowTableScan
     rowTableScan.input = null
 
-    // TODO: temporary workaround to clear parent field of buildPlan
-    // because of plan objects being sent across by StatsPredicateCompiler
-    val parentSetter = buildPlan.getClass.getMethod("parent_$eq",
-      classOf[CodegenSupport])
-    parentSetter.setAccessible(true)
-    parentSetter.invoke(buildPlan, null)
-
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
