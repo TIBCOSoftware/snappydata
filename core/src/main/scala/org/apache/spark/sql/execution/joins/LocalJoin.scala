@@ -168,8 +168,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    mapAccessor = ObjectHashMapAccessor(session, ctx, "LocalMap",
-      buildSideKeys, buildPlan.output, hashMapTerm, mapDataTerm, maskTerm,
+    mapAccessor = ObjectHashMapAccessor(session, ctx, buildSideKeys,
+      buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
 
     val entryClass = mapAccessor.getClassName
@@ -188,15 +188,15 @@ case class LocalJoin(leftKeys: Seq[Expression],
           ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
         }
        """)
-    // clear the input of RowTableScan
-    rowTableScan.input = null
 
-    // TODO: temporary workaround to clear parent field of buildPlan
-    // because of plan objects being sent across by StatsPredicateCompiler
+    // clear the parent by reflection if plan is sent by operators like Sort
     val parentSetter = buildPlan.getClass.getMethod("parent_$eq",
       classOf[CodegenSupport])
     parentSetter.setAccessible(true)
     parentSetter.invoke(buildPlan, null)
+
+    // clear the input of RowTableScan
+    rowTableScan.input = null
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
