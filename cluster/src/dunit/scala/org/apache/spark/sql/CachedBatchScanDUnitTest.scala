@@ -18,11 +18,8 @@ package org.apache.spark.sql
 
 import io.snappydata.cluster.ClusterManagerTestBase
 
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.execution.metric.SQLMetrics
 
-
-class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s){
+class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testCachedBatchSkipping(): Unit = {
 
@@ -35,21 +32,21 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s){
         "UniqueCarrier CHAR(6) NOT NULL"
 
     snc.sql(s"create table if not exists airline ($ddlStr) " +
-          s" using column options (Buckets '2')").collect()
+        s" using column options (Buckets '2')").collect()
 
-    for (i <- 1 to 100 ) {
+    for (i <- 1 to 100) {
       snc.sql(s"insert into airline values(2015, 2, 15, 1002, $i, 'AA')")
     }
 
     // ***Check for the case when all the cached batches are scanned ****
     var previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
 
-    var df_allCachedBatchesScan = snc.sql(
+    val df_allCachedBatchesScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where  ArrDelay < 101 " +
           "group by UniqueCarrier order by arrivalDelay")
 
-    df_allCachedBatchesScan.count
+    df_allCachedBatchesScan.count()
 
     var executionIds =
       snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
@@ -69,7 +66,7 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s){
           "from AIRLINE where ArrDelay > 101  " +
           "group by UniqueCarrier order by arrivalDelay")
 
-    df_noCachedBatchesScan.count
+    df_noCachedBatchesScan.count()
 
     executionIds =
         snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
@@ -89,7 +86,7 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s){
           "from AIRLINE where ArrDelay < 20  " +
           "group by UniqueCarrier order by arrivalDelay")
 
-    df_someCachedBatchesScan.count
+    df_someCachedBatchesScan.count()
 
     executionIds =
         snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
@@ -107,18 +104,18 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s){
       sc: SnappySession, executionId: Long): (Long, Long) = {
 
     val metricValues = sc.sharedState.listener.getExecutionMetrics(executionId)
-    var a = (sc.sharedState.listener.getRunningExecutions ++
-        sc.sharedState.listener.getCompletedExecutions ).filter(x => {
+    val a = (sc.sharedState.listener.getRunningExecutions ++
+        sc.sharedState.listener.getCompletedExecutions).filter(x => {
       x.executionId == executionId
     })
-    val seenid = a.head.accumulatorMetrics.filter(x =>
-    {x._2.name == "cached batches seen"}).head._1
-    val skippedid = a.head.accumulatorMetrics.filter(x =>
-    {x._2.name == "cached batches skipped by the predicate"}).head._1
+    val seenid = a.head.accumulatorMetrics.filter(x => {
+      x._2.name == "column batches seen"
+    }).head._1
+    val skippedid = a.head.accumulatorMetrics.filter(x => {
+      x._2.name == "column batches skipped by the predicate"
+    }).head._1
 
     (metricValues.filter(_._1 == seenid).head._2.toInt,
         metricValues.filter(_._1 == skippedid).head._2.toInt)
   }
-
-
 }
