@@ -124,7 +124,9 @@ object StoreUtils extends Logging {
             Utils.getHostExecutorId(SnappyContext.getBlockId(
               m.toString).get.blockId)
         }
-        new MultiBucketExecutorPartition(p, Set(p), prefNodes.toSeq)
+        val buckets = new mutable.ArrayBuffer[Int](1)
+        buckets += p
+        new MultiBucketExecutorPartition(p, buckets, prefNodes.toSeq)
       }.toArray[Partition]
     }
   }
@@ -144,7 +146,8 @@ object StoreUtils extends Logging {
       case m if SnappyContext.containsBlockId(m.toString) =>
         Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
     }.toSeq
-    partitions(0) = new MultiBucketExecutorPartition(0, Set.empty, prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition(
+      0, new mutable.ArrayBuffer[Int](0), prefNodes)
     partitions
   }
 
@@ -213,7 +216,7 @@ object StoreUtils extends Logging {
           case Some(b) => Utils.getHostExecutorId(b.blockId)
         }
         partitionIndex += 1
-        new MultiBucketExecutorPartition(partitionIndex, partBuckets.toSet,
+        new MultiBucketExecutorPartition(partitionIndex, partBuckets,
           preferredLocations)
       }
     }.toArray[Partition]

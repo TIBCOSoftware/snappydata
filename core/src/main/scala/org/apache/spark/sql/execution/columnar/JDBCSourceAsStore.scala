@@ -223,7 +223,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int], predicateOnStats: (InternalRow) => Boolean,
+    bucketIds: java.util.Set[Integer], predicateOnStats: (InternalRow) => Boolean,
     numColsInSchema: Int, cachedBatchesSeen: SQLMetric, cachedBatchesSkipped: SQLMetric)
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
@@ -261,7 +261,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 }
 
 final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
       bucketIds) {
 

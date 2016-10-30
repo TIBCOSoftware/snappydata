@@ -749,13 +749,26 @@ class ExecutorLocalPartition(override val index: Int,
 }
 
 class MultiBucketExecutorPartition(private[this] var _index: Int,
-    private[this] var _buckets: Set[Int],
+    private[this] var _buckets: mutable.ArrayBuffer[Int],
     private[this] var _hostExecutorIds: Seq[String])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index
 
-  def buckets: Set[Int] = _buckets
+  def buckets: java.util.Set[Integer] = new java.util.AbstractSet[Integer] {
+
+    override def contains(o: Any): Boolean = _buckets.contains(o)
+
+    override def iterator() = new java.util.Iterator[Integer] {
+      private val iterator = _buckets.iterator
+      override def hasNext: Boolean = iterator.hasNext
+      override def next(): Integer = Int.box(iterator.next())
+    }
+
+    override def size(): Int = _buckets.length
+  }
+
+  def bucketsString: String = _buckets.mkString(",")
 
   def hostExecutorIds: Seq[String] = _hostExecutorIds
 
@@ -775,12 +788,12 @@ class MultiBucketExecutorPartition(private[this] var _index: Int,
     _index = input.readVarInt(true)
 
     var numBuckets = input.readVarInt(true)
-    val bucketsBuilder = Set.newBuilder[Int]
+    val buckets = new mutable.ArrayBuffer[Int](numBuckets)
     while (numBuckets > 0) {
-      bucketsBuilder += input.readVarInt(true)
+      buckets += input.readVarInt(true)
       numBuckets -= 1
     }
-    _buckets = bucketsBuilder.result()
+    _buckets = buckets
 
     var numExecutors = input.readVarInt(true)
     val executorBuilder = Seq.newBuilder[String]
@@ -791,8 +804,8 @@ class MultiBucketExecutorPartition(private[this] var _index: Int,
     _hostExecutorIds = executorBuilder.result()
   }
 
-  override def toString: String =
-    s"MultiBucketExecutorPartition($index, $buckets, $hostExecutorIds)"
+  override def toString: String = s"MultiBucketExecutorPartition(" +
+      s"$index, $bucketsString, ${_hostExecutorIds.mkString(",")})"
 }
 
 

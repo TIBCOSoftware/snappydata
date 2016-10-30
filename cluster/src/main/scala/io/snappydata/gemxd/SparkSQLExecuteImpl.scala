@@ -198,21 +198,20 @@ class SparkSQLExecuteImpl(val sql: String,
 
   def getTableNamesAndNullability: (Array[String], Array[Boolean]) = {
     var i = 0
-    val output = df.queryExecution.analyzed.output
+    val output = df.queryExecution.executedPlan.output
     val tables = new Array[String](output.length)
     val nullables = new Array[Boolean](output.length)
-    output.foreach(a => {
+    output.foreach { a =>
       val fn = a.qualifiedName
       val dotIdx = fn.lastIndexOf('.')
       if (dotIdx > 0) {
         tables(i) = fn.substring(0, dotIdx)
-      }
-      else {
+      } else {
         tables(i) = ""
       }
       nullables(i) = a.nullable
-      i = i + 1
-    })
+      i += 1
+    }
     (tables, nullables)
   }
 
