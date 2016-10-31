@@ -143,7 +143,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
-    val createMap = ctx.freshName("CreateMap")
+    val createMap = ctx.freshName("createMap")
+    val createMapClass = ctx.freshName("CreateMap")
+    val getOrCreateMap = ctx.freshName("getOrCreateMap")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
@@ -190,25 +192,29 @@ case class LocalJoin(leftKeys: Seq[Expression],
       s"this.$contextName = $taskContextClass.get();")
     ctx.addMutableState("scala.collection.Iterator", rowIterator,
       s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, $contextName);")
-    ctx.addNewFunction(createMap,
+    ctx.addNewFunction(getOrCreateMap,
       s"""
-        public final class $createMap implements java.util.concurrent.Callable {
+        public final void $createMap() throws java.io.IOException {
+          $hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
+            $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
+              $entryClass.class));
+          this.$hashMapTerm = $hashMapTerm;
+          int $maskTerm = $hashMapTerm.mask();
+          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
 
-          public void apply($taskContextClass context) throws java.io.IOException {
-            $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
-             .get($cacheKeyTerm, this, context, 1,
-               scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
-          }
+          ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
+        }
+
+        public final void $getOrCreateMap() throws java.io.IOException {
+          $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
+            .get($cacheKeyTerm, new $createMapClass(), $contextName, 1,
+             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+        }
+
+        public final class $createMapClass implements java.util.concurrent.Callable {
 
           public Object call() throws java.io.IOException {
-            $hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
-              $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
-              $entryClass.class));
-            int $maskTerm = $hashMapTerm.mask();
-            $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
-
-            ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
-
+            $createMap();
             return $hashMapTerm;
           }
         }
@@ -243,7 +249,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
       boolean $keyIsUniqueTerm = true;
       if (!$initMap) {
         final long beforeMap = System.nanoTime();
-        new $createMap().apply($contextName);
+        $getOrCreateMap();
         $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
         $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
         $initMap = true;
