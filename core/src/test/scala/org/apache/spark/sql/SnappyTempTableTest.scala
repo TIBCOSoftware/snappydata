@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.Logging
@@ -25,20 +24,21 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 
 class SnappyTempTableTest extends SnappyFunSuite
-with Logging
-with BeforeAndAfter {
+    with Logging
+    with BeforeAndAfter {
 
   val tableName: String = "TestTempTable"
   val props = Map.empty[String, String]
 
   after {
-    snc.dropTable(tableName, true)
+    snc.dropTable(tableName, ifExists = true)
   }
 
 
   test("test drop table from a simple source") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd =  sc.parallelize(data, data.length).map(s => new io.snappydata.core.Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      io.snappydata.core.Data(s.head, s(1), s(2)))
     val df = snc.createDataFrame(rdd)
 
     df.createOrReplaceTempView(tableName)
@@ -63,11 +63,11 @@ with BeforeAndAfter {
 
   test("test drop table from a relational source") {
     val file = getClass.getResource("/airlineCode_Lookup.csv").getPath
-    val df  = snc.read
-            .format("com.databricks.spark.csv") // CSV to DF package
-            .option("header", "true") // Use first line of all files as header
-            .option("inferSchema", "true") // Automatically infer data types
-            .load(file)
+    val df = snc.read
+        .format("com.databricks.spark.csv") // CSV to DF package
+        .option("header", "true") // Use first line of all files as header
+        .option("inferSchema", "true") // Automatically infer data types
+        .load(file)
 
     df.createOrReplaceTempView(tableName)
     val catalog = snc.sessionState.catalog
@@ -79,7 +79,7 @@ with BeforeAndAfter {
           "matched with LogicalRelation")
     }
     val scan = snc.sql(s"select * from $tableName")
-    scan.count
+    scan.count()
 
     snc.sql(s"drop table $tableName")
 
