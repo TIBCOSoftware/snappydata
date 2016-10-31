@@ -32,7 +32,7 @@ import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter, StatsPredicateCompiler}
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{Partition, TaskContext}
@@ -45,12 +45,12 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
+      session: SparkSession): RDD[CachedBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession,
-          tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
+          tableName, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -122,7 +122,6 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
 final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
-    private var statsPredicate: StatsPredicateCompiler,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
@@ -132,14 +131,8 @@ final class ColumnarStorePartitionedRDD(
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds,
-      statsPredicate.compilePredicate, statsPredicate.numStatisticsFields,
-      statsPredicate.cachedBatchesSeenMetric,
-      statsPredicate.cachedBatchesSkippedMetric)
-    else new ByteArraysIteratorOnScan(container, bucketIds,
-      statsPredicate.compilePredicate, statsPredicate.numStatisticsFields,
-      statsPredicate.cachedBatchesSeenMetric,
-      statsPredicate.cachedBatchesSkippedMetric)
+    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
+    else new ByteArraysIteratorOnScan(container, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -160,15 +153,12 @@ final class ColumnarStorePartitionedRDD(
     super.write(kryo, output)
 
     output.writeString(tableName)
-    statsPredicate.write(kryo, output)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
 
     tableName = input.readString()
-    statsPredicate = new StatsPredicateCompiler(null, 0, null, null, null)
-    statsPredicate.read(kryo, input)
   }
 }
 

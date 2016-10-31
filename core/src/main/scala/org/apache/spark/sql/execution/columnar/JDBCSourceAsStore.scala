@@ -32,12 +32,9 @@ import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.catalyst.expressions.codegen.Predicate
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.sources.{ConnectionProperties, StatsPredicateCompiler}
-import org.apache.spark.unsafe.Platform
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.{Logging, Partition, TaskContext}
 
 /*
@@ -53,9 +50,9 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
     connProperties.dialect)
 
 
-  def getCachedBatchRDD(tableName: String,
+  override def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
-      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
+      session: SparkSession): RDD[CachedBatch] = {
     new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
         numPartitions, this)
   }
@@ -223,9 +220,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], predicateOnStats: Predicate,
-    numStatsFields: Int, cachedBatchesSeen: SQLMetric,
-    cachedBatchesSkipped: SQLMetric)
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
@@ -243,17 +238,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
         if (v ne null) {
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
           rowFormatter = container.getRowFormatter(currentVal(0))
-          val statBytes = rowFormatter.getLob(currentVal, 4)
-          val result = new UnsafeRow(numStatsFields)
-          result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-            statBytes.length)
-          // Skip the cached batches based on the predicate on stat
-          cachedBatchesSeen += 1
-          if (predicateOnStats.eval(result)) {
-            return
-          } else {
-            cachedBatchesSkipped += 1
-          }
+          return
         }
       }
     }
@@ -262,9 +247,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 }
 
 final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], predicateOnStats: Predicate,
-    numStatsFields: Int, cachedBatchesSeen: SQLMetric,
-    cachedBatchesSkipped: SQLMetric)
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
       bucketIds) {
 
@@ -282,17 +265,7 @@ final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
         val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
         if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
           v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
-          val statBytes = currentVal.getRowBytes(4)
-          val result = new UnsafeRow(numStatsFields)
-          result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-            statBytes.length)
-          // Skip the cached batches based on the predicate on stat
-          cachedBatchesSeen += 1
-          if (predicateOnStats.eval(result)) {
-            return
-          } else {
-            cachedBatchesSkipped += 1
-          }
+          return
         }
       }
     }
