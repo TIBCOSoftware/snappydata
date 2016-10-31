@@ -19,18 +19,20 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 
-import scala.reflect.ClassTag
-
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.collection._
+import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter, StatsPredicateCompiler}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{Partition, TaskContext}
@@ -47,14 +49,14 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
-        new ColumnarStorePartitionedRDD[CachedBatch](snappySession,
+        new ColumnarStorePartitionedRDD(snappySession,
           tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
         val poolProps = _connProperties.poolProps -
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        new SparkShellCachedBatchRDD[CachedBatch](snappySession,
+        new SparkShellCachedBatchRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
@@ -117,9 +119,12 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySession,
-    tableName: String, statsPredicate: StatsPredicateCompiler,
-    store: JDBCSourceAsColumnarStore) extends RDD[Any](session.sparkContext, Nil) {
+final class ColumnarStorePartitionedRDD(
+    @transient private val session: SnappySession,
+    private var tableName: String,
+    private var statsPredicate: StatsPredicateCompiler,
+    @transient private val store: JDBCSourceAsColumnarStore)
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
@@ -150,12 +155,31 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
         region.asInstanceOf[PartitionedRegion])
     })
   }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    super.write(kryo, output)
+
+    output.writeString(tableName)
+    statsPredicate.write(kryo, output)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    super.read(kryo, input)
+
+    tableName = input.readString()
+    statsPredicate = new StatsPredicateCompiler(null, 0, null, null, null)
+    statsPredicate.read(kryo, input)
+  }
 }
 
-class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
-    tableName: String, requiredColumns: Array[String],
-    connProperties: ConnectionProperties, store: ExternalStore)
-    extends RDD[CachedBatch](_session.sparkContext, Nil) {
+final class SparkShellCachedBatchRDD(
+    @transient private val session: SnappySession,
+    private var tableName: String,
+    private var requiredColumns: Array[String],
+    private var connProperties: ConnectionProperties,
+    @transient private val store: ExternalStore)
+    extends RDDKryo[CachedBatch](session.sparkContext, Nil)
+    with KryoSerializable {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
@@ -174,6 +198,26 @@ class SparkShellCachedBatchRDD[T: ClassTag](_session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    super.write(kryo, output)
+
+    output.writeString(tableName)
+    output.writeVarInt(requiredColumns.length, true)
+    for (column <- requiredColumns) {
+      output.writeString(column)
+    }
+    ConnectionPropertiesSerializer.write(kryo, output, connProperties)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    super.read(kryo, input)
+
+    tableName = input.readString()
+    val numColumns = input.readVarInt(true)
+    requiredColumns = Array.fill(numColumns)(input.readString())
+    connProperties = ConnectionPropertiesSerializer.read(kryo, input)
   }
 }
 

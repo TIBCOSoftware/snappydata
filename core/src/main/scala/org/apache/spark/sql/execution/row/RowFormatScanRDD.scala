@@ -30,15 +30,12 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
-import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.TypeUtils
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -56,7 +53,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
     @transient private val _partitions: Array[Partition] = Array.empty[Partition])
-    extends RDD[Any](session.sparkContext, Nil) with KryoSerializable {
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -259,7 +256,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
-    output.writeInt(id)
+    super.write(kryo, output)
+
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
@@ -286,9 +284,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
-    TypeUtils.rddIdField.set(this, input.readInt())
-    TypeUtils.rddStorageLevelField.set(this, StorageLevel.NONE)
-    checkpointData = None
+    super.read(kryo, input)
+
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()

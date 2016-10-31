@@ -17,7 +17,6 @@
 package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
-import java.util
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -59,21 +58,21 @@ final class SparkShellRDDHelper {
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-    var bucketString = ""
-    partition.buckets.foreach( bucket => {
-      bucketString = bucketString + bucket + ","
-    })
-    val buckets = bucketString.substring(0, bucketString.length-1)
+    val buckets = partition.buckets.mkString(",")
     val statement = conn.createStatement()
-    if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+    if (!useLocatorURL) {
+      statement.execute(
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+    }
 
     val rs = statement.executeQuery(query)
     (statement, rs)
   }
 
-  def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
-    val urlsOfNetServerHost = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition].hostList
+  def getConnection(connectionProperties: ConnectionProperties,
+      split: Partition): Connection = {
+    val urlsOfNetServerHost = split.asInstanceOf[
+        ExecutorMultiBucketLocalShellPartition].hostList
     useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
@@ -99,13 +98,12 @@ final class SparkShellRDDHelper {
       ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
         props, connProperties.executorConnProps, connProperties.hikariCP)
     } catch {
-      case sqlException: SQLException =>
-        if (hostList.size == 1 || useLocatorURL)
-          throw sqlException
-        else {
-          hostList.remove(index)
-          createConnection(connProperties, hostList)
-        }
+      case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
+        throw sqle
+      } else {
+        hostList.remove(index)
+        createConnection(connProperties, hostList)
+      }
     }
   }
 }
@@ -126,75 +124,6 @@ object SparkShellRDDHelper {
     partitions
   }
 
-  private def mapBucketsToPartitions(tableName: String, conn: Connection): Array[Partition] = {
-    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-    val bucketToServerList = getBucketToServerMapping(resolvedName)
-    val numBuckets = bucketToServerList.length
-
-    Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
-      case pr: PartitionedRegion =>
-        val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
-            mutable.HashSet[Int]]()
-        var totalBuckets = new mutable.HashSet[Int]()
-        for (p <- 0 until numBuckets) {
-          val owner = pr.getBucketPrimary(p)
-          val bucketSet = {
-            if (serverToBuckets.contains(owner)) serverToBuckets.get(owner).get
-            else new mutable.HashSet[Int]()
-          }
-          bucketSet += p
-          totalBuckets += p
-          serverToBuckets put(owner, bucketSet)
-        }
-        val numCores = Runtime.getRuntime.availableProcessors()
-        val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
-        val numPartitions = numServers * numCores
-        val partitions = {
-          if (numBuckets < numPartitions) {
-            new Array[Partition](numBuckets)
-          } else {
-            new Array[Partition](numPartitions)
-          }
-        }
-        var partCnt = 0;
-        serverToBuckets foreach (e => {
-          var numCoresPending = numCores
-          var localBuckets = e._2
-          assert(!localBuckets.isEmpty)
-          var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
-          assert(maxBucketsPerPart >= 1)
-          while (partCnt <= numPartitions && !localBuckets.isEmpty) {
-            var cntr = 0;
-            val bucketsPerPart = new mutable.HashSet[Int]()
-            maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
-            assert(maxBucketsPerPart >= 1)
-            while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
-              val buck = localBuckets.head
-              bucketsPerPart += buck
-              localBuckets = localBuckets - buck
-              totalBuckets = totalBuckets - buck
-              cntr += 1
-            }
-            partitions(partCnt) = new ExecutorMultiBucketLocalShellPartition(
-              partCnt, bucketsPerPart, bucketToServerList(bucketsPerPart.head))
-            partCnt += 1
-            numCoresPending -= 1
-          }
-        })
-        partitions
-      case pr: DistributedRegion =>
-        val numPartitions = bucketToServerList.length
-        val partitions = new Array[Partition](numPartitions)
-        for (p <- 0 until numPartitions) {
-          partitions(p) = new ExecutorMultiBucketLocalShellPartition(
-            p,
-            mutable.HashSet.empty,
-            bucketToServerList(p))
-        }
-        partitions
-    }
-  }
-
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
@@ -208,11 +137,13 @@ object SparkShellRDDHelper {
       if (netServers.indexOf(',') > 0) {
         for (netServer <- netServers.split(",")) {
           netUrls += node.getIpAddress.getHostAddress ->
-              (urlPrefix + org.apache.spark.sql.collection.Utils.getClientHostPort(netServer) + urlSuffix)
+              (urlPrefix + org.apache.spark.sql.collection.Utils
+                  .getClientHostPort(netServer) + urlSuffix)
         }
       } else {
         netUrls += node.getIpAddress.getHostAddress ->
-            (urlPrefix + org.apache.spark.sql.collection.Utils.getClientHostPort(netServers) + urlSuffix)
+            (urlPrefix + org.apache.spark.sql.collection.Utils
+                .getClientHostPort(netServers) + urlSuffix)
       }
     }
   }
@@ -243,7 +174,8 @@ object SparkShellRDDHelper {
             membersToNetServers, urlPrefix, urlSuffix, netUrls))
 
           if (netUrls.isEmpty) {
-            // Save the bucket which does not have a neturl, and later assign available ones to it.
+            // Save the bucket which does not have a neturl,
+            // and later assign available ones to it.
             orphanBuckets += bid
           } else {
             for (e <- netUrls) {

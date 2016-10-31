@@ -34,10 +34,11 @@ import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
-import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
+import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.sources.{ConnectionProperties, StatsPredicateCompiler}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
@@ -129,9 +130,16 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
     kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
     kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
+    kryo.register(classOf[ColumnarStorePartitionedRDD],
+      new KryoSerializableSerializer)
+    kryo.register(classOf[SparkShellCachedBatchRDD],
+      new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
+    kryo.register(classOf[StatsPredicateCompiler],
+      new KryoSerializableSerializer)
+    kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(

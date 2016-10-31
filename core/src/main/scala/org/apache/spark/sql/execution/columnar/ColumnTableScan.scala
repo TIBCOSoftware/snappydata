@@ -299,7 +299,13 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
     // need DataType and nullable to get decoder in generated code
-    val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
+    // shipping as StructType for efficient serialization
+    val planSchema = ctx.addReferenceObj("schema", schema,
+      classOf[StructType].getName)
+    val fields = ctx.freshName("fields")
+    ctx.addMutableState("Attribute[]", fields,
+      s"$fields = (Attribute[])$planSchema.toAttributes().toArray(" +
+          "scala.reflect.ClassTag$.MODULE$.apply(Attribute.class));")
     val columnBufferInitCode = new StringBuilder
     val bufferInitCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
