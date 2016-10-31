@@ -46,15 +46,16 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext, ExprCode, ExpressionCanonicalizer, Predicate}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, StatsPredicateCompiler}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
@@ -66,40 +67,40 @@ import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, T
  */
 private[sql] final case class ColumnTableScan(
     output: Seq[Attribute],
+    dataRDD: RDD[Any],
+    otherRDDs: Seq[RDD[InternalRow]],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan,
-    requestedColumns: Seq[AttributeReference],
-    pushedFilters: Seq[Filter],
     allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-        (RDD[Any], Seq[RDD[InternalRow]]))
-    extends PartitionedPhysicalScan(output, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation],
-      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder)
-        with CodegenSupport {
+    schemaAttributes: Seq[AttributeReference])
+    extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation])
+    with CodegenSupport {
 
-  override def getMetricsMap: Map[String, SQLMetric] = {
-    super.getMetricsMap ++ Map("numRowsBufferOutput" -> SQLMetrics.createMetric(
-      sparkContext, "number of output rows from row buffer")) ++ (
-        if (otherRDDs.isEmpty) Map.empty
-        else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
-          "number of output rows from other RDDs")))
-  }
+  override def getMetrics: Map[String, SQLMetric] = super.getMetrics ++ Map(
+    "numRowsBufferOutput" -> SQLMetrics.createMetric(sparkContext,
+      "number of output rows from row buffer"),
+    "columnBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
+      "column batches seen"),
+    "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
+      "column batches skipped by the predicate")) ++ (
+      if (otherRDDs.isEmpty) Map.empty
+      else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
+        "number of output rows from other RDDs")))
 
-  override def getStatsPredicate: StatsPredicateCompiler = {
+  private def generateStatPredicate(ctx: CodegenContext): String = {
 
-    val cachedBatchStatistics = relation match {
+    val columnBatchStatistics = relation match {
       case columnRelation: BaseColumnFormatRelation =>
-        columnRelation.getCachedBatchStatistics(schemaAttributes)
+        columnRelation.getColumnBatchStatistics(schemaAttributes)
       case _ => null
     }
 
-    def getCachedBatchStatsSchema: Seq[AttributeReference] =
-      if (cachedBatchStatistics ne null) cachedBatchStatistics.schema else Nil
+    def getColumnBatchStatSchema: Seq[AttributeReference] =
+      if (columnBatchStatistics ne null) columnBatchStatistics.schema else Nil
 
-    def statsFor(a: Attribute) = cachedBatchStatistics.forAttribute(a)
+    def statsFor(a: Attribute) = columnBatchStatistics.forAttribute(a)
 
     // Returned filter predicate should return false iff it is impossible for the input expression
     // to evaluate to `true' based on statistics collected about this partition batch.
@@ -135,21 +136,18 @@ private[sql] final case class ColumnTableScan(
     }
 
     // This code is picked up from InMemoryTableScanExec
-    val cachedBatchStatFilters: Seq[Expression] = {
+    val columnBatchStatFilters: Seq[Expression] = {
       if (relation.isInstanceOf[BaseColumnFormatRelation]) {
         allFilters.flatMap { p =>
           val filter = buildFilter.lift(p)
-          val boundFilter =
-            filter.map(
-              BindReferences.bindReference(
-                _,
-                cachedBatchStatistics.schema,
-                allowFailures = true))
+          val boundFilter = filter.map(BindReferences.bindReference(
+            _, columnBatchStatistics.schema, allowFailures = true))
 
           boundFilter.foreach(_ =>
-            filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
+            filter.foreach(f =>
+              logDebug(s"Predicate $p generates partition filter: $f")))
 
-          // If the filter can't be resolved th en we are missing required statistics.
+          // If the filter can't be resolved then we are missing required statistics.
           boundFilter.filter(_.resolved)
         }
       } else {
@@ -157,54 +155,39 @@ private[sql] final case class ColumnTableScan(
       }
     }
 
-    val cachedBatchesSeen = SQLMetrics.createMetric(sparkContext,
-      "cached batches seen")
-    val cachedBatchesSkipped = SQLMetrics.createMetric(sparkContext,
-      "cached batches skipped by the predicate")
-    metricsCreatedBeforeInit = metricsCreatedBeforeInit ++
-        Map("cachedBatchesSeen" -> cachedBatchesSeen,
-          "cachedBatchesSkipped" -> cachedBatchesSkipped)
-
-    val cachedBatchStatsSchema = getCachedBatchStatsSchema
-    val (source, references) = createCode(cachedBatchStatFilters
-        .reduceOption(And).getOrElse(Literal(true)), cachedBatchStatsSchema)
-    new StatsPredicateCompiler(source, cachedBatchStatsSchema.length,
-      references, cachedBatchesSeen, cachedBatchesSkipped)
-  }
-
-  private def createCode(expression: Expression,
-      schema: Seq[Attribute]): (CodeAndComment, Array[Any]) = {
+    val columnBatchStatsSchema = getColumnBatchStatSchema
+    val numStatFields = columnBatchStatsSchema.length
     val predicate = ExpressionCanonicalizer.execute(
-      BindReferences.bindReference(expression, schema))
-    val ctx = new CodegenContext
-    val eval = predicate.genCode(ctx)
-    val codeBody =
+      BindReferences.bindReference(columnBatchStatFilters
+          .reduceOption(And).getOrElse(Literal(true)), columnBatchStatsSchema))
+    val statRow = ctx.freshName("statRow")
+    val statBytes = ctx.freshName("statBytes")
+    ctx.INPUT_ROW = statRow
+    ctx.currentVars = null
+    val predicateEval = predicate.genCode(ctx)
+
+    val platformClass = classOf[Platform].getName
+    val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+    val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
+    val filterFunction = ctx.freshName("columnBatchFilter")
+    ctx.addNewFunction(filterFunction,
       s"""
-      public SpecificPredicate generate(Object[] references) {
-        return new SpecificPredicate(references);
-      }
-
-      class SpecificPredicate extends ${classOf[Predicate].getName} {
-        private final Object[] references;
-        ${ctx.declareMutableStates()}
-        ${ctx.declareAddedFunctions()}
-
-        public SpecificPredicate(Object[] references) {
-          this.references = references;
-          ${ctx.initMutableStates()}
-        }
-
-        public boolean eval(InternalRow ${ctx.INPUT_ROW}) {
-          ${eval.code}
-          return !${eval.isNull} && ${eval.value};
-        }
-      }"""
-
-    val code = CodeFormatter.stripOverlappingComments(
-      new CodeAndComment(codeBody, ctx.getPlaceHolderToComments()))
-    logDebug(s"Generated predicate '$predicate':\n${CodeFormatter.format(code)}")
-
-    (code, ctx.references.toArray)
+         |private boolean $filterFunction(byte[] $statBytes) {
+         |  final UnsafeRow $statRow = new UnsafeRow($numStatFields);
+         |  $statRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statBytes.length);
+         |  $columnBatchesSeen.add(1);
+         |  // Skip the column batches based on the predicate
+         |  ${predicateEval.code}
+         |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |    return true;
+         |  } else {
+         |    $columnBatchesSkipped.add(1);
+         |    return false;
+         |  }
+         |}
+       """.stripMargin)
+    filterFunction
   }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
@@ -404,6 +387,9 @@ private[sql] final case class ColumnTableScan(
       ev
     }
 
+    val filterFunction = generateStatPredicate(ctx)
+    // TODO: add filter function for non-embedded mode (using store layer
+    //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
       s"""
         final $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
@@ -412,14 +398,32 @@ private[sql] final case class ColumnTableScan(
       """
     } else if (isOffHeap) {
       s"""
-        final $execRowClass $batch = ($execRowClass)$colInput.next();
+        $execRowClass $batch;
+        while (true) {
+          $batch = ($execRowClass)$colInput.next();
+          final byte[] statBytes = $batch.getRowBytes(
+            ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+          if ($filterFunction(statBytes)) {
+            break;
+          }
+          if (!$colInput.hasNext()) return false;
+        }
         $numBatchRows = $batch.getAsInt(
           ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, ($wasNullClass)null);
       """
     } else {
       s"""
-        final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
-        $buffers = (byte[][])$colInput.next();
+        $rowFormatterClass $rowFormatter;
+        while (true) {
+          $rowFormatter = $colInput.rowFormatter();
+          $buffers = (byte[][])$colInput.next();
+          final byte[] statBytes = $rowFormatter.getLob($buffers,
+            ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+          if ($filterFunction(statBytes)) {
+            break;
+          }
+          if (!$colInput.hasNext()) return false;
+        }
         $numBatchRows = $rowFormatter.getAsInt(
           ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, $buffers[0],
           ($wasNullClass)null);
@@ -461,7 +465,7 @@ private[sql] final case class ColumnTableScan(
       columnsInput)).mkString("")
 
     s"""
-       |// Combined iterator for cached batches from column table
+       |// Combined iterator for column batches from column table
        |// and ResultSet from row buffer. Also takes care of otherRDDs
        |// case when partition is of otherRDDs by iterating over it
        |// using an UnsafeRow adapter.
