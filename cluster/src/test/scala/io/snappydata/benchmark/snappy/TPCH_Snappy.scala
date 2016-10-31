@@ -1567,7 +1567,7 @@ object TPCH_Snappy {
           "                         and l3.l_receiptdate > l3.l_commitdate" +
           "         )" +
           "         and s_nationkey = n_nationkey" +
-          "         and n_name = 'SAUDI ARABIA'" +
+          "         and n_name = 'VIETNAM'" +
           " group by" +
           "         s_name" +
           " order by" +

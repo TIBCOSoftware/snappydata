@@ -427,8 +427,8 @@ case class SnappyHashAggregateExec(
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    keyBufferAccessor = ObjectHashMapAccessor(session, ctx, "KeyBuffer",
-      groupingExpressions, aggregateBufferAttributesForGroup, hashMapTerm,
+    keyBufferAccessor = ObjectHashMapAccessor(session, ctx, groupingExpressions,
+      aggregateBufferAttributesForGroup, "KeyBuffer", hashMapTerm,
       mapDataTerm, maskTerm, multiMap = false, this, this.parent, child)
 
     val entryClass = keyBufferAccessor.getClassName
