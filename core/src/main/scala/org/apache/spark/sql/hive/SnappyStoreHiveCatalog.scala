@@ -47,7 +47,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{DependencyCatalog, BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
+import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
 
@@ -166,10 +166,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
         relation match {
-          case sr: StreamBaseRelation => //Do Nothing as it is not supported for stream relation
-          case pr: ParentRelation => {
+          case sr: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
+          case pr: ParentRelation =>
             var dependentRelations: Array[String] = Array()
-            if (None != table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+            if (table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
               dependentRelations = table.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
                   .split(",")
             }
@@ -177,9 +177,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             dependentRelations.foreach(rel => {
               DependencyCatalog.addDependent(in.toString, rel)
             })
-
-          }
-          case _ => //Do nothing
+          case _ => // Do nothing
         }
 
         (LogicalRelation(relation), table)
@@ -471,7 +469,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           lookupRelation(newQualifiedTableName(t)) match {
             case LogicalRelation(p: ParentRelation, _, _) =>
               p.removeDependent(dep, this)
-              removeDependentRelation(newQualifiedTableName(t),newQualifiedTableName(dep.name))
+              removeDependentRelation(newQualifiedTableName(t),
+                newQualifiedTableName(dep.name))
             case _ => // ignore
           }
         } catch {
@@ -535,7 +534,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         lookupRelation(newQualifiedTableName(t)) match {
           case LogicalRelation(p: ParentRelation, _, _) =>
             p.addDependent(dep, this)
-            addDependentRelation(newQualifiedTableName(t),newQualifiedTableName(dep.name))
+            addDependentRelation(newQualifiedTableName(t),
+              newQualifiedTableName(dep.name))
           case _ => // ignore
         }
         tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
@@ -760,6 +760,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           (ExternalStoreUtils.DEPENDENT_RELATIONS -> (indexes + index.toString())))
     )
   }
+
   def addDependentRelation(inTable: QualifiedTableName,
       dependentRelation: QualifiedTableName): Unit = {
     alterTableLock.synchronized {
