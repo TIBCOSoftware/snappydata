@@ -17,7 +17,7 @@
 package io.snappydata.cluster
 
 import java.io.File
-import java.sql.{DriverManager, Connection}
+import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -31,6 +31,7 @@ import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -222,6 +223,7 @@ object ClusterManagerTestBase {
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
     // conf.set("spark.executor.memory", "2g")
     // conf.set("spark.shuffle.manager", "SORT")
+    Utils.setDefaultSerializerAndCodec(conf)
 
     props.asScala.foreach({ case (k, v) =>
       if (k.indexOf(".") < 0) {
