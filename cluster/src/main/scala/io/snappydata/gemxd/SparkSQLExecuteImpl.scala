@@ -325,6 +325,7 @@ object SparkSQLExecuteImpl extends Logging {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
           dvd.setToNull()
+          index += 1
         } else {
           types(index) match {
             case StoredFormatIds.SQL_CHAR_ID |
