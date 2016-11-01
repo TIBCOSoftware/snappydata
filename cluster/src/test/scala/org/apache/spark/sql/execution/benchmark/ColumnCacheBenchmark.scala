@@ -40,11 +40,11 @@ package org.apache.spark.sql.execution.benchmark
 
 import io.snappydata.SnappyFunSuite
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, QueryTest, Row}
+import org.apache.spark.sql.{DataFrame, QueryTest, Row, SparkSession}
 import org.apache.spark.util.Benchmark
-import org.apache.spark.{SparkConf, SparkEnv}
 
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
@@ -63,6 +63,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     conf
   }
 
+  private val sparkSession = new SparkSession(sc)
   private val snappySession = snc.snappySession
 
   ignore("cache with randomized keys - end-to-end") {
@@ -118,82 +119,93 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, readPathOnly: Boolean): Unit = {
     val numIters = 10
     val benchmark = new Benchmark("Cache random keys", size)
-    snappySession.sql("drop table if exists test")
-    var testDF = snappySession.range(size)
+    sparkSession.sql("drop table if exists test")
+    var testDF = sparkSession.range(size)
+        .selectExpr("id", "floor(rand() * 10000) as k")
+    val testDF2 = snappySession.range(size)
         .selectExpr("id", "floor(rand() * 10000) as k")
     // var testDF = snappySession.range(size)
     //    .selectExpr("id", "concat('val', cast((id % 100) as string)) as k")
     testDF.createOrReplaceTempView("test")
     val query = "select avg(k), avg(id) from test"
-    val expectedAnswer = snappySession.sql(query).collect().toSeq
+    val expectedAnswer = sparkSession.sql(query).collect().toSeq
+    val expectedAnswer2 = testDF2.selectExpr("avg(k)", "avg(id)").collect().toSeq
 
     /**
      * Add a benchmark case, optionally specifying whether to cache the dataset.
      */
     def addBenchmark(name: String, cache: Boolean, params: Map[String, String] = Map(),
         snappy: Boolean = false, nullable: Boolean = true): Unit = {
-      val defaults = params.keys.flatMap { k => snappySession.conf.getOption(k).map((k, _)) }
-      var ds = snappySession.sql(query)
+      val defaults = params.keys.flatMap { k => sparkSession.conf.getOption(k).map((k, _)) }
+      val defaults2 = params.keys.flatMap { k => snappySession.conf.getOption(k).map((k, _)) }
       def prepare(): Unit = {
+        params.foreach { case (k, v) => sparkSession.conf.set(k, v) }
         params.foreach { case (k, v) => snappySession.conf.set(k, v) }
         if (!nullable) {
-          testDF = snappySession.internalCreateDataFrame(testDF.queryExecution.toRdd,
+          testDF = sparkSession.internalCreateDataFrame(testDF.queryExecution.toRdd,
             StructType(testDF.schema.fields.map(_.copy(nullable = false))))
           testDF.createOrReplaceTempView("test")
-          ds = snappySession.sql(query)
         }
         doGC()
         if (cache) {
           testDF.createOrReplaceTempView("test")
-          snappySession.catalog.cacheTable("test")
+          sparkSession.catalog.cacheTable("test")
         } else if (snappy) {
           val nullableStr = if (nullable) "" else " not null"
           snappySession.sql("drop table if exists test")
           snappySession.sql(s"create table test (id bigint $nullableStr, " +
               s"k bigint $nullableStr) using column")
           if (readPathOnly) {
-            testDF.write.insertInto("test")
-            ds = snappySession.sql(query)
+            testDF2.write.insertInto("test")
           }
         }
         if (readPathOnly) {
-          collect(ds, expectedAnswer)
+          if (snappy) {
+            collect(snappySession.sql(query), expectedAnswer2)
+          } else {
+            collect(sparkSession.sql(query), expectedAnswer)
+          }
           testCleanup()
         }
         doGC()
       }
       def cleanup(): Unit = {
-        defaults.foreach { case (k, v) => snappySession.conf.set(k, v) }
-        snappySession.catalog.clearCache()
+        defaults.foreach { case (k, v) => sparkSession.conf.set(k, v) }
+        defaults2.foreach { case (k, v) => snappySession.conf.set(k, v) }
+        sparkSession.catalog.clearCache()
         snappySession.sql("drop table if exists test")
         doGC()
       }
       def testCleanup(): Unit = {
-        snappySession.sparkContext.parallelize(1 to 10, 10).foreach { _ =>
-          SparkEnv.get.blockManager.diskBlockManager.getAllFiles().foreach { dir =>
-            dir.delete()
-          }
-        }
       }
       addCaseWithCleanup(benchmark, name, numIters, prepare, cleanup, testCleanup) { _ =>
         if (readPathOnly) {
-          collect(ds, expectedAnswer)
+          if (snappy) {
+            collect(snappySession.sql(query), expectedAnswer2)
+          } else {
+            collect(sparkSession.sql(query), expectedAnswer)
+          }
         } else {
           // also benchmark the time it takes to build the column buffers
           if (snappy) {
             snappySession.sql("truncate table test")
-            testDF.write.insertInto("test")
+            testDF2.write.insertInto("test")
+            val ds = snappySession.sql(query)
+            collect(ds, expectedAnswer2)
+            collect(ds, expectedAnswer2)
+          } else {
+            val ds = sparkSession.sql(query)
+            collect(ds, expectedAnswer)
+            collect(ds, expectedAnswer)
           }
-          val ds2 = snappySession.sql(query)
-          collect(ds2, expectedAnswer)
-          collect(ds2, expectedAnswer)
         }
       }
     }
 
     // All of these are codegen = T hashmap = T
+    sparkSession.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    sparkSession.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
     snappySession.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    snappySession.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
 
     // Benchmark cases:
     //   (1) Caching without compression
