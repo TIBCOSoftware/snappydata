@@ -44,6 +44,7 @@ import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResul
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.{CollectionAccumulator, DoubleAccumulator, LongAccumulator, SerializableBuffer, Utils}
 import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
@@ -117,6 +118,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[RemoveBroadcast])
     kryo.register(classOf[RemoveRdd])
     kryo.register(classOf[RemoveShuffle])
+    kryo.register(classOf[BitSet])
 
     kryo.register(classOf[BlockManagerId], new ExternalizableResolverSerializer(
       BlockManagerId.getCachedBlockManagerId))
