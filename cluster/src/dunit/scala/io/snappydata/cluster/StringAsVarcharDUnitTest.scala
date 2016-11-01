@@ -1,5 +1,3 @@
-package io.snappydata.cluster
-
 /*
  * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
@@ -16,6 +14,8 @@ package io.snappydata.cluster
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
+package io.snappydata.cluster
 
 import java.sql.Connection
 
@@ -35,8 +35,8 @@ class StringAsVarcharDUnitTest(val s: String)
   val colTab1 = "colTab1"
   val rowTab1 = "rowTab1"
 
-  val varcharSize = 20;
-  val charSize = 10;
+  val varcharSize = 20
+  val charSize = 10
 
   /**
    * Test 'select *' and 'select cast(* as)' queries on a column table, without query hint.
@@ -146,12 +146,6 @@ class StringAsVarcharDUnitTest(val s: String)
 
   /**
    * Verify the metadata of the result set.
-   *
-   * @param rs
-   * @param cols
-   * @param stringType
-   * @param tName
-   * @param join
    */
   private def verify(rs: java.sql.ResultSet, cols: Int,
       stringType: String, tName: String, join: Boolean = false): Unit = {
@@ -199,14 +193,13 @@ class StringAsVarcharDUnitTest(val s: String)
       assert(md.getPrecision(5) == charSize)
     }
 
-    assert(md.getTableName(1).equalsIgnoreCase(tName))
+    assert(md.getTableName(1).equalsIgnoreCase(tName),
+      s"Expected $tName but got ${md.getTableName(1)}")
   }
 
   /**
    * Create a row table and a column table with five columns each. Row table has five entries while
    * the column table has just two entries.
-   * 
-   * @param conn
    */
   def createTablesAndInsertData(conn: Connection): Unit = {
     val snc = SnappyContext(sc)
@@ -225,7 +218,7 @@ class StringAsVarcharDUnitTest(val s: String)
       Seq(5, "t1.5.string", "t1.5.varchar", "t1.5.clob", "t1.5.char"))
 
     val rdd = sc.parallelize(data, data.length).map(s =>
-        Data9(s(0).asInstanceOf[Int], s(1).toString, s(2).toString, s(3).toString, s(4).toString))
+      Data9(s(0).asInstanceOf[Int], s(1).toString, s(2).toString, s(3).toString, s(4).toString))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("row").mode(SaveMode.Append)
         .saveAsTable(rowTab1)
@@ -239,4 +232,3 @@ class StringAsVarcharDUnitTest(val s: String)
 }
 
 case class Data9(col1: Int, col2: String, col3: String, col4: String, col5: String)
-
