@@ -155,17 +155,16 @@ case class JDBCMutableRelation(
     connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val rdd = new JDBCRDD(
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
-      executorConnector,
-      ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
+      schema,
+      connProperties.url,
+      connProperties.executorConnProps,
       table,
       requiredColumns,
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
-      parts,
-      connProperties.url,
-      connProperties.executorConnProps).asInstanceOf[RDD[Any]]
+      parts).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
 

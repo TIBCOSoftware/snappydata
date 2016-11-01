@@ -117,6 +117,10 @@ abstract class ColumnEncoding {
   def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     throw new UnsupportedOperationException(s"readUTF8String for $toString")
 
+  def getStringDictionary: Array[UTF8String] = null
+
+  def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int = -1
+
   def readDate(columnBytes: AnyRef, cursor: Long): Int =
     readInt(columnBytes, cursor)
 

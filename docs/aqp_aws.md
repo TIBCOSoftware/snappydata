@@ -80,8 +80,12 @@ Refer to the Amazon documentation for more information on  [generating your own 
 ![STEP](./Images/aws_selectedregion.png)
 > Note: 
 	
+	> * When you click **Launch Cluster** you are directed to the AWS sign-in page. 
+	Login may fail for IAM users who have not previously logged into the AWS account on the current browser.
+	To resolve this, open a new tab in the browser, and use your account-specific URL to log into AWS for the 	first sign-in. Once the account-specific URL is stored as a cookie in the browser, click **Launch Cluster** to log into the AWS console. 
+
 	> * Use the key pair that exists in the region selected.
-	
+				
 	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
 	
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>

@@ -45,7 +45,6 @@ dependencies {
   provided "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}"
-  //provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}"
   provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
@@ -111,7 +110,7 @@ scalaTest {
 task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
   outputs.files "${sparkProductDir}.tgz"
 
-  src "http://redrockdigimark.com/apachemirror/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
+  src "http://archive.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
   dest sparkDistDir
   onlyIfNewer true
 
@@ -135,7 +134,7 @@ task getApacheSparkDist {
       // gradle tarTree does not preserve symlinks (GRADLE-2844)
       exec {
         executable 'tar'
-        args 'xfz', "${sparkDistDir}/${sparkDistName}.tgz"
+        args 'xzf', "${sparkDistName}.tgz"
         workingDir = sparkDistDir
       }
     }
