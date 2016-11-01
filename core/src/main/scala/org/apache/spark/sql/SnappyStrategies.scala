@@ -229,27 +229,21 @@ object SnappyAggregation extends Strategy {
     val finalAggregateAttributes = finalAggregateExpressions.map(
       _.resultAttribute)
 
+    val finalHashAggregate = SnappyHashAggregateExec(
+      requiredChildDistributionExpressions = Some(groupingAttributes),
+      groupingExpressions = groupingAttributes,
+      aggregateExpressions = finalAggregateExpressions,
+      aggregateAttributes = finalAggregateAttributes,
+      initialInputBufferOffset = groupingExpressions.length,
+      __resultExpressions = resultExpressions,
+      child = partialAggregate)
+
     val finalAggregate = if (isRootPlan) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
-      new CollectAggregateExec(
-        _requiredChildDistributionExpressions = Some(groupingAttributes),
-        _groupingExpressions = groupingAttributes,
-        _aggregateExpressions = finalAggregateExpressions,
-        _aggregateAttributes = finalAggregateAttributes,
-        _initialInputBufferOffset = groupingExpressions.length,
-        _resultExpressions = resultExpressions,
-        _child = partialAggregate)
-    } else {
-      SnappyHashAggregateExec(
-        requiredChildDistributionExpressions = Some(groupingAttributes),
-        groupingExpressions = groupingAttributes,
-        aggregateExpressions = finalAggregateExpressions,
-        aggregateAttributes = finalAggregateAttributes,
-        initialInputBufferOffset = groupingExpressions.length,
-        __resultExpressions = resultExpressions,
+      CollectAggregateExec(basePlan = finalHashAggregate,
         child = partialAggregate)
-    }
+    } else finalHashAggregate
     finalAggregate :: Nil
   }
 

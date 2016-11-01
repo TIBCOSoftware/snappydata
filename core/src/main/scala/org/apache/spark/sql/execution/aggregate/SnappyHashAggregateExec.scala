@@ -92,7 +92,7 @@ case class SnappyHashAggregateExec(
     "aggTime" -> SQLMetrics.createTimingMetric(sparkContext, "aggregate time"))
 
   // this is a var to allow CollectAggregateExec to switch temporarily
-  protected var childProducer = child
+  private[execution] var childProducer = child
 
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 

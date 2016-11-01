@@ -1392,14 +1392,14 @@ object SnappySession extends Logging {
 
     override def profileCreated(profile: Profile): Unit = {
       // clear all plans pessimistically for now
-      clearCache()
+      clearPlanCache()
     }
 
     override def profileUpdated(profile: Profile): Unit = {}
 
     override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
       // clear all plans pessimistically for now
-      clearCache()
+      clearPlanCache()
     }
   }
 
@@ -1524,7 +1524,7 @@ object SnappySession extends Logging {
     }
   }
 
-  private[spark] def clearCache(): Unit = {
+  private[spark] def clearPlanCache(): Unit = {
     planCache.invalidateAll()
   }
 
