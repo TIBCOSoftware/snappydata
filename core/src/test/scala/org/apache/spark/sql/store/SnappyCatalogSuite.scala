@@ -35,15 +35,15 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.{SnappySession, AnalysisException}
-import org.apache.spark.sql.catalog.{Column, Function, Table, Database}
-import org.apache.spark.sql.catalyst.{ScalaReflection, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalog.{Column, Database, Function, Table}
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.Range
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.internal.CatalogImpl
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.util.Utils
 
 /**
@@ -51,28 +51,29 @@ import org.apache.spark.util.Utils
  */
 
 class SnappyCatalogSuite extends SnappyFunSuite
-with BeforeAndAfter
-with BeforeAndAfterAll {
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
 
-  var snappySession : SnappySession = null
+  var snappySession: SnappySession = _
 
-  private var sessionCatalog: SessionCatalog = null
+  private var sessionCatalog: SessionCatalog = _
 
   before {
     try {
-      if(sessionCatalog != null) {
-        sessionCatalog.reset
+      if (sessionCatalog != null) {
+        sessionCatalog.reset()
       }
       snappySession = new SnappySession(snc.sparkContext)
       sessionCatalog = snappySession.sessionState.catalog
     } finally {
-      //super.afterEach()
+      // super.afterEach()
     }
   }
 
   private val utils = new CatalogTestUtils {
     override val tableInputFormat: String = "org.apache.hadoop.mapred.SequenceFileInputFormat"
     override val tableOutputFormat: String = "org.apache.hadoop.mapred.SequenceFileOutputFormat"
+
     override def newEmptyCatalog(): ExternalCatalog = snc.sharedState.externalCatalog
   }
 
@@ -118,9 +119,11 @@ with BeforeAndAfterAll {
     val tableMetadata = sessionCatalog.getTableMetadata(TableIdentifier(tableName, dbName))
     val columns = dbName
         .map { db => snappySession.catalog.listColumns(db, tableName) }
-        .getOrElse { snappySession.catalog.listColumns(tableName) }
+        .getOrElse {
+          snappySession.catalog.listColumns(tableName)
+        }
     assume(tableMetadata.schema.nonEmpty, "bad test")
-   // assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
+    // assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
     assume(tableMetadata.bucketColumnNames.nonEmpty, "bad test")
     assert(columns.collect().map(_.name).toSet == tableMetadata.schema.map(_.name).toSet)
     columns.collect().foreach { col =>
@@ -144,7 +147,8 @@ with BeforeAndAfterAll {
   }
 
   test("list databases") {
-    assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet == Set("APP", "DEFAULT"))
+    assert(snappySession.catalog.listDatabases().collect()
+        .map(_.name.toUpperCase).toSet == Set("APP", "DEFAULT"))
     createDatabase("my_db1")
     createDatabase("my_db2")
     assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet ==
@@ -165,7 +169,8 @@ with BeforeAndAfterAll {
     assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet ==
         Set("my_table2", "my_temp_table"))
     dropTable("my_temp_table")
-    assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet == Set("my_table2"))
+    assert(snappySession.catalog.listTables().collect()
+        .map(_.name.toLowerCase).toSet == Set("my_table2"))
   }
 
   test("list tables with database") {
@@ -234,9 +239,11 @@ with BeforeAndAfterAll {
 
     // Make sure database is set properly.
     assert(
-      snappySession.catalog.listFunctions("my_db1").collect().map(_.database).toSet == Set("MY_DB1", null))
+      snappySession.catalog.listFunctions("my_db1").collect()
+          .map(_.database).toSet == Set("MY_DB1", null))
     assert(
-      snappySession.catalog.listFunctions("my_db2").collect().map(_.database).toSet == Set("MY_DB2", null))
+      snappySession.catalog.listFunctions("my_db2").collect()
+          .map(_.database).toSet == Set("MY_DB2", null))
 
     // Remove the function and make sure they no longer appear.
     dropFunction("my_func1", Some("my_db1"))
@@ -338,6 +345,7 @@ abstract class CatalogTestUtils {
   // Unimplemented methods
   val tableInputFormat: String
   val tableOutputFormat: String
+
   def newEmptyCatalog(): ExternalCatalog
 
   // These fields must be lazy because they rely on fields that are not implemented yet
