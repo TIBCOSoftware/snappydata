@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
+import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
 
 /**
@@ -31,7 +32,7 @@ import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, SparkP
  * an exchange for simple aggregates.
  */
 case class CollectAggregateExec(
-    basePlan: SnappyHashAggregateExec,
+    @transient basePlan: SnappyHashAggregateExec,
     child: SparkPlan) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
@@ -41,9 +42,10 @@ case class CollectAggregateExec(
   override def requiredChildDistribution: List[Distribution] =
     UnspecifiedDistribution :: Nil
 
-  private[sql] lazy val childRDD = child.execute()
+  @transient private[sql] lazy val childRDD = child.execute()
 
-  private[sql] lazy val (generatedSource, generatedReferences, generatedClass) = {
+  @transient private[sql] lazy val (generatedSource, generatedReferences,
+  generatedClass) = {
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
     basePlan.childProducer = InputAdapter(child)
@@ -97,6 +99,6 @@ case class CollectAggregateExec(
   }
 
   override def doExecute(): RDD[InternalRow] = {
-    sqlContext.sparkContext.parallelize(executeCollect(), 1)
+    EnsureRequirements(sqlContext.conf).apply(basePlan).execute()
   }
 }

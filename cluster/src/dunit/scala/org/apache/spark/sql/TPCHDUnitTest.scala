@@ -78,7 +78,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
     queries.foreach(query => TPCH_Snappy.execute(query, snc,
-      isResultCollection = true, isSnappy = isSnappy))
+      isResultCollection = true, isSnappy = isSnappy, avgPrintStream = System.out))
   }
 
   private def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
