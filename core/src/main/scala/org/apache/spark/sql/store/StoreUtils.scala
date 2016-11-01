@@ -186,8 +186,8 @@ object StoreUtils extends Logging {
     var partitionIndex = -1
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
-      val numPartitions = math.max(1, math.min(numBuckets,
-        blockId.map(_.numProcessors).getOrElse(numBuckets)))
+      val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
+        b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
       val minPartitions = numBuckets / numPartitions
       val remaining = numBuckets % numPartitions
       var partitionStart = 0
