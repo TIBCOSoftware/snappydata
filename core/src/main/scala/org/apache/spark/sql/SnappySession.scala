@@ -158,6 +158,9 @@ class SnappySession(@transient private val sc: SparkContext,
   override def sql(sqlText: String): CachedDataFrame =
     snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText))
 
+  def sqlUncached(sqlText: String): DataFrame =
+    snappyContextFunctions.sql(super.sql(sqlText))
+
   private[sql] final def executeSQL(sqlText: String): DataFrame =
     super.sql(sqlText)
 
@@ -1503,7 +1506,7 @@ object SnappySession extends Logging {
       case e: UncheckedExecutionException => e.getCause match {
         case ee: EntryExistsException => new CachedDataFrame(
           ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
-        case _ => throw e
+        case t => throw t
       }
     }
   }

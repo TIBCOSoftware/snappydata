@@ -50,6 +50,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
@@ -748,36 +749,65 @@ class ExecutorLocalPartition(override val index: Int,
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
-class MultiBucketExecutorPartition(private[this] var _index: Int,
-    private[this] var _buckets: mutable.ArrayBuffer[Int],
+final class MultiBucketExecutorPartition(private[this] var _index: Int,
+    _buckets: mutable.ArrayBuffer[Int],
     private[this] var _hostExecutorIds: Seq[String])
     extends Partition with KryoSerializable {
+
+  private[this] var bucketSet = {
+    val maxBucket = _buckets.max
+    val set = new BitSet(maxBucket + 1)
+    for (b <- _buckets) {
+      set.set(b)
+    }
+    set
+  }
 
   override def index: Int = _index
 
   def buckets: java.util.Set[Integer] = new java.util.AbstractSet[Integer] {
 
-    override def contains(o: Any): Boolean = _buckets.contains(o)
-
-    override def iterator() = new java.util.Iterator[Integer] {
-      private val iterator = _buckets.iterator
-      override def hasNext: Boolean = iterator.hasNext
-      override def next(): Integer = Int.box(iterator.next())
+    override def contains(o: Any): Boolean = o match {
+      case b: Int => try {
+        b >= 0 && bucketSet.get(b)
+      } catch {
+        case ie: IndexOutOfBoundsException => false
+      }
+      case _ => false
     }
 
-    override def size(): Int = _buckets.length
+    override def iterator() = new java.util.Iterator[Integer] {
+      private[this] var bucket = bucketSet.nextSetBit(0)
+
+      override def hasNext: Boolean = bucket >= 0
+      override def next(): Integer = {
+        val b = Int.box(bucket)
+        bucket = bucketSet.nextSetBit(bucket + 1)
+        b
+      }
+    }
+
+    override def size(): Int = bucketSet.cardinality()
   }
 
-  def bucketsString: String = _buckets.mkString(",")
+  def bucketsString: String = {
+    val sb = new StringBuilder
+    val bucketSet = this.bucketSet
+    var bucket = bucketSet.nextSetBit(0)
+    while (bucket >= 0) {
+      sb.append(bucket).append(',')
+      bucket = bucketSet.nextSetBit(bucket + 1)
+    }
+    // trim trailing comma
+    sb.setLength(sb.length - 1)
+    sb.toString()
+  }
 
   def hostExecutorIds: Seq[String] = _hostExecutorIds
 
   override def write(kryo: Kryo, output: Output): Unit = {
     output.writeVarInt(_index, true)
-    output.writeVarInt(_buckets.size, true)
-    for (bucket <- _buckets) {
-      output.writeVarInt(bucket, true)
-    }
+    kryo.writeClassAndObject(output, bucketSet)
     output.writeVarInt(_hostExecutorIds.length, true)
     for (executor <- _hostExecutorIds) {
       output.writeString(executor)
@@ -786,15 +816,7 @@ class MultiBucketExecutorPartition(private[this] var _index: Int,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     _index = input.readVarInt(true)
-
-    var numBuckets = input.readVarInt(true)
-    val buckets = new mutable.ArrayBuffer[Int](numBuckets)
-    while (numBuckets > 0) {
-      buckets += input.readVarInt(true)
-      numBuckets -= 1
-    }
-    _buckets = buckets
-
+    bucketSet = kryo.readClassAndObject(input).asInstanceOf[BitSet]
     var numExecutors = input.readVarInt(true)
     val executorBuilder = Seq.newBuilder[String]
     while (numExecutors > 0) {

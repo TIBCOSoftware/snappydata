@@ -91,8 +91,11 @@ class SparkSQLExecuteImpl(val sql: String,
       size: Int): Unit = {
     // prepare SnappyResultHolder with all data and create new one
     if (size > 0) {
-      val rawData = hdos.toByteArrayCopy
-      srh.fromSerializedData(rawData, rawData.length, null)
+      val bytes = new Array[Byte](size + 1)
+      // byte 1 will indicate that the metainfo is being packed too
+      bytes(0) = if (srh.hasMetadata) 0x1 else 0x0
+      hdos.sendTo(bytes, 1)
+      srh.fromSerializedData(bytes, bytes.length, null)
     }
   }
 
@@ -141,6 +144,22 @@ class SparkSQLExecuteImpl(val sql: String,
             msg.sendResult(srh)
             srh = new SnappyResultHolder(this)
           } else {
+            // throttle sending if target node is CRITICAL_UP
+            val targetMember = msg.getSender
+            if (thresholdListener.isCritical ||
+                thresholdListener.isCriticalUp(targetMember)) {
+              try {
+                var throttle = true
+                for (tries <- 1 to 5 if throttle) {
+                  Thread.sleep(4)
+                  throttle = thresholdListener.isCritical ||
+                      thresholdListener.isCriticalUp(targetMember)
+                }
+              } catch {
+                case ie: InterruptedException => Misc.checkIfCacheClosing(ie)
+              }
+            }
+
             msg.sendResult(srh)
           }
           logTrace(s"Sent one batch for result, current partition ID = $id")
@@ -148,22 +167,6 @@ class SparkSQLExecuteImpl(val sql: String,
           // 0/1 indicator is now written in serializeRows itself to allow
           // ByteBuffer to be passed as is in the chunks list of
           // GfxdHeapDataOutputStream and avoid a copy
-
-          // throttle sending if CRITICAL_UP
-          val targetMember = msg.getSender
-          if (thresholdListener.isCritical ||
-              thresholdListener.isCriticalUp(targetMember)) {
-            try {
-              var throttle = true
-              for (tries <- 1 to 5 if throttle) {
-                Thread.sleep(4)
-                throttle = thresholdListener.isCritical ||
-                    thresholdListener.isCriticalUp(targetMember)
-              }
-            } catch {
-              case ie: InterruptedException => Misc.checkIfCacheClosing(ie)
-            }
-          }
         }
         id += 1
       }

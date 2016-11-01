@@ -37,6 +37,11 @@ dependencies {
   provided 'org.scala-lang:scala-reflect:' + scalaVersion
   provided 'org.scala-lang:scala-compiler:' + scalaVersion
 
+  compile 'org.slf4j:slf4j-api:' + slf4jVersion
+  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
   provided "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
