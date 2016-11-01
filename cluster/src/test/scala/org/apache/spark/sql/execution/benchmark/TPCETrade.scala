@@ -64,7 +64,7 @@ class TPCETrade extends SnappyFunSuite {
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
 
-  test("basic query performance with JDBC") {
+  ignore("basic query performance with JDBC") {
     val numRuns = 1000
     val numIters = 1000
     val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
@@ -380,6 +380,7 @@ object TPCETradeTest extends Logging {
         doGC()
       }
       def cleanup(): Unit = {
+        SnappySession.clearPlanCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
       }

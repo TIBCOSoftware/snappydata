@@ -21,31 +21,22 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.plans.physical.{Distribution, SinglePartition, UnspecifiedDistribution}
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
-import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, ShuffledRowRDD, SparkPlan, UnsafeRowSerializer, WholeStageCodegenExec}
+import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
+import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
  * an exchange for simple aggregates.
  */
-class CollectAggregateExec(
-    _requiredChildDistributionExpressions: Option[Seq[Expression]],
-    _groupingExpressions: Seq[NamedExpression],
-    _aggregateExpressions: Seq[AggregateExpression],
-    _aggregateAttributes: Seq[Attribute],
-    _initialInputBufferOffset: Int,
-    _resultExpressions: Seq[NamedExpression],
-    _child: SparkPlan)
-    extends SnappyHashAggregateExec(
-      _requiredChildDistributionExpressions, _groupingExpressions,
-      _aggregateExpressions, _aggregateAttributes, _initialInputBufferOffset,
-      _resultExpressions, _child) {
+case class CollectAggregateExec(
+    basePlan: SnappyHashAggregateExec,
+    child: SparkPlan) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
+
+  override def output: Seq[Attribute] = basePlan.output
 
   override def requiredChildDistribution: List[Distribution] =
     UnspecifiedDistribution :: Nil
@@ -55,9 +46,9 @@ class CollectAggregateExec(
   private[sql] lazy val (generatedSource, generatedReferences, generatedClass) = {
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
-    childProducer = InputAdapter(child)
-    val (ctx, cleanedSource) = WholeStageCodegenExec(this).doCodeGen()
-    childProducer = child
+    basePlan.childProducer = InputAdapter(child)
+    val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
+    basePlan.childProducer = child
     val clazz = CodeGenerator.compile(cleanedSource)
     (cleanedSource, ctx.references.toArray, clazz)
   }
@@ -106,8 +97,6 @@ class CollectAggregateExec(
   }
 
   override def doExecute(): RDD[InternalRow] = {
-    val serializer = new UnsafeRowSerializer(child.schema.length)
-    new ShuffledRowRDD(ShuffleExchange.prepareShuffleDependency(
-      child.execute(), child.output, SinglePartition, serializer))
+    sqlContext.sparkContext.parallelize(executeCollect(), 1)
   }
 }

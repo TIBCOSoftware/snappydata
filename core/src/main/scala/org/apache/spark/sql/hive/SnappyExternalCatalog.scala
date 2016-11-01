@@ -209,7 +209,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
     } else {
       withHiveExceptionHandling(client.createTable(tableDefinition, ignoreIfExists))
     }
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def dropTable(
@@ -218,14 +218,14 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
       ignoreIfNotExists: Boolean): Unit = withClient {
     requireDbExists(db)
     withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
     val newTable = client.getTable(db, oldName)
         .copy(identifier = TableIdentifier(newName, Some(db)))
     withHiveExceptionHandling(client.alterTable(oldName, newTable))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   /**
@@ -239,7 +239,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
     requireDbMatches(db, tableDefinition)
     requireTableExists(db, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def getTable(db: String, table: String): CatalogTable = withClient {
@@ -315,7 +315,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
       ignoreIfExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     withHiveExceptionHandling(client.createPartitions(db, table, parts, ignoreIfExists))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def dropPartitions(
@@ -325,7 +325,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
       ignoreIfNotExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     withHiveExceptionHandling(client.dropPartitions(db, table, parts, ignoreIfNotExists))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def renamePartitions(
@@ -334,7 +334,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
       specs: Seq[TablePartitionSpec],
       newSpecs: Seq[TablePartitionSpec]): Unit = withClient {
     withHiveExceptionHandling(client.renamePartitions(db, table, specs, newSpecs))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def alterPartitions(
@@ -342,7 +342,7 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
       table: String,
       newParts: Seq[CatalogTablePartition]): Unit = withClient {
     withHiveExceptionHandling(client.alterPartitions(db, table, newParts))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def getPartition(
@@ -376,17 +376,17 @@ private[spark] class SnappyExternalCatalog(private[this] var _client: HiveClient
     val functionIdentifier = funcDefinition.identifier.copy(funcName = functionName)
     withHiveExceptionHandling(client.createFunction(db,
       funcDefinition.copy(identifier = functionIdentifier)))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def dropFunction(db: String, name: String): Unit = withClient {
     withHiveExceptionHandling(client.dropFunction(db, name))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def renameFunction(db: String, oldName: String, newName: String): Unit = withClient {
     withHiveExceptionHandling(client.renameFunction(db, oldName, newName))
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   override def getFunction(db: String, funcName: String): CatalogFunction = withClient {
