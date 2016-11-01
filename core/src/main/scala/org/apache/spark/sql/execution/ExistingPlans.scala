@@ -17,18 +17,17 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning,
-Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter,
-BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.expressions._
 
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -38,35 +37,18 @@ import org.apache.spark.sql.catalyst.expressions._
  * make it inline with the partitioning of the underlying DataSource */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
+    dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient override val relation: BaseRelation,
-    requestedColumns: Seq[AttributeReference],
-    pushedFilters: Seq[Filter],
-    allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-        (RDD[Any], Seq[RDD[InternalRow]]),
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
 
-  var metricsCreatedBeforeInit: Map[String, SQLMetric] = Map.empty[String, SQLMetric]
+  def getMetrics: Map[String, SQLMetric] = Map(
+    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
-  val (dataRDD, otherRDDs) = scanBuilder(
-      requestedColumns, pushedFilters, getStatsPredicate())
-
-  override lazy val metrics = getMetricsMap
-
-  def getMetricsMap: Map[String, SQLMetric] = {
-    Map(
-      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows")) ++
-        metricsCreatedBeforeInit
-  }
-
-  def getStatsPredicate(): StatsPredicateCompiler = {
-    return new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
-  }
+  override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
   private val extraInformation = relation.toString
 
@@ -111,32 +93,28 @@ private[sql] abstract class PartitionedPhysicalScan(
 private[sql] object PartitionedPhysicalScan {
 
   private[sql] val CT_NUMROWS_POSITION = 3
+  private[sql] val CT_STATROW_POSITION = 4
   private[sql] val CT_COLUMN_START = 5
 
   def createFromDataSource(
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
+      rdd: RDD[Any],
+      otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,
-      requestedColumns: Seq[AttributeReference],
-      pushedFilters: Seq[Filter],
       allFilters: Seq[Expression],
-      schemaAttributes: Seq[AttributeReference],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-          (RDD[Any], Seq[RDD[InternalRow]])): PartitionedPhysicalScan =
+      schemaAttributes: Seq[AttributeReference]): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+          partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
-        ColumnTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+          partitionColumns, relation, allFilters, schemaAttributes)
       case _: RowFormatRelation =>
-        RowTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        RowTableScan(output, rdd, numBuckets,
+          partitionColumns, relation)
     }
 }
 
@@ -152,3 +130,25 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def connectionType: ConnectionType.Value
 }
+
+trait BatchConsumer extends CodegenSupport {
+
+  /**
+   * Generate Java source code to do any processing before a batch is consumed
+   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * optimizations, initializations etc).
+   * <p>
+   * Implementations should use this for additional optimizations that can be
+   * done at batch level when a batched scan is being done. They should not
+   * depend on this being invoked since many scans will not be batched.
+   */
+  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
+}
+
+/**
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
+ */
+final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
+    dictionary: String, dictionaryIndex: String)

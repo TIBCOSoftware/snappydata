@@ -54,7 +54,6 @@ class NorthWindTest
     validateColocatedTableQueries(snc)
   }
 
-
   lazy val shufflePartitions = snc.sparkContext
       .schedulerBackend.defaultParallelism()
 

@@ -899,7 +899,7 @@ class ColumnTableTest
   }
 
   test("Check cachedBatch num rows") {
-    System.setProperty("forceFlush", "true")
+    System.setProperty("snappydata.testForceFlush", "true")
     val data = (1 to 200) map (i => Seq(i, +i, +i))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -911,7 +911,7 @@ class ColumnTableTest
     try {
       parDF.write.insertInto(tableName)
     } finally {
-      System.clearProperty("forceFlush")
+      System.clearProperty("snappydata.testForceFlush")
     }
 
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -920,10 +920,13 @@ class ColumnTableTest
     assert(r.length === 200)
 
     val rowBuffer = Misc.getRegionForTable(("APP." + tableName).toUpperCase, true)
-    println(rowBuffer.asInstanceOf[PartitionedRegion].getPrStats.getDataStoreEntryCount)
+    logInfo(rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
+        .getDataStoreEntryCount.toString)
 
-    val region = Misc.getRegionForTable(JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
-    val entries = region.asInstanceOf[PartitionedRegion].getPrStats.getPRNumRowsInCachedBatches
+    val region = Misc.getRegionForTable(
+      JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+    val entries = region.asInstanceOf[PartitionedRegion].getPrStats
+        .getPRNumRowsInCachedBatches
 
     assert(entries == 200)
     logInfo("Successful")

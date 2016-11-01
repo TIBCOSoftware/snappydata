@@ -89,6 +89,7 @@ object ExternalStoreUtils {
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
+      props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
     }
     props

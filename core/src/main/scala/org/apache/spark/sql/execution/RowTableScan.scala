@@ -21,11 +21,10 @@ import java.util.GregorianCalendar
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, BaseRelation}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
 /**
@@ -37,63 +36,64 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
+    dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    @transient baseRelation: PartitionedDataSourceScan,
-    requestedColumns: Seq[AttributeReference],
-    pushedFilters: Seq[Filter],
-    allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-        (RDD[Any], Seq[RDD[InternalRow]]))
-    extends PartitionedPhysicalScan(output, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation],
-      requestedColumns, pushedFilters, allFilters, schemaAttributes, scanBuilder) {
+    @transient baseRelation: PartitionedDataSourceScan)
+    extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
+      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
-  if (otherRDDs.nonEmpty) {
-    throw new UnsupportedOperationException(
-      "Row table scan cannot handle other RDDs")
-  }
+  private[sql] var input: String = _
 
   override def doProduce(ctx: CodegenContext): String = {
+    // a parent plan may set a custom input (e.g. LocalJoin)
+    // for that case no need to add the "shouldStop()" calls
+    var builderInput = true
+    if (input == null) {
+      // PartitionedPhysicalRDD always has one input
+      input = ctx.freshName("input")
+      ctx.addMutableState("scala.collection.Iterator",
+        input, s"$input = inputs[0];")
+      builderInput = false
+    }
     val numOutputRows = metricTerm(ctx, "numOutputRows")
-    // PartitionedPhysicalRDD always just has one input
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator",
-      input, s"$input = inputs[0];")
     ctx.currentVars = null
 
-    dataRDD match {
+    val code = dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
-        doProduceWithoutProjection(ctx, input, numOutputRows,
+        doProduceWithoutProjection(ctx, input, builderInput, numOutputRows,
           output, baseRelation)
       case _ =>
-        doProduceWithProjection(ctx, input, numOutputRows,
+        doProduceWithProjection(ctx, input, builderInput, numOutputRows,
           output, baseRelation)
     }
+    input = null
+    code
   }
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
-      numOutputRows: String, output: Seq[Attribute],
+      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
+    val iterator = ctx.freshName("localIterator")
     val holder = ctx.freshName("nullHolder")
-    val holderClass = classOf[ResultNullHolder].getName
+    val holderClass = classOf[ResultSetNullHolder].getName
     val compactRowClass = classOf[AbstractCompactExecRow].getName
     val baseSchema = baseRelation.schema
     val columnsRowInput = output.map(a => genCodeCompactRowColumn(ctx,
       row, holder, baseSchema.fieldIndex(a.name), a.dataType, a.nullable))
     s"""
+       |final scala.collection.Iterator $iterator = $input;
        |final $holderClass $holder = new $holderClass();
        |long $numRows = 0L;
        |try {
-       |  while ($input.hasNext()) {
-       |    final $compactRowClass $row = ($compactRowClass)$input.next();
+       |  while ($iterator.hasNext()) {
+       |    final $compactRowClass $row = ($compactRowClass)$iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    if (shouldStop()) return;
+       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
@@ -106,7 +106,7 @@ private[sql] final case class RowTableScan(
   }
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
-      numOutputRows: String, output: Seq[Attribute],
+      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
@@ -125,7 +125,7 @@ private[sql] final case class RowTableScan(
        |    $iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    if (shouldStop()) return;
+       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
@@ -143,15 +143,13 @@ private[sql] final case class RowTableScan(
     val javaType = ctx.javaType(dataType)
     val col = ctx.freshName("col")
     val pos = ordinal + 1
+    var useHolder = true
     val code = dataType match {
       case IntegerType =>
         s"final $javaType $col = $rowVar.getAsInt($pos, $holder);"
       case StringType =>
-        // TODO: SW: optimize to store same full UTF8 format in GemXD
-        s"""
-          final $javaType $col = UTF8String.fromString($rowVar.getAsString(
-            $pos, $holder));
-        """
+        useHolder = false
+        s"final $javaType $col = $rowVar.getAsUTF8String($ordinal);"
       case LongType =>
         s"final $javaType $col = $rowVar.getAsLong($pos, $holder);"
       case BooleanType =>
@@ -165,44 +163,42 @@ private[sql] final case class RowTableScan(
       case DoubleType =>
         s"final $javaType $col = $rowVar.getAsDouble($pos, $holder);"
       case d: DecimalType =>
+        useHolder = false
         val decVar = ctx.freshName("dec")
         s"""
           final java.math.BigDecimal $decVar = $rowVar.getAsBigDecimal(
-            $pos, $holder);
+            $pos, null);
           final $javaType $col = $decVar != null ? Decimal.apply($decVar,
             ${d.precision}, ${d.scale}) : null;
         """
       case DateType =>
-        // TODO: optimize to avoid Date object and instead get millis
         val cal = ctx.freshName("cal")
-        val date = ctx.freshName("date")
+        val dateMs = ctx.freshName("dateMillis")
         val calClass = classOf[GregorianCalendar].getName
         s"""
           final $calClass $cal = $holder.defaultCal();
           $cal.clear();
-          final java.sql.Date $date = $rowVar.getAsDate($pos, $cal, $holder);
-          final $javaType $col = $date != null ? org.apache.spark.sql
-            .catalyst.util.DateTimeUtils.fromJavaDate($date) : 0;
+          final long $dateMs = $rowVar.getAsDateMillis($ordinal, $cal, $holder);
+          final $javaType $col = org.apache.spark.sql.collection
+              .Utils.millisToDays($dateMs, $holder.defaultTZ());
         """
       case TimestampType =>
-        // TODO: optimize to avoid object and instead get nanoseconds
         val cal = ctx.freshName("cal")
-        val tsVar = ctx.freshName("ts")
         val calClass = classOf[GregorianCalendar].getName
         s"""
           final $calClass $cal = $holder.defaultCal();
           $cal.clear();
-          final java.sql.Timestamp $tsVar = $rowVar.getAsTimestamp($pos,
-             $cal, $holder);
-          final $javaType $col = $tsVar != null ? org.apache.spark.sql
-            .catalyst.util.DateTimeUtils.fromJavaTimestamp($tsVar) : 0L;
+          final $javaType $col = $rowVar.getAsTimestampMicros(
+            $ordinal, $cal, $holder);
         """
       case BinaryType =>
-        s"final $javaType $col = $rowVar.getAsBytes($pos, $holder);"
+        useHolder = false
+        s"final $javaType $col = $rowVar.getAsBytes($pos, null);"
       case _: ArrayType =>
+        useHolder = false
         val bytes = ctx.freshName("bytes")
         s"""
-          final byte[] $bytes = $rowVar.getAsBytes($pos, $holder);
+          final byte[] $bytes = $rowVar.getAsBytes($pos, null);
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeArrayData();
@@ -212,9 +208,10 @@ private[sql] final case class RowTableScan(
           }
         """
       case _: MapType =>
+        useHolder = false
         val bytes = ctx.freshName("bytes")
         s"""
-          final byte[] $bytes = $rowVar.getAsBytes($pos, $holder);
+          final byte[] $bytes = $rowVar.getAsBytes($pos, null);
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeMapData();
@@ -224,9 +221,10 @@ private[sql] final case class RowTableScan(
           }
         """
       case s: StructType =>
+        useHolder = false
         val bytes = ctx.freshName("bytes")
         s"""
-          final byte[] $bytes = $rowVar.getAsBytes($pos, $holder);
+          final byte[] $bytes = $rowVar.getAsBytes($pos, null);
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeRow(${s.length});
@@ -236,14 +234,18 @@ private[sql] final case class RowTableScan(
           }
         """
       case _ =>
-        s"""
-          $javaType $col = ($javaType)$rowVar.getAsObject($pos, $holder);
-        """
+        useHolder = false
+        s"$javaType $col = ($javaType)$rowVar.getAsObject($pos, null);"
     }
     if (nullable) {
       val isNullVar = ctx.freshName("isNull")
-      ExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
-        isNullVar, col)
+      if (useHolder) {
+        ExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
+          isNullVar, col)
+      } else {
+        ExprCode(s"$code\nfinal boolean $isNullVar = $col == null;",
+          isNullVar, col)
+      }
     } else {
       ExprCode(code, "false", col)
     }
