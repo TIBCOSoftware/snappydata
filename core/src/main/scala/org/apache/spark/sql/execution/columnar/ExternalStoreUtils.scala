@@ -515,10 +515,8 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     schema: StructType,
     useCompression: Boolean,
     bufferSize: Int,
-    baseIsPartitioned: Boolean,
     reservoirInRegion: Boolean) {
 
-  val fixedBucket = reservoirInRegion && baseIsPartitioned
   var holder = getCachedBatchHolder(-1)
 
   def getCachedBatchHolder(bucketId: Int): CachedBatchHolder =
@@ -536,13 +534,13 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
 
   def endRows(u: Unit): Unit = {
     holder.forceEndOfBatch()
-    if (!fixedBucket) {
+    if (!reservoirInRegion) {
       holder = getCachedBatchHolder(-1)
     }
   }
 
   def startRows(u: Unit, bucketId: Int): Unit = {
-    if (fixedBucket) {
+    if (reservoirInRegion) {
       holder = getCachedBatchHolder(bucketId)
     }
     u

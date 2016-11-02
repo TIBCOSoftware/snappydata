@@ -29,8 +29,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val loadFactor: Double,
     val concurrency: Int,
     val segmentCreator: (Int, Double, Int, Int) => M,
-    val hasher: K => Int,
-    val reservoirInRegion: Boolean) extends Serializable {
+    val hasher: K => Int) extends Serializable {
 
   /** maximum size of batches in bulk insert API */
   private[this] final val MAX_BULK_INSERT_SIZE = 256
@@ -40,9 +39,9 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
    * and concurrency `16`.
    */
   def this(concurrency: Int, segmentCreator: (Int, Double, Int, Int) => M,
-      hasher: K => Int, reservoirInRegion: Boolean) =
+      hasher: K => Int) =
     this(32, SegmentMap.DEFAULT_LOAD_FACTOR, concurrency,
-      segmentCreator, hasher, reservoirInRegion)
+      segmentCreator, hasher)
 
   require(initialSize > 0,
     s"ConcurrentSegmentedHashMap: unexpected initialSize=$initialSize")
@@ -161,7 +160,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     added
   }
 
-  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: Int) {
+  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: (Int) => Int) {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -222,8 +221,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
             var added: java.lang.Boolean = null
             var idx = 0
             while (idx < nhashes) {
-              added = seg.changeValue(keys(idx),
-                if (reservoirInRegion) bucketId else hashes(idx), change)
+              added = seg.changeValue(keys(idx), bucketId(hashes(idx)), change)
               if (added != null) {
                 if (added.booleanValue()) numAdded += 1
                 idx += 1
