@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation, StatsPredicateCompiler}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 
 
@@ -37,35 +37,18 @@ import org.apache.spark.sql.types._
  * make it inline with the partitioning of the underlying DataSource */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
+    dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     @transient override val relation: BaseRelation,
-    requestedColumns: Seq[AttributeReference],
-    pushedFilters: Seq[Filter],
-    allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference],
-    scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-        (RDD[Any], Seq[RDD[InternalRow]]),
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupport {
 
-  var metricsCreatedBeforeInit: Map[String, SQLMetric] = Map.empty[String, SQLMetric]
+  def getMetrics: Map[String, SQLMetric] = Map(
+    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
-  val (dataRDD, otherRDDs) = scanBuilder(
-      requestedColumns, pushedFilters, getStatsPredicate)
-
-  override lazy val metrics = getMetricsMap
-
-  def getMetricsMap: Map[String, SQLMetric] = {
-    Map(
-      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows")) ++
-        metricsCreatedBeforeInit
-  }
-
-  def getStatsPredicate: StatsPredicateCompiler = {
-    new StatsPredicateCompiler(newPredicate, Literal(true), null, null, null)
-  }
+  override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
   private val extraInformation = relation.toString
 
@@ -110,32 +93,28 @@ private[sql] abstract class PartitionedPhysicalScan(
 private[sql] object PartitionedPhysicalScan {
 
   private[sql] val CT_NUMROWS_POSITION = 3
+  private[sql] val CT_STATROW_POSITION = 4
   private[sql] val CT_COLUMN_START = 5
 
   def createFromDataSource(
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
+      rdd: RDD[Any],
+      otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,
-      requestedColumns: Seq[AttributeReference],
-      pushedFilters: Seq[Filter],
       allFilters: Seq[Expression],
-      schemaAttributes: Seq[AttributeReference],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
-          (RDD[Any], Seq[RDD[InternalRow]])): PartitionedPhysicalScan =
+      schemaAttributes: Seq[AttributeReference]): PartitionedPhysicalScan =
     relation match {
       case r: BaseColumnFormatRelation =>
-        ColumnTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+          partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
-        ColumnTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+          partitionColumns, relation, allFilters, schemaAttributes)
       case _: RowFormatRelation =>
-        RowTableScan(output, numBuckets,
-          partitionColumns, relation, requestedColumns,
-          pushedFilters, allFilters, schemaAttributes, scanBuilder)
+        RowTableScan(output, rdd, numBuckets,
+          partitionColumns, relation)
     }
 }
 

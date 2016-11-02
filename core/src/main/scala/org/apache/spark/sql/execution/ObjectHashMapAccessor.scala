@@ -74,11 +74,12 @@ import org.apache.spark.unsafe.array.ByteArrayMethods
  * and 2-4X faster than VectorizedHashMapGenerator. It is generic enough
  * to be used for both group by aggregation as well as for HashJoins.
  */
-final case class ObjectHashMapAccessor(session: SnappySession,
-    ctx: CodegenContext, classPrefix: String, keyExprs: Seq[Expression],
-    valueExprs: Seq[Expression], hashMapTerm: String, dataTerm: String,
-    maskTerm: String, multiMap: Boolean, consumer: CodegenSupport,
-    cParent: CodegenSupport, override val child: SparkPlan)
+final case class ObjectHashMapAccessor(@transient session: SnappySession,
+    @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
+    @transient valueExprs: Seq[Expression], classPrefix: String,
+    hashMapTerm: String, dataTerm: String, maskTerm: String,
+    multiMap: Boolean, @transient consumer: CodegenSupport,
+    @transient cParent: CodegenSupport, override val child: SparkPlan)
     extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
@@ -95,7 +96,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
   // End output is Seq of (expression, index) where index will be negative if
   // found in the key list i.e. value expression index will be negative of that
   // in the key map if found there else its own running index for unique ones.
-  private[this] val (keyExprIndexes, valueExprIndexes) = {
+  @transient private[this] val (keyExprIndexes, valueExprIndexes) = {
     val keyExprIndexMap = keyExpressions.zipWithIndex.toMap
     var index = -1
     val valueExprIndexes = valueExpressions.map(e =>
@@ -105,7 +106,7 @@ final case class ObjectHashMapAccessor(session: SnappySession,
     (keyExprIndexMap.toSeq, valueExprIndexes)
   }
 
-  lazy val (integralKeys, integralKeysMinVars, integralKeysMaxVars) =
+  @transient lazy val (integralKeys, integralKeysMinVars, integralKeysMaxVars) =
     keyExprIndexes.collect {
       case (expr, index) if isIntegralType(expr.dataType) =>
         (index, ctx.freshName("minValue"), ctx.freshName("maxValue"))
@@ -123,8 +124,8 @@ final case class ObjectHashMapAccessor(session: SnappySession,
 
   private type ClassVar = (DataType, String, ExprCode, Int)
 
-  private[this] val (className, valueClassName, classVars, numNullVars) =
-    initClass()
+  @transient private[this] val (className, valueClassName, classVars,
+  numNullVars) = initClass()
 
   private def initClass(): (String, String, IndexedSeq[ClassVar], Int) = {
 

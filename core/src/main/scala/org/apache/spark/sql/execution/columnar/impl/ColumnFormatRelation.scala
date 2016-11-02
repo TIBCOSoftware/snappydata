@@ -91,7 +91,7 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  def getCachedBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
+  def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
     new PartitionStatistics(schema)
   }
 
@@ -104,17 +104,16 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
-      requiredColumns, filters, statsPredicate)
+      requiredColumns, filters)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
-  override def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (rdd, _) = scanTable(table, requiredColumns, filters, statsPredicate)
+  override def buildUnsafeScan(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
     // [sumedh] In the absence of snapshot isolation, one option is to

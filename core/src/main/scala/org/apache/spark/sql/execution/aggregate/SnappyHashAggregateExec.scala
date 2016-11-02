@@ -82,7 +82,7 @@ case class SnappyHashAggregateExec(
         aggregateExpressions.flatMap(_.aggregateFunction
             .inputAggBufferAttributes)
 
-  override private[sql] lazy val metrics = Map(
+  override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
       "number of output rows"),
     "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
@@ -425,8 +425,8 @@ case class SnappyHashAggregateExec(
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    keyBufferAccessor = ObjectHashMapAccessor(session, ctx, "KeyBuffer",
-      groupingExpressions, aggregateBufferAttributesForGroup, hashMapTerm,
+    keyBufferAccessor = ObjectHashMapAccessor(session, ctx, groupingExpressions,
+      aggregateBufferAttributesForGroup, "KeyBuffer", hashMapTerm,
       mapDataTerm, maskTerm, multiMap = false, this, this.parent, child)
 
     val entryClass = keyBufferAccessor.getClassName

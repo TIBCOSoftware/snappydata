@@ -110,7 +110,7 @@ scalaTest {
 task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
   outputs.files "${sparkProductDir}.tgz"
 
-  src "http://redrockdigimark.com/apachemirror/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
+  src "http://archive.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
   dest sparkDistDir
   onlyIfNewer true
 
