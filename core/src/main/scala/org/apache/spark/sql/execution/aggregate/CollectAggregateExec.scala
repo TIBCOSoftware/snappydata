@@ -93,7 +93,7 @@ case class CollectAggregateExec(
     buffer.init(0, Array(results))
     val processedResults = new ArrayBuffer[InternalRow]
     while (buffer.hasNext) {
-      processedResults += buffer.next()
+      processedResults += buffer.next().copy()
     }
     processedResults.toArray
   }
