@@ -506,7 +506,7 @@ Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column 
 
 ```bash
 # Submit a job to Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.6.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./examples/jars/quickstart-0.6.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
