@@ -33,8 +33,9 @@ import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
-import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
@@ -185,6 +186,18 @@ class SnappySessionState(snappySession: SnappySession)
   override def executePlan(plan: LogicalPlan): QueryExecution = {
     clearExecutionData()
     contextFunctions.executePlan(snappySession, plan)
+  }
+
+  protected[sql] def queryPreparations: Seq[Rule[SparkPlan]] = Seq(
+    python.ExtractPythonUDFs,
+    PlanSubqueries(snappySession),
+    EnsureRequirements(snappySession.sessionState.conf),
+    CollapseCodegenStages(snappySession.sessionState.conf),
+    ReuseExchange(snappySession.sessionState.conf))
+
+  private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
+    clearExecutionData()
+    queryPreparations.foldLeft(plan) { case (sp, rule) => rule.apply(sp) }
   }
 
   private[spark] def clearExecutionData(): Unit = {

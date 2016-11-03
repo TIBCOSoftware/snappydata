@@ -24,8 +24,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
-import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.internal.SnappySessionState
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
@@ -99,6 +99,7 @@ case class CollectAggregateExec(
   }
 
   override def doExecute(): RDD[InternalRow] = {
-    EnsureRequirements(sqlContext.conf).apply(basePlan).execute()
+    sqlContext.sparkSession.sessionState.asInstanceOf[SnappySessionState]
+        .prepareExecution(basePlan).execute()
   }
 }
