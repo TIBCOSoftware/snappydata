@@ -86,12 +86,10 @@ object TypeUtils {
   def readProperties(input: Input): Properties = {
     val props = new Properties()
     var numProperties = input.readVarInt(true)
-    if (numProperties > 0) {
-      while (numProperties > 0) {
-        val key = input.readString()
-        props.setProperty(key, input.readString())
-        numProperties -= 1
-      }
+    while (numProperties > 0) {
+      val key = input.readString()
+      props.setProperty(key, input.readString())
+      numProperties -= 1
     }
     props
   }
