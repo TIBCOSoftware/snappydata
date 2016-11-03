@@ -292,16 +292,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     useResultSet = input.readBoolean()
 
     columnList = input.readString()
-    var numFilters = input.readVarInt(true)
+    val numFilters = input.readVarInt(true)
     if (numFilters == 0) {
       filterWhereClause = ""
       filterWhereArgs = null
     } else {
       filterWhereClause = input.readString()
       filterWhereArgs = new ArrayBuffer[Any](numFilters)
-      while (numFilters > 0) {
+      var i = 0
+      while (i < numFilters) {
         filterWhereArgs += kryo.readClassAndObject(input)
-        numFilters -= 1
+        i += 1
       }
     }
     // read connection properties only if computing ResultSet

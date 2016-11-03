@@ -790,6 +790,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
         bucket = bucketSet.nextSetBit(bucket + 1)
         b
       }
+      override def remove(): Unit = throw new UnsupportedOperationException
     }
 
     override def size(): Int = bucketSet.cardinality()
