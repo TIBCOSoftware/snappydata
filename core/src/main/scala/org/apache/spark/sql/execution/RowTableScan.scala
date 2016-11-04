@@ -89,19 +89,9 @@ private[sql] final case class RowTableScan(
        |final $holderClass $holder = new $holderClass();
        |long $numRows = 0L;
        |try {
-<<<<<<< HEAD
-       |  while ($input.hasNext()) {
-       |    final $compactRowClass $row = ($compactRowClass)$input.next();
-       |     $numRows++;
-||||||| merged common ancestors
-       |  while ($input.hasNext()) {
-       |    final $compactRowClass $row = ($compactRowClass)$input.next();
-       |    $numRows++;
-=======
        |  while ($iterator.hasNext()) {
        |    final $compactRowClass $row = ($compactRowClass)$iterator.next();
        |    $numRows++;
->>>>>>> master
        |    ${consume(ctx, columnsRowInput).trim}
        |    ${if (builderInput) "" else "if (shouldStop()) return;"}
        |  }
