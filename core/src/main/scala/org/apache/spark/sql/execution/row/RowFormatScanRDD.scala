@@ -247,8 +247,16 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          session.sessionState.getTablePartitions(pr)
-        case dr => session.sessionState.getTablePartitions(dr)
+          val reduceFactor = if (filterWhereClause.nonEmpty) {
+            // for store index scans, reduce parallelism since many partitions
+            // will end up scanning the whole index on the node and all
+            // rejecting rows being filtered out
+            // TODO: make this dynamic depending on expected filtering instead of a fixed factor
+            4
+          } else 1
+          val partitions = session.sessionState.getTablePartitions(pr, reduceFactor)
+          partitions
+        case dr => session.sessionState.getReplicatedTablePartitions(dr)
       }
     } finally {
       conn.close()
