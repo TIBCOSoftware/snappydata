@@ -48,7 +48,7 @@ import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
-import org.apache.spark.sql.streaming.StreamPlan
+import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
 
 /**
@@ -140,6 +140,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def getCurrentSchema: String = currentSchema
 
+
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
       (LogicalRelation, CatalogTable)] = {
@@ -154,7 +155,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
         val options = table.storage.serdeProperties
-
         val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
@@ -164,6 +164,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             DataSource(snappySession, provider, userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns, options = options +
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
+        }
+
+
+        relation match {
+          case sr: StreamBaseRelation => //Do Nothing as it is not supported for stream relation
+          case pr: ParentRelation => pr.recoverDependentsRelation(table.properties)
         }
 
         (LogicalRelation(relation), table)
@@ -411,6 +417,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           lookupRelation(newQualifiedTableName(t)) match {
             case LogicalRelation(p: ParentRelation, _, _) =>
               p.removeDependent(dep, this)
+              removeDependentRelation(newQualifiedTableName(t),newQualifiedTableName(dep.name))
             case _ => // ignore
           }
         } catch {
@@ -472,6 +479,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         lookupRelation(newQualifiedTableName(t)) match {
           case LogicalRelation(p: ParentRelation, _, _) =>
             p.addDependent(dep, this)
+            addDependentRelation(newQualifiedTableName(t),newQualifiedTableName(dep.name))
           case _ => // ignore
         }
         tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
@@ -512,21 +520,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
   }
 
-  private def addIndexProp(inTable: QualifiedTableName,
-      index: QualifiedTableName): Unit = {
-    val hiveTable = inTable.getTable(this)
-    var indexes = ""
-    try {
-      indexes = hiveTable.properties(ExternalStoreUtils.INDEX_NAME) + ","
-    } catch {
-      case e: scala.NoSuchElementException =>
-    }
-
-    client.alterTable(
-      hiveTable.copy(properties = hiveTable.properties +
-          (ExternalStoreUtils.INDEX_NAME -> (indexes + index.toString())))
-    )
-  }
 
   def withHiveExceptionHandling[T](function: => T): T = {
     try {
@@ -540,40 +533,32 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  def alterTableToAddIndexProp(inTable: QualifiedTableName,
-      index: QualifiedTableName): Unit = {
-    alterTableLock.synchronized {
-      withHiveExceptionHandling(addIndexProp(inTable, index))
-    }
-    cachedDataSourceTables.invalidate(inTable)
-  }
+  def removeDependentRelationFromHive(table: QualifiedTableName,
+      dependentRelation: QualifiedTableName): Unit = {
+    val hiveTable = table.getTable(this)
+    val dependentRelations = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
+    val relationsArray = dependentRelations.split(",")
 
-  def removeIndexProp(inTable: QualifiedTableName,
-      index: QualifiedTableName): Unit = {
-    val hiveTable = inTable.getTable(this)
-    val indexes = hiveTable.properties(ExternalStoreUtils.INDEX_NAME)
-    val indexArray = indexes.split(",")
-    // indexes are stored in lower case
-    val newindexes = indexArray.filter(_ != index.toString()).mkString(",")
+    val newindexes = relationsArray.filter(_ != dependentRelation.toString()).mkString(",")
     if (newindexes.isEmpty) {
       client.alterTable(
         hiveTable.copy(
-          properties = hiveTable.properties - ExternalStoreUtils.INDEX_NAME)
+          properties = hiveTable.properties - ExternalStoreUtils.DEPENDENT_RELATIONS)
       )
     } else {
       client.alterTable(
         hiveTable.copy(properties = hiveTable.properties +
-            (ExternalStoreUtils.INDEX_NAME -> newindexes))
+            (ExternalStoreUtils.DEPENDENT_RELATIONS -> newindexes))
       )
     }
   }
 
-  def alterTableToRemoveIndexProp(inTable: QualifiedTableName,
-      index: QualifiedTableName): Unit = {
+  def removeDependentRelation(table: QualifiedTableName,
+      dependentRelation: QualifiedTableName): Unit = {
     alterTableLock.synchronized {
-      withHiveExceptionHandling(removeIndexProp(inTable, index))
+      withHiveExceptionHandling(removeDependentRelationFromHive(table, dependentRelation))
     }
-    cachedDataSourceTables.invalidate(inTable)
+    cachedDataSourceTables.invalidate(table)
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -701,6 +686,30 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       functionRegistry.registerFunction(f, expressionInfo.get, functionBuilder.get)
     }
   }
+
+  private def addDependentRelationToHive(inTable: QualifiedTableName,
+      index: QualifiedTableName): Unit = {
+    val hiveTable = inTable.getTable(this)
+    var indexes = ""
+    try {
+      indexes = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS) + ","
+    } catch {
+      case e: scala.NoSuchElementException =>
+    }
+
+    client.alterTable(
+      hiveTable.copy(properties = hiveTable.properties +
+          (ExternalStoreUtils.DEPENDENT_RELATIONS -> (indexes + index.toString())))
+    )
+  }
+  def addDependentRelation(inTable: QualifiedTableName,
+      dependentRelation: QualifiedTableName): Unit = {
+    alterTableLock.synchronized {
+      withHiveExceptionHandling(addDependentRelationToHive(inTable, dependentRelation))
+    }
+    cachedDataSourceTables.invalidate(inTable)
+  }
+
 }
 
 object SnappyStoreHiveCatalog {
