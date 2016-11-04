@@ -22,6 +22,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.execution.CodegenSupport
 
 object TypeUtils {
 
@@ -33,6 +34,15 @@ object TypeUtils {
     f1.setAccessible(true)
     f2.setAccessible(true)
     (f1, f2)
+  }
+
+  private[spark] val (parentMethod, parentSetter) = {
+    val c = classOf[CodegenSupport]
+    val m = c.getDeclaredMethod("parent")
+    m.setAccessible(true)
+    val s = c.getDeclaredMethod("parent_$eq", classOf[CodegenSupport])
+    s.setAccessible(true)
+    (m, s)
   }
 
   def getMetadata[T](key: String, metadata: Metadata): Option[T] = {

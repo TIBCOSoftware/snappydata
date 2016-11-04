@@ -153,5 +153,5 @@ trait BatchConsumer extends CodegenSupport {
  * variable having dictionary reference and its index when dictionary
  * encoding is being used.
  */
-final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
+case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
     dictionary: String, dictionaryIndex: String)
