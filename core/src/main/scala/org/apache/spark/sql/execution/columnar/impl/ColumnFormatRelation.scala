@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -610,13 +610,11 @@ class IndexColumnFormatRelation(
 
   override def name: String = _table
 
-  def buildBaseTableRowRDD(requiredColumns: Array[String],
-      filters: Array[Filter]): (ColumnFormatRelation, RDD[Any]) = {
+  def getBaseTableRelation: ColumnFormatRelation = {
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.lookupRelation(catalog.newQualifiedTableName(baseTableName)) match {
       case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
-        (cr, cr.buildRowBufferRDD(Array.empty, // we will shuffle.
-          requiredColumns, filters, false))
+        cr
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
     }

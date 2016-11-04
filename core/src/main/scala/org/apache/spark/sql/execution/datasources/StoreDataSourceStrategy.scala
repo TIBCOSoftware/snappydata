@@ -23,23 +23,21 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan, PartitionedPhysicalScan, RowTableScan, SparkPlan}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, StatsPredicateCompiler}
+import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
+import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
-  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
-  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
-  * partitions of the datasource.
-  */
+ * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
+ * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
+ * partitions of the datasource.
+ */
 private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-    l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
+        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
       pruneFilterProject(
         l,
         projects,
@@ -118,14 +116,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     // convertible to data source `Filter`s or cannot be handled by `relation`.
     val filterCondition = unhandledPredicates.reduceLeftOption(expressions.And)
 
-    def applyFilter(fullScan: SparkPlan) = {
-      filterCondition.map(execution.FilterExec(_, fullScan)).getOrElse(fullScan)
-    }
-
-    def applyProjection(allColScan: SparkPlan) = {
-      execution.ProjectExec(projects, allColScan)
-    }
-
     // Get the partition column attribute INFO from relation schema
     val sqlContext = relation.relation.sqlContext
 
@@ -157,17 +147,16 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           // Don't request columns that are only referenced by pushed filters.
           .filterNot(handledSet.contains)
 
-      val partitionedScanner = execution.PartitionedPhysicalScan.createFromDataSource(
-        mappedProjects,
-        numBuckets,
-        joinedCols,
-        requestedColumns, // projected columns
-        pushedFilters, // filters that are pushed for row table scan
-        filterPredicates, // filter predicates for cached batch screening
-        relation.output) _
-
       val scan = if (isPartitioned) {
-        partitionedScanner(relation.relation.asInstanceOf[PartitionedDataSourceScan], false,
+        execution.PartitionedPhysicalScan.createFromDataSource(
+          mappedProjects,
+          numBuckets,
+          joinedCols,
+          relation.relation.asInstanceOf[PartitionedDataSourceScan],
+          requestedColumns, // projected columns
+          pushedFilters, // filters that are pushed for row table scan
+          filterPredicates, // filter predicates for cached batch screening
+          relation.output,
           scanBuilder)
       } else {
         execution.DataSourceScanExec.create(
@@ -175,98 +164,32 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           scanBuilder(requestedColumns, pushedFilters, null)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
-
-      buildIndexScanIfRequired(relation.relation, scan,
-        requestedColumns, pushedFilters,
-        partitionedScanner, scanBuilder,
-        applyFilter)
+      filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
       // Don't request columns that are only referenced by pushed filters.
       val requestedColumns = (projectSet ++ filterSet -- handledSet).map(
         relation.attributeMap).toSeq
 
-      val partitionedScanner = execution.PartitionedPhysicalScan.createFromDataSource(
-        requestedColumns,
-        numBuckets,
-        joinedCols,
-        requestedColumns, // projected columns
-        pushedFilters, // filters that are pushed for row table scan
-        filterPredicates, // filter predicates for cached batch screening
-        relation.output) _
-
       val scan = if (isPartitioned) {
-        partitionedScanner(relation.relation.asInstanceOf[PartitionedDataSourceScan], false,
+        execution.PartitionedPhysicalScan.createFromDataSource(
+          requestedColumns,
+          numBuckets,
+          joinedCols,
+          relation.relation.asInstanceOf[PartitionedDataSourceScan],
+          requestedColumns, // projected columns
+          pushedFilters, // filters that are pushed for row table scan
+          filterPredicates, // filter predicates for cached batch screening
+          relation.output,
           scanBuilder)
+
       } else {
         execution.DataSourceScanExec.create(
           requestedColumns,
           scanBuilder(requestedColumns, pushedFilters, null)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
-
-      buildIndexScanIfRequired(relation.relation, scan,
-        requestedColumns, pushedFilters,
-        partitionedScanner, scanBuilder,
-        applyFilter, applyProjection)
-    }
-  }
-
-  /**
-    * Wraps original index scan with base table row buffer scan with Shuffle exchange.
-    * To favor a WholeStage code generation, this method discards the incoming index scan object
-    * and recreates them with base table rowRDD as otherRDD in ColumnTableScan.
-    *
-    * Due to interdependency of StatsPredicateCompiler and outputPartitioning, I don't see any
-    * other way because outputPartitioning requires numPartitioning of the base RDD and
-    * statsPredicateCompiler requires newPredicate.
-    *
-    * Although, IndexTableScan extending ColumnTableScan creation was another option but then
-    * applyFilter, applyProjection on row buffer will require to be pushed down.
-    * @param relation index or table relation.
-    * @param scan index scanner.
-    * @param requestedColumns projection that can be pushed down to table row buffer.
-    * @param pushedFilters filters that can be propagated down to table row buffer.
-    * @param partitionedScanner partially invoked DataSource builder.
-    * @param origScanBuilder The original scan builder used to create scan in first place.
-    * @param applyFilter filter that is to be applied.
-    * @param applyProject projection that is to be applied if not pushed down.
-    * @return
-    */
-  protected def buildIndexScanIfRequired(relation: BaseRelation,
-      scan: SparkPlan,
-      requestedColumns: Seq[Attribute], pushedFilters: Seq[Filter],
-      partitionedScanner: (PartitionedDataSourceScan, Boolean,
-          (Seq[Attribute], Seq[Filter], StatsPredicateCompiler)
-              => (RDD[Any], Seq[RDD[InternalRow]])) => SparkPlan,
-      origScanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler)
-          => (RDD[Any], Seq[RDD[InternalRow]]),
-      applyFilter: (SparkPlan) => SparkPlan,
-      applyProject: (SparkPlan) => SparkPlan = p => p) = {
-
-    relation match {
-      case ir: IndexColumnFormatRelation =>
-        val (tableRelation, tableRowBufferRDD) = ir.buildBaseTableRowRDD(
-          requestedColumns.map(_.name).toArray,
-          pushedFilters.toArray)
-
-        def witBaseTableRowBufferScan(a: Seq[Attribute], f: Seq[Filter],
-            sp: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
-          val (rdd, _) = origScanBuilder(a, f, sp)
-
-          val tableRowBufferScan = applyProject(applyFilter(
-            partitionedScanner(tableRelation, true, (_, _, _) => (tableRowBufferRDD, Nil))))
-
-          val tableRowBufferExchange = execution.exchange.ShuffleExchange(
-            scan.outputPartitioning,
-            tableRowBufferScan).execute()
-
-          (rdd, Seq(tableRowBufferExchange))
-        }
-
-        applyProject(applyFilter(partitionedScanner(ir.asInstanceOf[PartitionedDataSourceScan],
-          false, witBaseTableRowBufferScan)))
-
-      case _ => applyProject(applyFilter(scan))
+      execution.ProjectExec(projects,
+        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }
   }
 }

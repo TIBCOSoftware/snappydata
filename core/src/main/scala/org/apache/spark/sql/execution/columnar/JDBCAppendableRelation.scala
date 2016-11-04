@@ -28,6 +28,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -110,7 +111,8 @@ case class JDBCAppendableRelation(
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
       requiredColumns, filters, statsPredicate)
     val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>

@@ -91,7 +91,7 @@ private[sql] final case class RowTableScan(
        |try {
        |  while ($input.hasNext()) {
        |    final $compactRowClass $row = ($compactRowClass)$input.next();
-       |    $numRows++;
+       |     $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
        |    if (shouldStop()) return;
        |  }

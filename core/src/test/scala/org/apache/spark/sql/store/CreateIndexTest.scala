@@ -40,6 +40,18 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   val tablesToDrop = new ListBuffer[String]
   val context = new AtomicReference[SnappyContext]
 
+  override def beforeAll(): Unit = {
+    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    System.setProperty("spark.testing", "true")
+    super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    System.clearProperty("spark.testing")
+    super.afterAll()
+  }
+
   override def afterEach(): Unit = {
     try {
       val snContext = context.getAndSet(null)
@@ -468,6 +480,11 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"and t1.col4 = t4.col4 and t1.col1 = t4.col2 ")
 */
 
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 " +
+        s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") {
+      validateIndex(Seq(index1), table2)(_)
+    }
+
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table3 t3 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
         s"and t1.col1 = t3.col1 and t1.col3 = t3.col3") {
@@ -563,8 +580,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
 
   test("Test append table joins") {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
-
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
@@ -712,6 +727,10 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
       if (showResults) {
         selectRes.show
+      } else {
+        // scalastyle:off println
+        selectRes.collect().take(10).foreach(println)
+        // scalastyle:on println
       }
 
       selectRes
@@ -726,17 +745,25 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     if (indexesMatched.size != index.size) {
       df.explain(true)
-      fail(s"Expected index selection $index, but found $indexesUnMatched")
+      fail(s"Expected index selection ${index.mkString(",")}, but found" +
+          s" ${indexesUnMatched.mkString(",")}")
     }
 
-    val (tablesFound, tablesNotFound) = df.queryExecution.optimizedPlan.collect {
+    val tablesAppeared = df.queryExecution.optimizedPlan.collect {
       case l@LogicalRelation(columnTable: ColumnFormatRelation, _, _) => columnTable.table
       case l@LogicalRelation(rowTable: RowFormatRelation, _, _) => rowTable.table
-    }.partition(tab => tables.exists(t => tab.indexOf(t.toUpperCase) > 0))
+    }
+
+    val (tablesFound, tablesNotFound) = tables.partition(tab =>
+      tablesAppeared.exists(t => t.indexOf(tab.toUpperCase) > 0))
+
+    val unexpected = tablesAppeared.filterNot(tab =>
+      tables.exists(t => tab.indexOf(t.toUpperCase) > 0))
 
     if (tablesFound.size != tables.size) {
       df.explain(true)
-      fail(s"Expected tables $tables not found. UnFound tables ${tablesNotFound} ")
+      fail(s"Expected tables ${tables.mkString(",")} but not found " +
+          s"${tablesNotFound.mkString(",")} with additional tables ${unexpected.mkString(",")}")
     }
 
 

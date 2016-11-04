@@ -19,8 +19,9 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -288,7 +289,8 @@ trait ExternalSchemaRelationProvider {
 trait PrunedUnsafeFilteredScan {
 
   def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter], statsPredicate: StatsPredicateCompiler):
+      filters: Array[Filter],
+      statsPredicate: StatsPredicateCompiler):
   (RDD[Any], Seq[RDD[InternalRow]])
 }
 

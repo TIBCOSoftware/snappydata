@@ -33,7 +33,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
@@ -94,9 +94,7 @@ class RowFormatRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
-  override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+  override def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
