@@ -32,6 +32,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
+import org.apache.spark.sql.catalyst.catalog.{FunctionResourceType, FunctionResource}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
@@ -40,8 +41,9 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.command.CreateFunctionCommand
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.{ExprCodeEx, HashingUtil, LogicalRDD}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
@@ -1301,6 +1303,23 @@ class SnappySession(@transient private val sc: SparkContext,
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }
+  }
+
+  def createFunction(functionName: String, className: String, isTemporary: Boolean,
+      resource: Option[String], path: Option[String]): Unit = {
+    val tableIdent = this.sessionState.sqlParser.parseTableIdentifier(functionName)
+    val resources = resource match {
+      case Some(p) => Seq(FunctionResource(FunctionResourceType.fromString(p), path.get))
+      case None => Seq.empty[FunctionResource]
+    }
+    val cmd =
+      CreateFunctionCommand(
+        tableIdent.database,
+        tableIdent.table,
+        className = className,
+        resources,
+        isTemp = isTemporary)
+    this.sessionState.executePlan(cmd).toRdd
   }
 
   private def convertListToRow(row: java.util.ArrayList[_]): Row = {
