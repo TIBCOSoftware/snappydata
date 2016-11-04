@@ -34,10 +34,12 @@ import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
+import org.apache.spark.sql.catalyst.analysis.{NoSuchPermanentFunctionException, FunctionRegistry, NoSuchDatabaseException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.expressions.{ExpressionInfo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -45,7 +47,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.{UDFFunction, SQLConf}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
@@ -96,6 +98,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }
+
 
   override def setCurrentDatabase(db: String): Unit = {
     val dbName = formatTableName(db)
@@ -344,6 +347,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     tempTables.contains(tableIdent.table)
   }
 
+  override def lookupRelation(tableIdent: TableIdentifier,
+      alias: Option[String]): LogicalPlan = {
+    // If an alias was specified by the lookup, wrap the plan in a
+    // sub-query so that attributes are properly qualified with this alias
+    SubqueryAlias(alias.getOrElse(tableIdent.table),
+      lookupRelation(newQualifiedTableName(tableIdent)))
+  }
+
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
     tableIdent.getTableOption(this) match {
       case Some(table) =>
@@ -369,14 +380,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
       }
     }
-  }
-
-  override def lookupRelation(tableIdent: TableIdentifier,
-      alias: Option[String]): LogicalPlan = {
-    // If an alias was specified by the lookup, wrap the plan in a
-    // sub-query so that attributes are properly qualified with this alias
-    SubqueryAlias(alias.getOrElse(tableIdent.table),
-      lookupRelation(newQualifiedTableName(tableIdent)))
   }
 
   override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
@@ -661,6 +664,69 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ => ExternalTableType.Row
     }
   }
+
+  override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
+    UDFFunction.makeFunctionBuilder(funcName, Utils.classForName(className))
+  }
+
+  /**
+   * Return an [[Expression]] that represents the specified function, assuming it exists.
+   *
+   * For a temporary function or a permanent function that has been loaded,
+   * this method will simply lookup the function through the
+   * FunctionRegistry and create an expression based on the builder.
+   *
+   * For a permanent function that has not been loaded, we will first fetch its metadata
+   * from the underlying external catalog. Then, we will load all resources associated
+   * with this function (i.e. jars and files). Finally, we create a function builder
+   * based on the function class and put the builder into the FunctionRegistry.
+   * The name of this function in the FunctionRegistry will be `databaseName.functionName`.
+   */
+  override def lookupFunction(
+      name: FunctionIdentifier,
+      children: Seq[Expression]): Expression = synchronized {
+    // Note: the implementation of this function is a little bit convoluted.
+    // We probably shouldn't use a single FunctionRegistry to register all three kinds of functions
+    // (built-in, temp, and external).
+    if (name.database.isEmpty && functionRegistry.functionExists(name.funcName)) {
+      // This function has been already loaded into the function registry.
+      return functionRegistry.lookupFunction(name.funcName, children)
+    }
+
+    // If the name itself is not qualified, add the current database to it.
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+
+    if (functionRegistry.functionExists(qualifiedName.unquotedString)) {
+      // This function has been already loaded into the function registry.
+      // Unlike the above block, we find this function by using the qualified name.
+      return functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+    }
+
+    // The function has not been loaded to the function registry, which means
+    // that the function is a permanent function (if it actually has been registered
+    // in the metastore). We need to first put the function in the FunctionRegistry.
+    // TODO: why not just check whether the function exists first?
+    val catalogFunction = try {
+      externalCatalog.getFunction(currentSchema, name.funcName)
+    } catch {
+      case e: AnalysisException => failFunctionLookup(name.funcName)
+      case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+    }
+    loadFunctionResources(catalogFunction.resources)
+    // Please note that qualifiedName is provided by the user. However,
+    // catalogFunction.identifier.unquotedString is returned by the underlying
+    // catalog. So, it is possible that qualifiedName is not exactly the same as
+    // catalogFunction.identifier.unquotedString (difference is on case-sensitivity).
+    // At here, we preserve the input from the user.
+    val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
+    val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
+    createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
+    // Now, we need to create the Expression.
+    functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+  }
+
+
 
   // -----------------
   // | Other methods |
