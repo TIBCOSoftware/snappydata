@@ -30,6 +30,7 @@ object CreateAndLoadNWTablesSparkApp {
   def main(args: Array[String]) {
     val dataFilesLocation = args(0)
     //snc.sql("set spark.sql.shuffle.partitions=6")
+    snc.setConf("dataFilesLocation", dataFilesLocation)
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)

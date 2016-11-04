@@ -32,6 +32,8 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     val tableType = jobConfig.getString("tableType")
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
+      val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+      snc.setConf("dataFilesLocation",dataFilesLocation)
       northwind.NWQueries.snc = snc
       pw.println(s"Validate ${tableType} tables Queries Test started")
       NWTestUtil.validateQueries(snc, tableType, pw)

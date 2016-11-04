@@ -16,9 +16,9 @@
  */
 package io.snappydata.hydra.northwind
 
-import java.io.PrintWriter
+import java.io.{File, FileOutputStream, PrintStream, PrintWriter}
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{Row, SQLContext, SnappyContext}
 
 object NWTestUtil {
 
@@ -41,40 +41,120 @@ object NWTestUtil {
         + " for query =" + sqlString + " Table Type : " + tableType)
   }
 
+
+  def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    snc.sql("set spark.sql.crossJoin.enabled = true")
+    val snappyDF = snc.sql(sqlString)
+    val sparkDF = sqlContext.sql(sqlString);
+    val snappyResultSet = snappyDF.collect()
+    collectResultInFile(true, queryNum, snappyResultSet, pw)
+    val sparkResultSet = sparkDF.collect()
+    collectResultInFile(false, queryNum, sparkResultSet, pw)
+    /*val snappyResultSet = snappyDF.collect().toList.sorted
+    val sparkResultSet = sparkDF.collect().toList.sorted*/
+
+    val expectedFile = snc.sparkContext.textFile(s"Spark_${queryNum}.out")
+    val actualFile = snc.sparkContext.textFile(s"Snappy_${queryNum}.out")
+
+    val expectedLineSet = expectedFile.collect().toList.sorted
+    val actualLineSet = actualFile.collect().toList.sorted
+    if (!actualLineSet.equals(expectedLineSet)) {
+      if (!(expectedLineSet.size == actualLineSet.size)) {
+        pw.println(s"For ${queryNum} result count mismatch observed")
+      } else {
+        for ((expectedLine, actualLine) <- (expectedLineSet zip actualLineSet)) {
+          if (!expectedLine.equals(actualLine)) {
+            pw.println(s"For ${queryNum} result mismatch observed")
+            pw.println(s"Excpected : $expectedLine")
+            pw.println(s"Found     : $actualLine")
+            pw.println(s"Query =" + sqlString + " Table Type : " + tableType)
+          }
+        }
+      }
+    }
+  }
+
+  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    val snappyDF = snc.sql(sqlString)
+    val sparkDF = sqlContext.sql(sqlString);
+    val snappyResultSet = snappyDF.collect()
+    collectResultInFile(true, queryNum, snappyResultSet, pw)
+    val sparkResultSet = sparkDF.collect()
+    collectResultInFile(false, queryNum, sparkResultSet, pw)
+    /*val snappyResultSet = snappyDF.collect().toList.sorted
+    val sparkResultSet = sparkDF.collect().toList.sorted*/
+
+    val expectedFile = snc.sparkContext.textFile(s"Spark_${queryNum}.out")
+    val actualFile = snc.sparkContext.textFile(s"Snappy_${queryNum}.out")
+
+    val expectedLineSet = expectedFile.collect().toList.sorted
+    val actualLineSet = actualFile.collect().toList.sorted
+    if (!actualLineSet.equals(expectedLineSet)) {
+      if (!(expectedLineSet.size == actualLineSet.size)) {
+        pw.println(s"For ${queryNum} result count mismatched observed")
+      } else {
+        for ((expectedLine, actualLine) <- (expectedLineSet zip actualLineSet)) {
+          if (!expectedLine.equals(actualLine)) {
+            pw.println(s"For ${queryNum} result mismatched observed")
+            pw.println(s"Excpected : $expectedLine")
+            pw.println(s"Found     : $actualLine")
+            pw.println(s"Query =" + sqlString + " Table Type : " + tableType)
+          }
+        }
+      }
+    }
+  }
+
+  def collectResultInFile(isSnappy: Boolean, queryNum: String, resultSet: Array[Row], pw: PrintWriter): Unit = {
+    val queryFileName = if (isSnappy) s"Snappy_${queryNum}.out" else s"Spark_${queryNum}.out"
+    var queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
+    var queryPrintStream: PrintStream = new PrintStream(queryFileStream)
+    //val resultSet = df.collect()
+    pw.println(s"$queryNum : ${resultSet.length}")
+
+    for (row <- resultSet) {
+      queryPrintStream.println(row.toSeq.map {
+        case d: Double => "%18.4f".format(d).trim()
+        case v => v
+      }.mkString(","))
+    }
+    pw.println(s"${queryNum} Result Collected in file $queryFileName")
+  }
+
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table)
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table)
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table)
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table)
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table)
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table)
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table)
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
   def validateQueries(snc: SnappyContext, tableType: String, pw: PrintWriter): Unit = {
@@ -112,12 +192,12 @@ object NWTestUtil {
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30", tableType, pw)
         case "Q31" => assertJoin(snc, NWQueries.Q31, 830, "Q31", tableType, pw)
         case "Q32" => assertJoin(snc, NWQueries.Q32, 8, "Q32", tableType, pw)
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33", tableType, pw)
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33", tableType, pw)
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34", tableType, pw)
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35", tableType, pw)
         case "Q36" => assertJoin(snc, NWQueries.Q36, 290, "Q36", tableType, pw)
         case "Q37" => assertJoin(snc, NWQueries.Q37, 77, "Q37", tableType, pw)
-        //case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, "Q38", tableType, pw) // NPE LocalJoin
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, "Q38", tableType, pw) // NPE LocalJoin
         case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39", tableType, pw)
         case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40", tableType, pw)
         case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41", tableType, pw)
@@ -141,133 +221,221 @@ object NWTestUtil {
     }
   }
 
+  def validateQueriesFullResultSet(snc: SnappyContext, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Unit = {
+    for (q <- NWQueries.queries) {
+      q._1 match {
+        case "Q1" => assertQueryFullResultSet(snc, NWQueries.Q1, 8, "Q1", tableType, pw, sqlContext)
+        case "Q2" => assertQueryFullResultSet(snc, NWQueries.Q2, 91, "Q2", tableType, pw, sqlContext)
+        case "Q3" => assertQueryFullResultSet(snc, NWQueries.Q3, 830, "Q3", tableType, pw, sqlContext)
+        case "Q4" => assertQueryFullResultSet(snc, NWQueries.Q4, 9, "Q4", tableType, pw, sqlContext)
+        case "Q5" => assertQueryFullResultSet(snc, NWQueries.Q5, 9, "Q5", tableType, pw, sqlContext)
+        case "Q6" => assertQueryFullResultSet(snc, NWQueries.Q6, 9, "Q6", tableType, pw, sqlContext)
+        case "Q7" => assertQueryFullResultSet(snc, NWQueries.Q7, 9, "Q7", tableType, pw, sqlContext)
+        case "Q8" => assertQueryFullResultSet(snc, NWQueries.Q8, 6, "Q8", tableType, pw, sqlContext)
+        case "Q9" => assertQueryFullResultSet(snc, NWQueries.Q9, 3, "Q9", tableType, pw, sqlContext)
+        case "Q10" => assertQueryFullResultSet(snc, NWQueries.Q10, 2, "Q10", tableType, pw, sqlContext)
+        case "Q11" => assertQueryFullResultSet(snc, NWQueries.Q11, 4, "Q11", tableType, pw, sqlContext)
+        case "Q12" => assertQueryFullResultSet(snc, NWQueries.Q12, 2, "Q12", tableType, pw, sqlContext)
+        case "Q13" => assertQueryFullResultSet(snc, NWQueries.Q13, 2, "Q13", tableType, pw, sqlContext)
+        case "Q14" => assertQueryFullResultSet(snc, NWQueries.Q14, 69, "Q14", tableType, pw, sqlContext)
+        case "Q15" => assertQueryFullResultSet(snc, NWQueries.Q15, 5, "Q15", tableType, pw, sqlContext)
+        case "Q16" => assertQueryFullResultSet(snc, NWQueries.Q16, 8, "Q16", tableType, pw, sqlContext)
+        case "Q17" => assertQueryFullResultSet(snc, NWQueries.Q17, 3, "Q17", tableType, pw, sqlContext)
+        case "Q18" => assertQueryFullResultSet(snc, NWQueries.Q18, 9, "Q18", tableType, pw, sqlContext)
+        case "Q19" => assertQueryFullResultSet(snc, NWQueries.Q19, 13, "Q19", tableType, pw, sqlContext)
+        case "Q20" => assertQueryFullResultSet(snc, NWQueries.Q20, 1, "Q20", tableType, pw, sqlContext)
+        case "Q21" => assertQueryFullResultSet(snc, NWQueries.Q21, 1, "Q21", tableType, pw, sqlContext)
+        case "Q22" => assertQueryFullResultSet(snc, NWQueries.Q22, 1, "Q22", tableType, pw, sqlContext)
+        case "Q23" => assertQueryFullResultSet(snc, NWQueries.Q23, 1, "Q23", tableType, pw, sqlContext)
+        case "Q24" => assertQueryFullResultSet(snc, NWQueries.Q24, 4, "Q24", tableType, pw, sqlContext)
+        case "Q25" => assertJoinFullResultSet(snc, NWQueries.Q25, 1, "Q25", tableType, pw, sqlContext)
+        case "Q26" => assertJoinFullResultSet(snc, NWQueries.Q26, 86, "Q26", tableType, pw, sqlContext)
+        case "Q27" => assertJoinFullResultSet(snc, NWQueries.Q27, 9, "Q27", tableType, pw, sqlContext)
+        case "Q28" => assertJoinFullResultSet(snc, NWQueries.Q28, 12, "Q28", tableType, pw, sqlContext)
+        case "Q29" => assertJoinFullResultSet(snc, NWQueries.Q29, 8, "Q29", tableType, pw, sqlContext)
+        case "Q30" => assertJoinFullResultSet(snc, NWQueries.Q30, 8, "Q30", tableType, pw, sqlContext)
+        case "Q31" => assertJoinFullResultSet(snc, NWQueries.Q31, 830, "Q31", tableType, pw, sqlContext)
+        case "Q32" => assertJoinFullResultSet(snc, NWQueries.Q32, 8, "Q32", tableType, pw, sqlContext)
+        case "Q33" => assertJoinFullResultSet(snc, NWQueries.Q33, 51, "Q33", tableType, pw, sqlContext)
+        case "Q34" => assertJoinFullResultSet(snc, NWQueries.Q34, 5, "Q34", tableType, pw, sqlContext)
+        case "Q35" => assertJoinFullResultSet(snc, NWQueries.Q35, 3, "Q35", tableType, pw, sqlContext)
+        case "Q36" => assertJoinFullResultSet(snc, NWQueries.Q36, 290, "Q36", tableType, pw, sqlContext)
+        case "Q37" => assertJoinFullResultSet(snc, NWQueries.Q37, 77, "Q37", tableType, pw, sqlContext)
+        case "Q38" => assertJoinFullResultSet(snc, NWQueries.Q38, 2155, "Q38", tableType, pw, sqlContext) // NPE LocalJoin
+        case "Q39" => assertJoinFullResultSet(snc, NWQueries.Q39, 9, "Q39", tableType, pw, sqlContext)
+        case "Q40" => assertJoinFullResultSet(snc, NWQueries.Q40, 830, "Q40", tableType, pw, sqlContext)
+        case "Q41" => assertJoinFullResultSet(snc, NWQueries.Q41, 2155, "Q41", tableType, pw, sqlContext)
+        case "Q42" => assertJoinFullResultSet(snc, NWQueries.Q42, 22, "Q42", tableType, pw, sqlContext)
+        case "Q43" => assertJoinFullResultSet(snc, NWQueries.Q43, 830, "Q43", tableType, pw, sqlContext)
+        case "Q44" => assertJoinFullResultSet(snc, NWQueries.Q44, 830, "Q44", tableType, pw, sqlContext) //LeftSemiJoinHash
+        case "Q45" => assertJoinFullResultSet(snc, NWQueries.Q45, 1788650, "Q45", tableType, pw, sqlContext)
+        case "Q46" => assertJoinFullResultSet(snc, NWQueries.Q46, 1788650, "Q46", tableType, pw, sqlContext)
+        case "Q47" => assertJoinFullResultSet(snc, NWQueries.Q47, 1788650, "Q47", tableType, pw, sqlContext)
+        case "Q48" => assertJoinFullResultSet(snc, NWQueries.Q48, 1788650, "Q48", tableType, pw, sqlContext)
+        case "Q49" => assertJoinFullResultSet(snc, NWQueries.Q49, 1788650, "Q49", tableType, pw, sqlContext)
+        case "Q50" => assertJoinFullResultSet(snc, NWQueries.Q50, 2155, "Q50", tableType, pw, sqlContext)
+        case "Q51" => assertJoinFullResultSet(snc, NWQueries.Q51, 2155, "Q51", tableType, pw, sqlContext)
+        case "Q52" => assertJoinFullResultSet(snc, NWQueries.Q52, 2155, "Q52", tableType, pw, sqlContext)
+        case "Q53" => assertJoinFullResultSet(snc, NWQueries.Q53, 2155, "Q53", tableType, pw, sqlContext)
+        case "Q54" => assertJoinFullResultSet(snc, NWQueries.Q54, 2155, "Q54", tableType, pw, sqlContext)
+        case "Q55" => assertJoinFullResultSet(snc, NWQueries.Q55, 21, "Q55", tableType, pw, sqlContext)
+        case "Q56" => assertJoinFullResultSet(snc, NWQueries.Q56, 8, "Q56", tableType, pw, sqlContext)
+        case _ => println("OK")
+      }
+    }
+  }
+
   def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
       " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', redundancy '1')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1')")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
 
   }
 
   def createAndLoadColumnTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table + " using row options(partition_by 'City,Country', redundancy '1')")
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', COLOCATE_WITH 'employees', redundancy '1')")
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13', redundancy '1')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
   def createAndLoadColocatedTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
       " using row options( partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
       " using column options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
       " using row options (partition_by 'CustomerID, OrderID', buckets '19', redundancy '1')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
       " using row options ( partition_by 'ProductID', buckets '329', redundancy '1')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
       " USING column options ( partition_by 'ProductID', buckets '329'," +
       " colocate_with 'order_details', redundancy '1')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
       " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
       " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
       " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories', redundancy '1') ")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
+  def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
+    NWQueries.regions(sqlContext).registerTempTable("regions")
+    println(s"regions Table created successfully in spark")
+    NWQueries.categories(sqlContext).registerTempTable("categories")
+    println(s"categories Table created successfully in spark")
+    NWQueries.shippers(sqlContext).registerTempTable("shippers")
+    println(s"shippers Table created successfully in spark")
+    NWQueries.employees(sqlContext).registerTempTable("employees")
+    println(s"employees Table created successfully in spark")
+    NWQueries.customers(sqlContext).registerTempTable("customers")
+    println(s"customers Table created successfully in spark")
+    NWQueries.orders(sqlContext).registerTempTable("orders")
+    println(s"orders Table created successfully in spark")
+    NWQueries.order_details(sqlContext).registerTempTable("order_details")
+    println(s"order_details Table created successfully in spark")
+    NWQueries.products(sqlContext).registerTempTable("products")
+    println(s"products Table created successfully in spark")
+    NWQueries.suppliers(sqlContext).registerTempTable("suppliers")
+    println(s"suppliers Table created successfully in spark")
+    NWQueries.territories(sqlContext).registerTempTable("territories")
+    println(s"territories Table created successfully in spark")
+    NWQueries.employee_territories(sqlContext).registerTempTable("employee_territories")
+    println(s"employee_territories Table created successfully in spark")
+  }
 
   def dropTables(snc: SnappyContext): Unit = {
     snc.sql("drop table if exists regions")
