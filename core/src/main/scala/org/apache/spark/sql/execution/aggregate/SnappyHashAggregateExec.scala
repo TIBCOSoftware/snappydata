@@ -169,7 +169,8 @@ case class SnappyHashAggregateExec(
   // all the mode of aggregate expressions
   private val modes = aggregateExpressions.map(_.mode).distinct
 
-  override def usedInputs: AttributeSet = inputSet
+  // return empty here as code of required variables is explicitly instantiated
+  override def usedInputs: AttributeSet = AttributeSet.empty
 
   override def supportCodegen: Boolean = {
     // ImperativeAggregate is not supported right now
@@ -205,8 +206,17 @@ case class SnappyHashAggregateExec(
     else {
       batchConsumeDone = true
       val entryClass = keyBufferAccessor.getClassName
+      // check for optimized dictionary code path
+      val arrayCode = keyBufferAccessor.checkSingleKeyCase(input) match {
+        case Some(ExprCodeEx(_, _, dictionary, _)) =>
+          // create an array at batch level for grouping
+          dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+          s"final $entryClass[] $dictionaryArrayTerm = $dictionary != null " +
+              s"? new $entryClass[$dictionary.length] : null;"
+        case None => ""
+      }
       // add declarations for mask and data to enable using register variables
-      s"""
+      s"""$arrayCode
         int $maskTerm = $hashMapTerm.mask();
         $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
       """
@@ -349,6 +359,7 @@ case class SnappyHashAggregateExec(
   @transient private var keyBufferAccessor: ObjectHashMapAccessor = _
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
+  @transient private var dictionaryArrayTerm: String = _
   @transient private var batchConsumeDone = false
 
   /**
@@ -542,7 +553,7 @@ case class SnappyHashAggregateExec(
     // them together for same key.
     s"""
        |${keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
-            initVars, initCode, input)}
+            initVars, initCode, input, dictionaryArrayTerm)}
        |
        |// -- Update the buffer with new aggregate results --
        |

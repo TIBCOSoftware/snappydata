@@ -56,6 +56,7 @@ import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
@@ -131,6 +132,32 @@ private[sql] final case class ColumnTableScan(
       case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
       case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
 
+      case StartsWith(a: AttributeReference, l: Literal) =>
+        // upper bound for column (i.e. LessThan) can be found by going to
+        // next value of the last character of literal
+        val s = l.value.asInstanceOf[UTF8String]
+        val len = s.numBytes()
+        val upper = new Array[Byte](len)
+        s.writeToMemory(upper, Platform.BYTE_ARRAY_OFFSET)
+        var lastCharPos = len - 1
+        // check for maximum unsigned value 0xff
+        val max = 0xff.toByte // -1
+        while (lastCharPos >= 0 && upper(lastCharPos) == max) {
+          lastCharPos -= 1
+        }
+        val stats = statsFor(a)
+        if (lastCharPos < 0) { // all bytes are 0xff
+          // a >= startsWithPREFIX
+          l <= stats.upperBound
+        } else {
+          upper(lastCharPos) = (upper(lastCharPos) + 1).toByte
+          val upperLiteral = Literal(UTF8String.fromAddress(upper,
+            Platform.BYTE_ARRAY_OFFSET, len))
+
+          // a >= startsWithPREFIX && a < startsWithPREFIX+1
+          l <= stats.upperBound && stats.lowerBound < upperLiteral
+        }
+
       case IsNull(a: Attribute) => statsFor(a).nullCount > 0
       case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
     }
@@ -169,6 +196,10 @@ private[sql] final case class ColumnTableScan(
     val platformClass = classOf[Platform].getName
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
+    // skip filtering if nothing is to be applied
+    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
+      return ""
+    }
     val filterFunction = ctx.freshName("columnBatchFilter")
     ctx.addNewFunction(filterFunction,
       s"""
@@ -394,33 +425,44 @@ private[sql] final case class ColumnTableScan(
         $numBatchRows = $batch.numRows();
       """
     } else if (isOffHeap) {
+      val filterCode = if (filterFunction.isEmpty) {
+        s"final $execRowClass $batch = ($execRowClass)$colInput.next();"
+      } else {
+        s"""$execRowClass $batch;
+          while (true) {
+            $batch = ($execRowClass)$colInput.next();
+            final byte[] statBytes = $batch.getRowBytes(
+              ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+            if ($filterFunction(statBytes)) {
+              break;
+            }
+            if (!$colInput.hasNext()) return false;
+          }"""
+      }
       s"""
-        $execRowClass $batch;
-        while (true) {
-          $batch = ($execRowClass)$colInput.next();
-          final byte[] statBytes = $batch.getRowBytes(
-            ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-          if ($filterFunction(statBytes)) {
-            break;
-          }
-          if (!$colInput.hasNext()) return false;
-        }
+        $filterCode
         $numBatchRows = $batch.getAsInt(
           ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, ($wasNullClass)null);
       """
     } else {
+      val filterCode = if (filterFunction.isEmpty) {
+        s"""final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
+          $buffers = (byte[][])$colInput.next();"""
+      } else {
+        s"""$rowFormatterClass $rowFormatter;
+           while (true) {
+             $rowFormatter = $colInput.rowFormatter();
+             $buffers = (byte[][])$colInput.next();
+             final byte[] statBytes = $rowFormatter.getLob($buffers,
+               ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+             if ($filterFunction(statBytes)) {
+               break;
+             }
+             if (!$colInput.hasNext()) return false;
+           }"""
+      }
       s"""
-        $rowFormatterClass $rowFormatter;
-        while (true) {
-          $rowFormatter = $colInput.rowFormatter();
-          $buffers = (byte[][])$colInput.next();
-          final byte[] statBytes = $rowFormatter.getLob($buffers,
-            ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-          if ($filterFunction(statBytes)) {
-            break;
-          }
-          if (!$colInput.hasNext()) return false;
-        }
+        $filterCode
         $numBatchRows = $rowFormatter.getAsInt(
           ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, $buffers[0],
           ($wasNullClass)null);
@@ -503,15 +545,14 @@ private[sql] final case class ColumnTableScan(
     """.stripMargin
   }
 
-  private def getBatchConsumer(
-      parent: CodegenSupport): Option[BatchConsumer] = parent match {
-    case null => None
-    case b: BatchConsumer => Some(b)
-    case _ =>
-      // using reflection here since protected parent cannot be accessed
-      val m = parent.getClass.getDeclaredMethod("parent")
-      m.setAccessible(true)
-      getBatchConsumer(m.invoke(parent).asInstanceOf[CodegenSupport])
+  private def getBatchConsumer(parent: CodegenSupport): List[BatchConsumer] = {
+    parent match {
+      case null => Nil
+      case b: BatchConsumer => b :: getBatchConsumer(TypeUtils.parentMethod
+          .invoke(parent).asInstanceOf[CodegenSupport])
+      case _ => getBatchConsumer(TypeUtils.parentMethod.invoke(parent)
+          .asInstanceOf[CodegenSupport])
+    }
   }
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,

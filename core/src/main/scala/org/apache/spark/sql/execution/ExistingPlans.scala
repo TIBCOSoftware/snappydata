@@ -232,10 +232,9 @@ trait BatchConsumer extends CodegenSupport {
 }
 
 /**
-  * Extended information for ExprCode to also hold the hashCode variable,
-  * variable having dictionary reference and its index when dictionary
-  * encoding is being used.
-  */
-final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
+ */
+case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
     dictionary: String, dictionaryIndex: String)
-
