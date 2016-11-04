@@ -74,7 +74,7 @@ import org.apache.spark.unsafe.array.ByteArrayMethods
  * and 2-4X faster than VectorizedHashMapGenerator. It is generic enough
  * to be used for both group by aggregation as well as for HashJoins.
  */
-final case class ObjectHashMapAccessor(@transient session: SnappySession,
+case class ObjectHashMapAccessor(@transient session: SnappySession,
     @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
     @transient valueExprs: Seq[Expression], classPrefix: String,
     hashMapTerm: String, dataTerm: String, maskTerm: String,
@@ -84,8 +84,9 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   override def output: Seq[Attribute] = child.output
 
-  private[this] val keyExpressions = keyExprs.map(_.canonicalized)
-  private[this] val valueExpressions = valueExprs.map(_.canonicalized)
+  private[execution] val keyExpressions = keyExprs.map(_.canonicalized)
+  private[execution] val valueExpressions = valueExprs.map(_.canonicalized)
+  private[execution] var dictionaryKey: Option[ExprCodeEx] = None
 
   private[this] val valueIndex = keyExpressions.length
 
@@ -189,6 +190,8 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
             $multiValues
             final int hash;
 
+            static final $entryClass EMPTY = new $entryClass(0);
+
             public $entryClass(int h) {
               this.hash = h;
             }
@@ -264,11 +267,11 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
   }
 
   private def getExpressionVars(expressions: Seq[Expression],
-      input: Seq[ExprCode]): Seq[ExprCode] = {
+      input: Seq[ExprCode], output: Seq[Attribute] = child.output): Seq[ExprCode] = {
     ctx.INPUT_ROW = null
     ctx.currentVars = input
     val vars = ctx.generateExpressions(expressions.map(e =>
-      BindReferences.bindReference[Expression](e, child.output)))
+      BindReferences.bindReference[Expression](e, output)))
     ctx.currentVars = null
     vars
   }
@@ -336,7 +339,7 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
       if (${keyVars.map(_.isNull).mkString(" ||\n")}) continue;
       // generate hash code
       int $hashVar;
-      ${generateHashCode(hashVar, keyVars, keyExpressions)}
+      ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
       // lookup or insert the grouping key in map
       // using inline get call so that equals() is inline using
       // existing register variables instead of having to fill up
@@ -384,17 +387,22 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
    * correspond to the key columns in this class.
    */
   def generateHashCode(hashVar: String, keyVars: Seq[ExprCode],
-      keyExpressions: Seq[Expression]): String = {
+      keyExpressions: Seq[Expression], register: Boolean = true): String = {
     // check if hash has already been generated for keyExpressions
+    var doRegister = register
     val vars = keyVars.map(_.value)
-    val (prefix, suffix) = session.getExCode(ctx, vars, keyExpressions) match {
+    val (prefix, suffix) = if (doRegister) session.getExCode(ctx, vars,
+      keyExpressions) match {
       case Some(ExprCodeEx(Some(hash), _, _, _)) =>
-        (s"if (($hashVar = $hash) == 0) {\n", "}\n")
+        doRegister = false
+        (s"if (($hashVar = $hash) == 0) {\n$hash = ", "}\n")
       case _ => ("", "")
-    }
+    } else ("", "")
 
     // register the hash variable for the key expressions
-    session.addExCodeHash(ctx, vars, keyExpressions, hashVar)
+    if (doRegister) {
+      session.addExCodeHash(ctx, vars, keyExpressions, hashVar)
+    }
 
     // optimize for first column to use fast hashing
     val expr = keyVars.head
@@ -537,61 +545,110 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
     (declarations.toString(), columnVars, nullValMaskVars)
   }
 
+  private[execution] def mapGetOrInsert(objVar: String, hashVar: String,
+      keyVars: Seq[ExprCode], valueInit: String): String = {
+    val pos = ctx.freshName("pos")
+    val delta = ctx.freshName("delta")
+    val mapKey = ctx.freshName("mapKey")
+    // if valueInit is passed as null, then its the case of only lookup
+    // with no insert (hash join)
+    val insertCode = if (valueInit eq null) {
+      s"""// key not found so set entry as null for consumption
+         |$objVar = null;
+      """.stripMargin
+    } else {
+      s"""$objVar = new $className($hashVar);
+         |// initialize the value fields to defaults
+         |$valueInit
+         |// initialize the key fields
+         |${generateUpdate(objVar, Nil, keyVars, forKey = true)}
+         |// insert into the map and rehash if required
+         |$dataTerm[$pos] = $objVar;
+         |if ($hashMapTerm.handleNewInsert()) {
+         |  // map was rehashed
+         |  $maskTerm = $hashMapTerm.mask();
+         |  $dataTerm = ($className[])$hashMapTerm.data();
+         |}
+      """.stripMargin
+    }
+    s"""
+       |// Lookup or insert the key in map (for group by).
+       |// Using inline get call so that equals() is inline using
+       |// existing register variables instead of having to fill up
+       |// a lookup key fields and compare against those (thus saving
+       |//   on memory writes/reads vs just register reads).
+       |int $pos = $hashVar & $maskTerm;
+       |int $delta = 1;
+       |while (true) {
+       |  final $className $mapKey = $dataTerm[$pos];
+       |  if ($mapKey != null) {
+       |    $objVar = $mapKey;
+       |    if (${generateEquals(objVar, keyVars)}) {
+       |      break;
+       |    } else {
+       |      // quadratic probing with position increase by 1, 2, 3, ...
+       |      $pos = ($pos + $delta) & $maskTerm;
+       |      $delta++;
+       |    }
+       |  } else {
+       |    $insertCode
+       |    break;
+       |  }
+       |}
+    """
+  }
+
+  def checkSingleKeyCase(input: Seq[ExprCode],
+      keyExpressions: Seq[Expression] = keyExpressions,
+      output: Seq[Attribute] = output): Option[ExprCodeEx] = {
+    // make a copy of input variables since this is used only for lookup
+    // and the ExprCode's code should not be cleared
+    val vars = input.map(_.copy())
+    dictionaryKey = DictionaryOptimizedMapAccessor.checkSingleKeyCase(
+      keyExpressions, getExpressionVars(keyExpressions, vars, output),
+      ctx, session)
+    dictionaryKey
+  }
+
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
    */
   def generateMapGetOrInsert(objVar: String, valueInitVars: Seq[ExprCode],
-      valueInitCode: String, input: Seq[ExprCode]): String = {
+      valueInitCode: String, input: Seq[ExprCode],
+      dictArrayVar: String): String = {
     val hashVar = ctx.freshName("hash")
-    val posVar = ctx.freshName("pos")
-    val deltaVar = ctx.freshName("delta")
     val keyVars = getExpressionVars(keyExpressions, input)
-    val valueInit = generateUpdate(objVar, Nil, valueInitVars, forKey = false,
-      doCopy = false)
-    s"""
-      // evaluate the key expressions
-      ${evaluateVariables(keyVars)}
-      // evaluate the hash code of the lookup key
-      int $hashVar;
-      ${generateHashCode(hashVar, keyVars, keyExpressions)}
-      // lookup or insert the grouping key in map
-      // using inline get call so that equals() is inline using
-      // existing register variables instead of having to fill up
-      // a lookup key fields and compare against those (thus saving
-      //   on memory writes/reads vs just register reads)
-      $className $objVar;
-      int $posVar = $hashVar & $maskTerm;
-      int $deltaVar = 1;
-      while (true) {
-        final $className key = $dataTerm[$posVar];
-        if (key != null) {
-          $objVar = key;
-          if (${generateEquals(objVar, keyVars)}) {
-            break;
-          } else {
-            // quadratic probing with position increase by 1, 2, 3, ...
-            $posVar = ($posVar + $deltaVar) & $maskTerm;
-            $deltaVar++;
-          }
-        } else {
-          $objVar = new $className($hashVar);
-          // initialize the value fields to defaults
-          $valueInitCode
-          $valueInit
-          // initialize the key fields
-          ${generateUpdate(objVar, Nil, keyVars, forKey = true)}
-          // insert into the map and rehash if required
-          $dataTerm[$posVar] = $objVar;
-          if ($hashMapTerm.handleNewInsert()) {
-            // map was rehashed
-            $maskTerm = $hashMapTerm.mask();
-            $dataTerm = ($className[])$hashMapTerm.data();
-          }
+    val valueInit = valueInitCode + "\n" + generateUpdate(objVar, Nil,
+      valueInitVars, forKey = false, doCopy = false)
 
-          break;
-        }
-      }
-    """
+    // optimized path for single key string column if dictionary is present
+    dictionaryKey match {
+      case Some(dictKey) =>
+        s"""
+          $className $objVar;
+          if (${dictKey.dictionary} != null) {
+            ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
+              keyVars.head, dictKey, dictArrayVar, objVar, valueInit, this)}
+          } else {
+            // evaluate the key expressions
+            ${evaluateVariables(keyVars)}
+            // evaluate hash code of the lookup key
+            int $hashVar;
+            ${generateHashCode(hashVar, keyVars, keyExpressions)}
+            ${mapGetOrInsert(objVar, hashVar, keyVars, valueInit)}
+          }
+        """
+      case None =>
+        s"""
+          // evaluate the key expressions
+          ${evaluateVariables(keyVars)}
+          // evaluate hash code of the lookup key
+          int $hashVar;
+          ${generateHashCode(hashVar, keyVars, keyExpressions)}
+          $className $objVar;
+          ${mapGetOrInsert(objVar, hashVar, keyVars, valueInit)}
+         """
+    }
   }
 
   private def getConsumeResultCode(numRows: String,
@@ -604,13 +661,11 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
       initCode: String, checkCondition: Option[ExprCode],
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       buildKeyVars: Seq[ExprCode], buildVars: Seq[ExprCode], input: Seq[ExprCode],
-      resultVars: Seq[ExprCode], joinType: JoinType): String = {
+      resultVars: Seq[ExprCode], dictArrayVar: String,
+      joinType: JoinType): String = {
     // scalastyle:on
 
     val hashVar = ctx.freshName("hash")
-    // these are all local variables inside private block, so no ctx.freshName
-    val posVar = "pos"
-    val deltaVar = "delta"
 
     // if consumer is a projection that will project away key columns,
     // then avoid materializing those
@@ -735,35 +790,33 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
         s"LocalJoin should not take $joinType as the JoinType")
     }
 
+    // optimized path for single key string column if dictionary is present
+    val mapLookupCode = dictionaryKey match {
+      case Some(dictKey) =>
+        s"""
+          if (${dictKey.dictionary} != null) {
+            ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
+              streamKeyVars.head, dictKey, dictArrayVar, entryVar,
+              valueInit = null, this)}
+          } else {
+            // generate hash code from stream side key columns
+            $streamHashCode
+            ${mapGetOrInsert(entryVar, hashVar, streamKeyVars, valueInit = null)}
+          }
+        """
+      case None =>
+        s"""
+          // generate hash code from stream side key columns
+          $streamHashCode
+          ${mapGetOrInsert(entryVar, hashVar, streamKeyVars, valueInit = null)}
+        """
+    }
     s"""
       $className $entryVar = null;
       int $hashVar = 0;
       // check if any join key is null or min/max for integral keys
       $initFilterCode {
-        // generate hash code from stream side key columns
-        $streamHashCode
-        // Lookup the key in map and consume all values.
-        // Using inline get call so that equals() is inline using
-        // existing register variables instead of having to fill up
-        // a lookup key fields and compare against those.
-        // Start with the full class object then read the values array.
-        int $posVar = $hashVar & $maskTerm;
-        int $deltaVar = 1;
-        while (true) {
-          $entryVar = $dataTerm[$posVar];
-          if ($entryVar != null) {
-            if (${generateEquals(entryVar, streamKeyVars)}) {
-              break;
-            } else {
-              // quadratic probing with position increase by 1, 2, 3, ...
-              $posVar = ($posVar + $deltaVar) & $maskTerm;
-              $deltaVar++;
-            }
-          } else {
-            // key not found so filter out the row with entry as null
-            break;
-          }
-        }
+        $mapLookupCode
       }
       $entryConsume
     """

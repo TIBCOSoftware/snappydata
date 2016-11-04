@@ -36,10 +36,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{BindReferences, BoundReference, Expression, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.{BinaryExecNode, CodegenSupport, ObjectHashMapAccessor, ObjectHashSet, RowTableScan, SparkPlan}
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{LongType, StructType}
+import org.apache.spark.sql.types.{LongType, StructType, TypeUtils}
 import org.apache.spark.sql.{SnappyAggregation, SnappySession}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
@@ -59,7 +59,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan)
-    extends BinaryExecNode with HashJoin with CodegenSupport {
+    extends BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "LocalJoin"
 
@@ -69,6 +69,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
   @transient private var maskTerm: String = _
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
+  @transient private var dictionaryArrayTerm: String = _
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
@@ -218,13 +219,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
             return $hashMapTerm;
           }
         }
-       """)
+      """)
 
     // clear the parent by reflection if plan is sent by operators like Sort
-    val parentSetter = buildPlan.getClass.getMethod("parent_$eq",
-      classOf[CodegenSupport])
-    parentSetter.setAccessible(true)
-    parentSetter.invoke(buildPlan, null)
+    TypeUtils.parentSetter.invoke(buildPlan, null)
 
     // clear the input of RowTableScan
     rowTableScan.input = null
@@ -323,7 +321,22 @@ case class LocalJoin(leftKeys: Seq[Expression],
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, joinType)
+      resultVars, dictionaryArrayTerm, joinType)
+  }
+
+  override def batchConsume(ctx: CodegenContext,
+      input: Seq[ExprCode]): String = {
+    val entryClass = mapAccessor.getClassName
+    // check for optimized dictionary code path
+    mapAccessor.checkSingleKeyCase(input, streamSideKeys,
+      streamedPlan.output) match {
+      case Some(ExprCodeEx(_, _, dictionary, _)) =>
+        // create an array at batch level for grouping
+        dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+        s"final $entryClass[] $dictionaryArrayTerm = $dictionary != null " +
+            s"? new $entryClass[$dictionary.length] : null;"
+      case None => ""
+    }
   }
 
   /**
