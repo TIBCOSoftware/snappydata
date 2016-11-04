@@ -7,21 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Development Team">
-  
-  <title>Synopsis Data Engine (SDE) - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../favicon.ico">
   
-
-  
+  <title>Synopsis Data Engine (SDE) - SnappyData Documentation</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
   <link href="../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -32,9 +26,7 @@
   
   <script src="../js/jquery-2.1.1.min.js"></script>
   <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script>
-  <script src="../js/theme.js"></script> 
-
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -54,7 +46,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -217,9 +209,8 @@
     <li>Synopsis Data Engine (SDE)</li>
     <li class="wy-breadcrumbs-aside">
       
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
+        <a href="https://github.com/SnappyDataInc/snappydata/edit/master/docs/aqp.md"
+          class="icon icon-github"> Edit on GitHub</a>
       
     </li>
   </ul>
@@ -229,7 +220,7 @@
             <div class="section">
               
                 <h1 id="overview-of-synopsis-data-engine-sde">Overview of Synopsis Data Engine (SDE)</h1>
-<p>The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightning fast response time. </p>
+<p>The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. </p>
 <p>For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering) , while the engineer continues to slice and dice the data sets without any interruptions. </p>
 <p>When accessed using a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds, while the full answer can be computed in the background. Depending on the immediate answer, users can choose to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer, or if after viewing the initial results they are no longer interested in viewing the final results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.</p>
 <p>While in-memory analytics can be fast, it is still expensive and cumbersome to provision large clusters. Instead, SDE allows you to retain data in existing databases and disparate sources, and only caches a fraction of the data using stratified sampling and other techniques. In many cases, data explorers can use their laptops and run high-speed interactive analytics over billions of records. </p>
@@ -239,28 +230,28 @@
 <p><img alt="SDE_Architecture" src="../Images/sde_architecture.png" /></p>
 <h2 id="key-concepts">Key Concepts</h2>
 <p>SnappyData SDE relies on two methods for approximations - <strong>Stratified Sampling</strong> and <strong>Sketching</strong>. A brief introduction to these concepts is provided below.</p>
-<h3 id="stratified-sampling">Stratified sampling</h3>
+<h3 id="stratified-sampling">Stratified Sampling</h3>
 <p>Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.</p>
 <p>Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
 This is depicted in the following figure:</p>
 <p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling1.png" /></p>
-<p>If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', our answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
+<p>If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
 <p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling2.png" /></p>
 <p>But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. </p>
 <p>Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. </p>
 <p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling3.png" /></p>
 <p>To understand these concepts in further detail, refer to the <a href="https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf">handbook</a>. It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.</p>
 <h3 id="online-sampling">Online Sampling</h3>
-<p>SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+<p>SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
 There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 minute time window, while still ensuring that all GEOs have good representation in the sample. </p>
 <h3 id="sketching">Sketching</h3>
-<p>While stratified sampling ensures that data dimensions with low representation is captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that captures the how often we see an element in a stream for the top-N such elements. 
-While a Count-min-sketch is well described (Link), SDE extends this with support for providing top-K estimates over time series data. </p>
+<p>While stratified sampling ensures that data dimensions with low representation is captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
+While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-min-sketch</a> is well described, SDE extends this with support for providing top-K estimates over time series data. </p>
 <h2 id="working-with-stratified-samples">Working with Stratified Samples</h2>
 <h3 id="create-sample-tables">Create Sample Tables</h3>
 <p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. </p>
-<p>Here is an SQL based example to create sample on tables locally available in the Snappydata cluster. </p>
-<pre><code>CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  
+<p>Here is an SQL based example to create sample on tables locally available in the SnappyData cluster. </p>
+<pre><code>CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
   OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
   AS (SELECT * FROM NYCTAXI);
 
@@ -269,7 +260,7 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
   AS (SELECT * FROM TAXIFARE);
 </code></pre>
 
-<p>Often your data set is too large to also fit in available cluster memory. If so, you can create a external table pointing to the source. 
+<p>Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:</p>
 <pre><code>CREATE EXTERNAL TABLE TAXIFARE USING parquet 
   OPTIONS(path 's3a://&lt;AWS_SECRET_ACCESS_KEY&gt;&lt;AWS_ACCESS_KEY_ID&gt;@zeppelindemo/nyctaxifaredata_cleaned');
@@ -281,17 +272,26 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 
 <h3 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample selection</h3>
 <p>For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). </p>
-<p>'QCS', which stands for 'Query Column Set' is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A 'QCS' can also be constructed using SQL expressions - for instance, using a function like 'hour (pickup_datetime)'.</p>
-<p>The parameter <em>fraction</em> represents the fraction of the full population that will managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction doesn't drop the error rate. SDE will always attempt to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
-For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) will automatically be sampled at a lower rate. The algorithm will always attempt to maintain the overall 1% fraction specified in the 'create sample' statement.  </p>
+<p>QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like <code>hour (pickup_datetime)</code>.</p>
+<p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. </p>
 <p>One can create multiple sample tables using different sample QCS and sample fraction for a given base table. </p>
 <p>Here are some general guidelines to use when creating samples:
-<em> Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine will automatically reject all samples and run the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
-</em> Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
-<em> Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
-</em> Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a timestamp and is not a good candidate given its likelyhood of high cardinality. i.e. there is possibility that each record in the data set has a different timestamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
-<em> when accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system will automatically pick the appropriate sample. 
-</em> ..more to come..</p>
+* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine automatically rejects all samples and runs the query on the base table. These queries typically would execute optimally anyway on the underlying data store.</p>
+<ul>
+<li>
+<p>Start by identifying the most common columns used in GroupBy/Where and Having clauses. </p>
+</li>
+<li>
+<p>Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. </p>
+</li>
+<li>
+<p>Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is possibility that each record in the data set has a different times tamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. </p>
+</li>
+<li>
+<p>When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. </p>
+</li>
+</ul>
 <blockquote>
 <h4 id="note-the-value-of-the-qcs-column-should-not-be-empty-or-set-to-null-for-stratified-sampling-or-an-error-may-be-reported-when-the-query-is-executed">Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</h4>
 </blockquote>
@@ -579,10 +579,10 @@ sample_count returns number of rows (true answer) in sample table of airline tab
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -595,6 +595,7 @@ sample_count returns number of rows (true answer) in sample table of airline tab
       
     </span>
 </div>
+    <script src="../js/theme.js"></script>
 
 </body>
 </html>

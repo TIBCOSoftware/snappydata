@@ -7,34 +7,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Project documentation with Markdown.">
   <meta name="author" content="SnappyData Development Team">
+  <link rel="shortcut icon" href="./favicon.ico">
   
-  <title>SnappyData Documentation</title>
-  
-
-  <link rel="shortcut icon" href="favicon.ico">
-  
-
-  
+  <title>Getting Started - SnappyData Documentation</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="./css/theme.css" type="text/css" />
   <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="./css/highlight.css">
   <link href="./extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
-    var mkdocs_page_name = "None";
+    var mkdocs_page_name = "Getting Started";
     var mkdocs_page_input_path = "index.md";
     var mkdocs_page_url = "/";
   </script>
   
   <script src="./js/jquery-2.1.1.min.js"></script>
   <script src="./js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="./js/highlight.pack.js"></script>
-  <script src="./js/theme.js"></script> 
-
+  <script type="text/javascript" src="./js/highlight.pack.js"></script> 
   
 </head>
 
@@ -54,7 +46,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 current">
@@ -233,9 +225,8 @@
     <li>Getting Started</li>
     <li class="wy-breadcrumbs-aside">
       
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
+        <a href="https://github.com/SnappyDataInc/snappydata/edit/master/docs/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
       
     </li>
   </ul>
@@ -616,7 +607,7 @@ val airlineCodeDF = snappyContext.createTable(&quot;AIRLINEREF&quot;, &quot;row&
 <p>Submit <code>CreateAndLoadAirlineDataJob</code> over the REST API to create row and column tables. See more details about jobs and job submission here:</p>
 <p><a href="jobs/">SnappyData jobs &amp; job submission</a>. </p>
 <pre><code class="bash"># Submit a job to Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.6.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./examples/jars/quickstart-0.6.jar
 {&quot;status&quot;: &quot;STARTED&quot;,
   &quot;result&quot;: {
     &quot;jobId&quot;: &quot;321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;,
@@ -656,7 +647,7 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 <h4 id="step-3-run-olap-and-oltp-queries_1">Step 3 - Run OLAP and OLTP queries</h4>
 <p><code>AirlineDataJob.scala</code> runs OLAP and OLTP queries on SnappyData tables. Also, it caches the same airline data in the Spark cache and runs the same OLAP query on the Spark cache. With the airline data set, we have seen both the Spark cache and the SnappyData store to have more and less the same performance.  </p>
 <pre><code class="bash"># Submit AirlineDataJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./lib/quickstart-0.6.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./examples/jars/quickstart-0.6.jar
 { &quot;status&quot;: &quot;STARTED&quot;,
   &quot;result&quot;: {
     &quot;jobId&quot;: &quot;1b0d2e50-42da-4fdd-9ea2-69e29ab92de2&quot;,
@@ -753,7 +744,7 @@ val topKDF = snappyContext.queryApproxTSTopK(&quot;topktable&quot;,
 <h5 id="steps-to-work-with-simulated-twitter-stream_1">Steps to work with simulated Twitter stream</h5>
 <p>Submit the <code>TwitterPopularTagsJob</code> that declares a stream table, creates and populates a topk-structure, registers a CQ on it and stores the result in the Snappy-store. It starts streaming and waits for two minutes. </p>
 <pre><code class="bash"># Submit the TwitterPopularTagsJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.6.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./examples/jars/quickstart-0.6.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -767,7 +758,7 @@ $ export APP_PROPS=&quot;consumerKey=&lt;consumerKey&gt;,consumerSecret=&lt;cons
 
 # submit the TwitterPopularTagsJob Lead node on port 8090 that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.6.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./examples/jars/quickstart-0.6.jar --stream
 
 </code></pre>
 
@@ -791,7 +782,7 @@ scala&gt; val airlineDF = sqlContext.table(&quot;airline&quot;).show
 <pre><code class="bash"># Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.6.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 
 # The results can be seen on the command line. 
 </code></pre>
@@ -842,10 +833,10 @@ localhost: The SnappyData Locator has stopped.
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -856,11 +847,12 @@ localhost: The SnappyData Locator has stopped.
       
     </span>
 </div>
+    <script src="./js/theme.js"></script>
 
 </body>
 </html>
 
 <!--
-MkDocs version : 0.15.3
-Build Date UTC : 2016-10-27 07:23:41.847284
+MkDocs version : 0.16.0
+Build Date UTC : 2016-11-04 15:08:39
 -->

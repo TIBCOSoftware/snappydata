@@ -7,21 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Development Team">
-  
-  <title>Using iSight-Cloud - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../favicon.ico">
   
-
-  
+  <title>Using iSight-Cloud - SnappyData Documentation</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
   <link href="../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -32,9 +26,7 @@
   
   <script src="../js/jquery-2.1.1.min.js"></script>
   <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script>
-  <script src="../js/theme.js"></script> 
-
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -54,7 +46,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -228,9 +220,8 @@
     <li>Using iSight-Cloud</li>
     <li class="wy-breadcrumbs-aside">
       
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
+        <a href="https://github.com/SnappyDataInc/snappydata/edit/master/docs/aqp_aws.md"
+          class="icon icon-github"> Edit on GitHub</a>
       
     </li>
   </ul>
@@ -240,7 +231,7 @@
             <div class="section">
               
                 <h1 id="overview-of-snappydata-isight-cloud">Overview of SnappyData iSight-Cloud</h1>
-<p>iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (SDE), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
+<p>iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (<a href="../aqp/">SDE</a>), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
 <p>iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
 <p>The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
@@ -278,10 +269,11 @@ With iSight-Cloud, you can speed up the process of understanding what your data 
 <p>Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.</p>
 <p><a href="https://www.youtube.com/watch?v=jbudjTqWsdI&amp;feature=youtu.be"><img alt="Cloudbuilder" src="../Images/aws_cloudbuildervideo.png" /></a></p>
 <h3 id="prerequisites">Prerequisites</h3>
-<p>Before you begin, ensure that:</p>
+<p>Before you begin,:</p>
 <ul>
-<li>You have an existing AWS account with required permissions to launch EC2 resources</li>
-<li>You have created an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster</li>
+<li>Ensure that you have an existing AWS account with required permissions to launch EC2 resources</li>
+<li>Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.</li>
+<li>Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster</li>
 </ul>
 <p>SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.</p>
 <p>It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.</p>
@@ -318,16 +310,16 @@ Refer to the Amazon documentation for more information on  <a href="http://docs.
 <p>Click <strong>Generate</strong>. </p>
 </li>
 <li>
-<p>On the next page, select the AWS region, and then click <strong>Launch Cluster</strong> to launch your single-node cluster. <br>
-<img alt="STEP" src="../Images/aws_selectedregion.png" /></p>
+<p>On the next page, select the AWS region, and then click <strong>Launch Cluster</strong> to launch your single-node cluster.</p>
 <blockquote>
 <p>Note: </p>
 <ul>
 <li>
-<p>Use the key pair that exists in the region selected.</p>
+<p>The region you select must match the key pair you created.</p>
 </li>
 <li>
-<p>If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br></p>
+<p>If you are not already logged into AWS, you are redirected to the AWS sign-in page. 
+<img alt="STEP" src="../Images/aws_selectedregion.png" /></p>
 </li>
 </ul>
 </blockquote>
@@ -354,12 +346,22 @@ Refer to the Amazon documentation for more information on  <a href="http://docs.
 <li>
 <p>The next page lists the existing stacks. Click <strong>Refresh</strong> to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to <strong>CREATE_COMPLETE</strong>. <br>
-<img alt="Refresh" src="../Images/aws_refreshstack.png" /></p>
+<img alt="Refresh" src="../Images/aws_refreshstack.png" />
+<a id="Stack"></a></p>
+</li>
+<li>
+<p>Click on the <strong>Outputs</strong> tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+    <img alt="Public IP" src="../Images/aws_links.png" /></p>
+<blockquote>
+<p>Note: If the status of the stack displays <strong>ROLLBACK_IN_PROGRESS</strong> or <strong>DELETE_COMPLETE</strong>, the stack creation may have failed. Some common problems that might have caused the failure are:</p>
+<ul>
+<li><strong>Insufficient Permissions</strong>: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.</li>
+<li><strong>Invalid Keypair</strong>: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.</li>
+<li><strong>Limit Exceeded</strong>: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.</li>
+</ul>
+</blockquote>
 </li>
 </ol>
-<p><a id="Stack"></a>
-13. Click on the <strong>Outputs</strong> tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
-    <img alt="Public IP" src="../Images/aws_links.png" /></p>
 <p>For more information, refer to the <a href="#LoggingZeppelin">Apache Zeppelin</a> section or refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>.</p>
 <blockquote>
 <p>Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</p>
@@ -462,7 +464,7 @@ Launch Apache Zeppelin from the web browser by accessing the host and port assoc
 SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see <a href="#predefinednotebook">Using Predefined Notebooks</a>.</p>
 <p>Refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>, for more information.</p>
 <h2 id="using-the-interpreter">Using the Interpreter</h2>
-<p>Snappydata Interpreter group consists of the interpreters <code>%snappydata.spark</code> and <code>%snappydata.sql</code>.
+<p>SnappyData Interpreter group consists of the interpreters <code>%snappydata.spark</code> and <code>%snappydata.sql</code>.
 To use an interpreter, add the associated interpreter directive with the format, <code>%&lt;Interpreter_name&gt;</code> at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.</p>
 <blockquote>
 <p>Note:</p>
@@ -582,10 +584,10 @@ It also displays data information for various tables created in the cluster on d
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -598,6 +600,7 @@ It also displays data information for various tables created in the cluster on d
       
     </span>
 </div>
+    <script src="../js/theme.js"></script>
 
 </body>
 </html>
