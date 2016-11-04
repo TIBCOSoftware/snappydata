@@ -80,9 +80,14 @@ class SnappyParser(session: SnappySession)
     var noDecimalPoint = true
     var index = 0
     val len = s.length
+    val lastChar = s.charAt(len - 1)
     // use double if ending with 'D'
-    if (s.charAt(len - 1) == 'D') {
-      return Literal(s.toDouble, DoubleType)
+    if (lastChar == 'D') {
+      return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)),
+        DoubleType)
+    } else if (lastChar == 'L') {
+      return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)),
+        LongType)
     }
     while (index < len) {
       val c = s.charAt(index)
@@ -151,8 +156,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ 'D'.?) ~ delimiter ~>
-        ((s: String) => toNumericLiteral(s))
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ Consts.numericSuffix.?) ~
+        delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
   protected final def literal: Rule1[Literal] = rule {
@@ -666,8 +671,10 @@ class SnappyParser(session: SnappySession)
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
       val withFilter = w.asInstanceOf[Option[Expression]].map(Filter(_, base))
           .getOrElse(base)
-      val expressions = p.asInstanceOf[Seq[Expression]]
-          .map(UnresolvedAlias(_, None))
+      val expressions = p.asInstanceOf[Seq[Expression]].map {
+        case ne: NamedExpression => ne
+        case e => UnresolvedAlias(e)
+      }
       val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
       val withProjection = gr.map(x => {
         x._3 match {
@@ -741,7 +748,7 @@ class SnappyParser(session: SnappySession)
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
-    session.queryHints.clear()
+    session.clearQueryData()
     parseSQL(sqlText, parseRule)
   }
 

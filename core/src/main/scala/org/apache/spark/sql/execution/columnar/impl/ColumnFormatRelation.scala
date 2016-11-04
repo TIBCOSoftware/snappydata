@@ -24,26 +24,23 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
-import org.apache.spark.Partition
-import org.apache.spark.internal.Logging
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, SortDirection}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, GeneratedIndexStatement, StoreUtils}
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 
 /**
   * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -97,7 +94,7 @@ class BaseColumnFormatRelation(
   @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
     true).asInstanceOf[PartitionedRegion]
 
-  def getCachedBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
+  def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
     new PartitionStatistics(schema)
   }
 
@@ -110,18 +107,16 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
-      requiredColumns, filters, statsPredicate)
+      requiredColumns, filters)
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (rdd, _) = scanTable(table, requiredColumns, filters, statsPredicate)
+  filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
 
     val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters, true).
         zipPartitions(rdd) { (leftItr, rightItr) =>
@@ -176,11 +171,13 @@ class BaseColumnFormatRelation(
     }
   }
 
+  private[this] val forceFlush = java.lang.Boolean.getBoolean(
+    "snappydata.testForceFlush")
+
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE ||
-        java.lang.Boolean.getBoolean("forceFlush")) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {

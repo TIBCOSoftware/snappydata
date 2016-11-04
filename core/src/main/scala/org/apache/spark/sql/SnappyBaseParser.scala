@@ -284,6 +284,7 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.') ++ exponent
+  final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val trueFn: () => Boolean = () => true

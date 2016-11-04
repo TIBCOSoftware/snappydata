@@ -16,14 +16,18 @@
  */
 package org.apache.spark.sql.execution.benchmark
 
+import java.sql.{Date, Timestamp}
+import java.util.{Calendar, GregorianCalendar}
+
+import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types.{Decimal, DecimalType, StructType}
+import org.apache.spark.sql.types.{Decimal, StringType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
+import org.apache.spark.{Logging, SparkConf}
 
 class TPCETrade extends SnappyFunSuite {
 
@@ -34,7 +38,7 @@ class TPCETrade extends SnappyFunSuite {
         .setIfMissing("spark.master", s"local[$numProcessors]")
         .setAppName("microbenchmark")
     conf.set("spark.sql.shuffle.partitions", numProcessors.toString)
-    conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
+    // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
     if (addOn != null) {
@@ -45,14 +49,135 @@ class TPCETrade extends SnappyFunSuite {
 
   private lazy val snappySession = snc.snappySession
 
-  import snappySession.implicits._
+  test("select queries with random data") {
+    val quoteSize = 3400000L
+    val tradeSize = 500000L
+    val numDays = 1
+    val numIters = 20
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      tradeSize, numDays, queryNumber = 2, numIters, doInit = false)
+    TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
+      tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
+  }
+}
 
-  ignore("cache with random data - read path only") {
-    benchmarkRandomizedKeys(size = 1000000000L, readPathOnly = true)
+class TPCETradeJob extends SnappySQLJob {
+
+  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+    // SCALE OUT case with 10 billion rows
+    val quoteSize = 8500000000L
+    val tradeSize = 1250000000L
+    val numDays = 16
+    val numIters = 10
+    sc.conf.setConfString("spark.sql.shuffle.partitions", "16")
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, quoteSize, numDays, queryNumber = 1, numIters,
+      doInit = true, runSparkCaching = false)
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, tradeSize, numDays, queryNumber = 2, numIters,
+      doInit = false, runSparkCaching = false)
+    TPCETradeTest.benchmarkRandomizedKeys(sc.snappySession,
+      quoteSize, tradeSize, tradeSize, numDays, queryNumber = 3, numIters,
+      doInit = false, runSparkCaching = false)
+    Boolean.box(true)
   }
 
+  override def isValidJob(sc: SnappyContext,
+      config: Config): SnappyJobValidation = SnappyJobValid()
+}
+
+case class Quote(sym: String, ex: String, bid: Double, time: Timestamp,
+    date: Date)
+
+case class Trade(sym: String, ex: String, price: String, time: Timestamp,
+    date: Date, size: Double)
+
+object TPCETradeTest extends Logging {
+
+  val HASH_OPTIMIZED = "spark.sql.hash.optimized"
+
+  val EXCHANGES: Array[String] = Array("NYSE", "NASDAQ", "AMEX", "TSE",
+    "LON", "BSE", "BER", "EPA", "TYO")
+  /*
+  val SYMBOLS: Array[String] = Array("IBM", "YHOO", "GOOG", "MSFT", "AOL",
+    "APPL", "ORCL", "SAP", "DELL", "RHAT", "NOVL", "HP")
+  */
+  val ALL_SYMBOLS: Array[String] = {
+    val syms = new Array[String](400)
+    for (i <- 0 until 10) {
+      syms(i) = s"SY0$i"
+    }
+    for (i <- 10 until 100) {
+      syms(i) = s"SY$i"
+    }
+    for (i <- 100 until 400) {
+      syms(i) = s"S$i"
+    }
+    syms
+  }
+  val SYMBOLS: Array[String] = ALL_SYMBOLS.take(100)
+
+  val sqlQuote: String =
+    s"""
+       |CREATE TABLE quote (
+       |   sym CHAR(4) NOT NULL,
+       |   ex VARCHAR(64) NOT NULL,
+       |   bid DOUBLE NOT NULL,
+       |   time TIMESTAMP NOT NULL,
+       |   date DATE NOT NULL
+       |)
+     """.stripMargin
+  val sqlTrade: String =
+    s"""
+       |CREATE TABLE trade (
+       |   sym CHAR(4) NOT NULL,
+       |   ex VARCHAR(64) NOT NULL,
+       |   price DECIMAL(10,4) NOT NULL,
+       |   time TIMESTAMP NOT NULL,
+       |   date DATE NOT NULL,
+       |   size DOUBLE NOT NULL
+       |)
+     """.stripMargin
+
+
+  private val d = "2016-06-06"
+  // private val s = "SY23"
+  val cacheQueries = Array(
+    "select cQuote.sym, last(bid) from cQuote join cS " +
+        s"on (cQuote.sym = cS.sym) where date='$d' group by cQuote.sym",
+    "select cTrade.sym, ex, last(price) from cTrade join cS " +
+        s"on (cTrade.sym = cS.sym) where date='$d' group by cTrade.sym, ex",
+    "select cTrade.sym, hour(time), avg(size) from cTrade join cS " +
+        s"on (cTrade.sym = cS.sym) where date='$d' group by cTrade.sym, hour(time)" /* ,
+    "select * from (select time, price, sym from cTrade where " +
+        s"date='$d' and sym='$s') t " +
+        "left outer join (select time, bid, sym from cQuote where " +
+        s"date='$d' and sym='$s') q " +
+        s"on q.time=(select max(time) from q where time<=t.time and sym='$s') " +
+        "where price<bid" */
+  )
+  val queries = Array(
+    "select quote.sym, last(bid) from quote join S " +
+        s"on (quote.sym = S.sym) where date='$d' group by quote.sym",
+    "select trade.sym, ex, last(price) from trade join S " +
+        s"on (trade.sym = S.sym) where date='$d' group by trade.sym, ex",
+    "select trade.sym, hour(time), avg(size) from trade join S " +
+        s"on (trade.sym = S.sym) where date='$d' group by trade.sym, hour(time)" /* ,
+    "select * from (select time, price, sym from trade where " +
+        s"date='$d' and sym='$s') t " +
+        "left outer join (select time ,bid, sym from quote where " +
+        s"date='$d' and sym='$s') q " +
+        s"on q.time=(select max(time) from q where time<=t.time and sym='$s') " +
+        "where price<bid" */
+  )
+
   private def collect(df: DataFrame): Unit = {
-    df.collect()
+    val result = df.collect()
+    // scalastyle:off
+    println(s"Count = ${result.length}")
+    // scalastyle:on
   }
 
   def addCaseWithCleanup(
@@ -68,7 +193,8 @@ class TPCETrade extends SnappyFunSuite {
       timer.stopTiming()
       testCleanup()
     }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
+    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters,
+      prepare, cleanup)
   }
 
   private def doGC(): Unit = {
@@ -80,129 +206,175 @@ class TPCETrade extends SnappyFunSuite {
 
   /**
    * Benchmark caching randomized keys created from a range.
-   *
-   * NOTE: When running this benchmark, you will get a lot of WARN logs complaining that the
-   * shuffle files do not exist. This is intentional; we delete the shuffle files manually
-   * after every call to `collect` to avoid the next run to reuse shuffle files written by
-   * the previous run.
    */
-  private def benchmarkRandomizedKeys(size: Long, readPathOnly: Boolean): Unit = {
-    val numIters = 20
+  def benchmarkRandomizedKeys(session: SparkSession, quoteSize: Long,
+      tradeSize: Long, size: Long, numDays: Int, queryNumber: Int,
+      numIters: Int, doInit: Boolean, runSparkCaching: Boolean = true): Unit = {
+    import session.implicits._
+
     val benchmark = new Benchmark("Cache random data", size)
-    snappySession.sql("drop table if exists trade")
-    val tradeDF = snappySession.range(size).mapPartitions { itr =>
+    val quoteDF = session.range(quoteSize).mapPartitions { itr =>
       val rnd = new XORShiftRandom
-      val syms = TPCETrade.SYMBOLS
+      val syms = ALL_SYMBOLS
       val numSyms = syms.length
-      itr.map(id => Trade(syms(rnd.nextInt(numSyms)),
-        Decimal(rnd.nextInt(10000000), 8, 2)))
-        // rnd.nextDouble()))
-    }
-    val dataDF = snappySession.internalCreateDataFrame(
-      tradeDF.queryExecution.toRdd,
-      StructType(tradeDF.schema.fields.map { f =>
-          f.dataType match {
-            case d: DecimalType =>
-              f.copy(dataType = DecimalType(8, 2), nullable = false)
-            case _ => f.copy(nullable = false)
+      val exs = EXCHANGES
+      val numExs = exs.length
+      var day = 0
+      // month is 0 based
+      var cal = new GregorianCalendar(2016, 5, day + 6)
+      var date = new Date(cal.getTimeInMillis)
+      var dayCounter = 0
+      itr.map { id =>
+        val sym = syms(rnd.nextInt(numSyms))
+        val ex = exs(rnd.nextInt(numExs))
+        if (numDays > 1) {
+          dayCounter += 1
+          // change date after some number of iterations
+          if (dayCounter == 10000) {
+            day = (day + 1) % numDays
+            cal = new GregorianCalendar(2016, 5, day + 6)
+            date = new Date(cal.getTimeInMillis)
+            dayCounter = 0
           }
-      }))
-    dataDF.createOrReplaceTempView("trade")
-    val query = "select avg(bid) from trade"
+        }
+        cal.set(Calendar.HOUR, rnd.nextInt(8))
+        cal.set(Calendar.MINUTE, rnd.nextInt(60))
+        cal.set(Calendar.SECOND, rnd.nextInt(60))
+        cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
+        val time = new Timestamp(cal.getTimeInMillis)
+        Quote(sym, ex, rnd.nextDouble() * 100000, time, date)
+      }
+    }
+    val tradeDF = session.range(tradeSize).mapPartitions { itr =>
+      val rnd = new XORShiftRandom
+      val syms = ALL_SYMBOLS
+      val numSyms = syms.length
+      val exs = EXCHANGES
+      val numExs = exs.length
+      var day = 0
+      // month is 0 based
+      var cal = new GregorianCalendar(2016, 5, day + 6)
+      var date = new Date(cal.getTimeInMillis)
+      var dayCounter = 0
+      itr.map { id =>
+        val sym = syms(rnd.nextInt(numSyms))
+        val ex = exs(rnd.nextInt(numExs))
+        if (numDays > 1) {
+          dayCounter += 1
+          // change date after some number of iterations
+          if (dayCounter == 10000) {
+            // change date
+            day = (day + 1) % numDays
+            cal = new GregorianCalendar(2016, 5, day + 6)
+            date = new Date(cal.getTimeInMillis)
+            dayCounter = 0
+          }
+        }
+        cal.set(Calendar.HOUR, rnd.nextInt(8))
+        cal.set(Calendar.MINUTE, rnd.nextInt(60))
+        cal.set(Calendar.SECOND, rnd.nextInt(60))
+        cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
+        val time = new Timestamp(cal.getTimeInMillis)
+        val dec = Decimal(rnd.nextInt(100000000), 10, 4).toString
+        Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000)
+      }
+    }
+    val quoteDataDF = session.internalCreateDataFrame(
+      quoteDF.queryExecution.toRdd,
+      StructType(quoteDF.schema.fields.map(_.copy(nullable = false))))
+    val tradeDataDF = session.internalCreateDataFrame(
+      tradeDF.queryExecution.toRdd,
+      StructType(tradeDF.schema.fields.map(_.copy(nullable = false))))
+
+    val sDF = session.createDataset(SYMBOLS)
+    val symDF = session.internalCreateDataFrame(
+      sDF.queryExecution.toRdd,
+      StructType(Array(StructField("SYM", StringType, nullable = false))))
+
+    quoteDataDF.createOrReplaceTempView("cQuote")
+    tradeDataDF.createOrReplaceTempView("cTrade")
+    symDF.createOrReplaceTempView("cS")
 
     /**
-     * Add a benchmark case, optionally specifying whether to cache the dataset.
+     * Add a benchmark case, optionally specifying whether to cache the DataSet.
      */
-    def addBenchmark(name: String, cache: Boolean, params: Map[String, String] = Map(),
-        snappy: Boolean = false): Unit = {
-      val defaults = params.keys.flatMap { k => snappySession.conf.getOption(k).map((k, _)) }
+    def addBenchmark(name: String, cache: Boolean,
+        params: Map[String, String] = Map(), query: String,
+        snappy: Boolean, init: Boolean): Unit = {
+      val defaults = params.keys.flatMap {
+        k => session.conf.getOption(k).map((k, _))
+      }
       def prepare(): Unit = {
-        params.foreach { case (k, v) => snappySession.conf.set(k, v) }
+        params.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
         if (cache) {
-          dataDF.createOrReplaceTempView("trade")
-          snappySession.catalog.cacheTable("trade")
-        } else if (snappy) {
-          snappySession.sql("drop table if exists trade")
-          snappySession.sql(s"${TPCETrade.sql} using column")
-          if (readPathOnly) {
-            dataDF.write.insertInto("trade")
+          SnappyAggregation.enableOptimizedAggregation = false
+          session.catalog.cacheTable("cQuote")
+          session.catalog.cacheTable("cTrade")
+          session.catalog.cacheTable("cS")
+        } else {
+          assert(snappy, "Only cache=T or snappy=T supported")
+          SnappyAggregation.enableOptimizedAggregation =
+              params.getOrElse(HASH_OPTIMIZED, "true").toBoolean
+          if (init) {
+            session.sql("drop table if exists quote")
+            session.sql("drop table if exists trade")
+            session.sql("drop table if exists S")
+            session.sql(s"$sqlQuote using column")
+            session.sql(s"$sqlTrade using column")
+            session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL)")
+            quoteDataDF.write.insertInto("quote")
+            tradeDataDF.write.insertInto("trade")
+            symDF.write.insertInto("S")
           }
         }
-        if (readPathOnly) {
-          collect(snappySession.sql(query))
-          testCleanup()
-        }
+        session.sql(query).collect()
+        testCleanup()
         doGC()
       }
       def cleanup(): Unit = {
-        defaults.foreach { case (k, v) => snappySession.conf.set(k, v) }
-        snappySession.sql("drop table if exists trade")
+        defaults.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
       }
       def testCleanup(): Unit = {
       }
-      addCaseWithCleanup(benchmark, name, numIters, prepare, cleanup, testCleanup) { _ =>
-        if (readPathOnly) {
-          collect(snappySession.sql(query))
-        } else {
-          // also benchmark the time it takes to build the column buffers
-          if (snappy) {
-            snappySession.sql("truncate table trade")
-            dataDF.write.insertInto("trade")
-          }
-          val ds2 = snappySession.sql(query)
-          collect(ds2)
-          collect(ds2)
-        }
+      addCaseWithCleanup(benchmark, name, numIters, prepare,
+        cleanup, testCleanup) { _ =>
+        collect(session.sql(query))
       }
     }
 
-    // All of these are codegen = T hashmap = T
-    snappySession.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    snappySession.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+    session.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
 
     // Benchmark cases:
-    //   (1) No caching
-    //   (2) Caching without compression
-    //   (3) Caching with compression
-    //   (4) Caching with snappydata without compression
-    //   (5) Caching with snappydata with compression
-    // addBenchmark("cache = F", cache = false)
-    /*
-    addBenchmark("cache = T compress = F", cache = true, Map(
-      // SQLConf.CACHE_CODEGEN.key -> "false",
-      SQLConf.COMPRESS_CACHED.key -> "false"
-    ))
-    addBenchmark("cache = T compress = F", cache = true, Map(
-      // SQLConf.CACHE_CODEGEN.key -> "false",
-      SQLConf.COMPRESS_CACHED.key -> "false"
-    ))
-    */
+    //   (1) Caching with column batch compression
+    //   (2) Column table compression
+    //   (3) Column table compression, optimized group by and local join
+    var init = doInit
 
-    /*
-    addBenchmark("cache = F snappyCompress = F", cache = false, Map(
-      SQLConf.COMPRESS_CACHED.key -> "false"
-    ), snappy = true)
-    */
-    addBenchmark("cache = F snappyCompress = T", cache = false, Map(
-      SQLConf.COMPRESS_CACHED.key -> "true"
-    ), snappy = true)
+    if (runSparkCaching) {
+      addBenchmark(s"Q$queryNumber: cache = T compress = T",
+        cache = true, Map(
+          SQLConf.COMPRESS_CACHED.key -> "true"
+        ), query = cacheQueries(queryNumber - 1), snappy = false, init)
+    }
+
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = F",
+      cache = false, Map(
+        SQLConf.COMPRESS_CACHED.key -> "true",
+        HASH_OPTIMIZED -> "false"
+      ), query = queries(queryNumber - 1), snappy = true, init)
+    init = false
+
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
+      cache = false, Map(
+        SQLConf.COMPRESS_CACHED.key -> "true",
+        HASH_OPTIMIZED -> "true"
+      ), query = queries(queryNumber - 1), snappy = true, init)
+    init = false
+
     benchmark.run()
   }
-}
-
-case class Trade(sym: String, bid: Decimal)
-
-object TPCETrade {
-  val SYMBOLS: Array[String] = Array("IBM", "YHOO", "GOOG", "MSFT", "AOL",
-    "APPL", "ORCL", "SAP", "DELL", "RHAT", "NOVL", "HP")
-
-  val sql: String =
-    s"""
-       |CREATE TABLE trade (
-       |   sym CHAR(15) NOT NULL,
-       |   bid DECIMAL(8, 2) NOT NULL
-       |)
-     """.stripMargin
 }

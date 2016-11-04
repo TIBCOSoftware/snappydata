@@ -19,25 +19,26 @@ package org.apache.spark.sql.execution.datasources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet,
+Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
 import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
- * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
- * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
- * partitions of the datasource.
- */
+  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
+  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
+  * partitions of the datasource.
+  */
 private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
+    l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
       pruneFilterProject(
         l,
         projects,
@@ -45,7 +46,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         isPartitioned = true,
         t.numBuckets,
         t.partitionColumns,
-        (a, f, sp) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray, sp)) :: Nil
+        (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case PhysicalOperation(projects, filters,
     l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _)) =>
       pruneFilterProject(
@@ -55,7 +56,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         isPartitioned = false,
         0,
         Seq.empty[String],
-        (a, f, sp) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray, sp)) :: Nil
+        (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case _ => Nil
   }
 
@@ -67,7 +68,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       isPartitioned: Boolean,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
+      scanBuilder: (Seq[Attribute], Array[Filter]) =>
           (RDD[Any], Seq[RDD[InternalRow]])) = {
     pruneFilterProjectRaw(
       relation,
@@ -76,7 +77,9 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       isPartitioned,
       numBuckets,
       partitionColumns,
-      scanBuilder)
+      (requestedColumns, _, pushedFilters) => {
+        scanBuilder(requestedColumns, pushedFilters.toArray)
+      })
   }
 
   // Based on Catalyst expressions.
@@ -87,7 +90,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       isPartitioned: Boolean,
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Filter], StatsPredicateCompiler) =>
+      scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) =>
           (RDD[Any], Seq[RDD[InternalRow]])) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
@@ -148,20 +151,24 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           .filterNot(handledSet.contains)
 
       val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
         execution.PartitionedPhysicalScan.createFromDataSource(
           mappedProjects,
           numBuckets,
           joinedCols,
+          rdd,
+          otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          requestedColumns, // projected columns
-          pushedFilters, // filters that are pushed for row table scan
           filterPredicates, // filter predicates for cached batch screening
           relation.output,
-          scanBuilder)
+          (requestedColumns, pushedFilters)
+        )
       } else {
         execution.DataSourceScanExec.create(
           mappedProjects,
-          scanBuilder(requestedColumns, pushedFilters, null)._1.asInstanceOf[RDD[InternalRow]],
+          scanBuilder(requestedColumns, candidatePredicates,
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -171,21 +178,25 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         relation.attributeMap).toSeq
 
       val scan = if (isPartitioned) {
+        val (rdd, otherRDDs) = scanBuilder(requestedColumns,
+          candidatePredicates, pushedFilters)
         execution.PartitionedPhysicalScan.createFromDataSource(
           requestedColumns,
           numBuckets,
           joinedCols,
+          rdd,
+          otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          requestedColumns, // projected columns
-          pushedFilters, // filters that are pushed for row table scan
           filterPredicates, // filter predicates for cached batch screening
           relation.output,
-          scanBuilder)
+          (requestedColumns, pushedFilters)
+        )
 
       } else {
         execution.DataSourceScanExec.create(
           requestedColumns,
-          scanBuilder(requestedColumns, pushedFilters, null)._1.asInstanceOf[RDD[InternalRow]],
+          scanBuilder(requestedColumns, candidatePredicates,
+            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
           relation.relation, metadata, relation.metastoreTableIdentifier)
       }
       execution.ProjectExec(projects,

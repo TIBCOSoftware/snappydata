@@ -39,7 +39,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.{AnalysisException, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
+import org.apache.spark.sql.{AnalysisException, SnappyAggregation, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 import org.apache.spark.streaming.Duration
 
 
@@ -113,7 +113,7 @@ class SnappySessionState(snappySession: SnappySession)
                 LogicalDStreamPlan(_, _)) =>
           transformed match {
             case true => transformed = false
-              WindowLogicalPlan(duration, slide, c, true)
+              WindowLogicalPlan(duration, slide, c, transformed = true)
             case _ => c
           }
       }
@@ -235,17 +235,8 @@ class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
     case _ => Nil
   }
 
-  // TODO temporary flag till we determine every thing works
-  // fine with the optimizations
-  val storeOptimization = conf.getConfString(
-    "snappy.store.optimization", "true").toBoolean
-
-  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization) {
-    Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-  }
-  else {
-    Nil
-  }
+  private val storeOptimizedRules: Seq[Strategy] =
+    Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

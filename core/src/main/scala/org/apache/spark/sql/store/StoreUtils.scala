@@ -33,7 +33,8 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
+import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext,
+SnappySession}
 
 
 object StoreUtils extends Logging {
@@ -225,19 +226,19 @@ object StoreUtils extends Logging {
   }
 
   def initStore(sqlContext: SQLContext,
-                table: String,
-                schema: Option[StructType],
-                partitions: Int,
-                connProperties: ConnectionProperties,
-                baseTable: Option[String] = None,
-                dmls: ArrayBuffer[String] = ArrayBuffer.empty): Unit = {
+      table: String,
+      schema: Option[StructType],
+      partitions: Int,
+      connProperties: ConnectionProperties,
+      baseTable: Option[String] = None,
+      dmls: ArrayBuffer[String] = ArrayBuffer.empty): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
     new StoreInitRDD(sqlContext, table, schema, partitions, connProperties,
       baseTable, dmls).collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
-                          registerDestroy: Boolean = false): Unit = {
+      registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
       StoreCallbacksImpl.executorCatalog.remove(table)
@@ -258,8 +259,7 @@ object StoreUtils extends Logging {
     ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-                          schema: StructType,
-                          context: SQLContext): String = {
+      schema: StructType, context: SQLContext): String = {
     val sb = new StringBuilder()
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
@@ -298,7 +298,7 @@ object StoreUtils extends Logging {
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String],
-                         isRowTable: Boolean, isShadowTable: Boolean): String = {
+      isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
     if (!isShadowTable) {
@@ -338,23 +338,23 @@ object StoreUtils extends Logging {
           ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
       })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
-      .getOrElse(EMPTY_STRING))
+        .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(
       v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
-      .getOrElse(EMPTY_STRING))
+        .getOrElse(EMPTY_STRING))
 
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-      .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
+        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v =>
         if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
-        .getOrElse(defaultEviction))
+          .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
@@ -379,7 +379,7 @@ object StoreUtils extends Logging {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
         isPersistent = true
       } else if (v.equalsIgnoreCase("sync") ||
-        v.equalsIgnoreCase("synchronous")) {
+          v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
         isPersistent = true
       } else {
@@ -394,11 +394,11 @@ object StoreUtils extends Logging {
         s"Option '$DISKSTORE' requires '$PERSISTENT' option")
     }
     sb.append(parameters.remove(SERVER_GROUPS)
-      .map(v => s"$GEM_SERVER_GROUPS ($v) ")
-      .getOrElse(EMPTY_STRING))
+        .map(v => s"$GEM_SERVER_GROUPS ($v) ")
+        .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v =>
       if (v.equalsIgnoreCase("true")) s"$GEM_OFFHEAP " else EMPTY_STRING)
-      .getOrElse(EMPTY_STRING))
+        .getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
@@ -429,7 +429,7 @@ object StoreUtils extends Logging {
   }
 
   def mapCatalystTypes(schema: StructType,
-                       types: Growable[DataType]): Array[Int] = {
+      types: Growable[DataType]): Array[Int] = {
     var i = 0
     val result = new Array[Int](schema.length)
     while (i < schema.length) {

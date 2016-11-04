@@ -19,11 +19,10 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
-import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -289,30 +288,5 @@ trait ExternalSchemaRelationProvider {
 trait PrunedUnsafeFilteredScan {
 
   def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter],
-      statsPredicate: StatsPredicateCompiler):
-  (RDD[Any], Seq[RDD[InternalRow]])
-}
-
-/**
- * ::Developer API ::
- * Predicate for stats that are part of cached batches
- * generatePredicate generates a predicate for a filter expression and schema.
- * This class is needed because the predicate needs to generated on the executor side.
- *
- * @param predicateCompiler Function that compiles the filter expression to byte code
- * @param filterExpression filter expression that will be compiled
- * @param schema schema of the stats row
- * @param cachedBatchesSeen metrics that is used to track the cached batches
- * @param cachedBatchesSkipped metrics that is used to track the skipped cached batches
- */
-class StatsPredicateCompiler(
-    val predicateCompiler: (Expression, Seq[Attribute]) => (InternalRow) => Boolean,
-    val filterExpression: Expression,
-    val schema: Seq[Attribute],
-    val cachedBatchesSeen: SQLMetric,
-    val cachedBatchesSkipped: SQLMetric) extends Serializable {
-
-  def compilePredicate : (InternalRow) => Boolean = predicateCompiler(filterExpression, schema)
-
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]])
 }

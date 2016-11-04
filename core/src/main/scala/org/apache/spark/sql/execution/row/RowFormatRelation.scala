@@ -94,7 +94,8 @@ class RowFormatRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
-  override def buildUnsafeScan(requiredColumns: Array[String], filters: Array[Filter], statsPredicate: StatsPredicateCompiler): (RDD[Any], Seq[RDD[InternalRow]]) = {
+  override def buildUnsafeScan(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
@@ -152,7 +153,6 @@ class RowFormatRelation(
    * inserted into the table represented by this relation
    *
    * @param data the DataFrame to be upserted
-   *
    * @return number of rows upserted
    */
   def put(data: DataFrame): Unit = {
@@ -165,7 +165,6 @@ class RowFormatRelation(
    * inserted into the table represented by this relation
    *
    * @param rows the rows to be upserted
-   *
    * @return number of rows upserted
    */
   override def put(rows: Seq[Row]): Int = {
@@ -190,14 +189,14 @@ class RowFormatRelation(
   }
 
   private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
-    colWithDirection._1 + " " + (colWithDirection._2 match
-    {
+    colWithDirection._1 + " " + (colWithDirection._2 match {
       case Some(Ascending) => "ASC"
       case Some(Descending) => "DESC"
       case None => ""
     })
 
   }
+
   override protected def constructSQL(indexName: String,
       baseTable: String,
       indexColumns: Map[String, Option[SortDirection]],
