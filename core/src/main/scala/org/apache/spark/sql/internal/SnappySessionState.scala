@@ -172,13 +172,15 @@ class SnappySessionState(snappySession: SnappySession)
     leaderPartitions.clear()
   }
 
-  def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
+  def getTablePartitions(region: PartitionedRegion,
+      reduceFactor: Int = 1): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
     leaderPartitions.getOrElseUpdate(leaderRegion,
-      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion))
+      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
+        reduceFactor))
   }
 
-  def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
+  def getReplicatedTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }
 

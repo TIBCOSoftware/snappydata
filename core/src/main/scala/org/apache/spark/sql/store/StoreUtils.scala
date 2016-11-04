@@ -109,11 +109,11 @@ object StoreUtils extends Logging {
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
-      region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion, reduceFactor: Int): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
-      allocateBucketsToPartitions(session, region)
+      allocateBucketsToPartitions(session, region, reduceFactor)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
 
@@ -151,7 +151,7 @@ object StoreUtils extends Logging {
   }
 
   private def allocateBucketsToPartitions(session: SnappySession,
-      region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion, reduceFactor: Int): Array[Partition] = {
 
     val numBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
@@ -186,7 +186,7 @@ object StoreUtils extends Logging {
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
       val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
-        b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
+        b.numProcessors, b.executorCores), numBuckets) / reduceFactor).getOrElse(numBuckets))
       val minPartitions = numBuckets / numPartitions
       val remaining = numBuckets % numPartitions
       var partitionStart = 0
