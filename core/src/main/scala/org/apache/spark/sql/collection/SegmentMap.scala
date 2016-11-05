@@ -39,7 +39,7 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def update(k: K, hash: Int, v: V): Boolean
 
-  def changeValue(k: K, hash: Int, change: ChangeValue[K, V]): java.lang.Boolean
+  def changeValue(k: K, hash: Int, change: ChangeValue[K, V], isLocal: Boolean): java.lang.Boolean
 
   // This flag is toggled only under write lock of clear
   var valid: Boolean = true

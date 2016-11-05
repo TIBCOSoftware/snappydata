@@ -341,7 +341,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *         if the default/merge calls returned null and nothing was done
    */
   override def changeValue(r: Row, hash: Int,
-      change: ChangeValue[Row, V]): java.lang.Boolean = {
+      change: ChangeValue[Row, V], isLocal: Boolean): java.lang.Boolean = {
     if (r != null) {
       changeValue(r, hash, _keySet.getColumnHandler(r), change)
     } else {

@@ -152,7 +152,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     var added: java.lang.Boolean = null
     lock.lock()
     try {
-      added = seg.changeValue(k, hash, change)
+      added = seg.changeValue(k, hash, change, true)
     } finally {
       lock.unlock()
     }
@@ -160,7 +160,8 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     added
   }
 
-  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: (Int) => Int) {
+  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: (Int) => Int,
+                             isLocal: Boolean) {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -221,7 +222,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
             var added: java.lang.Boolean = null
             var idx = 0
             while (idx < nhashes) {
-              added = seg.changeValue(keys(idx), bucketId(hashes(idx)), change)
+              added = seg.changeValue(keys(idx), bucketId(hashes(idx)), change, isLocal)
               if (added != null) {
                 if (added.booleanValue()) numAdded += 1
                 idx += 1
