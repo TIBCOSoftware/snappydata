@@ -1,5 +1,5 @@
 # Overview of Synopsis Data Engine (SDE)#
-The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for lightning fast response time. 
+The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. 
 
 For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering) , while the engineer continues to slice and dice the data sets without any interruptions. 
 
@@ -17,7 +17,7 @@ The following diagram provides a simplified view into how the SDE works. The SDE
 ## Key Concepts
 SnappyData SDE relies on two methods for approximations - **Stratified Sampling** and **Sketching**. A brief introduction to these concepts is provided below.
 
-###  Stratified sampling
+###  Stratified Sampling
 Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.
 
 Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
@@ -25,7 +25,7 @@ This is depicted in the following figure:
 
 ![Stratified Sampling](./Images/aqp_stratifiedsampling1.png)
 
-If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', our answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
+If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
 
 ![Stratified Sampling](./Images/aqp_stratifiedsampling2.png)
 
@@ -38,13 +38,12 @@ Stratified sampling on the other hand, allows the user to specify the common dim
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
 ### Online Sampling
-SDE also supports continuous sampling over streaming data not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
 There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 minute time window, while still ensuring that all GEOs have good representation in the sample. 
 
 ### Sketching
-While stratified sampling ensures that data dimensions with low representation is captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that captures the how often we see an element in a stream for the top-N such elements. 
-While a Count-min-sketch is well described (Link), SDE extends this with support for providing top-K estimates over time series data. 
-
+While stratified sampling ensures that data dimensions with low representation is captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
+While a [Count-min-sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) is well described, SDE extends this with support for providing top-K estimates over time series data. 
 
 ## Working with Stratified Samples
 
@@ -52,10 +51,10 @@ While a Count-min-sketch is well described (Link), SDE extends this with support
 
 You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. 
 
-Here is an SQL based example to create sample on tables locally available in the Snappydata cluster. 
+Here is an SQL based example to create sample on tables locally available in the SnappyData cluster. 
 
 ```
-CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI  
+CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
   OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
   AS (SELECT * FROM NYCTAXI);
 
@@ -63,7 +62,7 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
   OPTIONS (qcs 'hack_license', fraction '0.01') 
   AS (SELECT * FROM TAXIFARE);
 ```
-Often your data set is too large to also fit in available cluster memory. If so, you can create a external table pointing to the source. 
+Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:
 
 ```
@@ -79,20 +78,23 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 ###QCS (Query Column Set) and Sample selection###
 For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
 
-'QCS', which stands for 'Query Column Set' is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A 'QCS' can also be constructed using SQL expressions - for instance, using a function like 'hour (pickup_datetime)'.
+QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like `hour (pickup_datetime)`.
 
-The parameter *fraction* represents the fraction of the full population that will managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction doesn't drop the error rate. SDE will always attempt to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
-For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) will automatically be sampled at a lower rate. The algorithm will always attempt to maintain the overall 1% fraction specified in the 'create sample' statement.  
+The parameter *fraction* represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. 
 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
 Here are some general guidelines to use when creating samples:
-* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine will automatically reject all samples and run the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
+* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine automatically rejects all samples and runs the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
+
 * Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
+
 * Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
-* Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a timestamp and is not a good candidate given its likelyhood of high cardinality. i.e. there is possibility that each record in the data set has a different timestamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
-* when accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system will automatically pick the appropriate sample. 
-* ..more to come..
+
+* Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is possibility that each record in the data set has a different times tamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
+
+* When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
 > #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 
