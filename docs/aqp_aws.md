@@ -87,7 +87,6 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	> * If you are not already logged into AWS, you are redirected to the AWS sign-in page. 
 ![STEP](./Images/aws_selectedregion.png)
 
-
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
 
@@ -104,10 +103,15 @@ Refer to the Amazon documentation for more information on  [generating your own 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
 ![Refresh](./Images/aws_refreshstack.png)
-
 <a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](./Images/aws_links.png)
+> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
+
+	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
+	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
+	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
+
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
