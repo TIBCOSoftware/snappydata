@@ -70,7 +70,7 @@ class RowFormatRelation(
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
-  private[this] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
+  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
 
   @transient private[this] lazy val region: LocalRegion =

@@ -27,9 +27,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, StoreCallbacksImpl}
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
@@ -49,6 +50,8 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
+  val keepReservoirInRegion = sqlContext.conf.getConfString("spark.sql.aqp.reservoirNotInTable",
+    "true").toBoolean
   GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
     Constant.COLUMN_MIN_BATCH_SIZE)
 
@@ -66,6 +69,18 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
         StoreCallbacksImpl.registerExternalStoreAndSchema(
           ExecutorCatalogEntry(table, schema, store, columnBatchSize, userCompression,
             baseTable, dmls))
+        if (keepReservoirInRegion) {
+          schema.fields.last match {
+            case StructField("SNAPPY_SAMPLER_WEIGHTAGE", LongType, _, _) =>
+              val resolvedBaseName = ExternalStoreUtils.lookupName(table, Constant.DEFAULT_SCHEMA)
+              val reservoirName = Misc.getReservoirRegionNameForSampleTable(Constant.DEFAULT_SCHEMA,
+                resolvedBaseName)
+              val childRegion = Misc.createReservoirRegionForSampleTable(reservoirName,
+                resolvedBaseName)
+              assert(childRegion != null)
+            case _ =>
+          }
+        }
       case None => // row table case
         val region = Misc.getRegionForTable(table, false)
         if (region != null &&
