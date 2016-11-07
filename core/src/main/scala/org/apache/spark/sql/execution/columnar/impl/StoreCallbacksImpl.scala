@@ -33,7 +33,11 @@ import io.snappydata.Constant
 
 import org.apache.spark.SparkException
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql._
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.{SparkSession, SplitClusterMode, SnappySession, SnappyContext, SQLContext}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
@@ -183,6 +187,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
+  override def getLastIndexOfRow(o: Object): Int = {
+    val r = o.asInstanceOf[Row]
+    if (r != null) {
+      r.getInt(r.length - 1)
+    } else {
+      -1
+    }
+  }
 }
 
 trait StoreCallback extends Serializable {
