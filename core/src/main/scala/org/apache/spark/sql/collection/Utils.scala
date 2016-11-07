@@ -50,6 +50,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
@@ -678,6 +679,17 @@ object Utils {
     if (Constant.DEFAULT_CODEC != CompressionCodec.DEFAULT_COMPRESSION_CODEC) {
       setDefaultConfProperty(conf, "spark.io.compression.codec",
         Constant.DEFAULT_CODEC)
+    }
+  }
+
+  def metricMethods(sc: SparkContext): (String => String, String => String) = {
+    SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
+        (v => s"addLong($v)", v => s"$v.longValue()")
+      case _ =>
+        (v => s"add($v)",
+            // explicit cast for value to Object is for janino bug
+            v => s"(Long)((${classOf[AccumulatorV2[_, _]]})$v).value()")
     }
   }
 }
