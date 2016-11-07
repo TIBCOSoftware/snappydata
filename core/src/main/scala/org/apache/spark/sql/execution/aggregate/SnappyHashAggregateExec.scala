@@ -37,14 +37,15 @@
 package org.apache.spark.sql.execution.aggregate
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
 /**
@@ -66,6 +67,8 @@ case class SnappyHashAggregateExec(
     child: SparkPlan)
     extends UnaryExecNode with BatchConsumer {
 
+  override def nodeName: String = "SnappyHashAggregate"
+
   @transient lazy val resultExpressions = __resultExpressions
 
   @transient lazy private[this] val aggregateBufferAttributes = {
@@ -82,12 +85,18 @@ case class SnappyHashAggregateExec(
         aggregateExpressions.flatMap(_.aggregateFunction
             .inputAggBufferAttributes)
 
+  @transient val (metricAdd, metricValue): (String => String, String => String) =
+    collection.Utils.metricMethods(sparkContext)
+
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
       "number of output rows"),
     "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
     "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"),
     "aggTime" -> SQLMetrics.createTimingMetric(sparkContext, "aggregate time"))
+
+  // this is a var to allow CollectAggregateExec to switch temporarily
+  @transient private[execution] var childProducer = child
 
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 
@@ -161,8 +170,10 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  protected override def doExecute(): RDD[InternalRow] = {
-    // code generation should never fail
+  override protected def doExecute(): RDD[InternalRow] = {
+    // Code generation should never fail.
+    // If code generation is not supported (due to ImperativeAggregate)
+    // then this plan should not be created (SnappyAggregation.supportCodegen).
     WholeStageCodegenExec(this).execute()
   }
 
@@ -172,18 +183,11 @@ case class SnappyHashAggregateExec(
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  override def supportCodegen: Boolean = {
-    // ImperativeAggregate is not supported right now
-    !aggregateExpressions.exists(_.aggregateFunction
-        .isInstanceOf[ImperativeAggregate])
-  }
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     child.asInstanceOf[CodegenSupport].inputRDDs()
   }
 
-  protected override def doProduce(ctx: CodegenContext): String = {
-    batchConsumeDone = false
+  override protected def doProduce(ctx: CodegenContext): String = {
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
@@ -193,6 +197,13 @@ case class SnappyHashAggregateExec(
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
+    // skip "shouldStop()" call in child ColumnTableScan if possible
+    def adjustColumnTableScan(plan: SparkPlan): Unit = plan match {
+      case c: ColumnTableScan => c.shouldStopRequired = false
+      case _: WholeStageCodegenExec => // stop searching
+      case _ => plan.children.foreach(adjustColumnTableScan)
+    }
+    adjustColumnTableScan(this)
     if (groupingExpressions.isEmpty) {
       doConsumeWithoutKeys(ctx, input)
     } else {
@@ -204,27 +215,30 @@ case class SnappyHashAggregateExec(
       input: Seq[ExprCode]): String = {
     if (groupingExpressions.isEmpty) ""
     else {
-      batchConsumeDone = true
       val entryClass = keyBufferAccessor.getClassName
       // check for optimized dictionary code path
-      val arrayCode = keyBufferAccessor.checkSingleKeyCase(input) match {
-        case Some(ExprCodeEx(_, _, dictionary, _)) =>
-          // create an array at batch level for grouping
-          dictionaryArrayTerm = ctx.freshName("dictionaryArray")
-          s"final $entryClass[] $dictionaryArrayTerm = $dictionary != null " +
-              s"? new $entryClass[$dictionary.length] : null;"
+      keyBufferAccessor.checkSingleKeyCase(input) match {
+        case Some(ExprCodeEx(_, _, _, dictionary, _)) =>
+          // initialize or reuse the array at batch level for grouping
+          s"""
+             |if ($dictionary != null) {
+             |  if ($dictionaryArrayTerm != null
+             |      && $dictionaryArrayTerm.length >= $dictionary.length) {
+             |    java.util.Arrays.fill($dictionaryArrayTerm, null);
+             |  } else {
+             |    $dictionaryArrayTerm = new $entryClass[$dictionary.length];
+             |  }
+             |} else {
+             |  $dictionaryArrayTerm = null;
+             |}
+        """.stripMargin
         case None => ""
       }
-      // add declarations for mask and data to enable using register variables
-      s"""$arrayCode
-        int $maskTerm = $hashMapTerm.mask();
-        $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
-      """
     }
   }
 
   // The variables used as aggregation buffer
-  private var bufVars: Seq[ExprCode] = _
+  @transient private var bufVars: Seq[ExprCode] = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
@@ -278,6 +292,9 @@ case class SnappyHashAggregateExec(
       (resultVars, evaluateVariables(resultVars))
     }
 
+    if (childProducer eq null) {
+      childProducer = child
+    }
     val doAgg = ctx.freshName("doAggregateWithoutKey")
     ctx.addNewFunction(doAgg,
       s"""
@@ -285,7 +302,7 @@ case class SnappyHashAggregateExec(
          |  // initialize aggregation buffer
          |  $initBufVar
          |
-         |  ${child.asInstanceOf[CodegenSupport].produce(ctx, this)}
+         |  ${childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
          |}
        """.stripMargin)
 
@@ -297,12 +314,12 @@ case class SnappyHashAggregateExec(
        |  $initAgg = true;
        |  long $beforeAgg = System.nanoTime();
        |  $doAgg();
-       |  $aggTime.add((System.nanoTime() - $beforeAgg) / 1000000);
+       |  $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
        |
        |  // output the result
        |  ${genResult.trim}
        |
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  ${consume(ctx, resultVars).trim}
        |}
      """.stripMargin
@@ -352,7 +369,7 @@ case class SnappyHashAggregateExec(
   private val declFunctions = aggregateExpressions.map(_.aggregateFunction)
       .collect { case d: DeclarativeAggregate => d }
 
-  // The name for UnsafeRow HashMap
+  // The name for ObjectHashSet of generated class.
   private var hashMapTerm: String = _
 
   // utility to generate class for optimized map, and hash map access methods
@@ -360,7 +377,6 @@ case class SnappyHashAggregateExec(
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
-  @transient private var batchConsumeDone = false
 
   /**
    * Generate the code for output.
@@ -434,7 +450,7 @@ case class SnappyHashAggregateExec(
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
-    // generate local variables for HashMap data array and mask
+    // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
 
@@ -448,21 +464,25 @@ case class SnappyHashAggregateExec(
     val entryClass = keyBufferAccessor.getClassName
     val numKeyColumns = groupingExpressions.length
 
-    val childProduce = child.asInstanceOf[CodegenSupport].produce(ctx, this)
-    // if batchConsume has not been done then declare mask/data variables
-    val declareVars = if (batchConsumeDone) ""
-    else {
-      s"""
-        int $maskTerm = $hashMapTerm.mask();
-        $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
-      """
-    }
+    // check for possible optimized dictionary code path
+    val dictInit = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
+      keyBufferAccessor.keyExpressions)) {
+      // this array will be used at batch level for grouping if possible
+      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+      s"$entryClass[] $dictionaryArrayTerm = null;"
+    } else ""
+
+    val childProduce =
+      childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     ctx.addNewFunction(doAgg,
       s"""
         private void $doAgg() throws java.io.IOException {
           $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
-          $declareVars
+          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+          int $maskTerm = $hashMapTerm.mask();
+          $dictInit
+
           $childProduce
 
           $iterTerm = $hashMapTerm.iterator();
@@ -489,14 +509,14 @@ case class SnappyHashAggregateExec(
         $initAgg = true;
         long $beforeAgg = System.nanoTime();
         $doAgg();
-        $aggTime.add((System.nanoTime() - $beforeAgg) / 1000000);
+        $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
       }
 
       // output the result
       Object $iterObj;
       final $iterClass $iter = $iterTerm;
       while (($iterObj = $iter.next()) != null) {
-        $numOutput.add(1);
+        $numOutput.${metricAdd("1")};
         final $entryClass $keyBufferTerm = ($entryClass)$iterObj;
         $initCode
 
@@ -575,9 +595,10 @@ case class SnappyHashAggregateExec(
 
   override def verboseString: String = toString(verbose = true)
 
-  override def simpleString: String = toString(verbose = false)
+  override lazy val simpleString: String = toString(verbose = false)
 
   private def toString(verbose: Boolean): String = {
+    val name = nodeName
     val allAggregateExpressions = aggregateExpressions
 
     testFallbackStartsAt match {
@@ -588,13 +609,13 @@ case class SnappyHashAggregateExec(
           "[", ", ", "]")
         val outputString = Utils.truncatedString(output, "[", ", ", "]")
         if (verbose) {
-          s"SnappyHashAggregate(keys=$keyString, functions=$functionString, " +
+          s"$name(keys=$keyString, functions=$functionString, " +
               s"output=$outputString)"
         } else {
-          s"SnappyHashAggregate(keys=$keyString, functions=$functionString)"
+          s"$name(keys=$keyString, functions=$functionString)"
         }
       case Some(fallbackStartsAt) =>
-        s"SnappyHashAggregateWithControlledFallback $groupingExpressions " +
+        s"${name}WithControlledFallback $groupingExpressions " +
             s"$allAggregateExpressions $resultExpressions " +
             s"fallbackStartsAt=$fallbackStartsAt"
     }
