@@ -4,11 +4,12 @@ source PerfRun.conf
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries$UseIndex
 mkdir $directory
 
-cp $SnappyData/work/$leads-lead-1/*.out $directory/
+cp $leadDir/*.out $directory/
 
 latestProp=$directory/latestProp.props
 
 cd $SnappyData
+cd ../../..
 echo snappyData = $(git rev-parse HEAD)_$(git log -1 --format=%cd) > $latestProp
 cd spark
 echo snappy-spark = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp

@@ -97,6 +97,7 @@ object TPCH_Snappy {
          println(s"$queryNumber Result Collected in file $queryFileName")
        } else {
          var totalTimeForLast5Iterations: Long = 0
+         var bestTime: Long=0
          queryPrintStream.println(queryNumber)
          for (i <- 1 to (warmup + runsForAverage)) {
            val startTime = System.currentTimeMillis()
@@ -111,6 +112,12 @@ object TPCH_Snappy {
            }
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
+           if(i==1){
+             bestTime = iterationTime
+           }else{
+             if(iterationTime < bestTime)
+               bestTime = iterationTime
+           }
            queryPrintStream.println(s"$iterationTime")
            if (i > warmup) {
              totalTimeForLast5Iterations += iterationTime
@@ -118,7 +125,7 @@ object TPCH_Snappy {
            cnts=null
          }
          queryPrintStream.println(s"${totalTimeForLast5Iterations / runsForAverage}")
-         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / runsForAverage}")
+         avgPrintStream.println(s"$queryNumber,$bestTime / ${totalTimeForLast5Iterations / runsForAverage}")
        }
        println(s"Finished executing $queryNumber")
      } catch {

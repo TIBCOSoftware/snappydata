@@ -1,30 +1,25 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
+rm -rf $SnappyData/work/*
 
-ssh $leads mkdir $leadDir
-echo "*****************Created dir for lead**********************"
-ssh $locator mkdir $locatorDir
-echo "*****************Created dir for locator**********************"
-for element in "${servers[@]}";
-  do
-        ssh $element mkdir $serverDir
- done
-echo "*****************Created dir for server**********************"
+rm -rf $SnappyData/conf/leads
+rm -rf $SnappyData/conf/locators
+rm -rf $SnappyData/conf/servers
 
 cat > $SnappyData/conf/leads << EOF
-$leads -locators=$locator:10334 $sparkProperties -dir=$leadDir
+$leads -locators=$locator:10334 $sparkProperties
 EOF
 echo "******************Created conf/leads*********************"
 
 cat > $SnappyData/conf/locators << EOF
-$locator -client-bind-address=$locator -dir=$locatorDir
+$locator -client-bind-address=$locator
 EOF
 echo "******************Created conf/locators******************"
 
 for element in "${servers[@]}"; 
   do 
-	echo $element -locators=$locator:10334 $serverMemory -dir=$serverDir >> $SnappyData/conf/servers
+	echo $element -locators=$locator:10334 $serverMemory >> $SnappyData/conf/servers
   done
 echo "******************Created conf/servers******************"
 
