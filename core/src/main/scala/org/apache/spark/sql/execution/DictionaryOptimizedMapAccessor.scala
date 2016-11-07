@@ -51,7 +51,7 @@ import org.apache.spark.sql.types.StringType
  * for each of the dictionary columns indexed identical to dictionary. Use
  * this to lookup the main map which will also have additional columns for
  * dictionary indexes (that will be cleared at the start of a new batch).
- * One first lookup for key columns where dictionary indexes are missing in
+ * On first lookup for key columns where dictionary indexes are missing in
  * the map, insert the dictionary index in those additional columns.
  * Then use those indexes for equality comparisons instead of string.
  *
@@ -66,66 +66,83 @@ import org.apache.spark.sql.types.StringType
  */
 object DictionaryOptimizedMapAccessor {
 
+  def canHaveSingleKeyCase(keyExpressions: Seq[Expression]): Boolean = {
+    keyExpressions.length == 1 &&
+        keyExpressions.head.dataType.isInstanceOf[StringType]
+  }
+
   def checkSingleKeyCase(keyExpressions: Seq[Expression],
       keyVars: => Seq[ExprCode], ctx: CodegenContext,
       session: SnappySession): Option[ExprCodeEx] = {
-    if (keyExpressions.length == 1 &&
-        keyExpressions.head.dataType.isInstanceOf[StringType]) {
+    if (canHaveSingleKeyCase(keyExpressions)) {
       session.getExCode(ctx, keyVars.head.value :: Nil, keyExpressions) match {
-        case e@Some(ExprCodeEx(_, _, dictionary, _)) if dictionary.nonEmpty => e
+        case e@Some(ExprCodeEx(_, _, _, dict, _)) if dict.nonEmpty => e
         case _ => None
       }
     } else None
   }
 
-  def dictionaryArrayGetOrInsert(ctx: CodegenContext, keyVar: ExprCode,
-      keyVarEx: ExprCodeEx, arrayVar: String, resultVar: String,
-      valueInit: String, accessor: ObjectHashMapAccessor): String = {
+  def dictionaryArrayGetOrInsert(ctx: CodegenContext, keyExpr: Seq[Expression],
+      keyVar: ExprCode, keyVarEx: ExprCodeEx, arrayVar: String,
+      resultVar: String, valueInit: String, continueOnNull: Boolean,
+      accessor: ObjectHashMapAccessor): String = {
     val key = keyVar.value
     val keyIndex = keyVarEx.dictionaryIndex
     val keyNull = keyVar.isNull != "false"
-    val keyExpr = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
+    val keyEv = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
     val className = accessor.getClassName
 
     // for the case when there is no entry in map (hash join), insert a token
     // in the array to avoid looking up missing entries repeatedly
-    val arrayAssignFragment = if (valueInit eq null) {
-      s"""
-         |  if ($resultVar != null) {
-         |    $arrayVar[$keyIndex] = $resultVar;
-         |  } else {
-         |    $arrayVar[$keyIndex] = $className.EMPTY;
-         |  }
-         |} else if ($resultVar == $className.EMPTY) {
-         |  $resultVar = null;
-      """.stripMargin
-    } else s"$arrayVar[$keyIndex] = $resultVar;"
+    val (nullCheck, arrayAssignFragment) = if (valueInit eq null) {
+      val nullCheck = if (continueOnNull) {
+        s"if ($resultVar == $className.EMPTY) continue;\n"
+      } else {
+        s"""if ($resultVar == $className.EMPTY) {
+            |  $resultVar = null;
+            |} else """.stripMargin
+      }
+      (nullCheck,
+          s"""if ($resultVar != null) {
+             |  $arrayVar[$keyIndex] = $resultVar;
+             |} else {
+             |  $arrayVar[$keyIndex] = $className.EMPTY;
+             |}""".stripMargin)
+    } else ("", s"$arrayVar[$keyIndex] = $resultVar;")
 
-    val hash = ctx.freshName("keyHash")
+    var hash = ctx.freshName("keyHash")
     val hashExprCode = if (keyNull) s"$key != null ? $key.hashCode() : -1"
     else s"$key.hashCode()"
     // if hash has already been calculated then use it
     val hashExpr = keyVarEx.hash match {
       case Some(h) =>
-        s"""if ($h == 0) $h = $hashExprCode;
-          final int $hash = $h;"""
+        hash = h
+        s"if ($h == 0) $h = $hashExprCode;"
       case None => s"final int $hash = $hashExprCode;"
     }
 
     // if keyVar code has been consumed, then dictionary index
     // has already been assigned and likewise the key itself
-    val (dictionaryCode, keyAssign) = if (keyVar.code.isEmpty) ("", "")
-    else (keyVarEx.dictionaryCode,
-        s"final UTF8String $key = ${keyVarEx.dictionary}[$keyIndex];")
-    s"""
-       |$dictionaryCode
-       |$resultVar = $arrayVar[$keyIndex];
-       |if ($resultVar == null) {
-       |  $keyAssign
-       |  $hashExpr
-       |  ${accessor.mapGetOrInsert(resultVar, hash, Seq(keyExpr), valueInit)}
-       |  $arrayAssignFragment
-       |}
-    """.stripMargin
+    val keyAssign = if (keyVar.code.isEmpty) ""
+    else {
+      // in this case replace the keyVar code to skip dictionary index get
+      if (keyVar.isNull.isEmpty || keyVar.isNull == "false") {
+        keyVar.code = s"$key = ${keyVarEx.assignCode};"
+        s"$key = ${keyVarEx.dictionary}[$keyIndex];"
+      } else {
+        keyVar.code =
+            s"$key = ${keyVar.isNull} ? null : (${keyVarEx.assignCode});"
+        s"$key = $keyIndex != -1 ? ${keyVarEx.dictionary}[$keyIndex] : null;"
+      }
+    }
+    s"""if ($arrayVar != null) {
+       |  $resultVar = $arrayVar[$keyIndex];
+       |  ${nullCheck}if ($resultVar == null) {
+       |    $keyAssign
+       |    $hashExpr
+       |    ${accessor.mapLookup(resultVar, hash, keyExpr, Seq(keyEv), valueInit)}
+       |    $arrayAssignFragment
+       |  }
+       |}""".stripMargin
   }
 }

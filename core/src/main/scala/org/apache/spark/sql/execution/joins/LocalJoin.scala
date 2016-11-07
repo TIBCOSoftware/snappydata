@@ -33,9 +33,10 @@ import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{BindReferences, BoundReference, Expression, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
@@ -70,6 +71,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
+
+  @transient val (metricAdd, metricValue): (String => String, String => String) =
+    Utils.metricMethods(sparkContext)
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
@@ -129,6 +133,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
     rdd.dependencies.foreach(dep =>
       if (visited.add(dep.rdd)) materializeDependencies(dep.rdd, visited))
   }
+
+  // return empty here as code of required variables is explicitly instantiated
+  override def usedInputs: AttributeSet = AttributeSet.empty
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
@@ -231,6 +238,14 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
 
+    // check for possible optimized dictionary code path
+    val dictInit = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
+      streamSideKeys)) {
+      // this array will be used at batch level for grouping if possible
+      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+      s"$entryClass[] $dictionaryArrayTerm = null;"
+    } else ""
+
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys
@@ -242,6 +257,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
         final long $maxVar = $hashMapTerm.getMaxValue($index);
       """
     }.mkString("\n")
+    // increment numOutputRows in finally block
+    val depth = session.addFinallyCode(ctx,
+      s"$numOutputRows.${metricAdd(numRowsTerm)};")
+    val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
     s"""
       boolean $keyIsUniqueTerm = true;
@@ -249,18 +268,15 @@ case class LocalJoin(leftKeys: Seq[Expression],
         final long beforeMap = System.nanoTime();
         $getOrCreateMap();
         $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
-        $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
+        $buildTime.${metricAdd("(System.nanoTime() - beforeMap) / 1000000")};
         $initMap = true;
       }
       $initMinMaxVars
       final int $maskTerm = $hashMapTerm.mask();
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      $dictInit
       long $numRowsTerm = 0L;
-      try {
-        ${streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)}
-      } finally {
-        $numOutputRows.add($numRowsTerm);
-      }
+      ${session.evaluateFinallyCode(ctx, produced, depth)}
     """
   }
 
@@ -330,11 +346,20 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // check for optimized dictionary code path
     mapAccessor.checkSingleKeyCase(input, streamSideKeys,
       streamedPlan.output) match {
-      case Some(ExprCodeEx(_, _, dictionary, _)) =>
-        // create an array at batch level for grouping
-        dictionaryArrayTerm = ctx.freshName("dictionaryArray")
-        s"final $entryClass[] $dictionaryArrayTerm = $dictionary != null " +
-            s"? new $entryClass[$dictionary.length] : null;"
+      case Some(ExprCodeEx(_, _, _, dictionary, _)) =>
+        // initialize or reuse the array at batch level for join
+        s"""
+           |if ($dictionary != null) {
+           |  if ($dictionaryArrayTerm != null
+           |      && $dictionaryArrayTerm.length >= $dictionary.length) {
+           |    java.util.Arrays.fill($dictionaryArrayTerm, null);
+           |  } else {
+           |    $dictionaryArrayTerm = new $entryClass[$dictionary.length];
+           |  }
+           |} else {
+           |  $dictionaryArrayTerm = null;
+           |}
+        """.stripMargin
       case None => ""
     }
   }
@@ -359,9 +384,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |$relationTerm = org.apache.spark.sql.execution.joins.HashedRelationCache
        |  .get($buildSchemaVar, $buildKeysVar, $buildRDDTerm, $buildPartTerm,
        |  $contextName, 1);
-       |$buildTime.add((System.nanoTime() - $startName) / 1000000L);
+       |$buildTime.${metricAdd(s"(System.nanoTime() - $startName) / 1000000L")};
        |final long $sizeName = $relationTerm.estimatedSize();
-       |$buildDataSize.add($sizeName);
+       |$buildDataSize.${metricAdd(sizeName)};
        |$contextName.taskMetrics().incPeakExecutionMemory($sizeName);
     """.stripMargin
   }
@@ -506,7 +531,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    .getValue(${keyEv.value});
        |  if ($matched == null) continue;
        |  $checkCondition
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -518,7 +543,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  while ($matches.hasNext()) {
        |    UnsafeRow $matched = (UnsafeRow)$matches.next();
        |    $checkCondition
-       |    $numOutput.add(1);
+       |    $numOutput.${metricAdd("1")};
        |    $consumeResult
        |  }
        |}
@@ -582,7 +607,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    ${buildVars.filter(_.code == "").map(v => s"${v.isNull} = true;")
               .mkString("\n")}
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -599,7 +624,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    $checkCondition
        |    if (!$conditionPassed) continue;
        |    $found = true;
-       |    $numOutput.add(1);
+       |    $numOutput.${metricAdd("1")};
        |    $consumeResult
        |  }
        |}
@@ -629,7 +654,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    .getValue(${keyEv.value});
        |  if ($matched == null) continue;
        |  $checkCondition
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -645,7 +670,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    $found = true;
        |  }
        |  if (!$found) continue;
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
     """.stripMargin
@@ -680,7 +705,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      $antiCondition
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -701,7 +726,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      if ($found) continue;
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
     """.stripMargin
@@ -753,7 +778,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  if ($matched != null) {
        |    $checkCondition
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -768,7 +793,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      $checkCondition
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
      """.stripMargin
