@@ -9,15 +9,19 @@ rm -rf $SnappyData/conf/leads
 rm -rf $SnappyData/conf/locators
 rm -rf $SnappyData/conf/servers
 
-# Below script is used only in cluster mode
-#echo "*****************kill java on lead**********************"
-#ssh $leads killall -9 java
-#echo "*****************kill java on locator**********************"
-#ssh $locator killall -9 java
-#echo "*****************kill java on server***********************"
+ssh $leads killall -9 vmstat
+for element in "${servers[@]}";
+  do
+   ssh $element killall -9 vmstat
+done
 
-#for element in "${servers[@]}";
-#  do
-#	ssh $element killall -9 java
-#  done
+ssh $leads rm -rf $leadDir
+ssh $locator rm -rf $locatorDir
+for element in "${servers[@]}";
+  do
+   ssh $element rm -rf $serverDir
+done
+
+
+
 

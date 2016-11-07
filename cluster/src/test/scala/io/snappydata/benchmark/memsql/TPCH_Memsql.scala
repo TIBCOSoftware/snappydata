@@ -80,7 +80,7 @@ object TPCH_Memsql {
            }
            queryPrintStream.println()
          }
-         println(s"NUmber of results : $count")
+         println(s"Number of results : $count")
          println(s"$queryNumber Result Collected in file $queryNumber.out")
          if (queryNumber.equals("q13")) {
            stmt.execute("drop view ViewQ13")
@@ -90,6 +90,7 @@ object TPCH_Memsql {
          }
        } else {
          var totalTime: Long = 0
+         var bestTime: Long=0
          for (i <- 1 to (warmup + runsForAverage)) {
            val startTime = System.currentTimeMillis()
            rs = queryExecution(queryNumber, stmt)
@@ -99,6 +100,12 @@ object TPCH_Memsql {
            }
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
+           if(i==1){
+             bestTime = iterationTime
+           }else{
+             if(iterationTime < bestTime)
+               bestTime = iterationTime
+           }
            queryPrintStream.println(s"$iterationTime")
            if (i > warmup) {
              totalTime += iterationTime
@@ -111,7 +118,7 @@ object TPCH_Memsql {
            }
          }
          queryPrintStream.println(s"${totalTime / runsForAverage}")
-         avgPrintStream.println(s"$queryNumber,${totalTime /runsForAverage}")
+         avgPrintStream.println(s"$queryNumber,$bestTime / ${totalTime /runsForAverage}")
        }
        println(s"Finished executing $queryNumber")
 
