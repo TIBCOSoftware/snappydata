@@ -20,6 +20,7 @@ import java.lang
 import java.util.{Collections, UUID}
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
@@ -42,43 +43,55 @@ import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SQLContext, SnappyContext, SnappySession, SplitClusterMode}
+import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
-  @transient private var sqlContext = None: Option[SQLContext]
-  val stores = new TrieMap[String, (StructType, ExternalStore)]
+  case class ExecutorCatalogEntry(entityName: String, // either table or index name
+      schema: StructType, // table or index schema (can differ when column groups is introduced)
+      @transient externalStore: ExternalStore, // locally created store object
+      cachedBatchSize: Int, // table or index batchSize. can differ b/w the two.
+      useCompression: Boolean,
+      baseTable: Option[String] = None, // non null for index, whereby pointing to base table.
+      dmls: ArrayBuffer[String] = ArrayBuffer.empty, // DML string for maintaining the entity
+      dependents: ArrayBuffer[String] = ArrayBuffer.empty)
+
+  val executorCatalog = new TrieMap[String, ExecutorCatalogEntry]
 
   val partitioner = new StoreHashFunction
 
   var useCompression = false
   var cachedBatchSize = 0
 
-  def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
-      schema: StructType, externalStore: ExternalStore,
-      batchSize: Int, compress: Boolean): Unit = {
-    stores.synchronized {
-      stores.get(tableName) match {
-        case None => stores.put(tableName, (schema, externalStore))
-        case Some((previousSchema, _)) =>
-          if (previousSchema != schema) {
-            stores.put(tableName, (schema, externalStore))
+  def registerExternalStoreAndSchema(catalogEntry: ExecutorCatalogEntry): Unit = {
+    executorCatalog.synchronized {
+      executorCatalog.get(catalogEntry.entityName) match {
+        case None => executorCatalog.put(catalogEntry.entityName, catalogEntry)
+        case Some(previousEntry) =>
+          if (previousEntry.schema != catalogEntry.schema) {
+            executorCatalog.put(catalogEntry.entityName, catalogEntry)
           }
       }
+      if (catalogEntry.baseTable.isDefined) {
+        val baseTable = executorCatalog.get(catalogEntry.baseTable.get)
+        assert(baseTable.isDefined)
+        if (!baseTable.get.dependents.contains(catalogEntry.entityName)) {
+          baseTable.get.dependents += catalogEntry.entityName
+        }
+      }
     }
-    sqlContext = Some(context)
-    useCompression = compress
-    cachedBatchSize = batchSize
+    useCompression = catalogEntry.useCompression
+    cachedBatchSize = catalogEntry.cachedBatchSize
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
     val container = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
-    val store = stores.get(container.getQualifiedTableName)
+    val store = executorCatalog.get(container.getQualifiedTableName)
 
     if (store.isDefined) {
-      val (schema, externalStore) = store.get
+      val catalogEntry = store.get
       // LCC should be available assuming insert is already being done
       // via a proper connection
       var conn: EmbedConnection = null
@@ -105,10 +118,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             TransactionController.ISOLATION_NOLOCK /* not used */ ,
             null, null, 0, null, null, 0, null)
 
+          val dependents = if (catalogEntry.dependents.nonEmpty) {
+            catalogEntry.dependents.map(executorCatalog.get(_).get)
+          } else {
+            Seq.empty
+          }
+
           val batchCreator = new CachedBatchCreator(
             ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
-            container.getQualifiedTableName, schema,
-            externalStore, cachedBatchSize, useCompression)
+            container.getQualifiedTableName, catalogEntry.schema,
+            catalogEntry.externalStore,
+            dependents,
+            cachedBatchSize, useCompression)
           batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
         } finally {
@@ -160,7 +181,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       // cleanup invoked on embedded mode nodes
       // from external cluster (in split mode) driver
       ExternalStoreUtils.removeCachedObjects(table)
-      stores.remove(table)
+      executorCatalog.remove(table)
       // clean up cached hive relations on lead node
       if (GemFireXDUtils.getGfxdAdvisor.getMyProfile.hasSparkURL) {
         SnappyStoreHiveCatalog.registerRelationDestroy()

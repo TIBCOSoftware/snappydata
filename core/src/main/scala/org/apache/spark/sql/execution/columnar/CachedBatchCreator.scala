@@ -24,6 +24,8 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.execution.CompactExecRowToMutableRow
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.types.StructType
 
 final class CachedBatchCreator(
@@ -31,16 +33,12 @@ final class CachedBatchCreator(
     val userTableName: String, // user given table name (row buffer)
     override val schema: StructType,
     val externalStore: ExternalStore,
+    val dependents: Seq[ExecutorCatalogEntry],
     val columnBatchSize: Int,
     val useCompression: Boolean) extends CompactExecRowToMutableRow {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: UUID, bucketID: Int): java.util.HashSet[AnyRef] = {
-
-    def cachedBatchAggregate(batch: CachedBatch): Unit = {
-      externalStore.storeCachedBatch(tableName, batch,
-        bucketID, Option(batchID))
-    }
 
     def columnBuilders = schema.map {
       attribute =>
@@ -50,23 +48,47 @@ final class CachedBatchCreator(
           attribute.name, useCompression)
     }.toArray
 
-    // adding one variable so that only one cached batch is created
-    val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE, schema,
-      cachedBatchAggregate)
+    val connectedExternalStore = externalStore.getConnectedExternalStore(tableName,
+      onExecutor = true)
 
-    val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
-    memHeapScanController.setAddRegionAndKey()
-    val keySet = new java.util.HashSet[AnyRef]
-    val mutableRow = new SpecificMutableRow(dataTypes)
+    var success: Boolean = false
     try {
-      while (memHeapScanController.fetchNext(row)) {
-        holder.appendRow(createInternalRow(row, mutableRow))
-        keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
+
+      val indexStatements = dependents.map(ColumnFormatRelation.getIndexUpdateStruct(_,
+        connectedExternalStore))
+
+      def cachedBatchAggregate(batch: CachedBatch): Unit = {
+        connectedExternalStore.withDependentAction { conn =>
+          indexStatements.foreach { case (_, ps) => ps.executeBatch() }
+        }.storeCachedBatch(tableName, batch,
+          bucketID, Option(batchID))
       }
-      holder.forceEndOfBatch()
-      keySet
+
+      // adding one variable so that only one cached batch is created
+      val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE, schema,
+        cachedBatchAggregate,
+        indexStatements)
+
+      val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
+      memHeapScanController.setAddRegionAndKey()
+      val keySet = new java.util.HashSet[AnyRef]
+      val mutableRow = new SpecificMutableRow(dataTypes)
+      try {
+        while (memHeapScanController.fetchNext(row)) {
+          holder.appendRow(createInternalRow(row, mutableRow))
+          keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
+        }
+        holder.forceEndOfBatch()
+        keySet
+      } finally {
+        sc.close()
+        success = true
+      }
     } finally {
-      sc.close()
+      if (success) {
+        connectedExternalStore.conn.commit()
+      }
+      connectedExternalStore.conn.close()
     }
   }
 }

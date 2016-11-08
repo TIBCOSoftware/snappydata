@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -24,6 +26,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, StoreCallbacksImpl}
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -38,7 +41,9 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
     table: String,
     userSchema: Option[StructType],
     partitions: Int,
-    connProperties: ConnectionProperties)
+    connProperties: ConnectionProperties,
+    baseTable: Option[String],
+    dmls: ArrayBuffer[String])
     extends RDD[(InternalDistributedMember, BlockManagerId)](
       sqlContext.sparkContext, Nil) {
 
@@ -61,8 +66,9 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
     userSchema match {
       case Some(schema) =>
         val store = new JDBCSourceAsColumnarStore(connProperties, partitions)
-        StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
-          schema, store, columnBatchSize, userCompression)
+        StoreCallbacksImpl.registerExternalStoreAndSchema(
+          ExecutorCatalogEntry(table, schema, store, columnBatchSize, userCompression,
+            baseTable, dmls))
         if (keepReservoirInRegion) {
           schema.fields.last match {
             case StructField("SNAPPY_SAMPLER_WEIGHTAGE", LongType, _, _) =>
