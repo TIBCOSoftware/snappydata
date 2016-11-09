@@ -50,7 +50,7 @@ task productExamples(dependsOn: 'jar') << {
 
   def productDir = file("${rootProject.buildDir}/snappy")
   productDir.mkdirs()
-  def exampleArchiveName = "quickstart-${version}.jar"
+  def exampleArchiveName = "quickstart.jar"
   copy {
     from "${project.buildDir}/libs"
     into "${productDir}/lib"

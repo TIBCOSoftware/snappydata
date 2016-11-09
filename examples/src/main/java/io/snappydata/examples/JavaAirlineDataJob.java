@@ -16,11 +16,23 @@ import org.apache.spark.sql.types.StructType;
 /**
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
+ *
+ *
+ * Run this on your local machine:
+ * Start snappy cluster
+ * `$ sbin/snappy-start-all.sh`
+ * Start spark cluster
+ * `$ sbin/start-all.sh`
+ *
+ * `$./bin/spark-submit --class io.snappydata.examples.JavaAirlineDataJob \
+ * --master spark://<hostname>:7077 --conf snappydata.store.locators=localhost:10334 \
+ * $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
  */
 public class JavaAirlineDataJob {
 
-  private static String airlinefilePath = "examples/quickstart/data/airlineParquetData";
-  private static String airlinereftablefilePath = "examples/quickstart/data/airportcodeParquetData";
+  private static String airlinefilePath = "quickstart/data/airlineParquetData";
+  private static String airlinereftablefilePath = "quickstart/data/airportcodeParquetData";
   private static final String colTable = "AIRLINE";
   private static final String rowTable = "AIRLINEREF";
   private static final String sampleTable = "AIRLINE_SAMPLE";
@@ -54,7 +66,7 @@ public class JavaAirlineDataJob {
 
     // Populate the table in snappy store
     airlineDF.write().mode(SaveMode.Append).saveAsTable(colTable);
-    System.out.println("Created and imported data in $colTable table.");
+    System.out.println("Created and imported data in " + colTable + " table.");
 
     // Create a DF from the airline ref data file
     Dataset<Row> airlinerefDF = snc.read().load(airlinereftablefilePath);
@@ -70,7 +82,7 @@ public class JavaAirlineDataJob {
 
     // Create a sample table sampling parameters.
     options.clear();
-    options.put("buckets", "7");
+    options.put("buckets", "11");
     options.put("qcs", "UniqueCarrier, Year_, Month_");
     options.put("fraction", "0.03");
     options.put("strataReservoirSize", "50");

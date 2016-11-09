@@ -32,7 +32,22 @@ import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJob
  * comparison. Sample airline table and persist it in Snappy store.
  * Run a aggregate query on all the three tables and return the results in
  * a Map.This Map will be sent over REST.
+ *
+ * Run this on your local machine:
+ * `$ sbin/snappy-start-all.sh`
+ *
+ * Create tables
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
+ *
+ *  `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
  */
+
 object AirlineDataJob extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {

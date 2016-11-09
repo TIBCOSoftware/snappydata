@@ -24,6 +24,24 @@ import org.apache.spark.{SparkContext, SparkConf}
  * This application depicts how a Spark cluster can
  * connect to a Snappy cluster to fetch and query the tables
  * using Scala APIs in a Spark App.
+ *
+ * Run this on your local machine:
+ * Start snappy cluster
+ * `$ sbin/snappy-start-all.sh`
+ * Start spark cluster
+ * `$ sbin/start-all.sh`
+ *
+ * Create tables
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
+ *
+ * `$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
+ * --master spark://<hostname>:7077 --conf snappydata.store.locators=localhost:10334 \
+ * $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
+ *
  */
 object AirlineDataSparkApp {
 

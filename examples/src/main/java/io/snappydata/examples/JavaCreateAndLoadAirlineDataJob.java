@@ -15,7 +15,21 @@ import org.apache.spark.sql.types.StructType;
 /**
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
+ *
+ *
+ * Run this on your local machine:
+ * <p/>
+ * `$ sbin/snappy-start-all.sh`
+ * <p/>
+ *
+ * <p/>
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name JavaCreateAndLoadAirlineDataJob --class io.snappydata.examples.JavaCreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ * <p/>
  */
+
+
 public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
 
   private String airlinefilePath = null;

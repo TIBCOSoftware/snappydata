@@ -38,7 +38,7 @@ import org.apache.spark.streaming.dstream.DStream
  *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
- * --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream`
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar --stream`
  *
  * To run with stored twitter data, run simulateTwitterStream after the Job is submitted:
  * `$ ./quickstart/scripts/simulateTwitterStream`
