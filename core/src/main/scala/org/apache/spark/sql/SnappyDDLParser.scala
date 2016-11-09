@@ -343,11 +343,11 @@ abstract class SnappyDDLParser(session: SnappySession)
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~ optional(USING ~ zeroOrMore(functionResource)) ~>
-        { (te: Any, functionIdent: FunctionIdentifier, className: String, fre: Option[Seq[FunctionResource]]) =>
+    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~>
+        { (te: Any, functionIdent: FunctionIdentifier, className: String) =>
 
       val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
-      val funcResources = if (fre.isDefined) fre.get else Seq.empty[FunctionResource]
+      val funcResources = Seq.empty[FunctionResource]
 
       CreateFunctionCommand(
         functionIdent.database,
@@ -357,19 +357,6 @@ abstract class SnappyDDLParser(session: SnappySession)
         isTemp)
     }
   }
-
-  private def functionResource: Rule1[FunctionResource] = rule {
-    identifier ~ ws ~ stringLiteral ~> { (resource: String, path: String) =>
-      val resourceType = resource.toLowerCase
-      resourceType match {
-        case "jar" | "file" | "archive" =>
-          FunctionResource(FunctionResourceType.fromString(resourceType), path)
-        case _ => throw Utils.analysisException(s"Resource Type '$resourceType' is not supported.")
-
-      }
-    }
-  }
-
 
   /**
    * Create a [[DropFunctionCommand]] command.
