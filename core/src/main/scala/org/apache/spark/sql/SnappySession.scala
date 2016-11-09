@@ -41,7 +41,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.execution.command.CreateFunctionCommand
+import org.apache.spark.sql.execution.command.{DropFunctionCommand, CreateFunctionCommand}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.{ExprCodeEx, HashingUtil, LogicalRDD}
@@ -1305,19 +1305,26 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
-  def createFunction(functionName: String, className: String, isTemporary: Boolean,
-      resource: Option[String], path: Option[String]): Unit = {
+  def createFunction(functionName: String, className: String, isTemporary: Boolean): Unit = {
     val tableIdent = this.sessionState.sqlParser.parseTableIdentifier(functionName)
-    val resources = resource match {
-      case Some(p) => Seq(FunctionResource(FunctionResourceType.fromString(p), path.get))
-      case None => Seq.empty[FunctionResource]
-    }
+
     val cmd =
       CreateFunctionCommand(
         tableIdent.database,
         tableIdent.table,
         className = className,
-        resources,
+        Seq.empty[FunctionResource],
+        isTemp = isTemporary)
+    this.sessionState.executePlan(cmd).toRdd
+  }
+
+  def dropFunction(functionName: String, isTemporary: Boolean, ignoreIfExists : Boolean): Unit = {
+    val tableIdent = this.sessionState.sqlParser.parseTableIdentifier(functionName)
+    val cmd =
+      DropFunctionCommand(
+        tableIdent.database,
+        tableIdent.table,
+        ifExists = ignoreIfExists,
         isTemp = isTemporary)
     this.sessionState.executePlan(cmd).toRdd
   }

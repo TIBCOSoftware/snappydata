@@ -670,6 +670,27 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   /**
+   * Look up the [[ExpressionInfo]] associated with the specified function, assuming it exists.
+   */
+  override def lookupFunctionInfo(name: FunctionIdentifier): ExpressionInfo = synchronized {
+    // TODO: just make function registry take in FunctionIdentifier instead of duplicating this
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+    functionRegistry.lookupFunction(name.funcName)
+        .orElse(functionRegistry.lookupFunction(qualifiedName.unquotedString))
+        .getOrElse {
+          val db = qualifiedName.database.get
+          requireDbExists(db)
+          if (externalCatalog.functionExists(db, name.funcName)) {
+            val metadata = externalCatalog.getFunction(db, name.funcName)
+            new ExpressionInfo(metadata.className, qualifiedName.unquotedString)
+          } else {
+            failFunctionLookup(name.funcName)
+          }
+        }
+  }
+
+  /**
    * Return an [[Expression]] that represents the specified function, assuming it exists.
    *
    * For a temporary function or a permanent function that has been loaded,

@@ -710,7 +710,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | show | desc
+        ddl | set | cache | uncache | desc
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
