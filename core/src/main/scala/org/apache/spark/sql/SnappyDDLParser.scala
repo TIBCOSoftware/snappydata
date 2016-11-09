@@ -24,6 +24,7 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
+import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -331,6 +332,63 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+
+  /**
+   * Create a [[CreateFunctionCommand]] command.
+   *
+   * For example:
+   * {{{
+   *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name
+   *    [USING JAR|FILE|ARCHIVE 'file_uri' [, JAR|FILE|ARCHIVE 'file_uri']];
+   * }}}
+   */
+  protected def createFunction: Rule1[LogicalPlan] = rule {
+    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~ optional(USING ~ zeroOrMore(functionResource)) ~>
+        { (te: Any, functionIdent: FunctionIdentifier, className: String, fre: Option[Seq[FunctionResource]]) =>
+
+      val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
+      val funcResources = if (fre.isDefined) fre.get else Seq.empty[FunctionResource]
+
+      CreateFunctionCommand(
+        functionIdent.database,
+        functionIdent.funcName,
+        className,
+        funcResources,
+        isTemp)
+    }
+  }
+
+  private def functionResource: Rule1[FunctionResource] = rule {
+    identifier ~ ws ~ stringLiteral ~> { (resource: String, path: String) =>
+      val resourceType = resource.toLowerCase
+      resourceType match {
+        case "jar" | "file" | "archive" =>
+          FunctionResource(FunctionResourceType.fromString(resourceType), path)
+        case _ => throw Utils.analysisException(s"Resource Type '$resourceType' is not supported.")
+
+      }
+    }
+  }
+
+
+  /**
+   * Create a [[DropFunctionCommand]] command.
+   *
+   * For example:
+   * {{{
+   *   DROP [TEMPORARY] FUNCTION [IF EXISTS] function;
+   * }}}
+   */
+  protected def dropFunction: Rule1[LogicalPlan] = rule {
+    DROP ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ (IF ~ EXISTS ~> trueFn).? ~ functionIdentifier ~>
+        ((te: Any, ifExists: Any, functionIdent: FunctionIdentifier) =>  DropFunctionCommand(
+          functionIdent.database,
+          functionIdent.funcName,
+          ifExists = ifExists.asInstanceOf[Option[Boolean]].isDefined,
+          isTemp = te.asInstanceOf[Option[Boolean]].isDefined))
+  }
+
+
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
@@ -394,10 +452,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   // SHOW FUNCTIONS func1;
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
-    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
+   SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
       ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-    SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
-        (tableIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
+       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+        (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
         case None | Some("all") => (true, true)
@@ -407,8 +465,8 @@ abstract class SnappyDDLParser(session: SnappySession)
           throw Utils.analysisException(s"SHOW $x FUNCTIONS not supported")
       }
       nameOrPat match {
-        case Some(name: TableIdentifier) => ShowFunctionsCommand(
-          name.database, Some(name.table), user, system)
+        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
+          name.database, Some(name.funcName), user, system)
         case Some(pat: String) => ShowFunctionsCommand(
           None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
@@ -418,10 +476,13 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+
+
+
   protected def desc: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ FUNCTION ~ (EXTENDED ~> trueFn).? ~
-        (identifier | stringLiteral) ~> ((extended: Any, name: String) =>
-      DescribeFunctionCommand(FunctionIdentifier(name),
+        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
+      DescribeFunctionCommand(name,
         extended.asInstanceOf[Option[Boolean]].isDefined))
   }
 
@@ -501,7 +562,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createStream | streamContext | createIndex | dropIndex
+    createStream | streamContext | createIndex | dropIndex | createFunction | dropFunction | show
   }
 
   protected def query: Rule1[LogicalPlan]
