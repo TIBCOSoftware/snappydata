@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.store
 
 import scala.util.{Failure, Success, Try}
@@ -5,25 +21,39 @@ import scala.util.{Failure, Success, Try}
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.RefData
 
-import io.snappydata.udf.UDF1
+import io.snappydata.udf.{udf1, UDF1}
+import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.types.{DataTypes, DataType}
 
-class StringLengthUDF extends UDF1[String, Int]{
+class StringLengthUDF extends udf1[String, Int] {
   override def call(t1: String): Int = t1.length
 
   override def getDataType: DataType = DataTypes.IntegerType
 }
-class SnappyUDFTest extends SnappyFunSuite{
 
-  test("Test UDF API") {
+class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
+
+
+  override def beforeAll: Unit = {
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"some $i")))
     val refDf = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
+    snc.sql("DROP TABLE IF EXISTS COL_TABLE")
 
     snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String)")
+    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String) using column options()")
 
     refDf.write.insertInto("RR_TABLE")
+    refDf.write.insertInto("COL_TABLE")
+  }
+
+  override def afterAll: Unit = {
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE")
+    snc.sql("DROP TABLE IF EXISTS COL_TABLE")
+  }
+
+  test("Test UDF API") {
 
     snc.snappySession.createFunction("APP.strnglen",
       className = "org.apache.spark.sql.store.StringLengthUDF",
@@ -50,25 +80,10 @@ class SnappyUDFTest extends SnappyFunSuite{
   }
 
   test("Test UDF SQL") {
-    val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"some $i")))
-    val refDf = snc.createDataFrame(rdd)
-    snc.sql("DROP TABLE IF EXISTS RR_TABLE")
-
-    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String)")
-
-    refDf.write.insertInto("RR_TABLE")
-
     snc.snappySession.sql("CREATE FUNCTION APP.strnglen AS org.apache.spark.sql.store.StringLengthUDF")
-    snc.snappySession.sql("CREATE FUNCTION APP.strlen AS demo1.StringLengthUDF USING JAR '/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/udf.jar'")
-
-
 
     val query = s"select strnglen(description) from RR_TABLE"
     val udfdf = snc.sql(query)
-    val udf2 = snc.sql("select strlen(description) from RR_TABLE")
-    assert(udf2.collect().forall(r => {
-      r.getInt(0) == 6
-    }))
 
     assert(udfdf.collect().forall(r => {
       r.getInt(0) == 6
@@ -77,15 +92,16 @@ class SnappyUDFTest extends SnappyFunSuite{
     assert(snc.snappySession.sessionCatalog.listFunctions("app", "str*").
         find(f => (f._1.toString().contains("strnglen"))).size == 1)
 
-    snc.snappySession.sql("DESCRIBE FUNCTION APP.strlen").collect().foreach(println);
-    snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED APP.strlen").collect().foreach(println);
-    snc.snappySession.sql("DESCRIBE FUNCTION strlen").collect().foreach(println);
-    snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED strlen").collect().foreach(println);
-    snc.snappySession.sql("SHOW FUNCTIONS strlen").collect().foreach(println);
+    //@TDOD validate the output
+    snc.snappySession.sql("DESCRIBE FUNCTION APP.strnglen").collect().foreach(println)
+    snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED APP.strnglen").collect().foreach(println)
+    snc.snappySession.sql("DESCRIBE FUNCTION strnglen").collect().foreach(println)
+    snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED strnglen").collect().foreach(println)
+    snc.snappySession.sql("SHOW FUNCTIONS strnglen").collect().foreach(println)
 
-    snc.snappySession.sql("DROP FUNCTION app.strnglen");
-    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strlen");
-    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strlen");
+    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strnglen")
+    //Drop again to check if exists functionality
+    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strnglen")
 
     Try(snc.sql(query).count()) match {
       case Success(df) => throw new AssertionError(" Should not have succedded with dropped function")
@@ -93,4 +109,17 @@ class SnappyUDFTest extends SnappyFunSuite{
     }
   }
 
+  test("Test UDF SQL for column tables") {
+    snc.snappySession.sql("CREATE FUNCTION APP.strnglen AS org.apache.spark.sql.store.StringLengthUDF")
+
+    val query = s"select strnglen(description) from COL_TABLE"
+    val udfdf = snc.sql(query)
+
+    assert(udfdf.collect().forall(r => {
+      r.getInt(0) == 6
+    }))
+
+    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strnglen")
+
+  }
 }
