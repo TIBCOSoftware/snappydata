@@ -31,6 +31,7 @@ import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -243,6 +244,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver");
+
       String url = "jdbc:snappydata:;user=" +
           SnappyStoreHiveCatalog.HIVE_METASTORE() +
           ";disable-streaming=true;default-persistent=true";
