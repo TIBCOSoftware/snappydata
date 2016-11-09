@@ -91,7 +91,7 @@ More detail on passwordless ssh can be found [here](https://www.digitalocean.com
 
 ## Quick start with SQL  
 
-This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP and OLTP SQL.
+This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP and OLTP SQL. To explore a more complete hybrid workload programming example (streaming ingestion to column tables and interactive analytic queries) go through this AdAnalytics sample [application](https://github.com/SnappyDataInc/snappy-poc)
 
 The following script starts up a minimal set of essential components to form a SnappyData cluster - A locator, one data server 
 and one lead node. All nodes are started on localhost.

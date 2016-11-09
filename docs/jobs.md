@@ -316,7 +316,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 ```
 The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.
 
@@ -358,7 +358,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
@@ -383,7 +383,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar \
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar \
     --stream
 
 {
