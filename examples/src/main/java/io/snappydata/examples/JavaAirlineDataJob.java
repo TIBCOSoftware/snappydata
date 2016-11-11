@@ -1,8 +1,3 @@
-
-/*  CURRENTLY THERE IS NO SUPPORT FOR QUERIES ON SAMPLING TABLE IN SPLIT MODE.(AQP-257)
- *  NOT SUPPORTED FOR NOW.
- */
-
 package io.snappydata.examples;
 
 import java.util.Collections;
@@ -19,6 +14,10 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 /**
+ * NOTE :
+ * CURRENTLY THERE IS NO SUPPORT FOR QUERIES ON SAMPLING TABLE IN SPLIT MODE.(AQP-257)
+ * NOT SUPPORTED FOR NOW.
+ *
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
  *
@@ -26,11 +25,11 @@ import org.apache.spark.sql.types.StructType;
  * Run this on your local machine:
  * <p/>
  * Start snappy cluster
- * <p/>
+ *
  * `$ sbin/snappy-start-all.sh`
  * <p/>
  * Start spark cluster
- * <p/>
+ *
  * `$ sbin/start-all.sh`
  * <p/>
  * `$./bin/spark-submit --class io.snappydata.examples.JavaAirlineDataJob \
