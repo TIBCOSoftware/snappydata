@@ -175,10 +175,12 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     val row = ctx.freshName("row")
     val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map {
       case (ref, ordinal) =>
+        val baseIndex = basePlan.asInstanceOf[ColumnTableScan].baseRelation.schema.fieldIndex(
+          ref.name)
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
-      val value = ctx.getValue(row, dataType, ordinal.toString)
+      val value = ctx.getValue(row, dataType, baseIndex.toString)
       if (ref.nullable) {
         s"""
             boolean ${ev.isNull} = $row.isNullAt($ordinal);
