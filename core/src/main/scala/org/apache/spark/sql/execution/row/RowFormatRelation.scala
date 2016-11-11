@@ -33,7 +33,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
@@ -70,7 +70,7 @@ class RowFormatRelation(
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
-  private[this] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
+  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
 
   @transient private[this] lazy val region: LocalRegion =
