@@ -34,7 +34,7 @@ import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
