@@ -47,7 +47,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
+import org.apache.spark.sql.sources.{DependencyCatalog, BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
 
@@ -167,9 +167,23 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
 
+
+
         relation match {
           case sr: StreamBaseRelation => //Do Nothing as it is not supported for stream relation
-          case pr: ParentRelation => pr.recoverDependentsRelation(table.properties)
+          case pr: ParentRelation => {
+            var dependentRelations: Array[String] = Array()
+            if (None != table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+              dependentRelations = table.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
+                  .split(",")
+            }
+
+            dependentRelations.foreach(rel => {
+              DependencyCatalog.addDependent(in.toString, rel)
+            })
+
+          }
+          case _ => //Do nothing
         }
 
         (LogicalRelation(relation), table)
@@ -200,6 +214,27 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       }
 
       cachedDataSourceTables(table)._1
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    } finally {
+      sync.unlock()
+    }
+  }
+
+  def getCachedHiveTableProperties(table: QualifiedTableName): Map[String, String] = {
+    val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
+    sync.lock()
+    try {
+      // if a relation has been destroyed (e.g. by another instance of catalog),
+      // then the cached ones can be stale, so check and clear entire cache
+      val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
+      if (globalVersion != this.relationDestroyVersion) {
+        cachedDataSourceTables.invalidateAll()
+        this.relationDestroyVersion = globalVersion
+      }
+
+      cachedDataSourceTables(table)._2.properties
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
         throw e.getCause
