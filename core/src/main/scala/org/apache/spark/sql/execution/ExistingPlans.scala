@@ -132,7 +132,7 @@ private[sql] object PartitionedPhysicalScan {
         if (r.isPartitioned) {
           val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
-          ZipPartitionScan(columnScan, null, otherRDDs.head)
+          ZipPartitionScan(columnScan, null, otherRDDs.head, relation)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
@@ -157,8 +157,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 }
 
 private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenSupport,
-    otherPlan: SparkPlan, otherRDD: RDD[InternalRow] = null) extends LeafExecNode with
-    CodegenSupport {
+    otherPlan: SparkPlan, otherRDD: RDD[InternalRow] = null,
+    relation: PartitionedDataSourceScan = null) extends LeafExecNode with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
@@ -173,10 +173,9 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
 
     val row = ctx.freshName("row")
-    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map {
-      case (ref, ordinal) =>
-        val baseIndex = basePlan.asInstanceOf[ColumnTableScan].baseRelation.schema.fieldIndex(
-          ref.name)
+    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
+      (ref, ordinal) =>
+      val baseIndex = Option(otherPlan).fold(relation.schema.fieldIndex(ref.name))(_ => ordinal)
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
