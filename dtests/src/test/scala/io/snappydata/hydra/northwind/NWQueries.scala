@@ -133,7 +133,7 @@ object NWQueries {
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
     " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'))"
+    "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
 
   val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
     "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
@@ -267,7 +267,7 @@ object NWQueries {
 
   val Q39: String = "select s.supplierid,s.companyname,p.productid,p.productname " +
     "from suppliers s join products p on(s.supplierid= p.supplierid) and" +
-    " s.companyname IN('Grandma Kelly''s Homestead','Tokyo Traders','Exotic Liquids')"
+    " s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids')"
 
   val Q40: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
     "ON c.CustomerID = o.CustomerID"
