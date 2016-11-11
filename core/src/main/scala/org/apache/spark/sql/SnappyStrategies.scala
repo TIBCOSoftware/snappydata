@@ -16,13 +16,13 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{ImperativeAggregate, AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
+import org.apache.spark.sql.execution.aggregate.{AggUtils, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
@@ -174,11 +174,23 @@ object SnappyAggregation extends Strategy {
     case _ => Nil
   }
 
+  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
+    // ImperativeAggregate is not supported right now in code generation.
+    !aggregateExpressions.exists(_.aggregateFunction
+        .isInstanceOf[ImperativeAggregate])
+  }
+
+
   def planAggregateWithoutDistinct(
       groupingExpressions: Seq[NamedExpression],
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
+
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
+        aggregateExpressions, resultExpressions, child)
+    }
     // Check if we can use HashAggregate.
 
     // 1. Create an Aggregate Operator for partial aggregations.
