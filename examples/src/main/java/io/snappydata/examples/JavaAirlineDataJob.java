@@ -1,3 +1,8 @@
+
+/*  CURRENTLY THERE IS NO SUPPORT FOR QUERIES ON SAMPLING TABLE IN SPLIT MODE.(AQP-257)
+ *  NOT SUPPORTED FOR NOW.
+ */
+
 package io.snappydata.examples;
 
 import java.util.Collections;
