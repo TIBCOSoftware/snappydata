@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.DataType
     val call  = (1 to x).map(x => s"t$x:T$x").reduce(_ + ", " + _)
 
     s"""
-trait udf$x[${params}, R] extends Serializable {
+trait UDF$x[${params}, R] extends Serializable {
 
    @throws(classOf[Exception])
    def call($call) : R
@@ -38,7 +38,7 @@ trait udf$x[${params}, R] extends Serializable {
 }*/
 
 // scalastyle:off line.size.limit
-trait udf1[T1, R] extends Serializable {
+trait UDF1[T1, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1) : R
@@ -47,7 +47,7 @@ trait udf1[T1, R] extends Serializable {
 }
 
 
-trait udf2[T1, T2, R] extends Serializable {
+trait UDF2[T1, T2, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2) : R
@@ -56,7 +56,7 @@ trait udf2[T1, T2, R] extends Serializable {
 }
 
 
-trait udf3[T1, T2, T3, R] extends Serializable {
+trait UDF3[T1, T2, T3, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3) : R
@@ -65,7 +65,7 @@ trait udf3[T1, T2, T3, R] extends Serializable {
 }
 
 
-trait udf4[T1, T2, T3, T4, R] extends Serializable {
+trait UDF4[T1, T2, T3, T4, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4) : R
@@ -74,7 +74,7 @@ trait udf4[T1, T2, T3, T4, R] extends Serializable {
 }
 
 
-trait udf5[T1, T2, T3, T4, T5, R] extends Serializable {
+trait UDF5[T1, T2, T3, T4, T5, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5) : R
@@ -83,7 +83,7 @@ trait udf5[T1, T2, T3, T4, T5, R] extends Serializable {
 }
 
 
-trait udf6[T1, T2, T3, T4, T5, T6, R] extends Serializable {
+trait UDF6[T1, T2, T3, T4, T5, T6, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6) : R
@@ -92,7 +92,7 @@ trait udf6[T1, T2, T3, T4, T5, T6, R] extends Serializable {
 }
 
 
-trait udf7[T1, T2, T3, T4, T5, T6, T7, R] extends Serializable {
+trait UDF7[T1, T2, T3, T4, T5, T6, T7, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7) : R
@@ -101,7 +101,7 @@ trait udf7[T1, T2, T3, T4, T5, T6, T7, R] extends Serializable {
 }
 
 
-trait udf8[T1, T2, T3, T4, T5, T6, T7, T8, R] extends Serializable {
+trait UDF8[T1, T2, T3, T4, T5, T6, T7, T8, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8) : R
@@ -110,7 +110,7 @@ trait udf8[T1, T2, T3, T4, T5, T6, T7, T8, R] extends Serializable {
 }
 
 
-trait udf9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] extends Serializable {
+trait UDF9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9) : R
@@ -119,7 +119,7 @@ trait udf9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] extends Serializable {
 }
 
 
-trait udf10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] extends Serializable {
+trait UDF10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10) : R
@@ -128,7 +128,7 @@ trait udf10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] extends Serializable {
 }
 
 
-trait udf11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] extends Serializable {
+trait UDF11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11) : R
@@ -137,7 +137,7 @@ trait udf11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] extends Serializabl
 }
 
 
-trait udf12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] extends Serializable {
+trait UDF12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12) : R
@@ -146,7 +146,7 @@ trait udf12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] extends Serial
 }
 
 
-trait udf13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] extends Serializable {
+trait UDF13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13) : R
@@ -155,7 +155,7 @@ trait udf13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] extends S
 }
 
 
-trait udf14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R] extends Serializable {
+trait UDF14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14) : R
@@ -164,7 +164,7 @@ trait udf14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R] exte
 }
 
 
-trait udf15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R] extends Serializable {
+trait UDF15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15) : R
@@ -173,7 +173,7 @@ trait udf15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]
 }
 
 
-trait udf16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R] extends Serializable {
+trait UDF16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16) : R
@@ -182,7 +182,7 @@ trait udf16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, R] extends Serializable {
+trait UDF17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17) : R
@@ -191,7 +191,7 @@ trait udf17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, R] extends Serializable {
+trait UDF18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17, t18:T18) : R
@@ -200,7 +200,7 @@ trait udf18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, R] extends Serializable {
+trait UDF19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17, t18:T18, t19:T19) : R
@@ -209,7 +209,7 @@ trait udf19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, R] extends Serializable {
+trait UDF20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17, t18:T18, t19:T19, t20:T20) : R
@@ -218,7 +218,7 @@ trait udf20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, R] extends Serializable {
+trait UDF21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17, t18:T18, t19:T19, t20:T20, t21:T21) : R
@@ -227,7 +227,7 @@ trait udf21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T1
 }
 
 
-trait udf22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, R] extends Serializable {
+trait UDF22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, R] extends Serializable {
 
   @throws(classOf[Exception])
   def call(t1:T1, t2:T2, t3:T3, t4:T4, t5:T5, t6:T6, t7:T7, t8:T8, t9:T9, t10:T10, t11:T11, t12:T12, t13:T13, t14:T14, t15:T15, t16:T16, t17:T17, t18:T18, t19:T19, t20:T20, t21:T21, t22:T22) : R
