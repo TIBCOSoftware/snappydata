@@ -344,7 +344,7 @@ class BaseColumnFormatRelation(
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, partitionId integer, numRows integer not null, stats blob, " +
+        "not null, partitionId integer, stats blob, " +
         schema.fields.map(structField => externalStore.columnPrefix +
             structField.name + " blob").mkString(", ") +
         s", $primaryKey) $partitionStrategy $colocationClause " +

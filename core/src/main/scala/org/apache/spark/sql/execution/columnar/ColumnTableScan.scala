@@ -89,7 +89,7 @@ private[sql] final case class ColumnTableScan(
       else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
         "number of output rows from other RDDs")))
 
-  private def generateStatPredicate(ctx: CodegenContext): String = {
+  private def generateStatPredicate(ctx: CodegenContext): (String, String) = {
 
     val columnBatchStatistics = relation match {
       case columnRelation: BaseColumnFormatRelation =>
@@ -170,12 +170,10 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
     val filterFunction = ctx.freshName("columnBatchFilter")
+    val getUnsafeRow = ctx.freshName("getUnsafeRow")
     ctx.addNewFunction(filterFunction,
       s"""
-         |private boolean $filterFunction(byte[] $statBytes) {
-         |  final UnsafeRow $statRow = new UnsafeRow($numStatFields);
-         |  $statRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statBytes.length);
+         |private boolean $filterFunction(UnsafeRow $statRow) {
          |  $columnBatchesSeen.add(1);
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
@@ -187,7 +185,18 @@ private[sql] final case class ColumnTableScan(
          |  }
          |}
        """.stripMargin)
-    filterFunction
+
+    ctx.addNewFunction(getUnsafeRow,
+      s"""
+         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
+         |  final UnsafeRow unsafeRow = new UnsafeRow($numStatFields);
+         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statBytes.length);
+         |  return unsafeRow;
+         |}
+       """.stripMargin)
+
+    (getUnsafeRow, filterFunction)
   }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
@@ -381,7 +390,7 @@ private[sql] final case class ColumnTableScan(
       ev
     }
 
-    val filterFunction = generateStatPredicate(ctx)
+    val (getUnsafeRow, filterFunction) = generateStatPredicate(ctx)
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
@@ -397,13 +406,13 @@ private[sql] final case class ColumnTableScan(
           $batch = ($execRowClass)$colInput.next();
           final byte[] statBytes = $batch.getRowBytes(
             ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-          if ($filterFunction(statBytes)) {
+          UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
+          if ($filterFunction(unsafeRow)) {
+            $numBatchRows = unsafeRow.getInt(3);
             break;
           }
           if (!$colInput.hasNext()) return false;
         }
-        $numBatchRows = $batch.getAsInt(
-          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, ($wasNullClass)null);
       """
     } else {
       s"""
@@ -413,14 +422,13 @@ private[sql] final case class ColumnTableScan(
           $buffers = (byte[][])$colInput.next();
           final byte[] statBytes = $rowFormatter.getLob($buffers,
             ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-          if ($filterFunction(statBytes)) {
+          UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
+          if ($filterFunction(unsafeRow)) {
+            $numBatchRows = unsafeRow.getInt(3);
             break;
           }
           if (!$colInput.hasNext()) return false;
         }
-        $numBatchRows = $rowFormatter.getAsInt(
-          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, $buffers[0],
-          ($wasNullClass)null);
       """
     }
     val nextBatch = ctx.freshName("nextBatch")

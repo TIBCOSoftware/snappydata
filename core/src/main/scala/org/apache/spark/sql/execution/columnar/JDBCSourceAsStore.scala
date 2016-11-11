@@ -84,10 +84,9 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, batchId.toString)
         stmt.setInt(2, partitionId)
-        stmt.setInt(3, batch.numRows)
         // Use UnsafeRow for efficient serialization else shows perf impact.
-        stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
-        var columnIndex = 5
+        stmt.setBytes(3, batch.stats.asInstanceOf[UnsafeRow].getBytes)
+        var columnIndex = 4
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
           columnIndex += 1
@@ -124,7 +123,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
   protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")
+        s"insert into $tableName values(?,?,?${",?" * numOfColumns})")
       insertStrings.put(tableName, s)
     }
     insertStrings(tableName)
