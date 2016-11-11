@@ -29,18 +29,21 @@ import org.apache.spark.streaming.dstream.DStream
 
 /**
  * Run this on your local machine:
- *
+ * <p/>
  * `$ sbin/snappy-start-all.sh`
- *
+ * <p/>
  * To run with live twitter streaming, export twitter credentials
+ *
  * `$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>, \
  * accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"`
  *
+ *  <p/>
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar --stream`
- *
+ * <p/>
  * To run with stored twitter data, run simulateTwitterStream after the Job is submitted:
+ *
  * `$ ./quickstart/scripts/simulateTwitterStream`
  */
 

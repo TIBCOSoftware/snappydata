@@ -21,12 +21,9 @@ import org.apache.spark.sql.types.StructType;
  * <p/>
  * `$ sbin/snappy-start-all.sh`
  * <p/>
- *
- * <p/>
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name JavaCreateAndLoadAirlineDataJob --class io.snappydata.examples.JavaCreateAndLoadAirlineDataJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
- * <p/>
  */
 
 

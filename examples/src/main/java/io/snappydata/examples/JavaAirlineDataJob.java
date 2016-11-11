@@ -19,16 +19,21 @@ import org.apache.spark.sql.types.StructType;
  *
  *
  * Run this on your local machine:
+ * <p/>
  * Start snappy cluster
+ * <p/>
  * `$ sbin/snappy-start-all.sh`
+ * <p/>
  * Start spark cluster
+ * <p/>
  * `$ sbin/start-all.sh`
- *
+ * <p/>
  * `$./bin/spark-submit --class io.snappydata.examples.JavaAirlineDataJob \
  * --master spark://<hostname>:7077 --conf snappydata.store.locators=localhost:10334 \
  * $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
  */
+
 public class JavaAirlineDataJob {
 
   private static String airlinefilePath = "quickstart/data/airlineParquetData";
@@ -82,7 +87,7 @@ public class JavaAirlineDataJob {
 
     // Create a sample table sampling parameters.
     options.clear();
-    options.put("buckets", "11");
+    options.put("buckets", "7");
     options.put("qcs", "UniqueCarrier, Year_, Month_");
     options.put("fraction", "0.03");
     options.put("strataReservoirSize", "50");

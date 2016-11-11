@@ -29,14 +29,14 @@ import org.apache.spark.sql.{SaveMode, SnappyContext, SnappyJobInvalid, SnappyJo
 /**
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
- *
+ * <p/>
  * Run this on your local machine:
- * `$ sbin/snappy-start-all.sh`
  *
+ * `$ sbin/snappy-start-all.sh`
+ * <p/>
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
- *
  *
  */
 object CreateAndLoadAirlineDataJob extends SnappySQLJob {

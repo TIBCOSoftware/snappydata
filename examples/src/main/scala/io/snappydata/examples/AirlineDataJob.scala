@@ -34,15 +34,17 @@ import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJob
  * a Map.This Map will be sent over REST.
  *
  * Run this on your local machine:
+ * <p/>
  * `$ sbin/snappy-start-all.sh`
- *
+ * <p/>
  * Create tables
+ *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
  *
- *  `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
