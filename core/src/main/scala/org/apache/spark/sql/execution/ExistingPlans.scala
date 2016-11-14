@@ -128,8 +128,14 @@ private[sql] object PartitionedPhysicalScan {
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, relation, allFilters, schemaAttributes)
+        if (r.isPartitioned) {
+          val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
+            partitionColumns, relation, allFilters, schemaAttributes)
+          ZipPartitionScan(columnScan, null, otherRDDs.head, relation)
+        } else {
+          ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+            partitionColumns, relation, allFilters, schemaAttributes)
+        }
       case _: RowFormatRelation =>
         RowTableScan(output, rdd, numBuckets,
           partitionColumns, relation)
@@ -150,14 +156,15 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 }
 
 private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenSupport,
-    otherPlan: SparkPlan) extends LeafExecNode with CodegenSupport {
+    otherPlan: SparkPlan, otherRDD: RDD[InternalRow] = null,
+    relation: PartitionedDataSourceScan = null) extends LeafExecNode with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Seq(otherPlan.execute())
+    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD)(_.execute()))
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
@@ -165,11 +172,13 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
 
     val row = ctx.freshName("row")
-    val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
+    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
+      (ref, ordinal) =>
+      val baseIndex = Option(otherPlan).fold(relation.schema.fieldIndex(ref.name))(_ => ordinal)
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
-      val value = ctx.getValue(row, dataType, ordinal.toString)
+      val value = ctx.getValue(row, dataType, baseIndex.toString)
       if (ref.nullable) {
         s"""
             boolean ${ev.isNull} = $row.isNullAt($ordinal);
