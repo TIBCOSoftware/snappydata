@@ -35,6 +35,7 @@ object ValidateNWQueriesApp {
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
+    val fullResultSetValidation: Boolean = args(2).toBoolean
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
@@ -42,14 +43,15 @@ object ValidateNWQueriesApp {
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.validateQueries(snc, tableType, pw)
     pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
-    println(s"createAndLoadSparkTables Test started")
-    pw.println(s"createAndLoadSparkTables Test started")
-    NWTestUtil.createAndLoadSparkTables(sqlContext)
-    println(s"createAndLoadSparkTables Test completed successfully")
-    pw.println(s"createAndLoadSparkTables Test completed successfully")
-    pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started")
-    NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
-    pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully")
+    if(fullResultSetValidation) {
+      pw.println(s"createAndLoadSparkTables Test started")
+      NWTestUtil.createAndLoadSparkTables(sqlContext)
+      println(s"createAndLoadSparkTables Test completed successfully")
+      pw.println(s"createAndLoadSparkTables Test completed successfully")
+      pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started")
+      NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+      pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully")
+    }
     pw.close()
   }
 }
