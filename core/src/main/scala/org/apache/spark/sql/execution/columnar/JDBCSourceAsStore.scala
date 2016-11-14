@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeRegionKey, GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
 import org.apache.spark.rdd.RDD
@@ -76,23 +76,67 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
     rand.nextInt(numPartitions)
   }
 
+
+  /**
+   * Insert the base entry and n column entries in Snappy. Insert the base entry
+   * in the end to ensure that the partial inserts of a cached batch are ignored
+   * during iteration. We are not cleaning up the partial inserts of cached
+   * batches for now.
+   */
   protected def doInsert(tableName: String, batch: CachedBatch,
       batchId: UUID, partitionId: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
-        stmt.setString(1, batchId.toString)
-        stmt.setInt(2, partitionId)
-        // Use UnsafeRow for efficient serialization else shows perf impact.
-        stmt.setBytes(3, batch.stats.asInstanceOf[UnsafeRow].getBytes)
-        var columnIndex = 4
-        batch.buffers.foreach(buffer => {
-          stmt.setBytes(columnIndex, buffer)
-          columnIndex += 1
-        })
-        stmt.executeUpdate()
-        stmt.close()
+        var columnIndex = 1
+        val uuid = batchId.toString
+        try {
+          // add the columns
+          batch.buffers.foreach(buffer => {
+            stmt.setString(1, uuid)
+            stmt.setInt(2, partitionId)
+            stmt.setInt(3, columnIndex)
+            stmt.setBytes(4, buffer)
+            columnIndex += 1
+            stmt.addBatch()
+          })
+          // add the stat row
+          stmt.setString(1, uuid)
+          stmt.setInt(2, partitionId)
+          stmt.setInt(3, -1)
+          stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
+          stmt.addBatch()
+
+          stmt.executeBatch()
+          stmt.close()
+        } catch {
+          // TODO: test this code
+          case e: Exception =>
+            val deletestmt = connection.prepareStatement(
+              s"delete from $tableName where partitionId = $partitionId " +
+                  s" and uuid = ? and columnIndex = ? ")
+            // delete the base entry
+            try {
+              deletestmt.setString(1, uuid)
+              deletestmt.setInt(2, -1)
+              deletestmt.executeUpdate()
+            } catch {
+              case _ => // Do nothing
+            }
+
+            for (idx <- 1 to batch.buffers.size) {
+              try {
+                deletestmt.setString(1, uuid)
+                deletestmt.setInt(2, idx)
+                deletestmt.executeUpdate()
+              } catch {
+                case _ => // Do nothing
+              }
+            }
+            deletestmt.close()
+            throw e;
+        }
       }
     }
   }
@@ -123,7 +167,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
   protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?,?,?${",?" * numOfColumns})")
+        s"insert into $tableName values(?,?,?,?)")
       insertStrings.put(tableName, s)
     }
     insertStrings(tableName)

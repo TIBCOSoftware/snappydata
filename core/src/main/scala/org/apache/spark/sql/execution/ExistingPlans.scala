@@ -98,8 +98,8 @@ private[sql] abstract class PartitionedPhysicalScan(
 
 private[sql] object PartitionedPhysicalScan {
 
-  private[sql] val CT_STATROW_POSITION = 3
-  private[sql] val CT_COLUMN_START = 4
+  private[sql] val CT_STATROW_POSITION = 4
+  private[sql] val CT_COLUMN_START = 5
 
   def createFromDataSource(
       output: Seq[Attribute],

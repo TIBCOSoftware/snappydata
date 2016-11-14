@@ -324,6 +324,13 @@ class BaseColumnFormatRelation(
     createActualTable(table, externalStore)
   }
 
+  /**
+   * Table definition: create table columnTable (
+   *  id varchar(36) not null, partitionId integer, numRows integer not null, data blob)
+   * For a table with n columns, there will be n+1 region entries. A base entry and one entry
+   * each for a column. The data column for the base entry will contain the stats.
+   * id for the base entry would be the uuid while for column entries it would be uuid_colName.
+   */
   override def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
@@ -334,7 +341,7 @@ class BaseColumnFormatRelation(
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
-            "primary key (uuid, partitionId) ",
+            "primary key (uuid, partitionId, columnIndex) ",
             d.getPartitionByClause("partitionId"),
             "  DISABLE CONCURRENCY CHECKS ")
       case _ => ("primary key (uuid)", "", "")
@@ -343,10 +350,8 @@ class BaseColumnFormatRelation(
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, partitionId integer, stats blob, " +
-        schema.fields.map(structField => externalStore.columnPrefix +
-            structField.name + " blob").mkString(", ") +
+    createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
+        "not null, partitionId integer, columnIndex integer, data blob " +
         s", $primaryKey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)
