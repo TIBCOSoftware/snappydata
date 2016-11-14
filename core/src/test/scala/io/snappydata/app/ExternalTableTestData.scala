@@ -19,3 +19,5 @@ package io.snappydata.app
 case class TestData(key: Int, value: String)
 case class Data(col1: Int, col2: Int, col3: Int)
 case class Data1(col1: Int, col2: String)
+case class Data2(col1: Int, col2: String, col3: String)
+case class Data3(col1: Int, col2: String, col3: String, col4: String)
