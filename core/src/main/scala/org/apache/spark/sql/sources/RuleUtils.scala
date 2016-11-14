@@ -83,7 +83,9 @@ object RuleUtils extends PredicateHelper {
   def canTraverseLeftToRight(source: Seq[LogicalPlan], target: LogicalPlan,
       replicatedReachablePaths: Seq[List[LogicalPlan]]): Boolean = {
 
-    if (source.exists(_ == target)) {
+    if (source.isEmpty) {
+      return false
+    } else if (source.exists(_ == target)) {
       true
     } else if (replicatedReachablePaths.isEmpty) {
       false
