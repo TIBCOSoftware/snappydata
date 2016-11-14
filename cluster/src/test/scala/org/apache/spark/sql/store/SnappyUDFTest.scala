@@ -56,6 +56,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
   override def afterAll: Unit = {
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
+    TestUtil.stopNetServer()
   }
 
   private def detailedTest(): Unit = {
@@ -142,11 +143,11 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("Test UDAFs"){
+
     snc.snappySession.sql(s"CREATE FUNCTION APP.mydoubleavg AS io.snappydata.udf.MyDoubleAvg")
     val query = s"select mydoubleavg(ORDERREF) from COL_TABLE"
     val udfdf = snc.sql(query)
-    println(udfdf.queryExecution.executedPlan)
-    udfdf.show
+    assert(udfdf.collect().apply(0)(0) == 103)
   }
 
   test("Test DDLs from client connection"){
