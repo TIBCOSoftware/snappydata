@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -126,6 +127,28 @@ class SnappyParser(session: SnappySession)
       toDecimalOrDoubleLiteral(s, scientific = false)
     }
   }
+
+  private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
+      optAlias: Option[String]) = {
+    val indexHint = queryHints.remove(QueryHint.Index.toString)
+    if (indexHint.nonEmpty) {
+      val table = optAlias match {
+        case Some(alias) => alias
+        case _ => tableIdent.unquotedString
+      }
+
+      queryHints.put(QueryHint.Index.toString + table, indexHint.get)
+    }
+  }
+
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: String) = {
+    if (queryHints.exists({
+      case (key, _) => key.startsWith(hint.toString)
+    })) {
+      throw Utils.analysisException(msg)
+    }
+  }
+
 
   protected final def booleanLiteral: Rule1[Literal] = rule {
     TRUE ~> (() => Literal.create(true, BooleanType)) |
@@ -404,18 +427,29 @@ class SnappyParser(session: SnappySession)
         ((tableIdent: TableIdentifier,
             window: Any, alias: Any) => window.asInstanceOf[Option[
             (Duration, Option[Duration])]] match {
-          case None => UnresolvedRelation(tableIdent,
-            alias.asInstanceOf[Option[String]])
-          case Some(win) => WindowLogicalPlan(win._1, win._2,
-            UnresolvedRelation(tableIdent, alias.asInstanceOf[Option[String]]))
+          case None =>
+            val optAlias = alias.asInstanceOf[Option[String]]
+            updatePerTableQueryHint(tableIdent, optAlias)
+            UnresolvedRelation(tableIdent, optAlias)
+          case Some(win) =>
+            val optAlias = alias.asInstanceOf[Option[String]]
+            updatePerTableQueryHint(tableIdent, optAlias)
+            WindowLogicalPlan(win._1, win._2,
+              UnresolvedRelation(tableIdent, optAlias))
         }) |
     '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
         (AS ~ identifier | strictIdentifier) ~>
         ((child: LogicalPlan, window: Any, alias: String) => window
             .asInstanceOf[Option[(Duration, Option[Duration])]] match {
-          case None => SubqueryAlias(alias, child)
-          case Some(win) => WindowLogicalPlan(win._1, win._2,
-            SubqueryAlias(alias, child))
+          case None =>
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
+            SubqueryAlias(alias, child)
+          case Some(win) =>
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
+            WindowLogicalPlan(win._1, win._2,
+              SubqueryAlias(alias, child))
         })
   }
 
@@ -628,7 +662,7 @@ class SnappyParser(session: SnappySession)
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
-    (FROM ~ relations).? ~
+    (FROM ~ ws ~ relations).? ~
     (WHERE ~ expression).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~

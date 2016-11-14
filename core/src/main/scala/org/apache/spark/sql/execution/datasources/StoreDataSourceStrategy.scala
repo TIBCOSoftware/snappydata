@@ -19,7 +19,8 @@ package org.apache.spark.sql.execution.datasources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet,
+Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
@@ -29,10 +30,10 @@ import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
 /**
- * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
- * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
- * partitions of the datasource.
- */
+  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
+  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
+  * partitions of the datasource.
+  */
 private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
@@ -160,7 +161,9 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
           filterPredicates, // filter predicates for cached batch screening
-          relation.output)
+          relation.output,
+          (requestedColumns, pushedFilters)
+        )
       } else {
         execution.DataSourceScanExec.create(
           mappedProjects,
@@ -185,7 +188,9 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
           filterPredicates, // filter predicates for cached batch screening
-          relation.output)
+          relation.output,
+          (requestedColumns, pushedFilters)
+        )
 
       } else {
         execution.DataSourceScanExec.create(
