@@ -21,116 +21,119 @@ import java.io.{PrintStream, FileOutputStream, File}
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid,
+SnappyJobValidation, SnappySQLJob}
 
-object TPCH_Snappy_Tables extends SnappySQLJob{
+object TPCH_Snappy_Tables extends SnappySQLJob {
 
-   var tpchDataPath: String = _
-   var buckets_Order_Lineitem: String = _
-   var buckets_Cust_Part_PartSupp: String = _
-   var buckets_Nation_Region_Supp: String = _
-   var useIndex: Boolean = _
-   var nation_Region_Supp_col: Boolean =  _
+  var tpchDataPath: String = _
+  var buckets_Order_Lineitem: String = _
+  var buckets_Cust_Part_PartSupp: String = _
+  var buckets_Nation_Region_Supp: String = _
+  var useIndex: Boolean = _
+  var nation_Region_Supp_col: Boolean = _
 
-   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-     val isSnappy = true
+  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+    val isSnappy = true
 
-     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
-     var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
+    val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
+    val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
-     val usingOptionString = s"""
+    val usingOptionString =
+      s"""
            USING row
            OPTIONS ()"""
 
 
-     snc.dropTable("NATION", ifExists = true)
-     snc.dropTable("REGION", ifExists = true)
-     snc.dropTable("SUPPLIER", ifExists = true)
-     snc.dropTable("PARTSUPP", ifExists = true)
-     snc.dropTable("LINEITEM_PART", ifExists = true)
-     snc.dropTable("PART", ifExists = true)
-     snc.dropTable("ORDERS_CUST", ifExists = true)
-     snc.dropTable("CUSTOMER", ifExists = true)
-     snc.dropTable("LINEITEM", ifExists = true)
-     snc.dropTable("ORDERS", ifExists = true)
+    snc.dropTable("NATION", ifExists = true)
+    snc.dropTable("REGION", ifExists = true)
+    snc.dropTable("SUPPLIER", ifExists = true)
+    snc.dropTable("PARTSUPP", ifExists = true)
+    snc.dropTable("LINEITEM_PART", ifExists = true)
+    snc.dropTable("PART", ifExists = true)
+    snc.dropTable("ORDERS_CUST", ifExists = true)
+    snc.dropTable("CUSTOMER", ifExists = true)
+    snc.dropTable("LINEITEM", ifExists = true)
+    snc.dropTable("ORDERS", ifExists = true)
 
-     if (nation_Region_Supp_col) {
-       TPCHColumnPartitionedTable.createAndPopulateNationTable(snc, tpchDataPath, isSnappy,
-         buckets_Nation_Region_Supp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateRegionTable(snc, tpchDataPath, isSnappy,
-         buckets_Nation_Region_Supp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
-         buckets_Nation_Region_Supp, loadPerfPrintStream)
-     } else {
-       TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
-         loadPerfPrintStream)
-       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
-         loadPerfPrintStream)
-       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath, isSnappy,
-         loadPerfPrintStream)
-     }
+    if (nation_Region_Supp_col) {
+      TPCHColumnPartitionedTable.createAndPopulateNationTable(snc, tpchDataPath, isSnappy,
+        buckets_Nation_Region_Supp, loadPerfPrintStream)
+      TPCHColumnPartitionedTable.createAndPopulateRegionTable(snc, tpchDataPath, isSnappy,
+        buckets_Nation_Region_Supp, loadPerfPrintStream)
+      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
+        buckets_Nation_Region_Supp, loadPerfPrintStream)
+    } else {
+      TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
+        loadPerfPrintStream)
+      TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
+        loadPerfPrintStream)
+      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
+        isSnappy,
+        loadPerfPrintStream)
+    }
 
-     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
-       buckets_Order_Lineitem, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
-       buckets_Order_Lineitem, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
-       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
-       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
-       buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     if (useIndex) {
-       TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(snc, tpchDataPath, isSnappy,
-         buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-       TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(snc, tpchDataPath, isSnappy,
-         buckets_Cust_Part_PartSupp, loadPerfPrintStream)
-     }
-   }
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
+      buckets_Order_Lineitem, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
+      buckets_Order_Lineitem, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+    if (useIndex) {
+      TPCHColumnPartitionedTable.createAndPopulateOrder_CustTable(snc, tpchDataPath, isSnappy,
+        buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      TPCHColumnPartitionedTable.createAndPopulateLineItem_partTable(snc, tpchDataPath, isSnappy,
+        buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+    }
+  }
 
-   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
-     tpchDataPath = if (config.hasPath("dataLocation")) {
-       config.getString("dataLocation")
-     } else {
-       "/QASNAPPY/TPCH/DATA/1"
-     }
+    tpchDataPath = if (config.hasPath("dataLocation")) {
+      config.getString("dataLocation")
+    } else {
+      "/QASNAPPY/TPCH/DATA/1"
+    }
 
-     buckets_Order_Lineitem = if (config.hasPath("Buckets_Order_Lineitem")) {
-       config.getString("Buckets_Order_Lineitem")
-     } else {
-       "15"
-     }
+    buckets_Order_Lineitem = if (config.hasPath("Buckets_Order_Lineitem")) {
+      config.getString("Buckets_Order_Lineitem")
+    } else {
+      "15"
+    }
 
 
-     buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
-       config.getString("Buckets_Cust_Part_PartSupp")
-     } else {
-       "15"
-     }
+    buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
+      config.getString("Buckets_Cust_Part_PartSupp")
+    } else {
+      "15"
+    }
 
-     buckets_Nation_Region_Supp = if (config.hasPath("Buckets_Nation_Region_Supp")) {
-       config.getString("Buckets_Nation_Region_Supp")
-     } else {
-       "3"
-     }
+    buckets_Nation_Region_Supp = if (config.hasPath("Buckets_Nation_Region_Supp")) {
+      config.getString("Buckets_Nation_Region_Supp")
+    } else {
+      "3"
+    }
 
-     nation_Region_Supp_col = if (config.hasPath("Nation_Region_Supp_col")) {
-       config.getBoolean("Nation_Region_Supp_col")
-     } else {
-       false
-     }
+    nation_Region_Supp_col = if (config.hasPath("Nation_Region_Supp_col")) {
+      config.getBoolean("Nation_Region_Supp_col")
+    } else {
+      false
+    }
 
-     if (!(new File(tpchDataPath)).exists()) {
-       return new SnappyJobInvalid("Incorrect tpch data path. " +
-           "Specify correct location")
-     }
+    if (!new File(tpchDataPath).exists()) {
+      return SnappyJobInvalid("Incorrect tpch data path. " +
+          "Specify correct location")
+    }
 
-     useIndex = if (config.hasPath("useIndex")) {
-       config.getBoolean("useIndex")
-     } else {
-       return new SnappyJobInvalid("Specify whether to use Index")
-     }
-     SnappyJobValid()
-   }
- }
+    useIndex = if (config.hasPath("useIndex")) {
+      config.getBoolean("useIndex")
+    } else {
+      return SnappyJobInvalid("Specify whether to use Index")
+    }
+    SnappyJobValid()
+  }
+}
