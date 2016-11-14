@@ -148,6 +148,12 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
    * The underlying column table used to store data.
    */
   def baseRelation: BaseColumnFormatRelation
+
+  /**
+    * If underlying sample table is partitioned
+    * @return
+    */
+  def isPartitioned: Boolean
 }
 
 @DeveloperApi
