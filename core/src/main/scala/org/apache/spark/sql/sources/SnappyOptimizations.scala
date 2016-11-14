@@ -274,7 +274,11 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
               replicateToReplicateJoined,
               replicates)
 
-            Some((left, right, joinKeys, true /* isGenerated */ ))
+            if (joinKeys.nonEmpty) {
+              Some((left, right, joinKeys, true /* isGenerated */ ))
+            } else {
+              None
+            }
           }
 
         } else {
@@ -361,8 +365,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     * so, right now for every predicate on left, we will simply pair 1 to 1 with right PR
     * predicate and check for colocation. Simple user guideline will be to mention join
     * conditions in uniform order i.e.if first table p.cols are mentioned as t1.c2 = rc2 and t1
-    * .c1 = rc1 then, user must mention t2 table's join condition in reverse order too like t2.c1
-    * = rc4 and t2.c2 = rc3
+    * .c1 = rc1 then, user must mention t2 table's join condition in reverse order too like
+    * t2.c1 = rc4 and t2.c2 = rc3
     *
     * note: we don't care how many cols are involved in between replicated tables, till the time
     * replicates in between are joined and finally t1 and t2 have enough join conditions with the
