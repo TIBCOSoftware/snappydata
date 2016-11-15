@@ -84,7 +84,7 @@ object TPCH_Spark {
         }
       }
     }
-    TPCH_Snappy.close()
+    TPCH_Snappy.close
     sc.stop()
 
   }

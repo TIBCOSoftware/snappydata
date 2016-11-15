@@ -30,7 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -39,17 +39,26 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * Column Store implementation for GemFireXD.
  */
-final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
+class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     _numPartitions: Int)
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
+  self =>
+
+  override def getConnectedExternalStore(tableName: String,
+    onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsColumnarStore(
+    _connProperties,
+    _numPartitions) with ConnectedExternalStore {
+    protected[this] override val connectedInstance: Connection =
+      self.getConnection(tableName, onExecutor)
+  }
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
+      session: SparkSession): RDD[CachedBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
-        new ColumnarStorePartitionedRDD[CachedBatch](snappySession,
-          tableName, statsPredicate, this).asInstanceOf[RDD[CachedBatch]]
+        new ColumnarStorePartitionedRDD(snappySession,
+          tableName, this).asInstanceOf[RDD[CachedBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -118,9 +127,11 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 }
 
-class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySession,
-    tableName: String, statsPredicate: StatsPredicateCompiler,
-    store: JDBCSourceAsColumnarStore) extends RDD[Any](session.sparkContext, Nil) {
+final class ColumnarStorePartitionedRDD(
+    @transient private val session: SnappySession,
+    tableName: String,
+    @transient private val store: JDBCSourceAsColumnarStore)
+    extends RDD[Any](session.sparkContext, Nil) {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
@@ -129,12 +140,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient val session: SnappySes
       case _ => Set(part.index)
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
-    else new ByteArraysIteratorOnScan(container, bucketIds,
-      statsPredicate.compilePredicate,
-      //  pass dummy value if no schema
-      if (statsPredicate.schema != null) statsPredicate.schema.size else 1,
-      statsPredicate.cachedBatchesSeen,
-      statsPredicate.cachedBatchesSkipped)
+    else new ByteArraysIteratorOnScan(container, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

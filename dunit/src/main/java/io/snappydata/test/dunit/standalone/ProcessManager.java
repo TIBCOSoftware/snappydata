@@ -186,7 +186,7 @@ public class ProcessManager {
       "-Djava.library.path=" + System.getProperty("java.library.path"),
       "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
-      "-Xmx1g",
+      "-Xmx2g",
       "-Xms1g",
       "-XX:MaxPermSize=256m",
       "-XX:+UseParNewGC",

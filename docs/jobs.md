@@ -295,7 +295,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 > The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 • ```runSnappyJob``` contains the implementation of the Job.
-The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
+The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
 
 • ```isValidJob``` allows for an initial validation of the context and any provided configuration.
  If the context and configuration are OK to run the job, returning spark.jobserver.SnappyJobValid
@@ -316,7 +316,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 ```
 The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.
 
@@ -358,15 +358,15 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
-Python users can also submit the python script using spark-submit in split cluster mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "snappydata.store.locators" property denotes the locator url of the snappy cluster and it is used to connect to the snappy cluster.
+Python users can also submit the python script using spark-submit in split cluster mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "spark.snappydata.store.locators" property denotes the locator url of the snappy cluster and it is used to connect to the snappy cluster.
 ```
 $ bin/spark-submit \
   --master spark://pnq-nthanvi02:7077 \
-  --conf snappydata.store.locators=localhost:10334 \
+  --conf spark.snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042  
   python/examples/AirlineDataPythonApp.py
 ```
@@ -383,7 +383,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.6.jar \
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar \
     --stream
 
 {

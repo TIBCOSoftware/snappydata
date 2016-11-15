@@ -16,20 +16,22 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.Inner
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
 
 
 /**
-  * This trait is an extension to SparkPlanner and introduces number of
-  * enhancements specific to SnappyData.
-  */
+ * This trait is an extension to SparkPlanner and introduces number of
+ * enhancements specific to SnappyData.
+ */
 private[sql] trait SnappyStrategies {
 
   self: DefaultPlanner =>
@@ -58,38 +60,43 @@ private[sql] trait SnappyStrategies {
 
   object LocalJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, left, CanLocalJoin(right)) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildRight)
-      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, CanLocalJoin(left), right) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildLeft)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+      left, right) =>
+        if (canBuildRight(joinType) && canLocalJoin(right)) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight)
+        } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft)
+        } else Nil
       case _ => Nil
     }
 
-    object CanLocalJoin {
-      def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
+    private def canBuildRight(joinType: JoinType): Boolean = joinType match {
+      case Inner | LeftOuter | LeftSemi | LeftAnti => true
+      case j: ExistenceJoin => true
+      case _ => false
+    }
+
+    private def canBuildLeft(joinType: JoinType): Boolean = joinType match {
+      case Inner | RightOuter => true
+      case _ => false
+    }
+
+    private def canLocalJoin(plan: LogicalPlan): Boolean = {
+      plan match {
         case PhysicalOperation(projects, filters,
         l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          if (t.numBuckets == 1) Some(plan) else None
+          t.numBuckets == 1
         case PhysicalOperation(projects, filters,
         Join(left, right, _, _)) =>
-          val leftPlan = CanLocalJoin.unapply(left)
-          val rightPlan = CanLocalJoin.unapply(right)
           // If join is a result of join of replicated tables, this
           // join result should also be a local join with any other table
-          leftPlan match {
-            case Some(_) => rightPlan match {
-              case Some(_) => Some(plan)
-              case None => None
-            }
-            case None => None
-          }
+          canLocalJoin(left) && canLocalJoin(right)
         case PhysicalOperation(_, _, node) if node.children.size == 1 =>
-          CanLocalJoin.unapply(node.children.head) match {
-            case Some(_) => Some(plan)
-            case None => None
-          }
+          canLocalJoin(node.children.head)
 
-        case x => None
+        case _ => false
       }
     }
 
@@ -99,12 +106,268 @@ private[sql] trait SnappyStrategies {
         left: LogicalPlan,
         right: LogicalPlan,
         condition: Option[Expression],
+        joinType: JoinType,
         side: joins.BuildSide): Seq[SparkPlan] = {
-
-      val localHashJoin = execution.joins.LocalJoin(
-        leftKeys, rightKeys, side, condition, Inner, planLater(left), planLater(right))
-      condition.map(FilterExec(_, localHashJoin)).getOrElse(localHashJoin) :: Nil
+      joins.LocalJoin(leftKeys, rightKeys, side, condition,
+        joinType, planLater(left), planLater(right)) :: Nil
     }
   }
 
+}
+
+/**
+ * Used to plan the aggregate operator for expressions using the optimized
+ * SnappyData aggregation operators.
+ *
+ * Adapted from Spark's Aggregation strategy.
+ */
+object SnappyAggregation extends Strategy {
+
+  var enableOptimizedAggregation = true
+
+  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    case PhysicalAggregation(groupingExpressions, aggregateExpressions,
+    resultExpressions, child) if enableOptimizedAggregation =>
+
+      val (functionsWithDistinct, functionsWithoutDistinct) =
+        aggregateExpressions.partition(_.isDistinct)
+      if (functionsWithDistinct.map(_.aggregateFunction.children)
+          .distinct.length > 1) {
+        // This is a sanity check. We should not reach here when we have
+        // multiple distinct column sets. The MultipleDistinctRewriter
+        // should take care this case.
+        sys.error("You hit a query analyzer bug. Please report your query " +
+            "to Spark user mailing list.")
+      }
+
+      val aggregateOperator =
+        if (aggregateExpressions.map(_.aggregateFunction)
+            .exists(!_.supportsPartial)) {
+          if (functionsWithDistinct.nonEmpty) {
+            sys.error("Distinct columns cannot exist in Aggregate " +
+                "operator containing aggregate functions which don't " +
+                "support partial aggregation.")
+          } else {
+            aggregate.AggUtils.planAggregateWithoutPartial(
+              groupingExpressions,
+              aggregateExpressions,
+              resultExpressions,
+              planLater(child))
+          }
+        } else if (functionsWithDistinct.isEmpty) {
+          planAggregateWithoutDistinct(
+            groupingExpressions,
+            aggregateExpressions,
+            resultExpressions,
+            planLater(child))
+        } else {
+          planAggregateWithOneDistinct(
+            groupingExpressions,
+            functionsWithDistinct,
+            functionsWithoutDistinct,
+            resultExpressions,
+            planLater(child))
+        }
+
+      aggregateOperator
+
+    case _ => Nil
+  }
+
+  def planAggregateWithoutDistinct(
+      groupingExpressions: Seq[NamedExpression],
+      aggregateExpressions: Seq[AggregateExpression],
+      resultExpressions: Seq[NamedExpression],
+      child: SparkPlan): Seq[SparkPlan] = {
+    // Check if we can use HashAggregate.
+
+    // 1. Create an Aggregate Operator for partial aggregations.
+
+    val groupingAttributes = groupingExpressions.map(_.toAttribute)
+    val partialAggregateExpressions = aggregateExpressions.map(_.copy(
+      mode = Partial))
+    val partialAggregateAttributes = partialAggregateExpressions.flatMap(
+      _.aggregateFunction.aggBufferAttributes)
+    val partialResultExpressions = groupingAttributes ++
+        partialAggregateExpressions.flatMap(_.aggregateFunction
+            .inputAggBufferAttributes)
+
+    val partialAggregate = SnappyHashAggregateExec(
+      requiredChildDistributionExpressions = None,
+      groupingExpressions = groupingExpressions,
+      aggregateExpressions = partialAggregateExpressions,
+      aggregateAttributes = partialAggregateAttributes,
+      initialInputBufferOffset = 0,
+      __resultExpressions = partialResultExpressions,
+      child = child)
+
+    // 2. Create an Aggregate Operator for final aggregations.
+    val finalAggregateExpressions = aggregateExpressions.map(_.copy(
+      mode = Final))
+    // The attributes of the final aggregation buffer, which is presented
+    // as input to the result projection:
+    val finalAggregateAttributes = finalAggregateExpressions.map(
+      _.resultAttribute)
+
+    val finalAggregate = SnappyHashAggregateExec(
+      requiredChildDistributionExpressions = Some(groupingAttributes),
+      groupingExpressions = groupingAttributes,
+      aggregateExpressions = finalAggregateExpressions,
+      aggregateAttributes = finalAggregateAttributes,
+      initialInputBufferOffset = groupingExpressions.length,
+      __resultExpressions = resultExpressions,
+      child = partialAggregate)
+
+    finalAggregate :: Nil
+  }
+
+  def planAggregateWithOneDistinct(
+      groupingExpressions: Seq[NamedExpression],
+      functionsWithDistinct: Seq[AggregateExpression],
+      functionsWithoutDistinct: Seq[AggregateExpression],
+      resultExpressions: Seq[NamedExpression],
+      child: SparkPlan): Seq[SparkPlan] = {
+
+    // functionsWithDistinct is guaranteed to be non-empty. Even though it
+    // may contain more than one DISTINCT aggregate function, all of those
+    // functions will have the same column expressions.
+    // For example, it would be valid for functionsWithDistinct to be
+    // [COUNT(DISTINCT foo), MAX(DISTINCT foo)], but [COUNT(DISTINCT bar),
+    // COUNT(DISTINCT foo)] is disallowed because those two distinct
+    // aggregates have different column expressions.
+    val distinctExpressions = functionsWithDistinct.head
+        .aggregateFunction.children
+    val namedDistinctExpressions = distinctExpressions.map {
+      case ne: NamedExpression => ne
+      case other => Alias(other, other.toString)()
+    }
+    val distinctAttributes = namedDistinctExpressions.map(_.toAttribute)
+    val groupingAttributes = groupingExpressions.map(_.toAttribute)
+
+    // 1. Create an Aggregate Operator for partial aggregations.
+    val partialAggregate: SparkPlan = {
+      val aggregateExpressions = functionsWithoutDistinct.map(_.copy(
+        mode = Partial))
+      val aggregateAttributes = aggregateExpressions.map(_.resultAttribute)
+      // We will group by the original grouping expression, plus an
+      // additional expression for the DISTINCT column. For example, for
+      // AVG(DISTINCT value) GROUP BY key, the grouping expressions
+      // will be [key, value].
+      SnappyHashAggregateExec(
+        requiredChildDistributionExpressions = None,
+        groupingExpressions = groupingExpressions ++ namedDistinctExpressions,
+        aggregateExpressions = aggregateExpressions,
+        aggregateAttributes = aggregateAttributes,
+        initialInputBufferOffset = 0,
+        __resultExpressions = groupingAttributes ++ distinctAttributes ++
+            aggregateExpressions.flatMap(_.aggregateFunction
+                .inputAggBufferAttributes),
+        child = child)
+    }
+
+    // 2. Create an Aggregate Operator for partial merge aggregations.
+    val partialMergeAggregate: SparkPlan = {
+      val aggregateExpressions = functionsWithoutDistinct.map(_.copy(
+        mode = PartialMerge))
+      val aggregateAttributes = aggregateExpressions.map(_.resultAttribute)
+      SnappyHashAggregateExec(
+        requiredChildDistributionExpressions =
+            Some(groupingAttributes ++ distinctAttributes),
+        groupingExpressions = groupingAttributes ++ distinctAttributes,
+        aggregateExpressions = aggregateExpressions,
+        aggregateAttributes = aggregateAttributes,
+        initialInputBufferOffset = (groupingAttributes ++
+            distinctAttributes).length,
+        __resultExpressions = groupingAttributes ++ distinctAttributes ++
+            aggregateExpressions.flatMap(_.aggregateFunction
+                .inputAggBufferAttributes),
+        child = partialAggregate)
+    }
+
+    // 3. Create an Aggregate operator for partial aggregation (for distinct)
+    val distinctColumnAttributeLookup = distinctExpressions.zip(
+      distinctAttributes).toMap
+    val rewrittenDistinctFunctions = functionsWithDistinct.map {
+      // Children of an AggregateFunction with DISTINCT keyword has already
+      // been evaluated. At here, we need to replace original children
+      // to AttributeReferences.
+      case agg@AggregateExpression(aggregateFunction, mode, true, _) =>
+        aggregateFunction.transformDown(distinctColumnAttributeLookup)
+            .asInstanceOf[AggregateFunction]
+    }
+
+    val partialDistinctAggregate: SparkPlan = {
+      val mergeAggregateExpressions = functionsWithoutDistinct.map(_.copy(
+        mode = PartialMerge))
+      // The attributes of the final aggregation buffer, which is presented
+      // as input to the result projection:
+      val mergeAggregateAttributes = mergeAggregateExpressions.map(
+        _.resultAttribute)
+      val (distinctAggregateExpressions, distinctAggregateAttributes) =
+        rewrittenDistinctFunctions.zipWithIndex.map { case (func, i) =>
+          // We rewrite the aggregate function to a non-distinct
+          // aggregation because its input will have distinct arguments.
+          // We just keep the isDistinct setting to true, so when users
+          // look at the query plan, they still can see distinct aggregations.
+          val expr = AggregateExpression(func, Partial, isDistinct = true)
+          // Use original AggregationFunction to lookup attributes,
+          // which is used to build aggregateFunctionToAttribute.
+          val attr = functionsWithDistinct(i).resultAttribute
+          (expr, attr)
+        }.unzip
+
+      val partialAggregateResult = groupingAttributes ++
+          mergeAggregateExpressions.flatMap(_.aggregateFunction
+              .inputAggBufferAttributes) ++
+          distinctAggregateExpressions.flatMap(_.aggregateFunction
+              .inputAggBufferAttributes)
+      SnappyHashAggregateExec(
+        requiredChildDistributionExpressions = None,
+        groupingExpressions = groupingAttributes,
+        aggregateExpressions = mergeAggregateExpressions ++
+            distinctAggregateExpressions,
+        aggregateAttributes = mergeAggregateAttributes ++
+            distinctAggregateAttributes,
+        initialInputBufferOffset = (groupingAttributes ++
+            distinctAttributes).length,
+        __resultExpressions = partialAggregateResult,
+        child = partialMergeAggregate)
+    }
+
+    // 4. Create an Aggregate Operator for the final aggregation.
+    val finalAndCompleteAggregate: SparkPlan = {
+      val finalAggregateExpressions = functionsWithoutDistinct.map(_.copy(
+        mode = Final))
+      // The attributes of the final aggregation buffer, which is presented
+      // as input to the result projection:
+      val finalAggregateAttributes = finalAggregateExpressions.map(
+        _.resultAttribute)
+
+      val (distinctAggregateExpressions, distinctAggregateAttributes) =
+        rewrittenDistinctFunctions.zipWithIndex.map { case (func, i) =>
+          // We rewrite the aggregate function to a non-distinct
+          // aggregation because its input will have distinct arguments.
+          // We just keep the isDistinct setting to true, so when users
+          // look at the query plan, they still can see distinct aggregations.
+          val expr = AggregateExpression(func, Final, isDistinct = true)
+          // Use original AggregationFunction to lookup attributes,
+          // which is used to build aggregateFunctionToAttribute.
+          val attr = functionsWithDistinct(i).resultAttribute
+          (expr, attr)
+        }.unzip
+
+      SnappyHashAggregateExec(
+        requiredChildDistributionExpressions = Some(groupingAttributes),
+        groupingExpressions = groupingAttributes,
+        aggregateExpressions = finalAggregateExpressions ++
+            distinctAggregateExpressions,
+        aggregateAttributes = finalAggregateAttributes ++
+            distinctAggregateAttributes,
+        initialInputBufferOffset = groupingAttributes.length,
+        __resultExpressions = resultExpressions,
+        child = partialDistinctAggregate)
+    }
+
+    finalAndCompleteAggregate :: Nil
+  }
 }
