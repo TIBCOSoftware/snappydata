@@ -104,23 +104,24 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "import org.apache.spark.sql.SnappyContext;\n" +
                 "import org.apache.spark.sql.SnappyJobValid;\n" +
                 "import org.apache.spark.sql.SnappyJobValidation;\n" +
-                "import org.apache.spark.sql.SnappySQLJob;\n" +
+                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
                 "\n" +
                 "import java.io.File;\n" +
                 "import java.io.FileOutputStream;\n" +
                 "import java.io.PrintWriter;\n" +
                 "import java.io.StringWriter;\n" +
                 "\n" +
-                "public class DynamicJarLoadingJob extends SnappySQLJob {\n" +
+                "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
                 "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
                 "        PrintWriter pw = null;\n" +
                 "        try {\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
+                "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob started ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
-                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers);\n" +
+                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob finished ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
@@ -170,6 +171,14 @@ public class DynamicJarLoadingTest extends SnappyTest {
     }
 
     /**
+     * Executes gfxd modify-jar command using dynamically created jar file.
+     */
+    public static synchronized void HydraTask_executeRemoveJarCommand_DynamicJarLoading() {
+        String jarName = createJarWithOnlyClasses(2, "2");
+        executeCommand(jarName, null, "remove-jar");
+    }
+
+    /**
      * Executes dynamically created snappy job which uses the classes loaded through gfxd install-jar/replace-jar command.
      */
     public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading() {
@@ -178,9 +187,9 @@ public class DynamicJarLoadingTest extends SnappyTest {
     }
 
     protected static synchronized void executeCommand(String jarName, String jarIdentifier, String command) {
-        File log = null, logFile = null;
+        File log = null, logFile;
         if (jarName == null) {
-            String s = "No jarName name provided for executing install-jar command in Hydra TASK";
+            String s = "No jarName name provided for executing" + command + " command in Hydra TASK";
             throw new TestException(s);
         }
         if (jarIdentifier == null) {
@@ -195,8 +204,14 @@ public class DynamicJarLoadingTest extends SnappyTest {
             logFile = new File(dest);
             String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
             String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
-            ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, command, "-file=" + jarFilePath, "-name=" + jarIdentifier,
-                    "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+            ProcessBuilder pb;
+            if (command == "remove-jar") {
+                pb = new ProcessBuilder(SnappyShellPath, command, "-name=" + jarIdentifier,
+                        "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+            } else {
+                pb = new ProcessBuilder(SnappyShellPath, command, "-file=" + jarFilePath, "-name=" + jarIdentifier,
+                        "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+            }
             snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());

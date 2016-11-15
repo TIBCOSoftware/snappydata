@@ -17,26 +17,24 @@
 package io.snappydata.hydra.installJar;
 
 import com.typesafe.config.Config;
-import org.apache.spark.sql.SnappyContext;
-import org.apache.spark.sql.SnappyJobValid;
-import org.apache.spark.sql.SnappyJobValidation;
-import org.apache.spark.sql.SnappySQLJob;
+import org.apache.spark.sql.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
-public class DynamicJarLoadingJob extends SnappySQLJob {
+public class DynamicJarLoadingJob extends JavaSnappySQLJob {
     @Override
     public Object runSnappyJob(SnappyContext snc, Config jobConfig) {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
             int numServers = Integer.parseInt(jobConfig.getString("numServers"));
+            boolean expectedException = Boolean.parseBoolean(jobConfig.getString("expectedException"));
             pw.println("****** DynamicJarLoadingJob started ******");
             pw.println("numServers in test : " + numServers);
             String currentDirectory = new File(".").getCanonicalPath();
-            TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers);
+            TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers,expectedException);
             pw.println("****** DynamicJarLoadingJob finished ******");
             return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory);
         } catch (Exception e) {
