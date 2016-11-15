@@ -596,19 +596,21 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def removeDependentRelationFromHive(table: QualifiedTableName,
       dependentRelation: QualifiedTableName): Unit = {
     val hiveTable = table.getTable(this)
-    val dependentRelations = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
-    val relationsArray = dependentRelations.split(",")
-    val newindexes = relationsArray.filter(_ != dependentRelation.toString()).mkString(",")
-    if (newindexes.isEmpty) {
-      client.alterTable(
-        hiveTable.copy(
-          properties = hiveTable.properties - ExternalStoreUtils.DEPENDENT_RELATIONS)
-      )
-    } else {
-      client.alterTable(
-        hiveTable.copy(properties = hiveTable.properties +
-            (ExternalStoreUtils.DEPENDENT_RELATIONS -> newindexes))
-      )
+    if (hiveTable.properties.contains(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+      val dependentRelations = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
+      val relationsArray = dependentRelations.split(",")
+      val newindexes = relationsArray.filter(_ != dependentRelation.toString()).mkString(",")
+      if (newindexes.isEmpty) {
+        client.alterTable(
+          hiveTable.copy(
+            properties = hiveTable.properties - ExternalStoreUtils.DEPENDENT_RELATIONS)
+        )
+      } else {
+        client.alterTable(
+          hiveTable.copy(properties = hiveTable.properties +
+              (ExternalStoreUtils.DEPENDENT_RELATIONS -> newindexes))
+        )
+      }
     }
   }
 
