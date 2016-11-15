@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.DSFIDFactory
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
@@ -58,6 +59,7 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   override def compute(split: Partition,
       context: TaskContext): Iterator[(InternalDistributedMember,
       BlockManagerId)] = {
+    DSFIDFactory.aqpRegister("StoreInitRDD")
 
     // TODO:Suranjan Hackish as we have to register this store at each
     // executor, for storing the CachedBatch we are creating
