@@ -34,9 +34,9 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  */
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
-    with BeforeAndAfterAll
-    with Serializable
-    with Logging with Retries {
+        with BeforeAndAfterAll
+        with Serializable
+        with Logging with Retries {
 
   InitializeRun.setUp()
 
@@ -68,7 +68,7 @@ abstract class SnappyFunSuite
     new SparkContext(newSparkConf(addOn))
   }
 
-  @transient private var cachedContext : SnappyContext = _
+  @transient private var cachedContext: SnappyContext = _
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
@@ -101,15 +101,17 @@ abstract class SnappyFunSuite
         replaceAll("org.apache.spark", "o.a.s")
     try {
       logInfo(s"\n\n===== TEST OUTPUT FOR $shortSuiteName: '$testName' =====\n")
-      if (isRetryable(test))
-        withRetry { super.withFixture(test) }
-      else
+      if (isRetryable(test)) {
+        withRetry {
+          super.withFixture(test)
+        }
+      }
+      else {
         super.withFixture(test)
+      }
     } finally {
       logInfo(s"\n\n===== FINISHED $shortSuiteName: '$testName' =====\n")
     }
-
-
 
 
   }
@@ -128,7 +130,7 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def baseCleanup(clearStoreToBlockMap : Boolean = true): Unit = {
+  protected def baseCleanup(clearStoreToBlockMap: Boolean = true): Unit = {
     try {
       TestUtils.dropAllTables(this.snc)
     } finally {
@@ -169,7 +171,7 @@ abstract class SnappyFunSuite
   def stopAll(): Unit = {
     val sparkContext = SnappyContext.globalSparkContext
     logInfo("Stopping spark context = " + sparkContext)
-    if(sparkContext != null) sparkContext.stop()
+    if (sparkContext != null) sparkContext.stop()
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
     cachedContext = null
   }
@@ -186,5 +188,6 @@ abstract class SnappyFunSuite
   protected def logStdOut(msg: String): Unit = {
     println(msg)
   }
+
   // scalastyle:on
 }
