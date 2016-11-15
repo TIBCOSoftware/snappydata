@@ -585,7 +585,7 @@ task product(type: Zip) {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     def examplesProject = project(":snappy-examples_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    String exampleArchiveName = "quickstart-${version}.jar"
+    String exampleArchiveName = "quickstart.jar"
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
     copy {
@@ -812,7 +812,7 @@ def writeToFile(def fileName) {
 
 def runSubmitQuery(def jobName, def appName, def workDir) {
   println "Running job ${jobName}"
-  String exampleArchiveName = "quickstart-${version}.jar"
+  String exampleArchiveName = "quickstart.jar"
   String submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh", workDir,
       ['submit', '--lead', 'localhost:8090', '--app-name', appName + System.currentTimeMillis(),
        '--class', jobName, '--app-jar',
@@ -858,7 +858,7 @@ task runQuickstart {
   dependsOn cleanQuickstart
   dependsOn product
   mustRunAfter 'buildAll'
-  def exampleArchiveName = "quickstart-${version}.jar"
+  def exampleArchiveName = "quickstart.jar"
   String workingDir = "${testResultsBase}/quickstart"
   doLast {
     try {
