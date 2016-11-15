@@ -515,13 +515,13 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     schema: StructType,
     useCompression: Boolean,
     bufferSize: Int,
-    reservoirInRegion: Boolean) {
+    reservoirInRegion: Boolean, columnBatchSize: Int) {
 
   var holder = getCachedBatchHolder(-1)
 
   def getCachedBatchHolder(bucketId: Int): CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,
-      Int.MaxValue, schema, (c: CachedBatch) =>
+      columnBatchSize, schema, (c: CachedBatch) =>
         externalStore.storeCachedBatch(colTableName, c, bucketId))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {
