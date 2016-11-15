@@ -154,20 +154,17 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected String getStoteTestsJar() {
+    protected String getStoreTestsJar() {
         String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
                 ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) + "-all.jar";
         return storeTestsJar;
     }
 
     protected String getSnappyTestsJar() {
-        /*String snappyTestsJar = VmDescription.getSnappyJarPath(hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "dtests" + hd.getFileSep() +
-                "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs", "snappydata-store-scala-tests");*/
         String snappyTestsJar = getUserAppJarLocation("snappydata-store-scala-tests*.jar", hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + ".." + hd.getFileSep() + "dtests" + hd.getFileSep() +
                 "build-artifacts" + hd.getFileSep() + "scala-2.11" + hd.getFileSep() + "libs");
         return snappyTestsJar;
     }
-
 
     protected void getClientHostDescription() {
         hd = TestConfig.getInstance()
@@ -301,7 +298,7 @@ public class SnappyTest implements Serializable {
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoteTestsJar();
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
@@ -315,7 +312,7 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoteTestsJar();
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
