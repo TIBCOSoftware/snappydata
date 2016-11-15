@@ -57,10 +57,9 @@ object NWTestUtil {
     val sparkDest: String = log.getCanonicalPath() + File.separator + sparkQueryFileName
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-    //val encoder = RowEncoder(snappyDF.schema)
-    snappyDF.orderBy(col1, col: _*).repartition(1).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+    snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
     pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
-    sparkDF.orderBy(col1, col: _*).coalesce(1).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+    sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
     pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
     val expectedFile = new java.io.File(sparkDest).listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = new java.io.File(snappyDest).listFiles.filter(_.getName.endsWith(".csv"))
@@ -110,10 +109,9 @@ object NWTestUtil {
     val sparkDest: String = log.getCanonicalPath() + File.separator + sparkQueryFileName
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-    //val encoder = RowEncoder(snappyDF.schema)
-    snappyDF.orderBy(col1, col: _*).repartition(1).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+    snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
     pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
-    sparkDF.orderBy(col1, col: _*).coalesce(1).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+    sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
     pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
     val expectedFile = new java.io.File(sparkDest).listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = new java.io.File(snappyDest).listFiles.filter(_.getName.endsWith(".csv"))
@@ -206,7 +204,7 @@ object NWTestUtil {
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30", tableType, pw)
         case "Q31" => assertJoin(snc, NWQueries.Q31, 830, "Q31", tableType, pw)
         case "Q32" => assertJoin(snc, NWQueries.Q32, 8, "Q32", tableType, pw)
-        //case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33", tableType, pw)
+        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33", tableType, pw)
         case "Q33" => assertJoin(snc, NWQueries.Q33, 37, "Q33", tableType, pw)
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34", tableType, pw)
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35", tableType, pw)
