@@ -27,7 +27,7 @@ import org.apache.spark.util.{SnappyUtils, Utils}
 
 class SnappyContextFactory extends SparkContextFactory {
 
-  type C = SnappyContext with ContextLike
+  type C = SnappySession with ContextLike
 
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     SnappyContextFactory.newSession()
@@ -36,11 +36,12 @@ class SnappyContextFactory extends SparkContextFactory {
 
 object SnappyContextFactory {
 
-  private[this] val snappyContextLike =
-    SnappyContext(LeadImpl.getInitializingSparkContext)
+  private[this] val snappySession =
+    new SnappySession(LeadImpl.getInitializingSparkContext)
 
-  protected def newSession(): SnappyContext with ContextLike =
-    new SnappyContext(snappyContextLike.snappySession) with ContextLike {
+  protected def newSession(): SnappySession with ContextLike =
+    new SnappySession(snappySession.sparkContext) with ContextLike {
+
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
       override def stop(): Unit = {
@@ -57,19 +58,19 @@ trait SnappySQLJob extends SparkJobBase {
     val parentLoader = Utils.getContextOrSparkClassLoader
     val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
     Thread.currentThread().setContextClassLoader(currentLoader)
-    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyContext], config))
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    runSnappyJob(sc.asInstanceOf[SnappyContext], jobConfig)
+    runSnappyJob(sc.asInstanceOf[SnappySession], jobConfig)
   }
 
-  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
+  def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 
-  def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
+  def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
 
   final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
-    SnappyUtils.installOrReplaceJar(jarName, jarPath, sc.asInstanceOf[SnappyContext].sparkContext)
+    SnappyUtils.installOrReplaceJar(jarName, jarPath, sc.asInstanceOf[SnappySession].sparkContext)
   }
 
 }
