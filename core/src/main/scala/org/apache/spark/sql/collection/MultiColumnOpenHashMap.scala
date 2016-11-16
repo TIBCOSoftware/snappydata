@@ -418,9 +418,8 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
         override def defaultValue(k: Row) = value
 
         // This is placeholder. Need to implement if needed.
-        override def mergeValueNoNull(row: Row,
-                                      sr: V): (V, Boolean) = {
-          (mergeValue(row, sr), false)
+        override def mergeValueNoNull(row: Row, sr: V): (V, Boolean, Boolean) = {
+          (mergeValue(row, sr), false, false)
         }
 
         override def mergeValue(k: Row, v: V): V = combineOp(v, value)

@@ -53,7 +53,7 @@ trait ChangeValue[K, V] {
 
   def mergeValue(k: K, v: V): V
 
-  def mergeValueNoNull(k: K, v: V): (V, Boolean)
+  def mergeValueNoNull(k: K, v: V): (V, Boolean, Boolean)
 
   def segmentEnd(segment: SegmentMap[K, V]) {}
 
