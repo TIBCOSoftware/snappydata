@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SnappyContext, SQLContext}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -48,6 +48,11 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
     extends RDD[(InternalDistributedMember, BlockManagerId)](
       sqlContext.sparkContext, Nil) {
 
+  val scClass = sqlContext match {
+    case s: SnappyContext => s.sessionState.getStratumCache()
+    case _ => null
+  }
+
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -59,7 +64,7 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   override def compute(split: Partition,
       context: TaskContext): Iterator[(InternalDistributedMember,
       BlockManagerId)] = {
-    DSFIDFactory.aqpRegister("StoreInitRDD")
+    DSFIDFactory.aqpRegister(scClass)
 
     // TODO:Suranjan Hackish as we have to register this store at each
     // executor, for storing the CachedBatch we are creating

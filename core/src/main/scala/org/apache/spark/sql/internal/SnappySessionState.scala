@@ -180,6 +180,9 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  def getStratumReservoir(): Class[_] = null
+  def getStratumCache(): Class[_] = null
 }
 
 private[sql] class SnappyConf(@transient val session: SnappySession)
