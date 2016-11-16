@@ -312,7 +312,9 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() +
+                        " -spark.driver.extraClassPath=" +  getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
+                        getSnappyTestsJar() + ":" + getStoreTestsJar();;
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1605,7 +1607,7 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = getSparkMasterHost();
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --class " + userJob +
+                String command = snappyJobScript + " --jars " + getStoreTestsJar() + "," + getSnappyTestsJar() + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                         " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
@@ -1665,6 +1667,9 @@ public class SnappyTest implements Serializable {
             Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
             for (String key : keys) {
                 if (key.startsWith(logFilekey)) {
+
+
+
                     String logFilename = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
                     Log.getLogWriter().info("Key Found...." + logFilename);
                     snappyJobLogFiles.add(logFilename);

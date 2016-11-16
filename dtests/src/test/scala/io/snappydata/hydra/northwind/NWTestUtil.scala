@@ -16,7 +16,7 @@
  */
 package io.snappydata.hydra.northwind
 
-import java.io.{File, PrintWriter}
+import java.io.{File, IOException, PrintWriter}
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.{Row, SQLContext, SnappyContext}
@@ -33,6 +33,7 @@ object NWTestUtil {
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " Table Type : " + tableType)
+    pw.flush()
   }
 
   def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
@@ -42,6 +43,7 @@ object NWTestUtil {
     assert(df.count() == numRows,
       s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
         + " for query =" + sqlString + " Table Type : " + tableType)
+    pw.flush()
   }
 
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
@@ -49,12 +51,10 @@ object NWTestUtil {
     sqlContext.sql("set spark.sql.crossJoin.enabled = true")
     val snappyDF = snc.sql(sqlString)
     val sparkDF = sqlContext.sql(sqlString);
-    var log: File = null
-    log = new File(".")
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
-    val snappyDest: String = log.getCanonicalPath() + File.separator + snappyQueryFileName
-    val sparkDest: String = log.getCanonicalPath() + File.separator + sparkQueryFileName
+    val snappyDest: String = getTempDir + File.separator + snappyQueryFileName
+    val sparkDest: String = getTempDir + File.separator + sparkQueryFileName
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
     snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
@@ -79,6 +79,7 @@ object NWTestUtil {
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
       pw.println(s"\nFor ${queryNum} result count mismatch observed")
     }
+    pw.flush()
   }
 
   def dataTypeConverter(row: Row): Row = {
@@ -95,18 +96,22 @@ object NWTestUtil {
     Row.fromSeq(md)
   }
 
+  protected def getTempDir: String = {
+    val log: File = new File(".")
+    var dest: String = null
+    dest = log.getCanonicalPath + File.separator + "queryFiles"
+    val tempDir: File = new File(dest)
+    if (!tempDir.exists) tempDir.mkdir()
+    return tempDir.getAbsolutePath
+  }
 
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     val snappyDF = snc.sql(sqlString)
     val sparkDF = sqlContext.sql(sqlString);
-    var log: File = null
-    log = new File(".")
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
-    /*val snappyDest: String = getQueryFilesDir() + File.separator + snappyQueryFileName
-    val sparkDest: String = getQueryFilesDir() + File.separator + sparkQueryFileName*/
-    val snappyDest: String = log.getCanonicalPath() + File.separator + snappyQueryFileName
-    val sparkDest: String = log.getCanonicalPath() + File.separator + sparkQueryFileName
+    val snappyDest: String = getTempDir + File.separator + snappyQueryFileName
+    val sparkDest: String = getTempDir + File.separator + sparkQueryFileName
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
     snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
@@ -131,6 +136,7 @@ object NWTestUtil {
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
       pw.println(s"\nFor ${queryNum} result count mismatch observed")
     }
+    pw.flush()
   }
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
@@ -204,7 +210,6 @@ object NWTestUtil {
         case "Q30" => assertJoin(snc, NWQueries.Q30, 8, "Q30", tableType, pw)
         case "Q31" => assertJoin(snc, NWQueries.Q31, 830, "Q31", tableType, pw)
         case "Q32" => assertJoin(snc, NWQueries.Q32, 8, "Q32", tableType, pw)
-        case "Q33" => assertJoin(snc, NWQueries.Q33, 51, "Q33", tableType, pw)
         case "Q33" => assertJoin(snc, NWQueries.Q33, 37, "Q33", tableType, pw)
         case "Q34" => assertJoin(snc, NWQueries.Q34, 5, "Q34", tableType, pw)
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35", tableType, pw)

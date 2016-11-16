@@ -37,13 +37,13 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
-      snc.setConf("dataFilesLocation",dataFilesLocation)
+      snc.setConf("dataFilesLocation", dataFilesLocation)
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       pw.println(s"Validate ${tableType} tables Queries Test started")
       NWTestUtil.validateQueries(snc, tableType, pw)
       pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
-      if(fullResultSetValidation) {
+      if (fullResultSetValidation) {
         pw.println(s"createAndLoadSparkTables Test started")
         NWTestUtil.createAndLoadSparkTables(sqlContext)
         println(s"createAndLoadSparkTables Test completed successfully")
