@@ -21,7 +21,7 @@ import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
-  def foldValues[U](init: U, f: (Int, V, U) => U): U
+  def foldValues[U](init: U, f: (Int, V, U) => (U, V)): U
 
   def foldEntries[U](init: U, copyIfRequired: Boolean, f: (K, V, U) => U): U
 
