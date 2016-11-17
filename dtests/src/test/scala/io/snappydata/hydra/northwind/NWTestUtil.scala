@@ -18,6 +18,7 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, IOException, PrintWriter}
 
+
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.{Row, SQLContext, SnappyContext}
 
@@ -53,16 +54,22 @@ object NWTestUtil {
     val sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
-    val snappyDest: String = getTempDir + File.separator + snappyQueryFileName
-    val sparkDest: String = getTempDir + File.separator + sparkQueryFileName
+    val snappyDest: String = getTempDir("snappyQueryFiles") + File.separator + snappyQueryFileName
+    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
+    val sparkFile: File = new java.io.File(sparkDest)
+    val snappyFile = new java.io.File(snappyDest)
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-    snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
-    pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
-    sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
-    pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
-    val expectedFile = new java.io.File(sparkDest).listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = new java.io.File(snappyDest).listFiles.filter(_.getName.endsWith(".csv"))
+    if (snappyFile.listFiles() == null) {
+      snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
+    }
+    if (sparkFile.listFiles() == null) {
+      sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+      pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+    }
+    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
     //expectedFile.diff(actualFile)
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
     val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
@@ -96,10 +103,20 @@ object NWTestUtil {
     Row.fromSeq(md)
   }
 
-  protected def getTempDir: String = {
+  protected def getTempDir(dirName: String): String = {
     val log: File = new File(".")
     var dest: String = null
-    dest = log.getCanonicalPath + File.separator + "queryFiles"
+    val dirString = log.getCanonicalPath;
+    if (dirName.equals("sparkQueryFiles")) {
+      val logDir = log.listFiles.filter(_.getName.equals("snappyleader.log"))
+      if (!logDir.isEmpty) {
+        val leaderLogFile: File = logDir.iterator.next()
+        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator + ".." + File.separator + dirName
+      }
+      else dest = dirString + File.separator + ".." + File.separator + dirName
+    }
+    else dest = log.getCanonicalPath + File.separator + dirName
+    println("SS - dest : " + dest)
     val tempDir: File = new File(dest)
     if (!tempDir.exists) tempDir.mkdir()
     return tempDir.getAbsolutePath
@@ -110,16 +127,22 @@ object NWTestUtil {
     val sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
-    val snappyDest: String = getTempDir + File.separator + snappyQueryFileName
-    val sparkDest: String = getTempDir + File.separator + sparkQueryFileName
+    val snappyDest: String = getTempDir("snappyQueryFiles") + File.separator + snappyQueryFileName
+    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
+    val sparkFile: File = new java.io.File(sparkDest)
+    val snappyFile = new java.io.File(snappyDest)
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-    snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
-    pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
-    sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
-    pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
-    val expectedFile = new java.io.File(sparkDest).listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = new java.io.File(snappyDest).listFiles.filter(_.getName.endsWith(".csv"))
+    if (snappyFile.listFiles() == null) {
+      snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
+    }
+    if (sparkFile.listFiles() == null) {
+      sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+      pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+    }
+    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
     //expectedFile.diff(actualFile)
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
     val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
