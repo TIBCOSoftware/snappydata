@@ -205,6 +205,11 @@ public class SnappyPrms extends BasePrms {
     public static Long userAppJar;
 
     /**
+     * (String) A unique identifier for the JAR installation. The identifier you provide must specify a schema name delimiter. For example: APP.myjar.
+     */
+    public static Long jarIdentifier;
+
+    /**
      * (String) args to be passed to the Spark App
      */
     public static Long userAppArgs;
@@ -432,6 +437,11 @@ public class SnappyPrms extends BasePrms {
 
     public static String getUserAppJar() {
         Long key = userAppJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
+
+    public static String getJarIdentifier() {
+        Long key = jarIdentifier;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
