@@ -1607,7 +1607,7 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = getSparkMasterHost();
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --jars " + getStoreTestsJar() + "," + getSnappyTestsJar() + " --class " + userJob +
+                String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                         " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
