@@ -324,8 +324,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val nsegments = segments.length
     segments.indices.foreach(i => {
       segments(i).valid_=(false)
+      segments(i).clearBucket()
       segments(i) = segmentCreator(initSegmentCapacity(segments.length), loadFactor, i, nsegments)
     })
+    _size.set(0)
   }
 
   final def size = _size.get
