@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.examples.snappydata
 
 import java.io.PrintWriter
@@ -9,16 +25,19 @@ import org.apache.spark.sql.types.{StructField, StructType, IntegerType, StringT
 import org.apache.spark.sql.{Row, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 /**
- * An example that shows how to create row tables in SnappyData using SQL
- * or APIs.
+ * An example that shows how to create replicated row tables in SnappyData
+ * using SQL or APIs.
  *
+ * <p></p>
  * This example can be run either in local mode(in which it will spawn a single
  * node SnappyData system) or can be submitted as a job to an already running
  * SnappyData cluster.
  *
  * To run the example in local mode go to you SnappyData product distribution
  * directory and type following command on the command prompt
+ * <pre>
  * bin/run-example snappydata.CreateReplicatedRowTable
+ * </pre>
  *
  */
 object CreateReplicatedRowTable extends SnappySQLJob {
@@ -167,7 +186,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     val conf = new org.apache.spark.SparkConf()
-        .setAppName("RowTableExample")
+        .setAppName("ReplicatedRowTableExample")
         .setMaster("local[*]")
 
     println("Creating a Snappy context")
