@@ -154,6 +154,8 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
     * @return
     */
   def isPartitioned: Boolean
+
+  def isReservoirAsRegion: Boolean
 }
 
 @DeveloperApi
