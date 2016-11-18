@@ -1,0 +1,140 @@
+//split mode
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="Replicated"
+  scriptName="ct_create_and_load_replicated_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PersistentReplicated"
+  scriptName="ct_create_and_load_persistentReplicated_row_tables.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PartitionedRow"
+  scriptName="ct_create_and_load_partitoned_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PersistentPartitionedRow"
+  scriptName="ct_create_and_load_persistentPartitioned_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="ColocatedRow"
+  scriptName="ct_create_and_load_colocated_row_tables.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="RowWithEviction"
+  scriptName="ct_create_and_load_eviction_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PersistentColocatedRow"
+  scriptName="ct_create_and_load_persistentColocated_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="ColocatedWithEvictionRow"
+  scriptName="ct_create_and_load_colocatedWithEviction_row_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="Column"
+  scriptName="ct_create_and_load_column_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PersistentColumn"
+  scriptName="ct_create_and_load_persistent_column_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="ColocatedColumn"
+  scriptName="ct_create_and_load_colocated_column_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="ColumnWithEviction"
+  scriptName="ct_create_and_load_eviction_column_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="PersistentColocatedColumn"
+  scriptName="ct_create_and_load_persistentColocated_column_table.sql"
+
+io/snappydata/hydra/ct/ctSplitMode.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=0,1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/useCaseCT"
+  tableType="ColocatedWithEvictionColumn"
+  scriptName="ct_create_and_load_colocatedWithEviction_column_table.sql"

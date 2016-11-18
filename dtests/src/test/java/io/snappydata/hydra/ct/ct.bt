@@ -1,0 +1,13 @@
+//non HA tests in embeded mode
+INCLUDE $JTESTS/io/snappydata/hydra/ct/ctEmbededMode.bt
+
+
+//HA tests in embeded mode
+INCLUDE $JTESTS/io/snappydata/hydra/ct/ctEmbededModeHA.bt
+
+//non-HA tests in split Mode
+INCLUDE $JTESTS/io/snappydata/hydra/ct/ctSplitMode.bt
+
+//HA tests in split mode
+INCLUDE $JTESTS/io/snappydata/hydra/ct/ctSplitModeHA.bt
+
