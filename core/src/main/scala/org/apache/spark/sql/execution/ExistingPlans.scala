@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType, SampleColumnTableScan}
 import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
@@ -132,9 +132,8 @@ private[sql] object PartitionedPhysicalScan {
           partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
        if (r.isReservoirAsRegion) {
-          val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
+          SampleColumnTableScan(output, rdd, Nil, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
-          ZipPartitionSampleScan(columnScan, null, otherRDDs.head, relation)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
