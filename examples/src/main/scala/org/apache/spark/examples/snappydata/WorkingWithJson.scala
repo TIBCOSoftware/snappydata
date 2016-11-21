@@ -16,26 +16,51 @@
  */
 package org.apache.spark.examples.snappydata
 
+import scala.util.Try
+
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
+import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
  * This is a sample code snippet to work with JSON files and SnappyStore tables.
  * Run with
  * <pre>
- * bin/run-example snappydata.WorkingWithJson
+ * bin/run-example snappydata.WorkingWithJson quickstart/src/main/resources
  * </pre>
+ * Also you can run this example by submitting as a job.
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name JsonApp
+ *   --class org.apache.spark.examples.snappydata.WorkingWithJson
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *   --conf json_resource_folder=../../quickstart/src/main/resources
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
  */
 object WorkingWithJson extends SnappySQLJob {
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  private val NPARAMS = 1
+
+  private var jsonFolder: String = ""
+
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation ={
+    {
+      Try(config.getString("json_resource_folder"))
+          .map(x => SnappyJobValid())
+          .getOrElse(SnappyJobInvalid("No json_resource_folder config param"))
+    }
+  }
 
   override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
 
+    val some_people_path = s"${jobConfig.getString("json_resource_folder")}/some_people.json"
     // Read a JSON file using Spark API
-    val people = sc.jsonFile("examples/src/resources/people.json")
+    val people = sc.jsonFile(some_people_path)
 
     //Drop the table if it exists.
     sc.dropTable("people", ifExists = true)
@@ -44,8 +69,14 @@ object WorkingWithJson extends SnappySQLJob {
     people.write.format("column").saveAsTable("people")
 
     // Append more people to the column table
-    val morePeople = sc.jsonFile("examples/src/resources/more_people.json")
+    val more_people_path = s"${jobConfig.getString("json_resource_folder")}/more_people.json"
+    val morePeople = sc.jsonFile(more_people_path)
     morePeople.write.insertInto("people")
+
+    //print schema of the table
+    println("Print Schema of the table\n################")
+    println(sc.table("people").schema)
+    println
 
     // Query it like any other table
     val nameAndAddress = sc.sql("SELECT name, address.city, address.state FROM people")
@@ -61,14 +92,40 @@ object WorkingWithJson extends SnappySQLJob {
   }
 
   def main(args: Array[String]) {
+
+    parseArgs(args)
+
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val spark: SparkSession = SparkSession.builder.appName("WorkingWithJson").master("local[4]").getOrCreate
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("WorkingWithJson")
+        .master("local[4]")
+        .getOrCreate
+
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
-    val config = ConfigFactory.parseString("")
+    val config = ConfigFactory.parseString(s"json_resource_folder=$jsonFolder")
     val results = runSnappyJob(snSession.snappyContext, config)
     println("Printing All People \n################## \n" + results)
+
+    spark.stop()
+  }
+
+  private def parseArgs(args: Array[String]): Unit = {
+    if (args.length != NPARAMS) {
+      printUsage()
+      System.exit(1)
+    }
+    jsonFolder = args(0)
+  }
+
+  private def printUsage(): Unit = {
+    val usage: String =
+        "Usage: WorkingWithJson <jsonFolderPath> \n" +
+        "\n" +
+        "jsonFolderPath - (string) local folder where some_people.json & more_people.json are located\n"
+    println(usage)
   }
 }
