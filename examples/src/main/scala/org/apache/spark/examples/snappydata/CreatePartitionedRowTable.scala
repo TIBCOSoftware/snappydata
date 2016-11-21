@@ -129,7 +129,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     pw.println()
     pw.println("Creating a partitioned row table(PARTSUPP) using SQL")
 
-    snc.sql("DROP TABLE IF EXISTS ORDERS")
+    snc.sql("DROP TABLE IF EXISTS PARTSUPP")
 
     snc.sql("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
