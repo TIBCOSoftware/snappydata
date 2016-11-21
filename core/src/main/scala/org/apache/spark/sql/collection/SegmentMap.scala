@@ -37,6 +37,8 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def apply(k: K, hash: Int): V
 
+  def clearBucket(): Unit = {}
+
   def update(k: K, hash: Int, v: V): Boolean
 
   def changeValue(k: K, hash: Int, change: ChangeValue[K, V], isLocal: Boolean): java.lang.Boolean
