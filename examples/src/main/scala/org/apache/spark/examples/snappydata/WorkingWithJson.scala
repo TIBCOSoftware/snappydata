@@ -24,7 +24,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
- * This is a sample code snippet to work with JSON files and SnappyStore tables.
+ * This is a sample code snippet to work with JSON files and SnappyStore column tables.
  * Run with
  * <pre>
  * bin/run-example snappydata.WorkingWithJson quickstart/src/main/resources

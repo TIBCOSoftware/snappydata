@@ -22,7 +22,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
- * This is a sample code snippet to work with domain objects and SnappyStore tables.
+ * This is a sample code snippet to work with domain objects and SnappyStore column tables.
  * Run with
  * <pre>
  * bin/run-example snappydata.WorkingWithObjects
@@ -52,7 +52,10 @@ object WorkingWithObjects extends SnappySQLJob {
     snSession.dropTable("people", ifExists = true)
 
     // Write the created Dataset to a column table.
-    people.write.format("row").saveAsTable("people")
+    people.write
+        .format("column")
+        .options(Map("BUCKETS" -> "1", "PARTITION_BY" -> "name"))
+        .saveAsTable("people")
 
     //print schema of the table
     println("Print Schema of the table\n################")
