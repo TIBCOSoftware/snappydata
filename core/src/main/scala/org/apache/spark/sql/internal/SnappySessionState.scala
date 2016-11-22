@@ -24,6 +24,7 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.internal.config.ConfigEntry
+import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
@@ -39,7 +40,6 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.{AnalysisException, SnappyAggregation, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 import org.apache.spark.streaming.Duration
 
 
@@ -65,6 +65,7 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
+          AnalyzeDMLExternalTables(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
@@ -146,7 +147,21 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
+        d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
 
+  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+      case c: DMLExternalTable if !c.query.resolved =>
+        c.copy(query = analyzeQuery(c.query))
+    }
+
+    private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
+      val qe = sparkSession.sessionState.executePlan(query)
+      qe.assertAnalyzed()
+      qe.analyzed
     }
   }
 

@@ -24,15 +24,17 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
-import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, CreateTableUsing, DataSource, RefreshTable}
+import org.apache.spark.sql.sources.{ExternalTableDMLCmd, SingleRowInsertableRelation, RowPutRelation, UpdatableRelation, ExternalSchemaRelationProvider}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -348,7 +350,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def describeTable: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
-          DescribeTableCommand(tableIdent, extended
+          DescribeTableCommand(tableIdent, Map.empty[String, String], extended
               .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
   }
 
@@ -616,13 +618,12 @@ private[sql] case class DropIndex(
 
 case class DMLExternalTable(
     tableName: TableIdentifier,
-    child: LogicalPlan,
-    command: String)
-    extends LogicalPlan with Command {
+    query: LogicalPlan,
+    command: String) extends Command {
 
-  override def children: Seq[LogicalPlan] = child :: Nil
+  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+  override lazy val resolved: Boolean = query.resolved
 
-  override def output: Seq[Attribute] = child.output
 }
 
 private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {
