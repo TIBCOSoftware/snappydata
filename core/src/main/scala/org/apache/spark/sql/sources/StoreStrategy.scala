@@ -17,7 +17,6 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
@@ -52,8 +51,10 @@ object StoreStrategy extends Strategy {
       ExecutedCommandExec(createSelect) :: Nil
     case drop: DropTable =>
       ExecutedCommandExec(drop) :: Nil
-    case DMLExternalTable(table, rel: LogicalRelation, insertCmd) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(rel, insertCmd)) :: Nil
+
+    case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
+      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
       ExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
 
