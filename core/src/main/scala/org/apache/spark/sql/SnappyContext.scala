@@ -40,7 +40,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedRelationCache
-import org.apache.spark.sql.execution.ui.SnappyStatsTab
+import org.apache.spark.sql.execution.ui.{SnappyDashboardTab, SnappyStatsTab}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.sources.SamplingRelation
@@ -982,7 +982,10 @@ object SnappyContext extends Logging {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
-          sc.ui.foreach(new SnappyStatsTab(_))
+          sc.ui.foreach( u => {
+            new SnappyStatsTab(u)
+            new SnappyDashboardTab(u)
+          })
           initMemberBlockMap(sc)
           _globalSNContextInitialized = true
         }
