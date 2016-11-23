@@ -17,11 +17,12 @@
 package org.apache.spark.examples.snappydata
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
- * This is a sample code snippet to work with domain objects and SnappyStore tables.
+ * This is a sample code snippet to work with domain objects and SnappyStore column tables.
  * Run with
  * <pre>
  * bin/run-example snappydata.WorkingWithObjects
@@ -29,7 +30,8 @@ import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation,
  */
 
 case class Address(city: String, state: String)
-case class Person (name: String, address : Address)
+
+case class Person(name: String, address: Address)
 
 object WorkingWithObjects extends SnappySQLJob {
 
@@ -38,21 +40,34 @@ object WorkingWithObjects extends SnappySQLJob {
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
 
+    //Import the implicits for automatic conversion between Objects to DataSets.
     import snc.implicits._
 
     val snSession = snc.snappySession
-    // Read a JSON file using Spark API
-    val people = snSession.read.json("examples/src/main/resources/some_people.json").as[Person]
+    // Create a Dataset using Spark APIs
+    val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
 
 
     //Drop the table if it exists.
     snSession.dropTable("people", ifExists = true)
 
-    // Write the created DataFrame to a column table.
-    people.write.format("column").saveAsTable("people")
+    // Write the created Dataset to a column table.
+    people.write
+        .format("column")
+        .options(Map("BUCKETS" -> "1", "PARTITION_BY" -> "name"))
+        .saveAsTable("people")
+
+    //print schema of the table
+    println("Print Schema of the table\n################")
+    println(snc.table("people").schema)
+    println
+
 
     // Append more people to the column table
-    val morePeople = snSession.read.json("examples/src/main/resources/more_people.json").as[Person]
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio")),
+      Person("Rob Stark", Address("San Diego", "California")),
+      Person("Michael", Address("Null", "California"))).toDS()
+
     morePeople.write.insertInto("people")
 
     // Query it like any other table
@@ -69,7 +84,16 @@ object WorkingWithObjects extends SnappySQLJob {
   }
 
   def main(args: Array[String]) {
-    val spark: SparkSession = SparkSession.builder.appName("WorkingWithObjects").master("local[4]").getOrCreate
+    // reducing the log level to minimize the messages on console
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("WorkingWithObjects")
+        .master("local[4]")
+        .getOrCreate
+
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
     val config = ConfigFactory.parseString("")
     val results = runSnappyJob(snSession.snappyContext, config)

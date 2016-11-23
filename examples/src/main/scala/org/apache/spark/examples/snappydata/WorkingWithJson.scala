@@ -24,7 +24,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
- * This is a sample code snippet to work with JSON files and SnappyStore tables.
+ * This is a sample code snippet to work with JSON files and SnappyStore column tables.
  * Run with
  * <pre>
  * bin/run-example snappydata.WorkingWithJson quickstart/src/main/resources
@@ -61,6 +61,7 @@ object WorkingWithJson extends SnappySQLJob {
     val some_people_path = s"${jobConfig.getString("json_resource_folder")}/some_people.json"
     // Read a JSON file using Spark API
     val people = sc.jsonFile(some_people_path)
+    people.printSchema()
 
     //Drop the table if it exists.
     sc.dropTable("people", ifExists = true)
@@ -70,7 +71,10 @@ object WorkingWithJson extends SnappySQLJob {
 
     // Append more people to the column table
     val more_people_path = s"${jobConfig.getString("json_resource_folder")}/more_people.json"
-    val morePeople = sc.jsonFile(more_people_path)
+
+    //Explicitly passing schema to handle record level field mismatch
+    // e.g. some records have "district" field while some do not.
+    val morePeople = sc.read.schema(people.schema).json(more_people_path)
     morePeople.write.insertInto("people")
 
     //print schema of the table
@@ -79,13 +83,21 @@ object WorkingWithJson extends SnappySQLJob {
     println
 
     // Query it like any other table
-    val nameAndAddress = sc.sql("SELECT name, address.city, address.state FROM people")
+    val nameAndAddress = sc.sql("SELECT " +
+        "name, " +
+        "address.city, " +
+        "address.state, " +
+        "address.district, " +
+        "address.lane " +
+        "FROM people")
 
     val builder = new StringBuilder
     nameAndAddress.collect.map(row => {
       builder.append(s"${row(0)} ,")
       builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} \n")
+      builder.append(s"${row(2)} ,")
+      builder.append(s"${row(3)} ,")
+      builder.append(s"${row(4)} \n")
 
     })
     builder.toString
