@@ -39,9 +39,11 @@ public class TestUtils {
         } catch (Exception e) {
             if (expectedException && e.getMessage().contains("java.lang.ClassNotFoundException")) {
                 pw.println("Got expected java.lang.ClassNotFoundException.....");
+                pw.flush();
             } else if (!expectedException) {
-                //throw new TestException("Exception occurred while executing the job " + "\nError Message:" + e.getMessage());
+                //throw new util.TestException("Exception occurred while executing the job " + "\nError Message:" + e.getMessage());
                 pw.println("Exception occurred while executing the job " + "\nError Message:" + e.getMessage());
+                pw.flush();
             }
         }
     }
