@@ -469,7 +469,7 @@ class ColumnFormatRelation(
       catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(table)
 
-  override def recoverDependentsRelation(properties: Map[String, String]): Unit = {
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
     var dependentRelations: Array[String] = Array()
     if (None != properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
       dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")

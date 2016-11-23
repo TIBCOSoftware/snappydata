@@ -241,7 +241,7 @@ class RowFormatRelation(
    * is to recreate Dependent relations when the ParentRelation is
    * being created.
    */
-  override def recoverDependentsRelation(properties: Map[String, String]): Unit = {
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sncCatalog = snappySession.sessionState.catalog
@@ -275,8 +275,8 @@ final class DefaultSource extends MutableRelationProvider {
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
+    val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val sc = sqlContext.sparkContext
-
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 

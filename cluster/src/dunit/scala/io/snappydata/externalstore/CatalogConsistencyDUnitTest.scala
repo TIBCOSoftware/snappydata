@@ -191,7 +191,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    val snc = SnappyContext(sc)
+    var snc = SnappyContext(sc)
 
     val baseRowTable = "ORDER_DETAILS_ROW"
     val colloactedRowTable = "EXEC_DETAILS_ROW"
@@ -244,7 +244,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     ClusterManagerTestBase.stopAny()
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
-
+    snc = SnappyContext(sc)
     try {
       // This should throw an exception
       snc.sql(s"drop table $baseRowTable")
@@ -257,6 +257,12 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       case _ =>
         assert(false)
     }
+
+    snc.sql(s"drop table $colloactedColumnTable")
+    snc.sql(s"drop table $baseColumnTable")
+
+    snc.sql(s"drop table $colloactedRowTable")
+    snc.sql(s"drop table $baseRowTable")
 
   }
 }

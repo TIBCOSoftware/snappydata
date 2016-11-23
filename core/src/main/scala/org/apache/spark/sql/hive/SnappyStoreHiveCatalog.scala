@@ -165,10 +165,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               partitionColumns = partitionColumns, options = options +
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
-
-
-
-
         relation match {
           case sr: StreamBaseRelation => //Do Nothing as it is not supported for stream relation
           case pr: ParentRelation => {
