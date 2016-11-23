@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.types.{DecimalType, StringType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{SnappySQLJob, Row, SnappyJobValid, SnappyJobValidation, SnappyContext}
+import org.apache.spark.sql.{SnappySession, SparkSession, SnappySQLJob, Row, SnappyJobValid, SnappyJobValidation, SnappyContext}
 
 /**
  * An example that shows how to create partitioned row tables in SnappyData
@@ -174,21 +174,18 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("PartitionedRowTableExample")
-        .setMaster("local[*]")
+    println("Creating a SnappySession")
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreatePartitionedRowTable")
+        .master("local[4]")
+        .getOrCreate
 
-    println("Creating a Snappy context")
-    // create a spark context
-    val sc = new org.apache.spark.SparkContext(conf)
-    // get the snappy context from Spark context
-    // SnappyContext is the entry point for accessing various
-    // SnappyData features
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    createPartitionedRowTableUsingSQL(snc, pw)
-    createPartitionedRowTableUsingAPI(snc, pw)
+    createPartitionedRowTableUsingSQL(snSession.snappyContext, pw)
+    createPartitionedRowTableUsingAPI(snSession.snappyContext, pw)
     pw.close()
   }
 

@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.types.{StructField, StructType, IntegerType, StringType, DecimalType}
-import org.apache.spark.sql.{Row, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SparkSession, Row, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 /**
  * An example that shows how to create replicated row tables in SnappyData
@@ -185,21 +185,18 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("ReplicatedRowTableExample")
-        .setMaster("local[*]")
+    println("Creating a SnappySession")
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateReplicatedRowTable")
+        .master("local[4]")
+        .getOrCreate
 
-    println("Creating a Snappy context")
-    // create a spark context
-    val sc = new org.apache.spark.SparkContext(conf)
-    // get the snappy context from Spark context
-    // SnappyContext is the entry point for accessing various
-    // SnappyData features
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    createReplicatedRowTableUsingSQL(snc, pw)
-    createReplicatedRowTableUsingAPI(snc, pw)
+    createReplicatedRowTableUsingSQL(snSession.snappyContext, pw)
+    createReplicatedRowTableUsingAPI(snSession.snappyContext, pw)
     pw.close()
   }
 

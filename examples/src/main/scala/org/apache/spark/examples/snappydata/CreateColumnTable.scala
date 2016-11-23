@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.types.{StringType, DecimalType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SparkSession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 /**
  * An example that shows how to create column tables in SnappyData
@@ -160,20 +160,18 @@ object CreateColumnTable extends SnappySQLJob {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("PartitionedRowTableExample")
-        .setMaster("local[*]")
+    println("Creating a SnappySession")
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateColumnTable")
+        .master("local[4]")
+        .getOrCreate
 
-    println("Creating a Snappy context")
-    // create a spark context
-    val sc = new org.apache.spark.SparkContext(conf)
-    // get the snappy context from Spark context
-    // SnappyContext is the entry point for accessing various
-    // SnappyData features
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+
     val pw = new PrintWriter(System.out, true)
-    createColumnTableUsingAPI(snc, pw)
-    createColumnTableUsingSQL(snc, pw)
+    createColumnTableUsingAPI(snSession.snappyContext, pw)
+    createColumnTableUsingSQL(snSession.snappyContext, pw)
     pw.close()
   }
 
