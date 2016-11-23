@@ -19,6 +19,8 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.cache.partitioned.Bucket
+
 import scala.collection.mutable
 
 import io.snappydata.Constant
@@ -87,6 +89,7 @@ object ExternalStoreUtils {
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
+      props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
     }
     props
@@ -511,14 +514,15 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     colTableName: String,
     schema: StructType,
     useCompression: Boolean,
-    bufferSize: Int) {
+    bufferSize: Int,
+    reservoirInRegion: Boolean) {
 
-  var holder = getCachedBatchHolder
+  var holder = getCachedBatchHolder(-1)
 
-  def getCachedBatchHolder: CachedBatchHolder =
+  def getCachedBatchHolder(bucketId: Int): CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,
       Int.MaxValue, schema, (c: CachedBatch) =>
-        externalStore.storeCachedBatch(colTableName, c))
+        externalStore.storeCachedBatch(colTableName, c, bucketId))
 
   def columnBuilders: Array[ColumnBuilder] = schema.map {
     attribute =>
@@ -530,7 +534,16 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
 
   def endRows(u: Unit): Unit = {
     holder.forceEndOfBatch()
-    holder = getCachedBatchHolder
+    if (!reservoirInRegion) {
+      holder = getCachedBatchHolder(-1)
+    }
+  }
+
+  def startRows(u: Unit, bucketId: Int): Unit = {
+    if (reservoirInRegion) {
+      holder = getCachedBatchHolder(bucketId)
+    }
+    u
   }
 
   def appendRow(u: Unit, row: InternalRow): Unit = {

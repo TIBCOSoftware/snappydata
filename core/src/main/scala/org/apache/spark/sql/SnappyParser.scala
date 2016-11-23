@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -79,9 +80,14 @@ class SnappyParser(session: SnappySession)
     var noDecimalPoint = true
     var index = 0
     val len = s.length
+    val lastChar = s.charAt(len - 1)
     // use double if ending with 'D'
-    if (s.charAt(len - 1) == 'D') {
-      return Literal(s.toDouble, DoubleType)
+    if (lastChar == 'D') {
+      return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)),
+        DoubleType)
+    } else if (lastChar == 'L') {
+      return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)),
+        LongType)
     }
     while (index < len) {
       val c = s.charAt(index)
@@ -122,14 +128,36 @@ class SnappyParser(session: SnappySession)
     }
   }
 
+  private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
+      optAlias: Option[String]) = {
+    val indexHint = queryHints.remove(QueryHint.Index.toString)
+    if (indexHint.nonEmpty) {
+      val table = optAlias match {
+        case Some(alias) => alias
+        case _ => tableIdent.unquotedString
+      }
+
+      queryHints.put(QueryHint.Index.toString + table, indexHint.get)
+    }
+  }
+
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: String) = {
+    if (queryHints.exists({
+      case (key, _) => key.startsWith(hint.toString)
+    })) {
+      throw Utils.analysisException(msg)
+    }
+  }
+
+
   protected final def booleanLiteral: Rule1[Literal] = rule {
     TRUE ~> (() => Literal.create(true, BooleanType)) |
     FALSE ~> (() => Literal.create(false, BooleanType))
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ 'D'.?) ~ delimiter ~>
-        ((s: String) => toNumericLiteral(s))
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ Consts.numericSuffix.?) ~
+        delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
   protected final def literal: Rule1[Literal] = rule {
@@ -399,18 +427,29 @@ class SnappyParser(session: SnappySession)
         ((tableIdent: TableIdentifier,
             window: Any, alias: Any) => window.asInstanceOf[Option[
             (Duration, Option[Duration])]] match {
-          case None => UnresolvedRelation(tableIdent,
-            alias.asInstanceOf[Option[String]])
-          case Some(win) => WindowLogicalPlan(win._1, win._2,
-            UnresolvedRelation(tableIdent, alias.asInstanceOf[Option[String]]))
+          case None =>
+            val optAlias = alias.asInstanceOf[Option[String]]
+            updatePerTableQueryHint(tableIdent, optAlias)
+            UnresolvedRelation(tableIdent, optAlias)
+          case Some(win) =>
+            val optAlias = alias.asInstanceOf[Option[String]]
+            updatePerTableQueryHint(tableIdent, optAlias)
+            WindowLogicalPlan(win._1, win._2,
+              UnresolvedRelation(tableIdent, optAlias))
         }) |
     '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
         (AS ~ identifier | strictIdentifier) ~>
         ((child: LogicalPlan, window: Any, alias: String) => window
             .asInstanceOf[Option[(Duration, Option[Duration])]] match {
-          case None => SubqueryAlias(alias, child)
-          case Some(win) => WindowLogicalPlan(win._1, win._2,
-            SubqueryAlias(alias, child))
+          case None =>
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
+            SubqueryAlias(alias, child)
+          case Some(win) =>
+            assertNoQueryHint(QueryHint.Index,
+              s"${QueryHint.Index} cannot be applied to derived table $alias")
+            WindowLogicalPlan(win._1, win._2,
+              SubqueryAlias(alias, child))
         })
   }
 
@@ -623,7 +662,7 @@ class SnappyParser(session: SnappySession)
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
-    (FROM ~ relations).? ~
+    (FROM ~ ws ~ relations).? ~
     (WHERE ~ expression).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~
@@ -632,8 +671,10 @@ class SnappyParser(session: SnappySession)
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
       val withFilter = w.asInstanceOf[Option[Expression]].map(Filter(_, base))
           .getOrElse(base)
-      val expressions = p.asInstanceOf[Seq[Expression]]
-          .map(UnresolvedAlias(_, None))
+      val expressions = p.asInstanceOf[Seq[Expression]].map {
+        case ne: NamedExpression => ne
+        case e => UnresolvedAlias(e)
+      }
       val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
       val withProjection = gr.map(x => {
         x._3 match {
@@ -707,7 +748,7 @@ class SnappyParser(session: SnappySession)
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = synchronized {
-    session.queryHints.clear()
+    session.clearQueryData()
     parseSQL(sqlText, parseRule)
   }
 

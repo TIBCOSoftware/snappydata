@@ -1,11 +1,25 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.benchmark.memsql
 
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{ResultSet, Statement}
 
-/**
-  * Created by kishor on 27/10/15.
-  */
+
 object TPCH_Memsql {
 
   var avgFileStream:FileOutputStream  = new FileOutputStream(new File(s"Average.out"))
@@ -1015,7 +1029,7 @@ object TPCH_Memsql {
          "                         and l3.l_receiptdate > l3.l_commitdate" +
          "         )" +
          "         and S_NATIONKEY = N_NATIONKEY" +
-         "         and N_NAME = \"SAUDI ARABIA\"" +
+         "         and N_NAME = \"VIETNAM\"" +
          " group by" +
          "         S_NAME" +
          " order by" +

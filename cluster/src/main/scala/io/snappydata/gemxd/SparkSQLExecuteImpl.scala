@@ -56,13 +56,13 @@ class SparkSQLExecuteImpl(val sql: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
 
-
-  Thread.currentThread().setContextClassLoader(
-    SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader))
-
-
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
+
+  if (Thread.currentThread().getContextClassLoader != null) {
+    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
+    Thread.currentThread().setContextClassLoader(loader)
+  }
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
@@ -75,8 +75,6 @@ class SparkSQLExecuteImpl(val sql: String,
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
   private[this] val querySchema = df.schema
-
-  private[this] val resultsRdd = df.queryExecution.toRdd
 
   private[this] lazy val colTypes = getColumnTypes
 
@@ -93,18 +91,48 @@ class SparkSQLExecuteImpl(val sql: String,
     case None => (false, Array.empty[String])
   }
 
+  private def handleLocalExecution(srh: SnappyResultHolder): Unit = {
+    // prepare SnappyResultHolder with all data and create new one
+    if (hdos.size > 0) {
+      val rawData = hdos.toByteArrayCopy
+      srh.fromSerializedData(rawData, rawData.length, null)
+    }
+  }
+
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
 
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
-    val bm = SparkEnv.get.blockManager
-    val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
     val serializeComplexType = !complexTypeAsClob && querySchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
       })
+    // for plans that override SparkPlan.executeCollect(), use the normal
+    // execution because those have much more efficient paths (e.g.
+    //   limit will apply limit on individual partitions etc)
+    val executedPlan = df.queryExecution.executedPlan
+    if (Utils.useExecuteCollect(executedPlan)) {
+      val result = Utils.withNewExecutionId(df, {
+        val handler = new InternalRowHandler(sql, querySchema,
+          serializeComplexType, colTypes)
+        val rows = executedPlan.executeCollect()
+        handler.serializeRows(rows.iterator)
+      })
+      hdos.clearForReuse()
+      writeMetaData()
+      hdos.write(result)
+      if (isLocalExecution) {
+        handleLocalExecution(srh)
+      }
+      msg.lastResult(srh)
+      return
+    }
+
+    val resultsRdd = executedPlan.execute()
+    val bm = SparkEnv.get.blockManager
+    val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
     val handler = new ExecutionHandler(sql, querySchema, resultsRdd.id,
       partitionBlockIds, serializeComplexType, colTypes)
     var blockReadSuccess = false
@@ -158,11 +186,7 @@ class SparkSQLExecuteImpl(val sql: String,
         writeMetaData()
       }
       if (isLocalExecution) {
-        // prepare SnappyResultHolder with all data and create new one
-        if (hdos.size > 0) {
-          val rawData = hdos.toByteArrayCopy
-          srh.fromSerializedData(rawData, rawData.length, null)
-        }
+        handleLocalExecution(srh)
       }
       msg.lastResult(srh)
 
@@ -251,31 +275,27 @@ class SparkSQLExecuteImpl(val sql: String,
         lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
         lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
         if (allAsClob || columnsAsClob.contains(f.name)) {
-          if (hasProp && !base.equals("STRING")) {
-            if (base.equals("VARCHAR")) {
-              (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
-            } else {
-              // CHAR
-              (StoredFormatIds.SQL_CHAR_ID, size, -1)
+            if (hasProp && !base.equals("STRING")) {
+              if (base.equals("VARCHAR")) {
+                (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+              } else { // CHAR
+                (StoredFormatIds.SQL_CHAR_ID, size, -1)
+              }
+            } else { // STRING and CLOB
+              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
-          } else {
-            // STRING and CLOB
-            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-          }
         } else if (hasProp) {
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
-          } else {
-            // VARCHAR and STRING
-            if (!SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE) {
+          } else { // VARCHAR and STRING
+            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
               (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
             }
             else {
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
           }
-        } else {
-          // CLOB
+        } else { // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
         }
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
@@ -295,7 +315,6 @@ class SparkSQLExecuteImpl(val sql: String,
 
   def getContextOrCurrentClassLoader: ClassLoader =
     Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
-
 }
 
 object SparkSQLExecuteImpl {
@@ -499,20 +518,11 @@ object SparkSQLExecuteImpl {
   }
 }
 
-class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
-    partitionBlockIds: Array[RDDBlockId],
-    serializeComplexType: Boolean, rowStoreColTypes: Array[(Int, Int, Int)] = null)
-    extends Serializable {
+class InternalRowHandler(sql: String, schema: StructType,
+    serializeComplexType: Boolean,
+    rowStoreColTypes: Array[(Int, Int, Int)] = null) extends Serializable {
 
-  def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
-    Utils.withNewExecutionId(df.sparkSession, df.queryExecution) {
-      val sc = SnappyContext.globalSparkContext
-      sc.runJob(resultsRdd, rowIter _, resultHandler _)
-    }
-  }
-
-  private[snappydata] def rowIter(itr: Iterator[InternalRow]): Array[Byte] = {
-
+  final def serializeRows(itr: Iterator[InternalRow]): Array[Byte] = {
     var numCols = -1
     var numEightColGroups = -1
     var numPartCols = -1
@@ -557,6 +567,19 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
         numPartCols, schema, dos, bufferHolders, rowStoreColTypes)
     }
     dos.toByteArray
+  }
+}
+
+final class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
+    partitionBlockIds: Array[RDDBlockId], serializeComplexType: Boolean,
+    rowStoreColTypes: Array[(Int, Int, Int)] = null)
+    extends InternalRowHandler(sql, schema, serializeComplexType, rowStoreColTypes) {
+
+  def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
+    Utils.withNewExecutionId(df, {
+      val sc = SnappyContext.globalSparkContext
+      sc.runJob(resultsRdd, serializeRows _, resultHandler _)
+    })
   }
 
   private[snappydata] def resultHandler(partitionId: Int,

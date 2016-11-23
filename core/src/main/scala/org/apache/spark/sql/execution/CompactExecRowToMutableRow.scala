@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, Resu
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{DataType, Decimal, DecimalType, StructType}
 import org.apache.spark.unsafe.Platform
@@ -39,6 +39,10 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
 
   protected final val fieldTypes = StoreUtils.mapCatalystTypes(
     schema, dataTypes)
+
+  final lazy val defaultCal = ClientSharedData.getDefaultCalendar
+
+  final lazy val defaultTZ = defaultCal.getTimeZone
 
   protected final def createInternalRow(execRow: AbstractCompactExecRow,
       mutableRow: SpecificMutableRow): InternalRow = {
@@ -149,10 +153,9 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
         case StoreUtils.DATE_TYPE =>
           val cal = this.defaultCal
           cal.clear()
-          // TODO: can avoid creating Date object, rather get long millis
-          val v = execRow.getAsDate(pos, cal, this)
-          if (v != null) {
-            mutableRow.setInt(i, DateTimeUtils.fromJavaDate(v))
+          val millis = execRow.getAsDateMillis(i, cal, this)
+          if (!wasNull) {
+            mutableRow.setInt(i, Utils.millisToDays(millis, defaultTZ))
           } else {
             mutableRow.setNullAt(i)
             wasNull = false
@@ -160,10 +163,9 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
         case StoreUtils.TIMESTAMP_TYPE =>
           val cal = this.defaultCal
           cal.clear()
-          // TODO: can avoid creating Timestamp object, rather get long nanos
-          val v = execRow.getAsTimestamp(pos, cal, this)
-          if (v != null) {
-            mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(v))
+          val micros = execRow.getAsTimestampMicros(i, cal, this)
+          if (!wasNull) {
+            mutableRow.setLong(i, micros)
           } else {
             mutableRow.setNullAt(i)
             wasNull = false
@@ -220,8 +222,6 @@ class ResultNullHolder extends ResultWasNull {
 
   final var wasNull: Boolean = _
 
-  final lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
-
   override final def setWasNull(): Unit = {
     wasNull = true
   }
@@ -231,4 +231,11 @@ class ResultNullHolder extends ResultWasNull {
     wasNull = false
     result
   }
+}
+
+final class ResultSetNullHolder extends ResultNullHolder {
+
+  lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
+
+  lazy val defaultTZ = defaultCal.getTimeZone
 }

@@ -29,24 +29,20 @@ import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEn
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.sources.{StatsPredicateCompiler, ConnectionProperties}
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.{Logging, Partition, TaskContext}
 
 /*
 Generic class to query column table from SnappyData execution.
  */
-class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
+class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
     numPartitions: Int) extends ExternalStore {
+  self =>
 
   @transient
   protected lazy val rand = new Random
@@ -54,10 +50,17 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
 
+  def getConnectedExternalStore(tableName: String,
+    onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsStore(
+    this.connProperties,
+    this.numPartitions) with ConnectedExternalStore {
+    protected[this] override val connectedInstance: Connection =
+      self.getConnection(tableName, onExecutor)
+  }
 
-  def getCachedBatchRDD(tableName: String,
+  override def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
-      statsPredicate: StatsPredicateCompiler, session: SparkSession): RDD[CachedBatch] = {
+      session: SparkSession): RDD[CachedBatch] = {
     new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
         numPartitions, this)
   }
@@ -225,8 +228,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int], predicateOnStats: (InternalRow) => Boolean,
-    numColsInSchema: Int, cachedBatchesSeen: SQLMetric, cachedBatchesSkipped: SQLMetric)
+    bucketIds: scala.collection.Set[Int])
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
@@ -244,17 +246,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
         if (v ne null) {
           currentVal = v.asInstanceOf[Array[Array[Byte]]]
           rowFormatter = container.getRowFormatter(currentVal(0))
-          val statBytes = rowFormatter.getLob(currentVal, 4)
-          val result = new UnsafeRow(numColsInSchema)
-          result.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-            statBytes.length)
-          // Skip the cached batches based on the predicate on stat
-          cachedBatchesSeen += 1
-          if (predicateOnStats(result)){
-            return
-          } else {
-            cachedBatchesSkipped += 1
-          }
+          return
         }
       }
     }

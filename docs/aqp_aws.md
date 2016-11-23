@@ -1,5 +1,5 @@
 #Overview of SnappyData iSight-Cloud #
-iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (SDE), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
+iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
 
 iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
 
@@ -42,10 +42,12 @@ Watch the following  video to learn how easy it is to use iSight CloudBuilder, w
 [![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
 ###Prerequisites###
-Before you begin, ensure that:
+Before you begin,:
 
-* You have an existing AWS account with required permissions to launch EC2 resources
-*  You have created an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+* Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+*  Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
+
 
 SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 
@@ -76,14 +78,15 @@ Refer to the Amazon documentation for more information on  [generating your own 
 ![STEP](./Images/aws_email.png)
 
 6. Click **Generate**. 
-7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster. <br>
-![STEP](./Images/aws_selectedregion.png)
+
+7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 > Note: 
-	
-	> * Use the key pair that exists in the region selected.
-	
-	> * If you are not already logged into AWS, you are redirected to the AWS log in page. Enter your login credentials to continue.<br>
-	
+
+	> * The region you select must match the key pair you created.
+				
+	> * If you are not already logged into AWS, you are redirected to the AWS sign-in page. 
+![STEP](./Images/aws_selectedregion.png)
+
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](./Images/aws_selecttemplate.png)
 
@@ -100,10 +103,15 @@ Refer to the Amazon documentation for more information on  [generating your own 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
 ![Refresh](./Images/aws_refreshstack.png)
-
 <a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URLs) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](./Images/aws_links.png)
+> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
+
+	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
+	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
+	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
+
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
@@ -199,7 +207,7 @@ SnappyData provides predefined notebooks which are displayed on the home page af
 Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for more information.
 
 ##Using the Interpreter##
-Snappydata Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
+SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
 >  Note:
