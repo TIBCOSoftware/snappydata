@@ -299,7 +299,12 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    include '**/*DUnitTest.class'
+    def single = System.getProperty('dunit.single')
+    if (single == null || single.length() == 0) {
+      include '**/*DUnitTest.class'
+    } else {
+      include single
+    }
     exclude '**/*Suite.class'
 
     workingDir = "${testResultsBase}/dunit"
