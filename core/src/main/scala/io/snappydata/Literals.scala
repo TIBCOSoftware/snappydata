@@ -205,7 +205,7 @@ object Property extends Enumeration {
     s"Explicit JDBC driver class for ${MetastoreDBURL()} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSize",
+  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in MB) that will be used to split the data into chunks " +
