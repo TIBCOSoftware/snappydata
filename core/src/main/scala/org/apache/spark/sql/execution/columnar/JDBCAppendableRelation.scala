@@ -28,6 +28,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -364,7 +365,9 @@ class ColumnarRelationProvider
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
     val rel = getRelation(sqlContext, options)
-    val relation = rel.createRelation(sqlContext, mode, options, data.schema)
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val relation = rel.createRelation(sqlContext, mode, options,
+      catalog.normalizeSchema(data.schema))
     var success = false
     try {
       relation.insert(data, mode == SaveMode.Overwrite)

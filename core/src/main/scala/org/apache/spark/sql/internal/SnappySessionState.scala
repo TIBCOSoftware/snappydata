@@ -24,11 +24,13 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.internal.config.ConfigEntry
+import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -36,10 +38,9 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.{AnalysisException, SnappyAggregation, SnappyContext, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 import org.apache.spark.streaming.Duration
 
 
@@ -59,22 +60,38 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val analyzer: Analyzer = {
-    new Analyzer(catalog, conf) {
-      override val extendedResolutionRules =
-        new PreprocessTableInsertOrPut(conf) ::
-        new FindDataSourceTable(snappySession) ::
-        DataSourceAnalysis(conf) :: ResolveRelationsExtended ::
-        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules =
+      new PreprocessTableInsertOrPut(conf) ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis(conf) ::
+          ResolveRelationsExtended ::
+          AnalyzeDMLExternalTables(snappySession) ::
+          ResolveQueryHints(snappySession) ::
+          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
-      override val extendedCheckRules = Seq(
-        datasources.PreWriteCheck(conf, catalog), PrePutCheck)
-    }
+    override val extendedCheckRules = Seq(
+      datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
-  override lazy val optimizer: SparkOptimizer = {
-    new SparkOptimizer(catalog, conf, experimentalMethods) {
-      override def batches: Seq[Batch] = super.batches :+
+  override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
+    override def batches: Seq[Batch] = {
+      implicit val ss = snappySession
+      var insertedSnappyOpts = 0
+      val modified = super.batches.map {
+        case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
+          insertedSnappyOpts += 1
+          val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
+          Batch(batch.name, batch.strategy, left ++ Some(ResolveIndex()) ++ right
+              : _*)
+        case b => b
+      }
+
+      if (insertedSnappyOpts != 1) {
+        throw new AnalysisException("Snappy Optimizations not applied")
+      }
+
+      modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan)
     }
   }
@@ -118,7 +135,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
-  object ResolveRelationsExtended extends Rule[LogicalPlan] {
+  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
     def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
         catalog.lookupRelation(u.tableIdentifier, u.alias)
@@ -131,6 +148,21 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
+        d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
+
+  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+      case c: DMLExternalTable if !c.query.resolved =>
+        c.copy(query = analyzeQuery(c.query))
+    }
+
+    private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
+      val qe = sparkSession.sessionState.executePlan(query)
+      qe.assertAnalyzed()
+      qe.analyzed
     }
   }
 
@@ -138,13 +170,13 @@ class SnappySessionState(snappySession: SnappySession)
    * Internal catalog for managing table and database states.
    */
   override lazy val catalog = new SnappyStoreHiveCatalog(
-      sharedState.externalCatalog,
-      snappySession,
-      metadataHive,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+    sharedState.externalCatalog,
+    snappySession,
+    metadataHive,
+    functionResourceLoader,
+    functionRegistry,
+    conf,
+    newHadoopConf())
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
@@ -230,7 +262,7 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
 class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
     extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
-    with SnappyStrategies {
+        with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case _ => Nil
@@ -344,9 +376,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   }
 
   /**
-    * If necessary, cast data types and rename fields to the expected
-    * types and names.
-    */
+   * If necessary, cast data types and rename fields to the expected
+   * types and names.
+   */
   // TODO: do we really need to rename?
   def castAndRenameChildOutput[T <: LogicalPlan](
       plan: T,

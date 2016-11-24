@@ -78,9 +78,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
 
+  override def readDataType(in: ByteArrayDataInput): AnyRef = null
+
   override def getRowIterator(dvds: Array[DataValueDescriptor],
       types: Array[Int], precisions: Array[Int], scales: Array[Int],
-      in: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
+      dataTypes: Array[AnyRef], in: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
     SparkSQLExecuteImpl.getRowIterator(dvds, types, precisions, scales, in)
   }
 
@@ -90,6 +92,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def publishColumnTableStats(): Unit = {
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats();
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
   }
 }

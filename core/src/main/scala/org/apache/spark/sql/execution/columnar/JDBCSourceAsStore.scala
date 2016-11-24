@@ -40,8 +40,9 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 /*
 Generic class to query column table from SnappyData execution.
  */
-class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
+class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
     numPartitions: Int) extends ExternalStore {
+  self =>
 
   @transient
   protected lazy val rand = new Random
@@ -49,6 +50,13 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
 
+  def getConnectedExternalStore(tableName: String,
+    onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsStore(
+    this.connProperties,
+    this.numPartitions) with ConnectedExternalStore {
+    protected[this] override val connectedInstance: Connection =
+      self.getConnection(tableName, onExecutor)
+  }
 
   override def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
