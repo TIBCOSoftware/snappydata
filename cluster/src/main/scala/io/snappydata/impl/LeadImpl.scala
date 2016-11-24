@@ -109,7 +109,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.JobserverEnabled(), "true").
+          set(Property.JobserverEnabled(),
+            Property.JobserverEnabled.defaultValueString).
           set("spark.scheduler.mode", "FAIR")
 
       Utils.setDefaultSerializerAndCodec(conf)

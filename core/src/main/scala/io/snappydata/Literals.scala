@@ -18,7 +18,10 @@ package io.snappydata
 
 import java.util.Properties
 
+import scala.reflect.ClassTag
+
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.internal.SQLConfigEntry
 
 /**
  * Constant names suggested per naming convention
@@ -60,7 +63,7 @@ object Constant {
 
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
-  val DEFAULT_USE_HIKARICP = false
+  val DEFAULT_USE_HIKARICP = true
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
@@ -105,8 +108,12 @@ object Constant {
  */
 object Property extends Enumeration {
 
-  final class ValueAlt(name: String, altName: String)
-      extends Property.Val(name) {
+  case class ValueAlt(name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) {
+
+    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+
+    def defaultValueString: String = configEntry.defaultValueString
 
     def getOption(conf: SparkConf): Option[String] = if (altName == null) {
       conf.getOption(name)
@@ -144,35 +151,65 @@ object Property extends Enumeration {
       if (altName == null) name else name + '/' + altName
   }
 
+  case class SQLValue(name: String, configEntry: SQLConfigEntry)
+      extends Property.Val(name) {
+
+    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+
+    def defaultValueString: String = configEntry.defaultValueString
+
+    override def toString(): String = name
+  }
+
   type Type = ValueAlt
 
-  protected final def Val(name: String): ValueAlt =
-    new ValueAlt(name, null)
+  type SQLType = SQLValue
 
-  protected final def Val(name: String, prefix: String): ValueAlt =
-    new ValueAlt(name, prefix + name)
+  protected final def Val[T: ClassTag](name: String, doc: String,
+      defaultValue: Option[T], prefix: String = null,
+      isPublic: Boolean = true): ValueAlt = {
+    ValueAlt(name, if (prefix == null) null else prefix + name,
+      SQLConfigEntry.sparkConf(name, doc, defaultValue, isPublic))
+  }
 
-  val Locators = Val(s"${Constant.STORE_PROPERTY_PREFIX}locators",
-    Constant.SPARK_PREFIX)
+  protected final def SQLVal[T: ClassTag](name: String, doc: String,
+      defaultValue: Option[T], isPublic: Boolean = true): SQLValue = {
+    SQLValue(name, SQLConfigEntry(name, doc, defaultValue, isPublic))
+  }
 
-  val McastPort = Val(s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
-    Constant.SPARK_PREFIX)
+  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+    "The list of locators as comma-separated host:port values that have been " +
+        "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled")
+  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+    "[Deprecated] The multicast port configured in the SnappyData cluster " +
+        "when locators are not being used. This mode is no longer supported.",
+    None, Constant.SPARK_PREFIX)
 
-  val JobserverConfigFile =
-    Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile")
+  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+    "If true then REST API access via Spark jobserver will be available in " +
+        "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    Constant.SPARK_PREFIX)
+    "Enabled in SnappyData embedded cluster and disabled for other " +
+        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetastoreDBURL = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-url",
-    Constant.SPARK_PREFIX)
+  val MetastoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+    "An explicit JDBC URL to use for external meta-data storage. " +
+        "Normally this is set to use the SnappyData store by default and " +
+        "should not be touched unless there are special requirements. " +
+        "Use with caution since an incorrect configuration can result in " +
+        "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
-    Constant.SPARK_PREFIX)
+  val MetastoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+    s"Explicit JDBC driver class for ${MetastoreDBURL()} setting.",
+    None, Constant.SPARK_PREFIX)
 
-  val LocalCacheTimeout = Val(s"${Constant.SPARK_PREFIX}sql.cacheTimeout")
+  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSize",
+    "The default size of blocks to use for storage in SnappyData column " +
+        "store. When inserting data into the column storage this is " +
+        "the unit (in MB) that will be used to split the data into chunks " +
+        "for efficient storage and retrieval.", Some(32))
 }
 
 /**
@@ -188,15 +225,15 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
    * than as serialized blobs to display better in external tools.
    * <p>
    * Possible values are 'true/1' or 'false/0'
    * <p>
    * Example:<br>
-   * SELECT * FROM t1 --+ complexTypeAsClob(1)
+   * SELECT * FROM t1 --+ complexTypeAsJson(1)
    */
-  val ComplexTypeAsClob = Value("complexTypeAsClob")
+  val ComplexTypeAsJson = Value("complexTypeAsJson")
 
   /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
