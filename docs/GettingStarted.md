@@ -692,7 +692,7 @@ SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store 
 ```bash
 # Start the spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
-$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
+$ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
 scala>
 Try few commands on the spark-shell 
 
@@ -708,7 +708,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
 
 # The results can be seen on the command line. 
 ```
@@ -719,7 +719,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataPythonApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/quickstart/python/AirlineDataPythonApp.py
+$ bin/spark-submit --master spark://masterhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/quickstart/python/AirlineDataPythonApp.py
 
 ```
 
