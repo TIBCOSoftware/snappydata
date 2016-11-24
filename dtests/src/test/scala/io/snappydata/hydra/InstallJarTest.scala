@@ -29,12 +29,12 @@ class InstallJarTest extends SnappySQLJob {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
     Try {
-      pw.println("****** DynamicJarLoadingJob started ******")
+      pw.println("****** InstallJarTest started ******")
       val currentDirectory: String = new File(".").getCanonicalPath
       val numServers: Int = jobConfig.getString("numServers").toInt
       val expectedException: Boolean = jobConfig.getString("expectedException").toBoolean
       TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers, expectedException)
-      pw.println("****** DynamicJarLoadingJob finished ******")
+      pw.println("****** InstallJarTest finished ******")
       return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory)
     } match {
       case Success(v) => pw.close()

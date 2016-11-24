@@ -37,12 +37,10 @@ object InstallJarTestSparkApp {
     Try {
       pw.println("****** DynamicJarLoadingJob started ******")
       pw.flush()
-      val currentDirectory: String = new File(".").getCanonicalPath
       val numServers: Int = args(1).toInt
       val expectedException: Boolean = args(2).toBoolean
       TestUtils.verify(snc, args(0), pw, numServers, expectedException)
       pw.println("****** DynamicJarLoadingJob finished ******")
-      return String.format("See %s/" + outputFile, currentDirectory)
     } match {
       case Success(v) => pw.close()
       case Failure(e) =>

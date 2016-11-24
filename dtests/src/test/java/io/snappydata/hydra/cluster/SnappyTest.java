@@ -1420,7 +1420,7 @@ public class SnappyTest implements Serializable {
         int currentThread = snappyTest.getMyTid();
         String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
         SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(), jarPath);
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
     }
 
     /**
@@ -1554,10 +1554,12 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar, String jarPath) {
+    public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar, String jarPath, String appName) {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
+        if(appName == null) appName = SnappyPrms.getUserAppName();
+        Log.getLogWriter().info("appName is: " + appName);
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         try {
@@ -1569,8 +1571,8 @@ public class SnappyTest implements Serializable {
                 } else {
                     APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 }
-                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
-                String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=myapp&classPath=" + userJob + "'";
+                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + LEAD_PORT + "/jars/" + appName;
+                String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
