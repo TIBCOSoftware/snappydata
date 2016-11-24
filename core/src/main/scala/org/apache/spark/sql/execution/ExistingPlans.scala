@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -55,6 +55,9 @@ private[sql] abstract class PartitionedPhysicalScan(
   protected lazy val numPartitions: Int = dataRDD.getNumPartitions
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
+
+  @transient val (metricAdd, metricValue): (String => String, String => String) =
+    Utils.metricMethods(sparkContext)
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
   // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
@@ -153,5 +156,16 @@ trait BatchConsumer extends CodegenSupport {
  * variable having dictionary reference and its index when dictionary
  * encoding is being used.
  */
-final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
-    dictionary: String, dictionaryIndex: String)
+case class ExprCodeEx(var hash: Option[String],
+    private var dictionaryCode: String, assignCode: String,
+    dictionary: String, dictionaryIndex: String) {
+
+  def evaluateDictionaryCode(ev: ExprCode): String = {
+    if (ev.code.isEmpty) ""
+    else {
+      val code = dictionaryCode
+      dictionaryCode = ""
+      code
+    }
+  }
+}
