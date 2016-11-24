@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.hydra.adAnalytics;
 
 
@@ -291,18 +308,14 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void stopKafkaBroker() {
     File log = null;
     ProcessBuilder pb = null;
-    try {
-      String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-stop.sh");
-      log = new File(".");
-      String dest = log.getCanonicalPath() + sep + "kafkaLogDir/stopKafkaServer.log";
-      File logFile = new File(dest);
-      pb = new ProcessBuilder("/bin/bash", "-c", script);
-      snappyTest.executeProcess(pb, logFile);
-      Log.getLogWriter().info("Stopped Kafka servers");
-    } catch (IOException e) {
-      String s = "Problem occurred while stopping brokers";
-      throw new TestException(s, e);
-    }
+    String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-stop.sh");
+    log = new File(".");
+    String dest = kafkaLogDir + sep + "stopKafkaServer.log";
+    File logFile = new File(dest);
+    pb = new ProcessBuilder("/bin/bash", "-c", script);
+    snappyTest.executeProcess(pb, logFile);
+    Log.getLogWriter().info("Stopped Kafka servers");
+
   }
 
   /**
@@ -316,18 +329,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void stopKafkaZookeeper() {
     File log = null;
     ProcessBuilder pb = null;
-    try {
-      String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/zookeeper-server-stop.sh");
-      log = new File(".");
-      String dest = log.getCanonicalPath() + sep + "kafkaLogDir/stopZookeeper.log";
-      File logFile = new File(dest);
-      pb = new ProcessBuilder("/bin/bash", "-c", script);
-      snappyTest.executeProcess(pb, logFile);
-      Log.getLogWriter().info("Stopped Kafka zookeeper");
-    } catch (IOException e) {
-      String s = "Problem occurred while stopping zookeeper";
-      throw new TestException(s, e);
-    }
+    String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/zookeeper-server-stop.sh");
+    log = new File(".");
+    String dest = kafkaLogDir + sep + "stopZookeeper.log";
+    File logFile = new File(dest);
+    pb = new ProcessBuilder("/bin/bash", "-c", script);
+    snappyTest.executeProcess(pb, logFile);
+    Log.getLogWriter().info("Stopped Kafka zookeeper");
   }
 
   public static void HydraTask_stopStreaming() {
