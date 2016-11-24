@@ -1559,7 +1559,6 @@ public class SnappyTest implements Serializable {
         File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
         if(appName == null) appName = SnappyPrms.getUserAppName();
-        Log.getLogWriter().info("appName is: " + appName);
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         try {
