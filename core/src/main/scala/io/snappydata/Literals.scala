@@ -142,8 +142,6 @@ object Property extends Enumeration {
       } else properties.getProperty(altName)
     }
 
-    def apply(): String = name
-
     def unapply(key: String): Boolean = name.equals(key) ||
         (altName != null && altName.equals(key))
 
@@ -177,6 +175,20 @@ object Property extends Enumeration {
     SQLValue(name, SQLConfigEntry(name, doc, defaultValue, isPublic))
   }
 
+  def getPropertyValue(propertyName: String): Option[String] = {
+    if (propertyName.startsWith(Constant.PROPERTY_PREFIX) &&
+        !propertyName.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
+      Some(propertyName.substring(Constant.PROPERTY_PREFIX.length))
+    } else None
+  }
+
+  def getSnappyPropertyValue(propertyName: String): Option[String] = {
+    if (propertyName.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
+        !propertyName.startsWith(Constant.SPARK_STORE_PREFIX)) {
+      Some(propertyName.substring(Constant.SPARK_SNAPPY_PREFIX.length))
+    } else None
+  }
+
   val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
@@ -202,7 +214,7 @@ object Property extends Enumeration {
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
   val MetastoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
-    s"Explicit JDBC driver class for ${MetastoreDBURL()} setting.",
+    s"Explicit JDBC driver class for ${MetastoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
   val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
@@ -210,6 +222,28 @@ object Property extends Enumeration {
         "store. When inserting data into the column storage this is " +
         "the unit (in MB) that will be used to split the data into chunks " +
         "for efficient storage and retrieval.", Some(32))
+}
+
+// extractors for properties
+
+object SparkProperty {
+  def unapply(property: Property.Type): Option[String] =
+    Property.getPropertyValue(property.name)
+}
+
+object SparkSQLProperty {
+  def unapply(property: Property.SQLType): Option[String] =
+    Property.getPropertyValue(property.name)
+}
+
+object SnappySparkProperty {
+  def unapply(property: Property.Type): Option[String] =
+    Property.getSnappyPropertyValue(property.name)
+}
+
+object SnappySparkSQLProperty {
+  def unapply(property: Property.SQLType): Option[String] =
+    Property.getSnappyPropertyValue(property.name)
 }
 
 /**
