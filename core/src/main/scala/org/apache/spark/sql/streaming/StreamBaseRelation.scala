@@ -52,7 +52,7 @@ abstract class StreamBaseRelation(options: Map[String, String])
   override def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(tableName)
 
-  override def recoverDependentsRelation(): Unit = {
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
     throw new UnsupportedOperationException(
       "Recovery of dependents' relation not possible")
   }

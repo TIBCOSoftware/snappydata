@@ -32,8 +32,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
@@ -62,7 +63,8 @@ class RowFormatRelation(
       _origOptions,
       _context)
     with PartitionedDataSourceScan
-    with RowPutRelation {
+    with RowPutRelation with ParentRelation with DependentRelation {
+  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def toString: String = s"RowFormatRelation[$table]"
 
@@ -70,7 +72,7 @@ class RowFormatRelation(
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
-  private[this] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
+  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
 
   @transient private[this] lazy val region: LocalRegion =
@@ -210,6 +212,48 @@ class RowFormatRelation(
     }
     s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
   }
+
+  /** Base table of this relation. */
+  override def baseTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
+
+  /** Name of this relation in the catalog. */
+  override def name: String = table
+
+  override def addDependent(dependent: DependentRelation,
+      catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.addDependent(table, dependent.name)
+
+  override def removeDependent(dependent: DependentRelation,
+      catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.removeDependent(table, dependent.name)
+
+
+  override def getDependents(
+      catalog: SnappyStoreHiveCatalog): Seq[String] =
+    DependencyCatalog.getDependents(table)
+
+  /**
+   * Recover/Re-create the dependent child relations. This callback
+   * is to recreate Dependent relations when the ParentRelation is
+   * being created.
+   */
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
+
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sncCatalog = snappySession.sessionState.catalog
+
+    var dependentRelations: Array[String] = Array()
+    if (None != properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+      dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")
+    }
+    dependentRelations.foreach(rel => {
+      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
+        case LogicalRelation(r: DependentRelation, _, _) => r
+      }
+      addDependent(dr, sncCatalog)
+    })
+
+  }
 }
 
 final class DefaultSource extends MutableRelationProvider {
@@ -227,8 +271,8 @@ final class DefaultSource extends MutableRelationProvider {
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
+    val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val sc = sqlContext.sparkContext
-
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 

@@ -931,4 +931,50 @@ class ColumnTableTest
     assert(entries == 200)
     logInfo("Successful")
   }
+
+  test("Test Dropping Colocated column table") {
+
+
+    snc.sql("create table ORDER_DETAILS_COL(SINGLE_ORDER_DID BIGINT ," +
+        "SYS_ORDER_ID VARCHAR(64)" +
+        " ,SYS_ORDER_VER INTEGER ," +
+        "DATA_SNDG_SYS_NM VARCHAR(128)) " +
+        "USING column OPTIONS(BUCKETS '13', " +
+        "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT'," +
+        " PERSISTENT 'ASYNCHRONOUS')");
+
+    snc.sql("create table EXEC_DETAILS_COL(EXEC_DID BIGINT," +
+        "SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64)," +
+        "TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) " +
+        "USING column OPTIONS(COLOCATE_WITH 'ORDER_DETAILS_COL', " +
+        "BUCKETS '13', REDUNDANCY '1', " +
+        "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')");
+
+    try {
+      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+    } catch {
+      case e: AnalysisException => {
+        assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
+            "dependent objects: APP.EXEC_DETAILS_COL;")
+        //Execute second time to see we are getting same exception instead of table not found
+        try {
+          snc.sql("DROP TABLE ORDER_DETAILS_COL");
+        } catch {
+          case e: AnalysisException => {
+            assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
+                "dependent objects: APP.EXEC_DETAILS_COL;")
+          }
+          case _ => throw new AssertionError;
+        }
+      } // Expected Exception hence ignore
+      case _ => throw new AssertionError;
+    }
+
+    try {
+      snc.sql("DROP TABLE EXEC_DETAILS_COL");
+      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+    } catch {
+      case _ => assert(false)
+    }
+  }
 }

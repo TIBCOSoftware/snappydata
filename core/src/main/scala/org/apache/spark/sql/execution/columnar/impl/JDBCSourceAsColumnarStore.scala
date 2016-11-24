@@ -40,9 +40,18 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * Column Store implementation for GemFireXD.
  */
-final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
+class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     _numPartitions: Int)
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
+  self =>
+
+  override def getConnectedExternalStore(tableName: String,
+    onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsColumnarStore(
+    _connProperties,
+    _numPartitions) with ConnectedExternalStore {
+    protected[this] override val connectedInstance: Connection =
+      self.getConnection(tableName, onExecutor)
+  }
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       session: SparkSession): RDD[CachedBatch] = {

@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
@@ -32,7 +33,6 @@ import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, Partition}
-
 
 object StoreUtils extends Logging {
 
@@ -228,20 +228,22 @@ object StoreUtils extends Logging {
       table: String,
       schema: Option[StructType],
       partitions: Int,
-      connProperties: ConnectionProperties): Unit = {
+      connProperties: ConnectionProperties,
+      baseTable: Option[String] = None,
+      dmls: ArrayBuffer[String] = ArrayBuffer.empty): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
-        .collect()
+    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties,
+      baseTable, dmls).collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
-      StoreCallbacksImpl.stores.remove(table)
+      StoreCallbacksImpl.executorCatalog.remove(table)
       Iterator.empty
     }).count()
-    StoreCallbacksImpl.stores.remove(table)
+    StoreCallbacksImpl.executorCatalog.remove(table)
   }
 
   def appendClause(sb: mutable.StringBuilder,

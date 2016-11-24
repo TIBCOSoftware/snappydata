@@ -24,8 +24,10 @@ import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
+
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
+
 // scalastyle:on
 
 import org.apache.spark.sql.SnappyContext
@@ -180,8 +182,8 @@ abstract class SnappyFunSuite
   }
 
   protected def logStdOut(msg: String): Unit = {
-    // scalastyle:off
+    // scalastyle:off println
     println(msg)
-    // scalastyle:on
+    // scalastyle:on println
   }
 }
