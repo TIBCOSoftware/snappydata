@@ -16,10 +16,11 @@
  */
 package io.snappydata.gemxd
 
-import java.io.DataOutput
+import java.io.{CharArrayWriter, DataOutput}
 
 import scala.collection.JavaConverters._
 
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
@@ -34,6 +35,7 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.{Constant, QueryHint}
 
+import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
@@ -225,15 +227,30 @@ class SparkSQLExecuteImpl(val sql: String,
     DataSerializer.writeStringArray(tableNames, hdos)
     DataSerializer.writeStringArray(getColumnNames, hdos)
     DataSerializer.writeBooleanArray(nullability, hdos)
-    colTypes.foreach { case (tp, precision, scale) =>
+    for (i <- colTypes.indices) {
+      val (tp, precision, scale) = colTypes(i)
       InternalDataSerializer.writeSignedVL(tp, hdos)
-      if (tp == StoredFormatIds.SQL_DECIMAL_ID) {
-        InternalDataSerializer.writeSignedVL(precision, hdos) // precision
-        InternalDataSerializer.writeSignedVL(scale, hdos) // scale
-      } else if (tp == StoredFormatIds.SQL_VARCHAR_ID ||
-          tp == StoredFormatIds.SQL_CHAR_ID) {
-        // Write the size as precision
-        InternalDataSerializer.writeSignedVL(precision, hdos)
+      tp match {
+        case StoredFormatIds.SQL_DECIMAL_ID =>
+          InternalDataSerializer.writeSignedVL(precision, hdos) // precision
+          InternalDataSerializer.writeSignedVL(scale, hdos) // scale
+        case StoredFormatIds.SQL_VARCHAR_ID |
+            StoredFormatIds.SQL_CHAR_ID =>
+          // Write the size as precision
+          InternalDataSerializer.writeSignedVL(precision, hdos)
+        case StoredFormatIds.REF_TYPE_ID =>
+          // Write the DataType
+          val pooled = KryoSerializerPool.borrow()
+          val output = pooled.newOutput()
+          try {
+            StructTypeSerializer.writeType(pooled.kryo, output,
+              querySchema(i).dataType)
+            DataSerializer.writeByteArray(output.getBuffer,
+              output.position(), hdos)
+          } finally {
+            KryoSerializerPool.release(pooled)
+          }
+        case _ => // ignore for others
       }
     }
   }
@@ -300,7 +317,7 @@ class SparkSQLExecuteImpl(val sql: String,
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
 
       // send across rest as objects that will be displayed as strings
-      case _ => (StoredFormatIds.SQL_USERTYPE_ID_V3, -1, -1)
+      case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
     }
   }
 
@@ -315,8 +332,21 @@ object SparkSQLExecuteImpl {
     "false").toBoolean
 
   def getRowIterator(dvds: Array[DataValueDescriptor], types: Array[Int],
-      precisions: Array[Int], scales: Array[Int],
+      precisions: Array[Int], scales: Array[Int], dataTypes: Array[AnyRef],
       input: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
+    // initialize JSON generator if required
+    var continue = true
+    var writer: CharArrayWriter = null
+    var gen: JsonGenerator = null
+    for (d <- dataTypes if continue) {
+      if (d ne null) {
+        writer = new CharArrayWriter()
+        // create the Generator without separator inserted between 2 records
+        gen = new JsonFactory().createGenerator(writer)
+            .setRootValueSeparator(null)
+        continue = false
+      }
+    }
     val execRow = new ValueRow(dvds)
     val numFields = types.length
     val unsafeRows = CachedDataFrame.decodeUnsafeRows(numFields,
@@ -361,14 +391,13 @@ object SparkSQLExecuteImpl {
             case StoredFormatIds.SQL_DOUBLE_ID =>
               dvd.setValue(row.getDouble(index))
             case StoredFormatIds.REF_TYPE_ID =>
-              // convert to String and write (need DataType)
-              /*
-              val sb = new StringBuilder()
-              Utils.dataTypeStringBuilder(dataType, sb)(row.get(index, dataType))
-              */
-              throw new GemFireXDRuntimeException("SW: implement")
-            case StoredFormatIds.SQL_USERTYPE_ID_V3 =>
-              throw new GemFireXDRuntimeException("SW: implement")
+              // convert to Json using JacksonGenerator
+              val dataType = dataTypes(index).asInstanceOf[DataType]
+              Utils.generateJson(dataType, gen, row)
+              gen.flush()
+              val json = writer.toString
+              writer.reset()
+              dvd.setValue(json)
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
               // Array, Map, Struct (as well as Binary itself) store data
@@ -380,6 +409,8 @@ object SparkSQLExecuteImpl {
           index += 1
         }
       }
+      if ((gen ne null) && !unsafeRows.hasNext) gen.close()
+
       execRow
     }.asJava
   }

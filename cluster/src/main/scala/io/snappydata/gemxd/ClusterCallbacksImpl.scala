@@ -16,7 +16,7 @@
  */
 package io.snappydata.gemxd
 
-import java.util
+import java.util.{Iterator => JIterator}
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.ByteArrayDataInput
@@ -30,6 +30,7 @@ import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
+import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -42,8 +43,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     // nothing to be done; singleton constructor does all
   }
 
-  override def getLeaderGroup: util.HashSet[String] = {
-    val leaderServerGroup = new util.HashSet[String]
+  override def getLeaderGroup: java.util.HashSet[String] = {
+    val leaderServerGroup = new java.util.HashSet[String]
     leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
     leaderServerGroup
   }
@@ -78,10 +79,23 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
 
+  override def readDataType(in: ByteArrayDataInput): AnyRef = {
+    // read the DataType
+    val pooled = KryoSerializerPool.borrow()
+    val input = pooled.input
+    try {
+      input.setBuffer(in.array(), in.position(), in.available())
+      StructTypeSerializer.readType(pooled.kryo, input)
+    } finally {
+      KryoSerializerPool.release(pooled, clearInputBuffer = true)
+    }
+  }
+
   override def getRowIterator(dvds: Array[DataValueDescriptor],
       types: Array[Int], precisions: Array[Int], scales: Array[Int],
-      in: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
-    SparkSQLExecuteImpl.getRowIterator(dvds, types, precisions, scales, in)
+      dataTypes: Array[AnyRef], in: ByteArrayDataInput): JIterator[ValueRow] = {
+    SparkSQLExecuteImpl.getRowIterator(dvds, types, precisions, scales,
+      dataTypes, in)
   }
 
   override def clearSnappySessionForConnection(
@@ -90,6 +104,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def publishColumnTableStats(): Unit = {
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats();
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
   }
 }

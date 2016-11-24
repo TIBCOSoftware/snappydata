@@ -164,6 +164,8 @@ final class PooledObject(serializer: PooledKryoSerializer,
     bufferSize: Int) {
   val kryo: Kryo = serializer.newKryo()
   val input: Input = new KryoInputStringFix(0)
+
+  def newOutput(): Output = new Output(bufferSize, -1)
 }
 
 // TODO: SW: pool must be per SparkContext
@@ -240,7 +242,7 @@ private[spark] final class PooledKryoSerializerInstance(
 
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
     val poolObject = KryoSerializerPool.borrow()
-    val output = new Output(KryoSerializerPool.bufferSize, -1)
+    val output = poolObject.newOutput()
     try {
       poolObject.kryo.writeClassAndObject(output, t)
       val result = ByteBuffer.wrap(output.toBytes)
@@ -312,7 +314,7 @@ private[serializer] class KryoReuseSerializationStream(
   private[this] var output = stream match {
     case out: Output => out
     case _ =>
-      val out = new Output(KryoSerializerPool.bufferSize, -1)
+      val out = poolObject.newOutput()
       out.setOutputStream(stream)
       out
   }
