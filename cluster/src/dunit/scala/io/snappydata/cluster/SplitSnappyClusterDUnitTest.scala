@@ -228,7 +228,8 @@ object SplitSnappyClusterDUnitTest
         .saveAsTable("PR_TABLE3")
 
     val countdf = snc.sql("select * from PR_TABLE3")
-    assert(countdf.count() == 1000)
+    var count = countdf.count()
+    assert(count == 1000, s"Unexpected count = $count, expected 1000")
 
     snc.sql("DROP TABLE IF EXISTS PR_TABLE4")
 
@@ -243,7 +244,8 @@ object SplitSnappyClusterDUnitTest
     val dimensionDf = snc.createDataFrame(dimension2)
     dimensionDf.write.insertInto("PR_TABLE4")
     val countdf1 = snc.sql("select * from PR_TABLE4")
-    assert(countdf1.count() == 1000)
+    count = countdf1.count()
+    assert(count == 1000, s"Unexpected count = $count, expected 1000")
   }
 
 
