@@ -18,15 +18,17 @@ package io.snappydata
 
 import java.util.Properties
 
+import scala.reflect.ClassTag
+
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.sources._
+import org.apache.spark.sql.internal.SQLConfigEntry
 
 /**
-  * Constant names suggested per naming convention
-  * http://docs.scala-lang.org/style/naming-conventions.html
-  *
-  * we decided to use upper case with underscore word separator.
-  */
+ * Constant names suggested per naming convention
+ * http://docs.scala-lang.org/style/naming-conventions.html
+ *
+ * we decided to use upper case with underscore word separator.
+ */
 object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
@@ -61,7 +63,7 @@ object Constant {
 
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
-  val DEFAULT_USE_HIKARICP = false
+  val DEFAULT_USE_HIKARICP = true
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
@@ -97,18 +99,21 @@ object Constant {
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
-
 }
 
 /**
-  * Property names should be as per naming convention
-  * http://docs.scala-lang.org/style/naming-conventions.html
-  * i.e. upper camel case.
-  */
+ * Property names should be as per naming convention
+ * http://docs.scala-lang.org/style/naming-conventions.html
+ * i.e. upper camel case.
+ */
 object Property extends Enumeration {
 
-  final class ValueAlt(name: String, altName: String)
-      extends Property.Val(name) {
+  case class ValueAlt(name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) {
+
+    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+
+    def defaultValueString: String = configEntry.defaultValueString
 
     def getOption(conf: SparkConf): Option[String] = if (altName == null) {
       conf.getOption(name)
@@ -137,8 +142,6 @@ object Property extends Enumeration {
       } else properties.getProperty(altName)
     }
 
-    def apply(): String = name
-
     def unapply(key: String): Boolean = name.equals(key) ||
         (altName != null && altName.equals(key))
 
@@ -146,138 +149,206 @@ object Property extends Enumeration {
       if (altName == null) name else name + '/' + altName
   }
 
+  case class SQLValue(name: String, configEntry: SQLConfigEntry)
+      extends Property.Val(name) {
+
+    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+
+    def defaultValueString: String = configEntry.defaultValueString
+
+    override def toString(): String = name
+  }
+
   type Type = ValueAlt
 
-  protected final def Val(name: String): ValueAlt =
-    new ValueAlt(name, null)
+  type SQLType = SQLValue
 
-  protected final def Val(name: String, prefix: String): ValueAlt =
-    new ValueAlt(name, prefix + name)
+  protected final def Val[T: ClassTag](name: String, doc: String,
+      defaultValue: Option[T], prefix: String = null,
+      isPublic: Boolean = true): ValueAlt = {
+    ValueAlt(name, if (prefix == null) null else prefix + name,
+      SQLConfigEntry.sparkConf(name, doc, defaultValue, isPublic))
+  }
 
-  val Locators = Val(s"${Constant.STORE_PROPERTY_PREFIX}locators",
-    Constant.SPARK_PREFIX)
+  protected final def SQLVal[T: ClassTag](name: String, doc: String,
+      defaultValue: Option[T], isPublic: Boolean = true): SQLValue = {
+    SQLValue(name, SQLConfigEntry(name, doc, defaultValue, isPublic))
+  }
 
-  val McastPort = Val(s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
-    Constant.SPARK_PREFIX)
+  def getPropertyValue(propertyName: String): Option[String] = {
+    if (propertyName.startsWith(Constant.PROPERTY_PREFIX) &&
+        !propertyName.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
+      Some(propertyName.substring(Constant.PROPERTY_PREFIX.length))
+    } else None
+  }
 
-  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled")
+  def getSnappyPropertyValue(propertyName: String): Option[String] = {
+    if (propertyName.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
+        !propertyName.startsWith(Constant.SPARK_STORE_PREFIX)) {
+      Some(propertyName.substring(Constant.SPARK_SNAPPY_PREFIX.length))
+    } else None
+  }
 
-  val JobserverConfigFile =
-    Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile")
+  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+    "The list of locators as comma-separated host:port values that have been " +
+        "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
+
+  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+    "[Deprecated] The multicast port configured in the SnappyData cluster " +
+        "when locators are not being used. This mode is no longer supported.",
+    None, Constant.SPARK_PREFIX)
+
+  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+    "If true then REST API access via Spark jobserver will be available in " +
+        "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    Constant.SPARK_PREFIX)
+    "Enabled in SnappyData embedded cluster and disabled for other " +
+        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetastoreDBURL = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-url",
-    Constant.SPARK_PREFIX)
+  val MetastoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+    "An explicit JDBC URL to use for external meta-data storage. " +
+        "Normally this is set to use the SnappyData store by default and " +
+        "should not be touched unless there are special requirements. " +
+        "Use with caution since an incorrect configuration can result in " +
+        "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
-    Constant.SPARK_PREFIX)
+  val MetastoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+    s"Explicit JDBC driver class for ${MetastoreDBURL.name} setting.",
+    None, Constant.SPARK_PREFIX)
 
-  val LocalCacheTimeout = Val(s"${Constant.SPARK_PREFIX}sql.cacheTimeout")
+  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
+    "The default size of blocks to use for storage in SnappyData column " +
+        "store. When inserting data into the column storage this is " +
+        "the unit (in MB) that will be used to split the data into chunks " +
+        "for efficient storage and retrieval.", Some(32))
+}
+
+// extractors for properties
+
+object SparkProperty {
+  def unapply(property: Property.Type): Option[String] =
+    Property.getPropertyValue(property.name)
+}
+
+object SparkSQLProperty {
+  def unapply(property: Property.SQLType): Option[String] =
+    Property.getPropertyValue(property.name)
+}
+
+object SnappySparkProperty {
+  def unapply(property: Property.Type): Option[String] =
+    Property.getSnappyPropertyValue(property.name)
+}
+
+object SnappySparkSQLProperty {
+  def unapply(property: Property.SQLType): Option[String] =
+    Property.getSnappyPropertyValue(property.name)
 }
 
 /**
-  * SQL query hints as interpreted by the SnappyData SQL parser. The format
-  * mirrors closely the format used by Hive,Oracle query hints with a comment
-  * followed immediately by a '+' and then "key(value)" for the hint. Example:
-  * <p>
-  * SELECT * /{@literal *}+ hint(value) *{@literal /} FROM t1
-  */
+ * SQL query hints as interpreted by the SnappyData SQL parser. The format
+ * mirrors closely the format used by Hive,Oracle query hints with a comment
+ * followed immediately by a '+' and then "key(value)" for the hint. Example:
+ * <p>
+ * SELECT * /`*`+ hint(value) *`/` FROM t1
+ */
 object QueryHint extends Enumeration {
 
   type Type = Value
 
   import scala.language.implicitConversions
+
   implicit def toStr(h: Type): String = h.toString
 
   /**
-    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-    * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
-    * than as serialized blobs to display better in external tools.
-    *
-    * Possible values are 'true/1' or 'false/0'
-    *
-    * Example:<br>
-    * SELECT * FROM t1 --+ complexTypeAsClob(1)
-    */
-  val ComplexTypeAsClob = Value("complexTypeAsClob")
+   * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
+   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * than as serialized blobs to display better in external tools.
+   *
+   * Possible values are 'true/1' or 'false/0'
+   *
+   * Example:<br>
+   * SELECT * FROM t1 --+ complexTypeAsJson(1)
+   */
+  val ComplexTypeAsJson = Value("complexTypeAsJson")
 
   /**
-    * Query hint followed by table to override optimizer choice of index per table.
-    *
-    * Possible values are valid indexes defined on the table.
-    *
-    * Example:<br>
-    * SELECT * FROM t1 /{@literal *}+ index(xxx) *{@literal /} , t2 --+ withIndex(yyy)
-    */
+   * Query hint followed by table to override optimizer choice of index per table.
+   *
+   * Possible values are valid indexes defined on the table.
+   *
+   * Example:<br>
+   * SELECT * FROM t1 /`*`+ index(xxx) *`/`, t2 --+ withIndex(yyy)
+   */
   val Index = Value("index")
 
   /**
-    * Query hint after FROM clause to indicate following tables have join order fixed and
-    * optimizer shouldn't try to re-order joined tables.
-    *
-    * Possible comma separated values are [[io.snappydata.JOS]].
-    *
-    * Example:<br>
-    * SELECT * FROM /{@literal *}+ joinOrder(fixed) *{@literal /} t1, t2
-    */
+   * Query hint after FROM clause to indicate following tables have join order fixed and
+   * optimizer shouldn't try to re-order joined tables.
+   *
+   * Possible comma separated values are [[io.snappydata.JOS]].
+   *
+   * Example:<br>
+   * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
+   */
   val JoinOrder = Value("joinOrder")
 
   /**
-    * Query hint for SQL queries to serialize STRING type as CLOB rather than
-    * as VARCHAR.
-    *
-    * Possible values are valid column names in the tables/schema. Multiple
-    * column names to be comma separated.
-    * One can also provide '*' for serializing all the STRING columns as CLOB.
-    *
-    * Example:<br>
-    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
-    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
-    */
+   * Query hint for SQL queries to serialize STRING type as CLOB rather than
+   * as VARCHAR.
+   *
+   * Possible values are valid column names in the tables/schema. Multiple
+   * column names to be comma separated.
+   * One can also provide '*' for serializing all the STRING columns as CLOB.
+   *
+   * Example:<br>
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
+   * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
+   */
   val ColumnsAsClob = Value("columnsAsClob")
 }
 
 /**
-  * List of possible values for Join Order QueryHint.
-  *
-  * [[Note:]] Ordering is applicable only when index choice is left to the optimizer. By default,
-  * if user specifies explicit index hint like "select * from t1 --+ index()", optimizer will just
-  * honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
-  * hint for any table disables choice of index and its associated following rules.
-  */
+ * List of possible values for Join Order QueryHint.
+ *
+ * `Note:` Ordering is applicable only when index choice is left to the optimizer. By default,
+ * if user specifies explicit index hint like "select * from t1 --+ index()", optimizer will just
+ * honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
+ * hint for any table disables choice of index and its associated following rules.
+ */
 object JOS extends Enumeration {
   type Type = Value
 
   import scala.language.implicitConversions
+
   implicit def toStr(h: Type): String = h.toString
 
   /**
-    * Continue to attempt optimization choices of index for colocated joins even if user have
-    * specified explicit index hints for some tables.
-    *
-    * [[Note:]] user specified index hint will be honored and optimizer will only attempt for
-    * other tables in the query.
-    */
+   * Continue to attempt optimization choices of index for colocated joins even if user have
+   * specified explicit index hints for some tables.
+   *
+   * `Note:` user specified index hint will be honored and optimizer will only attempt for
+   * other tables in the query.
+   */
   val ContinueOptimizations = Value("continueOpts")
 
   /**
-    * By default if query have atleast one colocated join conditions mentioned between a pair of
-    * partitiioned tables, optimizer won't try to derive colocation possibilities with replicated
-    * tables in between. This switch tells the optimizer to include partition -> replicated ->
-    * partition like indirect colocation possibilities even if partition -> partition join
-    * conditions are mentioned.
-    */
+   * By default if query have atleast one colocated join conditions mentioned between a pair of
+   * partitiioned tables, optimizer won't try to derive colocation possibilities with replicated
+   * tables in between. This switch tells the optimizer to include partition -> replicated ->
+   * partition like indirect colocation possibilities even if partition -> partition join
+   * conditions are mentioned.
+   */
   val IncludeGeneratedPaths = Value("includeGeneratedPaths")
 
   /**
-    * Applies replicated table with filter conditions in the given order of preference in
-    * 'joinOrder' query hint comma separated values.
-    *
-    * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
-    * will apply the rule in the mentioned order and rest of the rules will be skipped.
-    */
+   * Applies replicated table with filter conditions in the given order of preference in
+   * 'joinOrder' query hint comma separated values.
+   *
+   * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
+   * will apply the rule in the mentioned order and rest of the rules will be skipped.
+   */
   val ReplicateWithFilters = Value("RWF")
 
   val ColocatedWithFilters = Value("CWF")
@@ -285,5 +356,4 @@ object JOS extends Enumeration {
   val LargestColocationChain = Value("LCC")
 
   val NonColocatedWithFilters = Value("NCWF")
-
 }

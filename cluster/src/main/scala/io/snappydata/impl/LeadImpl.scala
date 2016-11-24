@@ -33,8 +33,8 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.snappydata._
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 
@@ -72,17 +72,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
   private[snappydata] val snappyProperties = Utils.getFields(Property).collect {
-    case (_, propVal: Property.Type) =>
-      val prop = propVal()
-      if (prop.startsWith(Constant.PROPERTY_PREFIX) &&
-          !prop.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
-        prop.substring(Constant.PROPERTY_PREFIX.length)
-      } else if (prop.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
-          !prop.startsWith(Constant.SPARK_STORE_PREFIX)) {
-        prop.substring(Constant.SPARK_SNAPPY_PREFIX.length)
-      } else {
-        ""
-      }
+    case (_, SparkProperty(prop)) => prop
+    case (_, SnappySparkProperty(prop)) => prop
+    case (_, SparkSQLProperty(prop)) => prop
+    case (_, SnappySparkSQLProperty(prop)) => prop
+    case _ => ""
   }.toSet
 
   var _directApiInvoked: Boolean = false
@@ -109,7 +103,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.JobserverEnabled(), "true").
+          set(Property.JobserverEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR")
 
       Utils.setDefaultSerializerAndCodec(conf)
@@ -325,7 +319,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
-    changeOrAppend(Property.JobserverEnabled(), "false", ignoreIfPresent = true)
+    changeOrAppend(Property.JobserverEnabled.name, "false",
+      ignoreIfPresent = true)
 
     conf
   }

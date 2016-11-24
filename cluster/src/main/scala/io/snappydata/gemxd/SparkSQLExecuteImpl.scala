@@ -74,9 +74,9 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] lazy val colTypes = getColumnTypes
 
-  // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = session.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsClob.toString) match {
+  // check for query hint to serialize complex types as JSON strings
+  private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
   }
@@ -297,7 +297,7 @@ class SparkSQLExecuteImpl(val sql: String,
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       case _: ArrayType | _: MapType | _: StructType =>
         // indicates complex types serialized as strings
-        if (complexTypeAsClob) (StoredFormatIds.REF_TYPE_ID, -1, -1)
+        if (complexTypeAsJson) (StoredFormatIds.REF_TYPE_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
 
       // send across rest as objects that will be displayed as strings

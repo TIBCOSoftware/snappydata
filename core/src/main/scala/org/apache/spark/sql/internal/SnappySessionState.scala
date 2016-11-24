@@ -18,12 +18,13 @@
 package org.apache.spark.sql.internal
 
 import scala.collection.concurrent.TrieMap
+import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
-import org.apache.spark.internal.config.ConfigEntry
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
@@ -38,6 +39,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
@@ -216,7 +218,7 @@ class SnappySessionState(snappySession: SnappySession)
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }
 
-private[sql] class SnappyConf(@transient val session: SnappySession)
+class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable with CatalystConf with Logging {
 
   /**
@@ -256,6 +258,71 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
     checkShufflePartitionsKey(entry.key)
     super.setConf[T](entry, value)
+  }
+}
+
+class SQLConfigEntry private(entry: ConfigEntry[_]) {
+
+  def key: String = entry.key
+
+  def doc: String = entry.doc
+
+  def isPublic: Boolean = entry.isPublic
+
+  def defaultValue[T]: Option[T] = entry.defaultValue.asInstanceOf[Option[T]]
+
+  def defaultValueString: String = entry.defaultValueString
+
+  def getConf[T](conf: SQLConf): T =
+    conf.getConf[T](entry.asInstanceOf[ConfigEntry[T]])
+
+  override def toString: String = entry.toString
+}
+
+object SQLConfigEntry {
+
+  private def handleDefault[T](entry: TypedConfigBuilder[T],
+      defaultValue: Option[T]): SQLConfigEntry = defaultValue match {
+    case Some(v) => new SQLConfigEntry(entry.createWithDefault(v))
+    case None => new SQLConfigEntry(entry.createOptional)
+  }
+
+  def sparkConf[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
+      isPublic: Boolean = true): SQLConfigEntry = {
+    classTag[T] match {
+      case ClassTag.Int => handleDefault[Int](ConfigBuilder(key)
+          .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
+      case ClassTag.Long => handleDefault[Long](ConfigBuilder(key)
+          .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
+      case ClassTag.Double => handleDefault[Double](ConfigBuilder(key)
+          .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
+      case ClassTag.Boolean => handleDefault[Boolean](ConfigBuilder(key)
+          .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
+      case c if c.runtimeClass == classOf[String] =>
+        handleDefault[String](ConfigBuilder(key).doc(doc).stringConf,
+          defaultValue.asInstanceOf[Option[String]])
+      case c => throw new IllegalArgumentException(
+        s"Unknown type of configuration key: $c")
+    }
+  }
+
+  def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
+      isPublic: Boolean = true): SQLConfigEntry = {
+    classTag[T] match {
+      case ClassTag.Int => handleDefault[Int](SQLConfigBuilder(key)
+          .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
+      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
+          .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
+      case ClassTag.Double => handleDefault[Double](SQLConfigBuilder(key)
+          .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
+      case ClassTag.Boolean => handleDefault[Boolean](SQLConfigBuilder(key)
+          .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
+      case c if c.runtimeClass == classOf[String] =>
+        handleDefault[String](SQLConfigBuilder(key).doc(doc).stringConf,
+          defaultValue.asInstanceOf[Option[String]])
+      case c => throw new IllegalArgumentException(
+        s"Unknown type of configuration key: $c")
+    }
   }
 }
 
