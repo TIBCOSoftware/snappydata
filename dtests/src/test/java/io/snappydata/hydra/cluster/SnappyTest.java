@@ -16,7 +16,6 @@
  */
 package io.snappydata.hydra.cluster;
 
-
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
@@ -49,6 +48,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+
+
 //import util.*;
 
 public class SnappyTest implements Serializable {
@@ -58,9 +59,9 @@ public class SnappyTest implements Serializable {
     protected static SnappyTest snappyTest;
     protected static HostDescription hd = TestConfig.getInstance().getMasterDescription()
             .getVmDescription().getHostDescription();
-    private static char sep = hd.getFileSep();
+    protected static char sep = hd.getFileSep();
     private static String gemfireHome = hd.getGemFireHome() + sep;
-    private static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
+    protected static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
     private static String productConfDirPath = productDir + "conf" + sep;
     private static String productLibsDir = productDir + "lib" + sep;
     private static String productSbinDir = productDir + "sbin" + sep;

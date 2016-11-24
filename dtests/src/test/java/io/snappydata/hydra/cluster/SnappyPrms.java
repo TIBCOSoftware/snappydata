@@ -16,10 +16,10 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.Vector;
+
 import hydra.BasePrms;
 import hydra.HydraVector;
-
-import java.util.Vector;
 
 
 /**
@@ -315,6 +315,21 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long shufflePartitions;
 
+    /**
+     * path for kafka directory
+     */
+    public static Long kafkaDir;
+
+    /**
+     * snappy-poc jar path
+     */
+    public static Long snappyPocJarPath;
+
+    /**
+     * kafka topic name
+     */
+    public static  Long kafkaTopic;
+
     public static int getRetryCountForJob() {
         Long key = numTimesToRetry;
         return tasktab().intAt(key, tab().intAt(key, 5));
@@ -509,6 +524,12 @@ public class SnappyPrms extends BasePrms {
         Long key = streamingJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
+    public static Vector getKafkaTopic() {
+        Long key = kafkaTopic;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+
 
     static {
         BasePrms.setValues(SnappyPrms.class);
