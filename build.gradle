@@ -93,7 +93,7 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.0.0'
+    sparkVersion = '2.0.2'
     snappySparkVersion = '2.0.2-1'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
@@ -299,7 +299,12 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    include '**/*DUnitTest.class'
+    def single = System.getProperty('dunit.single')
+    if (single == null || single.length() == 0) {
+      include '**/*DUnitTest.class'
+    } else {
+      include single
+    }
     exclude '**/*Suite.class'
 
     workingDir = "${testResultsBase}/dunit"
