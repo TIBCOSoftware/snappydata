@@ -81,8 +81,8 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsClob.toString) match {
+  private[this] val complexTypeAsJson = snc.snappySession.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
   }
@@ -107,7 +107,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
-    val serializeComplexType = !complexTypeAsClob && querySchema.exists(
+    val serializeComplexType = !complexTypeAsJson && querySchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
@@ -305,7 +305,7 @@ class SparkSQLExecuteImpl(val sql: String,
         // the ID here is different from CLOB because serialization of CLOB
         // uses full UTF8 like in UTF8String while below is still modified
         // UTF8 (no code for full UTF8 yet -- change when full UTF8 code added)
-        if (complexTypeAsClob) (StoredFormatIds.REF_TYPE_ID, -1, -1)
+        if (complexTypeAsJson) (StoredFormatIds.REF_TYPE_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID

@@ -549,10 +549,10 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // also check access to complex types as string
     rs = stmt.executeQuery(
-      s"SELECT * FROM $tableName --+ complexTypeAsClob(1)")
+      s"SELECT * FROM $tableName --+ complexTypeAsJson(1)")
     checkComplexTypesAsClob(rs, expectedLength)
     rs = stmt.executeQuery(
-      s"SELECT * /*+ complexTypeAsClob( true ) */ FROM $tableName")
+      s"SELECT * /*+ complexTypeAsJson( true ) */ FROM $tableName")
     checkComplexTypesAsClob(rs, expectedLength)
   }
 
