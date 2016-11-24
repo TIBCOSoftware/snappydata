@@ -18,10 +18,12 @@
 package org.apache.spark.util
 
 import java.io.File
+import java.net.URL
 import java.security.SecureClassLoader
 
 import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
+import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.SparkContext
 
@@ -47,4 +49,20 @@ object SnappyUtils {
       sc.addedJars.remove(keyToRemove.head)
     }
   }
+
+  def getSnappyContextURLClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader =
+    new ContextURLClassLoader(Array[URL](), parent) {
+      override def loadClass(name: String): Class[_] = {
+        try {
+          Misc.getCacheLogWriter.info("Rishi Loading class " + name)
+          super.loadClass(name)
+        } catch {
+          case cnfe: ClassNotFoundException => {
+            Misc.getCacheLogWriter.info("Rishi Loading class from gemxd" + name)
+            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+          }
+
+        }
+      }
+    }
 }
