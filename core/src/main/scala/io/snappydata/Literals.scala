@@ -217,35 +217,109 @@ object Property extends Enumeration {
  * mirrors closely the format used by Hive,Oracle query hints with a comment
  * followed immediately by a '+' and then "key(value)" for the hint. Example:
  * <p>
- * SELECT * /*+ hint(value) */ FROM t1
+ * SELECT * /`*`+ hint(value) *`/` FROM t1
  */
 object QueryHint extends Enumeration {
 
   type Type = Value
 
+  import scala.language.implicitConversions
+
+  implicit def toStr(h: Type): String = h.toString
+
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
+   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
    * than as serialized blobs to display better in external tools.
-   * <p>
+   *
    * Possible values are 'true/1' or 'false/0'
-   * <p>
+   *
    * Example:<br>
    * SELECT * FROM t1 --+ complexTypeAsJson(1)
    */
   val ComplexTypeAsJson = Value("complexTypeAsJson")
 
   /**
+   * Query hint followed by table to override optimizer choice of index per table.
+   *
+   * Possible values are valid indexes defined on the table.
+   *
+   * Example:<br>
+   * SELECT * FROM t1 /`*`+ index(xxx) *`/`, t2 --+ withIndex(yyy)
+   */
+  val Index = Value("index")
+
+  /**
+   * Query hint after FROM clause to indicate following tables have join order fixed and
+   * optimizer shouldn't try to re-order joined tables.
+   *
+   * Possible comma separated values are [[io.snappydata.JOS]].
+   *
+   * Example:<br>
+   * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
+   */
+  val JoinOrder = Value("joinOrder")
+
+  /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
    * as VARCHAR.
-   * <p>
+   *
    * Possible values are valid column names in the tables/schema. Multiple
    * column names to be comma separated.
    * One can also provide '*' for serializing all the STRING columns as CLOB.
-   * <p>
+   *
    * Example:<br>
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
    */
   val ColumnsAsClob = Value("columnsAsClob")
+}
+
+/**
+ * List of possible values for Join Order QueryHint.
+ *
+ * `Note:` Ordering is applicable only when index choice is left to the optimizer. By default,
+ * if user specifies explicit index hint like "select * from t1 --+ index()", optimizer will just
+ * honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
+ * hint for any table disables choice of index and its associated following rules.
+ */
+object JOS extends Enumeration {
+  type Type = Value
+
+  import scala.language.implicitConversions
+
+  implicit def toStr(h: Type): String = h.toString
+
+  /**
+   * Continue to attempt optimization choices of index for colocated joins even if user have
+   * specified explicit index hints for some tables.
+   *
+   * `Note:` user specified index hint will be honored and optimizer will only attempt for
+   * other tables in the query.
+   */
+  val ContinueOptimizations = Value("continueOpts")
+
+  /**
+   * By default if query have atleast one colocated join conditions mentioned between a pair of
+   * partitiioned tables, optimizer won't try to derive colocation possibilities with replicated
+   * tables in between. This switch tells the optimizer to include partition -> replicated ->
+   * partition like indirect colocation possibilities even if partition -> partition join
+   * conditions are mentioned.
+   */
+  val IncludeGeneratedPaths = Value("includeGeneratedPaths")
+
+  /**
+   * Applies replicated table with filter conditions in the given order of preference in
+   * 'joinOrder' query hint comma separated values.
+   *
+   * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
+   * will apply the rule in the mentioned order and rest of the rules will be skipped.
+   */
+  val ReplicateWithFilters = Value("RWF")
+
+  val ColocatedWithFilters = Value("CWF")
+
+  val LargestColocationChain = Value("LCC")
+
+  val NonColocatedWithFilters = Value("NCWF")
 }

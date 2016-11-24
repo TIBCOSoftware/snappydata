@@ -132,3 +132,5 @@ Release 0.5
   [SNAP-858] Added documentation for Python APIs.
 
   [SNAP-852] Added new fields on the Snappy Store tab in Spark UI.
+
+  [SNAP-730] Added index creation and colocated joins

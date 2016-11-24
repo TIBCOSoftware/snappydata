@@ -418,13 +418,14 @@ object TPCETradeTest extends Logging {
     init = false
     */
 
+    /*
     addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
       cache = false, Map(
         SQLConf.COMPRESS_CACHED.key -> "true",
         HASH_OPTIMIZED -> "true"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
-
+    */
     benchmark.run()
   }
 }
