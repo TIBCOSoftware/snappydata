@@ -36,19 +36,11 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
     f(context, split, firstParent[T].iterator(split, context))
 }
 
-class DummyRDD(sqlContext: SQLContext)
-    extends RDD[InternalRow](sqlContext.sparkContext, Nil) {
+private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
+    prev: RDD[T],
+    f: (TaskContext, Int, Iterator[T]) => Iterator[U],
+    preservesPartitioning: Boolean = false, p: (Int) => Seq[String])
+    extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 
-  /**
-   * Implemented by subclasses to compute a given partition.
-   */
-  override def compute(split: Partition,
-      context: TaskContext): Iterator[InternalRow] = Iterator.empty
-
-  /**
-   * Implemented by subclasses to return the set of partitions in this RDD.
-   * This method will only be called once, so it is safe to implement
-   * a time-consuming computation in it.
-   */
-  override protected def getPartitions: Array[Partition] = Array.empty
+  override def getPreferredLocations(split: Partition): Seq[String] = p(split.index)
 }

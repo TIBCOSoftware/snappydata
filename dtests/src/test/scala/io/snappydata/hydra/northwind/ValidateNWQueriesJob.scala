@@ -20,7 +20,8 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql._
 
 import scala.util.{Failure, Success, Try}
 
@@ -30,12 +31,27 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     val outputFile = "ValidateNWQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
+    val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
+    val sc = SparkContext.getOrCreate()
+    val sqlContext = SQLContext.getOrCreate(sc)
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
+      val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+      snc.setConf("dataFilesLocation", dataFilesLocation)
       northwind.NWQueries.snc = snc
+      NWQueries.dataFilesLocation = dataFilesLocation
       pw.println(s"Validate ${tableType} tables Queries Test started")
       NWTestUtil.validateQueries(snc, tableType, pw)
       pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
+      if (fullResultSetValidation) {
+        pw.println(s"createAndLoadSparkTables Test started")
+        NWTestUtil.createAndLoadSparkTables(sqlContext)
+        println(s"createAndLoadSparkTables Test completed successfully")
+        pw.println(s"createAndLoadSparkTables Test completed successfully")
+        pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started")
+        NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully")
+      }
       pw.close()
     } match {
       case Success(v) => pw.close()

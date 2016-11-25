@@ -434,20 +434,19 @@ class ColumnFormatRelation(
     _externalStore: ExternalStore,
     partitioningColumns: Seq[String],
     _context: SQLContext)
-    extends BaseColumnFormatRelation(
-      _table,
-      _provider,
-      _mode,
-      _userSchema,
-      schemaExtensions,
-      ddlExtensionForShadowTable,
-      _origOptions,
-      _externalStore,
-      partitioningColumns,
-      _context)
-        with ParentRelation {
-
-  recoverDependentsRelation()
+  extends BaseColumnFormatRelation(
+    _table,
+    _provider,
+    _mode,
+    _userSchema,
+    schemaExtensions,
+    ddlExtensionForShadowTable,
+    _origOptions,
+    _externalStore,
+    partitioningColumns,
+    _context)
+  with ParentRelation with DependentRelation {
+  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
@@ -461,7 +460,7 @@ class ColumnFormatRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    snappySession.sessionState.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
+    snappySession.sessionState.catalog.removeDependentRelation(tableIdent, indexIdent)
     // Remove the actual index
     snappySession.dropTable(indexIdent, ifExists)
   }
@@ -470,23 +469,21 @@ class ColumnFormatRelation(
       catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(table)
 
-  override def recoverDependentsRelation(): Unit = {
-    var indexes: Array[String] = Array()
-    try {
-      val options = new CaseInsensitiveMutableHashMap(this.origOptions)
-      indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
-    } catch {
-      case e: NoSuchElementException =>
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
+    var dependentRelations: Array[String] = Array()
+    if (None != properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+      dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")
     }
 
-    indexes.foreach(index => {
-      val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val sncCatalog = snappySession.sessionState.catalog
-      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sncCatalog = snappySession.sessionState.catalog
+    dependentRelations.foreach(rel => {
+      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
         case LogicalRelation(r: DependentRelation, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
+
   }
 
   /**
@@ -559,7 +556,7 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snappySession.sessionState.catalog.alterTableToAddIndexProp(
+      snappySession.sessionState.catalog.addDependentRelation(
         tableIdent, snappySession.getIndexTable(indexIdent))
 
       val df = Dataset.ofRows(snappySession,
@@ -573,6 +570,12 @@ class ColumnFormatRelation(
         throw e
     }
   }
+
+  /** Base table of this relation. */
+  override def baseTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
+
+  /** Name of this relation in the catalog. */
+  override def name: String = table
 }
 
 /**
@@ -675,6 +678,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(
       parametersForShadowTable, isRowTable = false, isShadowTable = true)
 
+    val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
