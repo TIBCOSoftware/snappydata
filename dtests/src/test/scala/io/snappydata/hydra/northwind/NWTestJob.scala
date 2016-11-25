@@ -32,8 +32,9 @@ object NWTestJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
-      NWQueries.snc = snc
       val dataLocation = jobConfig.getString("dataFilesLocation")
+      snc.setConf("dataFilesLocation", dataLocation)
+      NWQueries.snc = snc
       println(s"SS - dataLocation is : ${dataLocation}")
       NWQueries.dataFilesLocation = dataLocation
       regions = snc.read.format("com.databricks.spark.csv")
