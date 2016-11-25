@@ -104,7 +104,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
         val file = new File(SparkFiles.getRootDirectory() , jar)
         jobJars.remove(jar)
         if (file.exists()) {
-          Misc.getCacheLogWriter.info(" Rishi Removing Jar " + jar)
+          Misc.getCacheLogWriter.info(s"Removing $jar from Spark root directory")
           file.delete()
         }
       }
