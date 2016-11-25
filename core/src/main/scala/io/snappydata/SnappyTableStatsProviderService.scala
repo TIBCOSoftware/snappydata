@@ -57,7 +57,8 @@ object SnappyTableStatsProviderService extends Logging {
             tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
           } catch {
             case (e: Exception) => {
-              if(!e.getMessage.contains("com.gemstone.gemfire.cache.CacheClosedException"))
+              if(!(e.getMessage.contains("com.gemstone.gemfire.cache.CacheClosedException")
+                  || e.getMessage.contains("The cache is closed.")))
               logger.warning(e)
             }
           }
