@@ -60,7 +60,8 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
 
   test("remove Jar from the MutableClassLoader") {
     val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
-    val fileName = new java.io.File(testJar1.toURI).getName
+    val file = new java.io.File(testJar1.toURI)
+    val fileName = file.getName
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
     classloader.removeURL(fileName)

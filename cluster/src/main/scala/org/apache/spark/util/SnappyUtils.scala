@@ -54,14 +54,10 @@ object SnappyUtils {
     new ContextURLClassLoader(Array[URL](), parent) {
       override def loadClass(name: String): Class[_] = {
         try {
-          Misc.getCacheLogWriter.info("Rishi Loading class " + name)
           super.loadClass(name)
         } catch {
-          case cnfe: ClassNotFoundException => {
-            Misc.getCacheLogWriter.info("Rishi Loading class from gemxd" + name)
+          case cnfe: ClassNotFoundException =>
             Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
-          }
-
         }
       }
     }
