@@ -52,6 +52,7 @@ object ExternalStoreUtils {
   final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
+  final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
 
 
   def lookupName(tableName: String, schema: String): String = {
