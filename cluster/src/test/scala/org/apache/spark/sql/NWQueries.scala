@@ -387,6 +387,7 @@ object NWQueries extends SnappyFunSuite {
     "Q32" -> Q32,
     "Q33" -> Q33,
     "Q34" -> Q34,
+    "Q35" -> Q35,
     //"Q36" -> Q36, commented due to SNAP-1183
     "Q37" -> Q37,
     "Q38" -> Q38,
