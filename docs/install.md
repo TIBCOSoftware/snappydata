@@ -49,6 +49,6 @@ CREATE EXTERNAL TABLE TAXIFARE USING parquet
 The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
 
 **Note: **
-> #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 
 
