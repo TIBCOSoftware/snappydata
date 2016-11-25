@@ -50,6 +50,7 @@ object CreateColumnTable extends SnappySQLJob {
     val pw = new PrintWriter("CreateColumnTable.out")
     createColumnTableUsingAPI(snc, pw)
     createColumnTableUsingSQL(snc, pw)
+    createColumnTableInferredSchema(snc, pw)
     pw.close()
   }
 
@@ -155,6 +156,28 @@ object CreateColumnTable extends SnappySQLJob {
     CustomerRow(s(0).toInt, s(1), s(2), s(3).toInt, s(4), s(5).toDouble, s(6), s(7))
   }
 
+  def createColumnTableInferredSchema(snc: SnappyContext, pw: PrintWriter): Unit = {
+    pw.println()
+
+    pw.println("****Create a column table using API where schema is inferred from parquet file****")
+    // create a partitioned row table using SQL
+    pw.println()
+    pw.println("Creating a column table(CUSTOMER) using API ")
+    snc.dropTable("CUSTOMER", ifExists = true)
+
+    val customerDF = snc.read.parquet(s"quickstart/src/resources/customer_parquet")
+
+    // props1 map specifies the properties for the table to be created
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY", "BUCKETS" -> "11")
+    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+
+    pw.println()
+    val result = snc.sql("SELECT COUNT(*) FROM CUSTOMER").collect()
+    pw.println("Number of records in CUSTOMER table after loading data are " + result(0).get(0))
+
+    pw.println("****Done****")
+  }
+
   def main(args: Array[String]): Unit = {
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
@@ -172,6 +195,7 @@ object CreateColumnTable extends SnappySQLJob {
     val pw = new PrintWriter(System.out, true)
     createColumnTableUsingAPI(snSession.snappyContext, pw)
     createColumnTableUsingSQL(snSession.snappyContext, pw)
+    createColumnTableInferredSchema(snSession.snappyContext, pw)
     pw.close()
   }
 

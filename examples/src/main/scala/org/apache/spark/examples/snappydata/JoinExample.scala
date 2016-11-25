@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.examples.snappydata
 
 import java.io.PrintWriter
@@ -7,6 +23,21 @@ import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
+/**
+ * An example that shows how to join between colocated tables
+ *
+ * <p></p>
+ * This example can be run either in local mode(in which it will spawn a single
+ * node SnappyData system) or can be submitted as a job to an already running
+ * SnappyData cluster.
+ *
+ * To run the example in local mode go to you SnappyData product distribution
+ * directory and type following command on the command prompt
+ * <pre>
+ * bin/run-example snappydata.JoinExample
+ * </pre>
+ *
+ */
 object JoinExample extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
@@ -19,6 +50,8 @@ object JoinExample extends SnappySQLJob {
 
   def runColocatedJoinQuery(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
+
+    pw.println("****Join Example****")
 
     pw.println("Creating a column table(CUSTOMER)")
 
@@ -80,7 +113,7 @@ object JoinExample extends SnappySQLJob {
     println("Creating a SnappySession")
     val spark: SparkSession = SparkSession
         .builder
-        .appName("CreateReplicatedRowTable")
+        .appName("JoinExample")
         .master("local[4]")
         .getOrCreate
 
