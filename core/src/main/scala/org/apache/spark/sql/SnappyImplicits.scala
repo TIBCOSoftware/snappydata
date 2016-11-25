@@ -132,6 +132,17 @@ object snappy extends Serializable {
           itr: Iterator[T]) => cleanedF(context, part, itr),
         preservesPartitioning)
     }
+
+    def mapPartitionsWithIndexPreserveLocations[U: ClassTag](
+        f: (Int, Iterator[T]) => Iterator[U],
+        p: (Int) => Seq[String],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      val cleanedF = rdd.sparkContext.clean(f)
+      new PreserveLocationsRDD(
+        rdd,
+        (context: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(index, iter),
+        preservesPartitioning, p)
+    }
   }
 
   /**
