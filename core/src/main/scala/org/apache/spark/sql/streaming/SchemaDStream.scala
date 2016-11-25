@@ -42,7 +42,7 @@ import org.apache.spark.streaming.{Duration, SnappyStreamingContext, Time}
  * @param queryExecution
  *
  */
-final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
+class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     @transient val queryExecution: QueryExecution)
     extends DStream[Row](snsc) {
 
@@ -150,7 +150,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Return a new SchemaDStream containing only the elements that satisfy a predicate. */
   override def filter(filterFunc: Row => Boolean): SchemaDStream = {
-    snsc.createSchemaDStream(filter(filterFunc), schema)
+    new FilteredSchemaDStream(this, filterFunc)
   }
 
   /**

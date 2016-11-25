@@ -145,7 +145,7 @@ class SnappyStreamingSuite
 
   test("SnappyData Kafka Streaming") {
     val topic = "kafka_topic"
-    val sent = Map("a" -> 1, "b" -> 1, "c" -> 1)
+    var sent = Map("a" -> 1, "b" -> 1, "c" -> 1)
     kafkaUtils.createTopic(topic)
     kafkaUtils.sendMessages(topic, sent)
 
@@ -162,15 +162,20 @@ class SnappyStreamingSuite
 
     val stream = ssnc.getSchemaDStream("kafkaStream")
 
+    val repartitioned = stream.repartition(2)
+    val filtered = repartitioned.filter(row => row.getString(0).startsWith("b"))
     val result = new mutable.HashMap[String, Long]()
-    stream.foreachDataFrame(df => {
+
+    filtered.foreachDataFrame(df => {
       df.collect().foreach(row => {
         result.synchronized {
           result.put(row.getString(0), 1)
         }
       })
     })
+
     ssnc.start()
+    sent = Map("b" -> 1)
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       assert(result.synchronized {
         sent === result
