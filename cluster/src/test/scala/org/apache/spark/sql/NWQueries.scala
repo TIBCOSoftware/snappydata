@@ -341,7 +341,7 @@ object NWQueries extends SnappyFunSuite {
       " inner join Products as b on a.CategoryID = b.CategoryID" +
       " inner join Order_Details as c on b.ProductID = c.ProductID" +
       " inner join Orders as d on d.OrderID = c.OrderID" +
-      " where ShippedDate > '1997-01-01' and ShippedDate < '1997-12-31'" +
+      " where d.ShippedDate > '1997-01-01' and d.ShippedDate < '1997-12-31'" +
       " group by a.CategoryName," +
       " b.ProductName," +
       " concat('Qtr ', quarter(d.ShippedDate))" +
@@ -387,8 +387,7 @@ object NWQueries extends SnappyFunSuite {
     "Q32" -> Q32,
     "Q33" -> Q33,
     "Q34" -> Q34,
-    "Q35" -> Q35,
-    "Q36" -> Q36,
+    //"Q36" -> Q36, commented due to SNAP-1183
     "Q37" -> Q37,
     "Q38" -> Q38,
     "Q39" -> Q39,
