@@ -22,6 +22,8 @@ import java.util.GregorianCalendar
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -30,13 +32,12 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
-import org.apache.spark.rdd.RDD
+import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -46,23 +47,21 @@ import org.apache.spark.{Partition, TaskContext}
  * as JDBCRDD has a lot of methods as private.
  */
 class RowFormatScanRDD(@transient val session: SnappySession,
-    getConnection: () => Connection,
-    schema: StructType,
-    tableName: String,
-    isPartitioned: Boolean,
-    columns: Array[String],
-    val pushProjections: Boolean,
-    val useResultSet: Boolean,
-    connProperties: ConnectionProperties,
-    filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition])
-    extends RDD[Any](session.sparkContext, Nil) {
+    protected var tableName: String,
+    protected var isPartitioned: Boolean,
+    @transient private val columns: Array[String],
+    var pushProjections: Boolean,
+    var useResultSet: Boolean,
+    protected var connProperties: ConnectionProperties,
+    @transient private val filters: Array[Filter] = Array.empty[Filter],
+    @transient private val _partitions: Array[Partition] = Array.empty[Partition])
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
    */
-  protected val filterWhereClause: String = {
+  protected var filterWhereClause: String = {
     val numFilters = filters.length
     if (numFilters > 0) {
       val sb = new StringBuilder().append(" WHERE ")
@@ -149,7 +148,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   /**
    * `columns`, but as a String suitable for injection into a SQL query.
    */
-  protected val columnList: String = {
+  protected var columnList: String = {
     if (!pushProjections) "*"
     else if (columns.length > 0) {
       val sb = new StringBuilder()
@@ -163,7 +162,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
-    val conn = getConnection()
+    val conn = ExternalStoreUtils.getConnection(tableName,
+      connProperties, forExecutor = true)
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
@@ -237,8 +237,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
-    if (partitions.length > 0) {
-      return partitions
+    if (_partitions != null && _partitions.length > 0) {
+      return _partitions
     }
     val conn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,
@@ -254,6 +254,53 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       }
     } finally {
       conn.close()
+    }
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    super.write(kryo, output)
+
+    output.writeString(tableName)
+    output.writeBoolean(isPartitioned)
+    output.writeBoolean(pushProjections)
+    output.writeBoolean(useResultSet)
+    ConnectionPropertiesSerializer.write(kryo, output, connProperties)
+
+    val filterArgs = filterWhereArgs
+    if ((filterArgs eq null) || filterArgs.isEmpty) {
+      output.writeVarInt(0, true)
+    } else {
+      val len = filterArgs.size
+      var i = 0
+      output.writeVarInt(len, true)
+      output.writeString(filterWhereClause)
+      while (i < len) {
+        kryo.writeClassAndObject(output, filterArgs(i))
+        i += 1
+      }
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    super.read(kryo, input)
+
+    tableName = input.readString()
+    isPartitioned = input.readBoolean()
+    pushProjections = input.readBoolean()
+    useResultSet = input.readBoolean()
+    connProperties = ConnectionPropertiesSerializer.read(kryo, input)
+
+    var numFilters = input.readVarInt(true)
+    if (numFilters == 0) {
+      filterWhereClause = ""
+      filterWhereArgs = null
+    } else {
+      filterWhereClause = input.readString()
+      filterWhereArgs = new ArrayBuffer[Any](numFilters)
+      while (numFilters > 0) {
+        filterWhereArgs += kryo.readClassAndObject(input)
+        numFilters -= 1
+      }
     }
   }
 }
