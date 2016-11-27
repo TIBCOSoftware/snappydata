@@ -312,7 +312,10 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() +
+                        " -spark.driver.extraClassPath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
+                        getSnappyTestsJar() + ":" + getStoreTestsJar();
+                ;
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1317,8 +1320,9 @@ public class SnappyTest implements Serializable {
     protected void recordSnappyProcessIDinNukeRun(String pName) {
         Process pr = null;
         try {
-            //String command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
-            String command = "jps | grep " + pName + " | awk '{print $1}'";
+            String command;
+            if (pName.equals("Master")) command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            else command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
             ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
@@ -1665,6 +1669,8 @@ public class SnappyTest implements Serializable {
             Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
             for (String key : keys) {
                 if (key.startsWith(logFilekey)) {
+
+
                     String logFilename = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
                     Log.getLogWriter().info("Key Found...." + logFilename);
                     snappyJobLogFiles.add(logFilename);
