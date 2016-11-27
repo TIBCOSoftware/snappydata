@@ -22,7 +22,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 
 import org.apache.spark.rdd.{RDD, RDDCheckpointData}
-import org.apache.spark.sql.types.TypeUtils
+import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{Dependency, SparkContext}
 
@@ -48,13 +48,13 @@ abstract class RDDKryo[T: ClassTag](_sc: SparkContext, _deps: Seq[Dependency[_]]
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
-    TypeUtils.rddIdField.set(this, input.readInt())
+    TypeUtilities.rddIdField.set(this, input.readInt())
     val flags = input.readByte()
     val replication = input.readByte()
     if (flags == 0 && replication == 0) {
-      TypeUtils.rddStorageLevelField.set(this, StorageLevel.NONE)
+      TypeUtilities.rddStorageLevelField.set(this, StorageLevel.NONE)
     } else {
-      TypeUtils.rddStorageLevelField.set(this, StorageLevel(flags, replication))
+      TypeUtilities.rddStorageLevelField.set(this, StorageLevel(flags, replication))
     }
     if (input.readBoolean()) {
       checkpointData = Some(kryo.readClassAndObject(input)

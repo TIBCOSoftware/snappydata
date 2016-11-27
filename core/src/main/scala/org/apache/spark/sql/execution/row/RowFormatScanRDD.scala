@@ -54,7 +54,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient private val _partitions: Array[Partition] = Array.empty[Partition])
+    @transient protected val parts: Array[Partition] = Array.empty[Partition])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -237,8 +237,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
-    if (_partitions != null && _partitions.length > 0) {
-      return _partitions
+    if (parts != null && parts.length > 0) {
+      return parts
     }
     val conn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,

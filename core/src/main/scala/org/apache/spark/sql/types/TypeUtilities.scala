@@ -24,7 +24,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.execution.CodegenSupport
 
-object TypeUtils {
+object TypeUtilities {
 
   private[spark] val (rddIdField, rddStorageLevelField) = {
     val c = classOf[RDD[_]]

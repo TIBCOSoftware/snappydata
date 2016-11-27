@@ -225,10 +225,10 @@ class SparkShellRowRDD(_session: SnappySession,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
     _filters: Array[Filter] = Array.empty[Filter],
-    _partitions: Array[Partition] = Array.empty[Partition])
+    _parts: Array[Partition] = Array.empty[Partition])
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-      _filters, _partitions) {
+      _filters, _parts) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -270,8 +270,8 @@ class SparkShellRowRDD(_session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
-    if (partitions.length > 0) {
-      return partitions
+    if (parts != null && parts.length > 0) {
+      return parts
     }
     val conn = ExternalStoreUtils.getConnection(tableName, connProperties,
       forExecutor = true)

@@ -160,7 +160,7 @@ object StructTypeSerializer extends KryoClassSerializer[StructType] {
       output.writeString(field.name)
       writeType(kryo, output, field.dataType)
       output.writeBoolean(field.nullable)
-      TypeUtils.writeMetadata(field.metadata, kryo, output)
+      TypeUtilities.writeMetadata(field.metadata, kryo, output)
       i += 1
     }
   }
@@ -174,7 +174,7 @@ object StructTypeSerializer extends KryoClassSerializer[StructType] {
       val name = input.readString()
       val dataType = readType(kryo, input)
       val nullable = input.readBoolean()
-      val metadata = TypeUtils.readMetadata(kryo, input)
+      val metadata = TypeUtilities.readMetadata(kryo, input)
       fields(i) = StructField(name, dataType, nullable, metadata)
       i += 1
     }
@@ -211,9 +211,9 @@ object ConnectionPropertiesSerializer
     // write only executor properties if available since on target side
     // that is the one which will be used
     if (connProps.executorConnProps.isEmpty) {
-      TypeUtils.writeProperties(connProps.connProps, output)
+      TypeUtilities.writeProperties(connProps.connProps, output)
     } else {
-      TypeUtils.writeProperties(connProps.executorConnProps, output)
+      TypeUtilities.writeProperties(connProps.executorConnProps, output)
     }
     output.writeBoolean(connProps.hikariCP)
   }
@@ -242,7 +242,7 @@ object ConnectionPropertiesSerializer
       }
       poolProps = propsBuilder.result
     }
-    val connProps = TypeUtils.readProperties(input)
+    val connProps = TypeUtilities.readProperties(input)
     val hikariCP = input.readBoolean()
     ConnectionProperties(url, driver, dialect, poolProps, connProps,
       connProps, hikariCP)
