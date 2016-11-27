@@ -55,7 +55,7 @@ class TPCETrade extends SnappyFunSuite {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
-    val numIters = 20
+    val numIters = 10
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
@@ -418,14 +418,13 @@ object TPCETradeTest extends Logging {
     init = false
     */
 
-    /*
     addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
       cache = false, Map(
         SQLConf.COMPRESS_CACHED.key -> "true",
         HASH_OPTIMIZED -> "true"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
-    */
+
     benchmark.run()
   }
 }

@@ -140,8 +140,13 @@ case class SnappyHashAggregateExec(
         minAttr.isGenerated) :: Nil
     case last: Last if !last.child.nullable =>
       val lastAttr = last.aggBufferAttributes.head
+      val tail = if (last.aggBufferAttributes.length == 2) {
+        val valueSetAttr = last.aggBufferAttributes(1)
+        valueSetAttr.copy(nullable = false)(valueSetAttr.exprId,
+          valueSetAttr.qualifier, valueSetAttr.isGenerated) :: Nil
+      } else Nil
       lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier,
-        lastAttr.isGenerated) :: Nil
+        lastAttr.isGenerated) :: tail
     case _ => aggregate.aggBufferAttributes
   }
 
