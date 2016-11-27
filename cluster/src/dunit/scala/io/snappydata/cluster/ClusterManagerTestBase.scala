@@ -275,6 +275,8 @@ object ClusterManagerTestBase {
     cleanupTestData(null, null)
     val sparkContext = SnappyContext.globalSparkContext
     if (sparkContext != null) sparkContext.stop()
+    // clear system properties set explicitly
+    Utils.clearDefaultSerializerAndCodec()
   }
 
   def stopNetworkServers(): Unit = {

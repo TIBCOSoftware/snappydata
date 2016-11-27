@@ -245,6 +245,7 @@ object ExecutorInitiator extends Logging {
       executorRunnable.stopTask = true
     }
     executorRunnable.setDriverDetails(None, null)
+    Utils.clearDefaultSerializerAndCodec()
   }
 
   def restartExecutor(): Unit = {

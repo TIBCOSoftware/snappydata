@@ -582,7 +582,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       function
     } catch {
       case he: HiveException if isDisconnectException(he) =>
-        // stale GemXD connection
+        // stale JDBC connection
         Hive.closeCurrent()
         client = externalCatalog.client.newSession()
         function
@@ -624,6 +624,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||
           tClass.contains("DisconnectException") ||
+          (tClass.contains("MetaException") && t.getMessage.contains("retries")) ||
           isDisconnectException(t.getCause)
     } else {
       false

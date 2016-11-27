@@ -651,6 +651,12 @@ object Utils {
         Constant.DEFAULT_CODEC)
     }
   }
+
+  def clearDefaultSerializerAndCodec(): Unit = {
+    System.clearProperty("spark.serializer")
+    System.clearProperty("spark.closure.serializer")
+    System.clearProperty("spark.io.compression.codec")
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,

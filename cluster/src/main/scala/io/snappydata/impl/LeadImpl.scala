@@ -247,6 +247,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       sparkContext.stop()
       sparkContext = null
     }
+    Utils.clearDefaultSerializerAndCodec()
 
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
