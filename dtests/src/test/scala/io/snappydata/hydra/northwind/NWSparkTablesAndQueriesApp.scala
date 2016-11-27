@@ -18,25 +18,26 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object NWSparkTablesAndQueriesApp {
   val conf = new SparkConf().
     setAppName("NWSparkTablesAndQueriesApp Application")
   val sc = new SparkContext(conf)
-
+  val sqlContext = SQLContext.getOrCreate(sc)
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
     val dataFilesLocation = args(0)
     snc.sql("set spark.sql.shuffle.partitions=6")
+    snc.setConf("dataFilesLocation", dataFilesLocation)
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     NWTestUtil.dropTables(snc)
     val pw = new PrintWriter(new FileOutputStream(new File("NWSparkTablesAndQueriesApp.out"), true));
     println("Test replicated row tables queries started")
-    createAndLoadSparkTables(snc)
+    createAndLoadSparkTables(sqlContext)
     printResults(snc, pw)
     pw.close()
   }
@@ -53,18 +54,18 @@ object NWSparkTablesAndQueriesApp {
     pw.println(s"\nQuery ${queryNum} \n df.count is : ${df.count} \n TableType : ${tableType} \n {df.explain() : ${df.explain().toString}")
   }
 
-  private def createAndLoadSparkTables(snc: SnappyContext): Unit = {
-    NWQueries.regions.registerTempTable("regions")
-    NWQueries.categories.registerTempTable("categories")
-    NWQueries.shippers.registerTempTable("shippers")
-    NWQueries.employees.registerTempTable("employees")
-    NWQueries.customers.registerTempTable("customers")
-    NWQueries.orders.registerTempTable("orders")
-    NWQueries.order_details.registerTempTable("order_details")
-    NWQueries.products.registerTempTable("products")
-    NWQueries.suppliers.registerTempTable("suppliers")
-    NWQueries.territories.registerTempTable("territories")
-    NWQueries.employee_territories.registerTempTable("employee_territories")
+  private def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
+    NWQueries.regions(sqlContext).registerTempTable("regions")
+    NWQueries.categories(sqlContext).registerTempTable("categories")
+    NWQueries.shippers(sqlContext).registerTempTable("shippers")
+    NWQueries.employees(sqlContext).registerTempTable("employees")
+    NWQueries.customers(sqlContext).registerTempTable("customers")
+    NWQueries.orders(sqlContext).registerTempTable("orders")
+    NWQueries.order_details(sqlContext).registerTempTable("order_details")
+    NWQueries.products(sqlContext).registerTempTable("products")
+    NWQueries.suppliers(sqlContext).registerTempTable("suppliers")
+    NWQueries.territories(sqlContext).registerTempTable("territories")
+    NWQueries.employee_territories(sqlContext).registerTempTable("employee_territories")
   }
 
   private def printResults(snc: SnappyContext, pw: PrintWriter): Unit = {
