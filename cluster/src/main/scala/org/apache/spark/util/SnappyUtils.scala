@@ -18,12 +18,13 @@
 package org.apache.spark.util
 
 import java.io.File
+import java.net.URL
 import java.security.SecureClassLoader
-import java.sql.{DriverManager, SQLException}
 
-import _root_.io.snappydata.util.ServiceUtils
+import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
-import org.apache.commons.io.FileUtils
+import spark.jobserver.util.ContextURLClassLoader
+
 import org.apache.spark.SparkContext
 
 object SnappyUtils {
@@ -40,35 +41,24 @@ object SnappyUtils {
       }
     }
 
-
-  def installOrReplaceJar(jarName: String, jarPath: String, sc: SparkContext): Unit = {
-    // for now using this approach as quickFix, later the add/replace should be called based on
-    // whether the jar is already loaded or not.
-
-    val jarExistsException =
-      executeCall("CALL SQLJ.INSTALL_JAR_BYTES(?, ?)", jarName, jarPath, sc)
-    if (jarExistsException) executeCall("CALL SQLJ.REPLACE_JAR_BYTES(?, ?)", jarName, jarPath, sc)
+  def removeJobJar(sc: SparkContext): Unit = {
+    def getName(path: String) = new File(path).getName
+    val jobJarToRemove = sc.getLocalProperty(Constant.JOB_SERVER_JAR_NAME)
+    val keyToRemove = sc.listJars().filter(getName(_).equals(getName(jobJarToRemove)))
+    if (!keyToRemove.isEmpty) {
+      sc.addedJars.remove(keyToRemove.head)
+    }
   }
 
-  private def executeCall(sql: String, jarName: String, jarPath: String,
-      sc: SparkContext): Boolean = {
-    val jar = new java.io.File(jarPath).toURI.toURL.toExternalForm
-    var jarExistsException = false
-    val conn = DriverManager.getConnection(ServiceUtils.getLocatorJDBCURL(sc))
-    try {
-      val cs = conn.prepareCall(sql)
-      cs.setBytes(1, FileUtils.readFileToByteArray(new File(jarPath)))
-      cs.setString(2, jarName)
-      cs.executeUpdate()
-      cs.close
-    } catch {
-      case se: SQLException => if (!se.getSQLState.equals("X0Y32")) throw se
-      else jarExistsException = true
+  def getSnappyContextURLClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader =
+    new ContextURLClassLoader(Array[URL](), parent) {
+      override def loadClass(name: String): Class[_] = {
+        try {
+          super.loadClass(name)
+        } catch {
+          case cnfe: ClassNotFoundException =>
+            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+        }
+      }
     }
-    finally {
-      conn.close
-    }
-
-    jarExistsException
-  }
 }
