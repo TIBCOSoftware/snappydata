@@ -280,6 +280,7 @@ subprojects {
 
     include '**/*.class'
     exclude '**/*DUnitTest.class'
+    exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
     workingDir = "${testResultsBase}/junit"
