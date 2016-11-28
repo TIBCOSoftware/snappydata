@@ -387,10 +387,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def getDynamicOverrides: Properties = {
     val dynamicOverrides = new Properties()
+    val replaceString = "<basedir>"
 
     def replace(key: String, value: String, newValue: String) = {
-      assert (value.indexOf("/tmp") >= 0)
-      dynamicOverrides.setProperty(key, value.replace("/tmp", newValue))
+      assert (value.indexOf(replaceString) >= 0)
+      dynamicOverrides.setProperty(key, value.replace(replaceString, newValue))
     }
 
     val workingDir = System.getProperty(

@@ -174,17 +174,18 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
+      val replaceString = "<dir>"
       " have jobserver tmp directory redirected " in {
         val l = new LeadImpl
         val conf = l.getConfig(Array.empty)
         val f = conf.getString("spark.jobserver.filedao.rootdir")
-        assert(f.indexOf("/tmp") == -1)
+        assert(f.indexOf(replaceString) == -1)
         assert(f equals "./spark-jobserver/filedao/data")
         val d = conf.getString("spark.jobserver.datadao.rootdir")
-        assert(d.indexOf("/tmp") == -1)
+        assert(d.indexOf(replaceString) == -1)
         assert(d equals "./spark-jobserver/upload")
         val s = conf.getString("spark.jobserver.sqldao.rootdir")
-        assert(s.indexOf("/tmp") == -1)
+        assert(s.indexOf(replaceString) == -1)
         assert(s equals "./spark-jobserver/sqldao/data")
       }
 
@@ -195,13 +196,13 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         val l = new LeadImpl
         val conf = l.getConfig(Array.empty)
         val f = conf.getString("spark.jobserver.filedao.rootdir")
-        assert(f.indexOf("/tmp") == -1)
+        assert(f.indexOf(replaceString) == -1)
         assert(f startsWith directory)
         val d = conf.getString("spark.jobserver.datadao.rootdir")
-        assert(d.indexOf("/tmp") == -1)
+        assert(d.indexOf(replaceString) == -1)
         assert(d startsWith directory)
         val s = conf.getString("spark.jobserver.sqldao.rootdir")
-        assert(s.indexOf("/tmp") == -1)
+        assert(s.indexOf(replaceString) == -1)
         assert(s startsWith directory)
       }
     } // end started
