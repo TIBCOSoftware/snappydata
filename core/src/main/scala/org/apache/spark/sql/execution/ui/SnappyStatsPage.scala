@@ -22,9 +22,11 @@ package org.apache.spark.sql.execution.ui
 import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
+
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
-import org.apache.spark.internal.Logging
+
+import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
@@ -38,7 +40,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
     val uiDisplayInfo = SnappyTableStatsProviderService
         .getAggregatedTableStatsOnDemand(SnappyContext.globalSparkContext)
 
-    val nodes = if (!uiDisplayInfo.isEmpty) {
+    val nodes = if (uiDisplayInfo.nonEmpty) {
       <span>
         <h4>Snappy Tables</h4>{UIUtils.listingTable(header, rowTable, uiDisplayInfo.values)}
       </span>
