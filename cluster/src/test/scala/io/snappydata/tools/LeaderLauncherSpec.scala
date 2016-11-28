@@ -29,8 +29,8 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
-  * BDD style tests
-  */
+ * BDD style tests
+ */
 class LeaderLauncherSpec extends WordSpec with Matchers {
 
   private def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)
@@ -69,30 +69,30 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
       "have host-data true for loner" in {
 
-//        {
-//
-//          val l = new LeadImpl
-//          val conf = new SparkConf().
-//              setMaster(s"${Constant.JDBC_URL_PREFIX}${Property.mcastPort}=0").
-//              setAppName("check hostdata true")
-//          val sc = new SparkContext(conf)
-//          try {
-//            val opts = l.initStartupArgs(conf, sc)
-//
-//            val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
-//                com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
-//
-//            assert(hdProp != null)
-//            assert(hdProp.toBoolean == true)
-//          } finally {
-//            sc.stop()
-//          }
-//        }
+        //        {
+        //
+        //          val l = new LeadImpl
+        //          val conf = new SparkConf().
+        //              setMaster(s"${Constant.JDBC_URL_PREFIX}${Property.mcastPort}=0").
+        //              setAppName("check hostdata true")
+        //          val sc = new SparkContext(conf)
+        //          try {
+        //            val opts = l.initStartupArgs(conf, sc)
+        //
+        //            val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+        //                com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+        //
+        //            assert(hdProp != null)
+        //            assert(hdProp.toBoolean == true)
+        //          } finally {
+        //            sc.stop()
+        //          }
+        //        }
 
         {
           // Stop if already any present
           val sparkContext = SnappyContext.globalSparkContext
-          if(sparkContext != null) sparkContext.stop()
+          if (sparkContext != null) sparkContext.stop()
 
           val l = new LeadImpl
           val conf = (new SparkConf).
@@ -174,6 +174,37 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
+      val replaceString = "<dir>"
+      " have jobserver tmp directory redirected " in {
+        val l = new LeadImpl
+        val conf = l.getConfig(Array.empty)
+        val f = conf.getString("spark.jobserver.filedao.rootdir")
+        assert(f.indexOf(replaceString) == -1)
+        assert(f equals "./spark-jobserver/filedao/data")
+        val d = conf.getString("spark.jobserver.datadao.rootdir")
+        assert(d.indexOf(replaceString) == -1)
+        assert(d equals "./spark-jobserver/upload")
+        val s = conf.getString("spark.jobserver.sqldao.rootdir")
+        assert(s.indexOf(replaceString) == -1)
+        assert(s equals "./spark-jobserver/sqldao/data")
+      }
+
+      " have jobserver tmp directory from syshome" in {
+        val directory = "/dummy"
+        System.setProperty(
+          com.pivotal.gemfirexd.internal.iapi.reference.Property.SYSTEM_HOME_PROPERTY, directory)
+        val l = new LeadImpl
+        val conf = l.getConfig(Array.empty)
+        val f = conf.getString("spark.jobserver.filedao.rootdir")
+        assert(f.indexOf(replaceString) == -1)
+        assert(f startsWith directory)
+        val d = conf.getString("spark.jobserver.datadao.rootdir")
+        assert(d.indexOf(replaceString) == -1)
+        assert(d startsWith directory)
+        val s = conf.getString("spark.jobserver.sqldao.rootdir")
+        assert(s.indexOf(replaceString) == -1)
+        assert(s startsWith directory)
+      }
     } // end started
   }
 
