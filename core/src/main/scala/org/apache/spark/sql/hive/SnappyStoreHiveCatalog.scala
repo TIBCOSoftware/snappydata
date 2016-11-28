@@ -49,7 +49,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{DependencyCatalog, BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
+import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -299,7 +299,18 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             val builder = new MetadataBuilder
             builder.withMetadata(f.metadata).putString("name", name).build()
           } else {
-            f.metadata
+            f.dataType match {
+              case s: StringType =>
+                if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+                  val builder = new MetadataBuilder
+                  builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
+                    "STRING").putLong(Constant.CHAR_TYPE_SIZE_PROP, Constant.MAX_VARCHAR_SIZE)
+                      .build()
+                } else {
+                  f.metadata
+                }
+              case _ => f.metadata
+            }
           }
           f.copy(name = name, metadata = metadata)
         })

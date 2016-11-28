@@ -27,7 +27,7 @@ import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
-import io.snappydata.ToolsCallback
+import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 
 import org.apache.spark.internal.Logging
@@ -363,6 +363,49 @@ object Utils {
       index += 1
     }
     k
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   * @param md
+   * @param size
+   * @return
+   */
+  def varcharMetadata(md: Metadata = Metadata.empty, size: Int = Constant.MAX_VARCHAR_SIZE):
+  Metadata = {
+    if (size < 1 && size > Constant.MAX_VARCHAR_SIZE) {
+      throw new IllegalArgumentException(s"VARCHAR size should be between 0 " +
+          s"and ${Constant.MAX_VARCHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   * @param md
+   * @param size
+   * @return
+   */
+  def charMetadata(md: Metadata = Metadata.empty, size: Int = Constant.MAX_CHAR_SIZE): Metadata = {
+    if (size < 1 && size > Constant.MAX_CHAR_SIZE) {
+      throw new IllegalArgumentException(s"CHAR size should be between 0 " +
+          s"and ${Constant.MAX_CHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is rendered as CLOB by SnappyStore.
+   * @param md
+   * @return
+   */
+  def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "STRING").build()
   }
 
   def schemaFields(schema: StructType): Map[String, StructField] = {

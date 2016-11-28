@@ -288,7 +288,7 @@ class SparkSQLExecuteImpl(val sql: String,
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
           } else { // VARCHAR and STRING
-            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
+            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size <= Constant.MAX_VARCHAR_SIZE ) {
               (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
             }
             else {
