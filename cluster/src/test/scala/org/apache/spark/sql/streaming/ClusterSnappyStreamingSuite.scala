@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.streaming
 
-import java.util.{Map => JMap}
-
 import scala.collection.mutable
 import scala.language.postfixOps
 
