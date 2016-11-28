@@ -33,11 +33,26 @@ import org.apache.spark.sql.{SnappySession, SparkSession, Row, SnappyJobValid, S
  * node SnappyData system) or can be submitted as a job to an already running
  * SnappyData cluster.
  *
+ * <p></p>
  * To run the example in local mode go to you SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
  * bin/run-example snappydata.CreateReplicatedRowTable
  * </pre>
+ *
+ * To submit this example as a job to an already running cluster
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name CreateReplicatedRowTable
+ *   --class org.apache.spark.examples.snappydata.CreateReplicatedRowTable
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ *
+ * The output of the job will be redirected to a file named CreateReplicatedRowTable.out
  *
  */
 object CreateReplicatedRowTable extends SnappySQLJob {
@@ -79,10 +94,13 @@ object CreateReplicatedRowTable extends SnappySQLJob {
       StructField("S_ACCTBAL", DecimalType(15, 2), false),
       StructField("S_COMMENT", StringType, false)
     ))
-    // props1 map specifies the properties for the table to be created
-    val props1 = Map("PERSISTENT" -> "asynchronous")
-    snc.createTable("SUPPLIER", "row", schema, props1)
 
+    // props1 map specifies the properties for the table to be created
+    // "PERSISTENT" that the table data should be persisted to disk asynchronously
+    // For complete list of attributes refer the documentation
+    val props1 = Map("PERSISTENT" -> "asynchronous")
+    // create a row table using createTable API
+    snc.createTable("SUPPLIER", "row", schema, props1)
 
     pw.println("Inserting data in SUPPLIER table")
     val data = Seq(Seq(1, "SUPPLIER1", "CHICAGO, IL", 0, "555-543-789", BigDecimal(10000), " "),
@@ -126,18 +144,24 @@ object CreateReplicatedRowTable extends SnappySQLJob {
   }
 
   /**
-   * Creates row table and performs operations on it using SQL queries
+   * Creates row table and performs operations on it using SQL queries thru
+   * SnappyContext
+   *
+   * Other way to execute a SQL statement is thru JDBC or ODBC driver. Refer to
+   * JDBCExample.scala for more details
    */
   def createReplicatedRowTableUsingSQL(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
 
     pw.println("****Create a row table using SQL****")
-    // create a row table using SQL
     pw.println()
     pw.println("Creating a row table(SUPPLIER) using SQL")
 
     snc.sql("DROP TABLE IF EXISTS SUPPLIER")
 
+    // Create a row table using SQL
+    // "PERSISTENT" that the table data should be persisted to disk asynchronously
+    // For complete list of attributes refer the documentation
     snc.sql(
       "CREATE TABLE SUPPLIER ( " +
           "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +

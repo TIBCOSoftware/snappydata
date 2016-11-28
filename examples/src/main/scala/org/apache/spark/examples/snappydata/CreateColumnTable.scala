@@ -42,10 +42,6 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyContext, SnappyJ
  */
 object CreateColumnTable extends SnappySQLJob {
 
-  case class CustomerRow (C_CUSTKEY: Int, C_NAME: String, C_ADDRESS: String,
-                          C_NATIONKEY: Int, C_PHONE: String, C_ACCTBAL: Double,
-                          C_MKTSEGMENT: String, C_COMMENT: String)
-
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter("CreateColumnTable.out")
     createColumnTableUsingAPI(snc, pw)
@@ -56,6 +52,9 @@ object CreateColumnTable extends SnappySQLJob {
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
+  /**
+   * Creates a column table using APIs
+   */
   def createColumnTableUsingAPI(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
 
@@ -66,7 +65,7 @@ object CreateColumnTable extends SnappySQLJob {
 
     snc.dropTable("CUSTOMER", ifExists = true)
 
-    val schema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
+    val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
       StructField("C_NAME", StringType, false),
       StructField("C_ADDRESS", StringType, false),
       StructField("C_NATIONKEY", IntegerType, false),
@@ -77,16 +76,19 @@ object CreateColumnTable extends SnappySQLJob {
     ))
 
     // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
+    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
+    // For complete list of attributes refer the documentation
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY", "BUCKETS" -> "11")
-    snc.createTable("CUSTOMER", "column", schema, props1)
+    snc.createTable("CUSTOMER", "column", tableSchema, props1)
 
     // insert some data in it
     pw.println()
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
-    val customerData = snc.sparkContext.
-        textFile(s"quickstart/src/resources/customer.tbl")
-    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
-    val customerDF = snc.createDataFrame(customerReadings)
+    val customerDF = snc.read.
+        format("com.databricks.spark.csv").schema(schema = tableSchema).
+        load(s"quickstart/src/resources/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -105,6 +107,12 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("****Done****")
   }
 
+  /**
+   * Creates a column table by executing a SQL statement thru SnappyContext
+   *
+   * Other way to execute a SQL statement is thru JDBC or ODBC driver. Refer to
+   * JDBCExample.scala for more details
+   */
   def createColumnTableUsingSQL(snc: SnappyContext, pw: PrintWriter): Unit = {
 
     pw.println()
@@ -116,6 +124,12 @@ object CreateColumnTable extends SnappySQLJob {
 
     snc.sql("DROP TABLE IF EXISTS CUSTOMER")
 
+    // Create the table using SQL command
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that
+    // can be moved around in SnappyStore when the data migrates. Here we specify
+    // the table to have 11 buckets
+    // For complete list of table attributes refer the documentation
     snc.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -130,10 +144,10 @@ object CreateColumnTable extends SnappySQLJob {
     // insert some data in it
     pw.println()
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
-    val customerData = snc.sparkContext.
-        textFile(s"quickstart/src/resources/customer.tbl")
-    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
-    val customerDF = snc.createDataFrame(customerReadings)
+    val tableSchema = snc.table("CUSTOMER").schema
+    val customerDF = snc.read.
+        format("com.databricks.spark.csv").schema(schema = tableSchema).
+        load(s"quickstart/src/resources/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -152,10 +166,9 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("****Done****")
   }
 
-  def parseCustomerRow(s: Array[String]): CustomerRow = {
-    CustomerRow(s(0).toInt, s(1), s(2), s(3).toInt, s(4), s(5).toDouble, s(6), s(7))
-  }
-
+  /**
+   * Creates a column table where schema is inferred from parquet data file
+   */
   def createColumnTableInferredSchema(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
 
@@ -168,6 +181,10 @@ object CreateColumnTable extends SnappySQLJob {
     val customerDF = snc.read.parquet(s"quickstart/src/resources/customer_parquet")
 
     // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
+    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
+    // For complete list of attributes refer the documentation
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY", "BUCKETS" -> "11")
     customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 

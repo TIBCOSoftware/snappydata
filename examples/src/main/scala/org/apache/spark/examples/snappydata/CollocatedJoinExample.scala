@@ -24,39 +24,57 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 /**
- * An example that shows how to join between colocated tables
+ * An example that shows how to join between collocated tables
  *
  * <p></p>
  * This example can be run either in local mode(in which it will spawn a single
  * node SnappyData system) or can be submitted as a job to an already running
  * SnappyData cluster.
  *
- * To run the example in local mode go to you SnappyData product distribution
+ * <p></p>
+ * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
- * bin/run-example snappydata.JoinExample
+ * bin/run-example snappydata.CollocatedJoinExample
  * </pre>
  *
+ * To submit this example as a job to an already running cluster
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name CollocatedJoinExample
+ *   --class org.apache.spark.examples.snappydata.CollocatedJoinExample
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ *
+ * The output of the job will be redirected to a file named CollocatedJoinExample.out
  */
-object JoinExample extends SnappySQLJob {
+object CollocatedJoinExample extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    val pw = new PrintWriter("JoinExample.out")
-    runColocatedJoinQuery(snc, pw)
+    val pw = new PrintWriter("CollocatedJoinExample.out")
+    runCollocatedJoinQuery(snc, pw)
     pw.close()
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
-  def runColocatedJoinQuery(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def runCollocatedJoinQuery(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
 
-    pw.println("****Join Example****")
+    pw.println("****Collocated Join Example****")
 
     pw.println("Creating a column table(CUSTOMER)")
 
     snc.sql("DROP TABLE IF EXISTS CUSTOMER")
 
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
+    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
+    // Refer to the documentation, for complete list of attributes
     snc.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -76,8 +94,14 @@ object JoinExample extends SnappySQLJob {
         "'San Jose, CA', 1, '555-532-345', 5500, 'MKTSEGMENT', '')")
 
     pw.println()
-    pw.println("Creating a ORDERS table colocated with CUSTOMER")
+    pw.println("Creating a ORDERS table collocated with CUSTOMER")
     snc.sql("DROP TABLE IF EXISTS ORDERS")
+
+    // "PARTITION_BY" attribute specifies partitioning key for ORDERS table(O_ORDERKEY),
+    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
+    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
+    // "COLOCATE_WITH" specifies that the table is colocated with CUSTOMERS table
+    // Refer to the documentation, for complete list of attributes
     snc.sql("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
         "O_CUSTKEY        INTEGER NOT NULL," +
@@ -113,14 +137,14 @@ object JoinExample extends SnappySQLJob {
     println("Creating a SnappySession")
     val spark: SparkSession = SparkSession
         .builder
-        .appName("JoinExample")
+        .appName("CollocatedJoinExample")
         .master("local[4]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    runColocatedJoinQuery(snSession.snappyContext, pw)
+    runCollocatedJoinQuery(snSession.snappyContext, pw)
     pw.close()
   }
 

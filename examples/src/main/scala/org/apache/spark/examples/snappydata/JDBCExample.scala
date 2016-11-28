@@ -18,15 +18,22 @@ package org.apache.spark.examples.snappydata
 
 import java.sql.DriverManager
 
+import scala.util.Try
+
 /**
  * An example that shows JDBC operations on SnappyData system
+ *
+ * Before running this example, ensure that SnappyData cluster is started and
+ * running. To start the cluster execute the following command:
+ * sbin/snappy-start-all.sh
  */
 object JDBCExample {
-  def doOperationsUsingJDBC(): Unit = {
+  def doOperationsUsingJDBC(clientPort: String): Unit = {
     println("****JDBCExample****")
 
     println("Initializing a JDBC connection")
-    val url: String = "jdbc:snappydata://localhost:1527/"
+    // JDBC url string to connect to SnappyData cluster
+    val url: String = s"jdbc:snappydata://localhost:$clientPort/"
     val conn1 = DriverManager.getConnection(url)
 
     val stmt1 = conn1.createStatement()
@@ -93,6 +100,27 @@ object JDBCExample {
   }
 
   def main(args: Array[String]): Unit = {
-    doOperationsUsingJDBC()
+    if (args.length > 1) {
+      printUsage()
+    } else if (args.length == 0) {
+      println("Using default client port 1527 for JDBC connection")
+      doOperationsUsingJDBC("1527")
+    } else {
+      if (Try(args(0).toInt).isFailure) {
+        printUsage()
+      } else {
+        doOperationsUsingJDBC(args(0))
+      }
+
+    }
+
+  }
+
+  def printUsage(): Unit = {
+    val usage: String =
+      "Usage: bin/run-example JDBCExample <clientPort>\n" +
+          "\n" +
+          "clientPort - client port number for SnappyData on which JDBC connections are accepted \n"
+    println(usage)
   }
 }

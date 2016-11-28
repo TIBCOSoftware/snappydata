@@ -33,11 +33,26 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappySQLJob, Row, Sna
  * node SnappyData system) or can be submitted as a job to an already running
  * SnappyData cluster.
  *
- * To run the example in local mode go to you SnappyData product distribution
+ * <p></p>
+ * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
  * bin/run-example snappydata.CreatePartitionedRowTable
  * </pre>
+ *
+ * To submit this example as a job to an already running cluster
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name CreatePartitionedRowTable
+ *   --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ *
+ * The output of the job will be redirected to a file named CreatePartitionedRowTable.out
  *
  */
 object CreatePartitionedRowTable extends SnappySQLJob {
@@ -75,7 +90,12 @@ object CreatePartitionedRowTable extends SnappySQLJob {
       StructField("PS_AVAILQTY", IntegerType, false),
       StructField("PS_SUPPLYCOST", DecimalType(15, 2), false)
     ))
+
     // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that can be moved around
+    // in SnappyStore when the data migrates. Here we specify
+    // the table to have 11 buckets
     val props1 = Map("PARTITION_BY" -> "PS_PARTKEY", "BUCKETS" -> "11")
     snc.createTable("PARTSUPP", "row", schema, props1)
 
@@ -120,6 +140,10 @@ object CreatePartitionedRowTable extends SnappySQLJob {
 
   /**
    * Creates a partitioned row table and performs operations on it using SQL queries
+   * thru SnappyContext
+   *
+   * Other way to execute a SQL statement is thru JDBC or ODBC driver. Refer to
+   * JDBCExample.scala for more details
    */
   def createPartitionedRowTableUsingSQL(snc: SnappyContext, pw: PrintWriter): Unit = {
     pw.println()
@@ -131,6 +155,12 @@ object CreatePartitionedRowTable extends SnappySQLJob {
 
     snc.sql("DROP TABLE IF EXISTS PARTSUPP")
 
+    // Create the table using SQL command
+    // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+    // "BUCKETS" attribute specifies the smallest unit that
+    // can be moved around in SnappyStore when the data migrates. Here we specify
+    // the table to have 11 buckets
+    // For complete list of table attributes refer the documentation
     snc.sql("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
         "PS_SUPPKEY     INTEGER NOT NULL," +
