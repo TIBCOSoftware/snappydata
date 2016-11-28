@@ -10,14 +10,15 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-FILEID=0Bz26LQmzyZJHZ2FXUVVub3h3SWc
-source=https://googledrive.com/host/$FILEID
+#FILEID=0Bz26LQmzyZJHZ2FXUVVub3h3SWc
+#source=https://googledrive.com/host/$FILEID
 
 # Download the parquet data from source to destination
 fileName=airlineParquetData_2007-15.tar.gz
 destFile="$1/${fileName}"
 mkdir -p "$1"
-curl -L -o "${destFile}" $source
+#curl -L -o "${destFile}" $source
+wget http://rowstore.docs.snappydata.io/data/$fileName "$destFile"
 
 #untar the downloaded file.
 cd "$1"
