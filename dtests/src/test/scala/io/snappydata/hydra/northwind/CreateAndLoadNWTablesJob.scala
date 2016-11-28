@@ -30,8 +30,9 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
     val tableType = jobConfig.getString("tableType")
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
-      northwind.NWQueries.snc = snc
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+      snc.setConf("dataFilesLocation", dataFilesLocation)
+      northwind.NWQueries.snc = snc
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
       NWQueries.dataFilesLocation = dataFilesLocation
       NWTestUtil.dropTables(snc)

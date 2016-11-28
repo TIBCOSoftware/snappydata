@@ -282,7 +282,9 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
     // need DataType and nullable to get decoder in generated code
-    val fields = ctx.addReferenceObj("fields", output.toArray, "Attribute[]")
+    // shipping as StructType for efficient serialization
+    val planSchema = ctx.addReferenceObj("schema", schema,
+      classOf[StructType].getName)
     val columnBufferInitCode = new StringBuilder
     val bufferInitCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
@@ -359,10 +361,11 @@ private[sql] final case class ColumnTableScan(
       }
       columnBufferInitCode.append(
         s"""
-          $decoder = $decoderClass.getColumnDecoder($buffer,
-            $fields[$index]);
+          $decoder = $decoderClass.getColumnDecoder(
+            $buffer, $planSchema.apply($index));
           // intialize the decoder and store the starting cursor position
-          $cursor = $decoder.initializeDecoding($buffer, $fields[$index]);
+          $cursor = $decoder.initializeDecoding(
+            $buffer, $planSchema.apply($index));
         """)
       bufferInitCode.append(
         s"""
