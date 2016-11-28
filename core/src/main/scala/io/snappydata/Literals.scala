@@ -19,7 +19,6 @@ package io.snappydata
 import java.util.Properties
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.sources._
 
 /**
   * Constant names suggested per naming convention
@@ -89,6 +88,14 @@ object Constant {
   val MAX_VARCHAR_SIZE = 32672
 
   val MAX_CHAR_SIZE = 254
+
+  val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
+
+  // LZ4 JNI version is the fastest one but LZF gives best balance between
+  // speed and compression ratio having higher compression ration than LZ4.
+  // But the JNI version means no warmup time which helps for short jobs.
+  val DEFAULT_CODEC = "lz4"
+
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
@@ -179,7 +186,7 @@ object Property extends Enumeration {
   * mirrors closely the format used by Hive,Oracle query hints with a comment
   * followed immediately by a '+' and then "key(value)" for the hint. Example:
   * <p>
-  * SELECT * /{@literal *}+ hint(value) *{@literal /} FROM t1
+  * SELECT * /`*`+ hint(value) *`/` FROM t1
   */
 object QueryHint extends Enumeration {
 
@@ -206,7 +213,7 @@ object QueryHint extends Enumeration {
     * Possible values are valid indexes defined on the table.
     *
     * Example:<br>
-    * SELECT * FROM t1 /{@literal *}+ index(xxx) *{@literal /} , t2 --+ withIndex(yyy)
+    * SELECT * FROM t1 /`*`+ index(xxx) *`/` , t2 --+ withIndex(yyy)
     */
   val Index = Value("index")
 
@@ -217,7 +224,7 @@ object QueryHint extends Enumeration {
     * Possible comma separated values are [[io.snappydata.JOS]].
     *
     * Example:<br>
-    * SELECT * FROM /{@literal *}+ joinOrder(fixed) *{@literal /} t1, t2
+    * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
     */
   val JoinOrder = Value("joinOrder")
 
@@ -239,7 +246,7 @@ object QueryHint extends Enumeration {
 /**
   * List of possible values for Join Order QueryHint.
   *
-  * [[Note:]] Ordering is applicable only when index choice is left to the optimizer. By default,
+  * `Note:` Ordering is applicable only when index choice is left to the optimizer. By default,
   * if user specifies explicit index hint like "select * from t1 --+ index()", optimizer will just
   * honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
   * hint for any table disables choice of index and its associated following rules.
@@ -254,7 +261,7 @@ object JOS extends Enumeration {
     * Continue to attempt optimization choices of index for colocated joins even if user have
     * specified explicit index hints for some tables.
     *
-    * [[Note:]] user specified index hint will be honored and optimizer will only attempt for
+    * `Note:` user specified index hint will be honored and optimizer will only attempt for
     * other tables in the query.
     */
   val ContinueOptimizations = Value("continueOpts")
