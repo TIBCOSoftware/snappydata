@@ -408,6 +408,9 @@ object Utils {
    * @return
    */
   def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    // Only add BASE property here so that SnappyStoreHiveCatalog.normalizeSchema() skips this
+    // field and does not add BASE and SIZE properties to its metadata. This causes
+    // SparkSQLExecuteImpl.getSQLType() to render this field as CLOB.
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "STRING").build()
   }
 
