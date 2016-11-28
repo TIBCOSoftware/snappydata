@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
@@ -21,12 +22,12 @@ import org.apache.spark.sql.Row
 import org.apache.spark.streaming.Time
 
 private[streaming]
-class FilteredSchemaDStream(
+class MappedSchemaDStream(
     parent: SchemaDStream,
-    filterFunc: Row => Boolean
+    mapFunc: Row => Row
 ) extends SchemaDStream(parent.snsc, parent.queryExecution) {
 
   override def compute(validTime: Time): Option[RDD[Row]] = {
-    parent.compute(validTime).map(_.filter(filterFunc))
+    parent.compute(validTime).map(_.map[Row](mapFunc))
   }
 }

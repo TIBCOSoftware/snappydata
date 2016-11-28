@@ -14,19 +14,23 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.streaming.Time
+import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.{Duration, Time}
 
 private[streaming]
-class FilteredSchemaDStream(
-    parent: SchemaDStream,
-    filterFunc: Row => Boolean
-) extends SchemaDStream(parent.snsc, parent.queryExecution) {
+class GlommedSchemaDStream(parent: SchemaDStream)
+    extends DStream[Array[Row]](parent.snsc) {
 
-  override def compute(validTime: Time): Option[RDD[Row]] = {
-    parent.compute(validTime).map(_.filter(filterFunc))
+  override def dependencies: List[DStream[_]] = List(parent)
+
+  override def slideDuration: Duration = parent.slideDuration
+
+  override def compute(validTime: Time): Option[RDD[Array[Row]]] = {
+    parent.compute(validTime).map(rdd => rdd.glom())
   }
 }
