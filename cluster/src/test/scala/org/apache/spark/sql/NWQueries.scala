@@ -195,7 +195,7 @@ object NWQueries extends SnappyFunSuite {
       " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
       " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
-      " order by ShippedDate"
+      " order by a.ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
       " a.CategoryName," +
