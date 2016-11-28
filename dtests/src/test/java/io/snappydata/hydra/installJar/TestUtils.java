@@ -47,4 +47,30 @@ public class TestUtils {
             }
         }
     }
+
+    public static void verifyClassFromPreviousJobExecution(SnappyContext snc, String version, PrintWriter pw, int numServers, boolean expectedException) {
+        try {
+            pw.println("Class version : " + version);
+            if (version.equalsIgnoreCase("1")) {
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass0", "1", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass1", "1", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass2", "1", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass3", "1", numServers, pw);
+            } else {
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass0", "2", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass1", "2", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass2", "2", numServers, pw);
+                SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass3", "1", numServers, pw);
+            }
+        } catch (Exception e) {
+            if (expectedException && e.getMessage().contains("java.lang.ClassNotFoundException")) {
+                pw.println("Got expected java.lang.ClassNotFoundException.....");
+                pw.flush();
+            } else if (!expectedException) {
+                //throw new util.TestException("Exception occurred while executing the job " + "\nError Message:" + e.getMessage());
+                pw.println("Exception occurred while executing the job " + "\nError Message:" + e.getMessage());
+                pw.flush();
+            }
+        }
+    }
 }

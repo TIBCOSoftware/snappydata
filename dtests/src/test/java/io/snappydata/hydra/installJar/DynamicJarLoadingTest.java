@@ -81,7 +81,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_installJar() {
         String appJar = createJarFile(3, "1");
-        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobInstallJarResult_thread_", null );
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobInstallJarResult_thread_", null);
     }
 
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_modifyJar() {
@@ -197,6 +197,52 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 new scala.collection.mutable.ArrayBuffer<URL>());
     }
 
+    public static File createJobAccessingClassFromPreviousJobExecution(String className, String destDir) {
+        String generalClassText = "import com.typesafe.config.Config;\n" +
+                "import org.apache.spark.sql.SnappyContext;\n" +
+                "import org.apache.spark.sql.SnappyJobValid;\n" +
+                "import org.apache.spark.sql.SnappyJobValidation;\n" +
+                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
+                "\n" +
+                "import java.io.File;\n" +
+                "import java.io.FileOutputStream;\n" +
+                "import java.io.PrintWriter;\n" +
+                "import java.io.StringWriter;\n" +
+                "\n" +
+                "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
+                "    @Override\n" +
+                "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
+                "        PrintWriter pw = null;\n" +
+                "        try {\n" +
+                "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
+                "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
+                "            pw.println(\"****** Started DynamicJarLoadingJob accessing class loaded through previous job execution ******\");\n" +
+                "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
+                "            io.snappydata.hydra.installJar.TestUtils.verifyClassFromPreviousJobExecution(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            pw.println(\"****** Finished DynamicJarLoadingJob accessing class loaded through previous job execution ******\");" +
+                "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
+                "        } catch (Exception e) {\n" +
+                "            pw.println(\"ERROR: failed with \" + e.getMessage());\n" +
+                "            e.printStackTrace(pw);\n" +
+                "        } finally {\n" +
+                "            pw.flush();\n" +
+                "            pw.close();\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }" +
+                "\n" +
+                "    @Override\n" +
+                "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
+                "        return new SnappyJobValid();\n" +
+                "    }\n" +
+                "}";
+        return SnappyTestUtils.createCompiledClass(className,
+                new File(destDir),
+                SnappyTestUtils.getJavaSourceFromString(className, generalClassText),
+                new scala.collection.mutable.ArrayBuffer<URL>());
+    }
+
     /**
      * Executes gfxd install-jar command using specified jar file.
      */
@@ -237,6 +283,28 @@ public class DynamicJarLoadingTest extends SnappyTest {
         String jarName = createJarFileWithOnlyJobClass(getTempDir());
         String appName = "myApp_" + System.currentTimeMillis();
         executeSnappyJobWithDynamicJarLoading(jarName, "snappyJobResult_thread_", appName);
+    }
+
+    /**
+     * Executes dynamically created snappy job which uses the classes from the same jar file used while executing the job.
+     */
+    public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading_WithClasses() {
+        String appJar = createJarFile(3, "1");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobResultWithClasses_thread_", null);
+    }
+
+    /**
+     * Executes dynamically created snappy job which accesses the class loaded through previous job execution and the classes from the same jar file used while executing the job.
+     */
+    public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading_verifyCleanUp() {
+        String appJar = createJarFileWithJobAccessingClassFromPreviousJobExecution(getTempDir(), 2, "2");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobResultAccessingClassFromPreviousJobExecution_thread_", null);
+    }
+
+    protected static String createJarFileWithJobAccessingClassFromPreviousJobExecution(String dir, int numClasses, String version) {
+        List files = createClasses(numClasses, version, dir);
+        files.add(createJobAccessingClassFromPreviousJobExecution("DynamicJarLoadingJob", dir));
+        return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
 
     /**
