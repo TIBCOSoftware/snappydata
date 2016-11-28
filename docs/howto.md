@@ -1,54 +1,117 @@
-## Heading 
-Text
-## Heading 
-Text
-## Heading
-Text
+This section provides you examples that demonstrate how to run queries using SnappyData. You can copy paste these  examples to try them yourself, or use them as a guidace to create your own queries. 
 
+* [How to use DataFrame APIs to Create Row and Column Tables](#howto-dataframeapi)
+* [How to Access SnappyData Store from Existing Spark Application (Split Mode)](#howto-splitmode)
+* [How to Access SnappyData Store in Embedded Mode](#howto-embeddedmode)
+* [How to Run SnappyData as an SQL Database](#howto-sqldatbase)
+* [Row Table and Column Table](#howto-row-columntable)
+* [Split Cluster Mode Usage](#howto-splitclustermode)
+* [Working with JSON](#howto-JSON)
+* [Working with Objects](#howto-objects)
+* [Demonstrating Query/Scan Performances](#howto-queryscan)
 
-**Table:**
+<a id="howto-dataframeapi"></a>
+### How to use DataFrame APIs to Create Row and Column Tables
 
-First Header | Second Header | Third Header
-:----------- |:-------------:| -----------:
-Left         | Center        | Right
-Left         | Center        | Right
+**DESCRIPTION: **
 
-
-**Image Link:**
-![SDE_Architecture](./Images/sde_architecture.png)
-
-**Hyperlink:**
-Refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf).
-
-**Formatting:**
-**Bold**, ++Underline++, *Italics*
-
-**Bullets and Numbering:**
-* Item 
-* Item 
-* Item 
-	- sub-item
-	- sub-item
-	- sub-item
-
-1. Item 1
-2. Item 2
-3. Item 3
-	1.1 
-	1.2
-	1.3
 
 **Code Example:**
 ```
-CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+ENTER CODE HERE
 
 ```
 
-**Code Text:**
-The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
+<a id="howto-splitmode"></a>
+### How to Access SnappyData Store from Existing Spark Application (Split Mode)
 
-**Note: **
-> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+<a id="howto-embeddedmode"></a>
+### How to Access SnappyData Store in Embedded Mode
+
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+
+<a id="howto-sqldatbase"></a>
+### How to Run SnappyData as an SQL Database
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+<a id="howto-row-columntable"></a>
+### Row Table and Column Table
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+
+<a id="howto-splitclustermode"></a>
+### Split Cluster Mode Usage
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+<a id="howto-JSON"></a>
+### Working with JSON
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+<a id="howto-objects"></a>
+### Working with Objects
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
+
+<a id="howto-queryscan"></a>
+### Demonstrating Query/Scan Performances
+**DESCRIPTION: **
+
+
+**Code Example:**
+```
+ENTER CODE HERE
+
+```
 
 
