@@ -1,3 +1,13 @@
+## Embedded/Unified Cluster Deployment 
+## Split Cluster Deployment 
+## Local Deployment 
+## Configuring Client Interfaces 
+### Configuring JDBC 
+### Configuring ODBC 
+### Configuring Job Submission 
+
+
+
 # Deployment topologies
 
 This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 

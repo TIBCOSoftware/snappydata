@@ -1,54 +1,23 @@
-## Heading 
+## Set up SnappyData 
 Text
-## Heading 
+### Set Up SnappyData Cluster Locally 
 Text
-## Heading
+### Setting Up SnappyData Cluster with Amazon Webservices (AWS)
 Text
+### Set Up SnappyData Cluster with Azure
 
+### Set Up SnappyData Cluster with Docker
 
-**Table:**
+## Obtaining the Installation Files
+### Downloading the Installation Files (Compressed File)
+### Building SnappyData (Latest Release Branch)
 
-First Header | Second Header | Third Header
-:----------- |:-------------:| -----------:
-Left         | Center        | Right
-Left         | Center        | Right
+## Starting the Installation
+### Step 1: Configuring SSH Login without Password
+### Step 2: Configuring SnappyData Cluster
 
-
-**Image Link:**
-![SDE_Architecture](./Images/sde_architecture.png)
-
-**Hyperlink:**
-Refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf).
-
-**Formatting:**
-**Bold**, ++Underline++, *Italics*
-
-**Bullets and Numbering:**
-* Item 
-* Item 
-* Item 
-	- sub-item
-	- sub-item
-	- sub-item
-
-1. Item 1
-2. Item 2
-3. Item 3
-	1.1 
-	1.2
-	1.3
-
-**Code Example:**
-```
-CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
-
-```
-
-**Code Text:**
-The values are `do_nothing`, `local_omit`, `strict`,  `run_on_full_table`, `partial_run_on_base_table`. The default value is `run_on_full_table`	
-
-**Note: **
-> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
-
+#### Configuring Locators
+#### Configuring Leads
+#### Configuring Data Servers
+#### Configuring Additional SnappyData Properties
 

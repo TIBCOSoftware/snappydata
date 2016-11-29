@@ -10,19 +10,17 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - SnappyData Overview: index.md
-- Introduction: snappyIntroduction.md
-- Key features: features.md
-- Quick Start Guide: quickstart.md
-- Reference Examples: howto.md
+# - Introduction: snappyIntroduction.md
+- Quick Start: quickstart.md
+- How To: howto.md
 - Architecture: architecture.md
-- Installing SnappyData: install.md
-- Download Binary Distribution: binary.md
-- Building from source, project layout: build-instructions.md
-- Configuring the Cluster: configuration.md
-- Connecting using JDBC, Spark: connectingToCluster.md
+- Install SnappyData: install.md
+# - Building from source, project layout: build-instructions.md
+# - Configuring the Cluster: configuration.md
+# - Connecting using JDBC, Spark: connectingToCluster.md
+- Synopsis Data Engine (SDE): aqp.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
-- Synopsis Data Engine (SDE): aqp.md
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
 - API: apidocsintro.md
@@ -30,6 +28,7 @@ pages:
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
+    - Contact and Support: techsupport.md
     - License: LICENSE.md
 
 theme: readthedocs
