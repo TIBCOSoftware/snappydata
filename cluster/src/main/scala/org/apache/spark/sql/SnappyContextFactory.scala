@@ -19,10 +19,11 @@ package org.apache.spark.sql
 import com.typesafe.config.Config
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
+import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.util.{SnappyUtils, Utils}
+import org.apache.spark.util.SnappyUtils
 
 
 class SnappyContextFactory extends SparkContextFactory {
@@ -32,6 +33,7 @@ class SnappyContextFactory extends SparkContextFactory {
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     SnappyContextFactory.newSession()
   }
+
 }
 
 object SnappyContextFactory {
@@ -47,6 +49,11 @@ object SnappyContextFactory {
       override def stop(): Unit = {
         // not stopping anything here because SQLContext doesn't have one.
       }
+      //Callback added to provide our classloader to load job classes. If Job class directly refers to
+      // any jars which has been provided by install_jars, this can help.
+      override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
+        SnappyUtils.getSnappyContextURLClassLoader(parent)
+      }
     }
 }
 
@@ -55,23 +62,25 @@ trait SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
-    val parentLoader = Utils.getContextOrSparkClassLoader
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
     val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
     Thread.currentThread().setContextClassLoader(currentLoader)
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    runSnappyJob(sc.asInstanceOf[SnappySession], jobConfig)
+    val snc = sc.asInstanceOf[SnappySession]
+    try {
+      runSnappyJob(snc, jobConfig)
+    }
+    finally {
+      SnappyUtils.removeJobJar(snc.sparkContext)
+    }
   }
 
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 
   def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
-
-  final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
-    SnappyUtils.installOrReplaceJar(jarName, jarPath, sc.asInstanceOf[SnappySession].sparkContext)
-  }
 
 }
 
