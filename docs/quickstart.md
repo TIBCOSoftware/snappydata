@@ -1,4 +1,4 @@
-#### Existing Spark users
+#### If you are an existing Spark users
 You can quickly check the functionality of SnappyData even with your existing Spark 2.0 installation. 
 
 Pre-requisites :
@@ -9,7 +9,8 @@ Pre-requisites :
 cd $SPARK_HOME
 ./bin/spark-shell --driver-memory 4g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
 ```
- This will open a Spark shell on which you need to copy the following code snippets. Also it will download the relevant SnappyData files to your local machine.
+ This will open a Spark shell and download the relevant SnappyData files to your local machine.
+ Read and go through the code snippet one by one and copy them to Spark shell to execute.
 
 Start a SparkSesion in local mode
 ```scala
@@ -65,21 +66,40 @@ df = snappy.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
 Create a column table in SnappyData. Also insert the created a DataFrame into the table
 
 ```scala
-df.write.format("column").saveAsTable("snappyTable")
+df.write.format("column").saveAsTable("snappyColumnTable")
 ```
 
 Run the same set of query and observe the performance difference between SparkSession and SnappySession
 ```scala
-elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyTable").show}
-elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyTable").show}
-elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyTable").show}
+elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
+elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
+elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
 elapsedTime("Spark perf") {snappy.sql("select avg(k), avg(id) from " +
-  "snappyTable group by (id%100)").show}
+  "snappyColumnTable group by (id%100)").show}
+```
+Unlike Spark DataFrames SnappyData column tables are mutable. You can insert rows to a column table.
+
+```scala
+snappy.insert("snappyColumnTable", Row.fromSeq(Seq(100000L, 1000000L)))
+```
+
+Now we will create a Row format table with DataFrame
+
+```scala
+df.write.format("row").saveAsTable("snappyRowTable")
 ```
 
 
-Type :q to quit the Spark shell
+Quit the Spark shell
 
-#### Let's now use SnappyData as a DataBase using SQL
+```
+:q
+```
+#### If you want to use SQL with a simple cluster
 
-Start the cluster
+#################Download link
+#################snappy-startAll.sh
+#################snappy-shell
+#################submit jobs
+#################queries
+
