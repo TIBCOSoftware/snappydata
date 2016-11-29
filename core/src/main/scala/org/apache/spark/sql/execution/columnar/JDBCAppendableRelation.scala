@@ -28,7 +28,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -50,14 +49,13 @@ case class JDBCAppendableRelation(
     override val schema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
-    @transient override val sqlContext: SQLContext)
-  extends BaseRelation
-  with PrunedUnsafeFilteredScan
-  with InsertableRelation
-  with DestroyRelation
-  with IndexableRelation
-  with Logging
-  with Serializable {
+    @transient override val sqlContext: SQLContext) extends BaseRelation
+    with PrunedUnsafeFilteredScan
+    with InsertableRelation
+    with DestroyRelation
+    with IndexableRelation
+    with Logging
+    with Serializable {
 
   self =>
 
@@ -85,9 +83,6 @@ case class JDBCAppendableRelation(
 
   val schemaFields = Utils.getSchemaFields(schema)
 
-  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
-    connProperties, forExecutor = true)
-
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */
@@ -108,8 +103,6 @@ case class JDBCAppendableRelation(
     }
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
@@ -233,7 +226,7 @@ case class JDBCAppendableRelation(
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
         "stats blob, " + schema.fields.map(structField =>
-        externalStore.columnPrefix + structField.name + " blob")
+      externalStore.columnPrefix + structField.name + " blob")
         .mkString(", ") + s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
   }
@@ -310,14 +303,13 @@ object JDBCAppendableRelation extends Logging {
     } else {
       Constant.DEFAULT_SCHEMA + "__" + table
     }
-    Constant.INTERNAL_SCHEMA_NAME + "." +  tableName + Constant.SHADOW_TABLE_SUFFIX
+    Constant.INTERNAL_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 }
 
 final class DefaultSource extends ColumnarRelationProvider
 
-class ColumnarRelationProvider
-    extends SchemaRelationProvider
+class ColumnarRelationProvider extends SchemaRelationProvider
     with CreatableRelationProvider {
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,

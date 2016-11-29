@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.math.{BigDecimal, BigInteger}
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -39,7 +39,7 @@ abstract class UncompressedBase extends ColumnEncoding {
   def supports(dataType: DataType): Boolean = true
 
   override final def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = {
+      field: StructField): Long = {
     val cursor = initializeNulls(columnBytes, field)
     // typeId takes 4 bytes for non-complex types else 0;
     // adjust cursor for the first next call to avoid extra checks in next
