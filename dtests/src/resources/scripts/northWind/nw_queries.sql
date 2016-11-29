@@ -104,7 +104,7 @@ select distinct (a.ShippedDate) as ShippedDate, a.OrderID, b.Subtotal, year(a.Sh
      inner join ( select distinct OrderID, sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal
      from order_details group by OrderID ) b on a.OrderID = b.OrderID
      where a.ShippedDate is not null and a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)
-     order by a.ShippedDate;
+     order by ShippedDate;
 
 select distinct a.CategoryID, a.CategoryName, b.ProductName, sum(c.ExtendedPrice) as ProductSales
      from Categories a

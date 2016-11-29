@@ -128,7 +128,7 @@ trait ParentRelation extends BaseRelation {
    * is to recreate Dependent relations when the ParentRelation is
    * being created.
    */
-  def recoverDependentsRelation(): Unit
+  def recoverDependentRelations(properties: Map[String, String]): Unit
 }
 
 @DeveloperApi

@@ -52,6 +52,7 @@ object ExternalStoreUtils {
   final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
+  final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
 
 
   def lookupName(tableName: String, schema: String): String = {
@@ -243,15 +244,18 @@ object ExternalStoreUtils {
       connProps, executorConnProps, hikariCP)
   }
 
+  def getConnection(id: String, connProperties: ConnectionProperties,
+      forExecutor: Boolean): Connection = {
+    registerDriver(connProperties.driver)
+    val connProps = if (forExecutor) connProperties.executorConnProps
+    else connProperties.connProps
+    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+      connProperties.poolProps, connProps, connProperties.hikariCP)
+  }
+
   def getConnector(id: String, connProperties: ConnectionProperties,
-      forExecutor: Boolean): () => Connection = {
-    () => {
-      registerDriver(connProperties.driver)
-      val connProps = if (forExecutor) connProperties.executorConnProps
-      else connProperties.connProps
-      ConnectionPool.getPoolConnection(id, connProperties.dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
-    }
+      forExecutor: Boolean): () => Connection = () => {
+    getConnection(id, connProperties, forExecutor)
   }
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
