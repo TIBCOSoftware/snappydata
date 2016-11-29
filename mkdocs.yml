@@ -18,9 +18,9 @@ pages:
 # - Building from source, project layout: build-instructions.md
 # - Configuring the Cluster: configuration.md
 # - Connecting using JDBC, Spark: connectingToCluster.md
+- Synopsis Data Engine (SDE): aqp.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
-- Synopsis Data Engine (SDE): aqp.md
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
 - API: apidocsintro.md
