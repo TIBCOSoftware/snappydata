@@ -97,9 +97,9 @@ Quit the Spark shell
 ```
 #### If you want to use SQL with a simple cluster
 
-#################Download link
-#################snappy-startAll.sh
-#################snappy-shell
-#################submit jobs
-#################queries
+1. Download link
+2. snappy-startAll.sh
+3. snappy-shell
+4. submit jobs
+5. queries
 
