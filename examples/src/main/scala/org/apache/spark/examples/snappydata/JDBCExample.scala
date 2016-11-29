@@ -47,20 +47,26 @@ object JDBCExample {
         "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY', BUCKETS '11' )")
 
     println()
-    println("Inserting a record in PARTSUPP table using prepared statement")
+    println("Inserting a record in PARTSUPP table via batch inserts")
     val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
-    preparedStmt1.setInt(1, 100)
-    preparedStmt1.setInt(2, 1)
-    preparedStmt1.setInt(3, 5000)
-    preparedStmt1.setInt(4, 100)
-    preparedStmt1.execute()
+
+    var x = 0
+    for (x <- 1 to 10) {
+      preparedStmt1.setInt(1, x*100)
+      preparedStmt1.setInt(2, x)
+      preparedStmt1.setInt(3, x*1000)
+      preparedStmt1.setBigDecimal(4, java.math.BigDecimal.valueOf(100.2))
+      preparedStmt1.addBatch()
+    }
+    preparedStmt1.executeBatch()
     preparedStmt1.close()
 
     println()
     println("Inserting data in PARTSUPP table using statement")
-    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(200, 2, 50, 10)")
-    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(300, 3, 1000, 20)")
-    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(400, 4, 200, 30)")
+    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(2000, 2, 50, 10)")
+    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(3000, 3, 1000, 20)")
+    stmt1.execute("INSERT INTO APP.PARTSUPP VALUES(4000, 4, 200, 30)")
+
 
     println()
     println("The contents of PARTSUPP are")

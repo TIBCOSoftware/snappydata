@@ -80,7 +80,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     pw.println()
     pw.println("****Create a partitioned row table using API****")
     pw.println()
-    pw.println("Creating a partitioned row table(PARTSUPP) using SQL")
+    pw.println("Creating a partitioned row table(PARTSUPP) using API")
 
     // drop the table if it exists
     snc.dropTable("PARTSUPP", ifExists = true)
