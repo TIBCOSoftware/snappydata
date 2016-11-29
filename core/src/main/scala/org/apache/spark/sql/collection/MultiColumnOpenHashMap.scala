@@ -365,18 +365,18 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     }
   }
 
-  override def foldValues[U](init: U, f: (Int, V, U) => (U, V)): U = {
+  override def foldValues[U](init: U, f: (Int, V, U) => U): U = {
     var v = init
     // first check for null value
     if (!noNullValue) {
-      v = f(-1, nullValue, v)._1
+      v = f(-1, nullValue, v)
     }
     // next go through the entire map
     val bitset = _keySet.getBitSet
     val values = _values
     var pos = bitset.nextSetBit(0)
     while (pos >= 0) {
-      v = f(-1, values(pos), v)._1
+      v = f(-1, values(pos), v)
       pos = bitset.nextSetBit(pos + 1)
     }
     v

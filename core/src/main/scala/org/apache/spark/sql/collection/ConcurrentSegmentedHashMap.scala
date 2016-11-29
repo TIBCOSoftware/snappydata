@@ -286,7 +286,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   def flatMap[U](f: M => GenTraversableOnce[U]): Iterator[U] =
     _segments.iterator.flatMap(f)
 
-  def foldValuesRead[U](init: U, f: (Int, V, U) => (U, V)): U = {
+  def foldValuesRead[U](init: U, f: (Int, V, U) => U): U = {
     _segments.foldLeft(init) { (v, seg) =>
       SegmentMap.lock(seg.readLock()) {
         seg.foldValues(v, f)
@@ -349,7 +349,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[V](size.toInt)
-      foldValuesRead[Unit]((), { (i, v, u) => (buffer += v, v) })
+      foldValuesRead[Unit]((), { (i, v, u) => buffer += v })
       buffer
     } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
