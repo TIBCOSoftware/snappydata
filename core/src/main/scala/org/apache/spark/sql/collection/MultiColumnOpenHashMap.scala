@@ -365,7 +365,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     }
   }
 
-  override def foldValues[U](init: U, f: (Int, V, U) => U): U = {
+  override def foldValues[U](init: U, f: (Int, V, U) => U, reset: Boolean = false): U = {
     var v = init
     // first check for null value
     if (!noNullValue) {
