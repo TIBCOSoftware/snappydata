@@ -193,7 +193,7 @@ object NWQueries {
     " where a.ShippedDate is not null" +
     " and a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
     " a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
-    " order by a.ShippedDate"
+    " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
     " a.CategoryName," +

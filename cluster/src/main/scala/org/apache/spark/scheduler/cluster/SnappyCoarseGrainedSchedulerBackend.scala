@@ -22,13 +22,13 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.SparkContext
-import org.apache.spark.internal.Logging
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
 import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext}
 
-class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
-    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
+class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
+    override val rpcEnv: RpcEnv)
+    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
 
@@ -92,7 +92,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
 }
 
 class BlockManagerIdListener(sc: SparkContext)
-    extends SparkListener with Logging {
+    extends SparkListener {
 
   override def onExecutorAdded(
       msg: SparkListenerExecutorAdded): Unit = synchronized {

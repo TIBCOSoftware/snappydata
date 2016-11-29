@@ -24,7 +24,6 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
-import org.apache.spark.{Logging, Partition}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -41,6 +40,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.{Logging, Partition}
 
 /**
   * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -118,10 +118,10 @@ class BaseColumnFormatRelation(
   filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
 
-    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters, true).
-        zipPartitions(rdd) { (leftItr, rightItr) =>
-          Iterator[Any](leftItr, rightItr)
-        }
+    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
+      Iterator[Any](leftItr, rightItr)
+    }
 
     (zipped, Nil)
   }
@@ -143,8 +143,6 @@ class BaseColumnFormatRelation(
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -158,8 +156,6 @@ class BaseColumnFormatRelation(
       case _ =>
         new SparkShellRowRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -471,7 +467,7 @@ class ColumnFormatRelation(
 
   override def recoverDependentRelations(properties: Map[String, String]): Unit = {
     var dependentRelations: Array[String] = Array()
-    if (None != properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+    if (properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
       dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")
     }
 
@@ -678,7 +674,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(
       parametersForShadowTable, isRowTable = false, isShadowTable = true)
 
-    val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
+    // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
@@ -702,7 +698,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     // create an index relation if it is an index table
     val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
-      case Some(baseTable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
+      case Some(btable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
           processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
         mode,
@@ -713,7 +709,7 @@ final class DefaultSource extends ColumnarRelationProvider {
         externalStore,
         partitioningColumn,
         sqlContext,
-        baseTable)
+        btable)
       case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
           processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
