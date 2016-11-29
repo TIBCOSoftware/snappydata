@@ -682,15 +682,15 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       valueInitCode: String, input: Seq[ExprCode],
       dictArrayVar: String): String = {
     val hashVar = Array(ctx.freshName("hash"))
-    val keyVars = getExpressionVars(keyExpressions, input)
     val valueInit = valueInitCode + '\n' + generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false)
 
     // optimized path for single key string column if dictionary is present
-    val mapLookupCode = () => mapLookup(objVar, hashVar(0), keyExpressions,
-      keyVars, valueInit)
+    def mapLookupCode(keyVars: Seq[ExprCode]): String = mapLookup(objVar,
+      hashVar(0), keyExpressions, keyVars, valueInit)
     dictionaryKey match {
       case Some(dictKey) =>
+        val keyVars = getExpressionVars(keyExpressions, input)
         val keyVar = keyVars.head
         s"""
           $className $objVar;
@@ -702,17 +702,20 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             ${if (keyVar.code.isEmpty) "" else keyVar.code.trim}
             // evaluate hash code of the lookup key
             ${generateHashCode(hashVar, keyVars, keyExpressions)}
-            ${mapLookupCode()}
+            ${mapLookupCode(keyVars)}
           }
         """
       case None =>
+        val inputEvals = evaluateVariables(input)
+        val keyVars = getExpressionVars(keyExpressions, input)
         s"""
           // evaluate the key expressions
+          $inputEvals
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, keyExpressions)}
           $className $objVar;
-          ${mapLookupCode()}
+          ${mapLookupCode(keyVars)}
          """
     }
   }

@@ -51,7 +51,7 @@ class TPCETrade extends SnappyFunSuite {
 
   private lazy val snappySession = snc.snappySession
 
-  ignore("select queries with random data") {
+  test("select queries with random data") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1

@@ -553,6 +553,10 @@ case class SnappyHashAggregateExec(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
     val bufferEval = evaluateVariables(bufferVars)
 
+    // evaluate map lookup code before updateEvals possibly modifies the keyVars
+    val mapCode = keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
+      initVars, initCode, input, dictionaryArrayTerm)
+
     ctx.currentVars = bufferVars ++ input
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
@@ -572,8 +576,7 @@ case class SnappyHashAggregateExec(
     // Finally, sort the spilled aggregate buffers by key, and merge
     // them together for same key.
     s"""
-       |${keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
-            initVars, initCode, input, dictionaryArrayTerm)}
+       |$mapCode
        |
        |// -- Update the buffer with new aggregate results --
        |

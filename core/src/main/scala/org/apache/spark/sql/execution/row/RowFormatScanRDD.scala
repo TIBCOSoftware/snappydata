@@ -29,6 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
@@ -73,6 +74,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.toString()
       } else ""
     } else ""
+  }
+
+  protected lazy val resultSetField = {
+    val field = classOf[ProxyResultSet].getDeclaredField("delegate")
+    field.setAccessible(true)
+    field
   }
 
   // below should exactly match ExternalStoreUtils.handledFilter
@@ -223,8 +230,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         new CompactExecRowIteratorOnScan(container, bucketIds)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
-        new CompactExecRowIteratorOnRS(conn, stmt,
-          rs.asInstanceOf[EmbedResultSet], context)
+        val ers = rs match {
+          case e: EmbedResultSet => e
+          case p: ProxyResultSet =>
+            resultSetField.get(p).asInstanceOf[EmbedResultSet]
+        }
+        new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
       }
     }
   }
