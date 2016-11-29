@@ -27,7 +27,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializable
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 
 import org.apache.spark.broadcast.TorrentBroadcast
-import org.apache.spark.executor.{BlockStatusesAccumulator, InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
+import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
 import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
@@ -108,7 +108,6 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[OutputMetrics])
     kryo.register(classOf[ShuffleReadMetrics])
     kryo.register(classOf[ShuffleWriteMetrics])
-    kryo.register(classOf[BlockStatusesAccumulator])
     kryo.register(classOf[LongAccumulator])
     kryo.register(classOf[DoubleAccumulator])
     kryo.register(classOf[CollectionAccumulator[_]])
