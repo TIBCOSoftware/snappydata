@@ -38,7 +38,6 @@ class TPCETrade extends SnappyFunSuite {
         .setIfMissing("spark.master", s"local[$numProcessors]")
         .setAppName("microbenchmark")
     conf.set("spark.sql.shuffle.partitions", numProcessors.toString)
-    // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
     if (addOn != null) {
@@ -54,6 +53,7 @@ class TPCETrade extends SnappyFunSuite {
     val tradeSize = 500000L
     val numDays = 1
     val numIters = 10
+    snappySession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,

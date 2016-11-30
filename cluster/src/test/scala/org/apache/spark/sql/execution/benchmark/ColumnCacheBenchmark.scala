@@ -118,6 +118,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, readPathOnly: Boolean): Unit = {
     val numIters = 10
     val benchmark = new Benchmark("Cache random keys", size)
+    snappySession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     snappySession.sql("drop table if exists test")
     var testDF = snappySession.range(size)
         .selectExpr("id", "floor(rand() * 10000) as k")
