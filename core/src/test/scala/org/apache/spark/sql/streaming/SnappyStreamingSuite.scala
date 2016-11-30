@@ -47,7 +47,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -179,6 +179,11 @@ class SnappyStreamingSuite
     filtered.glom().foreachRDD(rdd => rdd.foreach(_.foreach(println)))
     val mapped = filtered.map(row => row.getString(0).toInt)
     mapped.foreachRDD(rdd => rdd.foreach(println))
+    mapped.reduce(_ + _).foreachRDD(rdd => println(rdd.first()))
+    mapped.count().foreachRDD(rdd => println(rdd.first()))
+    // mapped.mapPartitions { _ => Seq.empty.toIterator }
+    mapped.mapPartitions { x => Iterator(x.sum)}
+    mapped.transform(rdd => rdd.map(_.toString))
     // scalastyle:on println
 
     ssnc.start()

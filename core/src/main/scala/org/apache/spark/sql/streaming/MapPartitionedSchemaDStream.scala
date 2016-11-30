@@ -17,17 +17,26 @@
 
 package org.apache.spark.sql.streaming
 
+import scala.reflect.ClassTag
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.streaming.Time
+import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.{Duration, Time}
 
 private[streaming]
-class MappedSchemaDStream(
+class MapPartitionedSchemaDStream[U: ClassTag](
     parent: SchemaDStream,
-    mapFunc: Row => Row
-) extends SchemaDStream(parent.snsc, parent.queryExecution) {
+    mapPartFunc: Iterator[Row] => Iterator[U],
+    preservePartitioning: Boolean
+) extends DStream[U](parent.snsc) {
 
-  override def compute(validTime: Time): Option[RDD[Row]] = {
-    parent.compute(validTime).map(_.map[Row](mapFunc))
+  override def dependencies: List[DStream[_]] = List(parent)
+
+  override def slideDuration: Duration = parent.slideDuration
+
+  override def compute(validTime: Time): Option[RDD[U]] = {
+    parent.compute(validTime).map(_.mapPartitions[U](mapPartFunc, preservePartitioning))
   }
 }
+
