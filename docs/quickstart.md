@@ -66,7 +66,7 @@ scala> System.runFinalization()
   Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This integrates the SQLContext
   functionality with the Snappy store.
 ```scala
-scala> val snappy = org.apache.spark.sql.SnappyContext()
+scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
 ```
 * Create a similar 100 million record DataFrame
 ```scala
