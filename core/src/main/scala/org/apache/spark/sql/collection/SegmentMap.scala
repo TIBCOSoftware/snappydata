@@ -21,7 +21,7 @@ import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
-  def foldValues[U](init: U, f: (Int, V, U) => U): U
+  def foldValues[U](init: U, f: (Int, V, U) => U, reset: Boolean = false): U
 
   def foldEntries[U](init: U, copyIfRequired: Boolean, f: (K, V, U) => U): U
 
@@ -36,6 +36,8 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
   def contains(k: K, hash: Int): Boolean
 
   def apply(k: K, hash: Int): V
+
+  def clearBucket(): Unit = {}
 
   def update(k: K, hash: Int, v: V): Boolean
 
@@ -53,7 +55,7 @@ trait ChangeValue[K, V] {
 
   def mergeValue(k: K, v: V): V
 
-  def mergeValueNoNull(k: K, v: V): (V, Boolean)
+  def mergeValueNoNull(k: K, v: V): (V, Boolean, Boolean)
 
   def segmentEnd(segment: SegmentMap[K, V]) {}
 
