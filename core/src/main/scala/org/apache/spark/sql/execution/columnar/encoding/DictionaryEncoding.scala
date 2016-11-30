@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, TimestampType}
+import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, StructField, TimestampType}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -42,7 +41,7 @@ abstract class DictionaryEncodingBase extends ColumnEncoding {
   private[this] final var longDictionary: Array[Long] = _
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = {
+      field: StructField): Long = {
     var cursor = super.initializeDecoding(columnBytes, field)
     val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4

@@ -74,6 +74,13 @@ trait ConnectedExternalStore extends ExternalStore {
     connectedInstance
   }
 
+  def commitAndClose(isSuccess: Boolean): Unit = {
+    if (!connectedInstance.isClosed && isSuccess) {
+      connectedInstance.commit()
+    }
+    connectedInstance.close()
+  }
+
 /*
   override def getConnection(id: String,
     onExecutor: Boolean): java.sql.Connection = connectedInstance

@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -42,7 +41,7 @@ abstract class RunLengthEncodingBase extends ColumnEncoding {
   }
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = {
+      field: StructField): Long = {
     cursorPos = super.initializeDecoding(columnBytes, field)
     // use the current count + value for cursor since that will be read and
     // written most frequently while actual cursor will be less frequently used
