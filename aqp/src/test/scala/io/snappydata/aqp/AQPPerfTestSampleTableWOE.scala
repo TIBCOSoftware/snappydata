@@ -3,7 +3,7 @@ package io.snappydata.aqp
 import java.io.PrintWriter
 import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql._
 
 
 /** This test will let us know the cost of sampling
@@ -15,7 +15,6 @@ object AQPPerfTestSampleTableWOE extends SnappySQLJob {
     val numIter = jobConfig.getString("numIter").toInt
     val skipTill = jobConfig.getString("skipTill").toInt
     val queryFile: String = jobConfig.getString("queryFile")
-    val sampleDataLocation: String = jobConfig.getString("sampleDataLocation")
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
     val execTimeArray = new Array[Double](queryArray.length)
 
@@ -23,53 +22,26 @@ object AQPPerfTestSampleTableWOE extends SnappySQLJob {
     val props = Map[String, String]()
     val pw = new PrintWriter("AQPPerfTestSampleTableWOE.out")
 
+    pw.println("Creating AIRLINE table")
+    val df = snc.read.load("/export/dev2a/users/spillai/data/1billionAirlineData")
+    snc.createTable("airline", "column", df.schema, props)
+    df.write.format("column").mode(SaveMode.Append).saveAsTable("airline")
+    println("Created Airline base  table")
+
     pw.println("Creating AIRLINE_SAMPLE table")
-    snc.sql(s"CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE " +
-      " OPTIONS(buckets '7',qcs 'UniqueCarrier, Year_, Month_'," +
-      " fraction '0.03',strataReservoirSize '50') " +
-      " AS (SELECT * FROM AIRLINE);")
- 
-   val actualResult1 = snc.sql("select count(*) as sample_ from airline_sample")
-      val result1 = actualResult1.collect()
-      result1.foreach(rs => {
-        pw.println(rs.toString)
-      })
+    val sampledf = snc.createSampleTable("airline_sample",
+      Some("airline"), Map("qcs" -> "UniqueCarrier ,Year_ ,Month_",
+        "fraction" -> "0.05", "strataReservoirSize" -> "25", "buckets" -> "13", "overflow" -> "false"),
+      allowExisting = false)
+    df.write.insertInto("airline_sample")
 
+    pw.println("Creating SampleTable_WOE table")
+    val sampleWOE_df = snc.sql("Select * from airline_sample")
+    snc.createTable("sampletable_WOE", "column", sampledf.schema, Map("overflow" -> "false"))
+    sampleWOE_df.write.insertInto("sampletable_WOE")
 
-    createSampleTableWOE()
-
-    def createSampleTableWOE(): Unit = {
-      storeSampleTableValue()
-      println("Creating table SampleTableWOE ")
-      println("sampleTableLocation is " + sampleDataLocation)
-      pw.println("Creating SampleTableWOE table")
-
-      //Use the saved sampled data to create a normal column table ,this is to avoid resampling as this data is already sampled.
-    /*  val df = snc.read.load(sampleDataLocation).toDF("YEAR_", "Month_", "DayOfMonth",
-        "DayOfWeek", "UniqueCarrier", "TailNum", "FlightNum", "Origin", "Dest", "CRSDepTime", "DepTime", "DepDelay", "TaxiOut",
-        "TaxiIn", "CRSArrTime", "ArrTime", "ArrDelay", "Cancelled", "CancellationCode", "Diverted", "CRSElapsedTime",
-        "ActualElapsedTime", "AirTime", "Distance", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay",
-        "LateAircraftDelay", "ArrDelaySlot", "SNAPPY_SAMPLER_WEIGHTAGE")
-      snc.createTable("sampleTable_WOE", "column", df.schema, Map("buckets" -> "7"))
-      df.write.insertInto("sampleTable_WOE")
-      val actualResult = snc.sql("select count(*) from sampleTable_WOE")
-      val result = actualResult.collect()
-      result.foreach(rs => {
-        pw.println(rs.toString)
-      })*/
-     snc.sql(s"""CREATE EXTERNAL TABLE STAGING_sampleTable_WOE  USING parquet OPTIONS(path '${sampleDataLocation}')""");
-     snc.sql(s"CREATE TABLE sampleTable_WOE USING column OPTIONS(buckets '11') AS ( select * from STAGING_sampleTable_WOE)");
-      val actualResult = snc.sql("select count(*) from sampleTable_WOE")
-      val result = actualResult.collect()
-      result.foreach(rs => {
-        pw.println(rs.toString)
-      })
-    }
-    //Save the already created sampletable data as a parquet
-    def storeSampleTableValue(): Unit = {
-      val df = snc.sql("SELECT * from airline_sample")
-      df.write.parquet(sampleDataLocation)
-    }
+    val df1: DataFrame = snc.sql(s"select count(*) from sampletable_WOE")
+    df1.collect()
 
     Try {
       AQPPerfTestUtil.runPerftest(numIter, snc, pw, queryArray, skipTill, execTimeArray)

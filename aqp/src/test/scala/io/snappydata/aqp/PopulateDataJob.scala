@@ -26,7 +26,6 @@ object PopulateDataJob extends SnappySQLJob {
         airlineDF1.write.format("column").mode(SaveMode.Append).saveAsTable("airline1")
         i = i + 1
         snc.dropTempTable(tempTable)
-
       }
       val df=snc.sql("SELECT * from airline1")
       df.write.parquet(dataLocation)
