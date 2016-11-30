@@ -85,10 +85,7 @@ final class CachedBatchCreator(
         success = true
       }
     } finally {
-      if (success) {
-        connectedExternalStore.conn.commit()
-      }
-      connectedExternalStore.conn.close()
+      connectedExternalStore.commitAndClose(success)
     }
   }
 }
