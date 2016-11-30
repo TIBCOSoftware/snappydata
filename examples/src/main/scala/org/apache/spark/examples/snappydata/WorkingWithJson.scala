@@ -56,34 +56,41 @@ object WorkingWithJson extends SnappySQLJob {
     }
   }
 
-  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
     val some_people_path = s"${jobConfig.getString("json_resource_folder")}/some_people.json"
     // Read a JSON file using Spark API
-    val people = sc.jsonFile(some_people_path)
+    val people = snc.jsonFile(some_people_path)
     people.printSchema()
 
     //Drop the table if it exists.
-    sc.dropTable("people", ifExists = true)
+    snc.dropTable("people", ifExists = true)
 
-    // Write the created DataFrame to a column table.
-    people.write.format("column").saveAsTable("people")
+   //Create a columnar table with the Json DataFrame schema
+    snc.createTable(tableName = "people",
+      provider = "column",
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto("people")
 
     // Append more people to the column table
     val more_people_path = s"${jobConfig.getString("json_resource_folder")}/more_people.json"
 
     //Explicitly passing schema to handle record level field mismatch
     // e.g. some records have "district" field while some do not.
-    val morePeople = sc.read.schema(people.schema).json(more_people_path)
+    val morePeople = snc.read.schema(people.schema).json(more_people_path)
     morePeople.write.insertInto("people")
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(sc.table("people").schema)
+    println(snc.table("people").schema)
     println
 
     // Query it like any other table
-    val nameAndAddress = sc.sql("SELECT " +
+    val nameAndAddress = snc.sql("SELECT " +
         "name, " +
         "address.city, " +
         "address.state, " +
@@ -114,7 +121,7 @@ object WorkingWithJson extends SnappySQLJob {
     val spark: SparkSession = SparkSession
         .builder
         .appName("WorkingWithJson")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)

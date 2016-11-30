@@ -38,12 +38,10 @@ object WorkingWithObjects extends SnappySQLJob {
   override def isValidJob(snc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-
+    val snSession = snc.snappySession
 
     //Import the implicits for automatic conversion between Objects to DataSets.
-    import snc.implicits._
-
-    val snSession = snc.snappySession
+    import snSession.implicits._
     // Create a Dataset using Spark APIs
     val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
 
@@ -51,11 +49,15 @@ object WorkingWithObjects extends SnappySQLJob {
     //Drop the table if it exists.
     snSession.dropTable("people", ifExists = true)
 
-    // Write the created Dataset to a column table.
-    people.write
-        .format("column")
-        .options(Map("BUCKETS" -> "1", "PARTITION_BY" -> "name"))
-        .saveAsTable("people")
+    //Create a columnar table with the DataFrame schema
+    snc.createTable(tableName = "people",
+      provider = "column",
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto("people")
 
     //print schema of the table
     println("Print Schema of the table\n################")
