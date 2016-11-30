@@ -1,20 +1,58 @@
-This section provides you examples that demonstrate how to do common operations such as create tables, load data and run queries using SnappyData. You can follow the instructions given in examples source code to run those directly.
+This section provides you examples that demonstrate how to do common operations such as starting a cluster, create tables, ingest streaming data and run queries using SnappyData. You can follow the instructions given in examples source code to run those directly.
 
 Source code for these examples is located at `quickstart/src/main/scala/org/apache/spark/examples/snappydata` directory of SnappyData product distribution.
 
-These examples can be run either in local mode(in which case, it will spawn a single node SnappyData system) by using `bin/run-example` script or can be submitted as a job to an already running SnappyData cluster.
+These examples can be run either in local mode(in which case, it will spawn a single node SnappyData system) by using `bin/run-example` script or can be submitted as a [job](#howto-job) to an already running SnappyData cluster.
 
-* [How to create row tables](#howto-row)
-* [How to create column tables](#howto-column)
+* [How to start SnappyData cluster](#howto-startCluster)
+* [How to run Spark code inside cluster](#howto-job)
+* [How to use snappy-shell](#howto-snappyShell)
+* [How to create row tables and run queries](#howto-row)
+* [How to create column tables and run queries](#howto-column)
 * [How to do collacated join](#howto-collacatedJoin)
 * [How to use SnappyData as SQL database using JDBC driver](#howto-jdbc)
-* [Working with JSON](#howto-JSON)
-* [Working with Objects](#howto-objects)
-* [How to Access SnappyData Store from Existing Spark Application (Split Mode)](#howto-splitmode)
-* [Demonstrating Query/Scan Performances](#howto-queryscan)
+* [How to store and query JSON objects](#howto-JSON)
+* [How to store and query objects](#howto-objects)
+* [How to access SnappyData store from existing Spark installation using split mode](#howto-splitmode)
+
+<a id="howto-startCluster"></a>
+### How to start SnappyData cluster
+
+**DESCRIPTION: **
+
+**Steps:**
+```
+Add details
+Step 1
+Step 2
+```
+
+<a id="howto-job"></a>
+### How to run Spark code inside cluster
+
+**DESCRIPTION: **
+
+**Steps:**
+```
+Add details
+Step 1
+Step 2
+```
+
+<a id="howto-snappyShell"></a>
+### How to use snappy-shell
+
+**DESCRIPTION: **
+
+**Steps:**
+```
+Add details
+Step 1
+Step 2
+```
 
 <a id="howto-row"></a>
-### How to create row tables
+### How to create row tables and run queries
 
 **DESCRIPTION: **
 Row tables in SnappyData are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location is determined by a hash function and hence very fast for point lookups or updates. A row table can either be replicated to all nodes or partitioned across nodes. A row table can be created by using DataFrame API or by using SQL.
@@ -40,7 +78,8 @@ First get a SnappyContext:
     val snc = snSession.snappyContext
 ```
 
-Now create the table using API:
+Now create the table using API. For that, first we define the table schema and then create the using createTable API
+
 ```
     val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
       StructField("S_NAME", StringType, false),
@@ -83,33 +122,33 @@ You can perform various operations such as inset data, mutate it (update/delete)
 For example:
 
 ```
-    println("Inserting data in SUPPLIER table")
+    // inserting data in SUPPLIER table
     snc.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
     snc.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
     snc.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
     snc.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 
-    println("Printing the contents of the SUPPLIER table")
+    // printing the contents of the SUPPLIER table
     var tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 
-    println("Update the table account balance for SUPPLIER4")
+    // update the table account balance for SUPPLIER4
     snc.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 
-    println("Printing the contents of the SUPPLIER table after update")
+    // printing the contents of the SUPPLIER table after update
     tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 
-    println("Delete the records for SUPPLIER2 and SUPPLIER3")
+    // delete the records for SUPPLIER2 and SUPPLIER3
     snc.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
-    println("Printing the contents of the SUPPLIER table after delete")
+    // printing the contents of the SUPPLIER table after delete
     tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
 
 <a id="howto-column"></a>
-### How to create column tables
+### How to create column tables and run queries
 
 **DESCRIPTION: **
 Column tables organize and manage data in columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory).
@@ -134,7 +173,7 @@ First get a SnappyContext:
     val snc = snSession.snappyContext
 ```
 
-Now create the table using API and load data into it from CSV:
+Now create the table using API and load data into it from CSV. For that, first we define the table schema and then create the using createTable API.
 
 ```
 val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
@@ -156,7 +195,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     snc.createTable("CUSTOMER", "column", tableSchema, props1)
 
     // insert some data in it
-    println("Loading data in CUSTOMER table from a text file with delimited columns")
+    // loading data in CUSTOMER table from a text file with delimited columns
     val customerDF = snc.read.
         format("com.databricks.spark.csv").schema(schema = tableSchema).
         load(s"quickstart/src/resources/customer.csv")
@@ -264,7 +303,7 @@ preparedStmt1.close()
 ```
 
 <a id="howto-JSON"></a>
-### Working with JSON
+### How to store and query JSON objects
 **DESCRIPTION: **
 You may insert JSON data in SnappyData tables and execute queries on those tables.
 
@@ -319,12 +358,12 @@ The source code for JSON example is in [WorkingWithJson.scala](https://github.co
 ```
 
 <a id="howto-objects"></a>
-### Working with Objects
+### How to store and query objects
 **DESCRIPTION: **
 You can use domain object to load the data into SnappyData tables and select the data by executing queries against the table.
 
 **Code Example:**
-The code snippet below insert Person objects into a column table. The source code for this example is in [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala)
+The code snippet below inserts Person objects into a column table. The source code for this example is in [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala)
 
 ```
     //Import the implicits for automatic conversion between Objects to DataSets.
