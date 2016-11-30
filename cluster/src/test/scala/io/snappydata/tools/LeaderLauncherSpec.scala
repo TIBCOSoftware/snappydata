@@ -180,13 +180,13 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         val conf = l.getConfig(Array.empty)
         val f = conf.getString("spark.jobserver.filedao.rootdir")
         assert(f.indexOf(replaceString) == -1)
-        assert(f equals "./spark-jobserver/filedao/data")
+        assert(f === "./spark-jobserver/filedao/data")
         val d = conf.getString("spark.jobserver.datadao.rootdir")
         assert(d.indexOf(replaceString) == -1)
-        assert(d equals "./spark-jobserver/upload")
+        assert(d === "./spark-jobserver/upload")
         val s = conf.getString("spark.jobserver.sqldao.rootdir")
         assert(s.indexOf(replaceString) == -1)
-        assert(s equals "./spark-jobserver/sqldao/data")
+        assert(s === "./spark-jobserver/sqldao/data")
       }
 
       " have jobserver tmp directory from syshome" in {
@@ -204,6 +204,8 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         val s = conf.getString("spark.jobserver.sqldao.rootdir")
         assert(s.indexOf(replaceString) == -1)
         assert(s startsWith directory)
+        System.clearProperty(
+          com.pivotal.gemfirexd.internal.iapi.reference.Property.SYSTEM_HOME_PROPERTY)
       }
     } // end started
   }
