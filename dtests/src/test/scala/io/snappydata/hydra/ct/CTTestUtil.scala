@@ -57,7 +57,7 @@ object CTTestUtil {
     pw.println(s"No. rows in resultset for query ${queryNum} is : ${df.count} for ${CTTestUtil.tableType} table")
     if (df.count() != numRows) {
       pw.println(s"Result mismatch for query ${queryNum} : found ${df.count} rows but " +
-          "expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
+          s"expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
       CTTestUtil.hasValidationFailed = true
       pw.flush()
       if (CTTestUtil.validateFullResultSet)
@@ -272,7 +272,7 @@ object CTTestUtil {
         case "Q18" => assertQuery(CTQueries.query18,0,"Q18")
         case "Q19" => assertQuery(CTQueries.query19,47,"Q19")
         case "Q20" => assertQuery(CTQueries.query20,100,"Q20")
-        case "Q21" => assertQuery(CTQueries.query21,0,"Q21")
+        case "Q21" => assertQuery(CTQueries.query21,2,"Q21")
         case "Q22" => assertJoin(CTQueries.query22,1,"Q22")
         //case "Q23" => assertJoin(CTQueries.query23,0,"Q23") // fails in snappy
         case "Q24" => assertQuery(CTQueries.query24,999,"Q24")
