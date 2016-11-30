@@ -1,10 +1,11 @@
 ###Use your existing Spark installation
 You can quickly check the functionality of SnappyData even with your existing Spark 2.0 installation. 
-Only pre-requisites are you should have Spark Version 2.0 installed and 4GB of RAM.
+Only pre-requisites are you should have Spark Version 2.0 installed. Preferably you should have at least 4GB of RAM for the application.
+
 
 
 ```scala
-$ cd $SPARK_HOME
+$ cd <Spark_Install_dir>
 $ ./bin/spark-shell --driver-memory 4g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
 ```
 This will open a Spark shell and download the relevant SnappyData files to your local machine.
@@ -14,115 +15,129 @@ Read and go through the code snippet one by one and copy them to Spark shell to 
 ```scala
 scala> import org.apache.spark.sql.SparkSession
 
-scala> val spark = SparkSession.builder.master("local[4]").appName("spark, " +
+scala> val spark = SparkSession.builder.master("local[*]").appName("spark, " +
                    "Snappy Quick Start").getOrCreate()
 ```
 
-* Define a function name "elapsedTime" which will compute a method execution time
+* Define a of helper function "benchmark", which will give us an average time of a query after doing initial warmups.
 ```scala
-scala> def elapsedTime(name: String)(f: => Unit) {
-           val startTime = System.nanoTime
+scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 2)(f: => Unit) {
+         for (i <- 1 to warmups) {
            f
-           val endTime = System.nanoTime
-           println(s"Time taken in $name: " + (endTime - startTime).toDouble / 1000000000 + " seconds")
-      }
+         }
+         val startTime = System.nanoTime
+         for (i <- 1 to times) {
+           f
+         }
+         val endTime = System.nanoTime
+         println(s"Average time taken in $name for $times runs: " +
+           (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
+       }
+
 ```
 * Create a DataFrame and temp table using Spark's range method. Cache it in Spark to get optimal performance.
   This will create a DataFrame of 100 million records.
 ```scala
 scala> var df = spark.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
-       df.cache
-       df.createOrReplaceTempView("sparkCacheTable")
+scala> df.cache
+scala> df.createOrReplaceTempView("sparkCacheTable")
 ```
 
-* Now run some query and to check the performance. The queries are mostly using average and group by.
+* Now run a query and to check the performance. The queries is using average of a field without any where clause.
 This will ensure it touches all records while scanning.
 ```scala
-scala> elapsedTime("Spark perf") {spark.sql("select avg(k), avg(id) from sparkCacheTable").show}
+scala> benchmark("Spark perf") { spark.sql("select avg(k) from sparkCacheTable").collect() }
 
-scala> elapsedTime("Spark perf") {spark.sql("select avg(k), avg(id) from sparkCacheTable").show}
+scala> spark.sql("select avg(k) from sparkCacheTable").show()
 
-scala> elapsedTime("Spark perf") {spark.sql("select avg(k), avg(id) from sparkCacheTable").show}
+scala> benchmark("Spark perf") {spark.sql("select avg(k) from sparkCacheTable group by (id%100)").collect}
 
-scala> elapsedTime("Spark perf") {spark.sql("select avg(k), avg(id) from sparkCacheTable group by (id%100)").show}
+scala> spark.sql("select avg(k) from sparkCacheTable group by (id%100)").show
+
 ```
-* Clean up the JVM
+* Clean up the JVM. This will ensure all in memory artifacts for Spark is cleaned up.
 ```scala
 scala> df.unpersist()
 scala> System.gc()
 scala> System.runFinalization()
 ```
 
-* Create a SnappySesion
+* Create a SnappyContext. A SnappyContext extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and Columnar tables.
+  Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This integrates the SQLContext
+  functionality with the Snappy store.
 ```scala
-scala> val snappy = org.apache.spark.sql.SnappyContext.apply().snappySession
+scala> val snappy = org.apache.spark.sql.SnappyContext()
 ```
 * Create a similar 100 million record DataFrame
 ```scala
 scala> df = snappy.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
 ```
-* Create a column table in SnappyData. Also insert the created a DataFrame into the table
+* Create a columnar table in SnappyData. Also insert the created a DataFrame into the table
 
 ```scala
-scala> df.write.format("column").saveAsTable("snappyColumnTable")
+scala> snappy.sql("create table snappyColumnTable (id bigint not null, k bigint not null) using column")
+scala> df.write.insertInto("snappyColumnTable")
 ```
 * Check the total row count now.
 ```scala
-scala> snappy.sql("select * from snappyTable").count
+scala> snappy.sql("select count(*) from snappyColumnTable").show
 ```
 
-* Run the same set of query and observe the performance difference between SparkSession and SnappySession
-```scala
-scala> elapsedTime("Snappy perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
-
-scala> elapsedTime("Snappy perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
-
-scala> elapsedTime("Snappy perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable").show}
-
-scala> elapsedTime("Snappy perf") {snappy.sql("select avg(k), avg(id) from snappyColumnTable group by (id%100)").show}
-```
 * Unlike Spark DataFrames SnappyData column tables are mutable. You can insert rows to a column table.
 The following code snippet create a Row object using Spark's API and inserts the Row to the table.
 
 ```scala
 scala> import org.apache.spark.sql.Row
-scala> snappy.insert("snappyColumnTable", Row.fromSeq(Seq(100000L, 1000000L)))
+scala> snappy.insert("snappyColumnTable", Row(100000L, 1000000L))
 ```
 * Check the total row count now.
 ```scala
-scala> snappy.sql("select * from snappyTable").count
+scala> snappy.sql("select count(*) from snappyColumnTable").show
 ```
+
+* Now lets run the same benchmark we ran against Spark DataFrame.
+```scala
+scala> benchmark("Snappy perf") {snappy.sql("select avg(k) from snappyColumnTable").collect}
+
+scala> snappy.sql("select avg(k) from snappyColumnTable").show
+
+scala> benchmark("Snappy perf") {snappy.sql("select avg(k) from snappyColumnTable group by (id%100)").collect}
+
+scala> snappy.sql("select avg(k) from snappyColumnTable group by (id%100)").show
+
+```
+
 * Snapppy also supports "Row" format tables. Row format tables are used for OLTP class of queries.
-Below snippet uses a smaller DataFrame to create a Row table. We have defined a primary key for the row
-table.
+ First we will create a row table which has a primary key.
 
 ```scala
-scala> df = snappy.range(1000).selectExpr("id", "floor(rand() * 10000) as k")
-
 scala> snappy.sql("Create Table snappyRowTable(id bigint not null PRIMARY KEY, k bigint not null) USING row")
-
+```
+* Now let's insert 100K rows in the row table.
+```
+scala> df = snappy.range(100000).selectExpr("id", "floor(rand() * 10000) as k")
 scala> df.write.insertInto("snappyRowTable")
-scala> snappy.sql("select * from snappyRowTable").count
+scala> snappy.sql("select count(*) from snappyRowTable").show
 ```
 
-Let's mutate some rows on the table.
+Let's now some example APIs how to mutate a row table.
 
 * Inserting new rows
 ```
-scala> snappy.insert("snappyRowTable", Row.fromSeq(Seq(1001L, 1001L)))
-scala> snappy.sql("select * from snappyRowTable").count
+scala> snappy.insert("snappyRowTable", Row(100001L, 100001L))
+scala> snappy.sql("select count(*) from snappyRowTable").show
 ```
- * Upserting a row with ID 1001
+ * Upserting a row with ID 100001
 ```
-scala> snappy.put("snappyRowTable", Row.fromSeq(Seq(1001L, 1002L)))
-scala> snappy.sql("select * from snappyRowTable where ID = 1001").show
+scala> snappy.put("snappyRowTable", Row(100001L, 100002L))
+scala> snappy.sql("select * from snappyRowTable where ID = 100001").show
 ```
 
-* Updating a row with ID 3
+* Updating a row with ID 100001. Update the new "K" to be 100003
 ```
-scala> snappy.update("snappyRowTable", "ID=3", Row.fromSeq(Seq(3L)), "K")
+scala> snappy.update("snappyRowTable", "ID=100001", Row(100003L), "K")
 
-scala> snappy.sql("select * from snappyRowTable where ID = 3").show
+scala> snappy.sql("select * from snappyRowTable where ID = 100001").show
 ```
 
 * Quit the Spark shell
@@ -131,14 +146,14 @@ scala> snappy.sql("select * from snappyRowTable where ID = 3").show
 scala> :q
 ```
 ###Set up a simple cluster to use SnappyData#
-Now that you have used SnappyData featueres from Spark shell in local cluster mode, we can move to a clustered setup on your local machine. We will
+Now that you have used SnappyData features from Spark shell in local cluster mode, we can move to a clustered setup on your local machine. We will
 download the SnappyData binaries to your local machine and create some tables.
 
 * Download link
 * Start the SnappyData cluster. This will start a simple local cluster. The started components are a single data node, one lead node and one locator.
 
 ```scala
-$ cd $SNAPPY_HOME
+$ cd <Snappy_Install_dir>
 $ ./sbin/snappy-start-all.sh
 ```
    For detailed configuration you can refer <>. But to run this example the above setup suffice.
@@ -146,6 +161,8 @@ $ ./sbin/snappy-start-all.sh
 * Connect to SnappyData cluster by Snappy shell.
 ```scala
 $ bin/snappy-shell
+snappy> connect client 'localhost:1527';
+snappy> create table snappyTable (id bigint not null, k bigint not null) using column;
 ```
 4. submit jobs
 5. queries

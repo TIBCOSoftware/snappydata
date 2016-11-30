@@ -51,11 +51,15 @@ object WorkingWithObjects extends SnappySQLJob {
     //Drop the table if it exists.
     snSession.dropTable("people", ifExists = true)
 
-    // Write the created Dataset to a column table.
-    people.write
-        .format("column")
-        .options(Map("BUCKETS" -> "1", "PARTITION_BY" -> "name"))
-        .saveAsTable("people")
+    //Create a columnar table with the DataFrame schema
+    snc.createTable(tableName = "people",
+      provider = "column",
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto("people")
 
     //print schema of the table
     println("Print Schema of the table\n################")
