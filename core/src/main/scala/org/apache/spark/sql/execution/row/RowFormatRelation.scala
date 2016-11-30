@@ -34,7 +34,7 @@ import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
@@ -87,7 +87,7 @@ class RowFormatRelation(
       while (itr.hasNext) {
         // first column of index has to be present in filter to be usable
         val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-        cols += baseColumns(indexCols(0))
+        cols += baseColumns(indexCols(0) - 1)
       }
     }
     cols
@@ -106,8 +106,6 @@ class RowFormatRelation(
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -120,8 +118,6 @@ class RowFormatRelation(
       case _ =>
         new SparkShellRowRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -247,7 +243,7 @@ class RowFormatRelation(
     val sncCatalog = snappySession.sessionState.catalog
 
     var dependentRelations: Array[String] = Array()
-    if (None != properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS)) {
+    if (properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
       dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")
     }
     dependentRelations.foreach(rel => {
@@ -275,7 +271,7 @@ final class DefaultSource extends MutableRelationProvider {
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
-    val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
+    // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val sc = sqlContext.sparkContext
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)

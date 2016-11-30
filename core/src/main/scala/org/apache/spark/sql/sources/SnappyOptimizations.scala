@@ -23,9 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression,
-PredicateHelper}
-import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
@@ -182,7 +180,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
    * like colocation chain can occur, we can potentially use multiple indexes. That we can
    * determine by reducing these combinations of 2 and merge into longer chain.
    *
-   * The choice of colocated group to [[replace]] will be made firstly based on more
+   * The choice of colocated group to `replace` will be made firstly based on more
    * feasibility check on LogicalPlan.outputSet, and then cost based computed by considering
    * filter and size. Later selectivity can be introduced.
    *

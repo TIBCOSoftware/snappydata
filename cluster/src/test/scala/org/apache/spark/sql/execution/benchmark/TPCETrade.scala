@@ -53,7 +53,7 @@ class TPCETrade extends SnappyFunSuite {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
-    val numIters = 20
+    val numIters = 10
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,

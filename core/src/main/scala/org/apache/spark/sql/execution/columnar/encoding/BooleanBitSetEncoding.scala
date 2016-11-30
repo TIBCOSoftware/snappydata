@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.types.{BooleanType, DataType}
+import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
 
 final class BooleanBitSetEncoding
     extends BooleanBitSetEncodingBase with NotNullColumn
@@ -36,7 +35,7 @@ abstract class BooleanBitSetEncodingBase extends ColumnEncoding {
     dataType == BooleanType
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = {
+      field: StructField): Long = {
     val cursor = super.initializeDecoding(columnBytes, field)
     // read the count but its not used since CachedBatch has numRows
     ColumnEncoding.readInt(columnBytes, cursor)

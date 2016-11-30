@@ -22,7 +22,7 @@ import org.apache.spark.sql.execution._
 
 object NWQueries extends SnappyFunSuite {
 
-  val Q1: String = "SELECT * FROM Categories"
+  val Q1: String = "SELECT CategoryID,CategoryName,Description FROM Categories"
 
   val Q2: String = "SELECT * FROM Customers"
 
@@ -136,7 +136,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
       " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-      "('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'))"
+      "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
 
   val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
       "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
@@ -175,7 +175,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q35: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
       " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-      " e.City, c.City" +
+      " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
       " GROUP BY e.City, c.City " +
@@ -192,10 +192,10 @@ object NWQueries extends SnappyFunSuite {
       " sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal" +
       " from order_details" +
       " group by OrderID" +
-      ") b on a.OrderID = b.OrderID" +
+      " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
       " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
-      " order by a.ShippedDate"
+      " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
       " a.CategoryName," +
@@ -239,7 +239,7 @@ object NWQueries extends SnappyFunSuite {
       " b.ShipPostalCode," +
       " b.ShipCountry," +
       " b.CustomerID," +
-      " c.CompanyName," +
+      " c.CompanyName as custCompanyName," +
       " c.Address," +
       " c.City," +
       " c.Region," +
@@ -250,7 +250,7 @@ object NWQueries extends SnappyFunSuite {
       " b.OrderDate," +
       " b.RequiredDate," +
       " b.ShippedDate," +
-      " a.CompanyName," +
+      " a.CompanyName as shippersCompanyName," +
       " e.ProductID," +
       " f.ProductName," +
       " e.UnitPrice," +
@@ -268,7 +268,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q39: String = "select s.supplierid,s.companyname,p.productid,p.productname " +
       "from suppliers s join products p on(s.supplierid= p.supplierid) and" +
-      " s.companyname IN('Grandma Kelly''s Homestead','Tokyo Traders','Exotic Liquids')"
+      " s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids')"
 
   val Q40: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
       "ON c.CustomerID = o.CustomerID"
@@ -286,22 +286,22 @@ object NWQueries extends SnappyFunSuite {
 
   val Q44: String = "SELECT * FROM orders LEFT SEMI JOIN order_details"
 
-  val Q45: String = "SELECT * FROM orders JOIN order_details"
-  val Q46: String = "SELECT * FROM orders LEFT JOIN order_details"
-  val Q47: String = "SELECT * FROM orders RIGHT JOIN order_details"
-  val Q48: String = "SELECT * FROM orders FULL OUTER JOIN order_details"
-  val Q49: String = "SELECT * FROM orders FULL JOIN order_details"
+  val Q45: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders JOIN order_details"
+  val Q46: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders LEFT JOIN order_details"
+  val Q47: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders RIGHT JOIN order_details"
+  val Q48: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL OUTER JOIN order_details"
+  val Q49: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL JOIN order_details"
 
-  val Q50: String = "SELECT * FROM orders JOIN order_details" +
+  val Q50: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q51: String = "SELECT * FROM orders LEFT JOIN order_details" +
+  val Q51: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders LEFT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q52: String = "SELECT * FROM orders RIGHT JOIN order_details" +
+  val Q52: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders RIGHT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q53: String = "SELECT * FROM orders FULL OUTER JOIN order_details" +
+  val Q53: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL OUTER JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q54: String = "SELECT * FROM orders FULL JOIN order_details" +
-      " ON Orders.OrderID =   Order_Details.OrderID"
+  val Q54: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL JOIN order_details" +
+      " ON Orders.OrderID = Order_Details.OrderID"
 
   // Number of units in stock by category and supplier continent
   val Q55: String = "select c.CategoryName as Product_Category," +
@@ -330,12 +330,12 @@ object NWQueries extends SnappyFunSuite {
   // This query shows sales figures by categories - mainly just aggregation with sub-query.
   // The inner query aggregates to product level, and the outer query further aggregates
   // the result set from inner-query to category level.
-  val Q56: String = "select CategoryName, format(sum(ProductSales), 2) as CategorySales" +
+  val Q56: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
       " from" +
       " (" +
       " select distinct a.CategoryName," +
       " b.ProductName," +
-      " format(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
       " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
       " from Categories as a" +
       " inner join Products as b on a.CategoryID = b.CategoryID" +

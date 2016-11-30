@@ -20,10 +20,10 @@ import java.sql.ResultSet
 
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
-import org.apache.spark.sql.types.{DataType, Decimal}
+import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
@@ -41,10 +41,10 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
   override def supports(dataType: DataType): Boolean = true
 
   override protected def initializeNulls(columnBytes: AnyRef,
-      field: Attribute): Long = 0L
+      field: StructField): Long = 0L
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = 0L
+      field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
 
