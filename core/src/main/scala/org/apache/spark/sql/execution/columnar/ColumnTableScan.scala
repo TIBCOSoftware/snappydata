@@ -38,18 +38,21 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
+import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull,
+RowFormatter}
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode,
+ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
+import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal,
+UnsafeRowEncodingAdapter, UnsafeRowHolder}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
@@ -314,30 +317,28 @@ private[sql] final case class ColumnTableScan(
     val cursorUpdateCode = new StringBuilder
     val moveNextCode = new StringBuilder
     val reservoirRowFetch = s"""
-         $stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
-         """ + (
-      if (weightVarName != null) {
-        s""" $weightVarName = $wrappedRow.weight();"""
-      } else {
-        ""
-      }
-      ) +
-      s"""$unsafeHolder.setRow((UnsafeRow)$wrappedRow.actualRow());"""
+           $stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
+         """ +
+         (
+           if (weightVarName != null) {
+             s""" $weightVarName = $wrappedRow.weight();"""
+           } else {
+             ""
+           }
+         ) +
+         s"""$unsafeHolder.setRow((UnsafeRow)$wrappedRow.actualRow());"""
 
     val nextRowSnippet = if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         s"""
-        if ($inputIsRowSRR) {
-          $reservoirRowFetch
-        } else {
-          $rowInput.next();
-        //  $rs = (($rsIterClass)$rowInput).rs();
-        }
-      """
-      } else {
-        s"""$rowInput.next();
-           // $rs = (($rsIterClass)$rowInput).rs();
+          if ($inputIsRowSRR) {
+            $reservoirRowFetch
+          } else {
+            $rowInput.next();
+          }
         """
+      } else {
+        s"""$rowInput.next();"""
       }
     }
     else {
@@ -346,17 +347,18 @@ private[sql] final case class ColumnTableScan(
           $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
         }
         """ +
-        (if (isForSampleReservoirAsRegion) {
-        s"""
-          else if( $inputIsRowSRR ) {
-            $reservoirRowFetch
+        (
+          if (isForSampleReservoirAsRegion) {
+            s"""
+              else if( $inputIsRowSRR ) {
+                $reservoirRowFetch
+              }
+            """
           }
-         """
-      }) +
+      ) +
       s"""
          else {
           $rowInput.next();
-          //$rs = (($rsIterClass)$rowInput).rs();
         }
       """
     }
@@ -506,28 +508,28 @@ private[sql] final case class ColumnTableScan(
            if ($input == null) return false;
            if (!$input.hasNext()) {
              if ($input == $rowInput) {
-         """ +
+      """ +
              (if (isForSampleReservoirAsRegion) {
                  s"""
                      $input = $rowInputSRR;
                      $inputIsRow = false;
                      $inputIsRowSRR = true;
-                  """.stripMargin +
+                 """.stripMargin +
                     output.zipWithIndex.map{
                      case (attr, index) =>
                        val baseIndex = baseRelation.schema.fieldIndex(attr.name)
-                       s"""${variableBuffer(index)} = new $rowAdapterClass
-                       ($unsafeHolder, $baseIndex);"""
+                       s"""${variableBuffer(index)} = new $rowAdapterClass($unsafeHolder,
+                          $baseIndex);""".stripMargin
                    }.mkString("\n") +
                  s"""
-                     if($input == null  || !$input.hasNext()) {
-                       $commonSnippet
-                     }
+                   if($input == null  || !$input.hasNext()) {
+                     $commonSnippet
+                   }
                   """.stripMargin
-
               } else {
                 commonSnippet
-              }) +
+              }
+             ) +
         s"""}""" +
         (if (isForSampleReservoirAsRegion) {
          s"""
@@ -543,18 +545,18 @@ private[sql] final case class ColumnTableScan(
           return false;
          }
        }
-           if ($inputIsRow || $inputIsRowSRR) {
-             $nextRowSnippet
-             $numBatchRows = 1;
-           } else {
-             $batchInit
-             $numOutputRows.add($numBatchRows);
-             // initialize the column buffers and decoders
-             ${columnBufferInitCode.toString()}
-           }
+       if ($inputIsRow || $inputIsRowSRR) {
+         $nextRowSnippet
+         $numBatchRows = 1;
+       } else {
+         $batchInit
+         $numOutputRows.add($numBatchRows);
+         // initialize the column buffers and decoders
+         ${columnBufferInitCode.toString()}
+       }
 
-           $batchIndex = 0;
-           return true;
+       $batchIndex = 0;
+       return true;
      }
      """.stripMargin)
 
