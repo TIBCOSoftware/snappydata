@@ -132,8 +132,8 @@ private[sql] object PartitionedPhysicalScan {
           partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
        if (r.isReservoirAsRegion) {
-          SampleColumnTableScan(output, rdd, Nil, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
+          ColumnTableScan(output, rdd, Nil, numBuckets,
+            partitionColumns, relation, allFilters, schemaAttributes, true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)

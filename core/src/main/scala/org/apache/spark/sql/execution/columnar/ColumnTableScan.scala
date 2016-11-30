@@ -37,10 +37,8 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
-
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -52,11 +50,11 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
+import org.apache.spark._
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -73,7 +71,8 @@ private[sql] final case class ColumnTableScan(
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan,
     allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference])
+    schemaAttributes: Seq[AttributeReference],
+    isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation])
     with CodegenSupport {
@@ -221,20 +220,36 @@ private[sql] final case class ColumnTableScan(
     // RDDs return iterator of UnsafeRows.
     val rowInput = ctx.freshName("rowInput")
     val colInput = ctx.freshName("colInput")
+    val rowInputSRR = ctx.freshName("rowInputSRR")
     val input = ctx.freshName("input")
     val inputIsRow = s"${input}IsRow"
+    val inputIsRowSRR = s"${input}IsRowSRR"
     val inputIsOtherRDD = s"${input}IsOtherRDD"
     val rs = ctx.freshName("resultSet")
     val rsIterClass = classOf[ResultSetTraversal].getName
-    val unsafeHolder = if (otherRDDs.isEmpty) null
+    val unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
     else ctx.freshName("unsafeHolder")
     val unsafeHolderClass = classOf[UnsafeRowHolder].getName
+    val stratumRowClass = classOf[StratumInternalRow].getName
 
+    val weightVarName = this.output.find(_.name == org.apache.spark.sql.collection.Utils
+      .WEIGHTAGE_COLUMN_NAME).map(_.toString.replace('#', '_')).getOrElse(null)
+
+    val wrappedRow = ctx.freshName("wrappedRow")
+    if(weightVarName != null) {
+      ctx.addMutableState("long", weightVarName, s" $weightVarName = 0; ")
+    }
     val colItrClass = if (!isEmbedded) classOf[CachedBatchIteratorOnRS].getName
     else if (isOffHeap) classOf[OffHeapLobsIteratorOnScan].getName
     else classOf[ByteArraysIteratorOnScan].getName
 
     if (otherRDDs.isEmpty) {
+      if (isForSampleReservoirAsRegion) {
+        ctx.addMutableState("scala.collection.Iterator",
+          rowInputSRR, s"$rowInputSRR = (scala.collection.Iterator)inputs[0].next();")
+        ctx.addMutableState(unsafeHolderClass, unsafeHolder,
+          s"$unsafeHolder = new $unsafeHolderClass();")
+      }
       ctx.addMutableState("scala.collection.Iterator",
         rowInput, s"$rowInput = (scala.collection.Iterator)inputs[0].next();")
       ctx.addMutableState(colItrClass, colInput,
@@ -244,11 +259,19 @@ private[sql] final case class ColumnTableScan(
     } else {
       ctx.addMutableState("boolean", inputIsOtherRDD,
         s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);")
+      if(isForSampleReservoirAsRegion) {
+        ctx.addMutableState("scala.collection.Iterator", rowInputSRR,
+          s"""
+            $rowInputSRR = $inputIsOtherRDD ? null : (scala.collection.Iterator)inputs[0].next();
+        """
+        )
+      }
       ctx.addMutableState("scala.collection.Iterator", rowInput,
-        s"""
+          s"""
             $rowInput = $inputIsOtherRDD ? inputs[0]
                 : (scala.collection.Iterator)inputs[0].next();
-        """)
+        """
+      )
       ctx.addMutableState(colItrClass, colInput,
         s"$colInput = $inputIsOtherRDD ? null : ($colItrClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
@@ -259,6 +282,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("scala.collection.Iterator", input,
       s"$input = $rowInput;")
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
+    ctx.addMutableState("boolean", inputIsRowSRR, s"$inputIsRowSRR = false;")
 
     ctx.currentVars = null
     val cachedBatchClass = classOf[CachedBatch].getName
@@ -289,14 +313,50 @@ private[sql] final case class ColumnTableScan(
     val bufferInitCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
     val moveNextCode = new StringBuilder
+    val reservoirRowFetch = s"""
+         $stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
+         """ + (
+      if (weightVarName != null) {
+        s""" $weightVarName = $wrappedRow.weight();"""
+      } else {
+        ""
+      }
+      ) +
+      s"""$unsafeHolder.setRow((UnsafeRow)$wrappedRow.actualRow());"""
 
-    val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
+    val nextRowSnippet = if (otherRDDs.isEmpty) {
+      if (isForSampleReservoirAsRegion) {
+        s"""
+        if ($inputIsRowSRR) {
+          $reservoirRowFetch
+        } else {
+          $rowInput.next();
+        //  $rs = (($rsIterClass)$rowInput).rs();
+        }
+      """
+      } else {
+        s"""$rowInput.next();
+           // $rs = (($rsIterClass)$rowInput).rs();
+        """
+      }
+    }
     else {
       s"""
         if ($inputIsOtherRDD) {
           $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
-        } else {
+        }
+        """ +
+        (if (isForSampleReservoirAsRegion) {
+        s"""
+          else if( $inputIsRowSRR ) {
+            $reservoirRowFetch
+          }
+         """
+      }) +
+      s"""
+         else {
           $rowInput.next();
+          //$rs = (($rsIterClass)$rowInput).rs();
         }
       """
     }
@@ -317,7 +377,7 @@ private[sql] final case class ColumnTableScan(
         $numRowsOtherOutput.add($numRowsOther);
       """
     }
-
+    val variableBuffer = scala.collection.mutable.ArrayBuffer[String]()
     val batchConsumer = getBatchConsumer(parent)
     val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
@@ -367,6 +427,8 @@ private[sql] final case class ColumnTableScan(
           $cursor = $decoder.initializeDecoding(
             $buffer, $planSchema.apply($index));
         """)
+
+      variableBuffer += decoder
       bufferInitCode.append(
         s"""
           final $decoderClass $decoderVar = $decoder;
@@ -426,37 +488,75 @@ private[sql] final case class ColumnTableScan(
           ($wasNullClass)null);
       """
     }
+    val commonSnippet =
+      s"""
+         $input = $colInput;
+         $inputIsRow = false;
+         $inputIsRowSRR = false;
+         if ($input == null || !$input.hasNext()) {
+          return false;
+         }
+       """.stripMargin
     val nextBatch = ctx.freshName("nextBatch")
     ctx.addNewFunction(nextBatch,
       s"""
-         |private boolean $nextBatch() throws Exception {
-         |  if ($buffers != null) return true;
-         |  // get next batch or row (latter for non-batch source iteration)
-         |  if ($input == null) return false;
-         |  if (!$input.hasNext()) {
-         |    if ($input == $rowInput) {
-         |      $input = $colInput;
-         |      $inputIsRow = false;
-         |      if ($input == null || !$input.hasNext()) {
-         |        return false;
-         |      }
-         |    } else {
-         |      return false;
-         |    }
-         |  }
-         |  if ($inputIsRow) {
-         |    $nextRowSnippet
-         |    $numBatchRows = 1;
-         |  } else {
-         |    $batchInit
-         |    $numOutputRows.add($numBatchRows);
-         |    // initialize the column buffers and decoders
-         |    ${columnBufferInitCode.toString()}
-         |  }
-         |  $batchIndex = 0;
-         |  return true;
-         |}
-      """.stripMargin)
+         private boolean $nextBatch() throws Exception {
+           if ($buffers != null) return true;
+           // get next batch or row (latter for non-batch source iteration)
+           if ($input == null) return false;
+           if (!$input.hasNext()) {
+             if ($input == $rowInput) {
+         """ +
+             (if (isForSampleReservoirAsRegion) {
+                 s"""
+                     $input = $rowInputSRR;
+                     $inputIsRow = false;
+                     $inputIsRowSRR = true;
+                  """.stripMargin +
+                    output.zipWithIndex.map{
+                     case (attr, index) =>
+                       val baseIndex = baseRelation.schema.fieldIndex(attr.name)
+                       s"""${variableBuffer(index)} = new $rowAdapterClass
+                       ($unsafeHolder, $baseIndex);"""
+                   }.mkString("\n") +
+                 s"""
+                     if($input == null  || !$input.hasNext()) {
+                       $commonSnippet
+                     }
+                  """.stripMargin
+
+              } else {
+                commonSnippet
+              }) +
+        s"""}""" +
+        (if (isForSampleReservoirAsRegion) {
+         s"""
+            else if($input == $rowInputSRR) {
+              $commonSnippet
+            }
+          """.stripMargin
+        } else {
+          ""
+        }) +
+      s"""
+         else {
+          return false;
+         }
+       }
+           if ($inputIsRow || $inputIsRowSRR) {
+             $nextRowSnippet
+             $numBatchRows = 1;
+           } else {
+             $batchInit
+             $numOutputRows.add($numBatchRows);
+             // initialize the column buffers and decoders
+             ${columnBufferInitCode.toString()}
+           }
+
+           $batchIndex = 0;
+           return true;
+     }
+     """.stripMargin)
 
     val batchConsume = batchConsumer.map(_.batchConsume(ctx,
       columnsInput)).mkString("")
@@ -473,7 +573,7 @@ private[sql] final case class ColumnTableScan(
        |    ${bufferInitCode.toString()}
        |    $batchConsume
        |    final int numRows = $numBatchRows;
-       |    final boolean isRow = $inputIsRow;
+       |    final boolean isRow = $inputIsRow || $inputIsRowSRR;
        |    for (int batchOrdinal = $batchIndex; batchOrdinal < numRows;
        |         batchOrdinal++) {
        |      ${moveNextCode.toString()}
