@@ -184,49 +184,190 @@ You can execute select queries on column table, join the column table with other
 ### How to do collacated join
 
 **DESCRIPTION: **
-
+When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you will frequently perform queries on those tables that join on that column. When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present without the need of shuffling the data.
 
 **Code Example:**
-```
-ENTER CODE HERE
-asdadasdsdsdsfd
-dsfsdf
+A partitioned table can be colocated with another partitioned table by using "COLOCATE_WITH" with atrribute in the table options. For example, in the code snippet below ORDERS table is colocated with CUSTOMER table. The complete source for this example can be found in file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
+```
+    snc.sql("CREATE TABLE CUSTOMER ( " +
+        "C_CUSTKEY     INTEGER NOT NULL," +
+        "C_NAME        VARCHAR(25) NOT NULL," +
+        "C_ADDRESS     VARCHAR(40) NOT NULL," +
+        "C_NATIONKEY   INTEGER NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
+        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+        "C_COMMENT     VARCHAR(117) NOT NULL)" +
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY', BUCKETS '11' )")
+        
+    snc.sql("CREATE TABLE ORDERS  ( " +
+        "O_ORDERKEY       INTEGER NOT NULL," +
+        "O_CUSTKEY        INTEGER NOT NULL," +
+        "O_ORDERSTATUS    CHAR(1) NOT NULL," +
+        "O_TOTALPRICE     DECIMAL(15,2) NOT NULL," +
+        "O_ORDERDATE      DATE NOT NULL," +
+        "O_ORDERPRIORITY  CHAR(15) NOT NULL," +
+        "O_CLERK          CHAR(15) NOT NULL," +
+        "O_SHIPPRIORITY   INTEGER NOT NULL," +
+        "O_COMMENT        VARCHAR(79) NOT NULL) " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', BUCKETS '11', " +
+        "COLOCATE_WITH 'CUSTOMER' )")
+```
+
+Now the following join query wil do a colocated join:
+
+```
+    // Selecting orders for all customers
+    val result = snc.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
+        "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
 ```
 
 <a id="howto-jdbc"></a>
 ### How to connect using JDBC driver
 
 **DESCRIPTION: **
+You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. Underneath the covers, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail.
 
+In order to connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
 
 **Code Example:**
+The code snippet shows how to connect to a SnappyData cluster using JDBC on default clietnt port 1527. The complete source code of the example is at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
 ```
-ENTER CODE HERE
-asdadasdsdsdsfd
-dsfsdf
+val url: String = s"jdbc:snappydata://localhost:1527/"
+val conn1 = DriverManager.getConnection(url)
+
+val stmt1 = conn1.createStatement()
+println("Creating a table (PARTSUPP) using JDBC connection")
+stmt1.execute("DROP TABLE IF EXISTS APP.PARTSUPP")
+stmt1.execute("CREATE TABLE APP.PARTSUPP ( " +
+     "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
+     "PS_SUPPKEY     INTEGER NOT NULL," +
+     "PS_AVAILQTY    INTEGER NOT NULL," +
+     "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
+    "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY', BUCKETS '11' )")
+
+println("Inserting a record in PARTSUPP table via batch inserts")
+val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
+
+var x = 0
+for (x <- 1 to 10) {
+  preparedStmt1.setInt(1, x*100)
+  preparedStmt1.setInt(2, x)
+  preparedStmt1.setInt(3, x*1000)
+  preparedStmt1.setBigDecimal(4, java.math.BigDecimal.valueOf(100.2))
+  preparedStmt1.addBatch()
+}
+preparedStmt1.executeBatch()
+preparedStmt1.close()
 
 ```
 
 <a id="howto-JSON"></a>
 ### Working with JSON
 **DESCRIPTION: **
-
+You may insert JSON data in SnappyData tables and execute queries on those tables.
 
 **Code Example:**
+The code snippet given below loads JSON data from a JSON file into a column table and executes query against it.
+The source code for JSON example is in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+
 ```
-ENTER CODE HERE
+    val some_people_path = s"quickstart/src/main/resources/some_people.json"
+    // Read a JSON file using Spark API
+    val people = snc.jsonFile(some_people_path)
+    people.printSchema()
+
+    //Drop the table if it exists.
+    snc.dropTable("people", ifExists = true)
+
+    // Write the created DataFrame to a column table.
+    people.write.format("column").saveAsTable("people")
+
+    // Append more people to the column table
+    val more_people_path = s"quickstart/src/main/resources/more_people.json"
+
+    //Explicitly passing schema to handle record level field mismatch
+    // e.g. some records have "district" field while some do not.
+    val morePeople = snc.read.schema(people.schema).json(more_people_path)
+    morePeople.write.insertInto("people")
+
+    //print schema of the table
+    println("Print Schema of the table\n################")
+    println(snc.table("people").schema)
+
+    // Query it like any other table
+    val nameAndAddress = snc.sql("SELECT " +
+        "name, " +
+        "address.city, " +
+        "address.state, " +
+        "address.district, " +
+        "address.lane " +
+        "FROM people")
+
+    // return the query result
+    val builder = new StringBuilder
+    nameAndAddress.collect.map(row => {
+      builder.append(s"${row(0)} ,")
+      builder.append(s"${row(1)} ,")
+      builder.append(s"${row(2)} ,")
+      builder.append(s"${row(3)} ,")
+      builder.append(s"${row(4)} \n")
+    })
+    builder.toString
 
 ```
 
 <a id="howto-objects"></a>
 ### Working with Objects
 **DESCRIPTION: **
-
+You can use domain object to load the data into SnappyData tables and select the data by executing queries against the table.
 
 **Code Example:**
+The code snippet below insert Person objects into a column table. The source code for this example is in [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala)
+
 ```
-ENTER CODE HERE
+    //Import the implicits for automatic conversion between Objects to DataSets.
+    import snc.implicits._
+
+    val snSession = snc.snappySession
+    // Create a Dataset using Spark APIs
+    val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
+
+
+    //Drop the table if it exists.
+    snSession.dropTable("people", ifExists = true)
+
+    // Write the created Dataset to a column table.
+    people.write
+        .format("column")
+        .options(Map("BUCKETS" -> "1", "PARTITION_BY" -> "name"))
+        .saveAsTable("people")
+
+    //print schema of the table
+    println("Print Schema of the table\n################")
+    println(snc.table("people").schema)
+    
+
+    // Append more people to the column table
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio")),
+      Person("Rob Stark", Address("San Diego", "California")),
+      Person("Michael", Address("Null", "California"))).toDS()
+
+    morePeople.write.insertInto("people")
+
+    // Query it like any other table
+    val nameAndAddress = snSession.sql("SELECT name, address.city, address.state FROM people")
+
+    // return the result
+    val builder = new StringBuilder
+    nameAndAddress.collect.map(row => {
+      builder.append(s"${row(0)} ,")
+      builder.append(s"${row(1)} ,")
+      builder.append(s"${row(2)} \n")
+
+    })
+    builder.toString
 
 ```
 
