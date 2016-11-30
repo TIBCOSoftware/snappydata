@@ -22,7 +22,6 @@ import scala.collection.concurrent.TrieMap
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 
 import org.apache.spark.Partition
-import org.apache.spark.internal.Logging
 import org.apache.spark.internal.config.ConfigEntry
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
@@ -198,7 +197,7 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 private[sql] class SnappyConf(@transient val session: SnappySession)
-    extends SQLConf with Serializable with CatalystConf with Logging {
+    extends SQLConf with Serializable with CatalystConf {
 
   /**
    * Records the number of shuffle partitions to be used determined on runtime

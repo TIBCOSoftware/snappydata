@@ -20,8 +20,6 @@ import java.sql.Connection
 
 import io.snappydata.SnappyTableStatsProviderService
 
-import org.apache.spark.Partition
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -34,6 +32,7 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
+import org.apache.spark.{Logging, Partition}
 
 /**
  * A LogicalPlan implementation for an external row table whose contents

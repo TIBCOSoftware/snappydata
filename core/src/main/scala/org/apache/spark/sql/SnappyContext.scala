@@ -30,7 +30,6 @@ import io.snappydata.{SnappyTableStatsProviderService, Constant, Property}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -49,7 +48,7 @@ import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkException}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -79,7 +78,7 @@ import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkException}
  */
 class SnappyContext protected[spark](val snappySession: SnappySession)
     extends SQLContext(snappySession)
-    with Serializable with Logging {
+    with Serializable {
 
   self =>
 

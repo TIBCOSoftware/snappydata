@@ -28,7 +28,6 @@ import io.snappydata.Constant
 
 import org.apache.spark.SparkContext
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
@@ -55,7 +54,7 @@ import org.apache.spark.streaming.dstream.DStream
 
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
-    extends SparkSession(sc) with Logging {
+    extends SparkSession(sc) {
 
   self =>
 

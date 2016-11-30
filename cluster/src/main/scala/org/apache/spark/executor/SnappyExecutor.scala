@@ -19,13 +19,12 @@ package org.apache.spark.executor
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.{SparkFiles, SparkEnv}
-import org.apache.spark.internal.Logging
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
+import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
 class SnappyExecutor(
     executorId: String,
@@ -47,7 +46,7 @@ class SnappyExecutor(
     // Bootstrap the list of jars with the user class path.
     val now = System.currentTimeMillis()
     userClassPath.foreach { url =>
-      currentJars(url.getPath().split("/").last) = now
+      currentJars(url.getPath.split("/").last) = now
     }
 
     val currentLoader = Utils.getContextOrSparkClassLoader
@@ -62,14 +61,14 @@ class SnappyExecutor(
 
   }
 
-  override def updateDependencies(newFiles: HashMap[String, Long],
-      newJars: HashMap[String, Long]): Unit = {
+  override def updateDependencies(newFiles: mutable.HashMap[String, Long],
+      newJars: mutable.HashMap[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
     def getName(path: String) = new File(path).getName
     val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
     val addedJarFiles = classloader.getAddedURLs.toList
-    val newJarFiles = newJars.keys.map(getName(_)).toList
-    addedJarFiles.diff(newJarFiles).foreach(classloader.removeURL(_))
+    val newJarFiles = newJars.keys.map(getName).toList
+    addedJarFiles.diff(newJarFiles).foreach(classloader.removeURL)
   }
 }
 
@@ -128,12 +127,14 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
 
   def loadClassFromJobJar(className: String): Class[_] = {
     val jobName = getJobName
-    if (!jobName.isEmpty && jobJars.get(jobName).isDefined) {
-      jobJars.get(jobName).get.loadClass(className)
+    if (!jobName.isEmpty) {
+      jobJars.get(jobName) match {
+        case Some(loader) => loader.loadClass(className)
+        case _ => throw new ClassNotFoundException(className)
+      }
     }
     else throw new ClassNotFoundException(className)
   }
-
 }
 
 /**
