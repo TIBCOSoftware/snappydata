@@ -13,11 +13,11 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Quick Start: quickstart.md
 - How To: howto.md
+- Download and Install SnappyData: install.md
+- Building from source, project layout: build-instructions.md
+- Configuring the Cluster: configuration.md
+- Connecting using JDBC, Spark: connectingToCluster.md
 - Architecture: architecture.md
-- Install SnappyData: install.md
-# - Building from source, project layout: build-instructions.md
-# - Configuring the Cluster: configuration.md
-# - Connecting using JDBC, Spark: connectingToCluster.md
 - Synopsis Data Engine (SDE): aqp.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
