@@ -58,7 +58,7 @@ object Constant {
 
   val DEFAULT_BEHAVIOR: String = "DEFAULT_BEHAVIOR"
 
-  val COLUMN_MIN_BATCH_SIZE: Int = 100
+  val COLUMN_MIN_BATCH_SIZE: Int = 200
 
   val DEFAULT_USE_HIKARICP = false
 
