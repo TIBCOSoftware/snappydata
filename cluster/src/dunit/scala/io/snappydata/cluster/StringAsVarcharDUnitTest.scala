@@ -56,6 +56,7 @@ class StringAsVarcharDUnitTest(val s: String)
    */
   def testQueriesOnTablesCreatedViaAPI(): Unit = {
     executeAndVerify(false)
+    validateUtilsFunctions()
   }
 
   def executeAndVerify(useDDL: Boolean = true, join: Boolean = false): Unit = {
@@ -213,9 +214,9 @@ class StringAsVarcharDUnitTest(val s: String)
     val schema = StructType(Array(
       StructField("col_int", IntegerType, false),
       StructField("col_string", StringType, false),
-      StructField("col_varchar", StringType, false, Utils.varcharMetadata(size = varcharSize)),
+      StructField("col_varchar", StringType, false, Utils.varcharMetadata(varcharSize)),
       StructField("col_clob", StringType, false, Utils.stringMetadata()),
-      StructField("col_char", StringType, false, Utils.charMetadata(size = charSize))
+      StructField("col_char", StringType, false, Utils.charMetadata(charSize))
     ))
 
     snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
@@ -241,6 +242,34 @@ class StringAsVarcharDUnitTest(val s: String)
     insertData(snc)
   }
 
+  def validateUtilsFunctions(): Unit = {
+    try {
+      Utils.varcharMetadata(Constant.MAX_VARCHAR_SIZE + 1)
+      assert(false, "Validation for Utils.varcharMetadata() failed")
+    } catch {
+      case iae: IllegalArgumentException => // ignore
+      case t: Throwable => throw t
+    }
+    var md = Utils.varcharMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("VARCHAR"))
+    assert(md.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_VARCHAR_SIZE)
+
+    try {
+      Utils.charMetadata(Constant.MAX_CHAR_SIZE + 1)
+      assert(false, "Validation for Utils.charMetadata() failed")
+    } catch {
+      case iae: IllegalArgumentException => // ignore
+      case t: Throwable => throw t
+    }
+    md = Utils.charMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR"))
+    assert(md.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_CHAR_SIZE)
+
+    md = Utils.stringMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CLOB"),
+      "Validation for Utils.stringMetadata() failed")
+  }
+
   def insertData(snc: SnappyContext): Unit = {
     // Insert into row table
     val data = Seq(Seq(1, "t1.1.string", "t1.1.varchar", "t1.1.clob", "t1.1.char"),
@@ -260,7 +289,6 @@ class StringAsVarcharDUnitTest(val s: String)
         s"'t2.1.varchar', 't2.1.clob', 't2.1.char')")
     snc.sql(s"insert into $colTab1 values (4, 't2.4.string', " +
         s"'t2.4.varchar', 't2.4.clob', 't2.4.char')")
-
   }
 }
 

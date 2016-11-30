@@ -302,8 +302,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                 if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
                   val builder = new MetadataBuilder
                   builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
-                    "STRING").putLong(Constant.CHAR_TYPE_SIZE_PROP, Constant.MAX_VARCHAR_SIZE)
-                      .build()
+                    "STRING").build()
+                } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+                    .equalsIgnoreCase("CLOB")) {
+                  // Remove the CharType properties from metadata
+                  val builder = new MetadataBuilder
+                  builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
+                      .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
                 } else {
                   f.metadata
                 }
