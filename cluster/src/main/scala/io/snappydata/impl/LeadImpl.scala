@@ -28,11 +28,13 @@ import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.control.InternalResourceManager
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.snappydata.gemxd.LeadNodeMemoryListener
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
@@ -471,9 +473,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
               tTransportException.getMessage)
       }
       // Add memory listener for zeppelin will need it for zeppelin
-      // val listener = new LeadNodeMemoryListener();
-      // GemFireCacheImpl.getInstance().getResourceManager().
-      //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
+      val listener = new LeadNodeMemoryListener();
+      GemFireCacheImpl.getInstance().getResourceManager().
+          addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
     }
   }
