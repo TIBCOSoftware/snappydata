@@ -1,6 +1,23 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.hydra.ct
 
-import org.apache.spark.sql.{DataFrame, SnappyContext}
+import org.apache.spark.sql.{SQLContext, DataFrame, SnappyContext}
 
 object CTQueries {
 
@@ -29,61 +46,63 @@ object CTQueries {
 
   val query10: String = "select count(*) from ORDER_DETAILS where Src_sys='OATC'"
 
-  val query11: String = "select '5-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS a , ORDER_DETAILS " +
-      "b " +
-      "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date >='2016-06-13' and b.trd_date >='2016-06-13' " +
+  val query11: String = "select '5-CTFIX_ORDER' as SrcFl, a.* from ORDER_DETAILS a , ORDER_DETAILS b " +
+      "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date >='20160413' and b.trd_date >='20160413' " +
       "and b.src_sys ='CRIO' order by a.glb_root_order_id, a.trd_datE"
 
   val query12: String = "select '4-CTFIX_ORDER' as SrcFl, a.glb_root_order_id, a.src_sys, count(*) " +
       "from ORDER_DETAILS a , ORDER_DETAILS b " +
-      "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date ='2016-06-13' " +
-      "and b.trd_date ='2016-06-13' and b.src_sys ='CRIO' " +
+      "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date ='20160413' " +
+      "and b.trd_date ='20160413' and b.src_sys ='CRIO' " +
       "group by a.glb_root_order_id, a.src_sys order by a.glb_root_order_id, a.src_sys"
 
   val query13: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
-      "where trd_date='2016-06-13' and src_sys='CRIO'"
+      "where trd_date='20160413' and src_sys='CRIO'"
 
   val query14: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
-      "where trd_date='2016-06-13' and src_sys='CRIO' order by trd_date"
+      "where trd_date='20160413' and src_sys='CRIO' order by trd_date"
 
   val query15: String = "select '5-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
-      "where trd_date>='2016-06-13' and glb_root_order_id in " +
-      "( select glb_root_order_id from ORDER_DETAILS where trd_date>='2016-06-13' and src_sys='CRIO' ) " +
+      "where trd_date>='20160413' and glb_root_order_id in " +
+      "( select glb_root_order_id from ORDER_DETAILS where trd_date>='20160413' and src_sys='CRIO' ) " +
       "order by glb_root_order_id, trd_datE"
 
   val query16: String = "select '4-CTFIX_ORDER' as SrcFl, glb_root_order_id, src_sys, count(*) " +
       "from ORDER_DETAILS " +
-      "where trd_date='2016-06-13' and glb_root_order_id in " +
-      "( select glb_root_order_id from ORDER_DETAILS where trd_date='2016-06-13' and src_sys='CRIO') " +
+      "where trd_date='20160413' and glb_root_order_id in " +
+      "( select glb_root_order_id from ORDER_DETAILS where trd_date='20160413' and src_sys='CRIO') " +
       "group by glb_root_order_id, src_sys order by glb_root_order_id, src_sys"
 
   val query17: String = "select Event_type_cd, count(1) from ORDER_DETAILS " +
-      "where TRD_DATE between '2016-06-01' and '2016-06-31' group by Event_type_cd limit 1000"
+      "where TRD_DATE between '20160401' and '20160431' group by Event_type_cd limit 1000"
 
   val query18: String = "SELECT event_type_cd, src_sys FROM ORDER_DETAILS " +
-      "WHERE TRD_DATE = '2016-06-16' AND sys_order_stat_cd is NULL limit 1000"
+      "WHERE TRD_DATE = '20160416' AND sys_order_stat_cd is NULL limit 1000"
 
   val query19: String = "SELECT ESOD.EXEC_INSTR, count(*) FROM ORDER_DETAILS ESOD " +
-      "WHERE ESOD.TRD_DATE = '2016-06-13' AND ESOD.EVENT_TYPE_CD = 'NEW_CONF' " +
+      "WHERE ESOD.TRD_DATE = '20160413' AND ESOD.EVENT_TYPE_CD = 'NEW_CONF' " +
       "AND ESOD.EXEC_INSTR like '%A%' GROUP BY ESOD.EXEC_INSTR"
 
   val query20: String = "select EVENT_RCV_TS, EVENT_TS, src_sys,glb_root_src_sys_id,glb_root_order_id, " +
       "ticker_symbol,SIDE,order_qty,EVENT_TYPE_CD,product_cat_cd,cntry_cd " +
       "from ORDER_DETAILS " +
-      "where trd_date > '2016-02-12' and src_sys='CAIQS' and event_ts not like '%.%' limit 100"
+      "where trd_date > '20160212' and src_sys='CAIQS' and event_ts not like '%.%' order by EVENT_RCV_TS limit 100 "
+
 
   val query21: String = "select event_type_cd,event_rcv_ts,event_ts,sent_ts " +
       "from ORDER_DETAILS " +
-      "where trd_date='2016-06-13' and glb_root_order_id='1534438x8c7' and sys_order_id='20151210.81147995.92597'"
+      "where trd_date='20160413' and glb_root_order_id='15344x8c7' and sys_order_id='20151210.92597'"
 
-  val query22: String = "(select TRD_DATE, ROOT_FLOW_CAT, sum(Notional) as notional, count(*) as trades, sum(shares) as shares " +
+  val query22: String = "select count(*) from EXEC_DETAILS a LEFT JOIN ORDER_DETAILS b using (sys_root_order_id)"
+
+  val query23: String = "(select TRD_DATE, ROOT_FLOW_CAT, sum(Notional) as notional, count(*) as trades, sum(shares) as shares " +
       "from " +
       "(select execs.sys_order_id, execs.EXECUTED_QTY * execs.EXEC_PRICE as notional, execs.EXECUTED_QTY as shares, " +
       "execs.TRD_DATE, case when coalesce(root_exec.flow_cat,root.flow_cat) is null then 'UNKNOWN' else " +
       "coalesce(root_exec.flow_cat,root.flow_cat) end as ROOT_FLOW_CAT " +
       "from EXEC_DETAILS as execs left join " +
       "( select distinct TRD_DATE,glb_root_order_id,flow_cat " +
-      "from EXEC_DETAILS where TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "from EXEC_DETAILS where TRD_DATE in ('20160325','20160413' ) " +
       "and (PRODUCT_CAT_CD is null or PRODUCT_CAT_CD not in ('OPT','FUT','MLEG')) " +
       "and (exec_price_curr_cd = 'USD' OR exec_price_curr_cd is null) " +
       "and sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
@@ -94,7 +113,7 @@ object CTQueries {
       "where T.sys_order_id = T.glb_root_order_id " +
       "and T.sys_src_sys_id = T.glb_root_src_sys_id " +
       "and T.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
-      "and T.TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "and T.TRD_DATE in ('20160325','20160413' ) " +
       "and (T.CURR_CD = 'USD' or T.CURR_CD is null) " +
       "and (T.PRODUCT_CAT_CD is null or T.PRODUCT_CAT_CD not in ('OPT', 'FUT','MLEG')) ) root on " +
       "execs.trd_date=root.trd_date and execs.glb_root_order_id=root.glb_root_order_id " +
@@ -102,7 +121,7 @@ object CTQueries {
       "and execs.event_type_cd = 'FILLED_CONF' " +
       "and execs.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
       "and execs.SYS_ORDER_STAT_CD in ('2','1') " +
-      "and execs.TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "and execs.TRD_DATE in ('20160325','20160413' ) " +
       "and (execs.PRODUCT_CAT_CD is null or execs.PRODUCT_CAT_CD not in ('OPT', 'FUT','MLEG')) " +
       "and (execs.exec_price_curr_cd = 'USD' or execs.exec_price_curr_cd = null) ) " +
       "Aggregated group by TRD_DATE, ROOT_FLOW_CAT order by TRD_DATE ) " +
@@ -113,7 +132,7 @@ object CTQueries {
       "execs.TRD_DATE, 'ALL' as ROOT_FLOW_CAT " +
       "from EXEC_DETAILS as execs " +
       "left join ( select distinct TRD_DATE,glb_root_order_id,flow_cat " +
-      "from EXEC_DETAILS where TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "from EXEC_DETAILS where TRD_DATE in ('20160325','20160413' ) " +
       "and (PRODUCT_CAT_CD is null or PRODUCT_CAT_CD not in ('OPT','FUT','MLEG')) " +
       "and (exec_price_curr_cd = 'USD' OR exec_price_curr_cd is null) " +
       "and sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
@@ -124,7 +143,7 @@ object CTQueries {
       "where T.sys_order_id = T.glb_root_order_id " +
       "and T.sys_src_sys_id = T.glb_root_src_sys_id " +
       "and T.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
-      "and T.TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "and T.TRD_DATE in ('20160325','20160413' ) " +
       "and (T.CURR_CD = 'USD' or T.CURR_CD is null) " +
       "and (T.PRODUCT_CAT_CD is null or T.PRODUCT_CAT_CD not in ('OPT', 'FUT','MLEG')) ) root on " +
       "execs.trd_date=root.trd_date and execs.glb_root_order_id=root.glb_root_order_id " +
@@ -132,14 +151,14 @@ object CTQueries {
       "and execs.event_type_cd = 'FILLED_CONF' " +
       "and execs.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
       "and execs.SYS_ORDER_STAT_CD in ('2','1') " +
-      "and execs.TRD_DATE in ('2016-05-25','2016-06-13' ) " +
+      "and execs.TRD_DATE in ('20160325','20160413' ) " +
       "and (execs.PRODUCT_CAT_CD is null or execs.PRODUCT_CAT_CD not in ('OPT', 'FUT','MLEG')) " +
       "and (execs.exec_price_curr_cd = 'USD' or execs.exec_price_curr_cd = null) ) " +
       "Aggregated group by TRD_DATE, ROOT_FLOW_CAT order by TRD_DATE )"
 
-  val query23: String = "select count(*) from EXEC_DETAILS a LEFT JOIN ORDER_DETAILS b using(sys_root_order_id)"
+  val query24: String = "select distinct FLOW_CLASS from ORDER_DETAILS"
 
-  val queries = Map(
+  val queries = List(
     "Q1" -> query1,
     "Q2" -> query2,
     "Q3" -> query3,
@@ -162,20 +181,21 @@ object CTQueries {
     "Q20" -> query20,
     "Q21" -> query21,
     "Q22" -> query22,
-    "Q23" -> query23
+    "Q23" -> query23,
+    "Q24" -> query24
   )
 
-  def order_details_data: DataFrame = snc.read.format("com.databricks.spark.csv")
+  def order_details_data(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .option("inferSchema", true)
+      .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load(s"${dataFilesLocation}/ORDER_DETAILS.dat")
+      .load(s"${snc.getConf("dataFilesLocation")}/ORDER_DETAILS.dat")
 
-  def exec_details_data: DataFrame = snc.read.format("com.databricks.spark.csv")
+  def exec_details_data(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .option("inferSchema", true)
+      .option("inferSchema","true")
       .option("nullValue", "NULL")
-      .load(s"${dataFilesLocation}/EXEC_DETAILS.dat")
+      .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
 
   val create_diskStore_ddl = "CREATE DISKSTORE OverflowDiskStore"
 
@@ -233,8 +253,7 @@ object CTQueries {
 
   val exec_details_create_ddl =
     "create table exec_details " +
-        "(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20), " +
-        "ALT_EXEC_ID VARCHAR(64)," +
+        "(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)," +
         "SYS_EXEC_STAT VARCHAR(20),DW_EXEC_STAT VARCHAR(20),ORDER_OWNER_FIRM_ID VARCHAR(20),TRDR_SYS_LOGON_ID VARCHAR(64)," +
         "CONTRA_BROKER_MNEMONIC VARCHAR(20),SIDE VARCHAR(20),TICKER_SYMBOL VARCHAR(32),SYS_SECURITY_ALT_ID VARCHAR(64)," +
         "PRODUCT_CAT_CD VARCHAR(20),LAST_MKT VARCHAR(20),EXECUTED_QTY DECIMAL(18, 4),EXEC_PRICE DECIMAL( 38, 18)," +

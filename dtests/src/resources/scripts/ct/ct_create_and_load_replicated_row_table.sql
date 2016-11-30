@@ -4,8 +4,7 @@ DROP TABLE IF EXISTS staging_order_details;
 
 -- CREATE COLUMN TABLE ORDER_DETAILS --
 CREATE EXTERNAL TABLE staging_order_details USING com.databricks.spark.csv
-             OPTIONS (path ':dataLocation/ORDER_DETAILS.dat', header 'true', inferSchema 'true',
-             nullValue 'NULL');
+             OPTIONS (path ':dataLocation/ORDER_DETAILS.dat', header 'true', inferSchema 'true', nullValue 'NULL');
 
 CREATE TABLE ORDER_DETAILS USING row AS
              (SELECT SINGLE_ORDER_DID,SYS_ORDER_ID,SYS_ORDER_VER,DATA_SNDG_SYS_NM,SRC_SYS,SYS_PARENT_ORDER_ID,

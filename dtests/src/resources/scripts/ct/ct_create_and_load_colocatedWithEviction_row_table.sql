@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS staging_order_details;
 CREATE EXTERNAL TABLE staging_order_details USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/ORDER_DETAILS.dat', header 'true', inferSchema 'true', nullValue 'NULL');
 
-CREATE TABLE ORDER_DETAILS USING ROW OPTIONS (partition_by 'SINGLE_ORDER_DID', buckets '11', redundancy '1', EVICTION_BY ':evictionByOption') AS
+CREATE TABLE ORDER_DETAILS USING ROW OPTIONS (partition_by 'SINGLE_ORDER_DID', buckets '11', redundancy ':redundancy', EVICTION_BY ':evictionByOption') AS
              (SELECT SINGLE_ORDER_DID,SYS_ORDER_ID,SYS_ORDER_VER,DATA_SNDG_SYS_NM,SRC_SYS,SYS_PARENT_ORDER_ID,
              SYS_PARENT_ORDER_VER,PARENT_ORDER_TRD_DATE,PARENT_ORDER_SYS_NM,SYS_ALT_ORDER_ID,TRD_DATE,GIVE_UP_BROKER,
              EVENT_RCV_TS,SYS_ROOT_ORDER_ID,GLB_ROOT_ORDER_ID,GLB_ROOT_ORDER_SYS_NM,GLB_ROOT_ORDER_RCV_TS,
@@ -49,7 +49,7 @@ DROP TABLE IF EXISTS staging_exec_details;
 CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'true', nullValue 'NULL');
 
-CREATE TABLE EXEC_DETAILS USING ROW OPTIONS (partition_by 'EXEC_DID', buckets '11', redundancy '1', COLOCATE_WITH 'ORDER_DETAILS', EVICTION_BY ':evictionByOption') AS
+CREATE TABLE EXEC_DETAILS USING ROW OPTIONS (partition_by 'EXEC_DID', buckets '11', redundancy ':redundancy', COLOCATE_WITH 'ORDER_DETAILS', EVICTION_BY ':evictionByOption') AS
              (SELECT EXEC_DID,SYS_EXEC_VER,SYS_EXEC_ID,TRD_DATE,ALT_EXEC_ID,SYS_EXEC_STAT,DW_EXEC_STAT,
              ORDER_OWNER_FIRM_ID,TRDR_SYS_LOGON_ID,CONTRA_BROKER_MNEMONIC,SIDE,TICKER_SYMBOL,SYS_SECURITY_ALT_ID,
              PRODUCT_CAT_CD,LAST_MKT,EXECUTED_QTY,EXEC_PRICE,EXEC_PRICE_CURR_CD,EXEC_CAPACITY,

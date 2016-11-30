@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
@@ -17,30 +34,32 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+      val redundancy = jobConfig.getString("redundancy")
       pw.println(s"Data files are at : ${dataFilesLocation}")
+      snc.setConf("dataFilesLocation",dataFilesLocation)
       CTQueries.snc = snc
       CTQueries.dataFilesLocation = dataFilesLocation
       CTTestUtil.dropTables(snc)
       pw.println(s"Create and load for ${tableType} tables has started...")
 
       tableType match {
-          //row tables
-        case "Replicated" => CTTestUtil.createReplicatedRowTables(pw,snc)
-        case "PersistentReplicated" => CTTestUtil.createPersistReplicatedRowTables(snc)
-          //partitioned tables
-        case "PartitionedRow" => CTTestUtil.createPartitionedRowTables(snc)
-        case "PersistentPartitionRow" => CTTestUtil.createPersistPartitionedRowTables(snc)
-        case "ColocatedRow" => CTTestUtil.createColocatedRowTables(snc)
-        case "RowWithEviction"=> CTTestUtil.createRowTablesWithEviction(snc)
-        case "PersistentColocatedRow" => CTTestUtil.createPersistColocatedTables(snc)
-        case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc)
-          //column tables
-        case "Column" => CTTestUtil.createColumnTables(snc)
-        case "PeristentColumn" => CTTestUtil.createPersistColumnTables(snc)
-        case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc)
-        case "ColumnWithEviction" => CTTestUtil.createColumnTablesWithEviction(snc)
-        case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc)
-        case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc)
+        //replicated row tables
+        case "Replicated" => CTTestUtil.createReplicatedRowTables(snc)
+        case "PersistentReplicated" => CTTestUtil.createPersistReplicatedRowTables(snc,jobConfig.getString("persistenceMode"))
+        //partitioned row tables
+        case "PartitionedRow" => CTTestUtil.createPartitionedRowTables(snc,redundancy)
+        case "PersistentPartitionRow" => CTTestUtil.createPersistPartitionedRowTables(snc,redundancy,jobConfig.getString("persistenceMode"))
+        case "ColocatedRow" => CTTestUtil.createColocatedRowTables(snc,redundancy)
+        case "EvictionRow"=> CTTestUtil.createRowTablesWithEviction(snc,redundancy)
+        case "PersistentColocatedRow" => CTTestUtil.createPersistColocatedTables(snc,redundancy,jobConfig.getString("persistenceMode"))
+        case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,redundancy,jobConfig.getString("persistenceMode"))
+        //column tables
+        case "Column" => CTTestUtil.createColumnTables(snc,redundancy)
+        case "PeristentColumn" => CTTestUtil.createPersistColumnTables(snc,jobConfig.getString("persistenceMode"))
+        case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc,redundancy)
+        case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
+        case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,jobConfig.getString("persistenceMode"))
+        case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
         case _ => // the default, catch-all
       }
       CTTestUtil.loadTables(snc);
