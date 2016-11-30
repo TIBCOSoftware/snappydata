@@ -21,12 +21,12 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
-with Logging
-with BeforeAndAfter {
+    with Logging
+    with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
   val props = Map.empty[String, String]

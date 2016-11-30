@@ -32,7 +32,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
@@ -67,7 +66,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       functionResourceLoader,
       functionRegistry,
       sqlConf,
-      hadoopConf) with Logging {
+      hadoopConf) {
 
   val sparkConf = snappySession.sparkContext.getConf
 
