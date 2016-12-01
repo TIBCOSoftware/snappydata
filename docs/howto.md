@@ -10,7 +10,7 @@ These examples can be run either in local mode(in which case, it will spawn a si
 * [How to create row tables and run queries](#howto-row)
 * [How to create column tables and run queries](#howto-column)
 * [How to do collacated join](#howto-collacatedJoin)
-* [How to use SnappyData as SQL database using JDBC driver](#howto-jdbc)
+* [How to connect using JDBC driver and run queries](#howto-jdbc)
 * [How to store and query JSON objects](#howto-JSON)
 * [How to store and query objects](#howto-objects)
 * [How to access SnappyData store from existing Spark installation using split mode](#howto-splitmode)
@@ -65,7 +65,7 @@ Full source code for examples to create and perform opeartions on replicated and
 
 The code snippet below shows how to create a replicated row table using API.
 
-First get a SnappyContext:
+First get a SnappySession:
 
 ```
     val spark: SparkSession = SparkSession
@@ -75,7 +75,6 @@ First get a SnappyContext:
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
-    val snc = snSession.snappyContext
 ```
 
 Now create the table using API. For that, first we define the table schema and then create the using createTable API
@@ -93,10 +92,9 @@ Now create the table using API. For that, first we define the table schema and t
     // props1 map specifies the properties for the table to be created
     // "PERSISTENT" flag indicates that the table data should be persisted to
     // disk asynchronously
-    // For complete list of attributes refer the documentation
     val props1 = Map("PERSISTENT" -> "asynchronous")
     // create a row table using createTable API
-    snc.createTable("SUPPLIER", "row", schema, props1)
+    snSession.createTable("SUPPLIER", "row", schema, props1)
 ```
 
 **Create a row table using SQL:**
@@ -105,7 +103,7 @@ The same table can be created using SQL as shown below
     // Create a row table using SQL
     // "PERSISTENT" that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
-    snc.sql(
+    snSession.sql(
       "CREATE TABLE SUPPLIER ( " +
           "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +
           "S_NAME STRING NOT NULL, " +
@@ -123,27 +121,27 @@ For example:
 
 ```
     // inserting data in SUPPLIER table
-    snc.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 
     // printing the contents of the SUPPLIER table
-    var tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 
     // update the table account balance for SUPPLIER4
-    snc.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
+    snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 
     // printing the contents of the SUPPLIER table after update
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 
     // delete the records for SUPPLIER2 and SUPPLIER3
-    snc.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
+    snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
     // printing the contents of the SUPPLIER table after delete
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
 
@@ -160,7 +158,7 @@ Full source code for example to create and perform opeartions on column table ca
 
 The code snippet below shows how to create a column table using API.
 
-First get a SnappyContext:
+First get a SnappySession:
 
 ```
     val spark: SparkSession = SparkSession
@@ -170,7 +168,6 @@ First get a SnappyContext:
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
-    val snc = snSession.snappyContext
 ```
 
 Now create the table using API and load data into it from CSV. For that, first we define the table schema and then create the using createTable API.
@@ -189,11 +186,11 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
-    snc.createTable("CUSTOMER", "column", tableSchema, props1)
+    snSession.createTable("CUSTOMER", "column", tableSchema, props1)
 
     // insert some data in it
     // loading data in CUSTOMER table from a text file with delimited columns
-    val customerDF = snc.read.
+    val customerDF = snSession.read.
         format("com.databricks.spark.csv").schema(schema = tableSchema).
         load(s"quickstart/src/resources/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
@@ -202,7 +199,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
 **Create a column table using SQL:**
 The same table can be created using SQL as shown below
 ```
-    snc.sql("CREATE TABLE CUSTOMER ( " +
+    snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
         "C_ADDRESS     VARCHAR(40) NOT NULL," +
@@ -226,7 +223,7 @@ When two tables are partitioned on columns and colocated, it forces partitions h
 A partitioned table can be colocated with another partitioned table by using "COLOCATE_WITH" with atrribute in the table options. For example, in the code snippet below ORDERS table is colocated with CUSTOMER table. The complete source for this example can be found in file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
 ```
-    snc.sql("CREATE TABLE CUSTOMER ( " +
+    snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
         "C_ADDRESS     VARCHAR(40) NOT NULL," +
@@ -237,7 +234,7 @@ A partitioned table can be colocated with another partitioned table by using "CO
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
         
-    snc.sql("CREATE TABLE ORDERS  ( " +
+    snSession.sql("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
         "O_CUSTKEY        INTEGER NOT NULL," +
         "O_ORDERSTATUS    CHAR(1) NOT NULL," +
@@ -255,7 +252,7 @@ Now the following join query wil do a colocated join:
 
 ```
     // Selecting orders for all customers
-    val result = snc.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
+    val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
         "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
 ```
 
@@ -274,7 +271,7 @@ val url: String = s"jdbc:snappydata://localhost:1527/"
 val conn1 = DriverManager.getConnection(url)
 
 val stmt1 = conn1.createStatement()
-println("Creating a table (PARTSUPP) using JDBC connection")
+// Creating a table (PARTSUPP) using JDBC connection
 stmt1.execute("DROP TABLE IF EXISTS APP.PARTSUPP")
 stmt1.execute("CREATE TABLE APP.PARTSUPP ( " +
      "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
@@ -283,7 +280,7 @@ stmt1.execute("CREATE TABLE APP.PARTSUPP ( " +
      "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
     "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY')")
 
-println("Inserting a record in PARTSUPP table via batch inserts")
+// Inserting a record in PARTSUPP table via batch inserts
 val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
 
 var x = 0
@@ -312,11 +309,11 @@ The source code for JSON example is in [WorkingWithJson.scala](https://github.co
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
-    val people = snc.jsonFile(some_people_path)
+    val people = snSession.jsonFile(some_people_path)
     people.printSchema()
 
     //Drop the table if it exists.
-    snc.dropTable("people", ifExists = true)
+    snSession.dropTable("people", ifExists = true)
 
     // Write the created DataFrame to a column table.
     people.write.format("column").saveAsTable("people")
@@ -326,15 +323,15 @@ The source code for JSON example is in [WorkingWithJson.scala](https://github.co
 
     //Explicitly passing schema to handle record level field mismatch
     // e.g. some records have "district" field while some do not.
-    val morePeople = snc.read.schema(people.schema).json(more_people_path)
+    val morePeople = snSession.read.schema(people.schema).json(more_people_path)
     morePeople.write.insertInto("people")
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snc.table("people").schema)
+    println(snSession.table("people").schema)
 
     // Query it like any other table
-    val nameAndAddress = snc.sql("SELECT " +
+    val nameAndAddress = snSession.sql("SELECT " +
         "name, " +
         "address.city, " +
         "address.state, " +
@@ -366,7 +363,7 @@ The code snippet below inserts Person objects into a column table. The source co
 
 ```
     //Import the implicits for automatic conversion between Objects to DataSets.
-    import snc.implicits._
+    import snSession.implicits._
 
     val snSession = snc.snappySession
     // Create a Dataset using Spark APIs
@@ -384,7 +381,7 @@ The code snippet below inserts Person objects into a column table. The source co
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snc.table("people").schema)
+    println(snSession.table("people").schema)
     
 
     // Append more people to the column table

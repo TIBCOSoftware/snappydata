@@ -60,13 +60,13 @@ object CreatePartitionedRowTable extends SnappySQLJob {
   case class Data(PS_PARTKEY: Int, PS_SUPPKEY: Int,
       PS_AVAILQTY: Int, PS_SUPPLYCOST: BigDecimal)
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
 
     val pw = new PrintWriter("CreatePartitionedRowTable.out")
 
-    createPartitionedRowTableUsingSQL(snc, pw)
+    createPartitionedRowTableUsingSQL(snSession.snappySession, pw)
 
-    createPartitionedRowTableUsingAPI(snc, pw)
+    createPartitionedRowTableUsingAPI(snSession.snappySession, pw)
 
     pw.close()
   }
@@ -76,14 +76,14 @@ object CreatePartitionedRowTable extends SnappySQLJob {
   /**
    * Creates a partitioned row table and performs operations on it using APIs
    */
-  def createPartitionedRowTableUsingAPI(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def createPartitionedRowTableUsingAPI(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
     pw.println("****Create a partitioned row table using API****")
     pw.println()
     pw.println("Creating a partitioned row table(PARTSUPP) using API")
 
     // drop the table if it exists
-    snc.dropTable("PARTSUPP", ifExists = true)
+    snSession.dropTable("PARTSUPP", ifExists = true)
 
     val schema = StructType(Array(StructField("PS_PARTKEY", IntegerType, false),
       StructField("S_SUPPKEY", IntegerType, false),
@@ -94,7 +94,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
     val props1 = Map("PARTITION_BY" -> "PS_PARTKEY")
-    snc.createTable("PARTSUPP", "row", schema, props1)
+    snSession.createTable("PARTSUPP", "row", schema, props1)
 
     pw.println("Inserting data in PARTSUPP table")
     val data = Seq(Seq(100, 1, 5000, BigDecimal(100)),
@@ -102,34 +102,34 @@ object CreatePartitionedRowTable extends SnappySQLJob {
       Seq(300, 3, 1000, BigDecimal(20)),
       Seq(400, 4, 200, BigDecimal(30))
     )
-    val rdd = snc.sparkContext.parallelize(data,
+    val rdd = snSession.sparkContext.parallelize(data,
       data.length).map(s => new Data(s(0).asInstanceOf[Int],
       s(1).asInstanceOf[Int],
       s(2).asInstanceOf[Int],
       s(3).asInstanceOf[BigDecimal]))
 
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snSession.createDataFrame(rdd)
     dataDF.write.insertInto("PARTSUPP")
 
     pw.println("Printing the contents of the PARTSUPP table")
-    var tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    var tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Update the available quantity for PARTKEY 100")
-    snc.update("PARTSUPP", "PS_PARTKEY = 100", Row(50000), "PS_AVAILQTY")
+    snSession.update("PARTSUPP", "PS_PARTKEY = 100", Row(50000), "PS_AVAILQTY")
 
     pw.println("Printing the contents of the PARTSUPP table after update")
-    tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Delete the records for PARTKEY 400")
-    snc.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
-    snc.delete("PARTSUPP", "PS_PARTKEY = 400")
+    snSession.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
+    snSession.delete("PARTSUPP", "PS_PARTKEY = 400")
 
     pw.println("Printing the contents of the PARTSUPP table after delete")
-    tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println("****Done****")
@@ -142,7 +142,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
    * Other way to execute a SQL statement is thru JDBC or ODBC driver. Refer to
    * JDBCExample.scala for more details
    */
-  def createPartitionedRowTableUsingSQL(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def createPartitionedRowTableUsingSQL(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
 
     pw.println("****Create a row table using SQL****")
@@ -150,12 +150,12 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     pw.println()
     pw.println("Creating a partitioned row table(PARTSUPP) using SQL")
 
-    snc.sql("DROP TABLE IF EXISTS PARTSUPP")
+    snSession.sql("DROP TABLE IF EXISTS PARTSUPP")
 
     // Create the table using SQL command
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
     // For complete list of table attributes refer the documentation
-    snc.sql("CREATE TABLE PARTSUPP ( " +
+    snSession.sql("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
         "PS_SUPPKEY     INTEGER NOT NULL," +
         "PS_AVAILQTY    INTEGER NOT NULL," +
@@ -165,29 +165,29 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     // insert some data in it
     pw.println()
     pw.println("Inserting data in PARTSUPP table")
-    snc.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
-    snc.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
-    snc.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
-    snc.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
+    snSession.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
+    snSession.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
+    snSession.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
+    snSession.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
 
     pw.println("Printing the contents of the PARTSUPP table")
-    var tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    var tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Update the available quantity for PARTKEY 100")
-    snc.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
+    snSession.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
 
     pw.println("Printing the contents of the PARTSUPP table after update")
-    tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Delete the records for PARTKEY 400")
-    snc.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
+    snSession.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
 
     pw.println("Printing the contents of the PARTSUPP table after delete")
-    tableData = snc.sql("SELECT * FROM PARTSUPP").collect()
+    tableData = snSession.sql("SELECT * FROM PARTSUPP").collect()
     tableData.foreach(pw.println)
 
     pw.println("****Done****")
@@ -208,8 +208,8 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    createPartitionedRowTableUsingSQL(snSession.snappyContext, pw)
-    createPartitionedRowTableUsingAPI(snSession.snappyContext, pw)
+    createPartitionedRowTableUsingSQL(snSession, pw)
+    createPartitionedRowTableUsingAPI(snSession, pw)
     pw.close()
   }
 

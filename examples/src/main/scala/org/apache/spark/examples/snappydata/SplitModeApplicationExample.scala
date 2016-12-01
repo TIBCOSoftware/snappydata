@@ -16,7 +16,7 @@
  */
 package org.apache.spark.examples.snappydata
 
-import org.apache.spark.sql.{SnappyContext, SparkSession}
+import org.apache.spark.sql.{SnappySession, SnappyContext, SparkSession}
 
 /**
  * This example shows how an application can interact with SnappyStore in Split cluster mode.
@@ -68,21 +68,21 @@ object SplitModeApplicationExample {
         .config("snappydata.store.locators", "localhost:10334")
         .getOrCreate
 
-    val snc = new SnappyContext(spark.sparkContext)
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     println("\n\n ####  Reading from the SnappyStore table SNAPPY_COL_TABLE  ####  \n")
-    val colTable = snc.table("SNAPPY_COL_TABLE")
+    val colTable = snSession.table("SNAPPY_COL_TABLE")
     colTable.show(10)
 
 
     println(" ####  Creating a table TestColumnTable  #### \n")
 
-    snc.dropTable("TestColumnTable", ifExists = true)
+    snSession.dropTable("TestColumnTable", ifExists = true)
 
     // Creating a table from a DataFrame
-    val dataFrame = snc.range(1000).selectExpr("id", "floor(rand() * 10000) as k")
+    val dataFrame = snSession.range(1000).selectExpr("id", "floor(rand() * 10000) as k")
 
-    snc.sql("create table TestColumnTable (id bigint not null, k bigint not null) using column")
+    snSession.sql("create table TestColumnTable (id bigint not null, k bigint not null) using column")
 
     dataFrame.write.insertInto("TestColumnTable")
 

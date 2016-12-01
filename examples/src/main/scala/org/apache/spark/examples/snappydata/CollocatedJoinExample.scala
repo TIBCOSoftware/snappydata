@@ -54,26 +54,26 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, Snappy
  */
 object CollocatedJoinExample extends SnappySQLJob {
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter("CollocatedJoinExample.out")
-    runCollocatedJoinQuery(snc, pw)
+    runCollocatedJoinQuery(snSession.snappySession, pw)
     pw.close()
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
 
-  def runCollocatedJoinQuery(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def runCollocatedJoinQuery(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
 
     pw.println("****Collocated Join Example****")
 
     pw.println("Creating a column table(CUSTOMER)")
 
-    snc.sql("DROP TABLE IF EXISTS CUSTOMER")
+    snSession.sql("DROP TABLE IF EXISTS CUSTOMER")
 
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
     // Refer to the documentation, for complete list of attributes
-    snc.sql("CREATE TABLE CUSTOMER ( " +
+    snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
         "C_ADDRESS     VARCHAR(40) NOT NULL," +
@@ -84,21 +84,21 @@ object CollocatedJoinExample extends SnappySQLJob {
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 
-    snc.sql("INSERT INTO CUSTOMER VALUES(20000, 'Customer20000', " +
+    snSession.sql("INSERT INTO CUSTOMER VALUES(20000, 'Customer20000', " +
         "'Chicago, IL', 1, '555-101-782', 3500, 'MKTSEGMENT', '')")
-    snc.sql("INSERT INTO CUSTOMER VALUES(30000, 'Customer30000', " +
+    snSession.sql("INSERT INTO CUSTOMER VALUES(30000, 'Customer30000', " +
         "'Boston, MA', 1, '555-151-678', 4500, 'MKTSEGMENT', '')")
-    snc.sql("INSERT INTO CUSTOMER VALUES(40000, 'Customer40000', " +
+    snSession.sql("INSERT INTO CUSTOMER VALUES(40000, 'Customer40000', " +
         "'San Jose, CA', 1, '555-532-345', 5500, 'MKTSEGMENT', '')")
 
     pw.println()
     pw.println("Creating a ORDERS table collocated with CUSTOMER")
-    snc.sql("DROP TABLE IF EXISTS ORDERS")
+    snSession.sql("DROP TABLE IF EXISTS ORDERS")
 
     // "PARTITION_BY" attribute specifies partitioning key for ORDERS table(O_ORDERKEY),
     // "COLOCATE_WITH" specifies that the table is colocated with CUSTOMERS table
     // Refer to the documentation, for complete list of attributes
-    snc.sql("CREATE TABLE ORDERS  ( " +
+    snSession.sql("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
         "O_CUSTKEY        INTEGER NOT NULL," +
         "O_ORDERSTATUS    CHAR(1) NOT NULL," +
@@ -110,13 +110,13 @@ object CollocatedJoinExample extends SnappySQLJob {
         "O_COMMENT        VARCHAR(79) NOT NULL) " +
         "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', " +
         "COLOCATE_WITH 'CUSTOMER' )")
-    snc.sql("INSERT INTO ORDERS VALUES (1, 20000, 'O', 100.50, '2016-04-04', 'LOW', 'Clerk#001', 3, '')")
-    snc.sql("INSERT INTO ORDERS VALUES (2, 20000, 'F', 1000, '2016-04-04', 'HIGH', 'Clerk#002', 1, '')")
-    snc.sql("INSERT INTO ORDERS VALUES (3, 30000, 'F', 400, '2016-04-04', 'MEDIUM', 'Clerk#003', 2, '')")
-    snc.sql("INSERT INTO ORDERS VALUES (4, 30000, 'O', 500, '2016-04-04', 'LOW', 'Clerk#002', 3, '')")
+    snSession.sql("INSERT INTO ORDERS VALUES (1, 20000, 'O', 100.50, '2016-04-04', 'LOW', 'Clerk#001', 3, '')")
+    snSession.sql("INSERT INTO ORDERS VALUES (2, 20000, 'F', 1000, '2016-04-04', 'HIGH', 'Clerk#002', 1, '')")
+    snSession.sql("INSERT INTO ORDERS VALUES (3, 30000, 'F', 400, '2016-04-04', 'MEDIUM', 'Clerk#003', 2, '')")
+    snSession.sql("INSERT INTO ORDERS VALUES (4, 30000, 'O', 500, '2016-04-04', 'LOW', 'Clerk#002', 3, '')")
 
     pw.println("Selecting orders for all customers")
-    val result = snc.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
+    val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
         "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
     pw.println("CUSTKEY, NAME, ORDERKEY, ORDERSTATUS, ORDERDATE, ORDERDATE")
     pw.println("____________________________________________________________")
@@ -140,7 +140,7 @@ object CollocatedJoinExample extends SnappySQLJob {
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    runCollocatedJoinQuery(snSession.snappyContext, pw)
+    runCollocatedJoinQuery(snSession, pw)
     pw.close()
   }
 
