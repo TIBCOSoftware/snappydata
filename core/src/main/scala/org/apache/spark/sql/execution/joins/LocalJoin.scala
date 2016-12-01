@@ -16,11 +16,15 @@
  */
 package org.apache.spark.sql.execution.joins
 
-import java.util.concurrent.atomic.AtomicLong
+import java.io.IOException
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
 import io.snappydata.Constant
 
@@ -137,7 +141,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
-    val createMap = ctx.freshName("createMap")
+    val createMap = ctx.freshName("CreateMap")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
@@ -159,6 +163,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     assert(rdd.getNumPartitions == 1)
     val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
     val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
+    // using the expression IDs is enough to ensure uniqueness
+    val exprIds = buildPlan.output.map(_.exprId.id).toArray
+    val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
+      new CacheKey(exprIds, rdd.id))
 
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
@@ -174,18 +182,33 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
+    val contextName = ctx.freshName("context")
+    val taskContextClass = classOf[TaskContext].getName
+    ctx.addMutableState(taskContextClass, contextName,
+      s"this.$contextName = $taskContextClass.get();")
     ctx.addMutableState("scala.collection.Iterator", rowIterator,
-      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, " +
-          "org.apache.spark.TaskContext.get());")
+      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, $contextName);")
     ctx.addNewFunction(createMap,
       s"""
-        private void $createMap() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
-            scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
-          int $maskTerm = $hashMapTerm.mask();
-          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+        public final class $createMap implements java.util.concurrent.Callable {
 
-          ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
+          public void apply($taskContextClass context) throws java.io.IOException {
+            $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
+             .get($cacheKeyTerm, this, context, 1,
+               scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          }
+
+          public Object call() throws java.io.IOException {
+            $hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
+              $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
+              $entryClass.class));
+            int $maskTerm = $hashMapTerm.mask();
+            $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+
+            ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
+
+            return $hashMapTerm;
+          }
         }
        """)
 
@@ -218,7 +241,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
       boolean $keyIsUniqueTerm = true;
       if (!$initMap) {
         final long beforeMap = System.nanoTime();
-        $createMap();
+        new $createMap().apply($contextName);
         $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
         $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
         $initMap = true;
@@ -820,5 +843,116 @@ object HashedRelationCache {
         _relationCache = None
       case None => // nothing to be done
     }
+  }
+}
+
+private[spark] final class CacheKey(private var exprIds: Array[Long],
+    private var rddId: Int) extends Serializable with KryoSerializable {
+
+  private[this] var hash: Int = {
+    var h = 0
+    val numIds = exprIds.length
+    var i = 0
+    while (i < numIds) {
+      val id = exprIds(i)
+      h = (h ^ 0x9e3779b9) + (id ^ (id >>> 32)).toInt + (h << 6) + (h >>> 2)
+      i += 1
+    }
+    (h ^ 0x9e3779b9) + rddId + (h << 6) + (h >>> 2)
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    val numIds = exprIds.length
+    output.writeVarInt(numIds, true)
+    var i = 0
+    while (i < numIds) {
+      output.writeLong(exprIds(i))
+      i += 1
+    }
+    output.writeInt(rddId)
+    output.writeInt(hash)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    val numIds = input.readVarInt(true)
+    val exprIds = new Array[Long](numIds)
+    var i = 0
+    while (i < numIds) {
+      exprIds(i) = input.readLong()
+      i += 1
+    }
+    this.exprIds = exprIds
+    rddId = input.readInt()
+    hash = input.readInt()
+  }
+
+  // noinspection HashCodeUsesVar
+  override def hashCode(): Int = hash
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: CacheKey =>
+      val exprIds = this.exprIds
+      val otherExprIds = other.exprIds
+      val numIds = exprIds.length
+      if (rddId == other.rddId && numIds == otherExprIds.length) {
+        var i = 0
+        while (i < numIds) {
+          if (exprIds(i) != otherExprIds(i)) return false
+          i += 1
+        }
+        true
+      } else false
+    case _ => false
+  }
+}
+
+object HashedObjectCache {
+
+  private[this] val mapCache = CacheBuilder.newBuilder()
+      .maximumSize(50)
+      .build[CacheKey, (ObjectHashSet[_], AtomicInteger)]()
+
+  @throws(classOf[IOException])
+  def get[T <: AnyRef](key: CacheKey,
+      callable: Callable[ObjectHashSet[T]], context: TaskContext,
+      tries: Int)(tag: ClassTag[T]): ObjectHashSet[T] = {
+    try {
+      val cached = mapCache.get(key,
+        new Callable[(ObjectHashSet[_], AtomicInteger)] {
+          override def call(): (ObjectHashSet[_], AtomicInteger) = {
+            (callable.call(), new AtomicInteger(0))
+          }
+        })
+      // Increment reference and add reference removal at the end of this task.
+      val counter = cached._2
+      counter.incrementAndGet()
+      // Do full removal if reference count goes down to zero. If any later
+      // task requires it again after full removal, then it will create again.
+      context.addTaskCompletionListener { _ =>
+        if (counter.get() > 0 && counter.decrementAndGet() <= 0) {
+          mapCache.invalidate(key)
+        }
+      }
+      cached._1.asInstanceOf[ObjectHashSet[T]]
+    } catch {
+      case e: ExecutionException =>
+        // in case of OOME from MemoryManager, try after clearing the cache
+        val cause = e.getCause
+        cause match {
+          case _: OutOfMemoryError =>
+            if (tries <= 10 && mapCache.size() > 0) {
+              mapCache.invalidateAll()
+              get(key, callable, context, tries + 1)(tag)
+            } else {
+              throw new IOException(cause.getMessage, cause)
+            }
+          case _ => throw new IOException(cause.getMessage, cause)
+        }
+      case e: Exception => throw new IOException(e.getMessage, e)
+    }
+  }
+
+  def close(): Unit = {
+    mapCache.invalidateAll()
   }
 }
