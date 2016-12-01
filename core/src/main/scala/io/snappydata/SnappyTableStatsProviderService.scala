@@ -22,6 +22,7 @@ package io.snappydata
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
+import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
@@ -31,7 +32,7 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorResult, SnappyRegionStatsCollectorFunction, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
@@ -44,20 +45,33 @@ object SnappyTableStatsProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, SnappyRegionStats]()
 
+  @volatile private var doRun: Boolean = false
+  @volatile private var running: Boolean = false
+
   def start(sc: SparkContext): Unit = {
     val delay =
       sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
           .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
+    doRun = true
     Misc.getGemFireCache.getCCPTimer.schedule(
       new SystemTimer.SystemTimerTask {
         var logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
         override def run2(): Unit = {
           try {
-            tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+            if (doRun) {
+              running = true
+              try {
+                tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+              } finally synchronized {
+                running = false
+                notifyAll()
+              }
+            }
           } catch {
-            case (e: Exception) => {
-              if(!e.getMessage.contains("com.gemstone.gemfire.cache.CacheClosedException"))
+            case _: CancelException => // ignore
+            case e: Exception => if (!e.getMessage.contains(
+              "com.gemstone.gemfire.cache.CacheClosedException")) {
               logger.warning(e)
             }
           }
@@ -68,6 +82,14 @@ object SnappyTableStatsProviderService extends Logging {
         }
       },
       delay, delay)
+  }
+
+  def stop(): Unit = {
+    doRun = false
+    // wait for it to end for sometime
+    synchronized {
+      if (running) wait(20000)
+    }
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
@@ -93,7 +115,7 @@ object SnappyTableStatsProviderService extends Logging {
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
             while (itr.hasNext) {
-              pr.getPrStats().incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
+              pr.getPrStats.incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
                   .getRow(container).getColumn(colPos).getInt)
             }
           }
@@ -107,6 +129,9 @@ object SnappyTableStatsProviderService extends Logging {
   Map[String, SnappyRegionStats] = {
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
+    if (!doRun) return Map.empty
+    val snc = SnappyContext(sc)
+    val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
       val oldRecord = aggregatedStats.get(stat.getRegionName)
       if (oldRecord.isDefined) {
@@ -121,7 +146,7 @@ object SnappyTableStatsProviderService extends Logging {
   private def getSampleTableList(snc: SnappyContext): Seq[String] = {
     try {
       snc.sessionState.catalog
-          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString()).toSeq
+          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
     } catch {
       case tnfe: org.apache.spark.sql.TableNotFoundException =>
         Seq.empty[String]
