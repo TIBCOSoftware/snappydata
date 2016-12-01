@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
@@ -137,6 +138,23 @@ class CachedDataFrame(df: Dataset[Row],
           CachedDataFrame.executeCollect(plan,
             cachedRDD.asInstanceOf[RDD[InternalRow]])
         */
+
+        case plan: CollectAggregateExec =>
+          if (skipLocalCollectProcessing) {
+            // special case where caller will do processing of the blocks
+            // (returns a AggregatePartialDataIterator)
+            new AggregatePartialDataIterator(plan.generatedSource,
+              plan.generatedReferences, plan.child.schema.length,
+              plan.executeCollectData()).asInstanceOf[Iterator[R]]
+          } else if (skipUnpartitionedDataProcessing) {
+            // no processing required
+            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+          } else {
+            // convert to UnsafeRow
+            val converter = UnsafeProjection.create(plan.schema)
+            Iterator(resultHandler(0, processPartition(TaskContext.get(),
+              plan.executeCollect().iterator.map(converter))._1))
+          }
 
         case plan@(_: ExecutedCommandExec | _: LocalTableScanExec) =>
           if (skipUnpartitionedDataProcessing) {

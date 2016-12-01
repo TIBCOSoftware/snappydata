@@ -835,14 +835,14 @@ object SnappyContext extends Logging {
       blockId: BlockAndExecutorId): Unit = {
     storeToBlockMap.put(executorId, blockId)
     totalCoreCount.addAndGet(blockId.numProcessors)
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   private[spark] def removeBlockId(
       executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.remove(executorId) match {
       case s@Some(id) => totalCoreCount.addAndGet(-id.numProcessors)
-        SnappySession.clearCache(); s
+        SnappySession.clearPlanCache(); s
       case None => None
     }
   }
@@ -854,7 +854,7 @@ object SnappyContext extends Logging {
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
     totalCoreCount.set(0)
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   /** Returns the current SparkContext or null */
@@ -882,7 +882,7 @@ object SnappyContext extends Logging {
         Runtime.getRuntime.availableProcessors())
       storeToBlockMap(cache.getMyId.toString) = blockId
       totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearCache()
+      SnappySession.clearPlanCache()
     }
   }
 
