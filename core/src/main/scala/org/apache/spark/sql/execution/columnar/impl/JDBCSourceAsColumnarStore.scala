@@ -139,7 +139,7 @@ final class ColumnarStorePartitionedRDD(
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     val bucketIds = part match {
       case p: MultiBucketExecutorPartition => p.buckets
-      case _ => Set(part.index)
+      case _ => java.util.Collections.singleton(Int.box(part.index))
     }
     if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
     else new ByteArraysIteratorOnScan(container, bucketIds)

@@ -573,6 +573,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       properties = tableProperties.toMap)
 
     withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
+    SnappySession.clearCache()
   }
 
 

@@ -21,8 +21,6 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
@@ -89,7 +87,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
-  override def simpleString: String = "Partitioned Scan " + extraInformation +
+  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
       " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
       " numBuckets= " + numBuckets +
@@ -119,7 +117,7 @@ private[sql] object PartitionedPhysicalScan {
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
-          a.map(_.name).toArray, f.toArray, false)
+          a.map(_.name).toArray, f.toArray, useResultSet = false)
         val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
           Seq.empty, table)
         val bufferExchange = ShuffleExchange(columnScan.outputPartitioning,
@@ -141,6 +139,9 @@ private[sql] object PartitionedPhysicalScan {
         RowTableScan(output, rdd, numBuckets,
           partitionColumns, relation)
     }
+
+  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
+    SparkPlanInfo.fromSparkPlan(plan)
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
@@ -238,4 +239,3 @@ trait BatchConsumer extends CodegenSupport {
   */
 final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
     dictionary: String, dictionaryIndex: String)
-

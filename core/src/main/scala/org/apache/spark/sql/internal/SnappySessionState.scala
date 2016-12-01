@@ -127,7 +127,7 @@ class SnappySessionState(snappySession: SnappySession)
    * The partition mapping selected for the lead partitioned region in
    * a collocated chain for current execution
    */
-  private[this] val leaderPartitions = new TrieMap[PartitionedRegion,
+  private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
       Array[Partition]]()
 
   /**
@@ -181,9 +181,13 @@ class SnappySessionState(snappySession: SnappySession)
 
 
   override def executePlan(plan: LogicalPlan): QueryExecution = {
+    clearExecutionData()
+    contextFunctions.executePlan(snappySession, plan)
+  }
+
+  private[spark] def clearExecutionData(): Unit = {
     conf.refreshNumShufflePartitions()
     leaderPartitions.clear()
-    contextFunctions.executePlan(snappySession, plan)
   }
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
@@ -208,9 +212,9 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
       .SHUFFLE_PARTITIONS.defaultValue match {
     case _ if session == null => -1
     case Some(d) => if (super.numShufflePartitions == d) {
-      session.sparkContext.schedulerBackend.defaultParallelism()
+      SnappyContext.totalCoreCount.get()
     } else -1
-    case None => session.sparkContext.schedulerBackend.defaultParallelism()
+    case None => SnappyContext.totalCoreCount.get()
   }
 
   private[this] def checkShufflePartitionsKey(key: String): Unit = {
@@ -219,8 +223,7 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
     if (dynamicShufflePartitions != -1 && session != null) {
-      dynamicShufflePartitions = session.sparkContext.schedulerBackend
-          .defaultParallelism()
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
     }
   }
 
