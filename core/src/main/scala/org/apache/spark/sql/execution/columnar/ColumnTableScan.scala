@@ -721,7 +721,7 @@ private[sql] final case class ColumnTableScan(
         """ +
         (if ( weightVar != null && attr.name ==  org.apache.spark.sql.collection.Utils
            .WEIGHTAGE_COLUMN_NAME ) {
-           s""" if($col == 0 || $col == 1) {
+           s""" if( $nullVar || $col == 0 || $col == 1) {
                   $col = $weightVar;
                 }
             """.stripMargin
