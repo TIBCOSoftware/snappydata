@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, SnappyHashAggregateExec}
@@ -44,7 +44,7 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
-    object StreamQueryStrategy extends Strategy {
+  object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
@@ -126,12 +126,6 @@ object SnappyAggregation extends Strategy {
   var enableOptimizedAggregation = true
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-    case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
-    case _ => applyAggregation(plan, isRootPlan = false)
-  }
-
-  def applyAggregation(plan: LogicalPlan,
-      isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
     resultExpressions, child) if enableOptimizedAggregation =>
 
@@ -165,8 +159,7 @@ object SnappyAggregation extends Strategy {
             groupingExpressions,
             aggregateExpressions,
             resultExpressions,
-            planLater(child),
-            isRootPlan)
+            planLater(child))
         } else {
           planAggregateWithOneDistinct(
             groupingExpressions,
@@ -192,10 +185,9 @@ object SnappyAggregation extends Strategy {
       groupingExpressions: Seq[NamedExpression],
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
-      child: SparkPlan,
-      isRootPlan: Boolean): Seq[SparkPlan] = {
-    // Check if we can use SnappyHashAggregateExec.
+      child: SparkPlan): Seq[SparkPlan] = {
 
+    // Check if we can use SnappyHashAggregateExec.
     if (!supportCodegen(aggregateExpressions)) {
       return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
         aggregateExpressions, resultExpressions, child)
@@ -253,6 +245,13 @@ object SnappyAggregation extends Strategy {
     if (!supportCodegen(aggregateExpressions)) {
       return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
         aggregateExpressions, resultExpressions, child)
+    }
+
+    // Check if we can use SnappyHashAggregateExec.
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
+        functionsWithDistinct, functionsWithoutDistinct,
+        resultExpressions, child)
     }
 
     // functionsWithDistinct is guaranteed to be non-empty. Even though it

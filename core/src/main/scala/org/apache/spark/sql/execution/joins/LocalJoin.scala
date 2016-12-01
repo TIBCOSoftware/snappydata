@@ -16,27 +16,32 @@
  */
 package org.apache.spark.sql.execution.joins
 
-import java.util.concurrent.atomic.AtomicLong
+import java.io.IOException
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
 import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{BindReferences, BoundReference, Expression, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.{BinaryExecNode, CodegenSupport, ObjectHashMapAccessor, ObjectHashSet, RowTableScan, SparkPlan}
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{SnappyAggregation, SnappySession}
+import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -55,7 +60,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan)
-    extends BinaryExecNode with HashJoin with CodegenSupport {
+    extends BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "LocalJoin"
 
@@ -65,6 +70,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
   @transient private var maskTerm: String = _
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
+  @transient private var dictionaryArrayTerm: String = _
+
+  @transient val (metricAdd, _): (String => String, String => String) =
+    Utils.metricMethods(sparkContext)
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
@@ -125,12 +134,16 @@ case class LocalJoin(leftKeys: Seq[Expression],
       if (visited.add(dep.rdd)) materializeDependencies(dep.rdd, visited))
   }
 
+  // return empty here as code of required variables is explicitly instantiated
+  override def usedInputs: AttributeSet = AttributeSet.empty
+
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
   override def doProduce(ctx: CodegenContext): String = {
-    if (SnappyAggregation.enableOptimizedAggregation) doProduceOptimized(ctx)
-    else {
+    if (true) {
+      doProduceOptimized(ctx)
+    } else {
       streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
     }
   }
@@ -140,6 +153,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
     val createMap = ctx.freshName("createMap")
+    val createMapClass = ctx.freshName("CreateMap")
+    val getOrCreateMap = ctx.freshName("getOrCreateMap")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
@@ -161,6 +176,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     assert(rdd.getNumPartitions == 1)
     val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
     val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
+    // using the expression IDs is enough to ensure uniqueness
+    val exprIds = buildPlan.output.map(_.exprId.id).toArray
+    val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
+      new CacheKey(exprIds, rdd.id))
 
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
@@ -176,26 +195,42 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
+    val contextName = ctx.freshName("context")
+    val taskContextClass = classOf[TaskContext].getName
+    ctx.addMutableState(taskContextClass, contextName,
+      s"this.$contextName = $taskContextClass.get();")
     ctx.addMutableState("scala.collection.Iterator", rowIterator,
-      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, " +
-          "org.apache.spark.TaskContext.get());")
-    ctx.addNewFunction(createMap,
+      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, $contextName);")
+    ctx.addNewFunction(getOrCreateMap,
       s"""
-        private void $createMap() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
-            scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+        public final void $createMap() throws java.io.IOException {
+          $hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
+            $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
+              $entryClass.class));
+          this.$hashMapTerm = $hashMapTerm;
           int $maskTerm = $hashMapTerm.mask();
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
 
           ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
         }
-       """)
+
+        public final void $getOrCreateMap() throws java.io.IOException {
+          $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
+            .get($cacheKeyTerm, new $createMapClass(), $contextName, 1,
+             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+        }
+
+        public final class $createMapClass implements java.util.concurrent.Callable {
+
+          public Object call() throws java.io.IOException {
+            $createMap();
+            return $hashMapTerm;
+          }
+        }
+      """)
 
     // clear the parent by reflection if plan is sent by operators like Sort
-    val parentSetter = buildPlan.getClass.getMethod("parent_$eq",
-      classOf[CodegenSupport])
-    parentSetter.setAccessible(true)
-    parentSetter.invoke(buildPlan, null)
+    TypeUtilities.parentSetter.invoke(buildPlan, null)
 
     // clear the input of RowTableScan
     rowTableScan.input = null
@@ -203,6 +238,14 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
+
+    // check for possible optimized dictionary code path
+    val dictInit = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
+      streamSideKeys)) {
+      // this array will be used at batch level for grouping if possible
+      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+      s"$entryClass[] $dictionaryArrayTerm = null;"
+    } else ""
 
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
@@ -215,31 +258,32 @@ case class LocalJoin(leftKeys: Seq[Expression],
         final long $maxVar = $hashMapTerm.getMaxValue($index);
       """
     }.mkString("\n")
+    // increment numOutputRows in finally block
+    val depth = session.addFinallyCode(ctx,
+      s"$numOutputRows.${metricAdd(numRowsTerm)};")
+    val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
     s"""
       boolean $keyIsUniqueTerm = true;
       if (!$initMap) {
         final long beforeMap = System.nanoTime();
-        $createMap();
+        $getOrCreateMap();
         $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
-        $buildTime.add((System.nanoTime() - beforeMap) / 1000000);
+        $buildTime.${metricAdd("(System.nanoTime() - beforeMap) / 1000000")};
         $initMap = true;
       }
       $initMinMaxVars
       final int $maskTerm = $hashMapTerm.mask();
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      $dictInit
       long $numRowsTerm = 0L;
-      try {
-        ${streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)}
-      } finally {
-        $numOutputRows.add($numRowsTerm);
-      }
+      ${session.evaluateFinallyCode(ctx, produced, depth)}
     """
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    if (SnappyAggregation.enableOptimizedAggregation) {
+    if (true) {
       return doConsumeOptimized(ctx, input)
     }
     // create a name for HashedRelation
@@ -294,7 +338,31 @@ case class LocalJoin(leftKeys: Seq[Expression],
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, joinType)
+      resultVars, dictionaryArrayTerm, joinType)
+  }
+
+  override def batchConsume(ctx: CodegenContext,
+      input: Seq[ExprCode]): String = {
+    val entryClass = mapAccessor.getClassName
+    // check for optimized dictionary code path
+    mapAccessor.checkSingleKeyCase(input, streamSideKeys,
+      streamedPlan.output) match {
+      case Some(ExprCodeEx(_, _, _, dictionary, _)) =>
+        // initialize or reuse the array at batch level for join
+        s"""
+           |if ($dictionary != null) {
+           |  if ($dictionaryArrayTerm != null
+           |      && $dictionaryArrayTerm.length >= $dictionary.length) {
+           |    java.util.Arrays.fill($dictionaryArrayTerm, null);
+           |  } else {
+           |    $dictionaryArrayTerm = new $entryClass[$dictionary.length];
+           |  }
+           |} else {
+           |  $dictionaryArrayTerm = null;
+           |}
+        """.stripMargin
+      case None => ""
+    }
   }
 
   /**
@@ -317,9 +385,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |$relationTerm = org.apache.spark.sql.execution.joins.HashedRelationCache
        |  .get($buildSchemaVar, $buildKeysVar, $buildRDDTerm, $buildPartTerm,
        |  $contextName, 1);
-       |$buildTime.add((System.nanoTime() - $startName) / 1000000L);
+       |$buildTime.${metricAdd(s"(System.nanoTime() - $startName) / 1000000L")};
        |final long $sizeName = $relationTerm.estimatedSize();
-       |$buildDataSize.add($sizeName);
+       |$buildDataSize.${metricAdd(sizeName)};
        |$contextName.taskMetrics().incPeakExecutionMemory($sizeName);
     """.stripMargin
   }
@@ -464,7 +532,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    .getValue(${keyEv.value});
        |  if ($matched == null) continue;
        |  $checkCondition
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -476,7 +544,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  while ($matches.hasNext()) {
        |    UnsafeRow $matched = (UnsafeRow)$matches.next();
        |    $checkCondition
-       |    $numOutput.add(1);
+       |    $numOutput.${metricAdd("1")};
        |    $consumeResult
        |  }
        |}
@@ -540,7 +608,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    ${buildVars.filter(_.code == "").map(v => s"${v.isNull} = true;")
               .mkString("\n")}
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -557,7 +625,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    $checkCondition
        |    if (!$conditionPassed) continue;
        |    $found = true;
-       |    $numOutput.add(1);
+       |    $numOutput.${metricAdd("1")};
        |    $consumeResult
        |  }
        |}
@@ -587,7 +655,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    .getValue(${keyEv.value});
        |  if ($matched == null) continue;
        |  $checkCondition
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -603,7 +671,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |    $found = true;
        |  }
        |  if (!$found) continue;
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
     """.stripMargin
@@ -638,7 +706,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      $antiCondition
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -659,7 +727,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      if ($found) continue;
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
     """.stripMargin
@@ -711,7 +779,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  if ($matched != null) {
        |    $checkCondition
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |} else {
        |  // generate join key for stream side
@@ -726,7 +794,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |      $checkCondition
        |    }
        |  }
-       |  $numOutput.add(1);
+       |  $numOutput.${metricAdd("1")};
        |  $consumeResult
        |}
      """.stripMargin
@@ -822,5 +890,116 @@ object HashedRelationCache {
         _relationCache = None
       case None => // nothing to be done
     }
+  }
+}
+
+private[spark] final class CacheKey(private var exprIds: Array[Long],
+    private var rddId: Int) extends Serializable with KryoSerializable {
+
+  private[this] var hash: Int = {
+    var h = 0
+    val numIds = exprIds.length
+    var i = 0
+    while (i < numIds) {
+      val id = exprIds(i)
+      h = (h ^ 0x9e3779b9) + (id ^ (id >>> 32)).toInt + (h << 6) + (h >>> 2)
+      i += 1
+    }
+    (h ^ 0x9e3779b9) + rddId + (h << 6) + (h >>> 2)
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    val numIds = exprIds.length
+    output.writeVarInt(numIds, true)
+    var i = 0
+    while (i < numIds) {
+      output.writeLong(exprIds(i))
+      i += 1
+    }
+    output.writeInt(rddId)
+    output.writeInt(hash)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    val numIds = input.readVarInt(true)
+    val exprIds = new Array[Long](numIds)
+    var i = 0
+    while (i < numIds) {
+      exprIds(i) = input.readLong()
+      i += 1
+    }
+    this.exprIds = exprIds
+    rddId = input.readInt()
+    hash = input.readInt()
+  }
+
+  // noinspection HashCodeUsesVar
+  override def hashCode(): Int = hash
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: CacheKey =>
+      val exprIds = this.exprIds
+      val otherExprIds = other.exprIds
+      val numIds = exprIds.length
+      if (rddId == other.rddId && numIds == otherExprIds.length) {
+        var i = 0
+        while (i < numIds) {
+          if (exprIds(i) != otherExprIds(i)) return false
+          i += 1
+        }
+        true
+      } else false
+    case _ => false
+  }
+}
+
+object HashedObjectCache {
+
+  private[this] val mapCache = CacheBuilder.newBuilder()
+      .maximumSize(50)
+      .build[CacheKey, (ObjectHashSet[_], AtomicInteger)]()
+
+  @throws(classOf[IOException])
+  def get[T <: AnyRef](key: CacheKey,
+      callable: Callable[ObjectHashSet[T]], context: TaskContext,
+      tries: Int)(tag: ClassTag[T]): ObjectHashSet[T] = {
+    try {
+      val cached = mapCache.get(key,
+        new Callable[(ObjectHashSet[_], AtomicInteger)] {
+          override def call(): (ObjectHashSet[_], AtomicInteger) = {
+            (callable.call(), new AtomicInteger(0))
+          }
+        })
+      // Increment reference and add reference removal at the end of this task.
+      val counter = cached._2
+      counter.incrementAndGet()
+      // Do full removal if reference count goes down to zero. If any later
+      // task requires it again after full removal, then it will create again.
+      context.addTaskCompletionListener { _ =>
+        if (counter.get() > 0 && counter.decrementAndGet() <= 0) {
+          mapCache.invalidate(key)
+        }
+      }
+      cached._1.asInstanceOf[ObjectHashSet[T]]
+    } catch {
+      case e: ExecutionException =>
+        // in case of OOME from MemoryManager, try after clearing the cache
+        val cause = e.getCause
+        cause match {
+          case _: OutOfMemoryError =>
+            if (tries <= 10 && mapCache.size() > 0) {
+              mapCache.invalidateAll()
+              get(key, callable, context, tries + 1)(tag)
+            } else {
+              throw new IOException(cause.getMessage, cause)
+            }
+          case _ => throw new IOException(cause.getMessage, cause)
+        }
+      case e: Exception => throw new IOException(e.getMessage, e)
+    }
+  }
+
+  def close(): Unit = {
+    mapCache.invalidateAll()
   }
 }

@@ -36,6 +36,7 @@ import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -136,6 +137,7 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
+    kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(

@@ -145,8 +145,6 @@ case class Trade(sym: String, ex: String, price: String, time: Timestamp,
 
 object TPCETradeTest extends Logging {
 
-  val HASH_OPTIMIZED = "spark.sql.hash.optimized"
-
   val EXCHANGES: Array[String] = Array("NYSE", "NASDAQ", "AMEX", "TSE",
     "LON", "BSE", "BER", "EPA", "TYO")
   /*
@@ -363,8 +361,7 @@ object TPCETradeTest extends Logging {
           session.catalog.cacheTable("cS")
         } else {
           assert(snappy, "Only cache=T or snappy=T supported")
-          SnappyAggregation.enableOptimizedAggregation =
-              params.getOrElse(HASH_OPTIMIZED, "true").toBoolean
+          SnappyAggregation.enableOptimizedAggregation = true
           if (init) {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
@@ -410,17 +407,9 @@ object TPCETradeTest extends Logging {
         ), query = cacheQueries(queryNumber - 1), snappy = false, init)
     }
 
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = F",
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T",
       cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "false"
-      ), query = queries(queryNumber - 1), snappy = true, init)
-    init = false
-
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
-      cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "true"
+        SQLConf.COMPRESS_CACHED.key -> "true"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
 
