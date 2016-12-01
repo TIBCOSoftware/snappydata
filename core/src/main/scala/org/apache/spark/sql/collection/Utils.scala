@@ -32,7 +32,6 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
@@ -50,7 +49,7 @@ import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
@@ -366,6 +365,66 @@ object Utils {
       index += 1
     }
     k
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   * @return
+   */
+  def varcharMetadata(): Metadata = {
+    varcharMetadata(Constant.MAX_VARCHAR_SIZE, Metadata.empty)
+  }
+
+  def varcharMetadata(size: Int): Metadata = {
+    varcharMetadata(size, Metadata.empty)
+  }
+
+  def varcharMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_VARCHAR_SIZE) {
+      throw new IllegalArgumentException(s"VARCHAR size should be between 1 " +
+          s"and ${Constant.MAX_VARCHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   * @return
+   */
+  def charMetadata(): Metadata = {
+    charMetadata(Constant.MAX_CHAR_SIZE, Metadata.empty)
+  }
+
+  def charMetadata(size: Int): Metadata = {
+    charMetadata(size, Metadata.empty)
+  }
+
+  def charMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_CHAR_SIZE) {
+      throw new IllegalArgumentException(s"CHAR size should be between 1 " +
+          s"and ${Constant.MAX_CHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is rendered as CLOB by SnappyStore.
+   * @param md
+   * @return
+   */
+  def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
+    // render this field as CLOB.
+    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // on its own and this field would be rendered as VARCHAR.
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+        .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
   def schemaFields(schema: StructType): Map[String, StructField] = {

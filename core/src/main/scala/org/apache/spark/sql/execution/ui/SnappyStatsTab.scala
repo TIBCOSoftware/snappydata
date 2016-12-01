@@ -19,7 +19,7 @@
 
 package org.apache.spark.sql.execution.ui
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.ui.{SparkUI, SparkUITab}
 
 /** Web UI showing storage status of all Snappy Tables */

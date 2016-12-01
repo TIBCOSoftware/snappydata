@@ -23,7 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 

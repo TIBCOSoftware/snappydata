@@ -23,6 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
@@ -62,26 +63,29 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
     val bootProperties = new Properties()
     bootProperties.setProperty("locators", locatorStr)
     dataStoreService.start(bootProperties)
-    println("Gfxd peer node vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
+    getLogWriter.info("Gfxd peer node vm type = " +
+        GemFireStore.getBootedInstance.getMyVMKind)
   }
 }
 
-object HiveMetastoreClientAccessDUnitTest {
+object HiveMetastoreClientAccessDUnitTest extends Logging {
 
   def helloWorld(): Unit = {
     hello("Hello World! " + this.getClass)
   }
 
   def hello(s: String): Unit = {
+    // scalastyle:off println
     println(s)
+    // scalastyle:on println
   }
 
   def startDriverApp(locatorStr: String): Unit = {
     startSnappyLocalModeAndCreateARowAndAColumnTable(locatorStr)
     val dsys = InternalDistributedSystem.getConnectedInstance
     assert(dsys != null)
-    println("Driver vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    println("locator prop in driver app = " + InternalDistributedSystem
+    logInfo("Driver vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
+    logInfo("locator prop in driver app = " + InternalDistributedSystem
         .getConnectedInstance.getConfig.getLocators)
   }
 
@@ -161,10 +165,10 @@ object HiveMetastoreClientAccessDUnitTest {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set(Property.Locators(), locStr)
+        .set(Property.Locators.name, locStr)
 
     if (setMaster != null) {
-      conf.setMaster(setMaster).set(Property.Embedded(), "true")
+      conf.setMaster(setMaster).set(Property.Embedded.name, "true")
     }
 
     val sc = new org.apache.spark.SparkContext(conf)
