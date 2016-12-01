@@ -69,7 +69,7 @@ allprojects {
     options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes'
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
-    options.forkOptions.executable = 'javac'
+    options.forkOptions.executable = "${System.properties['java.home']}/../bin/javac"
   }
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true
@@ -104,6 +104,7 @@ allprojects {
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
+    kryoVersion = '4.0.0'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.5.1'
@@ -279,6 +280,7 @@ subprojects {
 
     include '**/*.class'
     exclude '**/*DUnitTest.class'
+    exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
     workingDir = "${testResultsBase}/junit"

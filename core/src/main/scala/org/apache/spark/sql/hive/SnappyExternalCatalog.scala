@@ -26,13 +26,13 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.thrift.TException
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.hive.client.HiveClient
 
-private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: Configuration)
+private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
     extends ExternalCatalog with Logging {
 
   import CatalogTypes.TablePartitionSpec
@@ -41,8 +41,6 @@ private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: C
   private val clientExceptions = Set(
     classOf[HiveException].getCanonicalName,
     classOf[TException].getCanonicalName)
-
-
 
 
   /**
@@ -66,6 +64,7 @@ private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: C
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||
           tClass.contains("DisconnectException") ||
+          (tClass.contains("MetaException") && t.getMessage.contains("retries")) ||
           isDisconnectException(t.getCause)
     } else {
       false
@@ -77,7 +76,7 @@ private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: C
       function
     } catch {
       case he: HiveException if isDisconnectException(he) =>
-        // stale GemXD connection
+        // stale JDBC connection
         Hive.closeCurrent()
         client = client.newSession()
         function
@@ -99,7 +98,7 @@ private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: C
   }
 
   private def requireDbMatches(db: String, table: CatalogTable): Unit = {
-    if (table.identifier.database != Some(db)) {
+    if (!table.identifier.database.contains(db)) {
       throw new AnalysisException(
         s"Provided database '$db' does not match the one specified in the " +
             s"table definition (${table.identifier.database.getOrElse("n/a")})")
@@ -367,7 +366,8 @@ private[spark] class SnappyExternalCatalog(var client :HiveClient, hadoopConf: C
     // we are normalizing the function name.
     val functionName = funcDefinition.identifier.funcName.toLowerCase
     val functionIdentifier = funcDefinition.identifier.copy(funcName = functionName)
-    withHiveExceptionHandling(client.createFunction(db, funcDefinition.copy(identifier = functionIdentifier)))
+    withHiveExceptionHandling(client.createFunction(db,
+      funcDefinition.copy(identifier = functionIdentifier)))
   }
 
   override def dropFunction(db: String, name: String): Unit = withClient {

@@ -20,6 +20,8 @@ import java.io.DataOutput
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
@@ -46,7 +48,7 @@ import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -91,9 +93,10 @@ class SparkSQLExecuteImpl(val sql: String,
     case None => (false, Array.empty[String])
   }
 
-  private def handleLocalExecution(srh: SnappyResultHolder): Unit = {
+  private def handleLocalExecution(srh: SnappyResultHolder,
+      size: Int): Unit = {
     // prepare SnappyResultHolder with all data and create new one
-    if (hdos.size > 0) {
+    if (size > 0) {
       val rawData = hdos.toByteArrayCopy
       srh.fromSerializedData(rawData, rawData.length, null)
     }
@@ -118,13 +121,13 @@ class SparkSQLExecuteImpl(val sql: String,
         val handler = new InternalRowHandler(sql, querySchema,
           serializeComplexType, colTypes)
         val rows = executedPlan.executeCollect()
-        handler.serializeRows(rows.iterator)
+        handler(null, rows.iterator)
       })
       hdos.clearForReuse()
       writeMetaData()
       hdos.write(result)
       if (isLocalExecution) {
-        handleLocalExecution(srh)
+        handleLocalExecution(srh, hdos.size)
       }
       msg.lastResult(srh)
       return
@@ -133,6 +136,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val resultsRdd = executedPlan.execute()
     val bm = SparkEnv.get.blockManager
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
+
     val handler = new ExecutionHandler(sql, querySchema, resultsRdd.id,
       partitionBlockIds, serializeComplexType, colTypes)
     var blockReadSuccess = false
@@ -162,10 +166,7 @@ class SparkSQLExecuteImpl(val sql: String,
         if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
           if (isLocalExecution) {
             // prepare SnappyResultHolder with all data and create new one
-            if (dosSize > 0) {
-              val rawData = hdos.toByteArrayCopy
-              srh.fromSerializedData(rawData, rawData.length, null)
-            }
+            handleLocalExecution(srh, dosSize)
             msg.sendResult(srh)
             srh = new SnappyResultHolder(this)
           } else {
@@ -186,7 +187,7 @@ class SparkSQLExecuteImpl(val sql: String,
         writeMetaData()
       }
       if (isLocalExecution) {
-        handleLocalExecution(srh)
+        handleLocalExecution(srh, hdos.size)
       }
       msg.lastResult(srh)
 
@@ -518,11 +519,15 @@ object SparkSQLExecuteImpl {
   }
 }
 
-class InternalRowHandler(sql: String, schema: StructType,
-    serializeComplexType: Boolean,
-    rowStoreColTypes: Array[(Int, Int, Int)] = null) extends Serializable {
+class InternalRowHandler(private var sql: String,
+    private var schema: StructType,
+    private var serializeComplexType: Boolean,
+    private var rowStoreColTypes: Array[(Int, Int, Int)] = null)
+    extends ((TaskContext, Iterator[InternalRow]) => Array[Byte])
+    with Serializable with KryoSerializable {
 
-  final def serializeRows(itr: Iterator[InternalRow]): Array[Byte] = {
+  override def apply(context: TaskContext,
+      itr: Iterator[InternalRow]): Array[Byte] = {
     var numCols = -1
     var numEightColGroups = -1
     var numPartCols = -1
@@ -568,17 +573,62 @@ class InternalRowHandler(sql: String, schema: StructType,
     }
     dos.toByteArray
   }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeString(sql)
+    kryo.writeObject(output, schema)
+    output.writeBoolean(serializeComplexType)
+    val colTypes = rowStoreColTypes
+    if (colTypes != null) {
+      val len = colTypes.length
+      output.writeVarInt(len, true)
+      var i = 0
+      while (i < len) {
+        val colType = colTypes(i)
+        output.writeVarInt(colType._1, false)
+        output.writeVarInt(colType._2, false)
+        output.writeVarInt(colType._3, false)
+        i += 1
+      }
+    } else {
+      output.writeVarInt(0, true)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    sql = input.readString()
+    schema = kryo.readObject[StructType](input, classOf[StructType])
+    serializeComplexType = input.readBoolean()
+    val len = input.readVarInt(true)
+    if (len > 0) {
+      val colTypes = new Array[(Int, Int, Int)](len)
+      var i = 0
+      while (i < len) {
+        val colType1 = input.readVarInt(false)
+        val colType2 = input.readVarInt(false)
+        val colType3 = input.readVarInt(false)
+        colTypes(i) = (colType1, colType2, colType3)
+        i += 1
+      }
+      rowStoreColTypes = colTypes
+    } else {
+      rowStoreColTypes = null
+    }
+  }
 }
 
-final class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
-    partitionBlockIds: Array[RDDBlockId], serializeComplexType: Boolean,
-    rowStoreColTypes: Array[(Int, Int, Int)] = null)
-    extends InternalRowHandler(sql, schema, serializeComplexType, rowStoreColTypes) {
+final class ExecutionHandler(_sql: String, _schema: StructType, rddId: Int,
+    partitionBlockIds: Array[RDDBlockId], _serializeComplexType: Boolean,
+    _rowStoreColTypes: Array[(Int, Int, Int)])
+    extends InternalRowHandler(_sql, _schema, _serializeComplexType,
+      _rowStoreColTypes) with Serializable with KryoSerializable {
+
+  def this() = this(null, null, 0, null, false, null)
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
     Utils.withNewExecutionId(df, {
       val sc = SnappyContext.globalSparkContext
-      sc.runJob(resultsRdd, serializeRows _, resultHandler _)
+      sc.runJob(resultsRdd, this, resultHandler _)
     })
   }
 
@@ -592,6 +642,9 @@ final class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
       partitionBlockIds(partitionId) = blockId
     }
   }
+
+  override def toString(): String =
+    s"ExecutionHandler: Iterator[InternalRow] => Array[Byte]"
 }
 
 object SnappyContextPerConnection {

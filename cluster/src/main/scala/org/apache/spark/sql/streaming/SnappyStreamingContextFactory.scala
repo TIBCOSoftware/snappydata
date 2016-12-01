@@ -16,29 +16,33 @@
  */
 package org.apache.spark.sql.streaming
 
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
-import spark.jobserver.{SparkJobValidation, ContextLike, SparkJobBase}
+import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SnappyJobValidation, SnappyJobValidate}
+import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
 
 abstract class SnappyStreamingJob extends SparkJobBase {
   override type C = SnappyStreamingContext
   final override def validate(sc: C, config: Config): SparkJobValidation = {
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
+    Thread.currentThread().setContextClassLoader(currentLoader)
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyStreamingContext], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    runSnappyJob(sc.asInstanceOf[SnappyStreamingContext], jobConfig)
-  }
-
-  final override def addOrReplaceJar(sc: C, jarName: String, jarPath: String): Unit = {
-    SnappyUtils.installOrReplaceJar(jarName, jarPath,
-      sc.asInstanceOf[SnappyStreamingContext].snappyContext.sparkContext)
+    val snc = sc.asInstanceOf[SnappyStreamingContext]
+    try {
+      runSnappyJob(snc, jobConfig)
+    }
+    finally {
+      SnappyUtils.removeJobJar(snc.sparkContext)
+    }
   }
 
   def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation

@@ -30,7 +30,7 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.util.ServiceUtils
@@ -111,6 +111,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           setAppName("leaderLauncher").
           set(Property.JobserverEnabled(), "true").
           set("spark.scheduler.mode", "FAIR")
+      Utils.setDefaultSerializerAndCodec(conf)
 
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
@@ -240,12 +241,13 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       SnappyContext.flushSampleTables()
     }
 
-   assert(sparkContext != null, "Mix and match of LeadService api " +
+    assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()
       sparkContext = null
     }
+    Utils.clearDefaultSerializerAndCodec()
 
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
@@ -364,11 +366,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LeadImpl.clearInitializingSparkContext()
   }
 
+
   def getConfig(args: Array[String]): Config = {
 
     System.setProperty("config.trace", "loads")
-
-    val notConfigurable = ConfigFactory.parseResources("jobserver-overrides.conf")
+    val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
+        withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
     val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
 
@@ -384,6 +387,30 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     finalConf
   }
 
+  def getDynamicOverrides: Properties = {
+    val dynamicOverrides = new Properties()
+    val replaceString = "<basedir>"
+
+    def replace(key: String, value: String, newValue: String) = {
+      assert (value.indexOf(replaceString) >= 0)
+      dynamicOverrides.setProperty(key, value.replace(replaceString, newValue))
+    }
+
+    val workingDir = System.getProperty(
+      com.pivotal.gemfirexd.internal.iapi.reference.Property.SYSTEM_HOME_PROPERTY, ".")
+    val defaultConf = ConfigFactory.parseResources("jobserver-defaults.conf")
+
+    var key = "spark.jobserver.filedao.rootdir"
+    replace(key, defaultConf.getString(key), workingDir)
+    key = "spark.jobserver.datadao.rootdir"
+    replace(key, defaultConf.getString(key), workingDir)
+
+    val overrideConf = ConfigFactory.parseResources("jobserver-overrides.conf")
+    key = "spark.jobserver.sqldao.rootdir"
+    replace(key, overrideConf.getString(key), workingDir)
+
+    dynamicOverrides
+  }
 
   def createActorSystem(conf: Config): ActorSystem = {
     ActorSystem("SnappyLeadJobServer", conf)
