@@ -186,8 +186,8 @@ object SnappyAggregation extends Strategy {
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use SnappyHashAggregateExec.
 
+    // Check if we can use SnappyHashAggregateExec.
     if (!supportCodegen(aggregateExpressions)) {
       return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
         aggregateExpressions, resultExpressions, child)
@@ -240,11 +240,12 @@ object SnappyAggregation extends Strategy {
       functionsWithoutDistinct: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use SnappyHashAggregateExec.
 
+    // Check if we can use SnappyHashAggregateExec.
     if (!supportCodegen(aggregateExpressions)) {
-      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
-        aggregateExpressions, resultExpressions, child)
+      return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
+        functionsWithDistinct, functionsWithoutDistinct,
+        resultExpressions, child)
     }
 
     // functionsWithDistinct is guaranteed to be non-empty. Even though it
