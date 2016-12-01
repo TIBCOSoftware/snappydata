@@ -443,7 +443,7 @@ private[sql] final case class ColumnTableScan(
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
         cursorVar, "batchOrdinal", attr.dataType, notNullVar)).append('\n')
       val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
-        cursorVar, attr, notNullVar)
+        cursorVar, attr, notNullVar, weightVarName)
       bufferInitCode.append(bufferInit)
       ev
     }
@@ -649,7 +649,7 @@ private[sql] final case class ColumnTableScan(
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, attr: Attribute,
-      notNullVar: String): (ExprCode, String) = {
+      notNullVar: String, weightVar: String): (ExprCode, String) = {
     val col = ctx.freshName("col")
     var bufferInit: String = ""
     var dictionaryCode: String = ""
@@ -704,7 +704,7 @@ private[sql] final case class ColumnTableScan(
       //   at all if nonNull was false). Hence notNull uses tri-state to
       // indicate (true/false/use wasNull) and code below is a tri-switch.
       val code = s"""
-          final $jt $col;
+          $jt $col;
           final boolean $nullVar;
           if ($notNullVar == 1) {
             $colAssign
@@ -718,7 +718,17 @@ private[sql] final case class ColumnTableScan(
               $nullVar = $decoder.wasNull();
             }
           }
-        """
+        """ +
+        (if ( weightVar != null && attr.name ==  org.apache.spark.sql.collection.Utils
+           .WEIGHTAGE_COLUMN_NAME ) {
+           s""" if($col == 0 || $col == 1) {
+                  $col = $weightVar;
+                }
+            """.stripMargin
+         } else {
+           ""
+         })
+
       if (!dictionary.isEmpty) {
         session.addExCode(ctx, col :: Nil, attr :: Nil,
           ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
