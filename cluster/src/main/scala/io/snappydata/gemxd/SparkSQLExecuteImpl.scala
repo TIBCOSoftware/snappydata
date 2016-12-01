@@ -77,8 +77,8 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = session.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsClob.toString) match {
+  private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
   }
@@ -235,7 +235,7 @@ class SparkSQLExecuteImpl(val sql: String,
           InternalDataSerializer.writeSignedVL(precision, hdos) // precision
           InternalDataSerializer.writeSignedVL(scale, hdos) // scale
         case StoredFormatIds.SQL_VARCHAR_ID |
-            StoredFormatIds.SQL_CHAR_ID =>
+             StoredFormatIds.SQL_CHAR_ID =>
           // Write the size as precision
           InternalDataSerializer.writeSignedVL(precision, hdos)
         case StoredFormatIds.REF_TYPE_ID =>
@@ -267,11 +267,11 @@ class SparkSQLExecuteImpl(val sql: String,
     dataType match {
       case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
       case StringType =>
-        TypeUtilities.getMetadata[Long](Constant.CHAR_TYPE_SIZE_PROP,
+        TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
           f.metadata) match {
-          case Some(s) =>
-            val size = s.asInstanceOf[Int]
-            val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+          case Some(base) =>
+            val size = f.metadata.getLong(
+              Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
             if (allAsClob ||
                 (columnsAsClob.nonEmpty && columnsAsClob.contains(f.name))) {
               if (base != "STRING") {
@@ -313,7 +313,7 @@ class SparkSQLExecuteImpl(val sql: String,
       case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       case _: ArrayType | _: MapType | _: StructType =>
         // indicates complex types serialized as strings
-        if (complexTypeAsClob) (StoredFormatIds.REF_TYPE_ID, -1, -1)
+        if (complexTypeAsJson) (StoredFormatIds.REF_TYPE_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
 
       // send across rest as objects that will be displayed as strings

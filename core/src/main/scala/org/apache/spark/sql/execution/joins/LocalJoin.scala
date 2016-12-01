@@ -22,7 +22,7 @@ import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
 import scala.collection.mutable
 
 import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
-import io.snappydata.{Constant, Property}
+import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.memory.TaskMemoryManager
@@ -744,8 +744,7 @@ object HashedRelationCache {
   private[this] def initCache(): (Cache[KeyType, HashedRelation],
       TaskMemoryManager) = {
     val env = SparkEnv.get
-    val cacheTimeoutSecs = Property.LocalCacheTimeout.getOption(env.conf)
-        .map(_.toInt).getOrElse(Constant.DEFAULT_CACHE_TIMEOUT_SECS)
+    val cacheTimeoutSecs = Constant.DEFAULT_CACHE_TIMEOUT_SECS
     val cache = CacheBuilder.newBuilder()
         .maximumSize(50)
         .expireAfterAccess(cacheTimeoutSecs, TimeUnit.SECONDS)

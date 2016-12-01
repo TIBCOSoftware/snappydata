@@ -385,6 +385,66 @@ object Utils {
     k
   }
 
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   * @return
+   */
+  def varcharMetadata(): Metadata = {
+    varcharMetadata(Constant.MAX_VARCHAR_SIZE, Metadata.empty)
+  }
+
+  def varcharMetadata(size: Int): Metadata = {
+    varcharMetadata(size, Metadata.empty)
+  }
+
+  def varcharMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_VARCHAR_SIZE) {
+      throw new IllegalArgumentException(s"VARCHAR size should be between 1 " +
+          s"and ${Constant.MAX_VARCHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   * @return
+   */
+  def charMetadata(): Metadata = {
+    charMetadata(Constant.MAX_CHAR_SIZE, Metadata.empty)
+  }
+
+  def charMetadata(size: Int): Metadata = {
+    charMetadata(size, Metadata.empty)
+  }
+
+  def charMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_CHAR_SIZE) {
+      throw new IllegalArgumentException(s"CHAR size should be between 1 " +
+          s"and ${Constant.MAX_CHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is rendered as CLOB by SnappyStore.
+   * @param md
+   * @return
+   */
+  def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
+    // render this field as CLOB.
+    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // on its own and this field would be rendered as VARCHAR.
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+        .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+  }
+
   def schemaFields(schema: StructType): Map[String, StructField] = {
     Map(schema.fields.flatMap { f =>
       val name = if (f.metadata.contains("name")) f.metadata.getString("name")

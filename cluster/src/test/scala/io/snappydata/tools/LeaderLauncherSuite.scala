@@ -44,14 +44,14 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       "start",
       "-dir=" + f.getAbsolutePath,
       s"-peer-discovery-address=localhost",
-      s"-peer-discovery-port=${availablePort}"
+      s"-peer-discovery-port=$availablePort"
     ))
   }
 
   override def afterAll(): Unit = {
     GfxdDistributionLocator.main(Array(
       "stop",
-      "-dir=" +locatorDirPath
+      "-dir=" + locatorDirPath
     ))
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
     dirCleanup()
@@ -63,7 +63,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val props = TestUtil.doCommonSetup(null)
 
-    props.setProperty(Property.Locators(), s"localhost[$availablePort]")
+    props.setProperty(Property.Locators.name, s"localhost[$availablePort]")
     props.setProperty(Attribute.SYS_PERSISTENT_DIR, dirname)
     fs.start(props)
 
@@ -87,7 +87,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       LeaderLauncher.main(Array(
         "start",
         "-dir=" + dirname,
-        s"-locators=localhost[${availablePort}]"
+        s"-locators=localhost[$availablePort]"
       ))
     }
 
@@ -163,7 +163,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       LeaderLauncher.main(Array(
         "start",
         "-dir=" + leader1,
-        s"-locators=localhost[${availablePort}]"
+        s"-locators=localhost[$availablePort]"
       ))
     } transform(_ => Try {
 
@@ -173,7 +173,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       LeaderLauncher.main(Array(
         "start",
         "-dir=" + leader2,
-        s"-locators=localhost[${availablePort}]"
+        s"-locators=localhost[$availablePort]"
       ))
       logInfo("Leader 2 launched..")
     }, {
@@ -234,7 +234,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val conf = new SparkConf()
         .setAppName(testName)
-        .setMaster(Constant.SNAPPY_URL_PREFIX + s"localhost[${availablePort}]")
+        .setMaster(Constant.SNAPPY_URL_PREFIX + s"localhost[$availablePort]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
         .set(Constant.STORE_PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
 
@@ -251,7 +251,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       LeaderLauncher.main(Array(
         "start",
         "-dir=" + dirname,
-        s"-locators=localhost[${availablePort}]",
+        s"-locators=localhost[$availablePort]",
         s"-spark.ui.port=3344",
         s"-jobserver.enabled=true",
         s"-embedded=true"
