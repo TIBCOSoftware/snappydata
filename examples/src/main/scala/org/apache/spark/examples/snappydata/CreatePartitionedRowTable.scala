@@ -93,10 +93,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
 
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
-    // "BUCKETS" attribute specifies the smallest unit that can be moved around
-    // in SnappyStore when the data migrates. Here we specify
-    // the table to have 11 buckets
-    val props1 = Map("PARTITION_BY" -> "PS_PARTKEY", "BUCKETS" -> "11")
+    val props1 = Map("PARTITION_BY" -> "PS_PARTKEY")
     snc.createTable("PARTSUPP", "row", schema, props1)
 
     pw.println("Inserting data in PARTSUPP table")
@@ -157,16 +154,13 @@ object CreatePartitionedRowTable extends SnappySQLJob {
 
     // Create the table using SQL command
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
-    // "BUCKETS" attribute specifies the smallest unit that
-    // can be moved around in SnappyStore when the data migrates. Here we specify
-    // the table to have 11 buckets
     // For complete list of table attributes refer the documentation
     snc.sql("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
         "PS_SUPPKEY     INTEGER NOT NULL," +
         "PS_AVAILQTY    INTEGER NOT NULL," +
         "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
-        "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY', BUCKETS '11' )")
+        "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )")
 
     // insert some data in it
     pw.println()
@@ -208,7 +202,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreatePartitionedRowTable")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)

@@ -72,8 +72,6 @@ object CollocatedJoinExample extends SnappySQLJob {
     snc.sql("DROP TABLE IF EXISTS CUSTOMER")
 
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
-    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
-    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
     // Refer to the documentation, for complete list of attributes
     snc.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
@@ -84,7 +82,7 @@ object CollocatedJoinExample extends SnappySQLJob {
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY', BUCKETS '11' )")
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 
     snc.sql("INSERT INTO CUSTOMER VALUES(20000, 'Customer20000', " +
         "'Chicago, IL', 1, '555-101-782', 3500, 'MKTSEGMENT', '')")
@@ -98,8 +96,6 @@ object CollocatedJoinExample extends SnappySQLJob {
     snc.sql("DROP TABLE IF EXISTS ORDERS")
 
     // "PARTITION_BY" attribute specifies partitioning key for ORDERS table(O_ORDERKEY),
-    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
-    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
     // "COLOCATE_WITH" specifies that the table is colocated with CUSTOMERS table
     // Refer to the documentation, for complete list of attributes
     snc.sql("CREATE TABLE ORDERS  ( " +
@@ -112,7 +108,7 @@ object CollocatedJoinExample extends SnappySQLJob {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', BUCKETS '11', " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', " +
         "COLOCATE_WITH 'CUSTOMER' )")
     snc.sql("INSERT INTO ORDERS VALUES (1, 20000, 'O', 100.50, '2016-04-04', 'LOW', 'Clerk#001', 3, '')")
     snc.sql("INSERT INTO ORDERS VALUES (2, 20000, 'F', 1000, '2016-04-04', 'HIGH', 'Clerk#002', 1, '')")
@@ -138,7 +134,7 @@ object CollocatedJoinExample extends SnappySQLJob {
     val spark: SparkSession = SparkSession
         .builder
         .appName("CollocatedJoinExample")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)

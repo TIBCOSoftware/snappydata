@@ -213,7 +213,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
