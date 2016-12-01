@@ -145,7 +145,6 @@ object TPCETradeTest extends Logging {
   private val d = "2016-06-06"
   // private val s = "SY23"
   val cacheQueries = Array(
-    "select cQuote.sym, last(bid) from cQuote group by cQuote.sym",
     "select cQuote.sym, last(bid) from cQuote join cS " +
         s"on (cQuote.sym = cS.sym) where date='$d' group by cQuote.sym",
     "select cTrade.sym, ex, last(price) from cTrade join cS " +
@@ -160,7 +159,6 @@ object TPCETradeTest extends Logging {
         "where price<bid" */
   )
   val queries = Array(
-    "select quote.sym, last(bid) from quote group by quote.sym",
     "select quote.sym, last(bid) from quote join S " +
         s"on (quote.sym = S.sym) where date='$d' group by quote.sym",
     "select trade.sym, ex, last(price) from trade join S " +

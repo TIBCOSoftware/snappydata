@@ -43,7 +43,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
@@ -197,13 +196,6 @@ case class SnappyHashAggregateExec(
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    // skip "shouldStop()" call in child ColumnTableScan if possible
-    def adjustColumnTableScan(plan: SparkPlan): Unit = plan match {
-      case c: ColumnTableScan => c.shouldStopRequired = false
-      case _: WholeStageCodegenExec => // stop searching
-      case _ => plan.children.foreach(adjustColumnTableScan)
-    }
-    adjustColumnTableScan(this)
     if (groupingExpressions.isEmpty) {
       doConsumeWithoutKeys(ctx, input)
     } else {

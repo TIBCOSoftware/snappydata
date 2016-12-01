@@ -233,10 +233,6 @@ private[sql] final case class ColumnTableScan(
   @transient private val session =
     sqlContext.sparkSession.asInstanceOf[SnappySession]
 
-  // optimize to set this in case of aggregates etc where the
-  // "shouldStop()" call can be avoided in generated code
-  @transient private[sql] var shouldStopRequired = true
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
   }
@@ -502,15 +498,6 @@ private[sql] final case class ColumnTableScan(
       columnsInput)).mkString("\n")
     val finallyCode = session.evaluateFinallyCode(ctx)
     val consumeCode = consume(ctx, columnsInput).trim
-    val shouldStopCode = if (shouldStopRequired) {
-      s"""if (shouldStop()) {
-          |  // increment index for return
-          |  $batchIndex = batchOrdinal + 1;
-          |  // set the cursors
-          |  ${cursorUpdateCode.toString()}
-          |  return;
-          |}""".stripMargin
-    } else ""
 
     s"""
        |// Combined iterator for column batches from column table
@@ -526,7 +513,13 @@ private[sql] final case class ColumnTableScan(
        |         batchOrdinal++) {
        |      ${moveNextCode.toString()}
        |      $consumeCode
-       |      $shouldStopCode
+       |      if (shouldStop()) {
+       |        // increment index for return
+       |        $batchIndex = batchOrdinal + 1;
+       |        // set the cursors
+       |        ${cursorUpdateCode.toString()}
+       |        return;
+       |      }
        |    }
        |    $buffers = null;
        |  }
