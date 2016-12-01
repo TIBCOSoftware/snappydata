@@ -18,37 +18,148 @@ These examples can be run either in local mode(in which case, it will spawn a si
 <a id="howto-startCluster"></a>
 ### How to start SnappyData cluster
 
-**DESCRIPTION: **
+If you have [downloaded and extracted](http://snappydatainc.github.io/snappydata/#download-binary-distribution) the SnappyData product distribution, navigate to the SnappyData product root directory. You can use the sbin/snappy-start-all.sh script to start SnappyData cluster on your single machine with default settings. This will start one lead node, one locator and one data server.
 
-**Steps:**
 ```
-Add details
-Step 1
-Step 2
+$ sbin/snappy-start-all.sh
 ```
+This may take 30 seconds or more to bootstrap the entire cluster on your local machine. The sample output for snappy-start-all.sh  should look like:
+
+```
+Starting SnappyData Locator using peer discovery on: localhost[10334]
+Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 9368 status: running
+Starting SnappyData Server using locators for peer discovery: shirishd-laptop[10334]
+Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+Logs generated in /home/shirishd/snappyData/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 9519 status: running
+  Distributed system now has 2 members.
+  Other members: localhost(9368:locator)<v0>:16944
+Starting SnappyData Leader using locators for peer discovery: shirishd-laptop[10334]
+Logs generated in /home/shirishd/snappyData/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 9699 status: running
+  Distributed system now has 3 members.
+  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
+
+```
+
+You can check the status of a running cluster using following command:
+
+```
+$ sbin/snappy-status-all.sh
+SnappyData Locator pid: 9368 status: running
+SnappyData Server pid: 9519 status: running
+  Distributed system now has 2 members.
+  Other members: localhost(9368:locator)<v0>:16944
+SnappyData Leader pid: 9699 status: running
+  Distributed system now has 3 members.
+  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
+
+```
+
+You can shutdown the cluster using sbin/snappy-stop-all.sh command:
+
+```
+$ sbin/snappy-stop-all.sh
+The SnappyData Leader has stopped.
+The SnappyData Server has stopped.
+The SnappyData Locator has stopped.
+```
+
+
+**Starting cluster using multiple hosts**
+
+If you want to start the cluster on multiple hosts, you need to extract the product distribution on each node of the cluster(or use a file system shared by all nodes such as NFS to keep the product distribution). Create the configuration files conf/servers, conf/locators, conf/leads and mention the hostnames on which to start the server, locators, lead respectively and then start the cluster using sbin/snappy-start-all.sh. SnappyData will start the cluster using ssh. It is recommended that you set up passwordless ssh on all hosts in the cluster. Refer to the documentation for [cluster configuration](http://snappydatainc.github.io/snappydata/configuration/) for more details.
 
 <a id="howto-job"></a>
 ### How to run Spark code inside cluster
+A Spark program that can be run inside a SnappyData clustser is implemented as a SnappyData job. A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.
 
-**DESCRIPTION: **
+For example:
+```
+class MySnappyJob extends SnappySQLJob {
+  /** SnappyData uses this as an entry point to execute Snappy jobs. **/
+  def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
 
-**Steps:**
+  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
+}
+
 ```
-Add details
-Step 1
-Step 2
+In the runSnappyJob method above, you implement the logic for your Spark program using SnappyContext object instance passed to it. You can do all operations such as create table, load data, execute queries using the SnappyContext.
+
+Use following Maven dependencies ofr your program that implements the SnappyData job:
+
 ```
+groupId: io.snappydata
+artifactId: snappydata-cluster_2.11
+version: 0.7
+```
+
+Once you create a jar for SnappyData job, use `bin/snappy-job.sh` to submit the job to SnappyData cluster and run the job.
+
+For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you may use the following command. Here quickstart.jar is the jar in which this program is bundled along with the product distribution.
+
+```
+ # first cd to your SnappyData product dir
+ $ cd $SNAPPY_HOME
+ $ bin/snappy-job.sh submit
+    --app-name CreatePartitionedRowTable
+    --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
+    --app-jar examples/jars/quickstart.jar
+    --lead [leadHost:port]
+```
+
+The above command will submit the job and run it and return output similar to:
+
+```
+{
+  "status": "STARTED",
+  "result": {
+    "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
+    "context": "snappyContext1452598154529305363"
+  }
+}
+```
+
+You can check the status of the job using the job id listed above:
+
+```
+bin/snappy-job.sh status -lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+```
+
+Refer to the [Building Snappy applications using Spark API](http://snappydatainc.github.io/snappydata/jobs/) section of the documentation for more details.
+
 
 <a id="howto-snappyShell"></a>
 ### How to use snappy-shell
+`snappy-shell` can be used to execute any SQL queries on SnappyData cluster. `snappy-shell` uses JDBC connection to execute these queries.
 
-**DESCRIPTION: **
+To connect to a SnappyData cluster using `snappy-shell` use the `connect client` command on snappy shell. For example:
 
-**Steps:**
 ```
-Add details
-Step 1
-Step 2
+$ bin/snappy-shell
+snappy> connect client 'locatorHost:1527';
+```
+Use the hostaname of locatorHost instead of leadHost. 1527 is the default port on which locatorHost listens for connections. If you have changed the client port, use the correct port number.
+
+Once connected you can execute SQL queries using `snappy-shell`
+```
+snappy> CREATE TABLE PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
+
+snappy> INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100);
+
+snappy> INSERT INTO PARTSUPP VALUES(200, 2, 50, 10);
+
+snappy> SELECT * FROM PARTSUPP;
+PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST    
+-----------------------------------------------------
+100        |1          |5000       |100.00           
+200        |2          |50         |10.00            
+
+2 rows selected
+
 ```
 
 <a id="howto-row"></a>
@@ -259,7 +370,7 @@ Now the following join query wil do a colocated join:
 <a id="howto-jdbc"></a>
 ### How to connect using JDBC driver
 
-You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. Underneath the covers, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail.
+You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator will pass the information of all available servers based on which the driver automatically connects to one of the servers.
 
 In order to connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
 
@@ -407,13 +518,45 @@ The code snippet below inserts Person objects into a column table. The source co
 ```
 
 <a id="howto-splitmode"></a>
-### How to Access SnappyData Store from Existing Spark Application (Split Mode)
+### How to access SnappyData store from existing Spark installation using split mode
 
-**DESCRIPTION: **
+If you have an existing Apache Spark installation, you can use SnappyData cluster as a store to create and store data in tables. In this case, Spark executors and SnappyStore form independent clusters. When SnappyData is used in split mode, the Apache Spark cluster gets access to the store catalog (thru the driver node). When accessing partitioned data, all access is automatically parallelized between Spark executors and SnappyData nodes.
+
+For more information on Split mode, refer to the [deployment](http://snappydatainc.github.io/snappydata/deployment/#split-cluster-mode) section of documentation
 
 
 **Code Example:**
-```
-ENTER CODE HERE
+The code example for split mode is in [SplitModeApplicationExample.scala](#https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SplitModeApplicationExample.scala) The code below shows how to initialize a SparkSession to use it in split mode. Here the property `snappydata.store.locators` instructs the Spark to start SnappyData accessor process to read the SnappyData catalog.
 
+
+```
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("SplitModeApplicationExample")
+        // It can be any master URL
+        .master("local[4]")
+        // snappydata.store.locators property enables the application to interact with SnappyData store
+        .config("snappydata.store.locators", "localhost:10334")
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+
+```
+
+Now you can create tables and fire queries in SnappyData store using you Apache Spark program
+
+```
+    // reading an already created SnappyStore table SNAPPY_COL_TABLE
+    val colTable = snSession.table("SNAPPY_COL_TABLE")
+    colTable.show(10)
+
+    snSession.dropTable("TestColumnTable", ifExists = true)
+
+    // Creating a table from a DataFrame
+    val dataFrame = snSession.range(1000).selectExpr("id", "floor(rand() * 10000) as k")
+
+    snSession.sql("create table TestColumnTable (id bigint not null, k bigint not null) using column")
+
+    // insert data in TestColumnTable
+    dataFrame.write.insertInto("TestColumnTable")
 ```
