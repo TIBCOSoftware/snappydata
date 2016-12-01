@@ -65,7 +65,6 @@ class SnappySession(@transient private val sc: SparkContext,
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  SnappyContext.initGlobalSnappyContext(sparkContext)
 
   /* ----------------------- *
    |  Session-related state  |
@@ -88,7 +87,6 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-
     try {
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.internal.SnappyAQPSessionState")
@@ -98,7 +96,6 @@ class SnappySession(@transient private val sc: SparkContext,
       case NonFatal(e) =>
         new SnappySessionState(this)
     }
-
   }
 
   @transient
@@ -107,6 +104,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
+  SnappyContext.initGlobalSnappyContext(sparkContext, this)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
