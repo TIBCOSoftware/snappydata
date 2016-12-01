@@ -36,6 +36,7 @@ class StringAsVarcharDUnitTest(val s: String)
 
   val colTab1 = "colTab1"
   val rowTab1 = "rowTab1"
+  val rowTab2 = "rowTab2"
   val extTab1 = "extTab1"
   val extTab2 = "extTab2"
 
@@ -115,6 +116,7 @@ class StringAsVarcharDUnitTest(val s: String)
     eNv(s, rowTab1, "CLOB")
     eNv(s, extTab1, stringType, true, 0)
     if (!useDDL) {
+      eNv(s, rowTab2, "CLOB")
       eNv(s, extTab2, stringType, true, 5)
     }
 
@@ -220,6 +222,9 @@ class StringAsVarcharDUnitTest(val s: String)
     ))
 
     snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
+
+    snc.createTable(rowTab2, "row", s"(col_int int, col_string string, col_varchar varchar" +
+        s"($varcharSize), col_clob clob, col_char char($charSize))", Map.empty[String, String], false)
 
     snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
 
