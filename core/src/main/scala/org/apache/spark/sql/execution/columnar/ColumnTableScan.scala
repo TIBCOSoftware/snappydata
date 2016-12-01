@@ -704,7 +704,7 @@ private[sql] final case class ColumnTableScan(
       //   at all if nonNull was false). Hence notNull uses tri-state to
       // indicate (true/false/use wasNull) and code below is a tri-switch.
       val code = s"""
-          $jt $col;
+          final $jt $col;
           final boolean $nullVar;
           if ($notNullVar == 1) {
             $colAssign
@@ -718,17 +718,7 @@ private[sql] final case class ColumnTableScan(
               $nullVar = $decoder.wasNull();
             }
           }
-        """ +
-        (if ( weightVar != null && attr.name ==  org.apache.spark.sql.collection.Utils
-           .WEIGHTAGE_COLUMN_NAME ) {
-           s""" if( $nullVar || $col == 0 || $col == 1) {
-                  $col = $weightVar;
-                }
-            """.stripMargin
-         } else {
-           ""
-         })
-
+        """
       if (!dictionary.isEmpty) {
         session.addExCode(ctx, col :: Nil, attr :: Nil,
           ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
@@ -739,7 +729,18 @@ private[sql] final case class ColumnTableScan(
         session.addExCode(ctx, col :: Nil, attr :: Nil,
           ExprCodeEx(None, dictionaryCode, dictionary, dictionaryIndex))
       }
-      (ExprCode(s"final $jt $col;\n$colAssign\n", "false", col), bufferInit)
+      val code = s"$jt $col;\n$colAssign\n " +
+        (if ( weightVar != null && attr.name ==  org.apache.spark.sql.collection.Utils
+          .WEIGHTAGE_COLUMN_NAME ) {
+          s""" if($col == 1 ) {
+                  $col = $weightVar;
+                }
+            """.stripMargin
+        } else {
+          ""
+        })
+
+      (ExprCode(code, "false", col), bufferInit)
     }
   }
 }
