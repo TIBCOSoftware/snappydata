@@ -85,7 +85,7 @@ case class SnappyHashAggregateExec(
         aggregateExpressions.flatMap(_.aggregateFunction
             .inputAggBufferAttributes)
 
-  @transient val (metricAdd, metricValue): (String => String, String => String) =
+  @transient val (metricAdd, _): (String => String, String => String) =
     collection.Utils.metricMethods(sparkContext)
 
   override lazy val metrics = Map(

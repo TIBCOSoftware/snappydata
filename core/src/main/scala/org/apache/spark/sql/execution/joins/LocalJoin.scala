@@ -72,7 +72,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
   @transient private var numRowsTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
 
-  @transient val (metricAdd, metricValue): (String => String, String => String) =
+  @transient val (metricAdd, _): (String => String, String => String) =
     Utils.metricMethods(sparkContext)
 
   override lazy val metrics = Map(

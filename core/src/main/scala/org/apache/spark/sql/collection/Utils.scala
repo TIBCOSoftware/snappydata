@@ -26,6 +26,7 @@ import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
+import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -43,6 +44,7 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
@@ -751,14 +753,22 @@ object Utils {
     System.clearProperty("spark.io.compression.codec")
   }
 
+  lazy val metricWithPrimitiveMethods: Boolean = {
+    try {
+      classOf[SQLMetric].getMethod("longValue")
+      true
+    } catch {
+      case NonFatal(_) => false
+    }
+  }
+
   def metricMethods(sc: SparkContext): (String => String, String => String) = {
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
-        (v => s"addLong($v)", v => s"$v.longValue()")
-      case _ =>
-        (v => s"add($v)",
-            // explicit cast for value to Object is for janino bug
-            v => s"(Long)((${classOf[AccumulatorV2[_, _]]})$v).value()")
+    if (metricWithPrimitiveMethods) {
+      (v => s"addLong($v)", v => s"$v.longValue()")
+    } else {
+      (v => s"add($v)",
+          // explicit cast for value to Object is for janino bug
+          v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
     }
   }
 }
