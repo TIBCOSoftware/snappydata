@@ -272,11 +272,15 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case s: StringType =>
-        val hasProp = f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)
+        val hasBaseProp = f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)
         lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-        lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+        lazy val size = if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+          f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+        } else {
+          Constant.MAX_VARCHAR_SIZE
+        }
         if (allAsClob || columnsAsClob.contains(f.name)) {
-            if (hasProp && !base.equals("STRING")) {
+            if (hasBaseProp && !base.equals("STRING")) {
               if (base.equals("VARCHAR")) {
                 (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
               } else { // CHAR
@@ -285,16 +289,13 @@ class SparkSQLExecuteImpl(val sql: String,
             } else { // STRING and CLOB
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
-        } else if (hasProp) {
+        } else if (hasBaseProp) {
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
-          } else { // VARCHAR and STRING
-            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
-              (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
-            }
-            else {
-              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-            }
+          } else if (base.equals("VARCHAR") || !SparkSQLExecuteImpl.STRING_AS_CLOB) {
+            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+          } else {
+            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
           }
         } else { // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
