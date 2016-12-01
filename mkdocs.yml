@@ -9,11 +9,11 @@ repo_url: https://github.com/SnappyDataInc/snappydata
 pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
-- SnappyData Overview: index.md
+- Overview: index.md
 # - Introduction: snappyIntroduction.md
 - Quick Start: quickstart.md
-- How To: howto.md
-- Download and Install SnappyData: install.md
+- How Tos: howto.md
+- Installation: install.md
 - Building from source, project layout: build-instructions.md
 - Configuring the Cluster: configuration.md
 - Connecting using JDBC, Spark: connectingToCluster.md
