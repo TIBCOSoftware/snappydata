@@ -147,8 +147,7 @@ object StoreUtils extends Logging {
       case m if SnappyContext.containsBlockId(m.toString) =>
         Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
     }.toSeq
-    partitions(0) = new MultiBucketExecutorPartition(
-      0, new mutable.ArrayBuffer[Int](0), prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition(0, null, prefNodes)
     partitions
   }
 

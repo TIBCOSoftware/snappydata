@@ -695,12 +695,17 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
     extends Partition with KryoSerializable {
 
   private[this] var bucketSet = {
-    val maxBucket = _buckets.max
-    val set = new BitSet(maxBucket + 1)
-    for (b <- _buckets) {
-      set.set(b)
+    if (_buckets ne null) {
+      val maxBucket = _buckets.max
+      val set = new BitSet(maxBucket + 1)
+      for (b <- _buckets) {
+        set.set(b)
+      }
+      set
+    } else {
+      // replicated region case
+      new BitSet(0)
     }
-    set
   }
 
   override def index: Int = _index
