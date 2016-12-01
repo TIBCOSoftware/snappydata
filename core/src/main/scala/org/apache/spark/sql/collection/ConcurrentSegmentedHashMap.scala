@@ -330,9 +330,9 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     _size.set(0)
   }
 
-  final def size = _size.get
+  final def size: Long = _size.get
 
-  final def isEmpty = _size.get == 0
+  final def isEmpty: Boolean = _size.get == 0
 
   def toSeq: Seq[(K, V)] = {
     val size = this.size
