@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 /*
- * Adapted from Spark's HashAggregateExec having the license below.
+ * Some code adapted from Spark's HashAggregateExec having the license below.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

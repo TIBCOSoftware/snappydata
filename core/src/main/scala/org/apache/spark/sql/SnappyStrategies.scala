@@ -16,13 +16,13 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
+import org.apache.spark.sql.execution.aggregate.{AggUtils, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
@@ -44,7 +44,7 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
-    object StreamQueryStrategy extends Strategy {
+  object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
@@ -163,6 +163,7 @@ object SnappyAggregation extends Strategy {
         } else {
           planAggregateWithOneDistinct(
             groupingExpressions,
+            aggregateExpressions,
             functionsWithDistinct,
             functionsWithoutDistinct,
             resultExpressions,
@@ -174,12 +175,23 @@ object SnappyAggregation extends Strategy {
     case _ => Nil
   }
 
+  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
+    // ImperativeAggregate is not supported right now in code generation.
+    !aggregateExpressions.exists(_.aggregateFunction
+        .isInstanceOf[ImperativeAggregate])
+  }
+
   def planAggregateWithoutDistinct(
       groupingExpressions: Seq[NamedExpression],
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use HashAggregate.
+    // Check if we can use SnappyHashAggregateExec.
+
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
+        aggregateExpressions, resultExpressions, child)
+    }
 
     // 1. Create an Aggregate Operator for partial aggregations.
 
@@ -223,10 +235,17 @@ object SnappyAggregation extends Strategy {
 
   def planAggregateWithOneDistinct(
       groupingExpressions: Seq[NamedExpression],
+      aggregateExpressions: Seq[AggregateExpression],
       functionsWithDistinct: Seq[AggregateExpression],
       functionsWithoutDistinct: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
+    // Check if we can use SnappyHashAggregateExec.
+
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
+        aggregateExpressions, resultExpressions, child)
+    }
 
     // functionsWithDistinct is guaranteed to be non-empty. Even though it
     // may contain more than one DISTINCT aggregate function, all of those
