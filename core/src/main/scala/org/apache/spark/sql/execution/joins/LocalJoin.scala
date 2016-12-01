@@ -31,6 +31,7 @@ import io.snappydata.Constant
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
@@ -41,7 +42,6 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
-import org.apache.spark.sql.{SnappyAggregation, SnappySession}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -141,8 +141,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
     streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
   override def doProduce(ctx: CodegenContext): String = {
-    if (SnappyAggregation.enableOptimizedAggregation) doProduceOptimized(ctx)
-    else {
+    if (true) {
+      doProduceOptimized(ctx)
+    } else {
       streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
     }
   }
@@ -282,7 +283,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    if (SnappyAggregation.enableOptimizedAggregation) {
+    if (true) {
       return doConsumeOptimized(ctx, input)
     }
     // create a name for HashedRelation
