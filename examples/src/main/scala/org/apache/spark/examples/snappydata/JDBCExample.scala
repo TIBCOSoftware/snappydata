@@ -44,7 +44,7 @@ object JDBCExample {
         "PS_SUPPKEY     INTEGER NOT NULL," +
         "PS_AVAILQTY    INTEGER NOT NULL," +
         "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
-        "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY', BUCKETS '11' )")
+        "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY')")
 
     println()
     println("Inserting a record in PARTSUPP table via batch inserts")

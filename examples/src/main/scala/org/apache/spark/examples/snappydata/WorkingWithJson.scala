@@ -58,16 +58,17 @@ object WorkingWithJson extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
+    val snSession = snc.snappySession
     val some_people_path = s"${jobConfig.getString("json_resource_folder")}/some_people.json"
     // Read a JSON file using Spark API
     val people = snc.jsonFile(some_people_path)
     people.printSchema()
 
     //Drop the table if it exists.
-    snc.dropTable("people", ifExists = true)
+    snSession.dropTable("people", ifExists = true)
 
    //Create a columnar table with the Json DataFrame schema
-    snc.createTable(tableName = "people",
+    snSession.createTable(tableName = "people",
       provider = "column",
       schema = people.schema,
       options = Map.empty[String,String],
@@ -86,11 +87,11 @@ object WorkingWithJson extends SnappySQLJob {
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snc.table("people").schema)
+    println(snSession.table("people").schema)
     println
 
     // Query it like any other table
-    val nameAndAddress = snc.sql("SELECT " +
+    val nameAndAddress = snSession.sql("SELECT " +
         "name, " +
         "address.city, " +
         "address.state, " +

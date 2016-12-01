@@ -50,7 +50,7 @@ object WorkingWithObjects extends SnappySQLJob {
     snSession.dropTable("people", ifExists = true)
 
     //Create a columnar table with the DataFrame schema
-    snc.createTable(tableName = "people",
+    snSession.createTable(tableName = "people",
       provider = "column",
       schema = people.schema,
       options = Map.empty[String,String],
@@ -61,7 +61,7 @@ object WorkingWithObjects extends SnappySQLJob {
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snc.table("people").schema)
+    println(snSession.table("people").schema)
     println
 
 

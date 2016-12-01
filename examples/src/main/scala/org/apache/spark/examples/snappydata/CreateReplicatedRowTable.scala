@@ -64,9 +64,9 @@ object CreateReplicatedRowTable extends SnappySQLJob {
 
     val pw = new PrintWriter("CreateReplicatedRowTable.out")
 
-    createReplicatedRowTableUsingSQL(snc, pw)
+    createReplicatedRowTableUsingSQL(snc.snappySession, pw)
 
-    createReplicatedRowTableUsingAPI(snc, pw)
+    createReplicatedRowTableUsingAPI(snc.snappySession, pw)
 
     pw.close()
   }
@@ -76,7 +76,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
   /**
    * Creates row table and performs operations on it using APIs
    */
-  def createReplicatedRowTableUsingAPI(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def createReplicatedRowTableUsingAPI(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
 
     pw.println("****Create a row table(SUPPLIER) using API****")
@@ -84,7 +84,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     pw.println()
 
     // drop the table if it exists
-    snc.dropTable("SUPPLIER", ifExists = true)
+    snSession.dropTable("SUPPLIER", ifExists = true)
 
     val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
       StructField("S_NAME", StringType, false),
@@ -100,7 +100,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     // For complete list of attributes refer the documentation
     val props1 = Map("PERSISTENT" -> "asynchronous")
     // create a row table using createTable API
-    snc.createTable("SUPPLIER", "row", schema, props1)
+    snSession.createTable("SUPPLIER", "row", schema, props1)
 
     pw.println("Inserting data in SUPPLIER table")
     val data = Seq(Seq(1, "SUPPLIER1", "CHICAGO, IL", 0, "555-543-789", BigDecimal(10000), " "),
@@ -108,7 +108,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
       Seq(3, "SUPPLIER3", "NEWYORK, NY", 0, "555-743-785", BigDecimal(34000), " "),
       Seq(4, "SUPPLIER4", "SANHOSE, CA", 0, "555-321-098", BigDecimal(1000), " ")
     )
-    val rdd = snc.sparkContext.parallelize(data,
+    val rdd = snSession.sparkContext.parallelize(data,
       data.length).map(s => new Data(s(0).asInstanceOf[Int],
       s(1).asInstanceOf[String],
       s(2).asInstanceOf[String],
@@ -117,27 +117,27 @@ object CreateReplicatedRowTable extends SnappySQLJob {
       s(5).asInstanceOf[BigDecimal],
       s(6).asInstanceOf[String]))
 
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snSession.createDataFrame(rdd)
     dataDF.write.insertInto("SUPPLIER")
 
     pw.println("Printing the contents of the SUPPLIER table")
-    var tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Update the table account balance for SUPPLIER4")
-    snc.update("SUPPLIER", "S_NAME = 'SUPPLIER4'", Row(BigDecimal(50000)), "S_ACCTBAL")
+    snSession.update("SUPPLIER", "S_NAME = 'SUPPLIER4'", Row(BigDecimal(50000)), "S_ACCTBAL")
 
     pw.println("Printing the contents of the SUPPLIER table after update")
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Delete the records for SUPPLIER2 and SUPPLIER3")
-    snc.delete("SUPPLIER", "S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
+    snSession.delete("SUPPLIER", "S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
     pw.println("Printing the contents of the SUPPLIER table after delete")
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println("****Done****")
@@ -150,19 +150,19 @@ object CreateReplicatedRowTable extends SnappySQLJob {
    * Other way to execute a SQL statement is thru JDBC or ODBC driver. Refer to
    * JDBCExample.scala for more details
    */
-  def createReplicatedRowTableUsingSQL(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def createReplicatedRowTableUsingSQL(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
 
     pw.println("****Create a row table using SQL****")
     pw.println()
     pw.println("Creating a row table(SUPPLIER) using SQL")
 
-    snc.sql("DROP TABLE IF EXISTS SUPPLIER")
+    snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
 
     // Create a row table using SQL
     // "PERSISTENT" that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
-    snc.sql(
+    snSession.sql(
       "CREATE TABLE SUPPLIER ( " +
           "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +
           "S_NAME STRING NOT NULL, " +
@@ -176,29 +176,29 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     // insert some data in it
     pw.println()
     pw.println("Inserting data in SUPPLIER table")
-    snc.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
-    snc.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
+    snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 
     pw.println("Printing the contents of the SUPPLIER table")
-    var tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Update the table account balance for SUPPLIER4")
-    snc.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
+    snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 
     pw.println("Printing the contents of the SUPPLIER table after update")
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println()
     pw.println("Delete the records for SUPPLIER2 and SUPPLIER3")
-    snc.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
+    snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
     pw.println("Printing the contents of the SUPPLIER table after delete")
-    tableData = snc.sql("SELECT * FROM SUPPLIER").collect()
+    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(pw.println)
 
     pw.println("****Done****")
@@ -213,14 +213,14 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
 
     val pw = new PrintWriter(System.out, true)
-    createReplicatedRowTableUsingSQL(snSession.snappyContext, pw)
-    createReplicatedRowTableUsingAPI(snSession.snappyContext, pw)
+    createReplicatedRowTableUsingSQL(snSession, pw)
+    createReplicatedRowTableUsingAPI(snSession, pw)
     pw.close()
   }
 
