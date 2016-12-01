@@ -194,6 +194,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  def isAQP: Boolean = false
 }
 
 private[sql] class SnappyConf(@transient val session: SnappySession)

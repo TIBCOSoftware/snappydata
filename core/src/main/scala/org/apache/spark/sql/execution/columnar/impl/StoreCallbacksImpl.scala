@@ -211,6 +211,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       -1
     }
   }
+
+  override def isAQP: Boolean = {
+    val sc = SnappyContext.globalSparkContext
+    val snappyContext: SnappyContext = SnappySession.getOrCreate(sc).sqlContext
+    snappyContext.sessionState.isAQP
+  }
 }
 
 trait StoreCallback extends Serializable {

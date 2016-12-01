@@ -107,17 +107,12 @@ object SnappyTableStatsProviderService extends Logging {
   Map[String, SnappyRegionStats] = {
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
-    val snc = SnappyContext(sc)
-    val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
-      val tableName = stat.getRegionName
-      if (!samples.contains(tableName)) {
-        val oldRecord = aggregatedStats.get(stat.getRegionName)
-        if (oldRecord.isDefined) {
-          aggregatedStats.put(stat.getRegionName, oldRecord.get.getCombinedStats(stat))
-        } else {
-          aggregatedStats.put(stat.getRegionName, stat)
-        }
+      val oldRecord = aggregatedStats.get(stat.getRegionName)
+      if (oldRecord.isDefined) {
+        aggregatedStats.put(stat.getRegionName, oldRecord.get.getCombinedStats(stat))
+      } else {
+        aggregatedStats.put(stat.getRegionName, stat)
       }
     })
     Utils.immutableMap(aggregatedStats)
