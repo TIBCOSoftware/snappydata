@@ -54,7 +54,6 @@ Step 2
 <a id="howto-row"></a>
 ### How to create row tables and run queries
 
-**DESCRIPTION: **
 Row tables in SnappyData are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location is determined by a hash function and hence very fast for point lookups or updates. A row table can either be replicated to all nodes or partitioned across nodes. A row table can be created by using DataFrame API or by using SQL.
 
 Refer to the [Row and column tables](http://snappydatainc.github.io/snappydata/rowAndColumnTables/) documentation for complete list of attributes for row tables.
@@ -63,6 +62,7 @@ Full source code for examples to create and perform opeartions on replicated and
 
 
 **Create a row table using DataFrame API:**
+
 The code snippet below shows how to create a replicated row table using API.
 
 First get a SnappyContext:
@@ -150,7 +150,6 @@ For example:
 <a id="howto-column"></a>
 ### How to create column tables and run queries
 
-**DESCRIPTION: **
 Column tables organize and manage data in columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory).
 
 Refer to the [Row and column tables](http://snappydatainc.github.io/snappydata/rowAndColumnTables/) documentation for complete list of attributes for column tables.
@@ -158,6 +157,7 @@ Refer to the [Row and column tables](http://snappydatainc.github.io/snappydata/r
 Full source code for example to create and perform opeartions on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
 **Create a column table using DataFrame API:**
+
 The code snippet below shows how to create a column table using API.
 
 First get a SnappyContext:
@@ -187,11 +187,8 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     ))
 
     // props1 map specifies the properties for the table to be created
-    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
-    // "BUCKETS" attribute specifies the smallest unit that can be moved around in
-    // SnappyStore when the data migrates. Here we configure the table to have 11 buckets
-    // For complete list of attributes refer the documentation
-    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY", "BUCKETS" -> "11")
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
     snc.createTable("CUSTOMER", "column", tableSchema, props1)
 
     // insert some data in it
@@ -214,7 +211,7 @@ The same table can be created using SQL as shown below
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY', BUCKETS '11' )")
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
 You can execute select queries on column table, join the column table with other tables and append data to it.
@@ -222,10 +219,10 @@ You can execute select queries on column table, join the column table with other
 <a id="howto-collacatedJoin"></a>
 ### How to do collacated join
 
-**DESCRIPTION: **
 When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you will frequently perform queries on those tables that join on that column. When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present without the need of shuffling the data.
 
 **Code Example:**
+
 A partitioned table can be colocated with another partitioned table by using "COLOCATE_WITH" with atrribute in the table options. For example, in the code snippet below ORDERS table is colocated with CUSTOMER table. The complete source for this example can be found in file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
 ```
@@ -238,7 +235,7 @@ A partitioned table can be colocated with another partitioned table by using "CO
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY', BUCKETS '11' )")
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
         
     snc.sql("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
@@ -250,7 +247,7 @@ A partitioned table can be colocated with another partitioned table by using "CO
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', BUCKETS '11', " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', " +
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
@@ -265,12 +262,12 @@ Now the following join query wil do a colocated join:
 <a id="howto-jdbc"></a>
 ### How to connect using JDBC driver
 
-**DESCRIPTION: **
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. Underneath the covers, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail.
 
 In order to connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
 
 **Code Example:**
+
 The code snippet shows how to connect to a SnappyData cluster using JDBC on default clietnt port 1527. The complete source code of the example is at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
 ```
 val url: String = s"jdbc:snappydata://localhost:1527/"
@@ -284,7 +281,7 @@ stmt1.execute("CREATE TABLE APP.PARTSUPP ( " +
      "PS_SUPPKEY     INTEGER NOT NULL," +
      "PS_AVAILQTY    INTEGER NOT NULL," +
      "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
-    "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY', BUCKETS '11' )")
+    "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY')")
 
 println("Inserting a record in PARTSUPP table via batch inserts")
 val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
@@ -304,10 +301,11 @@ preparedStmt1.close()
 
 <a id="howto-JSON"></a>
 ### How to store and query JSON objects
-**DESCRIPTION: **
+
 You may insert JSON data in SnappyData tables and execute queries on those tables.
 
 **Code Example:**
+
 The code snippet given below loads JSON data from a JSON file into a column table and executes query against it.
 The source code for JSON example is in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
@@ -359,10 +357,11 @@ The source code for JSON example is in [WorkingWithJson.scala](https://github.co
 
 <a id="howto-objects"></a>
 ### How to store and query objects
-**DESCRIPTION: **
+
 You can use domain object to load the data into SnappyData tables and select the data by executing queries against the table.
 
 **Code Example:**
+
 The code snippet below inserts Person objects into a column table. The source code for this example is in [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala)
 
 ```
@@ -421,16 +420,3 @@ The code snippet below inserts Person objects into a column table. The source co
 ENTER CODE HERE
 
 ```
-
-<a id="howto-queryscan"></a>
-### Demonstrating Query/Scan Performances
-**DESCRIPTION: **
-
-
-**Code Example:**
-```
-ENTER CODE HERE
-
-```
-
-
