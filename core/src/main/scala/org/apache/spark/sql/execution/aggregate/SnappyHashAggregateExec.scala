@@ -37,6 +37,7 @@
 package org.apache.spark.sql.execution.aggregate
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
@@ -44,7 +45,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.{SnappyAggregation, SnappySession}
 import org.apache.spark.util.Utils
 
 /**
@@ -92,7 +92,7 @@ case class SnappyHashAggregateExec(
     "aggTime" -> SQLMetrics.createTimingMetric(sparkContext, "aggregate time"))
 
   // this is a var to allow CollectAggregateExec to switch temporarily
-  protected var childProducer = child
+  @transient private[execution] var childProducer = child
 
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 
@@ -167,7 +167,9 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    // code generation should never fail
+    // Code generation should never fail.
+    // If code generation is not supported (due to ImperativeAggregate)
+    // then this plan should not be created (SnappyAggregation.supportCodegen).
     WholeStageCodegenExec(this).execute()
   }
 
@@ -175,9 +177,6 @@ case class SnappyHashAggregateExec(
   private val modes = aggregateExpressions.map(_.mode).distinct
 
   override def usedInputs: AttributeSet = inputSet
-
-  override def supportCodegen: Boolean =
-    SnappyAggregation.supportCodegen(aggregateExpressions)
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     child.asInstanceOf[CodegenSupport].inputRDDs()
@@ -270,6 +269,9 @@ case class SnappyHashAggregateExec(
       (resultVars, evaluateVariables(resultVars))
     }
 
+    if (childProducer eq null) {
+      childProducer = child
+    }
     val doAgg = ctx.freshName("doAggregateWithoutKey")
     ctx.addNewFunction(doAgg,
       s"""
