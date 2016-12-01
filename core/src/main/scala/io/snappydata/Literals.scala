@@ -87,6 +87,8 @@ object Constant {
 
   val MAX_VARCHAR_SIZE = 32672
 
+  val MAX_CHAR_SIZE = 254
+
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 
   // LZ4 JNI version is the fastest one but LZF gives best balance between
