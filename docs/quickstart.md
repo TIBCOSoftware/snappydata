@@ -1,9 +1,35 @@
-##Run QuickStart on AWS
-##Run QuickStart with Docker
-##Run QuickStart on your local machine
-####-If you have Spark2.0 installed already
+##Run on AWS
 ---
-You can quickly check the functionality of SnappyData even with your existing Spark 2.0 installation. 
+* To be done
+##Run with Docker
+---
+SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
+
+This section assumes you have already installed Docker and its configured properly.
+You can verify it quickly by running.
+```scala
+$ docker run hello-world
+
+```
+Please refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
+
+In addition, make sure that Docker containers have access to at least 4GB of RAM on your machine.
+
+* Type the following command to get the docker image .This will start the container and will take you to the Spark Shell.
+```scala
+$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 4g
+```
+It will start downloading the image files to your local machine. It may take some time.
+Once your are inside the Spark shell with the "scala>" prompt you can follow the steps explained [here](#Start_quickStart)
+---
+
+
+##Run on your local machine
+---
+####-If you have Spark2.0 installed already
+
+You can quickly check the functionality of SnappyData even with your existing Spark 2.0 installation.
+In the following section we will see how to interact with SnappyData.
 Preferably you should have at least 4GB of RAM for the application.
 
 
@@ -20,21 +46,21 @@ This will open a Spark shell and download the relevant SnappyData files to your 
 
 * Create a SnappySession
 
+  SnappySession is the entry point for SnappyData.
+  A SnappySession extends SparkSession to work with Row and Column tables.
+
 ```scala
-//SnappySession is the entry point for SnappyData.
-//A SnappySession extends Spark's SQLContext to work with Row and Column tables.
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
 //Import snappy extensions
 scala> import snappy.implicits._
 ```
 
+* Create a small DataSet using Spark's APIs
 ```scala
-//create a small DataSet using Spark's APIs
 scala> val ds = Seq((1,"a"), (2, "b"), (3, "c")).toDS()
 ```
-
+* Define a schema for the table.
 ```scala
-//Define a schema for the table.
 scala>  import org.apache.spark.sql.types._
 scala>  val tableSchema = StructType(Array(StructField("CustKey", IntegerType, false),
           StructField("CustName", StringType, false)))
@@ -50,23 +76,23 @@ scala>  snappy.createTable(tableName = "colTable",
           allowExisting = false)
 ```
 
+* Insert the created DataSet to the column table "colTable"
 ```scala
-//Insert the created DataSet to the column table "colTable"
 scala>  ds.write.insertInto("colTable")
+// Check the total row count.
+scala>  snappy.table("colTable").count
 ```
-This will create a column table. Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.
+ Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.
 The following code snippet create a Row object using Spark's API and inserts the Row to the table.
 
 ```scala
 // Insert a new record
 scala>  import org.apache.spark.sql.Row
 scala>  snappy.insert("colTable", Row(10, "f"))
-```
-
-```scala
-// Check the total row count now.
+// Check the total row count after inserting the row.
 scala>  snappy.table("colTable").count
 ```
+
 
 * Create a "row" table with a simple schema [String, Int] and default options. For detailed option see [here]
 
@@ -79,26 +105,30 @@ scala>  snappy.createTable(tableName = "rowTable",
           allowExisting = false)
 ```
 
+* Insert the created DataSet to the row table "rowTable"
 ```scala
-//Insert the created DataSet to the row table "rowTable"
 scala>  ds.write.insertInto("rowTable")
+//Check the row count
+scala>  snappy.table("rowTable").count
 ```
-
-* Change some data in a row table.
-
-
+* Insert a new record
 ```scala
-//Insert a new record
 scala>  snappy.insert("rowTable", Row(4, "d"))
+//Check the row count now
 scala>  snappy.table("rowTable").count
 ```
 
+* Change some data in a row table.
 ```scala
 //Updating a row for customer with custKey = 1
 scala>  snappy.update(tableName = "rowTable", filterExpr = "CUSTKEY=1",
                 newColumnValues = Row("d"), updateColumns = "CUSTNAME")
 
 scala>  snappy.table("rowTable").orderBy("CUSTKEY").show
+
+//Delete the row for customer with custKey = 1
+scala>  snappy.delete(tableName = "rowTable", filterExpr = "CUSTKEY=1")
+
 ```
 
 ```scala
