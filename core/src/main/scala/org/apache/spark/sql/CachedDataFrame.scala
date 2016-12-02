@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -101,7 +102,8 @@ class CachedDataFrame(df: Dataset[Row],
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,
       decodeResult: R => Iterator[InternalRow],
-      skipUnpartitionedDataProcessing: Boolean = false): Iterator[R] = {
+      skipUnpartitionedDataProcessing: Boolean = false,
+      skipLocalCollectProcessing: Boolean = false): Iterator[R] = {
     val sc = sparkSession.sparkContext
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -183,6 +185,24 @@ class CachedDataFrame(df: Dataset[Row],
         sc.clearCallSite()
       }
     }
+  }
+}
+
+final class AggregatePartialDataIterator(
+    val generatedSource: CodeAndComment,
+    val generatedReferences: Array[Any], val numFields: Int,
+    val partialAggregateResult: Array[Any]) extends Iterator[Any] {
+
+  private val numResults = partialAggregateResult.length
+
+  private var index = 0
+
+  override def hasNext: Boolean = index < numResults
+
+  override def next(): Any = {
+    val data = partialAggregateResult(index)
+    index += 1
+    data
   }
 }
 
