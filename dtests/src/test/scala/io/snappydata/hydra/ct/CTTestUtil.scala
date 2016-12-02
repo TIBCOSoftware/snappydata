@@ -26,17 +26,15 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
 object CTTestUtil {
   var validateFullResultSet: Boolean = false;
-  var sqlContext: SQLContext = null
   var tableType: String = null
-  var pw: PrintWriter = null
-  var snc: SnappyContext = null
-  var hasValidationFailed = false
 
   def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-  def assertJoin(sqlString: String, numRows: Int, queryNum: String): Any = {
-    CTTestUtil.snc.sql("set spark.sql.crossJoin.enabled = true")
-    val df = CTTestUtil.snc.sql(sqlString)
+  def assertJoin(sqlString: String, numRows: Int, queryNum: String,snc: SnappyContext,sqlContext: SQLContext, pw: PrintWriter): Boolean = {
+    var hasValidationFailed = false
+    snc.sql("set spark.sql.crossJoin.enabled = true")
+    pw.println(s"\n**Validating Query : ${queryNum}**")
+    val df = snc.sql(sqlString)
     if (queryNum == "Q23")
       pw.println(s"No. rows in resultset for join query ${queryNum} is : ${df.show} for ${CTTestUtil.tableType} table")
     else {
@@ -44,29 +42,32 @@ object CTTestUtil {
       if (df.count() != numRows) {
         pw.println(s"Result mismatch for join query ${queryNum} : found ${df.count} rows but " +
             s"expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
-        CTTestUtil.hasValidationFailed = true
+        hasValidationFailed = true
         pw.flush()
-        if (CTTestUtil.validateFullResultSet)
-          assertValidateFullResultSet(sqlString, queryNum, CTTestUtil.tableType)
       }
+      if (CTTestUtil.validateFullResultSet)
+        assertValidateFullResultSet(sqlString, queryNum, CTTestUtil.tableType,snc,sqlContext,pw)
     }
+    return hasValidationFailed
   }
 
-  def assertQuery(sqlString: String, numRows: Int, queryNum: String): Any = {
+  def assertQuery(sqlString: String, numRows: Int, queryNum: String,snc: SnappyContext, sqlContext: SQLContext, pw: PrintWriter): Boolean = {
+    var hasValidationFailed = false
     val df = snc.sql(sqlString)
     pw.println(s"No. rows in resultset for query ${queryNum} is : ${df.count} for ${CTTestUtil.tableType} table")
     if (df.count() != numRows) {
       pw.println(s"Result mismatch for query ${queryNum} : found ${df.count} rows but " +
           s"expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
-      CTTestUtil.hasValidationFailed = true
+      hasValidationFailed = true
       pw.flush()
-      if (CTTestUtil.validateFullResultSet)
-        assertValidateFullResultSet(sqlString, queryNum, CTTestUtil.tableType)
     }
+    if (CTTestUtil.validateFullResultSet)
+      hasValidationFailed = assertValidateFullResultSet(sqlString, queryNum, CTTestUtil.tableType,snc,sqlContext,pw)
+    return hasValidationFailed
   }
 
-  def assertValidateFullResultSet(sqlString: String, queryNum: String, tableType: String): Any = {
-
+  def assertValidateFullResultSet(sqlString: String, queryNum: String, tableType: String, snc: SnappyContext, sqlContext: SQLContext, pw: PrintWriter): Boolean = {
+    var hasValidationFailed = false
     val snappyDF = snc.sql(sqlString)
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
@@ -85,16 +86,41 @@ object CTTestUtil {
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
 
     if (snappyFile.listFiles() == null) {
-      snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      snappyDF.coalesce(1).orderBy(col1, col: _*)
+          .map(row => {
+            val md = row.toSeq.map {
+              case d: Double => "%18.1f".format(d).trim().toDouble
+              case de: BigDecimal => de.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+              case i: Integer => i
+              case v => v
+            }
+            Row.fromSeq(md)
+          })(RowEncoder(snappyDF.schema))
+          .write.option("header", false).csv(snappyDest)
       pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
     }
     if (sparkFile.listFiles() == null) {
-
-      sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+      sparkDF.coalesce(1).orderBy(col1, col: _*)
+          .map(row => {
+            val md = row.toSeq.map {
+              case d: Double => "%18.1f".format(d).trim().toDouble
+              case de: BigDecimal => de.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+              case i: Integer => i
+              case v => v
+            }
+            Row.fromSeq(md)
+          })(RowEncoder(snappyDF.schema))
+          .write.option("header", false).csv(sparkDest)
       pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
     }
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    if(!(expectedFile.length > 0)) {
+      pw.println(s"File not found for csv")
+    }
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    if(!(actualFile.length > 0)) {
+      pw.println(s"File not found for csv")
+    }
     //expectedFile.diff(actualFile)
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
     val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
@@ -102,17 +128,29 @@ object CTTestUtil {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
-        CTTestUtil.hasValidationFailed = true
-        pw.println(s"\n** For ${queryNum} result mismatch observed**")
+        hasValidationFailed = true
         pw.println(s"Expected Result \n: $expectedLine")
         pw.println(s"Actual Result   \n: $actualLine")
-        pw.println(s"Query =" + sqlString + " Table Type : " + tableType + "\n")
       }
     }
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
-      pw.println(s"\nFor ${queryNum} result count mismatch observed")
+      hasValidationFailed = true
+      if(actualLineSet.hasNext)
+        pw.println("Following rows unexpected in Snappy:")
+      while (actualLineSet.hasNext)
+        pw.println(actualLineSet.next())
+      if(expectedLineSet.hasNext)
+      pw.println("Following rows missing in Snappy:")
+      while (expectedLineSet.hasNext)
+        pw.println(expectedLineSet.next())
+    }
+
+    if (hasValidationFailed) {
+      pw.println(s"\n For ${queryNum} result mismatch observed")
+      pw.println(s"Failed Query =" + sqlString + " Table Type : " + tableType + "\n")
     }
     pw.flush()
+    return hasValidationFailed
   }
 
   def dataTypeConverter(row: Row): Row = {
@@ -240,46 +278,44 @@ object CTTestUtil {
     CTQueries.exec_details_data(snc).write.insertInto("exec_details")
   }
 
-  def executeQueries(snappyCntxt: SnappyContext, tblType: String, printWriter: PrintWriter,
-      fullResultSetValidation: Boolean,sqlCntxt: SQLContext): Boolean = {
-    CTTestUtil.snc = snappyCntxt
-    CTTestUtil.validateFullResultSet = fullResultSetValidation
-    CTTestUtil.sqlContext = sqlCntxt
-    CTTestUtil.tableType = tblType
-    CTTestUtil.pw = printWriter
+  def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter,
+      fullResultSetValidation: Boolean,sqlContext: SQLContext): Boolean = {
+    var hasValidationFailed = false;
+    validateFullResultSet = fullResultSetValidation
+    tableType = tblType
     if(CTTestUtil.validateFullResultSet)
       CTTestUtil.createAndLoadSparkTables(sqlContext)
 
     for (q <- CTQueries.queries) {
       q._1 match {
-        case "Q1" => assertQuery(CTQueries.query1,1,"Q1")
-        case "Q2" => assertQuery(CTQueries.query2,1,"Q2")
-        case "Q3" => assertQuery(CTQueries.query3,1,"Q3")
-        case "Q4" => assertQuery(CTQueries.query4,1,"Q4")
-        case "Q5" => assertQuery(CTQueries.query5,1,"Q5")
-        case "Q6" => assertQuery(CTQueries.query6,5,"Q6")
-        case "Q7" => assertQuery(CTQueries.query7,5,"Q7")
-        case "Q8" => assertQuery(CTQueries.query8,5,"Q8")
-        case "Q9" => assertQuery(CTQueries.query9,1,"Q9")
-        case "Q10" => assertQuery(CTQueries.query10,1,"Q10")
-        case "Q11" => assertQuery(CTQueries.query11,2706,"Q11")
-        case "Q12" => assertQuery(CTQueries.query12,150,"Q12")
-        case "Q13" => assertQuery(CTQueries.query13,149,"Q13")
-        case "Q14" => assertQuery(CTQueries.query14,149,"Q14")
-        case "Q15" => assertQuery(CTQueries.query15,2620,"Q15")
-        case "Q16" => assertQuery(CTQueries.query16,150,"Q16")
-        case "Q17" => assertQuery(CTQueries.query17,2,"Q17")
-        case "Q18" => assertQuery(CTQueries.query18,0,"Q18")
-        case "Q19" => assertQuery(CTQueries.query19,47,"Q19")
-        case "Q20" => assertQuery(CTQueries.query20,100,"Q20")
-        case "Q21" => assertQuery(CTQueries.query21,2,"Q21")
-        case "Q22" => assertJoin(CTQueries.query22,1,"Q22")
-        //case "Q23" => assertJoin(CTQueries.query23,0,"Q23") // fails in snappy
-        case "Q24" => assertQuery(CTQueries.query24,999,"Q24")
+        case "Q1" => assertQuery(CTQueries.query1,1,"Q1",snc,sqlContext,pw)
+        case "Q2" => assertQuery(CTQueries.query2,1,"Q2",snc,sqlContext,pw)
+        case "Q3" => assertQuery(CTQueries.query3,1,"Q3",snc,sqlContext,pw)
+        case "Q4" => assertQuery(CTQueries.query4,1,"Q4",snc,sqlContext,pw)
+        case "Q5" => assertQuery(CTQueries.query5,1,"Q5",snc,sqlContext,pw)
+        case "Q6" => assertQuery(CTQueries.query6,5,"Q6",snc,sqlContext,pw)
+        case "Q7" => assertQuery(CTQueries.query7,5,"Q7",snc,sqlContext,pw)
+        case "Q8" => assertQuery(CTQueries.query8,5,"Q8",snc,sqlContext,pw)
+        case "Q9" => assertQuery(CTQueries.query9,1,"Q9",snc,sqlContext,pw)
+        case "Q10" => assertQuery(CTQueries.query10,1,"Q10",snc,sqlContext,pw)
+        case "Q11" => assertQuery(CTQueries.query11,2706,"Q11",snc,sqlContext,pw)
+        case "Q12" => assertQuery(CTQueries.query12,150,"Q12",snc,sqlContext,pw)
+        case "Q13" => assertQuery(CTQueries.query13,149,"Q13",snc,sqlContext,pw)
+        case "Q14" => assertQuery(CTQueries.query14,149,"Q14",snc,sqlContext,pw)
+        case "Q15" => assertQuery(CTQueries.query15,2620,"Q15",snc,sqlContext,pw)
+        case "Q16" => assertQuery(CTQueries.query16,150,"Q16",snc,sqlContext,pw)
+        case "Q17" => assertQuery(CTQueries.query17,2,"Q17",snc,sqlContext,pw)
+        case "Q18" => assertQuery(CTQueries.query18,0,"Q18",snc,sqlContext,pw)
+        case "Q19" => assertQuery(CTQueries.query19,47,"Q19",snc,sqlContext,pw)
+        case "Q20" => assertQuery(CTQueries.query20,100,"Q20",snc,sqlContext,pw)
+        case "Q21" => assertQuery(CTQueries.query21,2,"Q21",snc,sqlContext,pw)
+        case "Q22" => assertJoin(CTQueries.query22,1,"Q22",snc,sqlContext,pw)
+        //case "Q23" => assertJoin(CTQueries.query23,0,"Q23",snc,sqlContext,pw)
+        case "Q24" => assertQuery(CTQueries.query24,999,"Q24",snc,sqlContext,pw)
         case _ => pw.println(s"Query not be executed ${q._1}")
       }
     }
-    return CTTestUtil.hasValidationFailed;
+    return hasValidationFailed;
   }
 
   def dropTables(snc: SnappyContext): Unit = {

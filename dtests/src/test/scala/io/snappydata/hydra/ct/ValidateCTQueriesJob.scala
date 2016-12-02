@@ -21,7 +21,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
-import io.snappydata.test.util.TestException
+import util.TestException
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SQLContext, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
