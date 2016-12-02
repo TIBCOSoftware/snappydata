@@ -138,7 +138,7 @@ Before you begin, do the following:
 	
 SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2). 
 
-Download the script from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-ec2-0.6.tar.gz). 
+Download the script from the latest [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). 
 The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
 
 ###Launching SnappyData Cluster###
