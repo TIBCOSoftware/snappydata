@@ -50,7 +50,7 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
-  val keepReservoirInRegion = sqlContext.conf.getConfString("spark.sql.aqp.reservoirAsRegion",
+  val keepReservoirInRegion = sqlContext.conf.getConfString(Constant.RESERVOIR_AS_REGION,
     "true").toBoolean
   GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
     Constant.COLUMN_MIN_BATCH_SIZE)
