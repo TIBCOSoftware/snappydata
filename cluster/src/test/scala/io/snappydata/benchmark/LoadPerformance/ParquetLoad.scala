@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{SnappySQLJob, SnappyJobValid, SnappyJobInvalid, SnappyJobValidation, SaveMode, SnappyContext}
+import org.apache.spark.sql._
 
 /**
  * Created by kishor on 29/8/16.
@@ -32,8 +32,9 @@ import org.apache.spark.sql.{SnappySQLJob, SnappyJobValid, SnappyJobInvalid, Sna
 object ParquetLoad extends  SnappySQLJob{
 
   var parquetFilePath: String = _
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
+    val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("ParquetLoadPerformance.out")
     Try {
@@ -110,7 +111,7 @@ object ParquetLoad extends  SnappySQLJob{
    * Validate if the data files are available, else throw SparkJobInvalid
    *
    */
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
     parquetFilePath = if (config.hasPath("airline_file")) {
       config.getString("airline_file")
     } else {
