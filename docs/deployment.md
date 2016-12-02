@@ -1,12 +1,4 @@
-This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
-There are three deployment modes available in snappydata. 
-
-|Deployment Mode   | Description  |
-|---|---|
-|Unified Cluster   | Real time production application. Here the Spark Executor(compute) and Snappy DataStore are collocated   |
-|Split Cluster   | Spark executors and SnappyStore form independent clusters. Use for computationally heavy computing and Batch processing  |
-|Local | This is for development where client application, the executors and data store are all running in the same JVM |
-
+This section provides a short overview of the deployment architectures available in SnappyData.
 
 
 ## Unified cluster mode (aka 'Embedded store' mode)

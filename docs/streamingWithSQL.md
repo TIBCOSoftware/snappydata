@@ -139,5 +139,4 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
 ## Dynamic(ad-hoc) Continuous queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
 
-## What is currently out-of-scope?
-Continuous Queries through command line(Snappy-Shell)
+## Continuous Queries through command line (Snappy-Shell)
