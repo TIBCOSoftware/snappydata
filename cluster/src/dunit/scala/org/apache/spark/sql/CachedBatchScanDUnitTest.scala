@@ -98,8 +98,8 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val (scanned3, skipped3) =
       findCachedBatchStats(df_allCachedBatchesScan, snc.snappySession, executionId)
 
-    assert(skipped3 > 0, "Some Cached batches should have been scanned")
-    assert(scanned3 != skipped3, "Some Cached batches should have been scanned - comparison")
+    assert(skipped3 > 0, "Some Cached batches should have been skipped")
+    assert(scanned3 != skipped3, "Some Cached batches should have been skipped - comparison")
 
     // check for StartsWith predicate with MAX/MIN handling
 

@@ -391,7 +391,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     var result = snc.sql("SELECT Value FROM " + tableNameWithPartition)
     var r = result.collect()
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected size = ${r.length}, expected = 1005")
 
     result = snc.sql("SELECT other1 FROM " + tableNameWithPartition)
     r = result.collect()
@@ -399,7 +399,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val resultValues = r map { row =>
       row.getString(0).toInt
     }
-    assert(resultValues.length == 1005)
+    assert(resultValues.length == 1005,
+      s"Unexpected size = ${resultValues.length}, expected = 1005")
     colValues.foreach(v => assert(resultValues.contains(v)))
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
@@ -438,7 +439,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     var result = snc.sql("SELECT Value FROM " + tableNameWithPartition)
     var r = result.collect()
 
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected size = ${r.length}, expected = 1005")
 
     result = snc.sql("SELECT other1 FROM " + tableNameWithPartition)
     r = result.collect()
@@ -447,7 +448,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val resultValues = r map { row =>
       row.getInt(0)
     }
-    assert(resultValues.length == 1005)
+    assert(resultValues.length == 1005,
+      s"Unexpected size = ${resultValues.length}, expected = 1005")
     colValues.foreach(v => assert(resultValues.contains(v)))
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
@@ -459,8 +461,9 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
 
-    assert(1005 == (region.size() +
-        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()))
+    val regionSize = region.size() +
+        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()
+    assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
