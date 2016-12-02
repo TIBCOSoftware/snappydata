@@ -23,7 +23,7 @@ import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object TPCHReplicatedTable {
 
-  def createRegionTable_Memsql(stmt:Statement): Unit = {
+  def createRegionTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE REFERENCE TABLE REGION (" +
         "R_REGIONKEY  INTEGER NOT NULL PRIMARY KEY," +
         "R_NAME       CHAR(25) NOT NULL," +
@@ -32,7 +32,7 @@ object TPCHReplicatedTable {
     println("Created Table REGION")
   }
 
-  def createNationTable_Memsql(stmt:Statement): Unit = {
+  def createNationTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE REFERENCE TABLE NATION  (" +
         "N_NATIONKEY  INTEGER NOT NULL PRIMARY KEY," +
         "N_NAME       CHAR(25) NOT NULL," +
@@ -42,7 +42,7 @@ object TPCHReplicatedTable {
     println("Created Table NATION")
   }
 
-  def createSupplierTable_Memsql(stmt:Statement): Unit = {
+  def createSupplierTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE REFERENCE TABLE SUPPLIER ( " +
         "S_SUPPKEY     INTEGER NOT NULL PRIMARY KEY," +
         "S_NAME        CHAR(25) NOT NULL," +
@@ -56,11 +56,12 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateRegionTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
-    val regionReadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema.parseRegionRow(s))
+    val regionReadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseRegionRow(s))
     val regionDF = sqlContext.createDataFrame(regionReadings)
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
@@ -86,11 +87,12 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateNationTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
-    val nationReadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema.parseNationRow(s))
+    val nationReadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseNationRow(s))
     val nationDF = sqlContext.createDataFrame(nationReadings)
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
@@ -117,11 +119,12 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream=null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val supplierData = sc.textFile(s"$path/supplier.tbl")
-    val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema.parseSupplierRow(s))
+    val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseSupplierRow(s))
     val supplierDF = sqlContext.createDataFrame(supplierReadings)
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
@@ -149,7 +152,6 @@ object TPCHReplicatedTable {
       loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime - startTime}")
     }
   }
-
 
 
 }

@@ -22,7 +22,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression,
+NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -101,7 +102,8 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
     var index = -1
     val valueExprIndexes = valueExpressions.map(e =>
       e -> keyExprIndexMap.get(e).map(-_ - 1).getOrElse {
-        index += 1; index
+        index += 1;
+        index
       })
     (keyExprIndexMap.toSeq, valueExprIndexes)
   }
@@ -284,7 +286,8 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
     // consume the data and populate the map
-    val entryVar = "mapEntry" // local variable
+    val entryVar = "mapEntry"
+    // local variable
     val hashVar = ctx.freshName("hash")
     val posVar = ctx.freshName("pos")
     val deltaVar = ctx.freshName("delta")
@@ -516,12 +519,24 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
               case StringType =>
                 // wrap the bytes in UTF8String
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final UTF8String $lv = " +
-                    s"UTF8String.fromBytes($objVar.${ev.value});"))
+                (lv, new StringBuilder().append(s"final UTF8String $lv = ").append(
+                  if (checkNullObj) {
+                    s" ( $objVar != null ? UTF8String.fromBytes($objVar.${ev.value}) " +
+                        s" : null ) ; "
+                  }
+                  else {
+                    s"UTF8String.fromBytes($objVar.${ev.value});"
+                  }))
               case _ =>
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(
-                  s"final $javaType $lv = $objVar.${ev.value};"))
+                (lv, new StringBuilder().append(s"final $javaType $lv = ").append(
+                  if (checkNullObj) {
+                    s" ( $objVar != null ? $objVar.${ev.value} " +
+                        s" : ${ctx.defaultValue(dataType)} ) ; "
+                  }
+                  else {
+                    s"$objVar.${ev.value};"
+                  }))
             }
           }
           val nullExpr = nullMaskVarMap.get(ev.isNull)
@@ -826,11 +841,13 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
         }
         s"""
           if (${resultVar.isNull}) {
-            $objVar.$nullVar |= ${genNullBitMask(nullIdx)};
+            $objVar.$nullVar|= ${genNullBitMask(nullIdx)};
           } else {
             $nullClear
-            ${genVarAssignCode(objVar, resultVar, fieldVar.value,
-                dataType, doCopy)}
+            ${
+          genVarAssignCode(objVar, resultVar, fieldVar.value,
+            dataType, doCopy)
+        }
           }
         """
       }
@@ -887,7 +904,7 @@ final case class ObjectHashMapAccessor(@transient session: SnappySession,
         // treated like an empty outer join match by subsequent code
         s"""if ($entryVar != null) {
             ${ev.code}
-            if (${ev.isNull} || !${ev.value}) $entryVar = null;
+            if (${ev.isNull}|| !${ev.value}) $entryVar = null;
           }
           $buildInitCode
           if ($entryVar == null) {
