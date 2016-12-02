@@ -19,7 +19,10 @@
 
 package io.snappydata
 
+import java.util
+
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.cache.DataPolicy
@@ -29,7 +32,9 @@ import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
+import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorResult, SnappyRegionStatsCollectorFunction, SnappyRegionStats}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
@@ -43,6 +48,8 @@ import org.apache.spark.{Logging, SparkContext}
 object SnappyTableStatsProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, SnappyRegionStats]()
+  @volatile
+  private var membersInfo = mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
 
   def start(sc: SparkContext): Unit = {
     val delay =
@@ -55,6 +62,11 @@ object SnappyTableStatsProviderService extends Logging {
         override def run2(): Unit = {
           try {
             tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+
+            // get members details
+            membersInfo = getAggregatedMemberStatsOnDemand
+
+
           } catch {
             case (e: Exception) => {
               if(!e.getMessage.contains("com.gemstone.gemfire.cache.CacheClosedException"))
@@ -68,6 +80,59 @@ object SnappyTableStatsProviderService extends Logging {
         }
       },
       delay, delay)
+  }
+
+  def getAggregatedMemberStatsOnDemand: mutable.ArrayBuffer[mutable.Map[String, Any]] = {
+
+    val membersBuf = scala.collection.mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
+
+    val collector = new GfxdListResultCollector(null, true);
+    val msg:MemberStatisticsMessage = new MemberStatisticsMessage(collector)
+
+    msg.executeFunction()
+
+    val memStats = collector.getResult
+
+    val itr = memStats.iterator()
+
+    while(itr.hasNext){
+      val o = itr.next().asInstanceOf[ListResultCollectorValue]
+      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+      val map = scala.collection.mutable.HashMap.empty[String, Any]
+      val keyItr = memMap.keySet().iterator()
+
+      while(keyItr.hasNext){
+        val key = keyItr.next()
+        map.put(key, memMap.get(key))
+        println(">>>>>>>>>>>>>>>>>>>" + key + " >>>> " + memMap.get(key))
+      }
+
+      val totalMemory:Long = memMap.get("maxMemory").asInstanceOf[Long]
+      //val freeMemory:Long = memMap.get("freeMemory").asInstanceOf[Long]
+      val usedMemory:Long = memMap.get("usedMemory").asInstanceOf[Long] //maxMemory - freeMemory
+      val memoryUsage:Double = (usedMemory * 100) / totalMemory
+      //map.put("usedMemory", usedMemory)
+      map.put("memoryUsage", memoryUsage)
+      map.put("cpuUsage", memMap.get("cpuActive").toString.toDouble)
+
+      println(">>>>>>>>>>>>>>>>>>> cpuUsage >>>> " + map.get("cpuUsage"))
+      //println(">>>>>>>>>>>>>>>>>>> usedMemory >>>> " + map.get("usedMemory"))
+      println(">>>>>>>>>>>>>>>>>>> memoryUsage >>>> " + map.get("memoryUsage"))
+      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+      membersBuf += map
+
+    }
+
+    membersBuf
+  }
+
+  def getMembersStatsFromService: mutable.ArrayBuffer[mutable.Map[String, Any]] = {
+    if (membersInfo != null) {
+      membersInfo
+    } else {
+      mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
+    }
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
