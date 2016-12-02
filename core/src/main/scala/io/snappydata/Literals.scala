@@ -63,7 +63,7 @@ object Constant {
 
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
-  val DEFAULT_USE_HIKARICP = true
+  val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
