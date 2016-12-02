@@ -45,6 +45,7 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   // This flag is toggled only under write lock of clear
   var valid: Boolean = true
+
 }
 
 trait ChangeValue[K, V] {
