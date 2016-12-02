@@ -1,10 +1,10 @@
 This section provides a short overview of the deployment architectures available in SnappyData.
 
 
-## Unified cluster mode (aka 'Embedded store' mode)
-This is the default cluster model where Spark computations and in-memory data store run collocated in the same JVM. This is our ootb configuration and suitable for most SnappyData real time production environments. You launch Snappy Data servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. 
+<!---## Unified cluster mode (aka 'Embedded store' mode)
+In the default cluster model the Spark computations and in-memory data store run collocated in the same JVM. This is our ootb configuration and suitable for most SnappyData real time production environments. You launch Snappy Data servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. 
 
-You either start SnappyData members using the _snappy_start_all_ script or you start them individually. 
+You either start SnappyData members using the `_snappy_start_all_ script` or you start them individually. 
 
 ```bash
 # start members using the ssh scripts 
@@ -15,8 +15,9 @@ $ bin/snappy-shell locator start  -dir=/node-a/locator1
 $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 ```
 
-Spark applications are coordinated by a SparkContext instance that runs in the Application's main program called the 'Driver'. The driver coordinates the execution by running parallel tasks on executors and is responsible for delivering results to the application when 'Jobs'(i.e. actions like print() ) are executed. 
-When executing in this unified cluster mode there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit [Jobs](jobs.md) and don't have to be concerned about HA for the context or the driver program. 
+Spark applications are coordinated by a SparkContext instance that runs in the Application's main program called the 'Driver'. The driver coordinates the execution by running parallel tasks on executors and is responsible for delivering results to the application when 'Jobs'(i.e. actions like print() ) are executed.
+
+During execution, there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit [Jobs](jobs.md) and don't have to be concerned about HA for the context or the driver program. 
 The rationale for our design is further explored [here](architecture.md). 
  
 ### Fully managed Spark driver and context
@@ -38,8 +39,8 @@ val sc = new SparkContext(conf)
 > We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
 >For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode described next. 
 
-## Split cluster mode
-In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. 
+<!---## Split cluster mode--->
+In certain cases the Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
@@ -63,8 +64,8 @@ The big benefit even while the clusters for compute and data is split is that th
 When accessing partitioned data, the partitions are fetched as compressed blobs that is fully compatible with the columnar compression built into Spark. All access is automatically parallelized. 
 
 
-## Local mode
-As the name implies, use this mode to execute everything locally in the application JVM. The local vs cluster modes are described in the [Spark Programming guide](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).
+<!---## Local mode--->
+If you want to execute everything locally in the application JVM. The local vs cluster modes are described in the [Spark Programming guide](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).
 
 ```scala
 val conf = new SparkConf().
@@ -75,5 +76,3 @@ val sc = new SparkContext(conf)
 // use sc to use Spark and Snappy features. 
 // JobServer is started too. 
 ```
-
-
