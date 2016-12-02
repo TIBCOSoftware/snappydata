@@ -354,6 +354,8 @@ private[sql] final case class ColumnTableScan(
                 $reservoirRowFetch
               }
             """
+          }else {
+            ""
           }
       ) +
       s"""
