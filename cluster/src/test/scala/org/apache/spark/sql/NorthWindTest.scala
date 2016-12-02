@@ -37,6 +37,13 @@ class NorthWindTest
   test("Test replicated row tables queries") {
     createAndLoadReplicatedTables(snc)
     validateReplicatedTableQueries(snc)
+
+    // test SNAP-1152
+    val df = snc.sql("SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
+        " COUNT(DISTINCT c.CustomerID) AS numCompanies, e.City, c.City" +
+        " FROM Employees e LEFT JOIN Customers c ON (e.City = c.City)" +
+        " GROUP BY e.City, c.City ORDER BY numEmployees DESC;")
+    df.count()
   }
 
   test("Test partitioned row tables queries") {
@@ -57,7 +64,7 @@ class NorthWindTest
   lazy val shufflePartitions = snc.sparkContext
       .schedulerBackend.defaultParallelism()
 
-  private def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
+  def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
     NWQueries.regions.write.insertInto("regions")
 
