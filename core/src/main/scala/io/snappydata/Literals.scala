@@ -63,7 +63,7 @@ object Constant {
 
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
-  val DEFAULT_USE_HIKARICP = true
+  val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
@@ -104,6 +104,8 @@ object Constant {
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 
   final val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+
+  val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 }
 
 /**

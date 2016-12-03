@@ -84,15 +84,16 @@ class BaseColumnFormatRelation(
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
-  val columnBatchSize = sqlContext.conf.columnBatchSize
+  val columnBatchSize: Int = sqlContext.conf.columnBatchSize
 
-  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(dialect)
 
-  lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
-    resolvedName, schema)
+  lazy val rowInsertStr: String = ExternalStoreUtils
+      .getInsertStringWithColumnName(resolvedName, schema)
 
-  @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
-    true).asInstanceOf[PartitionedRegion]
+  @transient protected lazy val region: PartitionedRegion =
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
 
   def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
     new PartitionStatistics(schema)
@@ -112,18 +113,24 @@ class BaseColumnFormatRelation(
       requiredColumns, filters)
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-  filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
-
     val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
       useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
       Iterator[Any](leftItr, rightItr)
     }
-
     (zipped, Nil)
+  }
+
+
+  def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], RDD[Any],
+      Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
+    val rowRDD = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true)
+    (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
 
   def buildRowBufferRDD(partitions: Array[Partition],
@@ -513,16 +520,16 @@ class ColumnFormatRelation(
         val catalog = snappySession.sessionCatalog
         val colocateWith = {
           val colocationTable = catalog.newQualifiedTableName(value)
-          catalog.tableExists(colocationTable) match {
-            case true => value
-            case false =>
-              val idx = snappySession.getIndexTable(colocationTable)
-              catalog.tableExists(idx) match {
-                case true => idx.toString
-                case false =>
-                  throw new AnalysisException(
-                    s"Could not find colocation table $colocationTable in catalog")
-              }
+          if (catalog.tableExists(colocationTable)) {
+            value
+          } else {
+            val idx = snappySession.getIndexTable(colocationTable)
+            if (catalog.tableExists(idx)) {
+              idx.toString
+            } else {
+              throw new AnalysisException(
+                s"Could not find colocation table $colocationTable in catalog")
+            }
           }
         }
         tempOptions + (StoreUtils.COLOCATE_WITH -> colocateWith)

@@ -138,6 +138,14 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
+    try {
+      val launchTasksClass = Utils.classForName(
+        "org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LaunchTasks")
+      kryo.register(launchTasksClass, new KryoSerializableSerializer)
+    } catch {
+      case _: ClassNotFoundException => // ignore
+    }
+
     kryo
   }
 

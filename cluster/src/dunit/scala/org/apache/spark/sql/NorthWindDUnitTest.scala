@@ -26,7 +26,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testReplicatedTableQueries(): Unit = {
     val snc = SnappyContext(sc)
-    createAndLoadReplicatedTables(snc)
+    NorthWindDUnitTest.createAndLoadReplicatedTables(snc)
     validateReplicatedTableQueries(snc)
   }
 
@@ -48,40 +48,6 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     validateColocatedTableQueries(snc)
   }
 
-  private def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
-    snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
-
-    snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
-
-    snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
-
-    snc.sql(NWQueries.employees_table)
-    NWQueries.employees.write.insertInto("employees")
-
-    snc.sql(NWQueries.customers_table)
-    NWQueries.customers.write.insertInto("customers")
-
-    snc.sql(NWQueries.orders_table)
-    NWQueries.orders.write.insertInto("orders")
-
-    snc.sql(NWQueries.order_details_table)
-    NWQueries.order_details.write.insertInto("order_details")
-
-    snc.sql(NWQueries.products_table)
-    NWQueries.products.write.insertInto("products")
-
-    snc.sql(NWQueries.suppliers_table)
-    NWQueries.suppliers.write.insertInto("suppliers")
-
-    snc.sql(NWQueries.territories_table)
-    NWQueries.territories.write.insertInto("territories")
-
-    snc.sql(NWQueries.employee_territories_table)
-    NWQueries.employee_territories.write.insertInto("employee_territories")
-  }
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -560,5 +526,42 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q56" => NWQueries.assertJoin(snc, NWQueries.Q56, "Q56", 8, 1, classOf[LocalJoin])
       }
     }
+  }
+}
+
+object NorthWindDUnitTest {
+  def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
+    snc.sql(NWQueries.regions_table)
+    NWQueries.regions.write.insertInto("regions")
+
+    snc.sql(NWQueries.categories_table)
+    NWQueries.categories.write.insertInto("categories")
+
+    snc.sql(NWQueries.shippers_table)
+    NWQueries.shippers.write.insertInto("shippers")
+
+    snc.sql(NWQueries.employees_table)
+    NWQueries.employees.write.insertInto("employees")
+
+    snc.sql(NWQueries.customers_table)
+    NWQueries.customers.write.insertInto("customers")
+
+    snc.sql(NWQueries.orders_table)
+    NWQueries.orders.write.insertInto("orders")
+
+    snc.sql(NWQueries.order_details_table)
+    NWQueries.order_details.write.insertInto("order_details")
+
+    snc.sql(NWQueries.products_table)
+    NWQueries.products.write.insertInto("products")
+
+    snc.sql(NWQueries.suppliers_table)
+    NWQueries.suppliers.write.insertInto("suppliers")
+
+    snc.sql(NWQueries.territories_table)
+    NWQueries.territories.write.insertInto("territories")
+
+    snc.sql(NWQueries.employee_territories_table)
+    NWQueries.employee_territories.write.insertInto("employee_territories")
   }
 }
