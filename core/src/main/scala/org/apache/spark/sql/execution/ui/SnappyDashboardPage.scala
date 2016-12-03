@@ -133,18 +133,20 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def clusterStats(clusterDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = clusterDetails.getOrElse("status","")
-    val statusImgUri = if(status.equals("error")) {
-      "/static/snappydata/cluster-status-error-62x90.png"
+    val statusImgUri = if(status.equals("severe")) {
+      "/static/snappydata/severe-status-70x68.png"
+    } else if(status.equals("error")) {
+      "/static/snappydata/error-status-70x68.png"
     } else if(status.equals("warning")) {
-      "/static/snappydata/cluster-status-warning-62x90.png"
+      "/static/snappydata/warning-status-70x68.png"
     } else {
-      "/static/snappydata/cluster-status-normal-62x90.png"
+      "/static/snappydata/normal-status-70x68.png"
     }
 
     <div>
       <div class="keyStatesLeft" style="width: 300px; max-width: 300px;">
         <div class="clusterHealthImageBox">
-          <img style="padding-left:12px; padding-top: 5px;" src={statusImgUri} />
+          <img style="padding-left:10px; padding-top: 15px;" src={statusImgUri} />
         </div>
         <div class="clusterHealthTextBox">
           <div class="keyStatsValue statusTextNormal">{status}</div>
@@ -280,12 +282,14 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def memberRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = memberDetails.getOrElse("status","")
-    val statusImgUri = if(status.equals("error")) {
-      "/static/snappydata/cluster-status-error-16x23.png"
+    val statusImgUri = if(status.equals("severe")) {
+      "/static/snappydata/severe-status-20x19.png"
+    } else if(status.equals("error")) {
+      "/static/snappydata/error-status-20x19.png"
     } else if(status.equals("warning")) {
-      "/static/snappydata/cluster-status-warning-16x23.png"
+      "/static/snappydata/warning-status-20x19.png"
     } else {
-      "/static/snappydata/cluster-status-normal-16x23.png"
+      "/static/snappydata/normal-status-20x19.png"
     }
 
     val nameOrId = {
