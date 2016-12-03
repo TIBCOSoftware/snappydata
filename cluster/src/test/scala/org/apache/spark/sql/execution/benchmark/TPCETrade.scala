@@ -76,7 +76,9 @@ class TPCETrade extends SnappyFunSuite {
     for (i <- 1 to numRuns) {
       val start = System.nanoTime()
       for (j <- 1 to numIters) {
-        val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
+        // val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
+        //    "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        val rs = stmt.executeQuery("select count(*) from citi_order " +
             "--GEMFIREXD-PROPERTIES executionEngine=Spark")
         var count = 0
         while (rs.next()) {
