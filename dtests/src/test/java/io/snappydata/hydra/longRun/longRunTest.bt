@@ -3,7 +3,7 @@
 //currently we are running with northwind schema.
 
 /*
-// Embeded mode 
+// Embeded mode
 io/snappydata/hydra/longRun/longRunTestEmbededMode.conf
   A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -23,7 +23,7 @@ io/snappydata/hydra/longRun/longRunTestEmbededModeWithHA.conf
   tableType="Colocated"
   fullResultSetValidation = true
 
-// Split mode 
+// Split mode
 io/snappydata/hydra/longRun/longRunTestSplitMode.conf
   A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2

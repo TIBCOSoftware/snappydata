@@ -155,6 +155,9 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
     */
   def isPartitioned: Boolean
 
+  /**
+   * True if underlying sample table is using a row table as reservoir store.
+   */
   def isReservoirAsRegion: Boolean
 }
 
