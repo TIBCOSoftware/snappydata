@@ -24,6 +24,7 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 
 import org.apache.spark.Partition
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
+import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
@@ -40,7 +41,6 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.{AnalysisException, DMLExternalTable, SnappyAggregation, SnappySession, SnappySqlParser, SnappyStrategies, Strategy, _}
 import org.apache.spark.streaming.Duration
 
 
@@ -133,8 +133,8 @@ class SnappySessionState(snappySession: SnappySession)
       Array[Partition]]()
 
   /**
-    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-    */
+   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+   */
   object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
     def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
@@ -167,16 +167,16 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   /**
-    * Internal catalog for managing table and database states.
-    */
+   * Internal catalog for managing table and database states.
+   */
   override lazy val catalog = new SnappyStoreHiveCatalog(
-      sharedState.externalCatalog,
-      snappySession,
-      metadataHive,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+    sharedState.externalCatalog,
+    snappySession,
+    metadataHive,
+    functionResourceLoader,
+    functionRegistry,
+    conf,
+    newHadoopConf())
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
@@ -427,9 +427,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   }
 
   /**
-    * If necessary, cast data types and rename fields to the expected
-    * types and names.
-    */
+   * If necessary, cast data types and rename fields to the expected
+   * types and names.
+   */
   // TODO: do we really need to rename?
   def castAndRenameChildOutput[T <: LogicalPlan](
       plan: T,
