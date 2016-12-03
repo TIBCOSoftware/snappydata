@@ -1,53 +1,22 @@
-##Run on AWS
+##Getting started with your Spark distribution
 ---
-* To be done
-##Run with Docker
----
-SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
-
-This section assumes you have already installed Docker and its configured properly.
-You can verify it quickly by running.
-```scala
-$ docker run hello-world
-
-```
-Please refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
-
-In addition, make sure that Docker containers have access to at least 4GB of RAM on your machine.
-
-* Type the following command to get the docker image .This will start the container and will take you to the Spark Shell.
-```scala
-$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 4g
-```
-It will start downloading the image files to your local machine. It may take some time.
-Once your are inside the Spark shell with the "scala>" prompt you can follow the steps explained [here](#Start_quickStart)
----
-
-
-##Run on your local machine
----
-####-If you have Spark2.0 installed already
-
-You can quickly check the functionality of SnappyData even with your existing Spark 2.0 installation.
+You can quickly check the functionality of SnappyData with your existing Spark 2.0 installation.
 In the following section we will see how to interact with SnappyData.
-Preferably you should have at least 4GB of RAM for the application.
 
-
-
+* From command line go to your Spark installation directory
 ```scala
-//From commandline go to your Spark installation directory
 $ cd <Spark_Install_dir>
 $ ./bin/spark-shell --driver-memory 4g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
 ```
 This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files.
 
 <a id="Start_quickStart"></a>
-#####Spark Like APIs for SnappyData
+In the following section we will create a SnappySession, which is the entry point to SnappyData. We will create some tables and do some operations on those tables.
+#####-Getting started using Spark APIs"
 
 * Create a SnappySession
 
-  SnappySession is the entry point for SnappyData.
-  A SnappySession extends SparkSession to work with Row and Column tables.
+ A SnappySession extends SparkSession to work with Row and Column tables.
 
 ```scala
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
@@ -137,7 +106,7 @@ scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
-#####SQL for SnappyData
+#####-Getting started using SQL
 
 We will use SnappySession created above to fire SQL queries
 
@@ -194,7 +163,7 @@ Now that we have seen the basic working of SnappyData tables, let's run [benchma
 
 ---
 
-####-If you don't have a Spark installed
+##Getting started by installing SnappyData on-premise
 Download the latest version of SnappyData from the
 [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/)
 page, which lists the latest and previous releases of SnappyData.
@@ -207,11 +176,39 @@ $./bin/spark-shell --driver-memory 4g
 This will open a Spark shell. Then follow the steps mentioned [here](#Start_quickStart)
 
 ---
-###Snappy Vs Spark
 
+##Getting started on AWS
+---
+* To be done
+##Getting started with Docker image
+---
+SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
+
+This section assumes you have already installed Docker and its configured properly.
+You can verify it quickly by running.
+```scala
+$ docker run hello-world
+
+```
+Please refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
+
+In addition, make sure that Docker containers have access to at least 4GB of RAM on your machine.
+
+* Type the following command to get the docker image .This will start the container and will take you to the Spark Shell.
+```scala
+$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 4g
+```
+It will start downloading the image files to your local machine. It may take some time.
+Once your are inside the Spark shell with the "$ scala>" prompt you can follow the steps explained [here](#Start_quickStart)
+---
 
 <a id="Start Benchmark"></a>
-Open your Spark shell. You can choose from the afore mentioned ways to get the Spark shell.
+##SnappyData Query performance
+Here we will walk through a simple example to check SnappyData query performance as compared to Spark. We will be creating SnappyData column tables and check query performance
+as compared to Spark's DataSet.  Preferably you should have at least 6GB of RAM for the application.
+
+Open your Spark shell. You could be in AWS, docker, on premise installation or using your own Spark's distribution. For detailed steps see the sections above.
+
 
 * Start a SparkSesion in local mode
 ```scala
