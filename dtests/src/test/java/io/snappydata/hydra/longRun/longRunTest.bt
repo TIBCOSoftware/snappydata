@@ -3,8 +3,8 @@
 //currently we are running with northwind schema.
 
 // Embeded mode 
-//io/snappydata/hydra/cluster/longRunTestEmbededMode.conf
-//  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
+//io/snappydata/hydra/longRun/longRunTestEmbededMode.conf
+//  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
 //  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
 //  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
 //  redundantCopies=1
@@ -13,7 +13,7 @@
 //  fullResultSetValidation = true
 
 // Embeded mode HA
-//io/snappydata/hydra/cluster/longRunTestEmbededModeWithHA.conf
+//io/snappydata/hydra/longRun/longRunTestEmbededModeWithHA.conf
 //  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
 //  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
 //  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -23,7 +23,7 @@
 //  fullResultSetValidation = true
 
 // Split mode 
-//io/snappydata/hydra/cluster/longRunTestSplitMode.conf
+//io/snappydata/hydra/longRun/longRunTestSplitMode.conf
 //  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
 //  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
 //  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -34,7 +34,7 @@
 //  fullResultSetValidation = true
 
 // Split mode HA
-io/snappydata/hydra/cluster/longRunTestSplitModeWithHA.conf
+io/snappydata/hydra/longRun/longRunTestSplitModeWithHA.conf
   A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
