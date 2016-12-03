@@ -157,6 +157,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       lock.unlock()
     }
     if (added != null && added.booleanValue()) _size.incrementAndGet()
+
     added
   }
 
@@ -224,7 +225,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
             while (idx < nhashes) {
               added = seg.changeValue(keys(idx), bucketId(hashes(idx)), change, isLocal)
               if (added != null) {
-                if (added.booleanValue()) numAdded += 1
+                if (added.booleanValue()) {
+                  numAdded += 1
+                  this._size.incrementAndGet()
+                }
                 idx += 1
               } else {
                 // indicates that loop must be broken immediately
