@@ -35,14 +35,14 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.{r, _}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType, TypeUtils}
 import org.apache.spark.sql.{SnappyAggregation, SnappySession}
-import org.apache.spark.{Partition, SparkEnv, TaskContext}
+import org.apache.spark.{Dependency, Partition, ShuffleDependency, SparkEnv, TaskContext}
 
 /**
  * :: DeveloperApi ::
@@ -59,7 +59,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     condition: Option[Expression],
     joinType: JoinType,
     left: SparkPlan,
-    right: SparkPlan)
+    right: SparkPlan,
+    val replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "LocalJoin"
@@ -83,7 +84,12 @@ case class LocalJoin(leftKeys: Seq[Expression],
   override def outputPartitioning: Partitioning = streamedPlan.outputPartitioning
 
   override def requiredChildDistribution: Seq[Distribution] =
-    UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+    if (replicatedTableJoin) {
+      UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+    }
+    else {
+      ClusteredDistribution(leftKeys) :: ClusteredDistribution(rightKeys) :: Nil
+    }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
     require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
@@ -95,11 +101,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
   }
 
   private lazy val streamRDD = streamedPlan.execute()
-  private lazy val (buildRDD, buildPartition) = {
-    val rdd = buildPlan.execute()
-    assert(rdd.getNumPartitions == 1)
-    (rdd, rdd.partitions(0))
-  }
+  private lazy val buildRDD = buildPlan.execute()
+
 
   /**
    * Overridden by concrete implementations of SparkPlan.
@@ -112,20 +115,39 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     // materialize dependencies in the entire buildRDD graph for
     // buildRDD.iterator to work in the compute of mapPartitionsPreserve below
-    materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
-
-    val schema = buildPlan.schema
-    streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
-      val start = System.nanoTime()
-      val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
-        buildPartition, context)
-      buildTime += (System.nanoTime() - start) / 1000000L
-      val estimatedSize = hashed.estimatedSize
-      buildDataSize += estimatedSize
-      context.taskMetrics().incPeakExecutionMemory(estimatedSize)
-      context.addTaskCompletionListener(_ => hashed.close())
-      join(itr, hashed, numOutputRows)
+    if (buildRDD.partitions.size == 1) {
+      materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
+      val schema = buildPlan.schema
+      streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
+        val start = System.nanoTime()
+        val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
+          buildRDD.partitions(0), context)
+        buildTime += (System.nanoTime() - start) / 1000000L
+        val estimatedSize = hashed.estimatedSize
+        buildDataSize += estimatedSize
+        context.taskMetrics().incPeakExecutionMemory(estimatedSize)
+        context.addTaskCompletionListener(_ => hashed.close())
+        join(itr, hashed, numOutputRows)
+      }
+    } else {
+      streamRDD.zipPartitions(buildRDD) { (streamIter, buildIter) =>
+        val hashed = buildHashedRelation(buildIter)
+        join(streamIter, hashed, numOutputRows)
+      }
     }
+  }
+
+  private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {
+    val buildDataSize = longMetric("buildDataSize")
+    val buildTime = longMetric("buildTime")
+    val start = System.nanoTime()
+    val context = TaskContext.get()
+    val relation = HashedRelation(iter, buildKeys, taskMemoryManager = context.taskMemoryManager())
+    buildTime += (System.nanoTime() - start) / 1000000
+    buildDataSize += relation.estimatedSize
+    // This relation is usually used until the end of task.
+    context.addTaskCompletionListener(_ => relation.close())
+    relation
   }
 
   private[spark] def materializeDependencies[T](rdd: RDD[T],
@@ -137,8 +159,22 @@ case class LocalJoin(leftKeys: Seq[Expression],
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] =
-    streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+  lazy val buildCodegenRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    // If the build side has shuffle dependencies.
+    if (buildCodegenRDDs.length == 1 && buildCodegenRDDs(0).dependencies.size >= 1 &&
+        buildCodegenRDDs(0).dependencies.exists(x =>
+        {x.isInstanceOf[ShuffleDependency[_, _, _]]})){
+      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs().map(rdd => {
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+          (rdd.dependencies ++ buildCodegenRDDs(0).dependencies.filter(
+            _.isInstanceOf[ShuffleDependency[_, _, _]])))
+      })
+    } else {
+      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+    }
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     if (SnappyAggregation.enableOptimizedAggregation) doProduceOptimized(ctx)
@@ -160,31 +196,19 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
-    // add reference to the row table RDD directly since it is not possible
-    // to pass to inputRDDs in the general case (when streamPlan already
-    //   has 2 RDDs)
-    val rowIterator = ctx.freshName("rowIterator")
-    // find the underlying RowTableScan and set it up to use its RDD's direct
-    // iterator for best performance
-    val rowTableScan = buildPlan.collectFirst {
-      case scan: RowTableScan if scan.numBuckets == 1 =>
-        scan.input = rowIterator; scan
-    }.getOrElse(throw new IllegalStateException(
-      s"Failed to find replicated table for LocalJoin in $buildPlan"))
-    val rdd = rowTableScan.dataRDD
-    assert(rdd.getNumPartitions == 1)
-    val rowTableRDD = ctx.addReferenceObj("rowTableRDD", rdd)
-    val rowTablePart = ctx.addReferenceObj("singlePartition", rdd.partitions(0))
     // using the expression IDs is enough to ensure uniqueness
+    val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
+    val rdds = buildCodegenRDDs
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
-      new CacheKey(exprIds, rdd.id))
+      new CacheKey(exprIds, rdds.head.id))
 
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
     keyIsUniqueTerm = ctx.freshName("keyIsUnique")
     numRowsTerm = ctx.freshName("numRows")
+
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -192,25 +216,61 @@ case class LocalJoin(leftKeys: Seq[Expression],
       buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
 
-    val entryClass = mapAccessor.getClassName
-    val numKeyColumns = buildSideKeys.length
+    val buildRDDs = ctx.addReferenceObj("buildRDDs", rdds.toArray,
+      s"${classOf[RDD[_]].getName}[]")
+    val buildParts = rdds.map(_.partitions)
+    val partitionClass = classOf[Partition].getName
+    val buildPartsVar = ctx.addReferenceObj("buildParts", buildParts.toArray,
+      s"$partitionClass[][]")
+    val allIterators = ctx.freshName("allIterators")
+    val indexVar = ctx.freshName("index")
     val contextName = ctx.freshName("context")
     val taskContextClass = classOf[TaskContext].getName
     ctx.addMutableState(taskContextClass, contextName,
       s"this.$contextName = $taskContextClass.get();")
-    ctx.addMutableState("scala.collection.Iterator", rowIterator,
-      s"this.$rowIterator = $rowTableRDD.iterator($rowTablePart, $contextName);")
-    ctx.addNewFunction(getOrCreateMap,
-      s"""
-        public final void $createMap() throws java.io.IOException {
-          $hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
-            $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
-              $entryClass.class));
-          this.$hashMapTerm = $hashMapTerm;
-          int $maskTerm = $hashMapTerm.mask();
-          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
 
-          ${buildPlan.asInstanceOf[CodegenSupport].produce(ctx, mapAccessor)}
+
+    // switch inputs to use the buildPlan RDD iterators
+    ctx.addMutableState("scala.collection.Iterator[]", allIterators,
+      s"""
+         |$allIterators = inputs;
+         |inputs = new scala.collection.Iterator[$buildRDDs.length];
+         |$taskContextClass $contextName = $taskContextClass.get();
+         |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
+         |  $partitionClass[] parts = $buildPartsVar[$indexVar];
+         |  // check for replicate table
+         |  if (parts.length == 1) {
+         |    inputs[$indexVar] = $buildRDDs[$indexVar].iterator(
+         |      parts[0], $contextName);
+         |  } else {
+         |    inputs[$indexVar] = $buildRDDs[$indexVar].iterator(
+         |      parts[partitionIndex], $contextName);
+         |  }
+         |}
+      """.stripMargin)
+
+    val buildProduce = buildCodeGen.produce(ctx, mapAccessor)
+    // switch inputs back to streamPlan iterators
+    val numIterators = ctx.freshName("numIterators")
+    ctx.addMutableState("int", numIterators, s"inputs = $allIterators;")
+
+    val entryClass = mapAccessor.getClassName
+    val numKeyColumns = buildSideKeys.length
+
+    val buildSideCreateMap =
+      s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
+      $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
+        $entryClass.class));
+      this.$hashMapTerm = $hashMapTerm;
+      int $maskTerm = $hashMapTerm.mask();
+      $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      $buildProduce"""
+
+    if (replicatedTableJoin) {
+      ctx.addNewFunction(getOrCreateMap,
+        s"""
+        public final void $createMap() throws java.io.IOException {
+           $buildSideCreateMap
         }
 
         public final void $getOrCreateMap() throws java.io.IOException {
@@ -227,12 +287,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
           }
         }
       """)
+    } else {
+      ctx.addNewFunction(getOrCreateMap,
+        s"""
+          public final void $getOrCreateMap() throws java.io.IOException {
+            $buildSideCreateMap
+          }
+      """)
+    }
 
     // clear the parent by reflection if plan is sent by operators like Sort
     TypeUtils.parentSetter.invoke(buildPlan, null)
-
-    // clear the input of RowTableScan
-    rowTableScan.input = null
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
@@ -257,27 +322,32 @@ case class LocalJoin(leftKeys: Seq[Expression],
         final long $maxVar = $hashMapTerm.getMaxValue($index);
       """
     }.mkString("\n")
-    // increment numOutputRows in finally block
-    val depth = session.addFinallyCode(ctx,
-      s"$numOutputRows.${metricAdd(numRowsTerm)};")
+
     val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
+
+    val beforeMap = ctx.freshName("beforeMap")
 
     s"""
       boolean $keyIsUniqueTerm = true;
       if (!$initMap) {
-        final long beforeMap = System.nanoTime();
+        final long $beforeMap = System.nanoTime();
         $getOrCreateMap();
-        $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
-        $buildTime.${metricAdd("(System.nanoTime() - beforeMap) / 1000000")};
+        $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
         $initMap = true;
       }
+      $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
       $initMinMaxVars
       final int $maskTerm = $hashMapTerm.mask();
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
       $dictInit
       long $numRowsTerm = 0L;
-      ${session.evaluateFinallyCode(ctx, produced, depth)}
+      try {
+        ${session.evaluateFinallyCode(ctx, produced)}
+      } finally {
+        $numOutputRows.${metricAdd(numRowsTerm)};
+      }
     """
+
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
@@ -289,9 +359,11 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val relationTerm = ctx.freshName("relation")
     val relationIsUnique = ctx.freshName("keyIsUnique")
     val buildRDDRef = ctx.addReferenceObj("buildRDD", buildRDD)
-    val buildPartRef = ctx.addReferenceObj("buildPartition", buildPartition)
-    ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
-      prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))
+    if (buildRDD.partitions.size == 1) {
+      val buildPartRef = ctx.addReferenceObj("buildPartition", buildRDD.partitions(0))
+      ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
+        prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))
+    }
     ctx.addMutableState(classOf[Boolean].getName, relationIsUnique,
       s"$relationIsUnique = $relationTerm.keyIsUnique();")
 
@@ -311,6 +383,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   private def doConsumeOptimized(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
+    val evaluatedInputVars = evaluateVariables(input)
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
@@ -334,10 +407,15 @@ case class LocalJoin(leftKeys: Seq[Expression],
           streamSideKeys.map(BindReferences.bindReference(_, left.output)))
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
-    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
+
+    val mapAccesCode = mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, joinType)
+    s"""
+       $evaluatedInputVars
+       $mapAccesCode
+     """
   }
 
   override def batchConsume(ctx: CodegenContext,

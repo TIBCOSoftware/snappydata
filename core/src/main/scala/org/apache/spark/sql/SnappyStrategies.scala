@@ -17,7 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
@@ -61,15 +61,33 @@ private[sql] trait SnappyStrategies {
   object LocalJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
-      left, right) =>
-        if (canBuildRight(joinType) && canLocalJoin(right)) {
+      left, right) if canBuildRight(joinType) && canLocalJoin(right) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildRight, true)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+      left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildRight)
-        } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
-          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft)
-        } else Nil
+            joinType, joins.BuildLeft, true)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildRight(joinType) && canBuildLocalHashMap(right) ||
+            !RowOrdering.isOrderable(leftKeys) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildRight, false)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildLeft(joinType) && canBuildLocalHashMap(left) ||
+            !RowOrdering.isOrderable(leftKeys) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildLeft, false)
       case _ => Nil
+    }
+
+    /**
+     * Matches a plan whose size is small enough to build a hash table.
+     *
+     */
+    private def canBuildLocalHashMap(plan: LogicalPlan): Boolean = {
+      plan.statistics.sizeInBytes <
+          io.snappydata.Property.LocalHashJoinSize.configEntry.getConf[Long](conf)
     }
 
     private def canBuildRight(joinType: JoinType): Boolean = joinType match {
@@ -107,9 +125,10 @@ private[sql] trait SnappyStrategies {
         right: LogicalPlan,
         condition: Option[Expression],
         joinType: JoinType,
-        side: joins.BuildSide): Seq[SparkPlan] = {
+        side: joins.BuildSide,
+        replicatedTableJoin: Boolean): Seq[SparkPlan] = {
       joins.LocalJoin(leftKeys, rightKeys, side, condition,
-        joinType, planLater(left), planLater(right)) :: Nil
+        joinType, planLater(left), planLater(right), replicatedTableJoin) :: Nil
     }
   }
 

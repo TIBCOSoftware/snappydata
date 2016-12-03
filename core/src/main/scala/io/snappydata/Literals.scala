@@ -222,6 +222,10 @@ object Property extends Enumeration {
         "store. When inserting data into the column storage this is " +
         "the unit (in MB) that will be used to split the data into chunks " +
         "for efficient storage and retrieval.", Some(32))
+
+  val LocalHashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}localhashjoinsize",
+    "The join would be converted into a hash join if the table is of size less" +
+        "than localhashjoinsize. Default value is 100 MB.", Some(100*1024*1024))
 }
 
 // extractors for properties

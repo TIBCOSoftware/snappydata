@@ -812,9 +812,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         val nullVar = s"$nullsMaskPrefix$index"
         s"${nullMaskVars(index)} = $localValueVar.$nullVar;"
       }.mkString("\n")
+
+      val dupRow =
+        s"""
+           |if (!currentRows.isEmpty()) {
+           |  currentRows.addLast(((InternalRow)currentRows.pollLast()).copy());
+           |}
+         """.stripMargin
       s"""
         if ($entryIndexVar < $numEntriesVar) {
           $localValueVar = $valuesVar[$entryIndexVar++];
+          $dupRow
         } else if ($numEntriesVar == -1) {
           // multi-values array hit first time
           if (($valuesVar = $entryVar.$multiValuesVar) != null) {
@@ -822,6 +830,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             $numEntriesVar = $valuesVar.length;
             $localValueVar = $valuesVar[0];
             $nullsUpdate
+            $dupRow
           } else {
             break;
           }

@@ -26,34 +26,58 @@ import org.apache.spark.SparkContext
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
-    "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
-    "q20", "q21", "q22")
-
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
-    queryExecution(snc, isSnappy = true)
-    validateResult(snc, isSnappy = true)
+    TPCHUtils.queryExecution(snc, isSnappy = true)
+    TPCHUtils.validateResult(snc, isSnappy = true)
   }
 
   def _testSpark(): Unit = {
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = false)
-    queryExecution(snc, isSnappy = false)
-    validateResult(snc, isSnappy = false)
+    TPCHUtils.queryExecution(snc, isSnappy = false)
+    TPCHUtils.validateResult(snc, isSnappy = false)
   }
 
+}
 
-  private def queryExecution(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    snc.sql(s"set spark.sql.shuffle.partitions= 4")
-    snc.sql(s"set spark.sql.crossJoin.enabled = true")
+object TPCHUtils {
 
-    queries.foreach(query => TPCH_Snappy.execute(query, snc,
-      isResultCollection = true, isSnappy = isSnappy, avgPrintStream = System.out))
+  val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
+    "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
+    "q20", "q21", "q22")
+
+  def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
+    val tpchDataPath = getClass.getResource("/TPCH").getPath
+
+    val usingOptionString =
+      s"""
+           USING row
+           OPTIONS ()"""
+
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc,
+      tpchDataPath, isSnappy, null)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc,
+      tpchDataPath, isSnappy, null)
+    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc,
+      tpchDataPath, isSnappy, null)
+
+    val buckets_Order_Lineitem = "5"
+    val buckets_Cust_Part_PartSupp = "5"
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath,
+      isSnappy, buckets_Order_Lineitem, null)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath,
+      isSnappy, buckets_Order_Lineitem, null)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath,
+      isSnappy, buckets_Cust_Part_PartSupp, null)
+    TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath,
+      isSnappy, buckets_Cust_Part_PartSupp, null)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath,
+      isSnappy, buckets_Cust_Part_PartSupp, null)
   }
 
-  private def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
+  def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
     val sc: SparkContext = snc.sparkContext
 
     val fineName = if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
@@ -104,37 +128,11 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     }
   }
 
-}
+  def queryExecution(snc: SnappyContext, isSnappy: Boolean): Unit = {
+    snc.sql(s"set spark.sql.shuffle.partitions= 4")
+    snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
-object TPCHUtils {
-
-  def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath
-
-    val usingOptionString =
-      s"""
-           USING row
-           OPTIONS ()"""
-
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc,
-      tpchDataPath, isSnappy, null)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc,
-      tpchDataPath, isSnappy, null)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc,
-      tpchDataPath, isSnappy, null)
-
-    val buckets_Order_Lineitem = "5"
-    val buckets_Cust_Part_PartSupp = "5"
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath,
-      isSnappy, buckets_Order_Lineitem, null)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath,
-      isSnappy, buckets_Order_Lineitem, null)
-    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath,
-      isSnappy, buckets_Cust_Part_PartSupp, null)
-    TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath,
-      isSnappy, buckets_Cust_Part_PartSupp, null)
-    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath,
-      isSnappy, buckets_Cust_Part_PartSupp, null)
+    queries.foreach(query => TPCH_Snappy.execute(query, snc,
+      isResultCollection = true, isSnappy = isSnappy, avgPrintStream = System.out))
   }
-
 }
