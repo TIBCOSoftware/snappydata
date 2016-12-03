@@ -32,7 +32,6 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
@@ -41,6 +40,7 @@ import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame}
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String

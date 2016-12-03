@@ -133,7 +133,7 @@ class CachedDataFrame(df: Dataset[Row],
         case plan: CollectLimitExec =>
           CachedDataFrame.executeTake(cachedRDD, plan.limit, processPartition,
             resultHandler, decodeResult, schema, sparkSession)
-        /* TODO: SW:
+        /* TODO: SW: optimize this case too
         case plan: TakeOrderedAndProjectExec =>
           CachedDataFrame.executeCollect(plan,
             cachedRDD.asInstanceOf[RDD[InternalRow]])

@@ -1491,7 +1491,7 @@ object SnappySession extends Logging {
       case _ =>
         val rdd = executedPlan match {
           case plan: CollectLimitExec => plan.child.execute()
-          case _ => executedPlan.execute()
+          case _ => df.queryExecution.executedPlan.execute()
         }
         // add profile listener for all regions that are using cached
         // partitions of their "leader" region
