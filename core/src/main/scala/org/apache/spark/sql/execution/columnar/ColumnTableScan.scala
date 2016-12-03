@@ -283,7 +283,7 @@ private[sql] final case class ColumnTableScan(
     else if (isOffHeap) classOf[OffHeapLobsIteratorOnScan].getName
     else classOf[ByteArraysIteratorOnScan].getName
 
-    if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) {
+    if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState("scala.collection.Iterator",
           rowInputSRR, s"$rowInputSRR = (scala.collection.Iterator)inputs[0].next();")
