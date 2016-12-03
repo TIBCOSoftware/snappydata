@@ -3,6 +3,7 @@ This section presents a high level overview of SnappyData’s core components, a
 
 ### Core components
 Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
+
 ![Core components](CoreComponents.png) 
 
 The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](rowAndColumnTables.md) section for details on the syntax and available features. 

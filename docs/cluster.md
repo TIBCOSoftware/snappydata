@@ -1,4 +1,3 @@
-### SnappyData Cluster (explanation)
 SnappyData, a database server cluster, has three main components - Locator, Server and Lead.
 
 - **Locator**: Provides discovery service for the cluster. Informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
@@ -7,21 +6,17 @@ SnappyData, a database server cluster, has three main components - Locator, Serv
 
 ![ClusterArchitecture](GettingStarted_Architecture.png)
 
-Details of about the architecture can be found here:
+For details of the architecture refer to [Architecture](./architecture.md)
 
-[Architecture](./architecture.md) 
+SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](./deployment.md).
 
-SnappyData also has multiple deployment options which can be found here:
+### Interacting with SnappyData
 
-[Deployment Options](./deployment.md).### Interacting with SnappyData (explanation)
+> Note: For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
+And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs listed in the Spark guides work in SnappyData as well.
+For the section on SQL, no Spark knowledge is necessary.
 
-### Interacting with SnappyData (explanation)
-
-> For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
-> And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
-> listed in the Spark guides will work in SnappyData also. For the section on SQL, no Spark knowledge is necessary.
-
-To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to the SnappyData cluster and interact using SQL. On the other hand, users comfortable with the Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self contained Spark application or can share state with other jobs using the SnappyData store. 
+To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to the SnappyData cluster and interact using SQL. On the other hand, users comfortable with the Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self contained Spark application or can share state with other jobs using the SnappyData store.
 
 Unlike Apache Spark, which is primarily a computational engine, the SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
 
@@ -30,4 +25,3 @@ Unlike Apache Spark, which is primarily a computational engine, the SnappyData c
 Read our [docs](.) for details on the architecture.
  
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the [Spark API section](./clustersparkapi.md).
-
