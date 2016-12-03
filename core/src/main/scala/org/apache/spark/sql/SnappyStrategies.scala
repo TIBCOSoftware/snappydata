@@ -254,12 +254,6 @@ object SnappyAggregation extends Strategy {
       functionsWithoutDistinct: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use SnappyHashAggregateExec.
-
-    if (!supportCodegen(aggregateExpressions)) {
-      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
-        aggregateExpressions, resultExpressions, child)
-    }
 
     // Check if we can use SnappyHashAggregateExec.
     if (!supportCodegen(aggregateExpressions)) {

@@ -34,11 +34,13 @@ import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredS
 import org.apache.spark.sql.types._
 
 
-/** Physical plan node for scanning data from an DataSource scan RDD.
-  * If user knows that the data is partitioned or replicated across
-  * all nodes this SparkPla can be used to avoid expensive shuffle
-  * and Broadcast joins. This plan overrides outputPartitioning and
-  * make it inline with the partitioning of the underlying DataSource */
+/**
+ * Physical plan node for scanning data from an DataSource scan RDD.
+ * If user knows that the data is partitioned or replicated across
+ * all nodes this SparkPla can be used to avoid expensive shuffle
+ * and Broadcast joins. This plan overrides outputPartitioning and
+ * make it inline with the partitioning of the underlying DataSource
+ */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
@@ -112,7 +114,7 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan,
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter]) ): SparkPlan =
+      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter])): SparkPlan =
     relation match {
       case i: IndexColumnFormatRelation =>
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
@@ -224,14 +226,14 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
 trait BatchConsumer extends CodegenSupport {
 
   /**
-    * Generate Java source code to do any processing before a batch is consumed
-    * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
-    * optimizations, initializations etc).
-    * <p>
-    * Implementations should use this for additional optimizations that can be
-    * done at batch level when a batched scan is being done. They should not
-    * depend on this being invoked since many scans will not be batched.
-    */
+   * Generate Java source code to do any processing before a batch is consumed
+   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * optimizations, initializations etc).
+   * <p>
+   * Implementations should use this for additional optimizations that can be
+   * done at batch level when a batched scan is being done. They should not
+   * depend on this being invoked since many scans will not be batched.
+   */
   def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
 }
 

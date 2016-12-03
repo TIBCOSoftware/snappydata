@@ -40,7 +40,7 @@ import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame}
+import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
@@ -137,6 +137,7 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
+    kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
     try {

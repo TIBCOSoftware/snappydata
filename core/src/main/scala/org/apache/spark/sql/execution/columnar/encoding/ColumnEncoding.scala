@@ -233,8 +233,13 @@ object ColumnEncoding {
 
   def getColumnDecoder(columnBytes: Array[Byte],
       field: StructField): ColumnEncoding = {
+    getColumnDecoder(columnBytes, Platform.BYTE_ARRAY_OFFSET, field)
+  }
+
+  def getColumnDecoder(columnBytes: AnyRef, offset: Long,
+      field: StructField): ColumnEncoding = {
     // read and skip null values array at the start, then read the typeId
-    var cursor = Platform.BYTE_ARRAY_OFFSET
+    var cursor = offset
     val nullValuesSize = readInt(columnBytes, cursor) << 2
     cursor += (4 + nullValuesSize)
 
@@ -246,8 +251,13 @@ object ColumnEncoding {
       case _ => readInt(columnBytes, cursor)
     }
     if (typeId >= allEncodings.length) {
+      val bytesStr = columnBytes match {
+        case null => ""
+        case bytes: Array[Byte] => s" bytes: ${bytes.toSeq}"
+        case _ => ""
+      }
       throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
-          s"for $dataType($field) bytes: ${columnBytes.toSeq}")
+          s"for $dataType($field)$bytesStr")
     }
     val encoding = allEncodings(typeId)(columnBytes, dataType,
       // use NotNull version if field is marked so or no nulls in the batch

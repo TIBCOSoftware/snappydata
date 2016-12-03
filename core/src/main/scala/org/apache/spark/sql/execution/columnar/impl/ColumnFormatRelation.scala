@@ -43,23 +43,23 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
 
 /**
-  * This class acts as a DataSource provider for column format tables provided Snappy.
-  * It uses GemFireXD as actual datastore to physically locate the tables.
-  * Column tables can be used for storing data in columnar compressed format.
-  * A example usage is given below.
-  *
-  * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-  * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-  * val dataDF = snc.createDataFrame(rdd)
-  *snc.createTable(tableName, "column", dataDF.schema, props)
-  *dataDF.write.insertInto(tableName)
-  * *
-  * This provider scans underlying tables in parallel and is aware of the data partition.
-  * It does not introduces a shuffle if simple table query is fired.
-  * One can insert a single or multiple rows into this table as well
-  * as do a bulk insert by a Spark DataFrame.
-  * Bulk insert example is shown above.
-  */
+ * This class acts as a DataSource provider for column format tables provided Snappy.
+ * It uses GemFireXD as actual datastore to physically locate the tables.
+ * Column tables can be used for storing data in columnar compressed format.
+ * A example usage is given below.
+ *
+ * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+ * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+ * val dataDF = snc.createDataFrame(rdd)
+ * snc.createTable(tableName, "column", dataDF.schema, props)
+ * dataDF.write.insertInto(tableName)
+ *
+ * This provider scans underlying tables in parallel and is aware of the data partition.
+ * It does not introduces a shuffle if simple table query is fired.
+ * One can insert a single or multiple rows into this table as well
+ * as do a bulk insert by a Spark DataFrame.
+ * Bulk insert example is shown above.
+ */
 class BaseColumnFormatRelation(
     _table: String,
     _provider: String,
@@ -71,16 +71,10 @@ class BaseColumnFormatRelation(
     _externalStore: ExternalStore,
     partitioningColumns: Seq[String],
     _context: SQLContext)
-    extends JDBCAppendableRelation(
-      _table,
-      _provider,
-      _mode,
-      _userSchema,
-      _origOptions,
-      _externalStore,
-      _context)
-        with PartitionedDataSourceScan
-        with RowInsertableRelation {
+    extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
+      _origOptions, _externalStore, _context)
+    with PartitionedDataSourceScan
+    with RowInsertableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
@@ -112,10 +106,8 @@ class BaseColumnFormatRelation(
       requiredColumns, filters)
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-  filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
 
     val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
@@ -202,11 +194,11 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Insert a sequence of rows into the table represented by this relation.
-    *
-    * @param rows the rows to be inserted
-    * @return number of rows inserted
-    */
+   * Insert a sequence of rows into the table represented by this relation.
+   *
+   * @param rows the rows to be inserted
+   * @return number of rows inserted
+   */
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {
@@ -229,11 +221,11 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Insert a sequence of rows into the table represented by this relation.
-    *
-    * @param rows the rows to be inserted
-    * @return number of rows inserted
-    */
+   * Insert a sequence of rows into the table represented by this relation.
+   *
+   * @param rows the rows to be inserted
+   * @return number of rows inserted
+   */
   def insert(rows: Iterator[InternalRow]): Int = {
     if (rows.hasNext) {
       val connProps = connProperties.connProps
@@ -268,9 +260,9 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Destroy and cleanup this relation. It may include, but not limited to,
-    * dropping the external table that this relation represents.
-    */
+   * Destroy and cleanup this relation. It may include, but not limited to,
+   * dropping the external table that this relation represents.
+   */
   override def destroy(ifExists: Boolean): Unit = {
     // use a non-pool connection for operations
     val conn = connFactory()
@@ -389,8 +381,8 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Execute a DML SQL and return the number of rows affected.
-    */
+   * Execute a DML SQL and return the number of rows affected.
+   */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
@@ -483,11 +475,11 @@ class ColumnFormatRelation(
   }
 
   /**
-    * Index table is same as the column table apart from how it is
-    * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
-    * clause in its options. Also add GEM_INDEXED_TABLE parameter to
-    * indicate that this is an index table.
-    */
+   * Index table is same as the column table apart from how it is
+   * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
+   * clause in its options. Also add GEM_INDEXED_TABLE parameter to
+   * indicate that this is an index table.
+   */
   private def createIndexTable(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,
       tableRelation: JDBCAppendableRelation,
@@ -575,9 +567,9 @@ class ColumnFormatRelation(
 }
 
 /**
-  * Currently this is same as ColumnFormatRelation but has kept it as a separate class
-  * to allow adding of any index specific functionality in future.
-  */
+ * Currently this is same as ColumnFormatRelation but has kept it as a separate class
+ * to allow adding of any index specific functionality in future.
+ */
 class IndexColumnFormatRelation(
     _table: String,
     _provider: String,
