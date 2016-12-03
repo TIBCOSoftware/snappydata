@@ -117,14 +117,24 @@ class BaseColumnFormatRelation(
   override def buildUnsafeScan(requiredColumns: Array[String],
   filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
-
     val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
       useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
       Iterator[Any](leftItr, rightItr)
     }
-
     (zipped, Nil)
   }
+
+
+  def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
+                               filters: Array[Filter]): (RDD[Any], RDD[Any],
+     Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
+    val rowRDD = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true)
+    (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
+  }
+
+
 
   def buildRowBufferRDD(partitions: Array[Partition],
       requiredColumns: Array[String], filters: Array[Filter],
