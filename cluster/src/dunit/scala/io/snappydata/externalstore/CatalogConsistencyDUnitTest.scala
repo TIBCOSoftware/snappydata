@@ -51,7 +51,6 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -218,24 +217,20 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         s"'13', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS'," +
         s"PARTITION_BY  'SINGLE_ORDER_DID')");
 
-    snc.sql(s"create table $colloactedColumnTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID " +
-        s"VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING column OPTIONS" +
-        s"(COLOCATE_WITH '$baseColumnTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY " +
+    snc.sql(s"create table $colloactedColumnTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER," +
+        s"SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING column " +
+        s"OPTIONS (COLOCATE_WITH '$baseColumnTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY " +
         s"'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY 'EXEC_DID')");
 
     try {
       // This should throw an exception
       snc.sql(s"drop table $baseRowTable")
-
+      assert(assertion = false, "expected the drop to fail")
     } catch {
-
       case ae: AnalysisException =>
         // Expected Exception and assert message
         assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
             "dependent objects: APP.EXEC_DETAILS_ROW;"))
-      case _ =>
-        assert(false)
-
     }
 
     // stop spark
@@ -248,14 +243,12 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     try {
       // This should throw an exception
       snc.sql(s"drop table $baseRowTable")
-
+      assert(assertion = false, "expected the drop to fail")
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
         assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
             "dependent objects: APP.EXEC_DETAILS_ROW;"))
-      case _ =>
-        assert(false)
     }
 
     snc.sql(s"drop table $colloactedColumnTable")
@@ -263,6 +256,5 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.sql(s"drop table $colloactedRowTable")
     snc.sql(s"drop table $baseRowTable")
-
   }
 }
