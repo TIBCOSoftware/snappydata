@@ -17,23 +17,25 @@
 package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning,
+SinglePartition}
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.ToolsCallbackInit
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation,
+IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan,
+SamplingRelation}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -129,10 +131,9 @@ private[sql] object PartitionedPhysicalScan {
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
-        if (r.isPartitioned) {
-          val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
-          ZipPartitionScan(columnScan, null, otherRDDs.head, relation)
+       if (r.isReservoirAsRegion) {
+          ColumnTableScan(output, rdd, Nil, numBuckets,
+            partitionColumns, relation, allFilters, schemaAttributes, true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
@@ -193,6 +194,128 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     s"""
        |while ($input.hasNext()) {
        |  InternalRow $row = (InternalRow) $input.next();
+       |  // numOutputRows.add(1);
+       |  $columnsInputEval
+       |  $consumedCode
+       |  if (shouldStop()) return;
+       |}
+       |$child1Produce
+     """.stripMargin
+  }
+
+  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String = {
+    val consumeInput = evaluateVariables(input)
+    consumedCode = consume(ctx, input)
+    consumedVars.clear()
+    input.map(_.copy()).foreach(consumedVars += _)
+    consumeInput + "\n" + consumedCode
+  }
+
+  override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
+    WholeStageCodegenExec(this).execute()
+  }
+
+  override def output: Seq[Attribute] = basePlan.output
+}
+
+class StratumInternalRow(val weight: Long) extends InternalRow {
+
+  var actualRow: InternalRow = _
+
+  def numFields: Int = throw new UnsupportedOperationException("not implemented")
+
+  def getUTF8String(ordinal: Int): UTF8String = throw new UnsupportedOperationException("not " +
+    "implemented")
+
+  def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
+
+  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getBoolean(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getByte(ordinal: Int): Byte = throw new UnsupportedOperationException("not implemented")
+
+  def getShort(ordinal: Int): Short = throw new UnsupportedOperationException("not implemented")
+
+  def getInt(ordinal: Int): Int = throw new UnsupportedOperationException("not implemented")
+
+  def getLong(ordinal: Int): Long = throw new UnsupportedOperationException("not implemented")
+
+  def getFloat(ordinal: Int): Float = throw new UnsupportedOperationException("not implemented")
+
+  def getDouble(ordinal: Int): Double = throw new UnsupportedOperationException("not implemented")
+
+  def getDecimal(ordinal: Int, precision: Int, scale: Int): Decimal =
+    throw new UnsupportedOperationException("not implemented")
+
+
+
+  def getBinary(ordinal: Int): Array[Byte] =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getInterval(ordinal: Int): CalendarInterval =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getStruct(ordinal: Int, numFields: Int): InternalRow =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getArray(ordinal: Int): ArrayData = throw new UnsupportedOperationException("not implemented")
+
+  def getMap(ordinal: Int): MapData = throw new UnsupportedOperationException("not implemented")
+
+  def get(ordinal: Int, dataType: DataType): Object =
+    throw new UnsupportedOperationException("not implemented")
+}
+
+private[sql] final case class ZipPartitionSampleScan(basePlan: SparkPlan with CodegenSupport,
+                                               otherPlan: SparkPlan,
+                                               otherRDD: RDD[InternalRow] = null,
+                                               relation: PartitionedDataSourceScan = null)
+  extends LeafExecNode with CodegenSupport {
+
+  private var consumedCode: String = _
+  private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
+  private val inputCode = basePlan.asInstanceOf[CodegenSupport]
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] =
+    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD)(_.execute()))
+
+  override protected def doProduce(ctx: CodegenContext): String = {
+    val child1Produce = inputCode.produce(ctx, this)
+    val input = ctx.freshName("input")
+    val stratumRowClass = classOf[StratumInternalRow].getName
+    val weightVarName = this.output.find(_.name == org.apache.spark.sql.collection.Utils
+      .WEIGHTAGE_COLUMN_NAME).map(_.toString.replace('#', '_')).getOrElse("")
+
+    val wrappedRow = ctx.freshName("wrappedRow")
+    ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
+    ctx.addMutableState("long", weightVarName, s" $weightVarName = 0; ")
+     val row = ctx.freshName("row")
+    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
+      (ref, ordinal) =>
+      val baseIndex = Option(otherPlan).fold(relation.schema.fieldIndex(ref.name))(_ => ordinal)
+      val ev = consumedVars(ordinal)
+      val dataType = ref.dataType
+      val javaType = ctx.javaType(dataType)
+      val value = ctx.getValue(row, dataType, baseIndex.toString)
+      if (ref.nullable) {
+        s"""
+            boolean ${ev.isNull} = $row.isNullAt($ordinal);
+            $javaType ${ev.value} = ${ev.isNull} ? ${ctx.defaultValue(dataType)} : ($value);
+            """
+      } else {
+        s"""$javaType ${ev.value} = $value;"""
+      }
+    }.mkString("\n")
+
+    s"""
+       |while ($input.hasNext()) {
+       |  $stratumRowClass $wrappedRow = ($stratumRowClass)$input.next();
+       |  $weightVarName = $wrappedRow.weight();
+       |  InternalRow $row = $wrappedRow.actualRow();
+       |
        |  // numOutputRows.add(1);
        |  $columnsInputEval
        |  $consumedCode

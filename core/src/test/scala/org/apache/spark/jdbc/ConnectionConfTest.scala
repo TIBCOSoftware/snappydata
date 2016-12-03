@@ -28,26 +28,25 @@ import org.apache.spark.sql.SaveMode
 
 class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter {
 
-
   test("test default conf") {
     val conf = new ConnectionConfBuilder(snc).build()
-    assert(!conf.connProps.hikariCP)
-
-    val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
-    assert(conn.getSchema != null)
-  }
-
-  test("test hikari conf") {
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari").build()
     assert(conf.connProps.hikariCP)
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
   }
 
+  test("test tomcat conf") {
+    val conf = new ConnectionConfBuilder(snc).setPoolProvider("tomcat").build()
+    assert(!conf.connProps.hikariCP)
+
+    val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
+    assert(conn.getSchema != null)
+  }
 
   test("test Additional hikari conf") {
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari").setPoolConf("maximumPoolSize", "50").build
+    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
+        .setPoolConf("maximumPoolSize", "50").build()
     assert(conf.connProps.hikariCP)
     assert(conf.connProps.poolProps("maximumPoolSize") == "50")
 
@@ -59,7 +58,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
         .setPoolConf("maximumPoolSize", "50")
         .setPoolConf("minimumIdle", "5")
-        .build
+        .build()
     assert(conf.connProps.hikariCP)
     assert(conf.connProps.poolProps("maximumPoolSize") == "50")
     assert(conf.connProps.poolProps("minimumIdle") == "5")
@@ -69,10 +68,10 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
   }
 
   test("test multiple hikari conf by map") {
-    val poolProps = Map("maximumPoolSize" ->"50", "minimumIdle"->"5" )
+    val poolProps = Map("maximumPoolSize" -> "50", "minimumIdle" -> "5")
     val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
         .setPoolConfs(poolProps)
-        .build
+        .build()
     assert(conf.connProps.hikariCP)
     assert(conf.connProps.poolProps("maximumPoolSize") == "50")
     assert(conf.connProps.poolProps("minimumIdle") == "5")
@@ -81,9 +80,23 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     assert(conn.getSchema != null)
   }
 
+  test("test multiple tomcat conf by map") {
+    val poolProps = Map("maxActive" -> "50", "maxIdle" -> "80", "initialSize" -> "5")
+    val conf = new ConnectionConfBuilder(snc).setPoolProvider("tomcat")
+        .setPoolConfs(poolProps)
+        .build()
+    assert(!conf.connProps.hikariCP)
+    assert(conf.connProps.poolProps("maxActive") == "50")
+    assert(conf.connProps.poolProps("maxIdle") == "80")
+    assert(conf.connProps.poolProps("initialSize") == "5")
+
+    val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
+    assert(conn.getSchema != null)
+  }
+
   test("test serializibility") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
@@ -97,17 +110,17 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
       stmt.executeUpdate()
     })
 
-    val result = snc.sql("SELECT col1 FROM MY_SCHEMA.MY_TABLE" )
+    val result = snc.sql("SELECT col1 FROM MY_SCHEMA.MY_TABLE")
     result.collect().foreach(v => assert(v(0) == 9))
 
-    snc.sql("drop table MY_SCHEMA.MY_TABLE" )
+    snc.sql("drop table MY_SCHEMA.MY_TABLE")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test a simple connection") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
@@ -121,12 +134,12 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
       stmt.executeUpdate()
     })
 
-    val result = snc.sql("SELECT col1 FROM MY_SCHEMA.MY_TABLE" )
+    val result = snc.sql("SELECT col1 FROM MY_SCHEMA.MY_TABLE")
     result.collect().foreach(v => assert(v(0) == 9))
 
-    snc.sql("drop table MY_SCHEMA.MY_TABLE" )
+    snc.sql("drop table MY_SCHEMA.MY_TABLE")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   val path = "ConnectionConfTest"
@@ -140,7 +153,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
       "password" -> "app"
     )
 
-    //Start the database
+    // Start the database
     DriverManager.getConnection(s"jdbc:derby:$path;create=true")
 
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
@@ -148,12 +161,13 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props).saveAsTable("TEST_JDBC_TABLE_1")
-    val connConf =  new ConnectionConfBuilder(snc)
-    props.map( entry => connConf.setConf(entry._1, entry._2))
+    dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props)
+        .saveAsTable("TEST_JDBC_TABLE_1")
+    val connConf = new ConnectionConfBuilder(snc)
+    props.map(entry => connConf.setConf(entry._1, entry._2))
     val conf = connConf.build()
 
-    try{
+    try {
       rdd.foreachPartition(d => {
         val conn = ConnectionUtil.getPooledConnection("testDerby", conf)
         TaskContext.get().addTaskCompletionListener(_ => conn.close())
@@ -161,19 +175,17 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
         stmt.executeUpdate()
       })
 
-      var result = snc.sql("SELECT col1 from TEST_JDBC_TABLE_1" )
-      result.show
-      //result.collect().foreach(v => assert(v(0) == 9))
+      val result = snc.sql("SELECT col1 from TEST_JDBC_TABLE_1")
+      result.show()
+      // result.collect().foreach(v => assert(v(0) == 9))
 
-      snc.sql("drop table TEST_JDBC_TABLE_1" )
-    }finally {
-      shutdownDerbyDatabase
+      snc.sql("drop table TEST_JDBC_TABLE_1")
+    } finally {
+      shutdownDerbyDatabase()
     }
-
-
   }
 
-  private def shutdownDerbyDatabase(): Unit ={
+  private def shutdownDerbyDatabase(): Unit = {
     try {
       DriverManager.getConnection(s"jdbc:derby:$path;shutdown=true")
     } catch {
@@ -186,5 +198,4 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     } finally {
     }
   }
-
 }

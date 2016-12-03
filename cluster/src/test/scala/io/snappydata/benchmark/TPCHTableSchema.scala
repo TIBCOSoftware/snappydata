@@ -23,14 +23,15 @@ import org.apache.spark.sql.types.{StructField, StructType}
 
 
 object TPCHTableSchema {
+
   case class StreamMessageRegionObject(
       r_regionkey: Int,
       r_name: String,
       r_comment: String
-      )
+  )
 
-  def  newRegionSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newRegionSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("r_regionkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("r_name") => new StructField(c.name, c.dataType, false)
@@ -52,10 +53,10 @@ object TPCHTableSchema {
       n_name: String,
       n_regionkey: Int,
       n_comment: String
-      )
+  )
 
-  def  newNationSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newNationSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("n_nationkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("n_name") => new StructField(c.name, c.dataType, false)
@@ -82,10 +83,10 @@ object TPCHTableSchema {
       s_phone: String,
       s_acctbal: Double,
       s_comment: String
-      )
+  )
 
-  def  newSupplierSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newSupplierSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("s_suppkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("s_name") => new StructField(c.name, c.dataType, false)
@@ -111,20 +112,20 @@ object TPCHTableSchema {
   }
 
   case class StreamMessageOrderObject(
-      o_orderkey:Int,
-      o_custkey:Int,
-      o_orderstatus:String,
-      o_totalprice:Double,
-      o_orderdate:Date,
-      o_orderpriority:String,
-      o_clerk:String,
-      o_shippriority:Int,
-      o_comment:String
-      )
+      o_orderkey: Int,
+      o_custkey: Int,
+      o_orderstatus: String,
+      o_totalprice: Double,
+      o_orderdate: Date,
+      o_orderpriority: String,
+      o_clerk: String,
+      o_shippriority: Int,
+      o_comment: String
+  )
 
 
-  def  newOrderSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newOrderSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("o_orderkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("o_custkey") => new StructField(c.name, c.dataType, false)
@@ -139,7 +140,7 @@ object TPCHTableSchema {
     }.toArray)
   }
 
-  def  parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
+  def parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
     StreamMessageOrderObject(
       s(0).toInt,
       s(1).toInt,
@@ -154,26 +155,26 @@ object TPCHTableSchema {
   }
 
   case class StreamMessageLineItemObject(
-      l_orderkey:Int,
-      l_partkey:Int,
-      l_suppkey:Int,
-      l_linenumber:Int,
-      l_quantity:Double,
-      l_extendedprice:Double,
-      l_discount:Double,
-      l_tax:Double,
-      l_returnflag:String,
-      l_linestatus:String,
-      l_shipdate:Date,
-      l_commitdate:Date,
-      l_receiptdate:Date,
-      l_shipinstruct:String,
-      l_shipmode:String,
-      l_comment:String
-      )
+      l_orderkey: Int,
+      l_partkey: Int,
+      l_suppkey: Int,
+      l_linenumber: Int,
+      l_quantity: Double,
+      l_extendedprice: Double,
+      l_discount: Double,
+      l_tax: Double,
+      l_returnflag: String,
+      l_linestatus: String,
+      l_shipdate: Date,
+      l_commitdate: Date,
+      l_receiptdate: Date,
+      l_shipinstruct: String,
+      l_shipmode: String,
+      l_comment: String
+  )
 
-  def  newLineItemSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newLineItemSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("l_orderkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("l_partkey") => new StructField(c.name, c.dataType, false)
@@ -226,10 +227,10 @@ object TPCHTableSchema {
       p_container: String,
       p_retailprice: Double,
       p_comment: String
-      )
+  )
 
-  def  newPartSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newPartSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("p_partkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("p_name") => new StructField(c.name, c.dataType, false)
@@ -264,10 +265,10 @@ object TPCHTableSchema {
       ps_availqty: Int,
       ps_supplycost: Double,
       ps_comment: String
-      )
+  )
 
-  def  newPartSuppSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newPartSuppSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("ps_partkey") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("ps_suppkey") => new StructField(c.name, c.dataType, false)
@@ -297,10 +298,10 @@ object TPCHTableSchema {
       C_ACCTBAL: Double,
       C_MKTSEGMENT: String,
       C_COMMENT: String
-      )
+  )
 
-  def  newCustomerSchema(schema:StructType): StructType= {
-    new StructType (schema.map { a =>
+  def newCustomerSchema(schema: StructType): StructType = {
+    new StructType(schema.map { a =>
       a match {
         case b if b.name.equals("C_CUSTKEY") => new StructField(b.name, b.dataType, false)
         case c if c.name.equals("C_NAME") => new StructField(c.name, c.dataType, false)
@@ -313,6 +314,7 @@ object TPCHTableSchema {
       }
     }.toArray)
   }
+
   def parseCustomerRow(s: Array[String]): StreamMessageCustomerObject = {
     StreamMessageCustomerObject(
       s(0).toInt,
@@ -325,11 +327,12 @@ object TPCHTableSchema {
       s(7)
     )
   }
-  def formatDate(dateString:String): Date = {
+
+  def formatDate(dateString: String): Date = {
     val splittedDate = dateString.split("-")
     val year = splittedDate(0)
     val month = splittedDate(1)
-    val day= splittedDate(2)
-    new Date((year.toInt - 1900), (month.toInt -1), day.toInt)
+    val day = splittedDate(2)
+    new Date((year.toInt - 1900), (month.toInt - 1), day.toInt)
   }
 }

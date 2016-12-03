@@ -156,20 +156,13 @@ object ExecutorInitiator extends Logging {
 
                     val driverConf = new SparkConf
                     Utils.setDefaultSerializerAndCodec(driverConf)
-                    // Specify a default directory for executor, if the local directory for executor
-                    // is set via the executor conf,
-                    // it will override this property later in the code
-                    val localDirForExecutor = new File("./" + "executor").getAbsolutePath
 
-                    driverConf.set("spark.local.dir", localDirForExecutor)
                     for ((key, value) <- props) {
                       // this is required for SSL in standalone mode
-                      if (!key.equals("spark.local.dir")) {
-                        if (SparkCallbacks.isExecutorStartupConf(key)) {
-                          driverConf.setIfMissing(key, value)
-                        } else {
-                          driverConf.set(key, value)
-                        }
+                      if (SparkCallbacks.isExecutorStartupConf(key)) {
+                        driverConf.setIfMissing(key, value)
+                      } else {
+                        driverConf.set(key, value)
                       }
                     }
                     // TODO: Hemant: add executor specific properties from local

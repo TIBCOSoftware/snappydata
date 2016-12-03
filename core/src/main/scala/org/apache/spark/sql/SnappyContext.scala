@@ -26,11 +26,10 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyTableStatsProviderService, Constant, Property}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -43,13 +42,12 @@ import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
-import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkException}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -79,7 +77,7 @@ import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkException}
  */
 class SnappyContext protected[spark](val snappySession: SnappySession)
     extends SQLContext(snappySession)
-    with Serializable with Logging {
+    with Serializable {
 
   self =>
 
@@ -778,6 +776,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _clusterMode: ClusterMode = _
 
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
   val COLUMN_SOURCE = "column"
@@ -976,7 +975,8 @@ object SnappyContext extends Logging {
     }
   }
 
-  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
+  private[sql] def initGlobalSnappyContext(sc: SparkContext,
+      session: SnappySession): Unit = {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
@@ -984,6 +984,7 @@ object SnappyContext extends Logging {
           sc.addSparkListener(new SparkContextListener)
           sc.ui.foreach(new SnappyStatsTab(_))
           initMemberBlockMap(sc)
+          _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
         }
       }
@@ -992,7 +993,7 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      stopSnappyContext
+      stopSnappyContext()
     }
   }
 
@@ -1025,6 +1026,13 @@ object SnappyContext extends Logging {
     if (_globalSNContextInitialized) {
       // then on the driver
       clearStaticArtifacts()
+
+      if (_globalClear ne null) {
+        _globalClear()
+        _globalClear = null
+      }
+      SnappyTableStatsProviderService.stop()
+
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
