@@ -33,7 +33,6 @@ class SnappyContextFactory extends SparkContextFactory {
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     SnappyContextFactory.newSession()
   }
-
 }
 
 object SnappyContextFactory {
@@ -49,8 +48,10 @@ object SnappyContextFactory {
       override def stop(): Unit = {
         // not stopping anything here because SQLContext doesn't have one.
       }
-      //Callback added to provide our classloader to load job classes. If Job class directly refers to
-      // any jars which has been provided by install_jars, this can help.
+
+      // Callback added to provide our classloader to load job classes.
+      // If Job class directly refers to any jars which has been provided
+      // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
         SnappyUtils.getSnappyContextURLClassLoader(parent)
       }
@@ -89,7 +90,7 @@ abstract class JavaSnappySQLJob extends SnappySQLJob
 object SnappyJobValidate {
   def validate(status: SnappyJobValidation): SparkJobValidation = {
     status match {
-      case j: SnappyJobValid => SparkJobValid
+      case _: SnappyJobValid => SparkJobValid
       case j: SnappyJobInvalid => SparkJobInvalid(j.reason)
       case _ => SparkJobInvalid("isValid method is not correct")
     }

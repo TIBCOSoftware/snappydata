@@ -270,32 +270,32 @@ class SparkSQLExecuteImpl(val sql: String,
         TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
           f.metadata) match {
           case Some(base) =>
-            val size = f.metadata.getLong(
-              Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+            val size = TypeUtilities.getMetadata[Long](
+              Constant.CHAR_TYPE_SIZE_PROP, f.metadata)
+            lazy val varcharSize = size.getOrElse(
+              Constant.MAX_VARCHAR_SIZE.toLong).toInt
+            lazy val charSize = size.getOrElse(
+              Constant.MAX_CHAR_SIZE.toLong).toInt
             if (allAsClob ||
                 (columnsAsClob.nonEmpty && columnsAsClob.contains(f.name))) {
               if (base != "STRING") {
                 if (base == "VARCHAR") {
-                  (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+                  (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
                 } else {
                   // CHAR
-                  (StoredFormatIds.SQL_CHAR_ID, size, -1)
+                  (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
                 }
               } else {
-                // STRING and CLOB
                 (StoredFormatIds.SQL_CLOB_ID, -1, -1)
               }
             } else {
               if (base == "CHAR") {
-                (StoredFormatIds.SQL_CHAR_ID, size, -1)
+                (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+              } else if (base == "VARCHAR" || !SparkSQLExecuteImpl.STRING_AS_CLOB ||
+                  varcharSize <= Constant.MAX_VARCHAR_SIZE) {
+                (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
               } else {
-                // VARCHAR and STRING
-                if (!SparkSQLExecuteImpl.STRING_AS_CLOB ||
-                    size < Constant.MAX_VARCHAR_SIZE) {
-                  (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
-                } else {
-                  (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-                }
+                (StoredFormatIds.SQL_CLOB_ID, -1, -1)
               }
             }
           case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
