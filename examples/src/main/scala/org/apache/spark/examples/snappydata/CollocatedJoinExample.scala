@@ -54,10 +54,13 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, Snappy
  */
 object CollocatedJoinExample extends SnappySQLJob {
 
+  def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+
   override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter("CollocatedJoinExample.out")
     runCollocatedJoinQuery(snSession.snappySession, pw)
     pw.close()
+    s"Check ${getCurrentDirectory}/CollocatedJoinExample.out for output of this job"
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()

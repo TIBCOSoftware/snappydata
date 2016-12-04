@@ -60,12 +60,15 @@ object CreateColumnTable extends SnappySQLJob {
 
   private var dataFolder: String = ""
 
+  def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter("CreateColumnTable.out")
     dataFolder = s"${jobConfig.getString("data_resource_folder")}"
     createColumnTableUsingAPI(snc.snappySession, pw)
     createColumnTableUsingSQL(snc.snappySession, pw)
     pw.close()
+    s"Check ${getCurrentDirectory}/CreateColumnTable.out for output of this job"
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
