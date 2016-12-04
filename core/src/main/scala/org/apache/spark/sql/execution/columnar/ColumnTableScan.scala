@@ -386,7 +386,7 @@ private[sql] final case class ColumnTableScan(
     else s"$numOutputRows.${metricAdd(metricValue(numRowsOther))};"
 
     val initRowTableDecoders = new StringBuilder
-    val batchConsumer = getBatchConsumer(parent)
+    val batchConsumers = getBatchConsumers(parent)
     val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
@@ -563,7 +563,7 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin)
 
-    val batchConsume = batchConsumer.map(_.batchConsume(ctx,
+    val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
       columnsInput)).mkString("\n")
     val finallyCode = session.evaluateFinallyCode(ctx)
     val consumeCode = consume(ctx, columnsInput).trim
@@ -604,12 +604,12 @@ private[sql] final case class ColumnTableScan(
     """.stripMargin
   }
 
-  private def getBatchConsumer(parent: CodegenSupport): List[BatchConsumer] = {
+  private def getBatchConsumers(parent: CodegenSupport): List[BatchConsumer] = {
     parent match {
       case null => Nil
-      case b: BatchConsumer => b :: getBatchConsumer(TypeUtilities.parentMethod
-          .invoke(parent).asInstanceOf[CodegenSupport])
-      case _ => getBatchConsumer(TypeUtilities.parentMethod.invoke(parent)
+      case b: BatchConsumer if b.canConsume(this) => b :: getBatchConsumers(
+        TypeUtilities.parentMethod.invoke(parent).asInstanceOf[CodegenSupport])
+      case _ => getBatchConsumers(TypeUtilities.parentMethod.invoke(parent)
           .asInstanceOf[CodegenSupport])
     }
   }
@@ -654,6 +654,7 @@ private[sql] final case class ColumnTableScan(
     var assignCode = ""
     var dictionary = ""
     var dictIndex = ""
+    var dictionaryLen = ""
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     var jtDecl = s"final $jt $col;"
@@ -667,11 +668,16 @@ private[sql] final case class ColumnTableScan(
       case StringType =>
         dictionary = ctx.freshName("dictionary")
         dictIndex = ctx.freshName("dictionaryIndex")
-        jtDecl = s"UTF8String $col; int $dictIndex = -1;"
+        dictionaryLen = ctx.freshName("dictionaryLength")
+        // initialize index to dictionaryLength - 1 where null value will
+        // reside in case there are nulls in the current batch
+        jtDecl = s"UTF8String $col; int $dictIndex = $dictionaryLen - 1;"
         bufferInit =
-          s"""
-            final UTF8String[] $dictionary = $decoder.getStringDictionary();
-          """
+            s"""
+               |final UTF8String[] $dictionary = $decoder.getStringDictionary();
+               |final int $dictionaryLen =
+               |    $dictionary != null ? $dictionary.length : -1;
+            """.stripMargin
         dictionaryAssignCode =
             s"$dictIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);"
         assignCode =
@@ -736,15 +742,15 @@ private[sql] final case class ColumnTableScan(
               }
             }
           """
-        session.addExCode(ctx, col :: Nil, attr :: Nil,
-          ExprCodeEx(None, dictionaryCode, assignCode, dictionary, dictIndex))
+        session.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen))
       }
       (ExprCode(code, nullVar, col), bufferInit)
     } else {
       if (!dictionary.isEmpty) {
         val dictionaryCode = jtDecl + '\n' + dictionaryAssignCode
-        session.addExCode(ctx, col :: Nil, attr :: Nil,
-          ExprCodeEx(None, dictionaryCode, assignCode, dictionary, dictIndex))
+        session.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen))
       }
       var code = jtDecl + '\n' + colAssign + '\n'
       if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {

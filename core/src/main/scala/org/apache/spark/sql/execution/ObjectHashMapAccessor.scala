@@ -397,7 +397,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val vars = keyVars.map(_.value)
     val (prefix, suffix) = if (doRegister) session.getExCode(ctx, vars,
       keyExpressions) match {
-      case Some(ExprCodeEx(Some(h), _, _, _, _)) =>
+      case Some(ExprCodeEx(Some(h), _, _, _, _, _)) =>
         hashVar(0) = h
         hash = h
         doRegister = false
@@ -674,16 +674,34 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         s"$skipInit);$updateMapVars"
   }
 
-  def checkSingleKeyCase(input: Seq[ExprCode],
-      keyExpressions: Seq[Expression] = keyExpressions,
-      output: Seq[Attribute] = output): Option[ExprCodeEx] = {
+  def initDictionaryCodeForSingleKeyCase(dictionaryArrayTerm: String,
+      input: Seq[ExprCode], keyExpressions: Seq[Expression] = keyExpressions,
+      output: Seq[Attribute] = output): String = {
     // make a copy of input variables since this is used only for lookup
     // and the ExprCode's code should not be cleared
     val vars = input.map(_.copy())
     dictionaryKey = DictionaryOptimizedMapAccessor.checkSingleKeyCase(
       keyExpressions, getExpressionVars(keyExpressions, vars, output),
       ctx, session)
-    dictionaryKey
+    dictionaryKey match {
+      case Some(ExprCodeEx(_, _, _, dictionary, _, dictionaryLen)) =>
+        // initialize or reuse the array at batch level for join
+        // null key will be placed at the last index of dictionary
+        // and dictionary index will be initialized to that by ColumnTableScan
+        s"""
+           |if ($dictionary != null) {
+           |  if ($dictionaryArrayTerm != null
+           |      && $dictionaryArrayTerm.length >= $dictionaryLen) {
+           |    java.util.Arrays.fill($dictionaryArrayTerm, null);
+           |  } else {
+           |    $dictionaryArrayTerm = new $className[$dictionaryLen];
+           |  }
+           |} else {
+           |  $dictionaryArrayTerm = null;
+           |}
+        """.stripMargin
+      case None => ""
+    }
   }
 
   /**
