@@ -48,11 +48,11 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
-import org.apache.spark.sql.execution.{BatchConsumer, CodegenSupport, ExprCodeEx, PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -74,7 +74,8 @@ private[sql] final case class ColumnTableScan(
     partitionColumns: Seq[Expression],
     @transient baseRelation: PartitionedDataSourceScan,
     allFilters: Seq[Expression],
-    schemaAttributes: Seq[AttributeReference])
+    schemaAttributes: Seq[AttributeReference],
+    isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation])
     with CodegenSupport {
@@ -103,8 +104,9 @@ private[sql] final case class ColumnTableScan(
 
     def statsFor(a: Attribute) = columnBatchStatistics.forAttribute(a)
 
-    // Returned filter predicate should return false iff it is impossible for the input expression
-    // to evaluate to `true' based on statistics collected about this partition batch.
+    // Returned filter predicate should return false iff it is impossible
+    // for the input expression to evaluate to `true' based on statistics
+    // collected about this partition batch.
     // This code is picked up from InMemoryTableScanExec
     @transient def buildFilter: PartialFunction[Expression, Expression] = {
       case And(lhs: Expression, rhs: Expression)
@@ -252,20 +254,42 @@ private[sql] final case class ColumnTableScan(
     // RDDs return iterator of UnsafeRows.
     val rowInput = ctx.freshName("rowInput")
     val colInput = ctx.freshName("colInput")
+    val rowInputSRR = ctx.freshName("rowInputSRR")
     val input = ctx.freshName("input")
     val inputIsRow = s"${input}IsRow"
+    val inputIsRowSRR = s"${input}IsRowSRR"
     val inputIsOtherRDD = s"${input}IsOtherRDD"
     val rs = ctx.freshName("resultSet")
     val rsIterClass = classOf[ResultSetTraversal].getName
-    val unsafeHolder = if (otherRDDs.isEmpty) null
+    val unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
     else ctx.freshName("unsafeHolder")
     val unsafeHolderClass = classOf[UnsafeRowHolder].getName
+    val stratumRowClass = classOf[StratumInternalRow].getName
+
+    // TODO [sumedh]: Asif, why this special treatment for weightage column
+    // in the code here? Why not as a normal AttributeReference in the plan
+    // (or an extension of it if some special treatment is required)?
+    val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
+    else null
+    val (weightVarName, weightAssignCode) = if (isForSampleReservoirAsRegion &&
+        output.exists(_.name == Utils.WEIGHTAGE_COLUMN_NAME)) {
+      val varName = ctx.freshName("weightage")
+      ctx.addMutableState("long", varName, s"$varName = 0;")
+      (varName, s"$varName = $wrappedRow.weight();")
+    } else ("", "")
 
     val colItrClass = if (!isEmbedded) classOf[CachedBatchIteratorOnRS].getName
     else if (isOffHeap) classOf[OffHeapLobsIteratorOnScan].getName
     else classOf[ByteArraysIteratorOnScan].getName
 
     if (otherRDDs.isEmpty) {
+      if (isForSampleReservoirAsRegion) {
+        ctx.addMutableState("scala.collection.Iterator",
+          rowInputSRR, s"$rowInputSRR = (scala.collection.Iterator)inputs[0].next();")
+        ctx.addMutableState(unsafeHolderClass, unsafeHolder,
+          s"$unsafeHolder = new $unsafeHolderClass();")
+        ctx.addMutableState("boolean", inputIsRowSRR, s"$inputIsRowSRR = true;")
+      }
       ctx.addMutableState("scala.collection.Iterator",
         rowInput, s"$rowInput = (scala.collection.Iterator)inputs[0].next();")
       ctx.addMutableState(colItrClass, colInput,
@@ -288,7 +312,8 @@ private[sql] final case class ColumnTableScan(
         s"$unsafeHolder = new $unsafeHolderClass();")
     }
     ctx.addMutableState("scala.collection.Iterator", input,
-      s"$input = $rowInput;")
+      if (isForSampleReservoirAsRegion) s"$input = $rowInputSRR;"
+      else s"$input = $rowInput;")
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
@@ -317,9 +342,26 @@ private[sql] final case class ColumnTableScan(
     val bufferInitCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
     val moveNextCode = new StringBuilder
+    val reservoirRowFetch =
+      s"""
+         |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
+         |$weightAssignCode
+         |$unsafeHolder.setRow((UnsafeRow)$wrappedRow.actualRow());
+      """.stripMargin
 
-    val nextRowSnippet = if (otherRDDs.isEmpty) s"$rowInput.next();"
-    else {
+    val nextRowSnippet = if (otherRDDs.isEmpty) {
+      if (isForSampleReservoirAsRegion) {
+        s"""
+          if ($inputIsRowSRR) {
+            $reservoirRowFetch
+          } else {
+            $rowInput.next();
+          }
+        """
+      } else {
+        s"$rowInput.next();"
+      }
+    } else {
       s"""
         if ($inputIsOtherRDD) {
           $unsafeHolder.setRow((UnsafeRow)$rowInput.next());
@@ -342,6 +384,7 @@ private[sql] final case class ColumnTableScan(
     val incrementOtherRows = if (otherRDDs.isEmpty) ""
     else s"$numOutputRows.${metricAdd(metricValue(numRowsOther))};"
 
+    val initRowTableDecoders = new StringBuilder
     val batchConsumer = getBatchConsumer(parent)
     val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
@@ -357,16 +400,23 @@ private[sql] final case class ColumnTableScan(
       val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
 
       ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
+
+      val rowDecoderCode = s"$decoder = new $rsAdapterClass($rs, $rsPosition);"
       if (otherRDDs.isEmpty) {
-        ctx.addMutableState(decoderClass, decoder,
-          s"$decoder = new $rsAdapterClass($rs, $rsPosition);")
+        if (isForSampleReservoirAsRegion) {
+          ctx.addMutableState(decoderClass, decoder,
+            s"$decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);")
+          initRowTableDecoders.append(rowDecoderCode).append('\n')
+        } else {
+          ctx.addMutableState(decoderClass, decoder, rowDecoderCode)
+        }
       } else {
         ctx.addMutableState(decoderClass, decoder,
           s"""
             if ($inputIsOtherRDD) {
               $decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);
             } else {
-              $decoder = new $rsAdapterClass($rs, $rsPosition);
+              $rowDecoderCode
             }
           """
         )
@@ -403,7 +453,7 @@ private[sql] final case class ColumnTableScan(
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
         cursorVar, "batchOrdinal", attr.dataType, notNullVar)).append('\n')
       val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
-        cursorVar, attr, notNullVar)
+        cursorVar, attr, notNullVar, weightVarName)
       bufferInitCode.append(bufferInit)
       ev
     }
@@ -462,6 +512,24 @@ private[sql] final case class ColumnTableScan(
       """
     }
     val nextBatch = ctx.freshName("nextBatch")
+    val switchSRR = if (isForSampleReservoirAsRegion) {
+      // triple switch between rowInputSRR, rowInput, colInput
+      s"""
+         |if ($input == $rowInputSRR) {
+         |  $input = $rowInput;
+         |  $inputIsRowSRR = false;
+         |  $inputIsRow = true;
+         |  if ($input.hasNext()) {
+         |    $initRowTableDecoders
+         |    $input.next();
+         |    $numBatchRows = 1;
+         |    $incrementNumRowsSnippet
+         |    return true;
+         |  }
+         |  // else fall back to row table consumed case
+         |}
+      """.stripMargin
+    } else ""
     ctx.addNewFunction(nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
@@ -469,7 +537,7 @@ private[sql] final case class ColumnTableScan(
          |  // get next batch or row (latter for non-batch source iteration)
          |  if ($input == null) return false;
          |  if (!$input.hasNext()) {
-         |    if ($input == $rowInput) {
+         |    ${switchSRR}if ($input == $rowInput) {
          |      $input = $colInput;
          |      $inputIsRow = false;
          |      if ($input == null || !$input.hasNext()) {
@@ -578,7 +646,7 @@ private[sql] final case class ColumnTableScan(
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, attr: Attribute,
-      notNullVar: String): (ExprCode, String) = {
+      notNullVar: String, weightVar: String): (ExprCode, String) = {
     val col = ctx.freshName("col")
     var bufferInit = ""
     var dictionaryAssignCode = ""
@@ -677,7 +745,11 @@ private[sql] final case class ColumnTableScan(
         session.addExCode(ctx, col :: Nil, attr :: Nil,
           ExprCodeEx(None, dictionaryCode, assignCode, dictionary, dictIndex))
       }
-      (ExprCode(jtDecl + '\n' + colAssign + '\n', "false", col), bufferInit)
+      var code = jtDecl + '\n' + colAssign + '\n'
+      if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
+        code += s"if ($col == 1) $col = $weightVar;\n"
+      }
+      (ExprCode(code, "false", col), bufferInit)
     }
   }
 }

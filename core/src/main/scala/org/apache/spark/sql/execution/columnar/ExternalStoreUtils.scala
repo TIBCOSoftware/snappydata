@@ -444,11 +444,11 @@ object ExternalStoreUtils {
     parameters.getOrElse(BUCKETS, {
       val partitions = SnappyContext.getClusterMode(sc) match {
         case LocalMode(_, _) =>
-          if (!forSampleTable) DEFAULT_TABLE_BUCKETS_LOCAL_MODE
-          else DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+          if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+          else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
         case _ =>
-          if (!forSampleTable) DEFAULT_TABLE_BUCKETS
-          else DEFAULT_SAMPLE_TABLE_BUCKETS
+          if (forSampleTable)  DEFAULT_SAMPLE_TABLE_BUCKETS
+          else DEFAULT_TABLE_BUCKETS
       }
       if (forManagedTable) {
         if (forColumnTable) {
@@ -515,7 +515,7 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     schema: StructType,
     useCompression: Boolean,
     bufferSize: Int,
-    reservoirInRegion: Boolean) {
+    reservoirInRegion: Boolean, columnBatchSize: Int) {
 
   var holder = getCachedBatchHolder(-1)
 

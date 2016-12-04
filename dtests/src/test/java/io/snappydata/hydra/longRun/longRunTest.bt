@@ -1,0 +1,47 @@
+//can run any one test for ~40 hrs without stopping the cluster, individual lead and server node will go down in HA version of test.
+//We can also run the tests one after other, but the cluster will stop after each test.
+//currently we are running with northwind schema.
+
+/*
+// Embeded mode
+io/snappydata/hydra/longRun/longRunTestEmbededMode.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
+  fullResultSetValidation = true
+
+// Embeded mode HA
+io/snappydata/hydra/longRun/longRunTestEmbededModeWithHA.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
+  fullResultSetValidation = true
+
+// Split mode
+io/snappydata/hydra/longRun/longRunTestSplitMode.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
+  fullResultSetValidation = true
+*/
+
+// Split mode HA
+io/snappydata/hydra/longRun/longRunTestSplitModeWithHA.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
+  fullResultSetValidation = true
