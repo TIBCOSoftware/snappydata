@@ -55,7 +55,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         .setIfMissing("spark.master", "local[1]")
         .setAppName("microbenchmark")
     conf.set("spark.sql.shuffle.partitions", "1")
-    // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("spark.sql.autoBroadcastJoinThreshold", "1")
     if (addOn != null) {
       addOn(conf)
@@ -119,6 +118,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, readPathOnly: Boolean): Unit = {
     val numIters = 10
     val benchmark = new Benchmark("Cache random keys", size)
+    sparkSession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     snappySession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     sparkSession.sql("drop table if exists test")
     var testDF = sparkSession.range(size)
