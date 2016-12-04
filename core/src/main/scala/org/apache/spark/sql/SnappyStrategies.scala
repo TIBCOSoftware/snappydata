@@ -248,13 +248,6 @@ object SnappyAggregation extends Strategy {
         resultExpressions, child)
     }
 
-    // Check if we can use SnappyHashAggregateExec.
-    if (!supportCodegen(aggregateExpressions)) {
-      return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
-        functionsWithDistinct, functionsWithoutDistinct,
-        resultExpressions, child)
-    }
-
     // functionsWithDistinct is guaranteed to be non-empty. Even though it
     // may contain more than one DISTINCT aggregate function, all of those
     // functions will have the same column expressions.

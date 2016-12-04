@@ -795,14 +795,13 @@ class ExecutorLocalPartition(override val index: Int,
 }
 
 final class MultiBucketExecutorPartition(private[this] var _index: Int,
-    _buckets: mutable.ArrayBuffer[Int],
+    _buckets: mutable.ArrayBuffer[Int], numBuckets: Int,
     private[this] var _hostExecutorIds: Seq[String])
     extends Partition with KryoSerializable {
 
   private[this] var bucketSet = {
     if (_buckets ne null) {
-      val maxBucket = _buckets.max
-      val set = new BitSet(maxBucket + 1)
+      val set = new BitSet(numBuckets)
       for (b <- _buckets) {
         set.set(b)
       }
@@ -818,11 +817,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
   def buckets: java.util.Set[Integer] = new java.util.AbstractSet[Integer] {
 
     override def contains(o: Any): Boolean = o match {
-      case b: Int => try {
-        b >= 0 && bucketSet.get(b)
-      } catch {
-        case ie: IndexOutOfBoundsException => false
-      }
+      case b: Int => b >= 0 && bucketSet.get(b)
       case _ => false
     }
 
