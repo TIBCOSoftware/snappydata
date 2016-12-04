@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
@@ -32,6 +33,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
 /**
@@ -128,14 +130,13 @@ private[sql] object PartitionedPhysicalScan {
         val bufferExchange = ShuffleExchange(columnScan.outputPartitioning,
           rowBufferScan)
         ZipPartitionScan(columnScan, bufferExchange)
-      case r: BaseColumnFormatRelation =>
+      case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation, allFilters, schemaAttributes)
       case r: SamplingRelation =>
-        if (r.isPartitioned) {
-          val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
-          ZipPartitionScan(columnScan, null, otherRDDs.head, relation)
+        if (r.isReservoirAsRegion) {
+          ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns, relation,
+            allFilters, schemaAttributes, isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, relation, allFilters, schemaAttributes)
@@ -223,7 +224,63 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
   override def output: Seq[Attribute] = basePlan.output
 }
 
+class StratumInternalRow(val weight: Long) extends InternalRow {
+
+  var actualRow: InternalRow = _
+
+  def numFields: Int = throw new UnsupportedOperationException("not implemented")
+
+  def getUTF8String(ordinal: Int): UTF8String = throw new UnsupportedOperationException("not " +
+      "implemented")
+
+  def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
+
+  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getBoolean(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getByte(ordinal: Int): Byte = throw new UnsupportedOperationException("not implemented")
+
+  def getShort(ordinal: Int): Short = throw new UnsupportedOperationException("not implemented")
+
+  def getInt(ordinal: Int): Int = throw new UnsupportedOperationException("not implemented")
+
+  def getLong(ordinal: Int): Long = throw new UnsupportedOperationException("not implemented")
+
+  def getFloat(ordinal: Int): Float = throw new UnsupportedOperationException("not implemented")
+
+  def getDouble(ordinal: Int): Double = throw new UnsupportedOperationException("not implemented")
+
+  def getDecimal(ordinal: Int, precision: Int, scale: Int): Decimal =
+    throw new UnsupportedOperationException("not implemented")
+
+
+  def getBinary(ordinal: Int): Array[Byte] =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getInterval(ordinal: Int): CalendarInterval =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getStruct(ordinal: Int, numFields: Int): InternalRow =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getArray(ordinal: Int): ArrayData = throw new UnsupportedOperationException("not implemented")
+
+  def getMap(ordinal: Int): MapData = throw new UnsupportedOperationException("not implemented")
+
+  def get(ordinal: Int, dataType: DataType): Object =
+    throw new UnsupportedOperationException("not implemented")
+}
+
 trait BatchConsumer extends CodegenSupport {
+
+  /**
+   * Returns true if the given plan returning batches of data can be consumed
+   * by this plan.
+   */
+  def canConsume(plan: SparkPlan): Boolean
 
   /**
    * Generate Java source code to do any processing before a batch is consumed
@@ -234,7 +291,8 @@ trait BatchConsumer extends CodegenSupport {
    * done at batch level when a batched scan is being done. They should not
    * depend on this being invoked since many scans will not be batched.
    */
-  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
+  def batchConsume(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String
 }
 
 /**
@@ -244,7 +302,7 @@ trait BatchConsumer extends CodegenSupport {
  */
 case class ExprCodeEx(var hash: Option[String],
     private var dictionaryCode: String, assignCode: String,
-    dictionary: String, dictionaryIndex: String) {
+    dictionary: String, dictionaryIndex: String, dictionaryLen: String) {
 
   def evaluateDictionaryCode(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""

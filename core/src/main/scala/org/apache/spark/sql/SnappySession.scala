@@ -277,7 +277,7 @@ class SnappySession(@transient private val sc: SparkContext,
     getContextObject[ExprCodeEx](ctx, "E", key) match {
       case Some(ev) => ev.hash = Some(hashVar)
       case None => addContextObject(ctx, "E", key,
-        ExprCodeEx(Some(hashVar), "", "", "", ""))
+        ExprCodeEx(Some(hashVar), "", "", "", "", ""))
     }
   }
 

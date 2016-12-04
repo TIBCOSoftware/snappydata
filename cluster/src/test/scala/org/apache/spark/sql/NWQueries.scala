@@ -221,7 +221,8 @@ object NWQueries extends SnappyFunSuite {
       " order by a.CategoryName, b.ProductName, ProductSales"
 
   /*
-    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
+    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain
+    equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
     val Q38: String = "select distinct ProductName as Ten_Most_Expensive_Products," +
         " UnitPrice" +
         " from Products as a" +
@@ -286,21 +287,41 @@ object NWQueries extends SnappyFunSuite {
 
   val Q44: String = "SELECT * FROM orders LEFT SEMI JOIN order_details"
 
-  val Q45: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders JOIN order_details"
-  val Q46: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders LEFT JOIN order_details"
-  val Q47: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders RIGHT JOIN order_details"
-  val Q48: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL OUTER JOIN order_details"
-  val Q49: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL JOIN order_details"
+  val Q45: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders JOIN order_details"
+  val Q46: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders LEFT JOIN order_details"
+  val Q47: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders RIGHT JOIN order_details"
+  val Q48: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL OUTER JOIN order_details"
+  val Q49: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL JOIN order_details"
 
-  val Q50: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders JOIN order_details" +
+  val Q50: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q51: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders LEFT JOIN order_details" +
+  val Q51: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders LEFT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q52: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders RIGHT JOIN order_details" +
+  val Q52: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders RIGHT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q53: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL OUTER JOIN order_details" +
+  val Q53: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL OUTER JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q54: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry FROM orders FULL JOIN order_details" +
+  val Q54: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
 
   // Number of units in stock by category and supplier continent

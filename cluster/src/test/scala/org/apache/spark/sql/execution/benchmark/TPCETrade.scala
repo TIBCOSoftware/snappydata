@@ -73,9 +73,9 @@ class TPCETrade extends SnappyFunSuite {
     rs.next()
     logInfo(s"Connected to server ${rs.getString(1)}")
     rs.close()
-    for (i <- 1 to numRuns) {
+    for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
-      for (j <- 1 to numIters) {
+      for (_ <- 1 to numIters) {
         // val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
         //    "--GEMFIREXD-PROPERTIES executionEngine=Spark")
         val rs = stmt.executeQuery("select count(*) from citi_order " +
@@ -121,9 +121,9 @@ class TPCETradeJob extends SnappySQLJob with Logging {
     val numRuns = 1000
     val numIters = 1000
     val session = sc.snappySession
-    for (i <- 1 to numRuns) {
+    for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
-      for (j <- 1 to numIters) {
+      for (_ <- 1 to numIters) {
         session.sql("select * from citi_order where id=1000 " +
             "--GEMFIREXD-PROPERTIES executionEngine=Spark").collectInternal()
       }
@@ -273,7 +273,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -305,7 +305,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {

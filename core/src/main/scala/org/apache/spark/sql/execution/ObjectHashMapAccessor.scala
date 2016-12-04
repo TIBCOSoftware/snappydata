@@ -102,7 +102,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     var index = -1
     val valueExprIndexes = valueExpressions.map(e =>
       e -> keyExprIndexMap.get(e).map(-_ - 1).getOrElse {
-        index += 1; index
+        index += 1
+        index
       })
     (keyExprIndexMap.toSeq, valueExprIndexes)
   }
@@ -396,7 +397,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val vars = keyVars.map(_.value)
     val (prefix, suffix) = if (doRegister) session.getExCode(ctx, vars,
       keyExpressions) match {
-      case Some(ExprCodeEx(Some(h), _, _, _, _)) =>
+      case Some(ExprCodeEx(Some(h), _, _, _, _, _)) =>
         hashVar(0) = h
         hash = h
         doRegister = false
@@ -424,7 +425,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         hashSingleInt(s"Float.floatToIntBits($colVar)", nullVar, hash)
       case DoubleType =>
         hashSingleLong(s"Double.doubleToLongBits($colVar)", nullVar, hash)
-      case d: DecimalType =>
+      case _: DecimalType =>
         hashSingleInt(s"$colVar.fastHashCode()", nullVar, hash)
       // single column types that use murmur hash already,
       // so no need to further apply mixing on top of it
@@ -446,7 +447,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         case ((DoubleType, _, _, _), ev) =>
           addHashLong(s"Double.doubleToLongBits(${ev.value})", ev.isNull,
             hash)
-        case ((d: DecimalType, _, _, _), ev) =>
+        case ((_: DecimalType, _, _, _), ev) =>
           addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, hash)
         case (_, ev) =>
           addHashInt(s"${ev.value}.hashCode()", ev.isNull, hash)
@@ -507,8 +508,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // indicate the same as a null ExprCode with "nullIndex" pointing to
       // the index of actual key variable to use in classVars
       val valueVars = valueExprIndexes.collect {
-        case (e, i) if i >= 0 => classVars(i + valueIndex)
-        case (e, i) => (null, null, null, -i - 1) // i < 0
+        case (_, i) if i >= 0 => classVars(i + valueIndex)
+        case (_, i) => (null, null, null, -i - 1) // i < 0
       }
       if (onlyValueVars) valueVars else classVars.take(valueIndex) ++ valueVars
     }
@@ -529,12 +530,22 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
               case StringType =>
                 // wrap the bytes in UTF8String
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final UTF8String $lv = " +
-                    s"UTF8String.fromBytes($objVar.${ev.value});"))
+                (lv, new StringBuilder().append(s"final UTF8String $lv = ").append(
+                  if (checkNullObj) {
+                    s"($objVar != null ? UTF8String.fromBytes(" +
+                        s"$objVar.${ev.value}) : null);"
+                  } else {
+                    s"UTF8String.fromBytes($objVar.${ev.value});"
+                  }))
               case _ =>
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(
-                  s"final $javaType $lv = $objVar.${ev.value};"))
+                (lv, new StringBuilder().append(s"final $javaType $lv = ").append(
+                  if (checkNullObj) {
+                    s"($objVar != null ? $objVar.${ev.value} " +
+                        s" : ${ctx.defaultValue(dataType)});"
+                  } else {
+                    s"$objVar.${ev.value};"
+                  }))
             }
           }
           val nullExpr = nullMaskVarMap.get(ev.isNull)
@@ -663,16 +674,34 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         s"$skipInit);$updateMapVars"
   }
 
-  def checkSingleKeyCase(input: Seq[ExprCode],
-      keyExpressions: Seq[Expression] = keyExpressions,
-      output: Seq[Attribute] = output): Option[ExprCodeEx] = {
+  def initDictionaryCodeForSingleKeyCase(dictionaryArrayTerm: String,
+      input: Seq[ExprCode], keyExpressions: Seq[Expression] = keyExpressions,
+      output: Seq[Attribute] = output): String = {
     // make a copy of input variables since this is used only for lookup
     // and the ExprCode's code should not be cleared
     val vars = input.map(_.copy())
     dictionaryKey = DictionaryOptimizedMapAccessor.checkSingleKeyCase(
       keyExpressions, getExpressionVars(keyExpressions, vars, output),
       ctx, session)
-    dictionaryKey
+    dictionaryKey match {
+      case Some(ExprCodeEx(_, _, _, dictionary, _, dictionaryLen)) =>
+        // initialize or reuse the array at batch level for join
+        // null key will be placed at the last index of dictionary
+        // and dictionary index will be initialized to that by ColumnTableScan
+        s"""
+           |if ($dictionary != null) {
+           |  if ($dictionaryArrayTerm != null
+           |      && $dictionaryArrayTerm.length >= $dictionaryLen) {
+           |    java.util.Arrays.fill($dictionaryArrayTerm, null);
+           |  } else {
+           |    $dictionaryArrayTerm = new $className[$dictionaryLen];
+           |  }
+           |} else {
+           |  $dictionaryArrayTerm = null;
+           |}
+        """.stripMargin
+      case None => ""
+    }
   }
 
   /**

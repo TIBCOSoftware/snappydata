@@ -68,7 +68,7 @@ case class SnappyHashAggregateExec(
 
   override def nodeName: String = "SnappyHashAggregate"
 
-  @transient lazy val resultExpressions = __resultExpressions
+  @transient def resultExpressions: Seq[NamedExpression] = __resultExpressions
 
   @transient lazy private[this] val aggregateBufferAttributes = {
     aggregateExpressions.flatMap(_.aggregateFunction.aggBufferAttributes)
@@ -203,29 +203,28 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  override def batchConsume(ctx: CodegenContext,
+  override def canConsume(plan: SparkPlan): Boolean = {
+    if (groupingExpressions.isEmpty) return false
+    // check the outputs of the plan
+    val planOutput = plan.output
+    // linear search is enough instead of map create/lookup like in intersect
+    keyBufferAccessor.output.forall(a => planOutput.exists(_.semanticEquals(a)))
+  }
+
+  override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
     if (groupingExpressions.isEmpty) ""
     else {
-      val entryClass = keyBufferAccessor.getClassName
-      // check for optimized dictionary code path
-      keyBufferAccessor.checkSingleKeyCase(input) match {
-        case Some(ExprCodeEx(_, _, _, dictionary, _)) =>
-          // initialize or reuse the array at batch level for grouping
-          s"""
-             |if ($dictionary != null) {
-             |  if ($dictionaryArrayTerm != null
-             |      && $dictionaryArrayTerm.length >= $dictionary.length) {
-             |    java.util.Arrays.fill($dictionaryArrayTerm, null);
-             |  } else {
-             |    $dictionaryArrayTerm = new $entryClass[$dictionary.length];
-             |  }
-             |} else {
-             |  $dictionaryArrayTerm = null;
-             |}
-        """.stripMargin
-        case None => ""
+      // pluck out the variables from input as per the plan output
+      val planOutput = plan.output
+      val mapOutput = keyBufferAccessor.output
+      val mapInput = mapOutput.map { a =>
+        // we expect it to exist as per the check in canConsume
+        input(planOutput.indexWhere(_.semanticEquals(a)))
       }
+      // check for optimized dictionary code path
+      keyBufferAccessor.initDictionaryCodeForSingleKeyCase(
+        dictionaryArrayTerm, mapInput)
     }
   }
 
