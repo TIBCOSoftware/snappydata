@@ -76,7 +76,7 @@ object DictionaryOptimizedMapAccessor {
       session: SnappySession): Option[ExprCodeEx] = {
     if (canHaveSingleKeyCase(keyExpressions)) {
       session.getExCode(ctx, keyVars.head.value :: Nil, keyExpressions) match {
-        case e@Some(ExprCodeEx(_, _, _, dict, _)) if dict.nonEmpty => e
+        case e@Some(ExprCodeEx(_, _, _, dict, _, _)) if dict.nonEmpty => e
         case _ => None
       }
     } else None
@@ -106,6 +106,7 @@ object DictionaryOptimizedMapAccessor {
           s"""if ($resultVar != null) {
              |  $arrayVar[$keyIndex] = $resultVar;
              |} else {
+             |  // EMPTY is for no match (vs null which means "lookup map")
              |  $arrayVar[$keyIndex] = $className.EMPTY;
              |}""".stripMargin)
     } else ("", s"$arrayVar[$keyIndex] = $resultVar;")
@@ -130,9 +131,8 @@ object DictionaryOptimizedMapAccessor {
         keyVar.code = s"$key = ${keyVarEx.assignCode};"
         s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       } else {
-        keyVar.code =
-            s"$key = ${keyVar.isNull} ? null : (${keyVarEx.assignCode});"
-        s"$key = $keyIndex != -1 ? ${keyVarEx.dictionary}[$keyIndex] : null;"
+        keyVar.code = s"$key = ${keyVar.isNull} ? null : (${keyVarEx.assignCode});"
+        s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       }
     }
     s"""if ($arrayVar != null) {

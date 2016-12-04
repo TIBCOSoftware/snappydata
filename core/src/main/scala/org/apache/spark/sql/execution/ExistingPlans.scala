@@ -277,6 +277,12 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 trait BatchConsumer extends CodegenSupport {
 
   /**
+   * Returns true if the given plan returning batches of data can be consumed
+   * by this plan.
+   */
+  def canConsume(plan: SparkPlan): Boolean
+
+  /**
    * Generate Java source code to do any processing before a batch is consumed
    * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
    * optimizations, initializations etc).
@@ -285,7 +291,8 @@ trait BatchConsumer extends CodegenSupport {
    * done at batch level when a batched scan is being done. They should not
    * depend on this being invoked since many scans will not be batched.
    */
-  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
+  def batchConsume(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String
 }
 
 /**
@@ -295,7 +302,7 @@ trait BatchConsumer extends CodegenSupport {
  */
 case class ExprCodeEx(var hash: Option[String],
     private var dictionaryCode: String, assignCode: String,
-    dictionary: String, dictionaryIndex: String) {
+    dictionary: String, dictionaryIndex: String, dictionaryLen: String) {
 
   def evaluateDictionaryCode(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""
