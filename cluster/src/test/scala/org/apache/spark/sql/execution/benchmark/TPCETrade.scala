@@ -224,7 +224,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -256,7 +256,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {

@@ -115,7 +115,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
 
     val schema = buildPlan.schema
-    streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
+    streamRDD.mapPartitionsPreserveWithPartition { (context, _, itr) =>
       val start = System.nanoTime()
       val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
         buildPartition, context)
@@ -302,7 +302,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
         relationTerm, relationIsUnique)
       case LeftSemi => codeGenSemi(ctx, input, relationTerm, relationIsUnique)
       case LeftAnti => codeGenAnti(ctx, input, relationTerm, relationIsUnique)
-      case j: ExistenceJoin => codeGenExistence(ctx, input,
+      case _: ExistenceJoin => codeGenExistence(ctx, input,
         relationTerm, relationIsUnique)
       case x =>
         throw new IllegalArgumentException(
@@ -341,28 +341,25 @@ case class LocalJoin(leftKeys: Seq[Expression],
       resultVars, dictionaryArrayTerm, joinType)
   }
 
+  override def canConsume(plan: SparkPlan): Boolean = {
+    // check the outputs of the plan
+    val planOutput = plan.output
+    // linear search is enough instead of map create/lookup like in intersect
+    streamedPlan.output.forall(a => planOutput.exists(_.semanticEquals(a)))
+  }
+
   override def batchConsume(ctx: CodegenContext,
-      input: Seq[ExprCode]): String = {
-    val entryClass = mapAccessor.getClassName
-    // check for optimized dictionary code path
-    mapAccessor.checkSingleKeyCase(input, streamSideKeys,
-      streamedPlan.output) match {
-      case Some(ExprCodeEx(_, _, _, dictionary, _)) =>
-        // initialize or reuse the array at batch level for join
-        s"""
-           |if ($dictionary != null) {
-           |  if ($dictionaryArrayTerm != null
-           |      && $dictionaryArrayTerm.length >= $dictionary.length) {
-           |    java.util.Arrays.fill($dictionaryArrayTerm, null);
-           |  } else {
-           |    $dictionaryArrayTerm = new $entryClass[$dictionary.length];
-           |  }
-           |} else {
-           |  $dictionaryArrayTerm = null;
-           |}
-        """.stripMargin
-      case None => ""
+      plan: SparkPlan, input: Seq[ExprCode]): String = {
+    // pluck out the variables from input as per the plan output
+    val planOutput = plan.output
+    val streamedOutput = streamedPlan.output
+    val streamedInput = streamedOutput.map { a =>
+      // we expect it to exist as per the check in canConsume
+      input(planOutput.indexWhere(_.semanticEquals(a)))
     }
+    // check for optimized dictionary code path
+    mapAccessor.initDictionaryCodeForSingleKeyCase(
+      dictionaryArrayTerm, streamedInput, streamSideKeys, streamedOutput)
   }
 
   /**

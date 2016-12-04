@@ -32,6 +32,8 @@ abstract class ColumnEncoding {
 
   def supports(dataType: DataType): Boolean
 
+  protected def hasNulls: Boolean
+
   protected def initializeNulls(columnBytes: AnyRef,
       field: StructField): Long
 
@@ -340,6 +342,8 @@ object ColumnEncoding {
 
 trait NotNullColumn extends ColumnEncoding {
 
+  override protected final def hasNulls: Boolean = false
+
   override protected final def initializeNulls(
       columnBytes: AnyRef, field: StructField): Long = {
     val cursor = Platform.BYTE_ARRAY_OFFSET
@@ -390,6 +394,8 @@ trait NullableColumn extends ColumnEncoding {
     }
     */
   }
+
+  override protected final def hasNulls: Boolean = true
 
   override protected final def initializeNulls(
       columnBytes: AnyRef, field: StructField): Long = {
