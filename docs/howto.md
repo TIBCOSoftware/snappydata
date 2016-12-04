@@ -362,6 +362,18 @@ When collocated tables are joined on the partitioning columns, the join happens 
 **Code Example: ORDERS table is collocated with CUSTOMER table**
 
 A partitioned table can be collocated with another partitioned table by using "COLOCATE_WITH" with atrribute in the table options. For example, in the code snippet below ORDERS table is collocated with CUSTOMER table. The complete source for this example can be found in file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+**Get a SnappySession**:
+
+```
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateReplicatedRowTable")
+        .master("local[4]")
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+```
+
 **To create Table Customer:**
 ```
     snSession.sql("CREATE TABLE CUSTOMER ( " +
@@ -449,6 +461,20 @@ You can insert JSON data in SnappyData tables and execute queries on the tables.
 The code snippet given below loads JSON data from a JSON file into a column table and executes query against it.
 The source code for JSON example is located at [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
+**Get a SnappySession**:
+
+```
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateReplicatedRowTable")
+        .master("local[4]")
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+```
+
+Read the JSON file using Spark API and load the data into a table
+
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
@@ -504,6 +530,19 @@ You can use domain object to load the data into SnappyData tables and select the
 
 The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala)
 
+**Get a SnappySession**:
+
+```
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateReplicatedRowTable")
+        .master("local[4]")
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+```
+
+Insert the Person objects into a tabe and excute queries
 ```
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
