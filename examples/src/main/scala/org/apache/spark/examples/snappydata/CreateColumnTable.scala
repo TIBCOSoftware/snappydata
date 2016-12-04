@@ -18,11 +18,13 @@ package org.apache.spark.examples.snappydata
 
 import java.io.PrintWriter
 
+import scala.util.Try
+
 import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.types.{StringType, DecimalType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{SnappySession, SparkSession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobInvalid, SnappySession, SparkSession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 /**
  * An example that shows how to create column tables in SnappyData
@@ -36,20 +38,43 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyContext, SnappyJ
  * To run the example in local mode go to you SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
- * bin/run-example snappydata.CreateColumnTable
+ * bin/run-example snappydata.CreateColumnTable quickstart/src/main/resources
  * </pre>
  *
+ * To submit this example as a job to an already running cluster
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name CreateColumnTable
+ *   --class org.apache.spark.examples.snappydata.CreateColumnTable
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *   --conf data_resource_folder=../../quickstart/src/main/resources
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ *
+ * The output of the job will be redirected to a file named CollocatedJoinExample.out
  */
 object CreateColumnTable extends SnappySQLJob {
 
+  private var dataFolder: String = ""
+
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val pw = new PrintWriter("CreateColumnTable.out")
+    dataFolder = s"${jobConfig.getString("data_resource_folder")}"
     createColumnTableUsingAPI(snc.snappySession, pw)
     createColumnTableUsingSQL(snc.snappySession, pw)
     pw.close()
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+    {
+      Try(config.getString("data_resource_folder"))
+          .map(x => SnappyJobValid())
+          .getOrElse(SnappyJobInvalid("No data_resource_folder config param"))
+    }
+  }
 
   /**
    * Creates a column table using APIs
@@ -85,7 +110,7 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
     val customerDF = snSession.read.
         format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"quickstart/src/resources/customer.csv")
+        load(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -140,7 +165,7 @@ object CreateColumnTable extends SnappySQLJob {
     val tableSchema = snSession.table("CUSTOMER").schema
     val customerDF = snSession.read.
         format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"quickstart/src/resources/customer.csv")
+        load(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -160,6 +185,8 @@ object CreateColumnTable extends SnappySQLJob {
   }
 
   def main(args: Array[String]): Unit = {
+    parseArgs(args)
+
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
@@ -177,6 +204,22 @@ object CreateColumnTable extends SnappySQLJob {
     createColumnTableUsingAPI(snSession, pw)
     createColumnTableUsingSQL(snSession, pw)
     pw.close()
+  }
+
+  private def parseArgs(args: Array[String]): Unit = {
+    if (args.length != 1) {
+      printUsage()
+      System.exit(1)
+    }
+    dataFolder = args(0)
+  }
+
+  private def printUsage(): Unit = {
+    val usage: String =
+      "Usage: CreateColumnTable <dataFolderPath> \n" +
+          "\n" +
+          "dataFolderPath - (string) local folder where customer.csv is located\n"
+    println(usage)
   }
 
 }
