@@ -132,7 +132,8 @@ object StoreUtils extends Logging {
         }
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
-        new MultiBucketExecutorPartition(p, buckets, prefNodes.toSeq)
+        new MultiBucketExecutorPartition(p, buckets, numPartitions,
+          prefNodes.toSeq)
       }.toArray[Partition]
     }
   }
@@ -152,7 +153,7 @@ object StoreUtils extends Logging {
       case m if SnappyContext.containsBlockId(m.toString) =>
         Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
     }.toSeq
-    partitions(0) = new MultiBucketExecutorPartition(0, null, prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition(0, null, 0, prefNodes)
     partitions
   }
 
@@ -191,8 +192,8 @@ object StoreUtils extends Logging {
     var partitionIndex = -1
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
-      val numPartitions = math.max(1, math.min(numBuckets,
-        blockId.map(_.numProcessors).getOrElse(numBuckets)))
+      val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
+        b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
       val minPartitions = numBuckets / numPartitions
       val remaining = numBuckets % numPartitions
       var partitionStart = 0
@@ -229,7 +230,7 @@ object StoreUtils extends Logging {
         }
         partitionIndex += 1
         new MultiBucketExecutorPartition(partitionIndex, partBuckets,
-          preferredLocations)
+          numBuckets, preferredLocations)
       }
     }.toArray[Partition]
     assert(allocatedBuckets.forall(_ == true),
