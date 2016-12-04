@@ -21,12 +21,13 @@ The following topics are covered in this section:
 * [How to Store and Query JSON Objects](#howto-JSON)
 * [How to Store and Query Objects](#howto-objects)
 * [How to Access SnappyData Store from existing Spark Installation using Split Mode](#howto-splitmode)
+* [How to Use Python to Create Tables and Run Queries](#howto-python)
 
 <a id="howto-startCluster"></a>
 ### How to Start a SnappyData Cluster
 #### Start SnappyData Cluster on a Single Machine
 
-If you have [downloaded and extracted](http://snappydatainc.github.io/snappydata/#download-binary-distribution) the SnappyData product distribution, navigate to the SnappyData product root directory. 
+If you have [downloaded and extracted](http://snappydatainc.github.io/snappydata/#download-binary-distribution) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
 **Start the Cluster**: Run the `sbin/snappy-start-all.sh` script to start SnappyData cluster on your single machine using default settings. This starts one lead node, one locator and one data server.
 
@@ -422,7 +423,7 @@ stmt1.execute("CREATE TABLE APP.PARTSUPP ( " +
      "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
     "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY')")
 
-// Inserting a record in PARTSUPP table via batch inserts
+// Inserting records in PARTSUPP table via batch inserts
 val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
 
 var x = 0
@@ -556,10 +557,8 @@ If you have an existing Apache Spark installation, you can use SnappyData cluste
 For more information on Split mode, refer to the [deployment](http://snappydatainc.github.io/snappydata/deployment/#split-cluster-mode) section of documentation
 
 
-**Code Example: Initialize the SparkSession**
-The code example for split mode is in [SplitModeApplicationExample.scala](#https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SplitModeApplicationExample.scala).
-
-The code below shows how to initialize a SparkSession to use it in split mode. Here the property `snappydata.store.locators` instructs the Spark to start SnappyData accessor process to read the SnappyData catalog.
+**Code Example:**
+The code example for split mode is in [SplitModeApplicationExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SplitModeApplicationExample.scala) The code below shows how to initialize a SparkSession to use it in split mode. Here the property `snappydata.store.locators` instructs the Spark to start SnappyData accessor process to read the SnappyData catalog.
 
 ```
     val spark: SparkSession = SparkSession
@@ -592,3 +591,91 @@ The code below shows how to initialize a SparkSession to use it in split mode. H
     // insert data in TestColumnTable
     dataFrame.write.insertInto("TestColumnTable")
 ```
+
+
+<a id="howto-python"></a>
+### How to Use Python to Create Tables and Run Queries
+
+Developers can write programs in Python to use SnappyData features.
+
+In order to use SnappyData features in your Python program, first create SnappyContext:
+
+```
+    conf = SparkConf().setAppName('Python Example').setMaster("local[*]")
+    sc = SparkContext(conf=conf)
+    # get the SnappyContext
+    snContext = SnappyContext(sc)
+```
+
+You may execute SQL queries to create tables and execute queries using SnappyContext:
+
+```
+    # Creating partitioned table PARTSUPP using SQL
+    snContext.sql("DROP TABLE IF EXISTS PARTSUPP")
+    # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+    # For complete list of table attributes refer the documentation
+    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    snContext.sql("CREATE TABLE PARTSUPP ( " +
+                  "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
+                  "PS_SUPPKEY     INTEGER NOT NULL," +
+                  "PS_AVAILQTY    INTEGER NOT NULL," +
+                  "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
+                  "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )")
+
+    # Inserting data in PARTSUPP table using INSERT query
+    snContext.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
+    # Printing the contents of the PARTSUPP table
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    # Update the available quantity for PARTKEY 100
+    snContext.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
+    # Printing the contents of the PARTSUPP table after update
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    # Delete the records for PARTKEY 400
+    snContext.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
+    # Printing the contents of the PARTSUPP table after delete
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+```
+
+This same table can be created by using createTable API. First we create a schema and then create the table, and mutate the table data using API:
+
+```
+    # drop the table if it exists
+    snContext.dropTable('PARTSUPP', True)
+
+    schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
+                     StructField('PS_SUPPKEY', IntegerType(), False),
+                     StructField('PS_AVAILQTY', IntegerType(),False),
+                     StructField('PS_SUPPLYCOST', DecimalType(15, 2), False)
+                     ])
+
+    # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
+    # For complete list of table attributes refer the documentation at
+    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    snContext.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
+
+    # Inserting data in PARTSUPP table using dataframe
+    tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
+              (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
+    rdd = sc.parallelize(tuples)
+    tuplesDF = snContext.createDataFrame(rdd, schema)
+    tuplesDF.write.insertInto("PARTSUPP")
+    #Printing the contents of the PARTSUPP table
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    # Update the available quantity for PARTKEY 100
+    snContext.update("PARTSUPP", "PS_PARTKEY =100", [50000], ["PS_AVAILQTY"])
+    # Printing the contents of the PARTSUPP table after update
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    # Delete the records for PARTKEY 400
+    snContext.delete("PARTSUPP", "PS_PARTKEY =400")
+    # Printing the contents of the PARTSUPP table after delete
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+```
+
+The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/examples/src/main/python/CreateTable.py)
