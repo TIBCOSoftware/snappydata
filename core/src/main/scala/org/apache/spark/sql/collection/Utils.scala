@@ -26,13 +26,13 @@ import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
+import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
@@ -44,13 +44,15 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
@@ -368,6 +370,99 @@ object Utils {
     k
   }
 
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(): Metadata = {
+    varcharMetadata(Constant.MAX_VARCHAR_SIZE, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @param size the size parameter of the VARCHAR() column type
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(size: Int): Metadata = {
+    varcharMetadata(size, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @param size the size parameter of the VARCHAR() column type
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_VARCHAR_SIZE) {
+      throw new IllegalArgumentException(s"VARCHAR size should be between 1 " +
+          s"and ${Constant.MAX_VARCHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(): Metadata = {
+    charMetadata(Constant.MAX_CHAR_SIZE, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @param size the size parameter of the CHAR() column type
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(size: Int): Metadata = {
+    charMetadata(size, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @param size the size parameter of the CHAR() column type
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_CHAR_SIZE) {
+      throw new IllegalArgumentException(s"CHAR size should be between 1 " +
+          s"and ${Constant.MAX_CHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is rendered as CLOB by SnappyStore.
+   *
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
+    // render this field as CLOB.
+    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // on its own and this field would be rendered as VARCHAR.
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+        .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+  }
+
   def schemaFields(schema: StructType): Map[String, StructField] = {
     Map(schema.fields.flatMap { f =>
       val name = if (f.metadata.contains("name")) f.metadata.getString("name")
@@ -656,6 +751,25 @@ object Utils {
     System.clearProperty("spark.serializer")
     System.clearProperty("spark.closure.serializer")
     System.clearProperty("spark.io.compression.codec")
+  }
+
+  lazy val metricWithPrimitiveMethods: Boolean = {
+    try {
+      classOf[SQLMetric].getMethod("longValue")
+      true
+    } catch {
+      case NonFatal(_) => false
+    }
+  }
+
+  def metricMethods(sc: SparkContext): (String => String, String => String) = {
+    if (metricWithPrimitiveMethods) {
+      (v => s"addLong($v)", v => s"$v.longValue()")
+    } else {
+      (v => s"add($v)",
+          // explicit cast for value to Object is for janino bug
+          v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
+    }
   }
 }
 

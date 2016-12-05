@@ -28,7 +28,6 @@ import io.snappydata.Constant
 
 import org.apache.spark.SparkContext
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
@@ -55,18 +54,18 @@ import org.apache.spark.streaming.dstream.DStream
 
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
-    extends SparkSession(sc) with Logging {
+    extends SparkSession(sc) {
 
   self =>
 
-  private[sql] def this(sc: SparkContext) {
+  def this(sc: SparkContext) {
     this(sc, None)
   }
+
 
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  SnappyContext.initGlobalSnappyContext(sparkContext)
 
   /* ----------------------- *
    |  Session-related state  |
@@ -89,7 +88,6 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-
     try {
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.internal.SnappyAQPSessionState")
@@ -99,7 +97,6 @@ class SnappySession(@transient private val sc: SparkContext,
       case NonFatal(e) =>
         new SnappySessionState(this)
     }
-
   }
 
   @transient
@@ -108,6 +105,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
+  SnappyContext.initGlobalSnappyContext(sparkContext, this)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
@@ -150,25 +148,85 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
-  private val addedClasses = new mutable.HashMap[(CodegenContext,
-      Seq[(DataType, Boolean)], Seq[(DataType, Boolean)]), (String, String)]
-  private val exCodes = new mutable.HashMap[(CodegenContext,
-      Seq[Expr]), ExprCodeEx]()
+  private val contextObjects =
+    new mutable.HashMap[(CodegenContext, (String, Any)), Any]
+
+  /**
+   * Get a previously registered context object using [[addContextObject]].
+   */
+  private[sql] def getContextObject[T](ctx: CodegenContext, objectType: String,
+      key: Any): Option[T] = {
+    contextObjects.get(ctx -> (objectType -> key)).asInstanceOf[Option[T]]
+  }
+
+  /**
+   * Register a new context object for <code>CodegenSupport</code>.
+   */
+  private[sql] def addContextObject[T](ctx: CodegenContext, objectType: String,
+      key: Any, value: T): Unit = {
+    contextObjects.put(ctx -> (objectType -> key), value)
+  }
+
+  /**
+   * Remove a context object registered using [[addContextObject]].
+   */
+  private[sql] def removeContextObject(ctx: CodegenContext, objectType: String,
+      key: Any): Unit = {
+    contextObjects.remove(ctx -> (objectType -> key))
+  }
+
+  private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
+    val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
+    addContextObject(ctx, "D", "depth", depth)
+    addContextObject(ctx, "F", "finally" -> depth, code)
+    depth
+  }
+
+  private[sql] def evaluateFinallyCode(ctx: CodegenContext,
+      body: String = "", depth: Int = -1): String = {
+    // if no depth given then use the most recent one
+    val d = if (depth == -1) {
+      getContextObject[Int](ctx, "D", "depth").getOrElse(0)
+    } else depth
+    if (d <= 1) removeContextObject(ctx, "D", "depth")
+    else addContextObject(ctx, "D", "depth", d - 1)
+
+    val key = "finally" -> d
+    getContextObject[String](ctx, "F", key) match {
+      case Some(finallyCode) => removeContextObject(ctx, "F", key)
+        if (body.isEmpty) finallyCode
+        else {
+          s"""
+             |try {
+             |  $body
+             |} finally {
+             |   $finallyCode
+             |}
+          """.stripMargin
+        }
+      case None => body
+    }
+  }
 
   /**
    * Get name of a previously registered class using [[addClass]].
    */
   def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
-      types: Seq[(DataType, Boolean)]): Option[(String, String)] =
-    addedClasses.get((ctx, baseTypes, types))
+      keyTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)]): Option[(String, String)] = {
+    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types))
+  }
 
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
   private[sql] def addClass(ctx: CodegenContext,
-      baseTypes: Seq[(DataType, Boolean)], types: Seq[(DataType, Boolean)],
-      baseClassName: String, className: String): Unit =
-  addedClasses.put((ctx, baseTypes, types), baseClassName -> className)
+      baseTypes: Seq[(DataType, Boolean)], keyTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)], baseClassName: String,
+      className: String): Unit = {
+    addContextObject(ctx, "C", (baseTypes, keyTypes, types),
+      baseClassName -> className)
+  }
 
   private def wrapExpressions(vars: Seq[String],
       expr: Seq[Expression]): Seq[Expr] =
@@ -179,33 +237,34 @@ class SnappySession(@transient private val sc: SparkContext,
    * using [[addExCode]].
    */
   def getExCode(ctx: CodegenContext, vars: Seq[String],
-      expr: Seq[Expression]): Option[ExprCodeEx] =
-    exCodes.get(ctx -> wrapExpressions(vars, expr))
+      expr: Seq[Expression]): Option[ExprCodeEx] = {
+    getContextObject[ExprCodeEx](ctx, "E", wrapExpressions(vars, expr))
+  }
 
   /**
    * Register additional [[ExprCodeEx]] for a variable in ExprCode.
    */
   private[sql] def addExCode(ctx: CodegenContext, vars: Seq[String],
-      expr: Seq[Expression], exCode: ExprCodeEx): Unit =
-    exCodes.put(ctx -> wrapExpressions(vars, expr), exCode)
+      expr: Seq[Expression], exCode: ExprCodeEx): Unit = {
+    addContextObject(ctx, "E", wrapExpressions(vars, expr), exCode)
+  }
 
   /**
    * Register additional hash variable in [[ExprCodeEx]].
    */
   private[sql] def addExCodeHash(ctx: CodegenContext, vars: Seq[String],
       hashExpressions: Seq[Expression], hashVar: String): Unit = {
-    val key = ctx -> wrapExpressions(vars, hashExpressions)
-    exCodes.get(key) match {
+    val key = wrapExpressions(vars, hashExpressions)
+    getContextObject[ExprCodeEx](ctx, "E", key) match {
       case Some(ev) => ev.hash = Some(hashVar)
-      case None =>
-        exCodes.put(key, ExprCodeEx(Some(hashVar), "", "", ""))
+      case None => addContextObject(ctx, "E", key,
+        ExprCodeEx(Some(hashVar), "", "", "", "", ""))
     }
   }
 
   private[sql] def clearQueryData(): Unit = {
     queryHints.clear()
-    addedClasses.clear()
-    exCodes.clear()
+    contextObjects.clear()
   }
 
   def clear(): Unit = {

@@ -1,25 +1,37 @@
-##Getting started with your Spark distribution
+##Getting started
 ---
-You can quickly check the functionality of SnappyData with your existing Spark 2.0 installation.
-In the following section we will see how to interact with SnappyData.
+Before starting with SnappyData getting started guide you can choose between multiple ways to get SnappyData binaries.
+Depending on your preference you can work locally on your machine, on AWS or with a docker image.
+Preferably you should have 6GB of RAM for this application.
+
+###Getting started with your Spark distribution
+---
+If you are a Spark developer and is already using Spark 2.0 , fastest way to work with SnappyData is to use "package" option of Spark Shell.
+Follow the below instructions step by step.
+
 
 * From command line go to your Spark installation directory
 ```scala
 $ cd <Spark_Install_dir>
-$ ./bin/spark-shell --driver-memory 4g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
+$ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
 ```
 This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files.
 
 <a id="Start_quickStart"></a>
-In the following section we will create a SnappySession, which is the entry point to SnappyData. We will create some tables and do some operations on those tables.
-#####-Getting started using Spark APIs"
+
+<p>In the following section we will see how to interact with SnappyData.
+We will first create a SnappySession, which is the entry point to SnappyData. Then we will see we can create some tables, load data and query the tables from SnappySession.
+SnappySession tables have store like behaviour like persistence, redundancy etc. You can check the detailed documentation after trying out this section.
+Also, you can choose to work with Scala APIs or SQLs depending on your preference.</p>
+
+#####Getting started using Spark APIs
 
 * Create a SnappySession
 
  A SnappySession extends SparkSession to work with Row and Column tables.
 
 ```scala
-scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
+scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 //Import snappy extensions
 scala> import snappy.implicits._
 ```
@@ -106,7 +118,7 @@ scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
-#####-Getting started using SQL
+#####Getting started using SQL
 
 We will use SnappySession created above to fire SQL queries
 
@@ -163,7 +175,7 @@ Now that we have seen the basic working of SnappyData tables, let's run [benchma
 
 ---
 
-##Getting started by installing SnappyData on-premise
+###Getting started by installing SnappyData on-premise
 Download the latest version of SnappyData from the
 [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/)
 page, which lists the latest and previous releases of SnappyData.
@@ -177,10 +189,10 @@ This will open a Spark shell. Then follow the steps mentioned [here](#Start_quic
 
 ---
 
-##Getting started on AWS
+###Getting started on AWS
 ---
 * To be done
-##Getting started with Docker image
+###Getting started with Docker image
 ---
 SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
 
@@ -196,18 +208,18 @@ In addition, make sure that Docker containers have access to at least 4GB of RAM
 
 * Type the following command to get the docker image .This will start the container and will take you to the Spark Shell.
 ```scala
-$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 4g
+$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 6g
 ```
 It will start downloading the image files to your local machine. It may take some time.
 Once your are inside the Spark shell with the "$ scala>" prompt you can follow the steps explained [here](#Start_quickStart)
 ---
 
 <a id="Start Benchmark"></a>
-##SnappyData Query performance
+###SnappyData Query performance
 Here we will walk through a simple example to check SnappyData query performance as compared to Spark. We will be creating SnappyData column tables and check query performance
 as compared to Spark's DataSet.  Preferably you should have at least 6GB of RAM for the application.
 
-Open your Spark shell. You could be in AWS, docker, on premise installation or using your own Spark's distribution. For detailed steps see the sections above.
+Open your Spark shell. You could be in AWS, docker, on premise installation or using your own Spark's distribution.
 
 
 * Start a SparkSesion in local mode
@@ -220,7 +232,7 @@ scala>  val spark = SparkSession.builder.master("local[*]").appName("spark, " +
 
 * Define a of helper function "benchmark", which will give us an average time of a query after doing initial warmups.
 ```scala
-scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 2)(f: => Unit) {
+scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
          for (i <- 1 to warmups) {
            f
          }
@@ -261,7 +273,7 @@ scala>  System.runFinalization()
 
 * Create a SnappyContext.
 ```scala
-scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
+scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
 * Create a similar 100 million record DataFrame
 ```scala

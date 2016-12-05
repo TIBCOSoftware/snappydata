@@ -68,7 +68,7 @@ object SplitModeApplicationExample {
         .config("snappydata.store.locators", "localhost:10334")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     println("\n\n ####  Reading from the SnappyStore table SNAPPY_COL_TABLE  ####  \n")
     val colTable = snSession.table("SNAPPY_COL_TABLE")

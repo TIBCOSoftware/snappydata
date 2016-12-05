@@ -62,18 +62,18 @@ object CreatePartitionedRowTable extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
     val pw = new PrintWriter("CreatePartitionedRowTable.out")
 
-    createPartitionedRowTableUsingSQL(snSession.snappySession, pw)
-    createPartitionedRowTableUsingAPI(snSession.snappySession, pw)
+    createPartitionedRowTableUsingSQL(snSession, pw)
+    createPartitionedRowTableUsingAPI(snSession, pw)
     pw.close()
 
-    s"Check ${getCurrentDirectory}/CreatePartitionedRowTable.out for output of this job"
+    s"Check ${getCurrentDirectory}/CreatePartitionedRowTable.out file for output of this job"
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
   /**
    * Creates a partitioned row table and performs operations on it using APIs
@@ -207,7 +207,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
         .master("local[*]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     val pw = new PrintWriter(System.out, true)
     createPartitionedRowTableUsingSQL(snSession, pw)

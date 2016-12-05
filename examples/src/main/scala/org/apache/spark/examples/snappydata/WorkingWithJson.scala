@@ -48,7 +48,7 @@ object WorkingWithJson extends SnappySQLJob {
 
   private var jsonFolder: String = ""
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation ={
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation ={
     {
       Try(config.getString("json_resource_folder"))
           .map(x => SnappyJobValid())
@@ -56,12 +56,11 @@ object WorkingWithJson extends SnappySQLJob {
     }
   }
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
-    val snSession = snc.snappySession
     val some_people_path = s"${jobConfig.getString("json_resource_folder")}/some_people.json"
     // Read a JSON file using Spark API
-    val people = snc.jsonFile(some_people_path)
+    val people = snSession.read.json(some_people_path)
     people.printSchema()
 
     //Drop the table if it exists.
@@ -82,7 +81,7 @@ object WorkingWithJson extends SnappySQLJob {
 
     //Explicitly passing schema to handle record level field mismatch
     // e.g. some records have "district" field while some do not.
-    val morePeople = snc.read.schema(people.schema).json(more_people_path)
+    val morePeople = snSession.read.schema(people.schema).json(more_people_path)
     morePeople.write.insertInto("people")
 
     //print schema of the table
@@ -125,9 +124,9 @@ object WorkingWithJson extends SnappySQLJob {
         .master("local[*]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
     val config = ConfigFactory.parseString(s"json_resource_folder=$jsonFolder")
-    val results = runSnappyJob(snSession.snappyContext, config)
+    val results = runSnappyJob(snSession, config)
     println("Printing All People \n################## \n" + results)
 
     spark.stop()

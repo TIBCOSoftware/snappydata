@@ -26,7 +26,8 @@ import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
 class ValidateNWQueriesJob extends SnappySQLJob {
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
+    val snc = snappySession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val outputFile = "ValidateNWQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
@@ -61,5 +62,5 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

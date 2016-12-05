@@ -16,13 +16,14 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -31,11 +32,11 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 
 
 /**
@@ -63,10 +64,11 @@ case class JDBCAppendableRelation(
 
   var tableExists: Boolean = _
 
-  protected final val connProperties = externalStore.connProperties
+  protected final val connProperties: ConnectionProperties =
+    externalStore.connProperties
 
-  protected final val connFactory = JdbcUtils.createConnectionFactory(
-    connProperties.url, connProperties.connProps)
+  protected final val connFactory: () => Connection = JdbcUtils
+      .createConnectionFactory(connProperties.url, connProperties.connProps)
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
@@ -79,9 +81,9 @@ case class JDBCAppendableRelation(
   }
 
 
-  protected final def dialect = connProperties.dialect
+  protected final def dialect: JdbcDialect = connProperties.dialect
 
-  val schemaFields = Utils.getSchemaFields(schema)
+  val schemaFields: Map[String, StructField] = Utils.getSchemaFields(schema)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -382,7 +384,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
-      case d: GemFireXDBaseDialect =>
+      case _: GemFireXDBaseDialect =>
         DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
             .getCanonicalName).providingClass
 

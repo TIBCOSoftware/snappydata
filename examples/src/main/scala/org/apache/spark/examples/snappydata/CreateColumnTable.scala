@@ -54,7 +54,7 @@ import org.apache.spark.sql.{SnappyJobInvalid, SnappySession, SparkSession, Snap
  * Check the status of your job id
  * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
  *
- * The output of the job will be redirected to a file named CollocatedJoinExample.out
+ * The output of the job will be redirected to a file named CreateColumnTable.out
  */
 object CreateColumnTable extends SnappySQLJob {
 
@@ -62,16 +62,16 @@ object CreateColumnTable extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter("CreateColumnTable.out")
     dataFolder = s"${jobConfig.getString("data_resource_folder")}"
-    createColumnTableUsingAPI(snc.snappySession, pw)
-    createColumnTableUsingSQL(snc.snappySession, pw)
+    createColumnTableUsingAPI(snappySession, pw)
+    createColumnTableUsingSQL(snappySession, pw)
     pw.close()
     s"Check ${getCurrentDirectory}/CreateColumnTable.out for output of this job"
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snappySession: SnappySession, config: Config): SnappyJobValidation = {
     {
       Try(config.getString("data_resource_folder"))
           .map(x => SnappyJobValid())
@@ -201,7 +201,7 @@ object CreateColumnTable extends SnappySQLJob {
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     val pw = new PrintWriter(System.out, true)
     createColumnTableUsingAPI(snSession, pw)

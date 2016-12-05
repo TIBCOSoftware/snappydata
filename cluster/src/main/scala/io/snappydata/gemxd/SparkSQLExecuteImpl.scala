@@ -81,8 +81,8 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsClob.toString) match {
+  private[this] val complexTypeAsJson = snc.snappySession.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
   }
@@ -107,7 +107,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
-    val serializeComplexType = !complexTypeAsClob && querySchema.exists(
+    val serializeComplexType = !complexTypeAsJson && querySchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
@@ -272,11 +272,15 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case s: StringType =>
-        val hasProp = f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)
+        val hasBaseProp = f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)
         lazy val base = f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-        lazy val size = f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+        lazy val size = if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+          f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP).asInstanceOf[Int]
+        } else {
+          Constant.MAX_VARCHAR_SIZE
+        }
         if (allAsClob || columnsAsClob.contains(f.name)) {
-            if (hasProp && !base.equals("STRING")) {
+            if (hasBaseProp && !base.equals("STRING")) {
               if (base.equals("VARCHAR")) {
                 (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
               } else { // CHAR
@@ -285,16 +289,13 @@ class SparkSQLExecuteImpl(val sql: String,
             } else { // STRING and CLOB
               (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
-        } else if (hasProp) {
+        } else if (hasBaseProp) {
           if (base.equals("CHAR")) {
             (StoredFormatIds.SQL_CHAR_ID, size, -1)
-          } else { // VARCHAR and STRING
-            if ( !SparkSQLExecuteImpl.STRING_AS_CLOB || size < Constant.MAX_VARCHAR_SIZE ) {
-              (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
-            }
-            else {
-              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-            }
+          } else if (base.equals("VARCHAR") || !SparkSQLExecuteImpl.STRING_AS_CLOB) {
+            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+          } else {
+            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
           }
         } else { // CLOB
           (StoredFormatIds.SQL_CLOB_ID, -1, -1)
@@ -304,7 +305,7 @@ class SparkSQLExecuteImpl(val sql: String,
         // the ID here is different from CLOB because serialization of CLOB
         // uses full UTF8 like in UTF8String while below is still modified
         // UTF8 (no code for full UTF8 yet -- change when full UTF8 code added)
-        if (complexTypeAsClob) (StoredFormatIds.REF_TYPE_ID, -1, -1)
+        if (complexTypeAsJson) (StoredFormatIds.REF_TYPE_ID, -1, -1)
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
