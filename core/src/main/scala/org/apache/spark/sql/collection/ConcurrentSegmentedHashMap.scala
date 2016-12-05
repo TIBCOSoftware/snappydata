@@ -236,6 +236,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // indicates that loop must be broken immediately
                 // need to take the latest reference of segmnet
                 // after segmnetAbort is successful
+                if (numAdded > 0) {
+                  _size.addAndGet(numAdded)
+                  numAdded = 0
+                }
                 lock.unlock()
                 lockedState = false
                 // Because two threads can concurrently call segmentAbort
@@ -243,25 +247,20 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // one thread would correctly identify if the other has cleared
                 // the segments. So after the changeSegment, it should unconditionally
                 // refresh the segments
-                // try {
-                //   if (change.segmentAbort(seg)) {
-                // break out of loop when segmentAbort returns true
-                //     idx = nhashes
                 change.segmentAbort(seg)
                 val segmentAndLock = getLockedValidSegmentAndLock(i)
                 lockedState = true
                 seg = segmentAndLock._1
                 lock = segmentAndLock._2
-                // }
                 idx += 1
-
-                // } finally {
-                //   lock.lock()
-                // }
               }
             }
           } finally {
             if (lockedState) {
+              if (numAdded > 0) {
+                _size.addAndGet(numAdded)
+                numAdded = 0
+              }
               lock.unlock()
             }
           }
@@ -274,8 +273,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       for (b <- groupedKeys) if (b != null) b.clear()
       for (b <- groupedHashes) if (b != null) b.clear()
 
-      if (numAdded > 0) _size.addAndGet(numAdded)
-      numAdded = 0
+
     }
 
   }
