@@ -114,10 +114,10 @@ class BlockManagerIdListener(sc: SparkContext)
       msg: SparkListenerBlockManagerAdded): Unit = synchronized {
     val executorId = msg.blockManagerId.executorId
     SnappyContext.getBlockIdIfNull(executorId) match {
-      case None => SnappyContext.addBlockId(executorId,
-        new BlockAndExecutorId(msg.blockManagerId,
-          sc.schedulerBackend.defaultParallelism(),
-          Runtime.getRuntime.availableProcessors()))
+      case None =>
+        val numCores = sc.schedulerBackend.defaultParallelism()
+        SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
+          msg.blockManagerId, numCores, numCores))
       case Some(b) => b._blockId = msg.blockManagerId
     }
   }
