@@ -190,6 +190,14 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       (seg, lock)
     }
 
+
+    def addNumToSize(): Unit = {
+      if (numAdded > 0) {
+        _size.addAndGet(numAdded)
+        numAdded = 0
+      }
+    }
+
     // split into max batch sizes to avoid buffering up too much
     val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
@@ -236,10 +244,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // indicates that loop must be broken immediately
                 // need to take the latest reference of segmnet
                 // after segmnetAbort is successful
-                if (numAdded > 0) {
-                  _size.addAndGet(numAdded)
-                  numAdded = 0
-                }
+                addNumToSize()
                 lock.unlock()
                 lockedState = false
                 // Because two threads can concurrently call segmentAbort
@@ -257,10 +262,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
             }
           } finally {
             if (lockedState) {
-              if (numAdded > 0) {
-                _size.addAndGet(numAdded)
-                numAdded = 0
-              }
+              addNumToSize()
               lock.unlock()
             }
           }
