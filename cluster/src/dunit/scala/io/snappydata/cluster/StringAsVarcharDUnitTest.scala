@@ -218,7 +218,8 @@ class StringAsVarcharDUnitTest(val s: String)
     snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
 
     snc.createTable(rowTab2, "row", s"(col_int int, col_string string, col_varchar varchar" +
-        s"($varcharSize), col_clob clob, col_char char($charSize))", Map.empty[String, String], false)
+        s"($varcharSize), col_clob clob, col_char char($charSize))",
+      Map.empty[String, String], false)
 
     snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
 
