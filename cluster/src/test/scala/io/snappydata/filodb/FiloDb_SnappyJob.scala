@@ -24,7 +24,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, DataFrame, SaveMode, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, DataFrame, SaveMode, SnappySession, SnappySQLJob}
+
 
 
 object FiloDb_SnappyJob extends SnappySQLJob {
@@ -34,7 +35,8 @@ object FiloDb_SnappyJob extends SnappySQLJob {
 
   val cachedDF = new collection.mutable.HashMap[String, DataFrame]
 
-  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val sc = snSession.sqlContext
     val taxiCsvFile: String = nycTaxiDataPath
     val numRuns = 50 // Make this higher when doing performance profiling
 
@@ -117,7 +119,7 @@ object FiloDb_SnappyJob extends SnappySQLJob {
   }
 
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
     nycTaxiDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")
     } else {

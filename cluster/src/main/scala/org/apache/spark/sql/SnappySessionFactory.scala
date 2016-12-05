@@ -26,22 +26,22 @@ import org.apache.spark.SparkConf
 import org.apache.spark.util.SnappyUtils
 
 
-class SnappyContextFactory extends SparkContextFactory {
+class SnappySessionFactory extends SparkContextFactory {
 
-  type C = SnappyContext with ContextLike
+  type C = SnappySession with ContextLike
 
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
-    SnappyContextFactory.newSession()
+    SnappySessionFactory.newSession()
   }
 }
 
-object SnappyContextFactory {
+object SnappySessionFactory {
 
-  private[this] val snappyContextLike =
-    SnappyContext(LeadImpl.getInitializingSparkContext)
+  private[this] val snappySession =
+    new SnappySession(LeadImpl.getInitializingSparkContext)
 
-  protected def newSession(): SnappyContext with ContextLike =
-    new SnappyContext(snappyContextLike.snappySession) with ContextLike {
+  protected def newSession(): SnappySession with ContextLike =
+    new SnappySession(snappySession.sparkContext) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
@@ -66,11 +66,11 @@ trait SnappySQLJob extends SparkJobBase {
     val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
     val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
     Thread.currentThread().setContextClassLoader(currentLoader)
-    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyContext], config))
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    val snc = sc.asInstanceOf[SnappyContext]
+    val snc = sc.asInstanceOf[SnappySession]
     try {
       runSnappyJob(snc, jobConfig)
     }
@@ -79,9 +79,9 @@ trait SnappySQLJob extends SparkJobBase {
     }
   }
 
-  def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
+  def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 
-  def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
+  def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
 
 }
 
