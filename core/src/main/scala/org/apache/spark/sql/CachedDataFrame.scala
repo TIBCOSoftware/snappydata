@@ -229,7 +229,7 @@ object CachedDataFrame
    * Minimum size of block beyond which data will be stored in BlockManager
    * before being consumed to store data from multiple partitions safely.
    */
-  @transient val MIN_LOCAL_BLOCK_SIZE = 32 * 1024 // 32K
+  @transient val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
 
   def localBlockStoreResultHandler(rddId: Int, bm: BlockManager)(
       partitionId: Int, data: Array[Byte]): Any = {
@@ -305,6 +305,7 @@ object CachedDataFrame
 
     val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
     val input = new Input(data, offset, dataLen)
+    val dataLimit = offset + dataLen
     var decompressedLen = input.readVarInt(true)
     var inputLen = input.readVarInt(true)
     val inputPosition = input.position()
@@ -327,7 +328,7 @@ object CachedDataFrame
         sizeOfNextRow = if (newPosition < decompressedLen) {
           bufferInput.setPosition(newPosition)
           bufferInput.readVarInt(true)
-        } else if (input.position() < dataLen) {
+        } else if (input.position() < dataLimit) {
           decompressedLen = input.readVarInt(true)
           inputLen = input.readVarInt(true)
           val inputPosition = input.position()
