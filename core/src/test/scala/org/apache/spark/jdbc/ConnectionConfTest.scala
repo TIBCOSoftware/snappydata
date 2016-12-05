@@ -29,7 +29,7 @@ import org.apache.spark.sql.SaveMode
 class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter {
 
   test("test default conf") {
-    val conf = new ConnectionConfBuilder(snc).build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).build()
     assert(!conf.connProps.hikariCP)
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
@@ -37,7 +37,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
   }
 
   test("test tomcat conf") {
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("tomcat").build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).setPoolProvider("tomcat").build()
     assert(!conf.connProps.hikariCP)
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
@@ -45,7 +45,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
   }
 
   test("test Additional hikari conf") {
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
+    val conf = new ConnectionConfBuilder(snc.snappySession).setPoolProvider("hikari")
         .setPoolConf("maximumPoolSize", "50").build()
     assert(conf.connProps.hikariCP)
     assert(conf.connProps.poolProps("maximumPoolSize") == "50")
@@ -55,7 +55,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
   }
 
   test("test multiple hikari conf") {
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
+    val conf = new ConnectionConfBuilder(snc.snappySession).setPoolProvider("hikari")
         .setPoolConf("maximumPoolSize", "50")
         .setPoolConf("minimumIdle", "5")
         .build()
@@ -69,7 +69,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
   test("test multiple hikari conf by map") {
     val poolProps = Map("maximumPoolSize" -> "50", "minimumIdle" -> "5")
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("hikari")
+    val conf = new ConnectionConfBuilder(snc.snappySession).setPoolProvider("hikari")
         .setPoolConfs(poolProps)
         .build()
     assert(conf.connProps.hikariCP)
@@ -82,7 +82,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
   test("test multiple tomcat conf by map") {
     val poolProps = Map("maxActive" -> "50", "maxIdle" -> "80", "initialSize" -> "5")
-    val conf = new ConnectionConfBuilder(snc).setPoolProvider("tomcat")
+    val conf = new ConnectionConfBuilder(snc.snappySession).setPoolProvider("tomcat")
         .setPoolConfs(poolProps)
         .build()
     assert(!conf.connProps.hikariCP)
@@ -101,7 +101,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
 
-    val conf = new ConnectionConfBuilder(snc).build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).build()
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getPooledConnection("test", conf)
@@ -125,7 +125,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
 
-    val conf = new ConnectionConfBuilder(snc).build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).build()
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)
@@ -163,7 +163,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props)
         .saveAsTable("TEST_JDBC_TABLE_1")
-    val connConf = new ConnectionConfBuilder(snc)
+    val connConf = new ConnectionConfBuilder(snc.snappySession)
     props.map(entry => connConf.setConf(entry._1, entry._2))
     val conf = connConf.build()
 

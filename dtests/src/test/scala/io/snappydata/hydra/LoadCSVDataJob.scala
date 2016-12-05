@@ -24,7 +24,9 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
  * Created by swati on 3/8/16.
  */
 class LoadCSVDataJob extends SnappySQLJob {
-  override def runSnappyJob(snContext: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
+
+    val snContext = snappySession.sqlContext
 
     def createTable(tableName: String, mode: String): Unit = {
       val dataLocation = jobConfig.getString("dataLocation")
@@ -68,7 +70,7 @@ class LoadCSVDataJob extends SnappySQLJob {
     rowIndexes.foreach(index => createTable(rowTables.get(index.toInt).get, "row"))
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = {
     SnappyJobValid()
   }
 }

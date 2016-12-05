@@ -25,7 +25,8 @@ import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
 class InstallJarTest extends SnappySQLJob {
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
     Try {
@@ -46,5 +47,5 @@ class InstallJarTest extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

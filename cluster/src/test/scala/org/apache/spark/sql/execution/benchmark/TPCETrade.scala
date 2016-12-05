@@ -67,7 +67,8 @@ class TPCETrade extends SnappyFunSuite {
 
 class TPCETradeJob extends SnappySQLJob {
 
-  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val sc = snSession.sqlContext
     // SCALE OUT case with 10 billion rows
     val quoteSize = 8500000000L
     val tradeSize = 1250000000L
@@ -86,7 +87,7 @@ class TPCETradeJob extends SnappySQLJob {
     Boolean.box(true)
   }
 
-  override def isValidJob(sc: SnappyContext,
+  override def isValidJob(snSession: SnappySession,
       config: Config): SnappyJobValidation = SnappyJobValid()
 }
 
