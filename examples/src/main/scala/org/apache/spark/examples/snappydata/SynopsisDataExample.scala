@@ -7,7 +7,7 @@ import scala.util.Try
 import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.sql.{SnappyJobInvalid, SnappySession, SparkSession, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
  * An example that shows how to create sample tables in SnappyData
@@ -47,15 +47,15 @@ object SynopsisDataExample extends SnappySQLJob {
   private var dataFolder: String = ""
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter("SynopsisDataExample.out")
     dataFolder = s"${jobConfig.getString("data_resource_folder")}"
-    runSynopsisDataExample(snc.snappySession, pw)
+    runSynopsisDataExample(snappySession, pw)
     pw.close()
     s"Check ${getCurrentDirectory}/SynopsisDataExample.out file for output of this job"
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snappySession: SnappySession, config: Config): SnappyJobValidation = {
     {
       Try(config.getString("data_resource_folder"))
           .map(x => SnappyJobValid())
@@ -166,7 +166,7 @@ object SynopsisDataExample extends SnappySQLJob {
         .master("local[*]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     val pw = new PrintWriter(System.out, true)
     runSynopsisDataExample(snSession, pw)
