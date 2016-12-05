@@ -180,7 +180,8 @@ class BaseColumnFormatRelation(
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
+        batch.numRows <= math.max(1, columnBatchSize)) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
@@ -670,7 +671,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
-      forManagedTable = true, forColumnTable = true)
+      forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
