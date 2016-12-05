@@ -144,7 +144,7 @@ class CachedDataFrame(df: Dataset[Row],
             // special case where caller will do processing of the blocks
             // (returns a AggregatePartialDataIterator)
             new AggregatePartialDataIterator(plan.generatedSource,
-              plan.generatedReferences, plan.child.schema.length,
+              plan.generatedReferences, plan.left.schema.length,
               plan.executeCollectData()).asInstanceOf[Iterator[R]]
           } else if (skipUnpartitionedDataProcessing) {
             // no processing required

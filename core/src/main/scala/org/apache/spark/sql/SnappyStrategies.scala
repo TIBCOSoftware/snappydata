@@ -52,7 +52,7 @@ private[sql] trait SnappyStrategies {
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(output, rowStream)) :: Nil
       case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _), _) =>
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(l.output, t.rowStream)) :: Nil
-      case WindowLogicalPlan(d, s, child, _) => throw new AnalysisException(
+      case WindowLogicalPlan(_, _, child, _) => throw new AnalysisException(
         s"Unexpected child $child for WindowLogicalPlan")
       case _ => Nil
     }
@@ -74,7 +74,7 @@ private[sql] trait SnappyStrategies {
 
     private def canBuildRight(joinType: JoinType): Boolean = joinType match {
       case Inner | LeftOuter | LeftSemi | LeftAnti => true
-      case j: ExistenceJoin => true
+      case _: ExistenceJoin => true
       case _ => false
     }
 
@@ -85,11 +85,10 @@ private[sql] trait SnappyStrategies {
 
     private def canLocalJoin(plan: LogicalPlan): Boolean = {
       plan match {
-        case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
+        case PhysicalOperation(_, _, LogicalRelation(
+        t: PartitionedDataSourceScan, _, _)) =>
           t.numBuckets == 1
-        case PhysicalOperation(projects, filters,
-        Join(left, right, _, _)) =>
+        case PhysicalOperation(_, _, Join(left, right, _, _)) =>
           // If join is a result of join of replicated tables, this
           // join result should also be a local join with any other table
           canLocalJoin(left) && canLocalJoin(right)
@@ -241,8 +240,8 @@ object SnappyAggregation extends Strategy {
     val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
-      CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate)
+      CollectAggregateExec(left = partialAggregate,
+        right = finalHashAggregate, finalHashAggregate)
     } else finalHashAggregate
     finalAggregate :: Nil
   }
@@ -325,7 +324,7 @@ object SnappyAggregation extends Strategy {
       // Children of an AggregateFunction with DISTINCT keyword has already
       // been evaluated. At here, we need to replace original children
       // to AttributeReferences.
-      case agg@AggregateExpression(aggregateFunction, mode, true, _) =>
+      case AggregateExpression(aggregateFunction, _, true, _) =>
         aggregateFunction.transformDown(distinctColumnAttributeLookup)
             .asInstanceOf[AggregateFunction]
     }
