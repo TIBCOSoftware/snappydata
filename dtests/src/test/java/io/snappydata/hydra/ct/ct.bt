@@ -1,20 +1,20 @@
 //split mode tests
 //Row tables
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0  persistenceMode="null" //not required for replicated table, but required for hydra config
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Replicated"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/ct"
   redundantCopies=0  persistenceMode="async" //redundancy not required for replicated table, but required for hydra config
   tableType="PersistentReplicated"
@@ -22,10 +22,10 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentReplicated"
@@ -34,20 +34,20 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PartitionedRow"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeServerHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PartitionedRow"
@@ -55,10 +55,10 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentPartitionedRow"
@@ -66,20 +66,20 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedRow"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppLeadHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedRow"
@@ -87,20 +87,20 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppLeadHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="EvictionRow"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedRow"
@@ -108,10 +108,10 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedRow"
@@ -119,10 +119,10 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedWithEvictionRow"
@@ -130,40 +130,40 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
 
 //Column tables
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Column"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColumn"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedColumn"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedColumn"
@@ -172,10 +172,10 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="EvictionColumn"
@@ -183,20 +183,20 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitMode.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="EvictionColumn"
@@ -204,10 +204,10 @@ io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeServerHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
@@ -215,10 +215,10 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   fullResultSetValidation = true
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedWithEvictionColumn"
