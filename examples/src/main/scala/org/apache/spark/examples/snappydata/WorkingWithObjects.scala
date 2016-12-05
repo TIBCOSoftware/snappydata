@@ -35,10 +35,9 @@ case class Person(name: String, address: Address)
 
 object WorkingWithObjects extends SnappySQLJob {
 
-  override def isValidJob(snc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
-    val snSession = snc.snappySession
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
@@ -96,9 +95,9 @@ object WorkingWithObjects extends SnappySQLJob {
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
     val config = ConfigFactory.parseString("")
-    val results = runSnappyJob(snSession.snappyContext, config)
+    val results = runSnappyJob(snSession, config)
     println("Printing All People \n################## \n" + results)
   }
 }

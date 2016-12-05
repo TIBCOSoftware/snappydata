@@ -56,14 +56,14 @@ object CollocatedJoinExample extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter("CollocatedJoinExample.out")
-    runCollocatedJoinQuery(snSession.snappySession, pw)
+    runCollocatedJoinQuery(snSession, pw)
     pw.close()
     s"Check ${getCurrentDirectory}/CollocatedJoinExample.out for output of this job"
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
   def runCollocatedJoinQuery(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
@@ -140,7 +140,7 @@ object CollocatedJoinExample extends SnappySQLJob {
         .master("local[*]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     val pw = new PrintWriter(System.out, true)
     runCollocatedJoinQuery(snSession, pw)

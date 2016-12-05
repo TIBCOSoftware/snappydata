@@ -62,18 +62,18 @@ object CreateReplicatedRowTable extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
     val pw = new PrintWriter("CreateReplicatedRowTable.out")
 
-    createReplicatedRowTableUsingSQL(snc.snappySession, pw)
-    createReplicatedRowTableUsingAPI(snc.snappySession, pw)
+    createReplicatedRowTableUsingSQL(snappySession, pw)
+    createReplicatedRowTableUsingAPI(snappySession, pw)
     pw.close()
 
     s"Check ${getCurrentDirectory}/CreateReplicatedRowTable.out for output of this job"
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
   /**
    * Creates row table and performs operations on it using APIs
@@ -218,7 +218,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
         .master("local[*]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
     val pw = new PrintWriter(System.out, true)
     createReplicatedRowTableUsingSQL(snSession, pw)
