@@ -30,7 +30,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
   test("test default conf") {
     val conf = new ConnectionConfBuilder(snc.snappySession).build()
-    assert(conf.connProps.hikariCP)
+    assert(!conf.connProps.hikariCP)
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
