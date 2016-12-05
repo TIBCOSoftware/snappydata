@@ -70,7 +70,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     createPartitionedRowTableUsingAPI(snSession, pw)
     pw.close()
 
-    s"Check ${getCurrentDirectory}/CreatePartitionedRowTable.out for output of this job"
+    s"Check ${getCurrentDirectory}/CreatePartitionedRowTable.out file for output of this job"
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()

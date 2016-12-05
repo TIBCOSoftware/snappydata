@@ -13,16 +13,14 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - How Tos: howto.md
-- Download and Install SnappyData:
-    - Instructions: install.md
-    - Building from source, project layout: build-instructions.md
+- Download and Install SnappyData: install.md
+- Building from source, project layout: build-instructions.md
 - Architecture: architecture.md
-- About Cluster:
-    - Introduction: cluster.md
-    - Configuring the Cluster: configuration.md
-    - Using Spark API: clustersparkapi.md
-    - Using SQL: clustersql.md
-    - Connecting using JDBC, Spark: connectingToCluster.md
+- About Cluster: cluster.md
+- Configuring the Cluster: configuration.md
+- Using Spark API: clustersparkapi.md
+- Using SQL: clustersql.md
+- Connecting using JDBC, Spark: connectingToCluster.md
 - Synopsis Data Engine (SDE): aqp.md
 - Developing Apps using the Spark API: jobs.md
 - Row and Column tables: rowAndColumnTables.md
@@ -41,3 +39,34 @@ theme: readthedocs
 extra_css: [extra.css]
 
 copyright: Copyright &copy; 2016 SnappyData Inc.h
+
+
+
+# ---
+#- Overview: index.md
+# - Introduction: snappyIntroduction.md
+#- Quick Start: quickstart.md
+#- How Tos: howto.md
+#- Download and Install SnappyData:
+#    - Instructions: install.md
+#    - Building from source, project layout: build-instructions.md
+#- Architecture: architecture.md
+#- About Cluster:
+#    - Introduction: cluster.md
+#    - Configuring the Cluster: configuration.md
+#    - Using Spark API: clustersparkapi.md
+#    - Using SQL: clustersql.md
+#    - Connecting using JDBC, Spark: connectingToCluster.md
+#- Synopsis Data Engine (SDE): aqp.md
+#- Developing Apps using the Spark API: jobs.md
+#- Row and Column tables: rowAndColumnTables.md
+#- Stream processing using SQL: streamingWithSQL.md
+#- Deployment topologies: deployment.md
+#- API: apidocsintro.md
+#- Using iSight-Cloud: aqp_aws.md
+#- About:
+#   - Release Notes: about/release-notes.md
+#   - Contributing: about/contributing.md
+#    - Contact and Support: techsupport.md
+#    - License: LICENSE.md
+

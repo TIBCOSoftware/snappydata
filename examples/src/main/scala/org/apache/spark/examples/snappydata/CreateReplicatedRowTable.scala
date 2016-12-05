@@ -70,7 +70,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     createReplicatedRowTableUsingAPI(snappySession, pw)
     pw.close()
 
-    s"Check ${getCurrentDirectory}/CreateReplicatedRowTable.out for output of this job"
+    s"Check ${getCurrentDirectory}/CreateReplicatedRowTable.out file for output of this job"
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
