@@ -100,7 +100,7 @@ private[sql] final case class RowTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.add($numRows);
+       |  $numOutputRows.${metricAdd(numRows)};
        |}
     """.stripMargin
   }
@@ -132,7 +132,7 @@ private[sql] final case class RowTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.add($numRows);
+       |  $numOutputRows.${metricAdd(numRows)};
        |}
     """.stripMargin
   }

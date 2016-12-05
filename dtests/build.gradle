@@ -45,12 +45,6 @@ dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
     compile 'org.scala-lang:scala-compiler:' + scalaVersion
-
-    compile(group: 'com.databricks', name: 'spark-csv_' + scalaBinaryVersion, version: sparkCSVVersion) {
-        exclude(group: 'org.scala-lang', module: 'scala-library')
-        exclude(group: 'org.scala-lang', module: 'scala-reflect')
-        exclude(group: 'org.scala-lang', module: 'scala-compiler')
-    }
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
        exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)

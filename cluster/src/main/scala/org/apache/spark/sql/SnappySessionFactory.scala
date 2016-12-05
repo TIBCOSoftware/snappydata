@@ -26,17 +26,17 @@ import org.apache.spark.SparkConf
 import org.apache.spark.util.SnappyUtils
 
 
-class SnappyContextFactory extends SparkContextFactory {
+class SnappySessionFactory extends SparkContextFactory {
 
   type C = SnappySession with ContextLike
 
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
-    SnappyContextFactory.newSession()
+    SnappySessionFactory.newSession()
   }
 
 }
 
-object SnappyContextFactory {
+object SnappySessionFactory {
 
   private[this] val snappySession =
     new SnappySession(LeadImpl.getInitializingSparkContext)

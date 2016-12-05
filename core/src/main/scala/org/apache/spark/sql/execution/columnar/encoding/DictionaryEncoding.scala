@@ -44,23 +44,25 @@ abstract class DictionaryEncodingBase extends ColumnEncoding {
       field: StructField): Long = {
     var cursor = super.initializeDecoding(columnBytes, field)
     val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
+    // last index in the dictionary is for null element
+    val dictionaryLen = if (hasNulls) elementNum + 1 else elementNum
     cursor += 4
     Utils.getSQLDataType(field.dataType) match {
       case StringType =>
-        stringDictionary = new Array[UTF8String](elementNum)
+        stringDictionary = new Array[UTF8String](dictionaryLen)
         (0 until elementNum).foreach { index =>
           val s = ColumnEncoding.readUTF8String(columnBytes, cursor)
           stringDictionary(index) = s
           cursor += (4 + s.numBytes())
         }
       case IntegerType | DateType =>
-        intDictionary = new Array[Int](elementNum)
+        intDictionary = new Array[Int](dictionaryLen)
         (0 until elementNum).foreach { index =>
           intDictionary(index) = ColumnEncoding.readInt(columnBytes, cursor)
           cursor += 4
         }
       case LongType | TimestampType =>
-        longDictionary = new Array[Long](elementNum)
+        longDictionary = new Array[Long](dictionaryLen)
         (0 until elementNum).foreach { index =>
           longDictionary(index) = ColumnEncoding.readLong(columnBytes, cursor)
           cursor += 8

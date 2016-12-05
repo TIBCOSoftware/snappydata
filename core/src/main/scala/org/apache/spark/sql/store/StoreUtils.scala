@@ -194,7 +194,7 @@ object StoreUtils extends Logging {
             if (index < remaining) minPartitions + 1 else minPartitions)
         // find any alternative servers for whole bucket group
         val partBuckets = buckets.slice(partitionStart, partitionEnd)
-        val alternates = partBuckets.map { bucketId =>
+        val allAlternates = partBuckets.map { bucketId =>
           assert(!allocatedBuckets(bucketId), s"Double allocate for $bucketId")
           allocatedBuckets(bucketId) = true
           // remove self from the bucket owners before intersect;
@@ -202,11 +202,18 @@ object StoreUtils extends Logging {
           val owners = adviser.getBucketOwners(bucketId)
           owners.remove(m)
           owners.asScala
-        } reduce { (set1, set2) =>
-          // empty check useful only for set on left which is result
-          // of previous intersect
-          if (set1.isEmpty) set1
-          else set1.intersect(set2)
+        }
+        // Asif: This check is needed as in my tests found reduce throwing
+        // UnsupportedOperationException if the buffer is empty
+        val alternates = if (allAlternates.isEmpty) {
+          mutable.Set.empty[InternalDistributedMember]
+        } else {
+          allAlternates.reduce { (set1, set2) =>
+            // empty check useful only for set on left which is result
+            // of previous intersect
+            if (set1.isEmpty) set1
+            else set1.intersect(set2)
+          }
         }
         partitionStart = partitionEnd
         val preferredLocations = (blockId :: alternates.map(mbr =>
