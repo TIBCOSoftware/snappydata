@@ -51,14 +51,14 @@ object ErrorEstimationValidation extends SnappySQLJob {
       val result = snc.sql("Select uniqueCarrier, sum(ArrDelay) as x ,count(*) from airline group by uniqueCarrier order by uniqueCarrier desc")
       val rowCnt = result.count()
       val uniqueCarrier_base = new Array[String](rowCnt.toInt)
-      val actualVal = new Array[Long](rowCnt.toInt)
+      val actualVal = new Array[Double](rowCnt.toInt)
       val countVal = new Array[Long](rowCnt.toInt)
       println("The total row cnt from base table is " + rowCnt)
       val collectActualVal = result.collect()
       println("The total row  in collectActualVal is " + collectActualVal.length)
       for (i <- 0 to collectActualVal.length - 1) {
         uniqueCarrier_base(i) = collectActualVal(i).getString(0)
-        actualVal(i) = collectActualVal(i).getLong(1)
+        actualVal(i) = collectActualVal(i).getLong(1).toDouble
         countVal(i) = collectActualVal(i).getLong(2)
         println("Supriya1 :actual value is " + actualVal(i))
       }
@@ -66,14 +66,14 @@ object ErrorEstimationValidation extends SnappySQLJob {
       val sampleVal = snc.sql("Select uniqueCarrier, sum(ArrDelay) as x , relative_error(x),count(*) as sample_ from airline group by uniqueCarrier order by uniqueCarrier desc with error 0.2 confidence 0.9999 behavior 'do_nothing'")
       val sampleRowCnt = sampleVal.count()
       val uniqueCarrier_sample = new Array[String](sampleRowCnt.toInt)
-      val estimatedVal = new Array[Long](sampleRowCnt.toInt)
+      val estimatedVal = new Array[Double](sampleRowCnt.toInt)
       val relativeVal = new Array[Double](sampleRowCnt.toInt)
       val sampleCountVal = new Array[Long](sampleRowCnt.toInt)
       println("The total row cnt from sample table is " + sampleRowCnt)
       val collectSampleVal = sampleVal.collect()
       for (i <- 0 to collectSampleVal.length - 1) {
         uniqueCarrier_sample(i) = collectSampleVal(i).getString(0)
-        estimatedVal(i) = collectSampleVal(i).getLong(1)
+        estimatedVal(i) = collectSampleVal(i).getLong(1).toDouble
         relativeVal(i) = collectSampleVal(i).getDouble(2)
         sampleCountVal(i) = collectSampleVal(i).getLong(3)
         println("Supriya2 : absoluteVal is " + relativeVal(i))
@@ -81,7 +81,8 @@ object ErrorEstimationValidation extends SnappySQLJob {
 
       for (i <- 0 to actualVal.length - 1) {
         val actualDiff = java.lang.Math.abs(actualVal(i) - estimatedVal(i))
-        val actualError = (actualDiff.toDouble/actualVal(i).toDouble)
+        //val actualError = (actualDiff.toDouble/actualVal(i).toDouble)
+        val actualError = (actualDiff/actualVal(i))
         pw.println("BaseUniqueCarrier = " + uniqueCarrier_base(i) + " SampleUniqueCarrier = " + uniqueCarrier_sample(i))
         pw.println("Base Table count = " + countVal(i) + " Sample Table count " + sampleCountVal(i))
         pw.println("ActualValue is = " + actualVal(i) + " Estimated Value is =  " +
