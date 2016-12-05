@@ -11,7 +11,7 @@ pages:
 #
 - Overview: index.md
 # - Introduction: snappyIntroduction.md
-- Quick Start: quickstart.md
+- Getting Started: quickstart.md
 - How Tos: howto.md
 - Download and Install SnappyData:
     - Instructions: install.md
