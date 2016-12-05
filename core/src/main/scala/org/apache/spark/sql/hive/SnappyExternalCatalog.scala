@@ -44,11 +44,11 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
 
 
   /**
-    * Whether this is an exception thrown by the hive client that should be wrapped.
-    *
-    * Due to classloader isolation issues, pattern matching won't work here so we need
-    * to compare the canonical names of the exceptions, which we assume to be stable.
-    */
+   * Whether this is an exception thrown by the hive client that should be wrapped.
+   *
+   * Due to classloader isolation issues, pattern matching won't work here so we need
+   * to compare the canonical names of the exceptions, which we assume to be stable.
+   */
   private def isClientException(e: Throwable): Boolean = {
     var temp: Class[_] = e.getClass
     var found = false
@@ -84,9 +84,9 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   /**
-    * Run some code involving `client` in a [[synchronized]] block and wrap certain
-    * exceptions thrown in the process in [[AnalysisException]].
-    */
+   * Run some code involving `client` in a [[synchronized]] block and wrap certain
+   * exceptions thrown in the process in [[AnalysisException]].
+   */
   private def withClient[T](body: => T): T = synchronized {
     try {
       body
@@ -129,11 +129,11 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   /**
-    * Alter a database whose name matches the one specified in `dbDefinition`,
-    * assuming the database exists.
-    *
-    * Note: As of now, this only supports altering database properties!
-    */
+   * Alter a database whose name matches the one specified in `dbDefinition`,
+   * assuming the database exists.
+   *
+   * Note: As of now, this only supports altering database properties!
+   */
   override def alterDatabase(dbDefinition: CatalogDatabase): Unit = withClient {
     val existingDb = getDatabase(dbDefinition.name)
     if (existingDb.properties == dbDefinition.properties) {
@@ -209,6 +209,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     } else {
       withHiveExceptionHandling(client.createTable(tableDefinition, ignoreIfExists))
     }
+    SnappySession.clearCache()
   }
 
   override def dropTable(
@@ -217,25 +218,28 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       ignoreIfNotExists: Boolean): Unit = withClient {
     requireDbExists(db)
     withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists))
+    SnappySession.clearCache()
   }
 
   override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
     val newTable = client.getTable(db, oldName)
         .copy(identifier = TableIdentifier(newName, Some(db)))
     withHiveExceptionHandling(client.alterTable(oldName, newTable))
+    SnappySession.clearCache()
   }
 
   /**
-    * Alter a table whose name that matches the one specified in `tableDefinition`,
-    * assuming the table exists.
-    *
-    * Note: As of now, this only supports altering table properties, serde properties,
-    * and num buckets!
-    */
+   * Alter a table whose name that matches the one specified in `tableDefinition`,
+   * assuming the table exists.
+   *
+   * Note: As of now, this only supports altering table properties, serde properties,
+   * and num buckets!
+   */
   override def alterTable(db: String, tableDefinition: CatalogTable): Unit = withClient {
     requireDbMatches(db, tableDefinition)
     requireTableExists(db, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
+    SnappySession.clearCache()
   }
 
   override def getTable(db: String, table: String): CatalogTable = withClient {
@@ -311,6 +315,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       ignoreIfExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     withHiveExceptionHandling(client.createPartitions(db, table, parts, ignoreIfExists))
+    SnappySession.clearCache()
   }
 
   override def dropPartitions(
@@ -320,6 +325,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       ignoreIfNotExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     withHiveExceptionHandling(client.dropPartitions(db, table, parts, ignoreIfNotExists))
+    SnappySession.clearCache()
   }
 
   override def renamePartitions(
@@ -328,6 +334,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       specs: Seq[TablePartitionSpec],
       newSpecs: Seq[TablePartitionSpec]): Unit = withClient {
     withHiveExceptionHandling(client.renamePartitions(db, table, specs, newSpecs))
+    SnappySession.clearCache()
   }
 
   override def alterPartitions(
@@ -335,6 +342,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       table: String,
       newParts: Seq[CatalogTablePartition]): Unit = withClient {
     withHiveExceptionHandling(client.alterPartitions(db, table, newParts))
+    SnappySession.clearCache()
   }
 
   override def getPartition(
@@ -345,8 +353,8 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   /**
-    * Returns the partition names from hive metastore for a given table in a database.
-    */
+   * Returns the partition names from hive metastore for a given table in a database.
+   */
   override def listPartitions(
       db: String,
       table: String,
@@ -368,14 +376,17 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     val functionIdentifier = funcDefinition.identifier.copy(funcName = functionName)
     withHiveExceptionHandling(client.createFunction(db,
       funcDefinition.copy(identifier = functionIdentifier)))
+    SnappySession.clearCache()
   }
 
   override def dropFunction(db: String, name: String): Unit = withClient {
     withHiveExceptionHandling(client.dropFunction(db, name))
+    SnappySession.clearCache()
   }
 
   override def renameFunction(db: String, oldName: String, newName: String): Unit = withClient {
     withHiveExceptionHandling(client.renameFunction(db, oldName, newName))
+    SnappySession.clearCache()
   }
 
   override def getFunction(db: String, funcName: String): CatalogFunction = withClient {
@@ -393,5 +404,4 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
   }
-
 }

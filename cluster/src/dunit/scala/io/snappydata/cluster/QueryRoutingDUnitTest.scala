@@ -18,7 +18,7 @@
 package io.snappydata.cluster
 
 import java.io.File
-import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
+import java.sql.{Connection, DatabaseMetaData, SQLException, Statement}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -29,14 +29,17 @@ import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.types.Decimal
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Tests for query routing from JDBC client driver.
  */
 class QueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
+
+  // set default batch size for this test
+  bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "10000")
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
@@ -311,7 +314,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     // check no hang with decent number of runs (SNAP-608)
     rs.close()
-    for (i <- 0 until 20) {
+    for (_ <- 0 until 20) {
       rs = stmt.executeQuery("select YEARI, MONTHI, DAYOFMONTH, DAYOFWEEK, " +
           "DEPTIME, CRSDEPTIME, UNIQUECARRIER " +
           "from AIRLINE limit 2")

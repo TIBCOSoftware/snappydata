@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Creates and loads Airline data from parquet files in row and column
@@ -48,7 +48,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   val sampleTable = "AIRLINE_SAMPLE"
   val stagingAirline = "STAGING_AIRLINE"
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
     Try {
@@ -63,7 +63,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
       // Create a DF from the parquet data file and make it a table
-      val airlineDF = snc.createExternalTable(stagingAirline, "parquet",
+      val airlineDF = snc.catalog.createExternalTable(stagingAirline, "parquet",
         Map("path" -> airlinefilePath))
       val updatedSchema = replaceReservedWords(airlineDF.schema)
 
@@ -115,7 +115,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
    * Validate if the data files are available, else throw SparkJobInvalid
    *
    */
-  override def isValidJob(snc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snc: SnappySession, config: Config): SnappyJobValidation = {
 
     airlinefilePath = if (config.hasPath("airline_file")) {
       config.getString("airline_file")

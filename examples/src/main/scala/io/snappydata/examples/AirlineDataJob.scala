@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Fetches already created tables. Airline table is already persisted in
@@ -52,7 +52,7 @@ import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJob
 
 object AirlineDataJob extends SnappySQLJob {
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"
@@ -145,5 +145,5 @@ object AirlineDataJob extends SnappySQLJob {
     // scalastyle:on println
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
