@@ -191,7 +191,28 @@ This will open a Spark shell. Then follow the steps mentioned [here](#Start_quic
 
 ###Getting started on AWS
 ---
-* To be done
+You can quickly create a single host SnappyData cluster (i.e. one lead node , one data node and a locator in a single machine) through the AWS CloudFormation.
+
+###Prerequisites###
+Before you begin,:
+
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+* Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+*  Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
+
+
+Click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?bucket=snappydata-cloudbuilder&templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) to launch the instacne.
+ 
+ 1. After clicking in the above URL you should see a login screen like below. Enter your credentails. After login in you should be in "Select Template" page.
+ 2. In "Select Template" page default region is selected for you. If you want you can change the region . Click next to go to "Specify Details" page.
+ 3. By default  a c4.2xlarge instance ( with 8 CPU core and 15 GB RAM) is selected. This is the prefered instance size for running this quickstart.  Click next to go to "Options" page.
+ 4. Keep the selected defaults as is. Click next to go to "Review" page
+ 5. On the Review page, verify the details and click Create to create a stack.
+ 6. The next page lists the existing stacks. Click Refresh to view the updated list and the status of the stack creation. When the cluster has started, the status of the stack changes to CREATE_COMPLETE.
+ 7. Click on the Outputs tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration.  
+   
+   
+
 ###Getting started with Docker image
 ---
 SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
