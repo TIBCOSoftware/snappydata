@@ -84,8 +84,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     val pooled = KryoSerializerPool.borrow()
     val input = pooled.input
     try {
-      input.setBuffer(in.array(), in.position(), in.available())
-      StructTypeSerializer.readType(pooled.kryo, input)
+      val initPosition = in.position()
+      input.setBuffer(in.array(), initPosition, in.available())
+      val result = StructTypeSerializer.readType(pooled.kryo, input)
+      // move the cursor to the new position
+      in.setPosition(input.position())
+      result
     } finally {
       KryoSerializerPool.release(pooled, clearInputBuffer = true)
     }

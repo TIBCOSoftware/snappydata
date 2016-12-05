@@ -29,7 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecuto
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
@@ -247,8 +247,7 @@ class SparkSQLExecuteImpl(val sql: String,
           try {
             StructTypeSerializer.writeType(pooled.kryo, output,
               querySchema(i).dataType)
-            DataSerializer.writeByteArray(output.getBuffer,
-              output.position(), hdos)
+            hdos.write(output.getBuffer, 0, output.position())
           } finally {
             KryoSerializerPool.release(pooled)
           }
@@ -290,16 +289,14 @@ class SparkSQLExecuteImpl(val sql: String,
               } else {
                 (StoredFormatIds.SQL_CLOB_ID, -1, -1)
               }
+            } else if (base == "CHAR") {
+              (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+            } else if (base == "VARCHAR" || !SparkSQLExecuteImpl.STRING_AS_CLOB) {
+              (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
             } else {
-              if (base == "CHAR") {
-                (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
-              } else if (base == "VARCHAR" || !SparkSQLExecuteImpl.STRING_AS_CLOB ||
-                  varcharSize <= Constant.MAX_VARCHAR_SIZE) {
-                (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
-              } else {
-                (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-              }
+              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
             }
+
           case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
         }
       case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
@@ -362,11 +359,29 @@ object SparkSQLExecuteImpl {
           index += 1
         } else {
           types(index) match {
-            case StoredFormatIds.SQL_CHAR_ID |
-                 StoredFormatIds.SQL_VARCHAR_ID |
+            case StoredFormatIds.SQL_VARCHAR_ID |
                  StoredFormatIds.SQL_CLOB_ID =>
               val utf8String = row.getUTF8String(index)
               dvd.setValue(utf8String.toString)
+
+            case StoredFormatIds.SQL_CHAR_ID =>
+              val precision = precisions(index)
+              val utf8String = row.getUTF8String(index)
+              var fixedString = utf8String.toString
+              val stringLen = fixedString.length
+              if (stringLen != precision) {
+                if (stringLen < precision) {
+                  // add blank padding
+                  val sb = new java.lang.StringBuilder(precision)
+                  val blanks = new Array[Char](precision - stringLen)
+                  SQLChar.appendBlanks(blanks, 0, blanks.length)
+                  fixedString = sb.append(fixedString).append(blanks).toString
+                } else {
+                  // truncate
+                  fixedString = fixedString.substring(0, precision)
+                }
+              }
+              dvd.setValue(fixedString)
 
             case StoredFormatIds.SQL_INTEGER_ID =>
               dvd.setValue(row.getInt(index))

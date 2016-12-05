@@ -21,7 +21,7 @@ import com.typesafe.config.Config
 
 import org.apache.spark.TaskContext
 import org.apache.spark.jdbc.{ConnectionUtil, ConnectionConfBuilder}
-import org.apache.spark.sql.{SnappyJobValid, SaveMode, SnappyJobValidation, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SnappyJobValid, SaveMode, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 case class Data(col1: Int, col2: Int, col3: Int)
 
@@ -30,9 +30,9 @@ case class Data(col1: Int, col2: Int, col3: Int)
  * 
  */
 object DataUpdateJob extends SnappySQLJob {
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
     val sc = snc.sparkContext
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))

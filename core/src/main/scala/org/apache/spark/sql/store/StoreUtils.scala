@@ -160,11 +160,11 @@ object StoreUtils extends Logging {
   private def allocateBucketsToPartitions(session: SnappySession,
       region: PartitionedRegion): Array[Partition] = {
 
-    val numBuckets = region.getTotalNumberOfBuckets
+    val numTotalBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
     val adviser = region.getRegionAdvisor
-    for (p <- 0 until numBuckets) {
+    for (p <- 0 until numTotalBuckets) {
       var prefNode = adviser.getPreferredInitializedNode(p, true)
       if (prefNode == null) {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
@@ -187,7 +187,7 @@ object StoreUtils extends Logging {
       buckets += p
     }
     // marker array to check that all buckets have been allocated
-    val allocatedBuckets = new Array[Boolean](numBuckets)
+    val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
@@ -230,7 +230,7 @@ object StoreUtils extends Logging {
         }
         partitionIndex += 1
         new MultiBucketExecutorPartition(partitionIndex, partBuckets,
-          numBuckets, preferredLocations)
+          numTotalBuckets, preferredLocations)
       }
     }.toArray[Partition]
     assert(allocatedBuckets.forall(_ == true),

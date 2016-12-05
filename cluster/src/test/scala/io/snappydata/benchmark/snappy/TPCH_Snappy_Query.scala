@@ -23,8 +23,7 @@ import scala.language.implicitConversions
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid,
-SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 
 object TPCH_Snappy_Query extends SnappySQLJob {
@@ -38,7 +37,8 @@ object TPCH_Snappy_Query extends SnappySQLJob {
   var runsForAverage: Integer = _
 
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val snc = snSession.sqlContext
 
     //     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql
     // .")) {
@@ -137,7 +137,7 @@ object TPCH_Snappy_Query extends SnappySQLJob {
     runJob(snc, null)
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
 
     val sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
       config.getString("sparkSqlProps")
