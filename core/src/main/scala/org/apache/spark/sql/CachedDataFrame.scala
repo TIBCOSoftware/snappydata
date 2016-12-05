@@ -27,8 +27,10 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
@@ -100,7 +102,8 @@ class CachedDataFrame(df: Dataset[Row],
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,
       decodeResult: R => Iterator[InternalRow],
-      skipUnpartitionedDataProcessing: Boolean = false): Iterator[R] = {
+      skipUnpartitionedDataProcessing: Boolean = false,
+      skipLocalCollectProcessing: Boolean = false): Iterator[R] = {
     val sc = sparkSession.sparkContext
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -136,6 +139,23 @@ class CachedDataFrame(df: Dataset[Row],
             cachedRDD.asInstanceOf[RDD[InternalRow]])
         */
 
+        case plan: CollectAggregateExec =>
+          if (skipLocalCollectProcessing) {
+            // special case where caller will do processing of the blocks
+            // (returns a AggregatePartialDataIterator)
+            new AggregatePartialDataIterator(plan.generatedSource,
+              plan.generatedReferences, plan.child.schema.length,
+              plan.executeCollectData()).asInstanceOf[Iterator[R]]
+          } else if (skipUnpartitionedDataProcessing) {
+            // no processing required
+            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+          } else {
+            // convert to UnsafeRow
+            val converter = UnsafeProjection.create(plan.schema)
+            Iterator(resultHandler(0, processPartition(TaskContext.get(),
+              plan.executeCollect().iterator.map(converter))._1))
+          }
+
         case plan@(_: ExecutedCommandExec | _: LocalTableScanExec) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
@@ -165,6 +185,24 @@ class CachedDataFrame(df: Dataset[Row],
         sc.clearCallSite()
       }
     }
+  }
+}
+
+final class AggregatePartialDataIterator(
+    val generatedSource: CodeAndComment,
+    val generatedReferences: Array[Any], val numFields: Int,
+    val partialAggregateResult: Array[Any]) extends Iterator[Any] {
+
+  private val numResults = partialAggregateResult.length
+
+  private var index = 0
+
+  override def hasNext: Boolean = index < numResults
+
+  override def next(): Any = {
+    val data = partialAggregateResult(index)
+    index += 1
+    data
   }
 }
 

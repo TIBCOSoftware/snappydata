@@ -17,7 +17,7 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Statement, Connection}
+import java.sql.{Connection, Statement}
 
 import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
