@@ -227,7 +227,6 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
               if (added != null) {
                 if (added.booleanValue()) {
                   numAdded += 1
-                  this._size.incrementAndGet()
                 }
                 idx += 1
               } else {
@@ -272,8 +271,11 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       iter.setSlice(0, MAX_BULK_INSERT_SIZE)
       for (b <- groupedKeys) if (b != null) b.clear()
       for (b <- groupedHashes) if (b != null) b.clear()
+
+      if (numAdded > 0) _size.addAndGet(numAdded)
+      numAdded = 0
     }
-    if (numAdded > 0) _size.addAndGet(numAdded)
+
   }
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)
