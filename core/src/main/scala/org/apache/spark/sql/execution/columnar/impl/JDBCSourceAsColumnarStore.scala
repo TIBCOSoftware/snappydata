@@ -112,8 +112,13 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
                     getAllLocalPrimaryBucketIdArray
                 // TODO: do load-balancing among partitions instead
                 // of random selection
-                primaryBucketIds.getQuick(
-                  rand.nextInt(primaryBucketIds.size()))
+                val numPrimaries = primaryBucketIds.size()
+                // if no local primary bucket, then select some other
+                if (numPrimaries > 0) {
+                  primaryBucketIds.getQuick(rand.nextInt(numPrimaries))
+                } else {
+                  rand.nextInt(pr.getTotalNumberOfBuckets)
+                }
               } else {
                 partitionId
               }
