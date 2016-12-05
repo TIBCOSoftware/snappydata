@@ -58,9 +58,10 @@ class SnappySession(@transient private val sc: SparkContext,
 
   self =>
 
-  private[sql] def this(sc: SparkContext) {
+  def this(sc: SparkContext) {
     this(sc, None)
   }
+
 
   // initialize GemFireXDDialect so that it gets registered
 
