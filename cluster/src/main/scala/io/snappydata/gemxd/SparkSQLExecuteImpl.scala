@@ -247,8 +247,7 @@ class SparkSQLExecuteImpl(val sql: String,
           try {
             StructTypeSerializer.writeType(pooled.kryo, output,
               querySchema(i).dataType)
-            DataSerializer.writeByteArray(output.getBuffer,
-              output.position(), hdos)
+            hdos.write(output.getBuffer, 0, output.position())
           } finally {
             KryoSerializerPool.release(pooled)
           }

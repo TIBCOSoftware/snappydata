@@ -103,7 +103,7 @@ object StoreUtils extends Logging {
   // with all the optimizations under SNAP-1135, RDD-bucket delinking is
   // largely not required (max 5-10% advantage in the best case) since
   // without the delinking exchange on one side can be avoided where possible
-  val ENABLE_BUCKET_RDD_DELINKING = true
+  val ENABLE_BUCKET_RDD_DELINKING = false
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
