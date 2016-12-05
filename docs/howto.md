@@ -399,7 +399,7 @@ A partitioned table can be collocated with another partitioned table by using "C
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'O_CUSTKEY', " +
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 

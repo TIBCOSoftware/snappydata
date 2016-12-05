@@ -111,7 +111,7 @@ object CollocatedJoinExample extends SnappySQLJob {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'O_ORDERKEY', " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'O_CUSTKEY', " +
         "COLOCATE_WITH 'CUSTOMER' )")
     snSession.sql("INSERT INTO ORDERS VALUES (1, 20000, 'O', 100.50, '2016-04-04', 'LOW', 'Clerk#001', 3, '')")
     snSession.sql("INSERT INTO ORDERS VALUES (2, 20000, 'F', 1000, '2016-04-04', 'HIGH', 'Clerk#002', 1, '')")
