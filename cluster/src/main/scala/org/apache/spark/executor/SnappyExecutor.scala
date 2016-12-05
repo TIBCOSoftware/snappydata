@@ -76,7 +76,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) {
   protected val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
 
-  protected def getJobName = {
+  protected def getJobName: String = {
     val jobFile = Executor.taskDeserializationProps.
         get().getProperty(io.snappydata.Constant.JOB_SERVER_JAR_NAME, "")
     new File(jobFile).getName

@@ -200,7 +200,8 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   test("Test PR with multiple columns") {
     snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE9")
-    snc.sql("CREATE TABLE ROW_TEST_TABLE9(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ItemRef INT) " +
+    snc.sql("CREATE TABLE ROW_TEST_TABLE9(OrderId INT NOT NULL PRIMARY KEY," +
+        "  ItemId INT, ItemRef INT) " +
         "USING row " +
         "options " +
         "(" +
@@ -227,8 +228,8 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
         "PARTITION_BY 'OrderId'," +
         "EXPIRE '200')")
 
-    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE10", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE10", true)
+        .asInstanceOf[PartitionedRegion]
     assert(region.getAttributes.getEntryTimeToLive.getTimeout == 200)
-
-    }
+  }
 }

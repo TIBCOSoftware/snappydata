@@ -100,6 +100,11 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
+  // with all the optimizations under SNAP-1135, RDD-bucket delinking is
+  // largely not required (max 5-10% advantage in the best case) since
+  // without the delinking exchange on one side can be avoided where possible
+  val ENABLE_BUCKET_RDD_DELINKING = false
+
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
       if (tableName.indexOf('.') <= 0) {
@@ -113,7 +118,7 @@ object StoreUtils extends Logging {
       region: PartitionedRegion): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
+    if (ENABLE_BUCKET_RDD_DELINKING && callbacks != null) {
       allocateBucketsToPartitions(session, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
@@ -125,7 +130,10 @@ object StoreUtils extends Logging {
             Utils.getHostExecutorId(SnappyContext.getBlockId(
               m.toString).get.blockId)
         }
-        new MultiBucketExecutorPartition(p, Set(p), prefNodes.toSeq)
+        val buckets = new mutable.ArrayBuffer[Int](1)
+        buckets += p
+        new MultiBucketExecutorPartition(p, buckets, numPartitions,
+          prefNodes.toSeq)
       }.toArray[Partition]
     }
   }
@@ -145,18 +153,18 @@ object StoreUtils extends Logging {
       case m if SnappyContext.containsBlockId(m.toString) =>
         Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
     }.toSeq
-    partitions(0) = new MultiBucketExecutorPartition(0, Set.empty, prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition(0, null, 0, prefNodes)
     partitions
   }
 
   private def allocateBucketsToPartitions(session: SnappySession,
       region: PartitionedRegion): Array[Partition] = {
 
-    val numBuckets = region.getTotalNumberOfBuckets
+    val numTotalBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
     val adviser = region.getRegionAdvisor
-    for (p <- 0 until numBuckets) {
+    for (p <- 0 until numTotalBuckets) {
       var prefNode = adviser.getPreferredInitializedNode(p, true)
       if (prefNode == null) {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
@@ -179,13 +187,13 @@ object StoreUtils extends Logging {
       buckets += p
     }
     // marker array to check that all buckets have been allocated
-    val allocatedBuckets = new Array[Boolean](numBuckets)
+    val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
-      val numPartitions = math.max(1, math.min(numBuckets,
-        blockId.map(_.executorCores).getOrElse(numBuckets)))
+      val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
+        b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
       val minPartitions = numBuckets / numPartitions
       val remaining = numBuckets % numPartitions
       var partitionStart = 0
@@ -221,8 +229,8 @@ object StoreUtils extends Logging {
           case Some(b) => Utils.getHostExecutorId(b.blockId)
         }
         partitionIndex += 1
-        new MultiBucketExecutorPartition(partitionIndex, partBuckets.toSet,
-          preferredLocations)
+        new MultiBucketExecutorPartition(partitionIndex, partBuckets,
+          numTotalBuckets, preferredLocations)
       }
     }.toArray[Partition]
     assert(allocatedBuckets.forall(_ == true),
