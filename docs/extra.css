@@ -1,11 +1,32 @@
-h1 {
-      font-size: 250%;
+html {
+    font-size: 90%;
 }
 
-h2 {
-      font-size: 200%;
+h1{
+    color: #000000;
+    font-weight: 500
+    font-style: "Tahoma", sans-serif;
 }
 
-p {
-      font-size: 120%;
+
+h2{
+    color: #335183;
+    font-weight: 400
+    font-style: "Tahoma", sans-serif;
+    background-color: #e8e9ea;
 }
+
+
+h3{
+    color: #404040;
+    font-weight: 300
+    font-style: "Tahoma", sans-serif;
+    border-bottom: thin double #000000;
+}
+
+h4, h5, h6 {
+    color: #404040;
+    font-weight: 300
+    font-style: "Tahoma", sans-serif;
+}
+
