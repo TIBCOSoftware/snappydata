@@ -1,0 +1,103 @@
+from pyspark.conf import SparkConf
+from pyspark.context import SparkContext
+from pyspark.sql.types import StructField, StructType, IntegerType, DecimalType
+from pyspark.sql.snappy import SnappyContext
+from decimal import *
+
+# A Python example showing how create table in SnappyData and run queries
+# To run this example use following command:
+# bin/spark-submit <example>
+# For example:
+# bin/spark-submit quickstart/python/CreateTable.py
+def main(snContext):
+    # creates table using SQL and runs queries on it
+    createPartitionedTableUsingSQL(snContext)
+    # creates table using API and runs queries on it
+    createPartitionedTableUsingAPI(snContext)
+
+
+def createPartitionedTableUsingSQL(snContext):
+    print("Creating partitioned table PARTSUPP using SQL")
+    snContext.sql("DROP TABLE IF EXISTS PARTSUPP")
+    # Create the table using SQL command
+    # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+    # For complete list of table attributes refer the documentation
+    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    snContext.sql("CREATE TABLE PARTSUPP ( " +
+                  "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
+                  "PS_SUPPKEY     INTEGER NOT NULL," +
+                  "PS_AVAILQTY    INTEGER NOT NULL," +
+                  "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)" +
+                  "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )")
+    print
+    print("Inserting data in PARTSUPP table using INSERT query")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
+    snContext.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
+    print("Printing the contents of the PARTSUPP table")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    print
+    print("Update the available quantity for PARTKEY 100")
+    snContext.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
+    print("Printing the contents of the PARTSUPP table after update")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    print
+    print("Delete the records for PARTKEY 400")
+    snContext.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
+    print("Printing the contents of the PARTSUPP table after delete")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+    print("****Done****")
+
+def createPartitionedTableUsingAPI(snContext):
+    print
+    print('Creating partitioned table PARTSUPP using API')
+
+    # drop the table if it exists
+    snContext.dropTable('PARTSUPP', True)
+
+    schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
+                     StructField('PS_SUPPKEY', IntegerType(), False),
+                     StructField('PS_AVAILQTY', IntegerType(),False),
+                     StructField('PS_SUPPLYCOST', DecimalType(15, 2), False)
+                     ])
+
+    # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
+    # For complete list of table attributes refer the documentation at
+    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    snContext.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
+
+    print
+    print("Inserting data in PARTSUPP table using dataframe")
+    tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
+              (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
+    rdd = sc.parallelize(tuples)
+    tuplesDF = snContext.createDataFrame(rdd, schema)
+    tuplesDF.write.insertInto("PARTSUPP")
+    print("Printing the contents of the PARTSUPP table")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    print("Update the available quantity for PARTKEY 100")
+    snContext.update("PARTSUPP", "PS_PARTKEY =100", [50000], ["PS_AVAILQTY"])
+    print("Printing the contents of the PARTSUPP table after update")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    print("Delete the records for PARTKEY 400")
+    snContext.delete("PARTSUPP", "PS_PARTKEY =400")
+    print("Printing the contents of the PARTSUPP table after delete")
+    snContext.sql("SELECT * FROM PARTSUPP").show()
+
+    print("****Done****")
+
+
+if __name__ == "__main__":
+    conf = SparkConf().setAppName('Python Example').setMaster("local[*]")
+    sc = SparkContext(conf=conf)
+    # get the SnappyContext
+    snc = SnappyContext(sc)
+    main(snc)
+
+
+

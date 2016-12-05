@@ -60,15 +60,17 @@ object CreatePartitionedRowTable extends SnappySQLJob {
   case class Data(PS_PARTKEY: Int, PS_SUPPKEY: Int,
       PS_AVAILQTY: Int, PS_SUPPLYCOST: BigDecimal)
 
+  def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+
   override def runSnappyJob(snSession: SnappyContext, jobConfig: Config): Any = {
 
     val pw = new PrintWriter("CreatePartitionedRowTable.out")
 
     createPartitionedRowTableUsingSQL(snSession.snappySession, pw)
-
     createPartitionedRowTableUsingAPI(snSession.snappySession, pw)
-
     pw.close()
+
+    s"Check ${getCurrentDirectory}/CreatePartitionedRowTable.out for output of this job"
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()

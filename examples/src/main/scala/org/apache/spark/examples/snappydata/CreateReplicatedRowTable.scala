@@ -60,15 +60,17 @@ object CreateReplicatedRowTable extends SnappySQLJob {
   case class Data(S_SUPPKEY: Int, S_NAME: String, S_ADDRESS: String,
       S_NATIONKEY: Int, S_PHONE: String, S_ACCTBAL: BigDecimal, S_COMMENT: String)
 
+  def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+
   override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
 
     val pw = new PrintWriter("CreateReplicatedRowTable.out")
 
     createReplicatedRowTableUsingSQL(snc.snappySession, pw)
-
     createReplicatedRowTableUsingAPI(snc.snappySession, pw)
-
     pw.close()
+
+    s"Check ${getCurrentDirectory}/CreateReplicatedRowTable.out for output of this job"
   }
 
   override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
