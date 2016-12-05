@@ -208,7 +208,7 @@ The code snippet below shows how to create a replicated row table using API.
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **Create the table using API**: For that, first we define the table schema and then create the using createTable API
@@ -305,7 +305,7 @@ The code snippet below shows how to create a column table using Dataframe API.
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 ```
 **Define the table schema **
 ```
@@ -371,7 +371,7 @@ A partitioned table can be collocated with another partitioned table by using "C
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **To create Table Customer:**
@@ -470,7 +470,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 ```
 
 Read the JSON file using Spark API and load the data into a table
@@ -539,7 +539,7 @@ The code snippet below inserts Person objects into a column table. The source co
         .master("local[4]")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 ```
 
 Insert the Person objects into a tabe and excute queries
@@ -609,7 +609,7 @@ The code example for split mode is in [SplitModeApplicationExample.scala](https:
         .config("snappydata.store.locators", "localhost:10334")
         .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext, existingSharedState = None)
+    val snSession = new SnappySession(spark.sparkContext)
 
 ```
 

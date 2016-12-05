@@ -31,7 +31,7 @@ Also, you can choose to work with Scala APIs or SQLs depending on your preferenc
  A SnappySession extends SparkSession to work with Row and Column tables.
 
 ```scala
-scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
+scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 //Import snappy extensions
 scala> import snappy.implicits._
 ```
@@ -232,7 +232,7 @@ scala>  val spark = SparkSession.builder.master("local[*]").appName("spark, " +
 
 * Define a of helper function "benchmark", which will give us an average time of a query after doing initial warmups.
 ```scala
-scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 2)(f: => Unit) {
+scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
          for (i <- 1 to warmups) {
            f
          }
@@ -273,7 +273,7 @@ scala>  System.runFinalization()
 
 * Create a SnappyContext.
 ```scala
-scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext, existingSharedState = None)
+scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
 * Create a similar 100 million record DataFrame
 ```scala
