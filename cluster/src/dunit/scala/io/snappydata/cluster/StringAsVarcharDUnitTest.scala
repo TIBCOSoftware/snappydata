@@ -107,7 +107,8 @@ class StringAsVarcharDUnitTest(val s: String)
         while (rs.next()) {
           count += 1
         }
-        assert(count == expectedCount)
+        assert(count == expectedCount,
+          s"Expected count = $expectedCount but got $count")
       }
     }
 

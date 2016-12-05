@@ -76,7 +76,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] lazy val colTypes = getColumnTypes
 
-  // check for query hint to serialize complex types as CLOBs
+  // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
     case Some(v) => Misc.parseBoolean(v)
@@ -152,7 +152,7 @@ class SparkSQLExecuteImpl(val sql: String,
                 thresholdListener.isCriticalUp(targetMember)) {
               try {
                 var throttle = true
-                for (tries <- 1 to 5 if throttle) {
+                for (_ <- 1 to 5 if throttle) {
                   Thread.sleep(4)
                   throttle = thresholdListener.isCritical ||
                       thresholdListener.isCriticalUp(targetMember)
@@ -328,8 +328,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
 object SparkSQLExecuteImpl {
 
-  lazy val STRING_AS_CLOB = System.getProperty(Constant.STRING_AS_CLOB_PROP,
-    "false").toBoolean
+  lazy val STRING_AS_CLOB: Boolean = System.getProperty(
+    Constant.STRING_AS_CLOB_PROP, "false").toBoolean
 
   def getRowIterator(dvds: Array[DataValueDescriptor], types: Array[Int],
       precisions: Array[Int], scales: Array[Int], dataTypes: Array[AnyRef],
