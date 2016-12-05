@@ -100,6 +100,11 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
+  // with all the optimizations under SNAP-1135, RDD-bucket delinking is
+  // largely not required (max 5-10% advantage in the best case) since
+  // without the delinking exchange on one side can be avoided where possible
+  val ENABLE_BUCKET_RDD_DELINKING = false
+
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
       if (tableName.indexOf('.') <= 0) {
@@ -113,7 +118,7 @@ object StoreUtils extends Logging {
       region: PartitionedRegion): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
+    if (ENABLE_BUCKET_RDD_DELINKING && callbacks != null) {
       allocateBucketsToPartitions(session, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets

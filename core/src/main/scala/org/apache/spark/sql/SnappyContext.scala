@@ -838,17 +838,23 @@ object SnappyContext extends Logging {
     storeToBlockMap.get(executorId)
 
   private[spark] def addBlockId(executorId: String,
-      blockId: BlockAndExecutorId): Unit = {
-    storeToBlockMap.put(executorId, blockId)
-    totalCoreCount.addAndGet(blockId.numProcessors)
-    SnappySession.clearCache()
+      id: BlockAndExecutorId): Unit = {
+    storeToBlockMap.put(executorId, id)
+    if (id.blockId == null || !id.blockId.isDriver) {
+      totalCoreCount.addAndGet(id.numProcessors)
+    }
+    SnappySession.clearPlanCache()
   }
 
   private[spark] def removeBlockId(
       executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.remove(executorId) match {
-      case s@Some(id) => totalCoreCount.addAndGet(-id.numProcessors)
-        SnappySession.clearCache(); s
+      case s@Some(id) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(-id.numProcessors)
+        }
+        SnappySession.clearPlanCache()
+        s
       case None => None
     }
   }
@@ -860,7 +866,7 @@ object SnappyContext extends Logging {
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
     totalCoreCount.set(0)
-    SnappySession.clearCache()
+    SnappySession.clearPlanCache()
   }
 
   /** Returns the current SparkContext or null */
@@ -882,13 +888,13 @@ object SnappyContext extends Logging {
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
+      val numCores = sc.schedulerBackend.defaultParallelism()
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
-        sc.schedulerBackend.defaultParallelism(),
-        Runtime.getRuntime.availableProcessors())
+        numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
       totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearCache()
+      SnappySession.clearPlanCache()
     }
   }
 

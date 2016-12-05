@@ -17,7 +17,7 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Statement, Connection}
+import java.sql.{Connection, Statement}
 
 import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -107,7 +107,8 @@ class StringAsVarcharDUnitTest(val s: String)
         while (rs.next()) {
           count += 1
         }
-        assert(count == expectedCount)
+        assert(count == expectedCount,
+          s"Expected count = $expectedCount but got $count")
       }
     }
 
@@ -217,7 +218,8 @@ class StringAsVarcharDUnitTest(val s: String)
     snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
 
     snc.createTable(rowTab2, "row", s"(col_int int, col_string string, col_varchar varchar" +
-        s"($varcharSize), col_clob clob, col_char char($charSize))", Map.empty[String, String], false)
+        s"($varcharSize), col_clob clob, col_char char($charSize))",
+      Map.empty[String, String], false)
 
     snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
 

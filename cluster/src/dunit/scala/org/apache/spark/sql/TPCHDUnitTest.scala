@@ -26,9 +26,21 @@ import org.apache.spark.SparkContext
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "10000")
+
   val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
     "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
     "q20", "q21", "q22")
+
+  /*
+  test("snappy test") {
+    val snc = SnappyContext(sc)
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 10000")
+    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    queryExecution(snc, isSnappy = true)
+    validateResult(snc, isSnappy = true)
+  }
+  */
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
@@ -136,5 +148,4 @@ object TPCHUtils {
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath,
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
-
 }

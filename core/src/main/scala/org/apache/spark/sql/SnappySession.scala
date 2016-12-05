@@ -45,6 +45,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
@@ -1455,14 +1456,14 @@ object SnappySession extends Logging {
 
     override def profileCreated(profile: Profile): Unit = {
       // clear all plans pessimistically for now
-      clearCache()
+      clearPlanCache()
     }
 
     override def profileUpdated(profile: Profile): Unit = {}
 
     override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
       // clear all plans pessimistically for now
-      clearCache()
+      clearPlanCache()
     }
   }
 
@@ -1483,6 +1484,8 @@ object SnappySession extends Logging {
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec =>
         throw new EntryExistsException("uncached plan", df) // don't cache
+      case plan: CollectAggregateExec =>
+        (null, Array.empty[Int], plan.childRDD.id, true)
       case _: LocalTableScanExec =>
         (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
@@ -1585,7 +1588,7 @@ object SnappySession extends Logging {
     }
   }
 
-  private[spark] def clearCache(): Unit = {
+  private[spark] def clearPlanCache(): Unit = {
     planCache.invalidateAll()
   }
 
