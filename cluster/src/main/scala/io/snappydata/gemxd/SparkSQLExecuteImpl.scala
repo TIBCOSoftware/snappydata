@@ -163,6 +163,8 @@ class SparkSQLExecuteImpl(val sql: String,
             }
 
             msg.sendResult(srh)
+            // clear the metadata flag for subsequent chunks
+            srh.clearHasMetadata()
           }
           logTrace(s"Sent one batch for result, current partition ID = $id")
           hdos.clearForReuse()
@@ -222,7 +224,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private def writeMetaData(srh: SnappyResultHolder): Unit = {
     val hdos = this.hdos
-    // indicates that the metainfo is being packed too
+    // indicates that the metadata is being packed too
     srh.setHasMetadata()
     DataSerializer.writeStringArray(tableNames, hdos)
     DataSerializer.writeStringArray(getColumnNames, hdos)
