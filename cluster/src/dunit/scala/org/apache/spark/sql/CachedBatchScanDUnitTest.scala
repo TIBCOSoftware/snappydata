@@ -31,8 +31,11 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "ArrDelay INT," +
         "UniqueCarrier CHAR(6) NOT NULL"
 
+    // reduce the batch size to ensure that multiple are created
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 10")
+
     snc.sql(s"create table if not exists airline ($ddlStr) " +
-        s" using column options (Buckets '2')").collect()
+        s" using column options (Buckets '2')")
 
     import snc.implicits._
 
@@ -191,4 +194,4 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 }
 
 case class AirlineData(year: Int, month: Int, dayOfMonth: Int,
-    depTime: Int, arrTime: Int, carrier: String)
+    depTime: Int, arrDelay: Int, carrier: String)
