@@ -16,13 +16,18 @@
  */
 package org.apache.spark.sql
 
+import java.sql.{ResultSet, Statement}
+
 import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec, RowTableScan}
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+
+/*
 
   def testReplicatedTableQueries(): Unit = {
     val snc = SnappyContext(sc)
@@ -47,7 +52,23 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
   }
+*/
 
+
+  def testInsertionOfRecordInColumnTable(): Unit = {
+
+    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+    val conn = getANetConnection(netPort)
+
+
+    val s = conn.createStatement()
+    createAndLoadColumnTableUsingJDBC(s)
+    val rs: ResultSet = s.executeQuery(s"SELECT * from products")
+    assert(rs.next())
+    conn.close()
+
+  }
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -526,6 +547,22 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q56" => NWQueries.assertJoin(snc, NWQueries.Q56, "Q56", 8, 1, classOf[LocalJoin])
       }
     }
+  }
+
+  private def createAndLoadColumnTableUsingJDBC(stmt: Statement): Unit = {
+
+     stmt.executeUpdate(NWQueries.products_table + " USING column options (" +
+         "partition_by 'ProductID,SupplierID', buckets '3', redundancy '3')")
+     NWQueries.products.collect().foreach(row => {
+       val colValues = row.toSeq
+       val sqlQuery:String = s"INSERT INTO products VALUES(${colValues(0)}, " +
+       s"'${colValues(1).toString.replace("'","")}',${colValues(2)}, ${colValues(3)}, " +
+       s"'${colValues(4).toString.replace("'","")}',${colValues(5)}, ${colValues(6)}, " +
+       s"${colValues(7)}, ${colValues(8)},  ${colValues(9)})"
+       stmt.executeUpdate(sqlQuery)
+
+     })
+
   }
 }
 
