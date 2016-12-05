@@ -38,9 +38,10 @@ class TPCETrade extends SnappyFunSuite {
         .setIfMissing("spark.master", s"local[$numProcessors]")
         .setAppName("microbenchmark")
     conf.set("spark.sql.shuffle.partitions", numProcessors.toString)
-    // conf.set(SQLConf.COLUMN_BATCH_SIZE.key, "100000")
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
       addOn(conf)
     }
@@ -54,6 +55,7 @@ class TPCETrade extends SnappyFunSuite {
     val tradeSize = 500000L
     val numDays = 1
     val numIters = 10
+    snappySession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true)
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
@@ -65,7 +67,8 @@ class TPCETrade extends SnappyFunSuite {
 
 class TPCETradeJob extends SnappySQLJob {
 
-  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val sc = snSession.sqlContext
     // SCALE OUT case with 10 billion rows
     val quoteSize = 8500000000L
     val tradeSize = 1250000000L
@@ -84,7 +87,7 @@ class TPCETradeJob extends SnappySQLJob {
     Boolean.box(true)
   }
 
-  override def isValidJob(sc: SnappyContext,
+  override def isValidJob(snSession: SnappySession,
       config: Config): SnappyJobValidation = SnappyJobValid()
 }
 
@@ -95,8 +98,6 @@ case class Trade(sym: String, ex: String, price: String, time: Timestamp,
     date: Date, size: Double)
 
 object TPCETradeTest extends Logging {
-
-  val HASH_OPTIMIZED = "spark.sql.hash.optimized"
 
   val EXCHANGES: Array[String] = Array("NYSE", "NASDAQ", "AMEX", "TSE",
     "LON", "BSE", "BER", "EPA", "TYO")
@@ -224,7 +225,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -256,7 +257,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -314,8 +315,7 @@ object TPCETradeTest extends Logging {
           session.catalog.cacheTable("cS")
         } else {
           assert(snappy, "Only cache=T or snappy=T supported")
-          SnappyAggregation.enableOptimizedAggregation =
-              params.getOrElse(HASH_OPTIMIZED, "true").toBoolean
+          SnappyAggregation.enableOptimizedAggregation = true
           if (init) {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
@@ -361,17 +361,9 @@ object TPCETradeTest extends Logging {
         ), query = cacheQueries(queryNumber - 1), snappy = false, init)
     }
 
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = F",
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T",
       cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "false"
-      ), query = queries(queryNumber - 1), snappy = true, init)
-    init = false
-
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
-      cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "true"
+        SQLConf.COMPRESS_CACHED.key -> "true"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
 

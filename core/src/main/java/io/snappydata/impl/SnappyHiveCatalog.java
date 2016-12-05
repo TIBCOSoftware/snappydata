@@ -39,6 +39,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.collection.Utils;
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
 import org.apache.thrift.TException;
@@ -243,6 +244,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
+      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver");
+
       String url = "jdbc:snappydata:;user=" +
           SnappyStoreHiveCatalog.HIVE_METASTORE() +
           ";disable-streaming=true;default-persistent=true";

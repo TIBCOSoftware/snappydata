@@ -84,15 +84,16 @@ class BaseColumnFormatRelation(
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
-  val columnBatchSize = sqlContext.conf.columnBatchSize
+  val columnBatchSize: Int = sqlContext.conf.columnBatchSize
 
-  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(dialect)
 
-  lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
-    resolvedName, schema)
+  lazy val rowInsertStr: String = ExternalStoreUtils
+      .getInsertStringWithColumnName(resolvedName, schema)
 
-  @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
-    true).asInstanceOf[PartitionedRegion]
+  @transient protected lazy val region: PartitionedRegion =
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
 
   def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
     new PartitionStatistics(schema)
@@ -112,18 +113,24 @@ class BaseColumnFormatRelation(
       requiredColumns, filters)
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-  filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
-
     val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
       useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
       Iterator[Any](leftItr, rightItr)
     }
-
     (zipped, Nil)
+  }
+
+
+  def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], RDD[Any],
+      Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
+    val rowRDD = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true)
+    (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
 
   def buildRowBufferRDD(partitions: Array[Partition],
@@ -173,7 +180,8 @@ class BaseColumnFormatRelation(
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
+        batch.numRows <= math.max(1, columnBatchSize)) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
@@ -513,16 +521,16 @@ class ColumnFormatRelation(
         val catalog = snappySession.sessionCatalog
         val colocateWith = {
           val colocationTable = catalog.newQualifiedTableName(value)
-          catalog.tableExists(colocationTable) match {
-            case true => value
-            case false =>
-              val idx = snappySession.getIndexTable(colocationTable)
-              catalog.tableExists(idx) match {
-                case true => idx.toString
-                case false =>
-                  throw new AnalysisException(
-                    s"Could not find colocation table $colocationTable in catalog")
-              }
+          if (catalog.tableExists(colocationTable)) {
+            value
+          } else {
+            val idx = snappySession.getIndexTable(colocationTable)
+            if (catalog.tableExists(idx)) {
+              idx.toString
+            } else {
+              throw new AnalysisException(
+                s"Could not find colocation table $colocationTable in catalog")
+            }
           }
         }
         tempOptions + (StoreUtils.COLOCATE_WITH -> colocateWith)
@@ -663,7 +671,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
-      forManagedTable = true, forColumnTable = true)
+      forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)

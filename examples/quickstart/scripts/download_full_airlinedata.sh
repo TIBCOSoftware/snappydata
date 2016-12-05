@@ -18,7 +18,7 @@ fileName=airlineParquetData_2007-15.tar.gz
 destFile="$1/${fileName}"
 mkdir -p "$1"
 #curl -L -o "${destFile}" $source
-wget http://rowstore.docs.snappydata.io/data/$fileName "$destFile"
+wget https://s3-us-west-2.amazonaws.com/zeppelindemo/data/$fileName "$destFile"
 
 #untar the downloaded file.
 cd "$1"

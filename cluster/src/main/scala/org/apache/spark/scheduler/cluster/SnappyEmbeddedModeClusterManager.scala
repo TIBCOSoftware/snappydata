@@ -56,12 +56,12 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
-        (Property.Locators(), locator)
+        (Property.Locators.name, locator)
       }
 
       logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
-      sc.conf.set(Property.Embedded(), "true")
+      sc.conf.set(Property.Embedded.name, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }

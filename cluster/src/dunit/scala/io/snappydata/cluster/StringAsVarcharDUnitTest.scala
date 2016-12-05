@@ -17,12 +17,14 @@ package io.snappydata.cluster
  * LICENSE file.
  */
 
-import java.sql.Connection
+import java.sql.{Statement, Connection}
 
 import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
@@ -34,114 +36,103 @@ class StringAsVarcharDUnitTest(val s: String)
 
   val colTab1 = "colTab1"
   val rowTab1 = "rowTab1"
+  val rowTab2 = "rowTab2"
+  val extTab1 = "extTab1"
+  val extTab2 = "extTab2"
 
   val varcharSize = 20;
   val charSize = 10;
 
   /**
-   * Test 'select *' and 'select cast(* as)' queries on a column table, without query hint.
+   * Test 'select *' on column, row and external tables and 'select cast(* as)' on a column/row
+   * tables, with different possible query hints. The tables are created via DDLs.
    */
   def testQueries(): Unit = {
-    executeQuery()
+    executeAndVerify()
   }
 
   /**
-   * Test 'select *' and 'select cast(* as)' queries on a column table, with query hint with
-   * specific column names.
+   * Test 'select *' on column, row and external tables and 'select cast(* as)' on a column/row
+   * tables, with different possible query hints. The tables are created via APIs.
    */
-  def testQueriesWithHint(): Unit = {
-    executeQuery("col_string,col_varchar")
+  def testQueriesOnTablesCreatedViaAPI(): Unit = {
+    executeAndVerify(false)
+    validateUtilsFunctions()
   }
 
-  /**
-   * Test 'select *' and 'select cast(* as)' queries on a column table, with query hint '*'.
-   */
-  def testQueriesWithHintAll(): Unit = {
-    executeQuery("*")
-  }
+  def executeAndVerify(useDDL: Boolean = true, join: Boolean = false): Unit = {
+    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+    val conn = getANetConnection(netPort)
 
-  /**
-   * Test 'select *' and 'select cast(* as)' queries on a column table, with invalid query hint.
-   */
-  def testQueriesWithInvalidHint(): Unit = {
-    executeQuery("inv,lid")
-  }
-
-  /**
-   * Test select query on join of row table with column table, and 'select cast(* as)' query on a
-   * column table, without query hint.
-   */
-  def testJoinQuery(): Unit = {
-    executeQuery("FALSE", true)
-  }
-
-  /**
-   * Test select query on join of row table with column table, and 'select cast(* as)' query on a
-   * column table, with query hint '*'.
-   */
-  def testJoinQueryWithHint(): Unit = {
-    executeQuery("*", true)
-  }
-
-  def executeQuery(hint: String = "FALSE", join: Boolean = false): Unit = {
-    var stringType = "VARCHAR"
-    var affix = ""
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
-    val conn = getANetConnection(netPort1)
-
-    createTablesAndInsertData(conn)
+    if (useDDL) {
+      createTablesViaDDLAndInsertData(conn)
+    } else {
+      createTablesViaAPIAndInsertData(conn)
+    }
 
     val s = conn.createStatement()
 
-    def getType(value: String): String = value match {
-      case "*" => "CLOB"
-      case s: String => s.contains("col_string") match {
-        case true => "CLOB"
-        case false => "VARCHAR"
-      }
-    }
+    Seq( // all possible hint values
+      "FALSE", "*", "col_string,col_varchar", "inv,lid"
+    ).foreach(str => runQueriesAndVerify(s, useDDL, str))
 
+    conn.close()
+  }
+
+  def runQueriesAndVerify(s: Statement, useDDL: Boolean, hint: String): Unit = {
+    var stringType = "VARCHAR"
+    var affix = ""
     hint match {
       case "FALSE" =>
       case _ =>
         affix = s" --+ columnsAsClob($hint)"
         logInfo(s"affix: '$affix'")
-        stringType = getType(hint)
+        stringType = hint match {
+          case "*" => "CLOB"
+          case s: String => s.contains("col_string") match {
+            case true => "CLOB"
+            case false => "VARCHAR"
+          }
+        }
     }
 
-    if (!join) {
-      s.executeQuery(s"select * from $colTab1 $affix")
-      val rs = s.getResultSet
-      verify(rs, 5, stringType, colTab1)
-    } else {
-      s.execute(s"select t1.col_int, t1.col_string, t1.col_varchar, t2.col_clob, t2.col_string " +
-          s"from $rowTab1 t1, $colTab1 t2 where t1.col_int = t2.col_int $affix")
-      val rs = s.getResultSet
-      verify(rs, 5, stringType, "T1", true)
-
-      // Verify result
-      while (rs.next()) {
-        if (rs.getInt(1) == 1) {
-          assert(rs.getString(2).equals("t1.1.string"), s"actual string ${rs.getString(2)}")
-          assert(rs.getString(3).equals("t1.1.varchar"), s"actual varchar ${rs.getString(3)}")
-        } else if (rs.getInt(1) == 4) {
-          assert(rs.getInt(1) == 4, s"actual int ${rs.getInt(1)}")
-          assert(rs.getString(2).equals("t1.4.string"), s"actual string ${rs.getString(2)}")
-          assert(rs.getString(4).equals("t2.4.clob"), s"actual clob ${rs.getString(4)}")
+    def eNv(stmt: Statement, t: String, s: String, checkCount: Boolean = false, expectedCount:
+    Int = 0): Unit = {
+      stmt.executeQuery(s"select * from $t $affix")
+      val rs = stmt.getResultSet
+      verify(rs, 5, s, t, hint)
+      if (checkCount) {
+        var count = 0
+        while (rs.next()) {
+          count += 1
         }
+        assert(count == expectedCount)
       }
     }
-    s.executeQuery(s"select cast(col_int as string), cast(col_string as clob), " +
-        s"cast(col_char as varchar(100)) from $colTab1 $affix")
-    val rSet = s.getResultSet
-    var count = 0
-    while (rSet.next()) {
-      count += 1
-    }
-    assert(count == 2)
 
-    conn.close()
+    eNv(s, colTab1, stringType)
+    // query on row table does not get routed, hence rs metadata shows CLOB
+    eNv(s, rowTab1, "CLOB")
+    eNv(s, extTab1, stringType, true, 0)
+    if (!useDDL) {
+      eNv(s, rowTab2, "CLOB")
+      eNv(s, extTab2, stringType, true, 5)
+    }
+
+    def testCastOperator(s: Statement, t: String, expectedCount: Int): Unit = {
+      s.executeQuery(s"select cast(col_int as string), cast(col_string as clob), " +
+          s"cast(col_char as varchar(100)) from $t $affix")
+      val rSet = s.getResultSet
+      var count = 0
+      while (rSet.next()) {
+        count += 1
+      }
+      assert(count == expectedCount)
+    }
+
+    testCastOperator(s, colTab1, 2)
+    testCastOperator(s, rowTab1, 5)
   }
 
   /**
@@ -151,33 +142,29 @@ class StringAsVarcharDUnitTest(val s: String)
    * @param cols
    * @param stringType
    * @param tName
-   * @param join
+   * @param hint
    */
   private def verify(rs: java.sql.ResultSet, cols: Int,
-      stringType: String, tName: String, join: Boolean = false): Unit = {
+      stringType: String, tName: String, hint: String = "FALSE"): Unit = {
     val md = rs.getMetaData
     assert(md.getColumnCount == cols)
-    logInfo("metadata col cnt = " + md.getColumnCount)
+    logInfo(s"$tName metadata column count = ${md.getColumnCount}, hint = $hint")
     for (i <- 1 to cols) {
-      logInfo("col name = " + md.getColumnName(i) + ", col type " +
-          md.getColumnTypeName(i) + ", col table name = " + md.getTableName(i))
+      logInfo(s"col name = ${md.getColumnName(i)}, col type ${md.getColumnTypeName(i)}, table " +
+          s"name = ${md.getTableName(i)}")
     }
-    assertMetaData(md, stringType, tName, join)
+    assertMetaData(md, stringType, tName)
   }
 
   private def assertMetaData(md: java.sql.ResultSetMetaData,
-      stringType: String, tName: String, join: Boolean = false): Unit = {
+      stringType: String, tName: String): Unit = {
     assert(md.getColumnName(1).equals("COL_INT"))
     assert(md.getColumnTypeName(1).equals("INTEGER"))
 
     assert(md.getColumnName(2).equals("COL_STRING"))
-    if (join) {
-      assert(md.getColumnTypeName(2).equals("CLOB")) // row table
-    } else {
-      assert(md.getColumnTypeName(2).equals(stringType))
-      if (stringType.equals("VARCHAR")) {
-        assert(md.getPrecision(2) == Constant.MAX_VARCHAR_SIZE)
-      }
+    assert(md.getColumnTypeName(2).equals(stringType))
+    if (stringType.equals("VARCHAR")) {
+      assert(md.getPrecision(2) == Constant.MAX_VARCHAR_SIZE)
     }
 
     assert(md.getColumnName(3).equals("COL_VARCHAR"))
@@ -187,28 +174,20 @@ class StringAsVarcharDUnitTest(val s: String)
     assert(md.getColumnName(4).equals("COL_CLOB"))
     assert(md.getColumnTypeName(4).equals("CLOB"))
 
-    if (join) {
-      assert(md.getColumnName(5).equals("COL_STRING"))
-      assert(md.getColumnTypeName(5).equals(stringType))
-      if (stringType.equals("VARCHAR")) {
-        assert(md.getPrecision(5) == Constant.MAX_VARCHAR_SIZE)
-      }
-    } else {
-      assert(md.getColumnName(5).equals("COL_CHAR"))
-      assert(md.getColumnTypeName(5).equals("CHAR"))
-      assert(md.getPrecision(5) == charSize)
-    }
+    assert(md.getColumnName(5).equals("COL_CHAR"))
+    assert(md.getColumnTypeName(5).equals("CHAR"))
+    assert(md.getPrecision(5) == charSize)
 
     assert(md.getTableName(1).equalsIgnoreCase(tName))
   }
 
   /**
-   * Create a row table and a column table with five columns each. Row table has five entries while
-   * the column table has just two entries.
+   * Create a row, column and external tables with five columns each via DDLs. Column table
+   * has two records while others have five records.
    * 
    * @param conn
    */
-  def createTablesAndInsertData(conn: Connection): Unit = {
+  def createTablesViaDDLAndInsertData(conn: Connection): Unit = {
     val snc = SnappyContext(sc)
 
     snc.sql(s"create table $rowTab1 (col_int int, col_string string, " +
@@ -218,6 +197,86 @@ class StringAsVarcharDUnitTest(val s: String)
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
         "using column options(buckets '7')")
 
+    snc.sql(s"create external table $extTab1 (col_int int, col_string string, " +
+        s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
+        s"USING parquet OPTIONS()")
+
+    insertData(snc)
+  }
+
+  /**
+   * Create a row, column and external tables with five columns each via APIs. Column table
+   * has two records while others have five records.
+   *
+   * @param conn
+   */
+  def createTablesViaAPIAndInsertData(conn: Connection): Unit = {
+    val snc = SnappyContext(sc)
+
+    val schema = StructType(Array(
+      StructField("col_int", IntegerType, false),
+      StructField("col_string", StringType, false),
+      StructField("col_varchar", StringType, false, Utils.varcharMetadata(varcharSize)),
+      StructField("col_clob", StringType, false, Utils.stringMetadata()),
+      StructField("col_char", StringType, false, Utils.charMetadata(charSize))
+    ))
+
+    snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
+
+    snc.createTable(rowTab2, "row", s"(col_int int, col_string string, col_varchar varchar" +
+        s"($varcharSize), col_clob clob, col_char char($charSize))", Map.empty[String, String], false)
+
+    snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
+
+    snc.createExternalTable(extTab1, "com.databricks.spark.csv", schema, Map.empty[String,
+        String])
+
+    val df = snc.read
+        .format("com.databricks.spark.csv")
+        .option("header", "false")
+        .schema(schema)
+        .load(getClass.getResource("/allstringtypes.csv").getPath)
+        .cache
+
+    df.write
+        .format("column")
+        .mode("append")
+        .options(Map.empty[String, String])
+        .saveAsTable(extTab2)
+
+    insertData(snc)
+  }
+
+  def validateUtilsFunctions(): Unit = {
+    try {
+      Utils.varcharMetadata(Constant.MAX_VARCHAR_SIZE + 1)
+      assert(false, "Validation for Utils.varcharMetadata() failed")
+    } catch {
+      case iae: IllegalArgumentException => // ignore
+      case t: Throwable => throw t
+    }
+    var md = Utils.varcharMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("VARCHAR"))
+    assert(md.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_VARCHAR_SIZE)
+
+    try {
+      Utils.charMetadata(Constant.MAX_CHAR_SIZE + 1)
+      assert(false, "Validation for Utils.charMetadata() failed")
+    } catch {
+      case iae: IllegalArgumentException => // ignore
+      case t: Throwable => throw t
+    }
+    md = Utils.charMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CHAR"))
+    assert(md.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_CHAR_SIZE)
+
+    md = Utils.stringMetadata()
+    assert(md.getString(Constant.CHAR_TYPE_BASE_PROP).equals("CLOB"),
+      "Validation for Utils.stringMetadata() failed")
+  }
+
+  def insertData(snc: SnappyContext): Unit = {
+    // Insert into row table
     val data = Seq(Seq(1, "t1.1.string", "t1.1.varchar", "t1.1.clob", "t1.1.char"),
       Seq(7, "t1.7.string", "t1.7.varchar", "t1.7.clob", "t1.7.char"),
       Seq(9, "t1.9.string", "t1.9.varchar", "t1.9.clob", "t1.9.char"),
@@ -225,17 +284,17 @@ class StringAsVarcharDUnitTest(val s: String)
       Seq(5, "t1.5.string", "t1.5.varchar", "t1.5.clob", "t1.5.char"))
 
     val rdd = sc.parallelize(data, data.length).map(s =>
-        Data9(s(0).asInstanceOf[Int], s(1).toString, s(2).toString, s(3).toString, s(4).toString))
+      Data9(s(0).asInstanceOf[Int], s(1).toString, s(2).toString, s(3).toString, s(4).toString))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("row").mode(SaveMode.Append)
         .saveAsTable(rowTab1)
 
+    // Insert into column table
     snc.sql(s"insert into $colTab1 values (1, 't2.1.string', " +
         s"'t2.1.varchar', 't2.1.clob', 't2.1.char')")
     snc.sql(s"insert into $colTab1 values (4, 't2.4.string', " +
         s"'t2.4.varchar', 't2.4.clob', 't2.4.char')")
   }
-
 }
 
 case class Data9(col1: Int, col2: String, col3: String, col4: String, col5: String)

@@ -21,8 +21,7 @@ import java.io.{PrintStream, FileOutputStream, File}
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid,
-SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
 
 object TPCH_Snappy_Tables extends SnappySQLJob {
 
@@ -33,7 +32,8 @@ object TPCH_Snappy_Tables extends SnappySQLJob {
   var useIndex: Boolean = _
   var nation_Region_Supp_col: Boolean = _
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val snc = snSession.sqlContext
     val isSnappy = true
 
     val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
@@ -91,7 +91,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
 
     tpchDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")
