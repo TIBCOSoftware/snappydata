@@ -40,6 +40,8 @@ class TPCETrade extends SnappyFunSuite {
     conf.set("spark.sql.shuffle.partitions", numProcessors.toString)
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
       addOn(conf)
     }
@@ -95,8 +97,6 @@ case class Trade(sym: String, ex: String, price: String, time: Timestamp,
     date: Date, size: Double)
 
 object TPCETradeTest extends Logging {
-
-  val HASH_OPTIMIZED = "spark.sql.hash.optimized"
 
   val EXCHANGES: Array[String] = Array("NYSE", "NASDAQ", "AMEX", "TSE",
     "LON", "BSE", "BER", "EPA", "TYO")
@@ -224,7 +224,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -256,7 +256,7 @@ object TPCETradeTest extends Logging {
       var cal = new GregorianCalendar(2016, 5, day + 6)
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
-      itr.map { id =>
+      itr.map { _ =>
         val sym = syms(rnd.nextInt(numSyms))
         val ex = exs(rnd.nextInt(numExs))
         if (numDays > 1) {
@@ -314,8 +314,7 @@ object TPCETradeTest extends Logging {
           session.catalog.cacheTable("cS")
         } else {
           assert(snappy, "Only cache=T or snappy=T supported")
-          SnappyAggregation.enableOptimizedAggregation =
-              params.getOrElse(HASH_OPTIMIZED, "true").toBoolean
+          SnappyAggregation.enableOptimizedAggregation = true
           if (init) {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
@@ -361,17 +360,9 @@ object TPCETradeTest extends Logging {
         ), query = cacheQueries(queryNumber - 1), snappy = false, init)
     }
 
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = F",
+    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T",
       cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "false"
-      ), query = queries(queryNumber - 1), snappy = true, init)
-    init = false
-
-    addBenchmark(s"Q$queryNumber: cache = F snappyCompress = T, opt = T",
-      cache = false, Map(
-        SQLConf.COMPRESS_CACHED.key -> "true",
-        HASH_OPTIMIZED -> "true"
+        SQLConf.COMPRESS_CACHED.key -> "true"
       ), query = queries(queryNumber - 1), snappy = true, init)
     init = false
 
