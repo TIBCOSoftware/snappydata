@@ -1469,9 +1469,11 @@ object SnappySession extends Logging {
 
   private def findShuffleDependencies(rdd: RDD[_]): Seq[Int] = {
     rdd.dependencies.flatMap {
-      case s: ShuffleDependency[_, _, _] =>
+      case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
         s.shuffleId +: findShuffleDependencies(s.rdd)
-      case d => findShuffleDependencies(d.rdd)
+      } else s.shuffleId :: Nil
+
+      case d => if (d.rdd ne rdd) findShuffleDependencies(d.rdd) else Nil
     }
   }
 
@@ -1485,7 +1487,8 @@ object SnappySession extends Logging {
       case _: ExecutedCommandExec =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
-        (null, Array.empty[Int], plan.childRDD.id, true)
+        (null, findShuffleDependencies(plan.childRDD).toArray,
+            plan.childRDD.id, true)
       case _: LocalTableScanExec =>
         (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
