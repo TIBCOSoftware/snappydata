@@ -24,33 +24,33 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
-import org.apache.spark.sql.execution.{BinaryExecNode, BufferedRowIterator, InputAdapter, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.internal.SnappySessionState
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
  * an exchange for simple aggregates.
  */
 case class CollectAggregateExec(
-    left: SparkPlan,
-    right: SparkPlan,
-    @transient basePlan: SnappyHashAggregateExec) extends BinaryExecNode {
+    @transient basePlan: SnappyHashAggregateExec,
+    child: SparkPlan) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
 
-  override def output: Seq[Attribute] = right.output
+  override def output: Seq[Attribute] = basePlan.output
 
   override def requiredChildDistribution: List[Distribution] =
-    UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+    UnspecifiedDistribution :: Nil
 
-  @transient private[sql] lazy val childRDD = left.execute()
+  @transient private[sql] lazy val childRDD = child.execute()
 
   @transient private[sql] lazy val (generatedSource, generatedReferences,
   generatedClass) = {
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
-    basePlan.childProducer = InputAdapter(left)
+    basePlan.childProducer = InputAdapter(child)
     val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
-    basePlan.childProducer = left
+    basePlan.childProducer = child
     val clazz = CodeGenerator.compile(cleanedSource)
     (cleanedSource, ctx.references.toArray, clazz)
   }
@@ -85,7 +85,7 @@ case class CollectAggregateExec(
 
     val partitionBlocks = executeCollectData()
     // create an iterator over the blocks and pass to generated iterator
-    val numFields = left.schema.length
+    val numFields = child.schema.length
     val results = partitionBlocks.iterator.flatMap(
       CachedDataFrame.localBlockStoreDecoder(numFields, bm))
     val buffer = generatedClass.generate(generatedReferences)
@@ -98,7 +98,14 @@ case class CollectAggregateExec(
     processedResults.toArray
   }
 
-  override protected def doExecute(): RDD[InternalRow] = {
-    right.execute()
+  override def doExecute(): RDD[InternalRow] = {
+    val sessionState = sqlContext.sparkSession.sessionState
+        .asInstanceOf[SnappySessionState]
+    val plan = basePlan.transformUp {
+      // TODO: if Spark adds plan space exploration then do the same below
+      // (see SparkPlanner.plan)
+      case PlanLater(p) => sessionState.planner.plan(p).next()
+    }
+    sessionState.prepareExecution(plan).execute()
   }
 }

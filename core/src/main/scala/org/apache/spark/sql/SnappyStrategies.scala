@@ -240,8 +240,8 @@ object SnappyAggregation extends Strategy {
     val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
-      CollectAggregateExec(left = partialAggregate,
-        right = finalHashAggregate, finalHashAggregate)
+      CollectAggregateExec(basePlan = finalHashAggregate,
+        child = partialAggregate)
     } else finalHashAggregate
     finalAggregate :: Nil
   }
