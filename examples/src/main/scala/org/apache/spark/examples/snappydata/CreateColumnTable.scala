@@ -54,7 +54,7 @@ import org.apache.spark.sql.{SnappyJobInvalid, SnappySession, SparkSession, Snap
  * Check the status of your job id
  * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
  *
- * The output of the job will be redirected to a file named CollocatedJoinExample.out
+ * The output of the job will be redirected to a file named CreateColumnTable.out
  */
 object CreateColumnTable extends SnappySQLJob {
 
