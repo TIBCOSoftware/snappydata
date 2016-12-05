@@ -100,6 +100,11 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
+  // with all the optimizations under SNAP-1135, RDD-bucket delinking is
+  // largely not required (max 5-10% advantage in the best case) since
+  // without the delinking exchange on one side can be avoided where possible
+  val ENABLE_BUCKET_RDD_DELINKING = true
+
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
       if (tableName.indexOf('.') <= 0) {
@@ -113,7 +118,7 @@ object StoreUtils extends Logging {
       region: PartitionedRegion): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
+    if (ENABLE_BUCKET_RDD_DELINKING && callbacks != null) {
       allocateBucketsToPartitions(session, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
@@ -155,11 +160,11 @@ object StoreUtils extends Logging {
   private def allocateBucketsToPartitions(session: SnappySession,
       region: PartitionedRegion): Array[Partition] = {
 
-    val numBuckets = region.getTotalNumberOfBuckets
+    val numTotalBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
     val adviser = region.getRegionAdvisor
-    for (p <- 0 until numBuckets) {
+    for (p <- 0 until numTotalBuckets) {
       var prefNode = adviser.getPreferredInitializedNode(p, true)
       if (prefNode == null) {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
@@ -182,7 +187,7 @@ object StoreUtils extends Logging {
       buckets += p
     }
     // marker array to check that all buckets have been allocated
-    val allocatedBuckets = new Array[Boolean](numBuckets)
+    val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
     val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
@@ -225,7 +230,7 @@ object StoreUtils extends Logging {
         }
         partitionIndex += 1
         new MultiBucketExecutorPartition(partitionIndex, partBuckets,
-          numBuckets, preferredLocations)
+          numTotalBuckets, preferredLocations)
       }
     }.toArray[Partition]
     assert(allocatedBuckets.forall(_ == true),

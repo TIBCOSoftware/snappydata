@@ -843,7 +843,7 @@ object SnappyContext extends Logging {
     if (id.blockId == null || !id.blockId.isDriver) {
       totalCoreCount.addAndGet(id.numProcessors)
     }
-    SnappySession.clearPlanCache()
+    SnappySession.clearCache()
   }
 
   private[spark] def removeBlockId(
@@ -853,7 +853,7 @@ object SnappyContext extends Logging {
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
-        SnappySession.clearPlanCache()
+        SnappySession.clearCache()
         s
       case None => None
     }

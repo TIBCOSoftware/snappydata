@@ -444,9 +444,10 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def validateColocatedTableQueries(snc: SnappyContext): Unit = {
 
-    val partsFor19Buckets = Array(16, 17, 18, 19)
-    val shufflePartitions = Utils.mapExecutors(snc, () =>
+    val totalProcessors = Utils.mapExecutors(snc, () =>
       Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+    val partsFor19Buckets = ((totalProcessors - 4) until (totalProcessors + 4)).toArray
+    val shufflePartitions = totalProcessors
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
