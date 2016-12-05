@@ -93,13 +93,16 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
     var numLocator = 0
     var numServers = 0
     var numClients = 0
+    var numClientsToLocator = 0
+    var numClientsToDataServers = 0
 
     membersBuf.foreach(m => {
       if(m("lead").toString.toBoolean){
         numLead += 1
       }
       if(m("locator").toString.toBoolean){
-      numLocator += 1
+        numLocator += 1
+        numClientsToLocator = m("clients").toString.toInt
       }
       if(m("cacheServer").toString.toBoolean){
         numServers += 1
@@ -109,12 +112,16 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     })
 
+    numClientsToDataServers = numClients - numClientsToLocator
+
     clusterStatsMap += ("numMembers" -> membersBuf.size)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
     clusterStatsMap += ("numLocators" -> numLocator)
     clusterStatsMap += ("numServers" -> numServers)
     clusterStatsMap += ("numClients" -> numClients)
+    clusterStatsMap += ("numClientsToLocator" -> numClientsToLocator)
+    clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
 
   }
 
@@ -178,9 +185,18 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("tables")}</div>
       </div>
       <div class="keyStatesRight">
+        <div class="keyStatsValue" data-toggle="tooltip" title="" data-original-title={
+        val numClientsToLocator = clusterDetails.getOrElse("numClientsToLocator",0).toString.toInt
+        val numClientsToDataServers = clusterDetails.getOrElse("numClientsToDataServers",0).toString.toInt
+        "Control Connections : " + numClientsToLocator + " Data Server Connections : " + numClientsToDataServers }>
+          {clusterDetails.getOrElse("numClients","NA")}
+        </div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("clients")}</div>
+      </div>
+      <!-- <div class="keyStatesRight">
         <div class="keyStatsValue">{clusterDetails.getOrElse("memoryUsage","NA")}</div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("memoryUsage")}</div>
-      </div>
+      </div> -->
     </div>
   }
 
