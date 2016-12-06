@@ -519,8 +519,8 @@ snsc.sql("select count(*) from streamingExample").show()
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
 
-## Row and Column tables
-###   -Row and column tables
+## Tables in SnappyData
+### Row and column tables
 Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
 Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.
@@ -528,7 +528,7 @@ Row tables, unlike column tables, are laid out one row at a time in contiguous m
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 #### DDL and DML Syntax for tables
-
+```sql
     CREATE TABLE [IF NOT EXISTS] table_name
        (
       COLUMN_DEFININTION
@@ -549,7 +549,7 @@ Create table DDL for Row and Column tables allows tables to be partitioned on pr
     [AS select_statement];
 
     DROP TABLE [IF EXISTS] table_name
-
+```
 For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.
 
     snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
@@ -560,7 +560,7 @@ But for column table it's restricted to Spark syntax for column definition e.g.
     snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
 Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
-##### Spark API for managing tables
+#### Spark API for managing tables
 
 Get a reference to [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)
 
@@ -581,7 +581,7 @@ Drop a SnappyStore table using Spark APIs
 
     snc.dropTable(tableName, ifExists = true)
 
-##### DDL extensions to SnappyStore tables
+#### DDL extensions to SnappyStore tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
    1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
@@ -595,7 +595,7 @@ The below mentioned DDL extensions are required to configure a table based on us
    9. OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
    10.  EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
 
-##### Restrictions on column tables
+#### Restrictions on column tables
 1. Column tables can not specify any primary key, unique key constraints.
 2. Index on column table is not supported.
 2. Option EXPIRE is not applicable for column tables.
@@ -612,7 +612,7 @@ The below mentioned DDL extensions are required to configure a table based on us
     DELETE FROM tablename1 [WHERE expression]
     TRUNCATE TABLE tablename1;
 
-##### API extensions provided in SnappyContext
+#### API extensions provided in SnappyContext
 We have added several APIs in [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
 
     //  Applicable for both row & column tables
@@ -649,7 +649,7 @@ Usage SnappyConytext.delete(): Delete all rows in table that match passed filter
     snc.delete(tableName, "ITEMREF = 3")
 
 
-##### Row Buffers for column tables
+#### Row Buffers for column tables
 
 Generally, the Column table is used for analytical purpose. To this end, most of the
 operations (read or write) on it are bulk operations. Taking advantage of this fact
@@ -664,11 +664,12 @@ buffer is compressed column wise and stored in the column store.
 Any query on column table, also takes into account the row cached buffer. By doing
 this, we ensure that the query doesn't miss any data.
 
-##### Catalog in SnappyStore
+#### Catalog in SnappyStore
 We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us ability to query underlying GemFireXD to reconstruct the metastore incase of a driver failover. 
 
 There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. 
-##### SQL Reference to the Syntax
+#### SQL Reference to the Syntax
+
 For detailed syntax for GemFire XD check
 http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html
 
@@ -677,7 +678,9 @@ http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
-### -Spark Streaming Overview
+
+###Spark Streaming Overview
+
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like `map`, `reduce`, `join` and `window`.
 
 Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.  
@@ -703,7 +706,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
-### -SnappyData Streaming extensions over Spark
+#### SnappyData Streaming extensions over Spark
 We offer the following enhancements over Spark Streaming : 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to the any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
@@ -717,7 +720,7 @@ We offer the following enhancements over Spark Streaming :
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
 
-### -Working with stream tables
+#### Working with stream tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
     // DDL for creating a stream table
@@ -772,7 +775,7 @@ For example to create a stream table using kafka source :
 ```
 The streamTable created in above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
 
-### -Stream SQL through Snappy-Shell
+#### Stream SQL through Snappy-Shell
 Start a SnappyData cluster and connect through snappy-shell : 
  
     //create a connection
@@ -798,11 +801,11 @@ Start a SnappyData cluster and connect through snappy-shell :
     // Stop the streaming
     snappy> streaming stop;
 
-### -SchemaDStream
+#### SchemaDStream
 SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from Intel's Streaming SQL project - https://github.com/Intel-bigdata/spark-streamingsql
 
-### -Registering Continuous queries
+#### Registering Continuous queries
 ```scala
     //You can join two stream tables and produce a result stream. 
     val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration 
@@ -812,7 +815,7 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
     dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
-### -Dynamic(ad-hoc) Continuous queries
+#### Dynamic(ad-hoc) Continuous queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
 
-### -Continuous Queries through command line (Snappy-Shell)
+#### Continuous Queries through command line (Snappy-Shell)
