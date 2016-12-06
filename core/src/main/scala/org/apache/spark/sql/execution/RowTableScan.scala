@@ -43,19 +43,15 @@ private[sql] final case class RowTableScan(
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
 
-  private[sql] var input: String = _
-
   override def doProduce(ctx: CodegenContext): String = {
     // a parent plan may set a custom input (e.g. LocalJoin)
     // for that case no need to add the "shouldStop()" calls
     var builderInput = true
-    if (input == null) {
-      // PartitionedPhysicalRDD always has one input
-      input = ctx.freshName("input")
-      ctx.addMutableState("scala.collection.Iterator",
-        input, s"$input = inputs[0];")
-      builderInput = false
-    }
+    // PartitionedPhysicalRDD always has one input
+    val input = ctx.freshName("input")
+    ctx.addMutableState("scala.collection.Iterator",
+      input, s"$input = inputs[0];")
+    builderInput = false
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null
 
@@ -67,7 +63,6 @@ private[sql] final case class RowTableScan(
         doProduceWithProjection(ctx, input, builderInput, numOutputRows,
           output, baseRelation)
     }
-    input = null
     code
   }
 
