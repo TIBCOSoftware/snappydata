@@ -22,6 +22,7 @@ import java.sql.Types
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
 
+import org.apache.spark.sql.PartitionResult
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -179,6 +180,24 @@ object StructTypeSerializer extends KryoClassSerializer[StructType] {
       i += 1
     }
     StructType(fields)
+  }
+}
+
+object PartitionResultSerializer extends KryoClassSerializer[PartitionResult] {
+
+  override def write(kryo: Kryo, output: Output, obj: PartitionResult): Unit = {
+    val data = obj._1
+    val len = data.length
+    output.writeInt(len)
+    output.writeBytes(data, 0, len)
+    output.writeVarInt(obj._2, true)
+  }
+
+  override def read(kryo: Kryo, input: Input,
+      c: Class[PartitionResult]): PartitionResult = {
+    val len = input.readInt()
+    val data = input.readBytes(len)
+    new PartitionResult(data, input.readVarInt(true))
   }
 }
 

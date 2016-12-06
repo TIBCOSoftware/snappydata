@@ -94,7 +94,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
-  override def simpleString: String = "Partitioned Scan " + extraInformation +
+  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
       " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
       " numBuckets= " + numBuckets +
@@ -145,6 +145,9 @@ private[sql] object PartitionedPhysicalScan {
         RowTableScan(output, rdd, numBuckets,
           partitionColumns, relation)
     }
+
+  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
+    SparkPlanInfo.fromSparkPlan(plan)
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {

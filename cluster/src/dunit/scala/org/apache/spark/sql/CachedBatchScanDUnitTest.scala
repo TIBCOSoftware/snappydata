@@ -31,8 +31,11 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "ArrDelay INT," +
         "UniqueCarrier CHAR(6) NOT NULL"
 
+    // reduce the batch size to ensure that multiple are created
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
+
     snc.sql(s"create table if not exists airline ($ddlStr) " +
-        s" using column options (Buckets '2')").collect()
+        s" using column options (Buckets '2')")
 
     import snc.implicits._
 
@@ -98,8 +101,8 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val (scanned3, skipped3) =
       findCachedBatchStats(df_allCachedBatchesScan, snc.snappySession, executionId)
 
-    assert(skipped3 > 0, "Some Cached batches should have been scanned")
-    assert(scanned3 != skipped3, "Some Cached batches should have been scanned - comparison")
+    assert(skipped3 > 0, "Some Cached batches should have been skipped")
+    assert(scanned3 != skipped3, "Some Cached batches should have been skipped - comparison")
 
     // check for StartsWith predicate with MAX/MIN handling
 
@@ -191,4 +194,4 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 }
 
 case class AirlineData(year: Int, month: Int, dayOfMonth: Int,
-    depTime: Int, arrTime: Int, carrier: String)
+    depTime: Int, arrDelay: Int, carrier: String)

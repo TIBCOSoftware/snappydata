@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.benchmark
 
-import java.sql.{Date, Timestamp}
+import java.sql.{Date, DriverManager, Timestamp}
 import java.util.{Calendar, GregorianCalendar}
 
 import com.typesafe.config.Config
@@ -63,11 +63,43 @@ class TPCETrade extends SnappyFunSuite {
     TPCETradeTest.benchmarkRandomizedKeys(snappySession, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
+
+  ignore("basic query performance with JDBC") {
+    val numRuns = 1000
+    val numIters = 1000
+    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
+    val stmt = conn.createStatement()
+    val rs = stmt.executeQuery("values dsid()")
+    rs.next()
+    logInfo(s"Connected to server ${rs.getString(1)}")
+    rs.close()
+    for (_ <- 1 to numRuns) {
+      val start = System.nanoTime()
+      for (_ <- 1 to numIters) {
+        // val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
+        //    "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        val rs = stmt.executeQuery("select count(*) from citi_order " +
+            "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        var count = 0
+        while (rs.next()) {
+          count += 1
+        }
+        assert(count == 1)
+      }
+      val end = System.nanoTime()
+      val millis = (end - start) / 1000000.0
+      logInfo(s"Time taken for $numIters runs = ${millis}ms, " +
+          s"average = ${millis / numIters}ms")
+    }
+    stmt.close()
+    conn.close()
+  }
 }
 
-class TPCETradeJob extends SnappySQLJob {
+class TPCETradeJob extends SnappySQLJob with Logging {
 
-  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val sc = snSession.sqlContext
     // SCALE OUT case with 10 billion rows
     val quoteSize = 8500000000L
     val tradeSize = 1250000000L
@@ -86,7 +118,25 @@ class TPCETradeJob extends SnappySQLJob {
     Boolean.box(true)
   }
 
-  override def isValidJob(sc: SnappyContext,
+  def runSnappyJob2(sc: SnappyContext, jobConfig: Config): Any = {
+    val numRuns = 1000
+    val numIters = 1000
+    val session = sc.snappySession
+    for (_ <- 1 to numRuns) {
+      val start = System.nanoTime()
+      for (_ <- 1 to numIters) {
+        session.sql("select * from citi_order where id=1000 " +
+            "--GEMFIREXD-PROPERTIES executionEngine=Spark").collectInternal()
+      }
+      val end = System.nanoTime()
+      val millis = (end - start) / 1000000.0
+      logInfo(s"Time taken for $numIters runs = ${millis}ms, " +
+          s"average = ${millis / numIters}ms")
+    }
+    Boolean.box(true)
+  }
+
+  override def isValidJob(snSession: SnappySession,
       config: Config): SnappyJobValidation = SnappyJobValid()
 }
 
@@ -332,6 +382,7 @@ object TPCETradeTest extends Logging {
         doGC()
       }
       def cleanup(): Unit = {
+        SnappySession.clearPlanCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
       }
