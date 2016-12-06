@@ -20,15 +20,16 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
 
 import scala.util.{Failure, Success, Try}
 
 class CreateAndLoadNWTablesJob extends SnappySQLJob {
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
     val tableType = jobConfig.getString("tableType")
     Try {
+      val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataFilesLocation)
@@ -54,6 +55,6 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
 

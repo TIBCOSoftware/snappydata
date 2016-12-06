@@ -25,27 +25,27 @@ import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
 class InstallJarTest extends SnappySQLJob {
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
     Try {
-      pw.println("****** DynamicJarLoadingJob started ******")
+      pw.println("****** InstallJarTest started ******")
       val currentDirectory: String = new File(".").getCanonicalPath
       val numServers: Int = jobConfig.getString("numServers").toInt
       val expectedException: Boolean = jobConfig.getString("expectedException").toBoolean
       TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers, expectedException)
-      pw.println("****** DynamicJarLoadingJob finished ******")
+      pw.println("****** InstallJarTest finished ******")
       return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory)
-
     } match {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
       case Failure(e) =>
-        pw.println(e.getMessage)
+        pw.println("Exception occurred while executing the job " + "\nError Message:" + e.getMessage)
         pw.close();
         throw e;
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

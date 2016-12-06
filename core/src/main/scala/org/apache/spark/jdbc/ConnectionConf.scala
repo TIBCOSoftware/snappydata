@@ -20,7 +20,7 @@ import java.io.{IOException, ObjectOutputStream}
 
 import scala.StringBuilder
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappySession, SnappyContext}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -36,7 +36,7 @@ class ConnectionConf(val connProps: ConnectionProperties) extends Serializable {
   }
 }
 
-class ConnectionConfBuilder(snc: SnappyContext) {
+class ConnectionConfBuilder(session: SnappySession) {
 
   val URL = "url"
   val DRIVER = "driver"
@@ -129,7 +129,7 @@ class ConnectionConfBuilder(snc: SnappyContext) {
       connSettings.put("poolProperties", poolProperties)
     }
 
-    val connProps = ExternalStoreUtils.validateAndGetAllProps(snc.sparkContext,
+    val connProps = ExternalStoreUtils.validateAndGetAllProps(session.sparkContext,
       new CaseInsensitiveMutableHashMap(connSettings))
     new ConnectionConf(connProps)
   }

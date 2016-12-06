@@ -30,11 +30,11 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.snappydata._
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 
@@ -72,17 +72,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
   private[snappydata] val snappyProperties = Utils.getFields(Property).collect {
-    case (_, propVal: Property.Type) =>
-      val prop = propVal()
-      if (prop.startsWith(Constant.PROPERTY_PREFIX) &&
-          !prop.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
-        prop.substring(Constant.PROPERTY_PREFIX.length)
-      } else if (prop.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
-          !prop.startsWith(Constant.SPARK_STORE_PREFIX)) {
-        prop.substring(Constant.SPARK_SNAPPY_PREFIX.length)
-      } else {
-        ""
-      }
+    case (_, SparkProperty(prop)) => prop
+    case (_, SnappySparkProperty(prop)) => prop
+    case (_, SparkSQLProperty(prop)) => prop
+    case (_, SnappySparkSQLProperty(prop)) => prop
+    case _ => ""
   }.toSet
 
   var _directApiInvoked: Boolean = false
@@ -109,8 +103,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.JobserverEnabled(), "true").
+          set(Property.JobserverEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR")
+      Utils.setDefaultSerializerAndCodec(conf)
 
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
@@ -240,12 +235,13 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       SnappyContext.flushSampleTables()
     }
 
-   assert(sparkContext != null, "Mix and match of LeadService api " +
+    assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()
       sparkContext = null
     }
+    Utils.clearDefaultSerializerAndCodec()
 
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
@@ -318,7 +314,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
-    changeOrAppend(Property.JobserverEnabled(), "false", ignoreIfPresent = true)
+    changeOrAppend(Property.JobserverEnabled.name, "false",
+      ignoreIfPresent = true)
 
     conf
   }
@@ -364,11 +361,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LeadImpl.clearInitializingSparkContext()
   }
 
+
   def getConfig(args: Array[String]): Config = {
 
     System.setProperty("config.trace", "loads")
-
-    val notConfigurable = ConfigFactory.parseResources("jobserver-overrides.conf")
+    val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
+        withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
     val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
 
@@ -384,6 +382,30 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     finalConf
   }
 
+  def getDynamicOverrides: Properties = {
+    val dynamicOverrides = new Properties()
+    val replaceString = "<basedir>"
+
+    def replace(key: String, value: String, newValue: String) = {
+      assert (value.indexOf(replaceString) >= 0)
+      dynamicOverrides.setProperty(key, value.replace(replaceString, newValue))
+    }
+
+    val workingDir = System.getProperty(
+      com.pivotal.gemfirexd.internal.iapi.reference.Property.SYSTEM_HOME_PROPERTY, ".")
+    val defaultConf = ConfigFactory.parseResources("jobserver-defaults.conf")
+
+    var key = "spark.jobserver.filedao.rootdir"
+    replace(key, defaultConf.getString(key), workingDir)
+    key = "spark.jobserver.datadao.rootdir"
+    replace(key, defaultConf.getString(key), workingDir)
+
+    val overrideConf = ConfigFactory.parseResources("jobserver-overrides.conf")
+    key = "spark.jobserver.sqldao.rootdir"
+    replace(key, overrideConf.getString(key), workingDir)
+
+    dynamicOverrides
+  }
 
   def createActorSystem(conf: Config): ActorSystem = {
     ActorSystem("SnappyLeadJobServer", conf)

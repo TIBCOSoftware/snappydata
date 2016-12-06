@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, TimestampType}
+import org.apache.spark.sql.types.{DataType, DateType, IntegerType, LongType, StringType, StructField, TimestampType}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -42,26 +41,28 @@ abstract class DictionaryEncodingBase extends ColumnEncoding {
   private[this] final var longDictionary: Array[Long] = _
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = {
+      field: StructField): Long = {
     var cursor = super.initializeDecoding(columnBytes, field)
     val elementNum = ColumnEncoding.readInt(columnBytes, cursor)
+    // last index in the dictionary is for null element
+    val dictionaryLen = if (hasNulls) elementNum + 1 else elementNum
     cursor += 4
     Utils.getSQLDataType(field.dataType) match {
       case StringType =>
-        stringDictionary = new Array[UTF8String](elementNum)
+        stringDictionary = new Array[UTF8String](dictionaryLen)
         (0 until elementNum).foreach { index =>
           val s = ColumnEncoding.readUTF8String(columnBytes, cursor)
           stringDictionary(index) = s
           cursor += (4 + s.numBytes())
         }
       case IntegerType | DateType =>
-        intDictionary = new Array[Int](elementNum)
+        intDictionary = new Array[Int](dictionaryLen)
         (0 until elementNum).foreach { index =>
           intDictionary(index) = ColumnEncoding.readInt(columnBytes, cursor)
           cursor += 4
         }
       case LongType | TimestampType =>
-        longDictionary = new Array[Long](elementNum)
+        longDictionary = new Array[Long](dictionaryLen)
         (0 until elementNum).foreach { index =>
           longDictionary(index) = ColumnEncoding.readLong(columnBytes, cursor)
           cursor += 8

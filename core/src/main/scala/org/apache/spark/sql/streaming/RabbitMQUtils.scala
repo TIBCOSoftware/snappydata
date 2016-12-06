@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try}
 import com.rabbitmq.client.QueueingConsumer.Delivery
 import com.rabbitmq.client.{Address, Channel, Connection, ConnectionFactory, QueueingConsumer}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream

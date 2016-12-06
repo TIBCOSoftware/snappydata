@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
 
 /**
  * Fetches already created tables. Airline table is already persisted in
@@ -36,12 +36,12 @@ import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJob
  * Created by swati on 6/4/16.
  */
 object AirlineDataQueriesJob extends SnappySQLJob {
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"
     //    val sampleTable = "AIRLINE_SAMPLE"
-
+    val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     // scalastyle:off println
     val pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
@@ -166,5 +166,5 @@ object AirlineDataQueriesJob extends SnappySQLJob {
         s"count is :: ${query5ExecutionCount} ******")
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

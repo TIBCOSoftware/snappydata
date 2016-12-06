@@ -35,6 +35,7 @@ import io.snappydata.gemxd.ClusterCallbacksImpl
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
@@ -147,34 +148,29 @@ object ExecutorInitiator extends Logging {
 
                     // Fetch the driver's Spark properties.
                     val executorConf = new SparkConf
+                    Utils.setDefaultSerializerAndCodec(executorConf)
 
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val props = SparkCallbacks.fetchDriverProperty(executorHost,
                       executorConf, port, url)
 
-                    val driverConf = new SparkConf()
-                    // Specify a default directory for executor, if the local directory for executor
-                    // is set via the executor conf,
-                    // it will override this property later in the code
-                    val localDirForExecutor = new File("./" + "executor").getAbsolutePath
+                    val driverConf = new SparkConf
+                    Utils.setDefaultSerializerAndCodec(driverConf)
 
-                    driverConf.set("spark.local.dir", localDirForExecutor)
                     for ((key, value) <- props) {
                       // this is required for SSL in standalone mode
-                      if (!key.equals("spark.local.dir")) {
-                        if (SparkCallbacks.isExecutorStartupConf(key)) {
-                          driverConf.setIfMissing(key, value)
-                        } else {
-                          driverConf.set(key, value)
-                        }
+                      if (SparkCallbacks.isExecutorStartupConf(key)) {
+                        driverConf.setIfMissing(key, value)
+                      } else {
+                        driverConf.set(key, value)
                       }
                     }
                     // TODO: Hemant: add executor specific properties from local
                     // TODO: conf to this conf that was received from driver.
 
                     // If memory manager is not set, use Snappy unified memory manager
-                    driverConf.set("spark.memory.manager",
-                      driverConf.get("spark.memory.manager", SNAPPY_MEMORY_MANAGER))
+                    driverConf.setIfMissing("spark.memory.manager",
+                      SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)
@@ -242,6 +238,7 @@ object ExecutorInitiator extends Logging {
       executorRunnable.stopTask = true
     }
     executorRunnable.setDriverDetails(None, null)
+    Utils.clearDefaultSerializerAndCodec()
   }
 
   def restartExecutor(): Unit = {
@@ -256,7 +253,7 @@ object ExecutorInitiator extends Logging {
     // Avoid creation of executor inside the Gem accessor
     // that is a Spark driver but has joined the gem system
     // in the non embedded mode
-    if (SparkCallbacks.isDriver()) {
+    if (SparkCallbacks.isDriver) {
       logInfo("Executor cannot be instantiated in this " +
           "VM as a Spark driver is already running. ")
       return

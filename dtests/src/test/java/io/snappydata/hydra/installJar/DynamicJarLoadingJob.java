@@ -25,9 +25,10 @@ import java.io.PrintWriter;
 
 public class DynamicJarLoadingJob extends JavaSnappySQLJob {
     @Override
-    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {
+    public Object runSnappyJob(SnappySession spark, Config jobConfig) {
         PrintWriter pw = null;
         try {
+            SnappyContext snc = spark.sqlContext();
             pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
             int numServers = Integer.parseInt(jobConfig.getString("numServers"));
             boolean expectedException = Boolean.parseBoolean(jobConfig.getString("expectedException"));
@@ -48,7 +49,7 @@ public class DynamicJarLoadingJob extends JavaSnappySQLJob {
     }
 
     @Override
-    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {
+    public SnappyJobValidation isValidJob(SnappySession snc, Config config) {
         return new SnappyJobValid();
     }
 }
