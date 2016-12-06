@@ -12,23 +12,12 @@ pages:
 - Overview: index.md
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
-- Download and Install SnappyData: install.md
-- Set up Cluster using AWS: cluster_aws.md
-- Set up Cluster using Azure: cluster_azure.md
-- Set up Cluster using Docker: cluster_docker.md
-- Building from source, project layout: build-instructions.md
-- How Tos: howto.md
+- Download and Install: install.md
 - Architecture: architecture.md
-- About Cluster: cluster.md
 - Configuring the Cluster: configuration.md
 - Programming Guide: programming_guide.md
-- Using Spark API: clustersparkapi.md
-- Using SQL: clustersql.md
-- Connecting using JDBC, Spark: connectingToCluster.md
-- Developing Apps using the Spark API: jobs.md
-- Row and Column tables: rowAndColumnTables.md
-- Stream processing using SQL: streamingWithSQL.md
 - Store Collocation Modes: deployment.md
+- How Tos: howto.md
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
 - API: apidocsintro.md
