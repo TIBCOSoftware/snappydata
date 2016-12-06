@@ -19,8 +19,6 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import com.gemstone.gemfire.internal.cache.partitioned.Bucket
-
 import scala.collection.mutable
 
 import io.snappydata.Constant
@@ -30,7 +28,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.joins.HashedRelationCache
@@ -47,9 +44,9 @@ import org.apache.spark.sql.types._
 object ExternalStoreUtils {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
-  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "79"
+  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "19"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "11"
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
@@ -246,7 +243,7 @@ object ExternalStoreUtils {
 
   def getConnection(id: String, connProperties: ConnectionProperties,
       forExecutor: Boolean): Connection = {
-    registerDriver(connProperties.driver)
+    Utils.registerDriver(connProperties.driver)
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
@@ -447,11 +444,11 @@ object ExternalStoreUtils {
     parameters.getOrElse(BUCKETS, {
       val partitions = SnappyContext.getClusterMode(sc) match {
         case LocalMode(_, _) =>
-          if (!forSampleTable) DEFAULT_TABLE_BUCKETS_LOCAL_MODE
-          else DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+          if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+          else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
         case _ =>
-          if (!forSampleTable) DEFAULT_TABLE_BUCKETS
-          else DEFAULT_SAMPLE_TABLE_BUCKETS
+          if (forSampleTable)  DEFAULT_SAMPLE_TABLE_BUCKETS
+          else DEFAULT_TABLE_BUCKETS
       }
       if (forManagedTable) {
         if (forColumnTable) {
@@ -482,7 +479,6 @@ object ExternalStoreUtils {
         case other => columnDataTypes(index) = other
       }
     }
-    // TODO: partition pruning like in InMemoryColumnarTableScan?
     val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
     columnarIterator.initialize(cachedBatches, columnDataTypes, columnIndices)
     columnarIterator
@@ -519,7 +515,7 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     schema: StructType,
     useCompression: Boolean,
     bufferSize: Int,
-    reservoirInRegion: Boolean) {
+    reservoirInRegion: Boolean, columnBatchSize: Int) {
 
   var holder = getCachedBatchHolder(-1)
 
@@ -547,7 +543,6 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     if (reservoirInRegion) {
       holder = getCachedBatchHolder(bucketId)
     }
-    u
   }
 
   def appendRow(u: Unit, row: InternalRow): Unit = {

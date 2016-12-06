@@ -22,7 +22,7 @@ import java.io.{PrintStream, FileOutputStream, File}
 import com.typesafe.config.Config
 import io.snappydata.benchmark.TPCHColumnPartitionedTable
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
 
 /**
  * Created by kishor on 29/8/16.
@@ -33,7 +33,8 @@ object BulkLoad_Snappy extends SnappySQLJob{
   var buckets_Order_Lineitem: String = _
 
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val snc = snSession.sqlContext
 
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"BulkLoadPerf.out"))
     var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
@@ -58,7 +59,7 @@ object BulkLoad_Snappy extends SnappySQLJob{
     loadPerfFileStream.close()
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
 
     tpchDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")

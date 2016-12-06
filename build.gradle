@@ -100,7 +100,6 @@ allprojects {
     slf4jVersion = '1.7.21'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    sparkCSVVersion = '1.4.0'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
@@ -629,9 +628,9 @@ task product(type: Zip) {
 
     if (rootProject.hasProperty('hadoop-provided')) {
       releaseFile.append("SnappyData ${version}${gitRevision} " +
-              "built with Hadoop ${hadoopVersion}  but hadoop not bundled \n")
-    }else {
-      releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}\n")
+              "built with Hadoop ${hadoopVersion} but hadoop not bundled.\n")
+    } else {
+      releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
     }
     releaseFile.append("Build flags:${buildFlags}\n")
 
@@ -766,12 +765,19 @@ distTar {
   // also package pulse and VSD
   dependsOn ':packagePulse', ':packageVSD'
   classifier 'bin'
+  if (rootProject.hasProperty('hadoop-provided')) {
+    classifier 'without-hadoop-bin'
+  }
 }
+
 distZip {
   dependsOn product
   // also package pulse and VSD
   dependsOn ':packagePulse', ':packageVSD'
   classifier 'bin'
+  if (rootProject.hasProperty('hadoop-provided')) {
+    classifier 'without-hadoop-bin'
+  }
 }
 
 // use the task below to prepare final release bits

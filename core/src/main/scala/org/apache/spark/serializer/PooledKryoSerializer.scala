@@ -32,14 +32,15 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.BlockAndExecutorId
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
@@ -126,6 +127,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
       new KryoSerializableSerializer)
+    kryo.register(CachedDataFrame.getClass, new KryoSerializableSerializer)
     kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
     kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
     kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
@@ -135,6 +137,16 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
+    kryo.register(classOf[PartitionResult], PartitionResultSerializer)
+    kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
+
+    try {
+      val launchTasksClass = Utils.classForName(
+        "org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LaunchTasks")
+      kryo.register(launchTasksClass, new KryoSerializableSerializer)
+    } catch {
+      case _: ClassNotFoundException => // ignore
+    }
 
     kryo
   }
@@ -155,9 +167,9 @@ final class PooledKryoSerializer(conf: SparkConf)
 final class PooledObject(serializer: PooledKryoSerializer,
     bufferSize: Int) {
   val kryo: Kryo = serializer.newKryo()
-  val output: Output = new Output(bufferSize, -1)
   val input: Input = new KryoInputStringFix(0)
-  lazy val streamInput: Input = new KryoInputStringFix(bufferSize)
+
+  def newOutput(): Output = new Output(bufferSize, -1)
 }
 
 // TODO: SW: pool must be per SparkContext
@@ -169,7 +181,7 @@ object KryoSerializerPool {
 
   private[serializer] val zeroBytes = new Array[Byte](0)
 
-  private val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
+  private[serializer] val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
     val conf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf())
     val bufferSizeKb = conf.getSizeAsKb("spark.kryoserializer.buffer", "4k")
     val bufferSize = ByteUnit.KiB.toBytes(bufferSizeKb).toInt
@@ -202,8 +214,6 @@ object KryoSerializerPool {
     poolObject.kryo.reset()
     if (clearInputBuffer) {
       poolObject.input.setBuffer(zeroBytes)
-    } else {
-      poolObject.output.clear()
     }
     val ref = new SoftReference[PooledObject](poolObject)
     pool.synchronized {
@@ -236,7 +246,7 @@ private[spark] final class PooledKryoSerializerInstance(
 
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
     val poolObject = KryoSerializerPool.borrow()
-    val output = poolObject.output
+    val output = poolObject.newOutput()
     try {
       poolObject.kryo.writeClassAndObject(output, t)
       val result = ByteBuffer.wrap(output.toBytes)
@@ -307,7 +317,10 @@ private[serializer] class KryoReuseSerializationStream(
   // use incoming stream itself if it is an output
   private[this] var output = stream match {
     case out: Output => out
-    case _ => poolObject.output.setOutputStream(stream); poolObject.output
+    case _ =>
+      val out = poolObject.newOutput()
+      out.setOutputStream(stream)
+      out
   }
 
   override def writeObject[T: ClassTag](t: T): SerializationStream = {
@@ -329,7 +342,6 @@ private[serializer] class KryoReuseSerializationStream(
         output.close()
       } finally {
         output = null
-        poolObject.output.setOutputStream(null)
         KryoSerializerPool.release(poolObject)
       }
     }
@@ -341,7 +353,7 @@ private[spark] class KryoStringFixDeserializationStream(
 
   private[this] val poolObject = KryoSerializerPool.borrow()
 
-  private[this] var input = poolObject.streamInput
+  private[this] var input = new KryoInputStringFix(KryoSerializerPool.bufferSize)
   input.setInputStream(stream)
 
   override def readObject[T: ClassTag](): T = {

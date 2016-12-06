@@ -32,7 +32,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
@@ -49,7 +48,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
+import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -67,7 +66,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       functionResourceLoader,
       functionRegistry,
       sqlConf,
-      hadoopConf) with Logging {
+      hadoopConf) {
 
   val sparkConf = snappySession.sparkContext.getConf
 
@@ -297,7 +296,23 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             val builder = new MetadataBuilder
             builder.withMetadata(f.metadata).putString("name", name).build()
           } else {
-            f.metadata
+            f.dataType match {
+              case s: StringType =>
+                if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+                  val builder = new MetadataBuilder
+                  builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
+                    "STRING").build()
+                } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+                    .equalsIgnoreCase("CLOB")) {
+                  // Remove the CharType properties from metadata
+                  val builder = new MetadataBuilder
+                  builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
+                      .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+                } else {
+                  f.metadata
+                }
+              case _ => f.metadata
+            }
           }
           f.copy(name = name, metadata = metadata)
         })
@@ -574,6 +589,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       properties = tableProperties.toMap)
 
     withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
+    SnappySession.clearPlanCache()
   }
 
 
