@@ -1,4 +1,4 @@
-##Getting started
+##Getting started in 5 minutes or less
 
 You have multiple choices for getting started with SnappyData.
 Depending on your preference you can work locally on your local machine, on premise network, on AWS or with a docker image. We will adding support for Azure in the near future. 
@@ -17,7 +17,7 @@ $ cd <Spark_Install_dir>
 $ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11"
 ```
 This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files. 
-NOTE: I(jags) CHANGED THE PACKAGE NAME. CONFIRM WITH AMOGH
+NOTE: I(jags) CHANGED THE PACKAGE NAME. CONFIRM WITH AMOGH.  
 
 <a id="Start_quickStart"></a>
 
@@ -196,6 +196,7 @@ This will open a Spark shell. Then follow the steps mentioned [here](#Start_quic
 
 You can quickly create a single host SnappyData cluster (i.e. one lead node , one data node and a locator in a single machine) through the AWS CloudFormation.
 
+
 ###Prerequisites###
 Before you begin,:
 
@@ -212,13 +213,13 @@ Click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?buck
  4. Keep the selected defaults as is. Click next to go to "Review" page
  5. On the Review page, verify the details and click Create to create a stack.
  6. The next page lists the existing stacks. Click Refresh to view the updated list and the status of the stack creation. When the cluster has started, the status of the stack changes to CREATE_COMPLETE.
- 7. Click on the Outputs tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration.  
+ 7. Click on the Outputs tab, and click on the URL. This will take you to a Zeppelin notebook to run quickstart or other demos.   
    
-   
+Jags: These are instructions for launching a single instance. How do I launch multi-node?   
 
 ###Getting started with Docker image
 
-SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
+SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program and more with SnappyData easily.
 
 This section assumes you have already installed Docker and its configured properly.
 You can verify it quickly by running.
@@ -234,24 +235,26 @@ In addition, make sure that Docker containers have access to at least 4GB of RAM
 ```scala
 $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 6g
 ```
+Jags: This Docker image name is NOT CORRECT. It should have the release version number associated with it. Dhaval needs to fix. 
+
 It will start downloading the image files to your local machine. It may take some time.
 Once your are inside the Spark shell with the "$ scala>" prompt you can follow the steps explained [here](#Start_quickStart)
 
 
 <a id="Start Benchmark"></a>
-###SnappyData Query performance
-Here we will walk through a simple example to check SnappyData query performance as compared to Spark. We will be creating SnappyData column tables and check query performance
-as compared to Spark's DataSet.  Preferably you should have at least 6GB of RAM for the application.
+###SnappyData in-memory insert/Query performance is 20X Spark 2.0 caching?
+Here we will walk through a simple benchmark to compare SnappyData to Spark 2.0 performance. We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then do the same using SnappyData's column table. 
+ Preferably you should have at least 8GB of RAM reserved for this test.
 
-Open your Spark shell by any of the options mentioned below.
+Start the Spark shell using any of the options mentioned below.
 
 *  If your are using your own Spark 2.0 installation 
 
 ```scala
-$ ./bin/spark-shell --driver-memory=8g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+$ ./bin/spark-shell --driver-memory=8g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
 ```
 
-*  If your are using on premise Snappy installation
+*  If you have downloaded Snappydata 
 
 ```scala
 $ ./bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
@@ -264,7 +267,7 @@ $ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-
 
 You should be in a Spark shell. Then follow the instruction below to get the performance numbers.
 
-* Define a of helper function "benchmark", which will give us an average time of a query after doing initial warmups.
+* Define a function "benchmark", which tells us the average time to run queries after doing initial warmups.
 ```scala
 scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
           for (i <- 1 to warmups) {
@@ -279,6 +282,7 @@ scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Uni
             (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
         }
 ```
+Jags: 50 million is not sufficient to showcase the performance difference? Rishi, can u check? 8gb can hold much more.
 
 * Create a DataFrame and temp table using Spark's range method. Cache it in Spark to get optimal performance.
   This will create a DataFrame of 50 million records.
@@ -328,5 +332,5 @@ scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTab
 scala> :q // Quit the Spark shell
 ```
 
-
+Jags: Suggest them to next go through the "How to" section and also provide link so they can reach out to our community channels with their questions  (snappydata.io/community ?) 
 
