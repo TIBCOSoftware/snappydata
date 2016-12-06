@@ -179,8 +179,11 @@ case class SnappyHashAggregateExec(
   // all the mode of aggregate expressions
   private val modes = aggregateExpressions.map(_.mode).distinct
 
-  // return empty here as code of required variables is explicitly instantiated
-  override def usedInputs: AttributeSet = AttributeSet.empty
+  // return empty for grouping case as code of required variables
+  // is explicitly instantiated for that case
+  override def usedInputs: AttributeSet = {
+    if (groupingExpressions.isEmpty) inputSet else AttributeSet.empty
+  }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     child.asInstanceOf[CodegenSupport].inputRDDs()
@@ -250,7 +253,7 @@ case class SnappyHashAggregateExec(
         s"""
            | $isNull = ${ev.isNull};
            | $value = ${ev.value};
-       """.stripMargin
+        """.stripMargin
       ExprCode(ev.code + initVars, isNull, value)
     }
     val initBufVar = evaluateVariables(bufVars)
