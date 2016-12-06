@@ -44,22 +44,22 @@ Explain all steps
 #### Machines without shared path
 
 ## Setting up Cluster on AWS
-Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
+Launch the CloudBuilder from <mark>[LINK TEXT](http://link).</mark> 
 
-1. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
+1. On the **Select Template page**, the URL for the file is pre-populated. Click **Next** to continue.   <br>
 <p style="text-align: center;"><img alt="STEP" src="/Images/cluster_selecttemplate.png"></p>
 
 2. On the **Specify Details **page, you can:
 	* Change the stack name
-	* Select Instance Type:
-	* Select KeyPairName:
-	* Search VPCID: 
+	* Select Instance Type
+	* Select KeyPairName
+	* Search VPCID
 
 	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
 <p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_specifydetails.png"></p>
 Click **Next**. <br>
 
-4. On the **Options** page, click **Next** to use the provided default value.
+4. On the **Options** page, click **Next** to continue using the provided default value.
 4. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
 
 5. On the **Review** page, verify the details and click **Create** to create a stack. 
