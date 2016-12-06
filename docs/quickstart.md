@@ -1,11 +1,11 @@
 ##Getting started
----
+
 Before starting with SnappyData getting started guide you can choose between multiple ways to get SnappyData binaries.
 Depending on your preference you can work locally on your machine, on AWS or with a docker image.
 Preferably you should have 6GB of RAM for this application.
 
 ###Getting started with your Spark distribution
----
+
 If you are a Spark developer and is already using Spark 2.0 , fastest way to work with SnappyData is to use "package" option of Spark Shell.
 Follow the below instructions step by step.
 
@@ -173,7 +173,7 @@ scala> :q //Quit the Spark shell
 
 Now that we have seen the basic working of SnappyData tables, let's run [benchmark](#Start Benchmark) code to see the performance of SnappyData.
 
----
+
 
 ###Getting started by installing SnappyData on-premise
 Download the latest version of SnappyData from the
@@ -187,10 +187,9 @@ $./bin/spark-shell --driver-memory 4g
 ```
 This will open a Spark shell. Then follow the steps mentioned [here](#Start_quickStart)
 
----
 
 ###Getting started on AWS
----
+
 You can quickly create a single host SnappyData cluster (i.e. one lead node , one data node and a locator in a single machine) through the AWS CloudFormation.
 
 ###Prerequisites###
@@ -214,7 +213,7 @@ Click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?buck
    
 
 ###Getting started with Docker image
----
+
 SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program, and more with SnappyData easily.
 
 This section assumes you have already installed Docker and its configured properly.
@@ -233,61 +232,66 @@ $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver
 ```
 It will start downloading the image files to your local machine. It may take some time.
 Once your are inside the Spark shell with the "$ scala>" prompt you can follow the steps explained [here](#Start_quickStart)
----
+
 
 <a id="Start Benchmark"></a>
 ###SnappyData Query performance
 Here we will walk through a simple example to check SnappyData query performance as compared to Spark. We will be creating SnappyData column tables and check query performance
 as compared to Spark's DataSet.  Preferably you should have at least 6GB of RAM for the application.
 
-Open your Spark shell. You could be in AWS, docker, on premise installation or using your own Spark's distribution.
+Open your Spark shell by any of the options mentioned below.
 
+*  If your are using your own Spark 2.0 installation 
 
-* Start a SparkSesion in local mode
 ```scala
-scala>  import org.apache.spark.sql.SparkSession
-
-scala>  val spark = SparkSession.builder.master("local[*]").appName("spark, " +
-            "Snappy Quick Start").getOrCreate()
+$ ./bin/spark-shell --driver-memory=8g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
 ```
+
+*  If your are using on premise Snappy installation
+
+```scala
+$ ./bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+```
+* if your are using docker
+
+```scala
+$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+```
+
+You should be in a Spark shell. Then follow the instruction below to get the performance numbers.
 
 * Define a of helper function "benchmark", which will give us an average time of a query after doing initial warmups.
 ```scala
 scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
-         for (i <- 1 to warmups) {
-           f
-         }
-         val startTime = System.nanoTime
-         for (i <- 1 to times) {
-           f
-         }
-         val endTime = System.nanoTime
-         println(s"Average time taken in $name for $times runs: " +
-           (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
-       }
+          for (i <- 1 to warmups) {
+            f
+          }
+          val startTime = System.nanoTime
+          for (i <- 1 to times) {
+            f
+          }
+          val endTime = System.nanoTime
+          println(s"Average time taken in $name for $times runs: " +
+            (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
+        }
 ```
+
 * Create a DataFrame and temp table using Spark's range method. Cache it in Spark to get optimal performance.
-  This will create a DataFrame of 100 million records.
+  This will create a DataFrame of 50 million records.
 ```scala
-scala>  var df = spark.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
-scala>  df.cache
-scala>  df.createOrReplaceTempView("sparkCacheTable")
+scala>  var testDF = spark.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
+scala>  testDF.cache
+scala>  testDF.createOrReplaceTempView("sparkCacheTable")
 ```
 
 * Now run a query and to check the performance. The queries is using average of a field without any where clause.
 This will ensure it touches all records while scanning.
 ```scala
-scala>  benchmark("Spark perf") { spark.sql("select avg(k) from sparkCacheTable").collect() }
-
-scala>  spark.sql("select avg(k) from sparkCacheTable").show()
-
-scala>  benchmark("Spark perf") {spark.sql("select avg(k) from sparkCacheTable group by (id%100)").collect}
-
-scala>  spark.sql("select avg(k) from sparkCacheTable group by (id%100)").show
+scala>  benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
 ```
 * Clean up the JVM. This will ensure all in memory artifacts for Spark is cleaned up.
 ```scala
-scala>  df.unpersist()
+scala>  testDF.unpersist()
 scala>  System.gc()
 scala>  System.runFinalization()
 ```
@@ -296,33 +300,24 @@ scala>  System.runFinalization()
 ```scala
 scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
-* Create a similar 100 million record DataFrame
+* Create a similar 50 million record DataFrame
 ```scala
-scala>  df = snappy.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
+scala>  testDF = snappy.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 ```
-* Create a column table in SnappyData. Also insert the created a DataFrame into the table
+* Create the table
+```scala
+scala>  snappy.sql("drop table if exists snappyTable")
+scala>  snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
+```
+* Insert the created a DataFrame into the table. Measure its performance
 
 ```scala
-scala>  snappy.sql("create table snappyColumnTable (id bigint not null, k bigint not null) using column")
-scala>  df.write.insertInto("snappyColumnTable")
+scala>  benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
 ```
-
-```scala
-//Check the total row count now.
-scala>  snappy.sql("select count(*) from snappyColumnTable").show
-```
-
-
 
 * Now lets run the same benchmark we ran against Spark DataFrame.
 ```scala
-scala>  benchmark("Snappy perf") {snappy.sql("select avg(k) from snappyColumnTable").collect}
-
-scala>  snappy.sql("select avg(k) from snappyColumnTable").show
-
-scala>  benchmark("Snappy perf") {snappy.sql("select avg(k) from snappyColumnTable group by (id%100)").collect}
-
-scala>  snappy.sql("select avg(k) from snappyColumnTable group by (id%100)").show
+scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
 ```
 
 ```
