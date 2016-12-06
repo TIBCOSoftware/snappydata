@@ -86,7 +86,7 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def updateClusterStats(
       clusterStatsMap: mutable.HashMap[String, Any],
-      membersBuf: mutable.ArrayBuffer[mutable.Map[String, Any]],
+      membersBuf: mutable.Map[java.util.UUID, mutable.Map[String, Any]],
       tablesBuf: Map[String, SnappyRegionStats] ) : Unit = {
 
     var numLead = 0
@@ -96,7 +96,8 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
     var numClientsToLocator = 0
     var numClientsToDataServers = 0
 
-    membersBuf.foreach(m => {
+    membersBuf.foreach(mb => {
+      val m = mb._2
       if(m("lead").toString.toBoolean){
         numLead += 1
       }
@@ -200,8 +201,7 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def memberStats(membersBuf: mutable.ArrayBuffer[mutable.Map[String, Any]]): Seq[Node] = {
-
+  private def memberStats(membersBuf: mutable.Map[java.util.UUID,mutable.Map[String, Any]]): Seq[Node] = {
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
@@ -254,7 +254,7 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
           </tr>
         </thead>
         <tbody>
-          {membersBuf.map(memberRow(_))}
+          {membersBuf.map(mb => memberRow(mb._2))}
         </tbody>
       </table>
     </div>
@@ -298,11 +298,11 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def memberRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = memberDetails.getOrElse("status","")
-    val statusImgUri = if(status.equals("severe")) {
+    val statusImgUri = if(status.toString.toLowerCase.equals("severe")) {
       "/static/snappydata/severe-status-20x19.png"
-    } else if(status.equals("error")) {
+    } else if(status.toString.toLowerCase.equals("error")) {
       "/static/snappydata/error-status-20x19.png"
-    } else if(status.equals("warning")) {
+    } else if(status.toString.toLowerCase.equals("warning")) {
       "/static/snappydata/warning-status-20x19.png"
     } else {
       "/static/snappydata/normal-status-20x19.png"
@@ -403,6 +403,7 @@ object SnappyDashboardPage{
     val normal = "Normal"
     val warning = "Warning"
     val error = "Error"
+    val severe = "Severe"
   }
 
   val clusterStatsTitle = "Cluster"

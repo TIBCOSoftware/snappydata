@@ -42,6 +42,7 @@ import io.snappydata.Constant._
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ui.SnappyDashboardPage
 import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.{Logging, SparkContext}
 
@@ -49,7 +50,7 @@ object SnappyTableStatsProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, SnappyRegionStats]()
   @volatile
-  private var membersInfo = mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
+  private var membersInfo = mutable.Map.empty[java.util.UUID, mutable.Map[String, Any]]
 
   def start(sc: SparkContext): Unit = {
     val delay =
@@ -64,7 +65,7 @@ object SnappyTableStatsProviderService extends Logging {
             tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
 
             // get members details
-            membersInfo = getAggregatedMemberStatsOnDemand
+            getAggregatedMemberStatsOnDemand
 
 
           } catch {
@@ -82,9 +83,13 @@ object SnappyTableStatsProviderService extends Logging {
       delay, delay)
   }
 
-  def getAggregatedMemberStatsOnDemand: mutable.ArrayBuffer[mutable.Map[String, Any]] = {
+  def getAggregatedMemberStatsOnDemand: Unit = {
 
-    val membersBuf = scala.collection.mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
+    // reset all existing members status as down
+    membersInfo.map(tmp => {
+     val mbr = tmp._2
+      mbr.put("status" , SnappyDashboardPage.status.warning)
+    })
 
     val collector = new GfxdListResultCollector(null, true);
     val msg:MemberStatisticsMessage = new MemberStatisticsMessage(collector)
@@ -106,6 +111,7 @@ object SnappyTableStatsProviderService extends Logging {
         map.put(key, memMap.get(key))
         println(">>>>>>>>>>>>>>>>>>>" + key + " >>>> " + memMap.get(key))
       }
+      map.put("status", SnappyDashboardPage.status.normal)
 
       val totalMemory:Long = memMap.get("maxMemory").asInstanceOf[Long]
       //val freeMemory:Long = memMap.get("freeMemory").asInstanceOf[Long]
@@ -120,19 +126,14 @@ object SnappyTableStatsProviderService extends Logging {
       println(">>>>>>>>>>>>>>>>>>> memoryUsage >>>> " + map.get("memoryUsage"))
       println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-      membersBuf += map
+      membersInfo.put(memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID], map)
 
     }
 
-    membersBuf
   }
 
-  def getMembersStatsFromService: mutable.ArrayBuffer[mutable.Map[String, Any]] = {
-    if (membersInfo != null) {
-      membersInfo
-    } else {
-      mutable.ArrayBuffer.empty[mutable.Map[String, Any]]
-    }
+  def getMembersStatsFromService: mutable.Map[java.util.UUID, mutable.Map[String, Any]] = {
+    membersInfo
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
