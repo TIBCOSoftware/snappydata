@@ -23,15 +23,16 @@ import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class CreateAndLoadCTTablesJob extends SnappySQLJob {
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesJob.out"), true));
     val tableType = jobConfig.getString("tableType")
     pw.println("In create and load tables Job")
     Try {
+      val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=6")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       val redundancy = jobConfig.getString("redundancy")
@@ -73,5 +74,5 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

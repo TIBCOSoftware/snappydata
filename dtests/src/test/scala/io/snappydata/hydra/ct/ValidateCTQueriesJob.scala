@@ -24,17 +24,18 @@ import com.typesafe.config.Config
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SQLContext, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SQLContext, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class ValidateCTQueriesJob extends SnappySQLJob {
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val outputFile = "ValidateCTQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
 
     Try {
+      val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataFilesLocation)
@@ -62,5 +63,5 @@ class ValidateCTQueriesJob extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
