@@ -43,20 +43,20 @@ Explain all steps
 
 #### Machines without shared path
 
-## Setting up Cluster with AWS
+## Setting up Cluster on AWS
 To Be done
 
-## Setting up Cluster with Azure
+## Setting up Cluster on Azure
 To Be done
 
-## Setting up Cluster with Docker
+## Setting up Cluster with Docker images
 To Be done
 
 ## Building from source
 To Be done
 
 <a id="Configure_Cluster"></a>
-### Configuring SnappyData Cluster
+### Configuring SnappyData Cluster(Ignore for the time being)
 SnappyData, a database server cluster, has three main components, Locator, Server and Lead. These component can be configured individually using configuration files.
 
 > Note: If the directory and properties are not specified, a default directory is created inside the SPARK_HOME directory.

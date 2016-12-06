@@ -16,7 +16,7 @@ pages:
 - Architecture: architecture.md
 - Configuring the Cluster: configuration.md
 - Programming Guide: programming_guide.md
-- Store Collocation Modes: deployment.md
+- Application Deployment Modes: deployment.md
 - How Tos: howto.md
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
