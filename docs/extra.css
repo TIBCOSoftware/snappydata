@@ -30,3 +30,21 @@ h4, h5, h6 {
     font-style: "Tahoma", sans-serif;
 }
 
+.wy-menu-vertical li > a:before {
+    content: url("Images/arrow-20x20-collapsed.png");
+    float: left;
+}
+
+.wy-menu-vertical li.current > a::before {
+    content: url("Images/arrow-20x20-expanded.png");
+    float: left;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]{
+  margin-left: 15px;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]::before {
+  content: url("Images/dash-20x20-collapsed.png");
+  float: left;
+}

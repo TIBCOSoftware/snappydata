@@ -61,21 +61,21 @@ Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http
 
 1. Enter the name for your cluster. Each cluster is identified by it’s unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
-![STEP](./Images/AWS_clustername.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/AWS_clustername.png"></p>
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. 
 Refer to the Amazon documentation for more information on  [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br> 
-![STEP](./Images/aws_ec2keypair.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_ec2keypair.png"></p>
 
 3. Select an instance based on the capacity that you require. 
-![STEP](./Images/aws_instancetype.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_instancetype.png"></p>
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
-![STEP](./Images/aws_ebsvolumesize.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_ebsvolumesize.png"></p>
 >Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
 
 5. Enter your email address.  <br>
-![STEP](./Images/aws_email.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_email.png"></p>
 
 6. Click **Generate**. 
 
@@ -85,10 +85,10 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	> * The region you select must match the key pair you created.
 				
 	> * If you are not already logged into AWS, you are redirected to the AWS sign-in page. 
-![STEP](./Images/aws_selectedregion.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_selectedregion.png"></p>
 
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
-![STEP](./Images/aws_selecttemplate.png)
+<p style="text-align: center;"><img alt="STEP" src="/Images/aws_selecttemplate.png"></p>
 
 9. You can change the stack name or click **Next** to use the provided default value.
 
@@ -102,10 +102,10 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
-![Refresh](./Images/aws_refreshstack.png)
+<p style="text-align: center;"><img alt="Refresh" src="/Images/aws_refreshstack.png"></p>
 <a id="Stack"></a>
 13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
-	![Public IP](./Images/aws_links.png)
+	<p style="text-align: center;"><img alt="Public IP" src="/Images/aws_links.png"></p>
 > Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
 
 	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
@@ -239,7 +239,7 @@ At the same time, the query is executed on the base table, and the total time re
 %sql show-instant-results-first
 select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude < 40.767588 and pickup_latitude > 40.749775 and pickup_longitude > -74.001632 and  pickup_longitude < -73.974595 and dropoff_latitude > 40.716800 and  dropoff_latitude <  40.717776 and dropoff_longitude >  -74.017682 and dropoff_longitude < -74.000945 group by hour(pickup_datetime);
 ```
-![Example](./Images/DirectivesinApacheZeppelin.png)
+<p style="text-align: center;"><img alt="Example" src="/Images/DirectivesinApacheZeppelin.png"></p>
 
 > Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
@@ -266,24 +266,24 @@ This section provides you with examples you can use in a paragraph.
 
 * In this example, you can create tables using external dataset from AWS S3.
 
-![Example](./Images/sde_exampleusingexternaldatabase.png)
+<p style="text-align: center;"><img alt="Example" src="/Images/sde_exampleusingexternaldatabase.png"></p>
 
 * In this example, you can execute a query on a base table using the SQL interpreter. It returns the number of rides per week. 
 
-![Example](./Images/sde_exampleSQLnoofridesbase.png)
+<p style="text-align: center;"><img alt="Example" src="/Images/sde_exampleSQLnoofridesbase.png"></p>
 
 * In this example, you can execute a query on a sample table using the SQL interpreter. It returns the number of rides per week
 
-![Example](./Images/sde_exampleSQLnoofridessample.png)
+<p style="text-align: center;"><img alt="Example" src="/Images/sde_exampleSQLnoofridessample.png"></p>
 
 * In this example, you are processing data using the SnappyData Scala interpreter.
 
-![Example](./Images/sde_exampledatausingSnappyDataScala.png)
+<p style="text-align: center;"><img alt="Example" src="/Images/sde_exampledatausingSnappyDataScala.png"></p>
 
 * Apache Zeppelin allows you to dynamically create input fields. To create a text input field, use `${fieldname}`.
 In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 
-![Dynamic Form](Images/aqp_dynamicform.png)
+<p style="text-align: center;"><img alt="Dynamic Form" src="/Images/aqp_dynamicform.png"></p>
 
 <a id="Monitoring"></a>
 ##Monitoring the SnappyData Cloud Cluster ##
@@ -299,7 +299,7 @@ The Apache Spark Console displays useful information about SnappyData. This incl
 To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
 
 1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 
-![Launch Spark ](./Images/aws_pulsespark.png)
+<p style="text-align: center;"><img alt="Launch Spark" src="/Images/aws_pulsespark.png"></p>
 2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the user name and password.
 3. Once you have logged in, you can start monitoring SnappyData cluster. 
 

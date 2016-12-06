@@ -4,7 +4,7 @@ SnappyData, a database server cluster, has three main components - Locator, Serv
 - **Lead Node**: Acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 - **Data Servers**: Hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
 
-![ClusterArchitecture](GettingStarted_Architecture.png)
+<p style="text-align: center;"><img alt="ClusterArchitecture" src="../GettingStarted_Architecture.png"></p>
 
 For details of the architecture refer to [Architecture](./architecture.md)
 
