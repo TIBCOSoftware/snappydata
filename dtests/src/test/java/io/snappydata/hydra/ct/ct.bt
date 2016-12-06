@@ -171,6 +171,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptServerHA.conf
   redundantCopies=1,2  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColumn"
+  numVMsToStop=1
   scriptName="ct_create_and_load_persistent_column_table.sql"
   fullResultSetValidation= false
 
@@ -189,7 +190,7 @@ io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1  persistenceMode="null"
+  redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   numVMsToStop=1
