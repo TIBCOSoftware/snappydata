@@ -1,5 +1,5 @@
 ## Install On Premise
-### -Single Host Installation
+### Single Host Installation
 
 SnappyData runs on UNIX-like systems (e.g. Linux, Mac OS).
 Also make sure that Java SE Development Kit 7 or later version is installed, and the  _JAVA_HOME_ environment variable is set on each computer.
@@ -21,7 +21,7 @@ To start a basic cluster with one data node, one lead and one locator
 
 For custom configuration see the section [How to Configure SnappyData cluster](#Configure_Cluster)
 
-### -Multi Host Installation
+### Multi Host Installation
 
 #### Machines with shared path
 If all your machines can share a path over NFS or similar protocol the you can follow the below steps.

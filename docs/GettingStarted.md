@@ -6,7 +6,7 @@
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics).
 
-![SnappyDataOverview](./Images/SnappyDataOverview.png)
+<p style="text-align: center;"><img alt="SnappyDataOverview" src="./Images/SnappyDataOverview.png"></p>
 
 Conceptually, you could think of SnappyData as an **in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark DataSets.
 

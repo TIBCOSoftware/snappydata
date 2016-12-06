@@ -4,7 +4,7 @@ This section presents a high level overview of SnappyData’s core components, a
 ### Core components
 Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
 
-![Core components](CoreComponents.png) 
+<p style="text-align: center;"><img alt="Core components" src="../CoreComponents.png"></p>
 
 The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](rowAndColumnTables.md) section for details on the syntax and available features. 
 
@@ -20,7 +20,7 @@ To understand the data flow architecture, we first walk through a real time use 
 
 ### Data ingestion pipeline
 The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
-![Data Ingestion Pipeline](DataIngestionPipeline.png)  
+<p style="text-align: center;"><img alt="Data Ingestion Pipeline" src="../DataIngestionPipeline.png"></p>
 
 Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
 
@@ -58,7 +58,7 @@ A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct
 3. Data Servers. A data server member hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
 
 
-![ClusterArchitecture](GettingStarted_Architecture.png)
+<p style="text-align: center;"><img alt="ClusterArchitecture" src="../GettingStarted_Architecture.png"></p>
 
 SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](./deployment.md).
 
@@ -72,10 +72,10 @@ To interact with SnappyData, we provide interfaces for developers familiar with 
 
 Unlike Apache Spark, which is primarily a computational engine, the SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
 
-1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
-2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
+1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors.
+2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA).
 Read our [docs](.) for details on the architecture.
- 
+
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the [Spark API section](./clustersparkapi.md).
 
 #### High Concurrency in SnappyData

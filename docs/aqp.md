@@ -12,7 +12,7 @@ Unlike existing optimization techniques based on OLAP cubes or in-memory extract
 ## How does it work?
 The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can however be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. 
 
-![SDE_Architecture](./Images/sde_architecture.png)
+<p style="text-align: center;"><img alt="SDE_Architecture" src="/Images/sde_architecture.png"></p>
 
 ## Key Concepts
 SnappyData SDE relies on two methods for approximations - **Stratified Sampling** and **Sketching**. A brief introduction to these concepts is provided below.
@@ -23,17 +23,17 @@ Sampling is quite intuitive and commonly used by data scientists and explorers. 
 Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
 This is depicted in the following figure:
 
-![Stratified Sampling](./Images/aqp_stratifiedsampling1.png)
+<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling1.png"></p>
 
 If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
 
-![Stratified Sampling](./Images/aqp_stratifiedsampling2.png)
+<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling2.png"></p>
 
 But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
 
 Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. 
 
-![Stratified Sampling](./Images/aqp_stratifiedsampling3.png)
+<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling3.png"></p>
 
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
@@ -264,27 +264,27 @@ Synopsis Data Engine has HAC support using the following behavior clause.
 
 ##### `<do_nothing>`#####
 The SDE engine returns the estimate as is. 
-![DO NOTHING](./Images/aqp_donothing.png)
+<p style="text-align: center;"><img alt="DO NOTHING" src="/Images/aqp_donothing.png"></p>
 <br>
 
 ##### `<local_omit>`#####
 For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
-![LOCAL OMIT](./Images/aqp_localomit.png)
+<p style="text-align: center;"><img alt="LOCAL OMIT" src="/Images/aqp_localomit.png"></p>
 <br>
 
 ##### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-![Strict](./Images/aqp_strict.png)
+<p style="text-align: center;"><img alt="Strict" src="/Images/aqp_strict.png"></p>
 <br>
 
 ##### `<run_on_full_table>`#####
 If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
-![RUN OF FULL TABLE](./Images/aqp_runonfulltable.png)
+<p style="text-align: center;"><img alt="RUN OF FULL TABLE" src="/Images/aqp_runonfulltable.png"></p>
 <br>
 
 ##### `<partial_run_on_base_table>`#####
 If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
-![PARTIAL RUN ON BASE TABLE](./Images/aqp_partialrunonbasetable.png)
+<p style="text-align: center;"><img alt="PARTIAL RUN ON BASE TABLE" src="/Images/aqp_partialrunonbasetable.png"></p>
 <br>
 
 In the following example, any one of the above behavior clause can be applied. 
