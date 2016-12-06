@@ -1,34 +1,36 @@
 ##Getting started
 
-Before starting with SnappyData getting started guide you can choose between multiple ways to get SnappyData binaries.
-Depending on your preference you can work locally on your machine, on AWS or with a docker image.
-Preferably you should have 6GB of RAM for this application.
+You have multiple choices for getting started with SnappyData.
+Depending on your preference you can work locally on your local machine, on premise network, on AWS or with a docker image. We will adding support for Azure in the near future. 
+If you decide to get going on your local machine you should have 6GB of RAM for SnappyData.
 
 ###Getting started with your Spark distribution
 
-If you are a Spark developer and is already using Spark 2.0 , fastest way to work with SnappyData is to use "package" option of Spark Shell.
-Follow the below instructions step by step.
+If you are a Spark developer and is already using Spark 2.0 , fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
+
+Follow the below instructions to try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 10X advantage over Spark's native caching performance. 
 
 
 * From command line go to your Spark installation directory
 ```scala
 $ cd <Spark_Install_dir>
-$ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.6.2-s_2.11"
+$ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11"
 ```
-This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files.
+This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files. 
+NOTE: I(jags) CHANGED THE PACKAGE NAME. CONFIRM WITH AMOGH
 
 <a id="Start_quickStart"></a>
 
 <p>In the following section we will see how to interact with SnappyData.
-We will first create a SnappySession, which is the entry point to SnappyData. Then we will see we can create some tables, load data and query the tables from SnappySession.
-SnappySession tables have store like behaviour like persistence, redundancy etc. You can check the detailed documentation after trying out this section.
-Also, you can choose to work with Scala APIs or SQLs depending on your preference.</p>
+Your application code is almost all Spark. You bootstrap SnappyData using a SnappySession (derived from SparkSession). In this simple test, we create some tables, load data and query the tables using Spark SQL.
+Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. You can check the detailed documentation after trying out this section.
+While SnappyData supports Scala/Java/Python/SQL APIs for this quickstart you can choose to work with Scala APIs or SQL depending on your preference.</p>
 
-#####Getting started using Spark APIs
+#####Getting started using Spark Scala APIs
 
 * Create a SnappySession
 
- A SnappySession extends SparkSession to work with Row and Column tables.
+ A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 
 ```scala
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
@@ -49,13 +51,14 @@ scala>  val tableSchema = StructType(Array(StructField("CustKey", IntegerType, f
 
 * Create a column table with a simple schema [String, Int] and default options. For detailed option see [here]
 ```scala
-//Column tables are useful and performs best for analytic class of queries.
+//Column tables manage data is columnar form and offer superier performance for analytic class queries.
 scala>  snappy.createTable(tableName = "colTable",
-          provider = "column",
+          provider = "column", // Create a SnappyData Column table
           schema = tableSchema,
           options = Map.empty[String, String], // Map for options.
           allowExisting = false)
 ```
+ Snappy (SnappySession) extends SparkSession so you can simply use all the Spark APIs
 
 * Insert the created DataSet to the column table "colTable"
 ```scala
@@ -78,7 +81,7 @@ scala>  snappy.table("colTable").count
 * Create a "row" table with a simple schema [String, Int] and default options. For detailed option see [here]
 
 ```scala
-//Row format tables are used for OLTP class of queries.
+//Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.createTable(tableName = "rowTable",
           provider = "row",
           schema = tableSchema,
@@ -120,9 +123,9 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 
 #####Getting started using SQL
 
-We will use SnappySession created above to fire SQL queries
+We illustrate SQL using Spark SQL invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell; example in the How-to section).
 
-* Create a column table with a simple schema [Int, String] and default options. For detailed option see [here]
+* Create a column table with a simple schema [Int, String] and default options. For details on the options see [here]
 ```scala
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
 ```
@@ -142,11 +145,12 @@ scala>  snappy.sql("select count(*) from colTable").show
 * Create a row table with primary key
 
 ```scala
-//Row format tables are used for OLTP class of queries.
+//Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, " +
             "CustName String) using row options()")
 ```
-
+ If you create a table using standard SQL (i.e. no 'row options' clause) it will create a replicated Row table.
+ 
 ```scala
 //Insert couple of records to the row table
 scala>  snappy.sql("insert into rowTable values(1, 'a')")
@@ -171,7 +175,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark shell
 ```
 
-Now that we have seen the basic working of SnappyData tables, let's run [benchmark](#Start Benchmark) code to see the performance of SnappyData.
+Now that we have seen the basic working of SnappyData tables, let's run [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance. 
 
 
 
