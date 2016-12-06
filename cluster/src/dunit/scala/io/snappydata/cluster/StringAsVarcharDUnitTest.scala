@@ -1,5 +1,3 @@
-package io.snappydata.cluster
-
 /*
  * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
@@ -17,7 +15,9 @@ package io.snappydata.cluster
  * LICENSE file.
  */
 
-import java.sql.{Statement, Connection}
+package io.snappydata.cluster
+
+import java.sql.{Connection, Statement}
 
 import io.snappydata.Constant
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -40,8 +40,8 @@ class StringAsVarcharDUnitTest(val s: String)
   val extTab1 = "extTab1"
   val extTab2 = "extTab2"
 
-  val varcharSize = 20;
-  val charSize = 10;
+  val varcharSize = 20
+  val charSize = 10
 
   /**
    * Test 'select *' on column, row and external tables and 'select cast(* as)' on a column/row
@@ -107,7 +107,8 @@ class StringAsVarcharDUnitTest(val s: String)
         while (rs.next()) {
           count += 1
         }
-        assert(count == expectedCount)
+        assert(count == expectedCount,
+          s"Expected count = $expectedCount but got $count")
       }
     }
 
@@ -137,12 +138,6 @@ class StringAsVarcharDUnitTest(val s: String)
 
   /**
    * Verify the metadata of the result set.
-   *
-   * @param rs
-   * @param cols
-   * @param stringType
-   * @param tName
-   * @param hint
    */
   private def verify(rs: java.sql.ResultSet, cols: Int,
       stringType: String, tName: String, hint: String = "FALSE"): Unit = {
@@ -178,14 +173,13 @@ class StringAsVarcharDUnitTest(val s: String)
     assert(md.getColumnTypeName(5).equals("CHAR"))
     assert(md.getPrecision(5) == charSize)
 
-    assert(md.getTableName(1).equalsIgnoreCase(tName))
+    assert(md.getTableName(1).equalsIgnoreCase(tName),
+      s"Expected $tName but got ${md.getTableName(1)}")
   }
 
   /**
-   * Create a row, column and external tables with five columns each via DDLs. Column table
-   * has two records while others have five records.
-   * 
-   * @param conn
+   * Create a row table and a column table with five columns each. Row table has five entries while
+   * the column table has just two entries.
    */
   def createTablesViaDDLAndInsertData(conn: Connection): Unit = {
     val snc = SnappyContext(sc)
@@ -224,7 +218,8 @@ class StringAsVarcharDUnitTest(val s: String)
     snc.createTable(rowTab1, "row", schema, Map.empty[String, String])
 
     snc.createTable(rowTab2, "row", s"(col_int int, col_string string, col_varchar varchar" +
-        s"($varcharSize), col_clob clob, col_char char($charSize))", Map.empty[String, String], false)
+        s"($varcharSize), col_clob clob, col_char char($charSize))",
+      Map.empty[String, String], false)
 
     snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
 
@@ -298,4 +293,3 @@ class StringAsVarcharDUnitTest(val s: String)
 }
 
 case class Data9(col1: Int, col2: String, col3: String, col4: String, col5: String)
-

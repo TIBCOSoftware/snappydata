@@ -16,13 +16,13 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
+import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
@@ -44,7 +44,7 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
-    object StreamQueryStrategy extends Strategy {
+  object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
@@ -52,7 +52,7 @@ private[sql] trait SnappyStrategies {
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(output, rowStream)) :: Nil
       case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _), _) =>
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(l.output, t.rowStream)) :: Nil
-      case WindowLogicalPlan(d, s, child, _) => throw new AnalysisException(
+      case WindowLogicalPlan(_, _, child, _) => throw new AnalysisException(
         s"Unexpected child $child for WindowLogicalPlan")
       case _ => Nil
     }
@@ -74,7 +74,7 @@ private[sql] trait SnappyStrategies {
 
     private def canBuildRight(joinType: JoinType): Boolean = joinType match {
       case Inner | LeftOuter | LeftSemi | LeftAnti => true
-      case j: ExistenceJoin => true
+      case _: ExistenceJoin => true
       case _ => false
     }
 
@@ -85,11 +85,10 @@ private[sql] trait SnappyStrategies {
 
     private def canLocalJoin(plan: LogicalPlan): Boolean = {
       plan match {
-        case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
+        case PhysicalOperation(_, _, LogicalRelation(
+        t: PartitionedDataSourceScan, _, _)) =>
           t.numBuckets == 1
-        case PhysicalOperation(projects, filters,
-        Join(left, right, _, _)) =>
+        case PhysicalOperation(_, _, Join(left, right, _, _)) =>
           // If join is a result of join of replicated tables, this
           // join result should also be a local join with any other table
           canLocalJoin(left) && canLocalJoin(right)
@@ -126,6 +125,12 @@ object SnappyAggregation extends Strategy {
   var enableOptimizedAggregation = true
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
+    case _ => applyAggregation(plan, isRootPlan = false)
+  }
+
+  def applyAggregation(plan: LogicalPlan,
+      isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
     resultExpressions, child) if enableOptimizedAggregation =>
 
@@ -159,10 +164,12 @@ object SnappyAggregation extends Strategy {
             groupingExpressions,
             aggregateExpressions,
             resultExpressions,
-            planLater(child))
+            planLater(child),
+            isRootPlan)
         } else {
           planAggregateWithOneDistinct(
             groupingExpressions,
+            aggregateExpressions,
             functionsWithDistinct,
             functionsWithoutDistinct,
             resultExpressions,
@@ -174,12 +181,24 @@ object SnappyAggregation extends Strategy {
     case _ => Nil
   }
 
+  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
+    // ImperativeAggregate is not supported right now in code generation.
+    !aggregateExpressions.exists(_.aggregateFunction
+        .isInstanceOf[ImperativeAggregate])
+  }
+
   def planAggregateWithoutDistinct(
       groupingExpressions: Seq[NamedExpression],
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
-      child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use HashAggregate.
+      child: SparkPlan,
+      isRootPlan: Boolean): Seq[SparkPlan] = {
+
+    // Check if we can use SnappyHashAggregateExec.
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
+        aggregateExpressions, resultExpressions, child)
+    }
 
     // 1. Create an Aggregate Operator for partial aggregations.
 
@@ -209,7 +228,7 @@ object SnappyAggregation extends Strategy {
     val finalAggregateAttributes = finalAggregateExpressions.map(
       _.resultAttribute)
 
-    val finalAggregate = SnappyHashAggregateExec(
+    val finalHashAggregate = SnappyHashAggregateExec(
       requiredChildDistributionExpressions = Some(groupingAttributes),
       groupingExpressions = groupingAttributes,
       aggregateExpressions = finalAggregateExpressions,
@@ -218,15 +237,29 @@ object SnappyAggregation extends Strategy {
       __resultExpressions = resultExpressions,
       child = partialAggregate)
 
+    val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
+      // Special CollectAggregateExec plan for top-level simple aggregations
+      // which can be performed on the driver itself rather than an exchange.
+      CollectAggregateExec(basePlan = finalHashAggregate,
+        child = partialAggregate)
+    } else finalHashAggregate
     finalAggregate :: Nil
   }
 
   def planAggregateWithOneDistinct(
       groupingExpressions: Seq[NamedExpression],
+      aggregateExpressions: Seq[AggregateExpression],
       functionsWithDistinct: Seq[AggregateExpression],
       functionsWithoutDistinct: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
+
+    // Check if we can use SnappyHashAggregateExec.
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
+        functionsWithDistinct, functionsWithoutDistinct,
+        resultExpressions, child)
+    }
 
     // functionsWithDistinct is guaranteed to be non-empty. Even though it
     // may contain more than one DISTINCT aggregate function, all of those
@@ -291,7 +324,7 @@ object SnappyAggregation extends Strategy {
       // Children of an AggregateFunction with DISTINCT keyword has already
       // been evaluated. At here, we need to replace original children
       // to AttributeReferences.
-      case agg@AggregateExpression(aggregateFunction, mode, true, _) =>
+      case AggregateExpression(aggregateFunction, _, true, _) =>
         aggregateFunction.transformDown(distinctColumnAttributeLookup)
             .asInstanceOf[AggregateFunction]
     }

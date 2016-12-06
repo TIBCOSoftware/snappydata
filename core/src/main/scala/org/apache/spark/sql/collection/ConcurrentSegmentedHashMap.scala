@@ -18,7 +18,7 @@
 package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.{ReentrantReadWriteLock, Lock}
+import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
@@ -59,8 +59,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val nsegs = math.min(concurrency, 1 << 16)
     val segs = new Array[M](nsegs)
     // calculate the initial capacity of each segment
-    segs.indices.foreach(i => {segs(i) = segmentCreator(initSegmentCapacity(nsegs),
-      loadFactor, i, nsegs)})
+    segs.indices.foreach(i => {
+      segs(i) = segmentCreator(initSegmentCapacity(nsegs),
+        loadFactor, i, nsegs)
+    })
     segs
   }
   private val _size = new AtomicLong(0)
@@ -152,7 +154,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     var added: java.lang.Boolean = null
     lock.lock()
     try {
-      added = seg.changeValue(k, hash, change, true)
+      added = seg.changeValue(k, hash, change, isLocal = true)
     } finally {
       lock.unlock()
     }
@@ -161,7 +163,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: (Int) => Int,
-                             isLocal: Boolean) {
+      isLocal: Boolean) {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -174,11 +176,11 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val groupedHashes = new Array[mutable.ArrayBuilder.ofInt](nsegs)
     var numAdded = 0
 
-    def getLockedValidSegmentAndLock(i:Int) :(M, ReentrantReadWriteLock.WriteLock) = {
+    def getLockedValidSegmentAndLock(i: Int): (M, ReentrantReadWriteLock.WriteLock) = {
       var seg = segs(i)
       var lock = seg.writeLock
       lock.lock()
-      while(!seg.valid) {
+      while (!seg.valid) {
         lock.unlock()
         seg = segs(i)
         lock = seg.writeLock
@@ -186,6 +188,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       }
       (seg, lock)
     }
+
     // split into max batch sizes to avoid buffering up too much
     val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
@@ -216,7 +219,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         if (keys != null) {
           val hashes = groupedHashes(i).result()
           val nhashes = hashes.length
-          var(seg, lock) = getLockedValidSegmentAndLock(i)
+          var (seg, lock) = getLockedValidSegmentAndLock(i)
           lockedState = true
           try {
             var added: java.lang.Boolean = null
@@ -229,34 +232,33 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
               } else {
                 // indicates that loop must be broken immediately
                 // need to take the latest reference of segmnet
-                //after segmnetAbort is successful
+                // after segmnetAbort is successful
                 lock.unlock()
                 lockedState = false
-                //Because two threads can concurrently call segmentAbort
-                //& is since locks are released,  there is no guarantee that
+                // Because two threads can concurrently call segmentAbort
+                // & is since locks are released, there is no guarantee that
                 // one thread would correctly identify if the other has cleared
                 // the segments. So after the changeSegment, it should unconditionally
                 // refresh the segments
-               // try {
-                //  if (change.segmentAbort(seg)) {
-                    // break out of loop when segmentAbort returns true
-                    //idx = nhashes
+                // try {
+                //   if (change.segmentAbort(seg)) {
+                // break out of loop when segmentAbort returns true
+                //     idx = nhashes
                 change.segmentAbort(seg)
                 val segmentAndLock = getLockedValidSegmentAndLock(i)
                 lockedState = true
                 seg = segmentAndLock._1
                 lock = segmentAndLock._2
-                //  }
+                // }
                 idx += 1
 
-               // } finally {
-                  //lock.lock()
-                //}
+                // } finally {
+                //   lock.lock()
+                // }
               }
             }
-          }
-          finally {
-            if(lockedState) {
+          } finally {
+            if (lockedState) {
               lock.unlock()
             }
           }
@@ -338,7 +340,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[(K, V)](size.toInt)
-      foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += ((k, v)) })
+      foldEntriesRead[Unit]((), true, { (k, v, _) => buffer += ((k, v)) })
       buffer
     } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
@@ -350,7 +352,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[V](size.toInt)
-      foldValuesRead[Unit]((), { (i, v, u) => buffer += v })
+      foldValuesRead[Unit]((), { (_, v, _) => buffer += v })
       buffer
     } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
@@ -362,7 +364,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[K](size.toInt)
-      foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += k })
+      foldEntriesRead[Unit]((), true, { (k, _, _) => buffer += k })
       buffer
     } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +

@@ -18,9 +18,11 @@ package org.apache.spark.sql
 
 import io.snappydata.cluster.ClusterManagerTestBase
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec, RowTableScan}
+import org.apache.spark.sql.store.StoreUtils
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
@@ -299,27 +301,40 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def validatePartitionedColumnTableQueries(snc: SnappyContext): Unit = {
 
+    val numScanPartitions = if (StoreUtils.ENABLE_BUCKET_RDD_DELINKING) {
+      Utils.mapExecutors(snc, () =>
+        Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+    } else 113
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
         case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 13,
           classOf[ColumnTableScan])
-        case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, 24, classOf[ColumnTableScan])
+        case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, numScanPartitions,
+          classOf[ColumnTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 10, classOf[ColumnTableScan])
         case "Q6" => NWQueries.assertQuery(snc, NWQueries.Q6, "Q6", 9, 10, classOf[ColumnTableScan])
         case "Q7" => NWQueries.assertQuery(snc, NWQueries.Q7, "Q7", 9, 10, classOf[ColumnTableScan])
-        case "Q8" => NWQueries.assertQuery(snc, NWQueries.Q8, "Q8", 6, 24, classOf[FilterExec])
-        case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, 24, classOf[ProjectExec])
-        case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 24, classOf[FilterExec])
-        case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 24, classOf[ProjectExec])
+        case "Q8" => NWQueries.assertQuery(snc, NWQueries.Q8, "Q8", 6, numScanPartitions,
+          classOf[FilterExec])
+        case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, numScanPartitions,
+          classOf[ProjectExec])
+        case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, numScanPartitions,
+          classOf[FilterExec])
+        case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, numScanPartitions,
+          classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
         case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 13, classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 1, classOf[FilterExec])
-        case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 24, classOf[FilterExec])
-        case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, 24, classOf[FilterExec])
-        case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, 24, classOf[FilterExec])
-        case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, 24, classOf[ProjectExec])
+        case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, numScanPartitions,
+          classOf[FilterExec])
+        case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, numScanPartitions,
+          classOf[FilterExec])
+        case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, numScanPartitions,
+          classOf[FilterExec])
+        case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, numScanPartitions,
+          classOf[ProjectExec])
         case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 13, classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1,
@@ -429,14 +444,15 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def validateColocatedTableQueries(snc: SnappyContext): Unit = {
 
-    val partsFor19Buckets = Array(16, 17, 18, 19)
-    val shufflePartitions = snc.sparkContext.schedulerBackend.defaultParallelism()
+    val totalProcessors = Utils.mapExecutors(snc, () =>
+      Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+    val shufflePartitions = totalProcessors
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
-        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, partsFor19Buckets,
+        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 19,
           classOf[ColumnTableScan])
-        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, partsFor19Buckets,
+        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 19,
           classOf[RowTableScan])
         case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, 3, classOf[RowTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 10, classOf[RowTableScan])
@@ -447,7 +463,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 3, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 3, classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
-        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, partsFor19Buckets,
+        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 19,
           classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, shufflePartitions,
           classOf[FilterExec])
@@ -455,7 +471,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, 3, classOf[FilterExec])
         case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, 3, classOf[FilterExec])
         case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, 3, classOf[ProjectExec])
-        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, partsFor19Buckets,
+        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 19,
           classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1, classOf[RowTableScan])

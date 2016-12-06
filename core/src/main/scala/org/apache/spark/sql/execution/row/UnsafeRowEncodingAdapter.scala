@@ -28,6 +28,9 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def supports(dataType: DataType): Boolean = true
 
+  // nulls can be present so always return true
+  override protected def hasNulls: Boolean = true
+
   override protected def initializeNulls(columnBytes: AnyRef,
       field: StructField): Long = 0L
 
