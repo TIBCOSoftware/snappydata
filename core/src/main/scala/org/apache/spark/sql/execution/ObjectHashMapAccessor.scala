@@ -793,8 +793,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         .map(v => s"!${v.isNull}")
     // filter as per min/max if provided; the min/max variables will be
     // initialized by the caller outside the loop after creating the map
-    val minMaxFilter = integralKeys.map { index =>
-      val keyVar = streamKeyVars(index).value
+    val minMaxFilter = integralKeys.zipWithIndex.map {
+      case (indexKey, index) =>
+      val keyVar = streamKeyVars(indexKey).value
       val minVar = integralKeysMinVars(index)
       val maxVar = integralKeysMaxVars(index)
       s"$keyVar >= $minVar && $keyVar <= $maxVar"
@@ -841,9 +842,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         val nullVar = s"$nullsMaskPrefix$index"
         s"${nullMaskVars(index)} = $localValueVar.$nullVar;"
       }.mkString("\n")
+
+      val dupRow =
+        s"""
+           |if (!currentRows.isEmpty()) {
+           |  currentRows.addLast(((InternalRow)currentRows.pollLast()).copy());
+           |}
+         """.stripMargin
       s"""
         if ($entryIndexVar < $numEntriesVar) {
           $localValueVar = $valuesVar[$entryIndexVar++];
+          $dupRow
         } else if ($numEntriesVar == -1) {
           // multi-values array hit first time
           if (($valuesVar = $entryVar.$multiValuesVar) != null) {
@@ -851,6 +860,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             $numEntriesVar = $valuesVar.length;
             $localValueVar = $valuesVar[0];
             $nullsUpdate
+            $dupRow
           } else {
             break;
           }
