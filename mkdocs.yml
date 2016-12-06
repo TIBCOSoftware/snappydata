@@ -13,9 +13,9 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install SnappyData: install.md
-- Set up Cluster using AWS: cluster__aws.md
-- Set up Cluster using Azure: cluster__azure.md
-- Set up Cluster using Docker: cluster__docker.md
+- Set up Cluster using AWS: cluster_aws.md
+- Set up Cluster using Azure: cluster_azure.md
+- Set up Cluster using Docker: cluster_docker.md
 - Building from source, project layout: build-instructions.md
 - How Tos: howto.md
 - Architecture: architecture.md
