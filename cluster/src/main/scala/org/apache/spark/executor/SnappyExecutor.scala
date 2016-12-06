@@ -78,8 +78,9 @@ class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
 
   protected def getJobName: String = {
     var jobFile = ""
-    if (null != Executor.taskDeserializationProps.get()) {
-      jobFile = Executor.taskDeserializationProps.get().getProperty(io.snappydata.Constant
+    val taskDeserializationProps = Executor.taskDeserializationProps.get()
+    if (null != taskDeserializationProps) {
+      jobFile = taskDeserializationProps.getProperty(io.snappydata.Constant
           .JOB_SERVER_JAR_NAME, "")
     }
     new File(jobFile).getName
