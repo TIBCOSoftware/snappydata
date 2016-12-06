@@ -18,6 +18,7 @@ The following topics are covered in this section:
 * [How to Use snappy-shell](#howto-snappyShell)
 * [How to Create Row Tables and Run Queries](#howto-row)
 * [How to Create Column Tables and Run Queries](#howto-column)
+* [How to Load Data in SnappyData Tables](#howto-load)
 * [How to perform a Collocated Join](#howto-collacatedJoin)
 * [How to Connect using JDBC Driver and Run Queries](#howto-jdbc)
 * [How to Store and Query JSON Objects](#howto-JSON)
@@ -359,6 +360,47 @@ The same table can be created using SQL as shown below:
 ```
 
 You can execute select queries on column table, join the column table with other tables and append data to it.
+
+<a id="howto-collacatedJoin"></a>
+## How to Load Data in SnappyData Tables
+You can use Spark's DataFrameReader API in order to load data in SnappyData tables using different formats (Parquet, CSV, JSON etc.).
+
+**Code Example**
+
+In this example a column table is created as follows:
+
+```
+    snSession.sql("CREATE TABLE CUSTOMER ( " +
+        "C_CUSTKEY     INTEGER NOT NULL," +
+        "C_NAME        VARCHAR(25) NOT NULL," +
+        "C_ADDRESS     VARCHAR(40) NOT NULL," +
+        "C_NATIONKEY   INTEGER NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
+        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+        "C_COMMENT     VARCHAR(117) NOT NULL)" +
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
+```
+
+Load data in the CUSTOMER from a CSV file by using DataFrameReader API:
+
+```
+    val tableSchema = snSession.table("CUSTOMER").schema
+    val customerDF = snSession.read.
+        format("com.databricks.spark.csv").schema(schema = tableSchema).
+        load(s"quickstart/src/main/resources/customer.csv")
+    customerDF.write.insertInto("CUSTOMER")
+```
+
+In case you have a Parquet file, you can use code similar to following:
+
+```
+val customerDF = snc.read.parquet(s"$dataDir/customer_parquet")
+customerDF.write.insertInto("CUSTOMER")
+```
+
+The source code to load the data from a CSV file is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala]((https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+
 
 <a id="howto-collacatedJoin"></a>
 ## How to perform a Collocated Join
