@@ -32,6 +32,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
@@ -48,7 +49,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -68,7 +69,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       sqlConf,
       hadoopConf) {
 
-  val sparkConf = snappySession.sparkContext.getConf
+  val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
   private[sql] var client = metadataHive
 
@@ -165,8 +166,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
         relation match {
-          case sr: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
-          case pr: ParentRelation =>
+          case _: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
+          case _: ParentRelation =>
             var dependentRelations: Array[String] = Array()
             if (table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
               dependentRelations = table.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
@@ -189,8 +190,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = createCachedSampleTables
 
-  protected def createCachedSampleTables =
+  protected def createCachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalPlan, String)]] = {
     SnappyStoreHiveCatalog.cachedSampleTables
+  }
 
   private var relationDestroyVersion = 0
 
@@ -297,7 +300,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             builder.withMetadata(f.metadata).putString("name", name).build()
           } else {
             f.dataType match {
-              case s: StringType =>
+              case StringType =>
                 if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
                   val builder = new MetadataBuilder
                   builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
@@ -379,7 +382,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def unregisterTable(tableIdent: QualifiedTableName): Unit = synchronized {
     val tableName = tableIdent.table
     if (tempTables.contains(tableName)) {
-      snappySession.truncateTable(tableIdent, ignoreIfUnsupported = true)
+      snappySession.truncateTable(tableIdent, ifExists = false,
+        ignoreIfUnsupported = true)
       tempTables -= tableName
     }
   }
@@ -561,7 +565,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val schemaName = tableIdent.schemaName
     val dbInHive = client.getDatabaseOption(schemaName)
     dbInHive match {
-      case Some(x) => // We are all good
+      case Some(_) => // We are all good
       case None => client.createDatabase(CatalogDatabase(
         schemaName,
         description = schemaName,
@@ -714,10 +718,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def getTableType(relation: BaseRelation): ExternalTableType = {
     relation match {
-      case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: IndexColumnFormatRelation => ExternalTableType.Index
-      case x: JDBCAppendableRelation => ExternalTableType.Column
-      case x: StreamPlan => ExternalTableType.Stream
+      case _: JDBCMutableRelation => ExternalTableType.Row
+      case _: IndexColumnFormatRelation => ExternalTableType.Index
+      case _: JDBCAppendableRelation => ExternalTableType.Column
+      case _: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
   }
@@ -769,7 +773,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     try {
       indexes = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS) + ","
     } catch {
-      case e: scala.NoSuchElementException =>
+      case _: scala.NoSuchElementException =>
     }
 
     client.alterTable(

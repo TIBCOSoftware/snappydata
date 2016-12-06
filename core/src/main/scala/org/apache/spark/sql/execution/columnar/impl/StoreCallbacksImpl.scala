@@ -32,13 +32,12 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 
-import org.apache.spark.{Logging, SparkException}
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.execution.joins.HashedRelationCache
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode, _}
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode}
+import org.apache.spark.{Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -159,7 +158,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
-    HashedRelationCache.clear()
   }
 
   override def cachedBatchTableName(table: String): String = {

@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -39,6 +40,16 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
+trait PlanInsertableRelation extends InsertableRelation {
+
+  /**
+   * Get a spark plan for insert. The result of SparkPlan execution should
+   * be a count of number of inserted rows.
+   */
+  def getInsertPlan(relation: LogicalRelation, child: SparkPlan,
+      overwrite: Boolean): SparkPlan
+}
+
 trait RowPutRelation extends SingleRowInsertableRelation {
   /**
    * If the row is already present, it gets updated otherwise it gets
@@ -48,7 +59,6 @@ trait RowPutRelation extends SingleRowInsertableRelation {
    *
    * @return number of rows upserted
    */
-
   def put(rows: Seq[Row]): Int
 
   /**

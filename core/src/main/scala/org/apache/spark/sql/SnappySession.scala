@@ -37,12 +37,12 @@ import io.snappydata.Constant
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, AttributeReference, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -55,7 +55,7 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types.{DataType, DecimalType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -91,7 +91,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sharedState: SnappySharedState = {
-    existingSharedState.getOrElse(new SnappySharedState(sc))
+    existingSharedState.getOrElse(new SnappySharedState(sc, id))
   }
 
   private[spark] lazy val cacheManager = sharedState.cacheManager
@@ -162,6 +162,30 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] final def executeSQL(sqlText: String): DataFrame =
     super.sql(sqlText)
+
+  // scalastyle:off
+  // Disable style checker so "implicits" object can start with lowercase i
+  /**
+   * :: Experimental ::
+   * (Scala-specific) Implicit methods available in Scala for converting
+   * common Scala objects into [[DataFrame]]s.
+   *
+   * {{{
+   *   val snappySession = SnappyContext(sc).snappySession
+   *   import snappySession.implicits._
+   * }}}
+   *
+   * @since 2.0.0
+   */
+  @Experimental
+  object sqlImplicits extends SQLImplicits with Serializable {
+    protected override def _sqlContext: SnappyContext = self.snappyContext
+
+    implicit def rddOperations[T: u.TypeTag : Encoder](
+        rdd: RDD[T]): RDDOperations[T] = new RDDOperations[T](rdd, self)
+  }
+
+  // scalastyle:on
 
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
@@ -355,18 +379,29 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableName full table name to be truncated
+   * @param ifExists  attempt truncate only if the table exists
    */
-  def truncateTable(tableName: String): Unit =
-    truncateTable(sessionCatalog.newQualifiedTableName(tableName))
+  def truncateTable(tableName: String, ifExists: Boolean = false): Unit = {
+    truncateTable(sessionCatalog.newQualifiedTableName(tableName), ifExists,
+      ignoreIfUnsupported = false)
+  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableIdent qualified name of table to be truncated
+   * @param ifExists   attempt truncate only if the table exists
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
-      ignoreIfUnsupported: Boolean = false): Unit = {
-    val plan = sessionCatalog.lookupRelation(tableIdent)
+      ifExists: Boolean, ignoreIfUnsupported: Boolean): Unit = {
+    val plan = try {
+      sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException =>
+        if (ifExists) return else throw tnfe
+    }
     cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
     plan match {
       case LogicalRelation(br, _, _) =>
@@ -382,6 +417,15 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  override def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
+    val encoder = encoderFor[T]
+    val output = encoder.schema.toAttributes
+    val c = encoder.clsTag.runtimeClass
+    val isFlat = !(classOf[Product].isAssignableFrom(c) ||
+        classOf[DefinedByConstructorParams].isAssignableFrom(c))
+    val plan = new EncoderPlan[T](data, encoder, isFlat, output, self)
+    Dataset[T](self, plan)
+  }
 
   /**
    * Creates a [[DataFrame]] from an RDD[Row]. User can specify whether
@@ -1643,4 +1687,34 @@ private final class Expr(val name: String, val e: Expression) {
 
   override def hashCode: Int =
     HashingUtil.finalMix(name.hashCode, e.semanticHash())
+}
+
+class RDDOperations[T: u.TypeTag : Encoder](rdd: RDD[T], session: SnappySession) {
+
+  def insertInto(tableName: String): Unit = {
+    val sessionState = session.sessionState
+    val tableIdent = sessionState.sqlParser.parseTableIdentifier(tableName)
+    val relation = sessionState.catalog.lookupRelation(tableIdent)
+    val relationOutput = relation.output
+    val encoder = implicitly[Encoder[T]].asInstanceOf[ExpressionEncoder[T]]
+    val output = encoder.schema.zipWithIndex.map { case (f, i) =>
+      // avoid an unnecessary precision/scale clone+cast for DECIMAL types
+      val dataType = f.dataType match {
+        case d: DecimalType => relationOutput(i).dataType match {
+          case dt: DecimalType => dt
+          case _ => d
+        }
+        case t => t
+      }
+      AttributeReference(f.name, dataType, f.nullable, f.metadata)()
+    }
+    val isFlat = !ScalaReflection.definedByConstructorParams(u.typeOf[T])
+    sessionState.executePlan(
+      InsertIntoTable(
+        table = UnresolvedRelation(tableIdent),
+        partition = Map.empty[String, Option[String]],
+        child = new EncoderPlan(rdd, encoder, isFlat, output, session),
+        overwrite = false,
+        ifNotExists = false)).toRdd
+  }
 }

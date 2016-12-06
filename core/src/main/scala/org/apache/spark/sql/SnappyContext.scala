@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
-import org.apache.spark.sql.execution.joins.{HashedObjectCache, HashedRelationCache}
+import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
@@ -131,18 +131,23 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableName full table name to be truncated
+   * @param ifExists  attempt truncate only if the table exists
    */
-  def truncateTable(tableName: String): Unit = snappySession.truncateTable(tableName)
-
+  def truncateTable(tableName: String, ifExists: Boolean = false): Unit = {
+    snappySession.truncateTable(tableName, ifExists)
+  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableIdent qualified name of table to be truncated
+   * @param ifExists   attempt truncate only if the table exists
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
-      ignoreIfUnsupported: Boolean = false): Unit = {
-    snappySession.truncateTable(tableIdent, ignoreIfUnsupported)
+      ifExists: Boolean, ignoreIfUnsupported: Boolean): Unit = {
+    snappySession.truncateTable(tableIdent, ifExists, ignoreIfUnsupported)
   }
 
 
@@ -1079,7 +1084,6 @@ object SnappyContext extends Logging {
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
     CodeGeneration.clearCache()
-    HashedRelationCache.close()
     HashedObjectCache.close()
     _clusterMode match {
       case m: ExternalClusterMode =>

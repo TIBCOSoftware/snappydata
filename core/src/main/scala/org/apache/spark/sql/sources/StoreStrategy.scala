@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql.sources
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
+import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, SparkPlan}
 import org.apache.spark.sql.types.DataType
 
 /**
@@ -31,13 +33,13 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-        false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
+        false, opts, _, _, allowExisting, _) =>
       ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
 
     case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-        bucketSpec, mode, opts, query) =>
+        _, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
       ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
@@ -52,7 +54,15 @@ object StoreStrategy extends Strategy {
     case drop: DropTable =>
       ExecutedCommandExec(drop) :: Nil
 
-    case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
+    case plan: EncoderPlan[Any] =>
+      EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
+        plan.encoder, plan.isFlat, plan.output) :: Nil
+
+    case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
+    _, _), part, query, overwrite, false) if part.isEmpty =>
+      p.getInsertPlan(l, planLater(query), overwrite) :: Nil
+
+    case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>

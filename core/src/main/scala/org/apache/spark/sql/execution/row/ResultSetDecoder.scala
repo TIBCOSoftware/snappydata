@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.shared.ClientSharedData
 
 import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder
 import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -31,8 +31,8 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * An adapter for a ResultSet to pose as ColumnEncoding so that the same
  * generated code can be used for both row buffer and column data access.
  */
-final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
-    extends ColumnEncoding {
+final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
+    extends ColumnDecoder {
 
   private[this] val defaultCal = ClientSharedData.getDefaultCleanCalendar
 
@@ -44,9 +44,9 @@ final class ResultSetEncodingAdapter(rs: ResultSet, columnPosition: Int)
   override protected def hasNulls: Boolean = true
 
   override protected def initializeNulls(columnBytes: AnyRef,
-      field: StructField): Long = 0L
+      cursor: Long, field: StructField): Long = 0L
 
-  override def initializeDecoding(columnBytes: AnyRef,
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L

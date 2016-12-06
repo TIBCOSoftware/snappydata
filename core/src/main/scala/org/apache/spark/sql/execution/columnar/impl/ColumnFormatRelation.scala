@@ -22,19 +22,18 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, ExecutePlan, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -74,6 +73,7 @@ class BaseColumnFormatRelation(
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan
+    with PlanInsertableRelation
     with RowInsertableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
@@ -86,12 +86,8 @@ class BaseColumnFormatRelation(
   lazy val rowInsertStr: String = ExternalStoreUtils
       .getInsertStringWithColumnName(resolvedName, schema)
 
-  @transient protected lazy val region: PartitionedRegion =
+  @transient private[sql] lazy val region: PartitionedRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-
-  def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
-    new PartitionStatistics(schema)
-  }
 
   override lazy val numBuckets: Int = {
     region.getTotalNumberOfBuckets
@@ -168,39 +164,20 @@ class BaseColumnFormatRelation(
     }
   }
 
-  private[this] val forceFlush = java.lang.Boolean.getBoolean(
-    "snappydata.testForceFlush")
-
-  override def cachedBatchAggregate(batch: CachedBatch): Unit = {
-    // if number of rows are greater than columnBatchSize then store
-    // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
-        batch.numRows <= math.max(1, columnBatchSize)) {
-      externalStore.storeCachedBatch(ColumnFormatRelation.
-          cachedBatchTableName(table), batch)
-    } else {
-      // TODO: can we do it before compressing. Might save a bit.
-      // [sumedh] instead we should add it to a separate CachedBatch
-      // which will be appended with such small pieces in future.
-      val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
-        Iterator(batch), schema.map(_.name).toArray, schema, forScan = false)
-      insert(unCachedRows)
-    }
+  override def getInsertPlan(relation: LogicalRelation, child: SparkPlan,
+      overwrite: Boolean): SparkPlan = {
+    val partitionExprs = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    ExecutePlan(ColumnInsertExec(child, overwrite, partitionExprs, this))
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    partitionColumns match {
-      case Nil => super.insert(data, overwrite)
-      case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
-    }
-  }
-
-  def insert(data: DataFrame, mode: SaveMode): Unit = {
-    if (mode == SaveMode.Overwrite) {
-      truncate()
-    }
-    JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
-    flushRowBuffer()
+    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // that will use the getInsertPlan above (in StoreStrategy)
+    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+        .insertInto(table)
   }
 
   /**
@@ -668,7 +645,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
-    val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
+    val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters, schema, sqlContext)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)
@@ -709,7 +686,7 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        partitioningColumn,
+        partitioningColumns,
         sqlContext,
         btable)
       case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
@@ -721,7 +698,7 @@ final class DefaultSource extends ColumnarRelationProvider {
         ddlExtensionForShadowTable,
         options,
         externalStore,
-        partitioningColumn,
+        partitioningColumns,
         sqlContext)
     }
 

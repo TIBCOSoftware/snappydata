@@ -103,7 +103,7 @@ object StoreUtils extends Logging {
   // with all the optimizations under SNAP-1135, RDD-bucket delinking is
   // largely not required (max 5-10% advantage in the best case) since
   // without the delinking exchange on one side can be avoided where possible
-  val ENABLE_BUCKET_RDD_DELINKING = false
+  val ENABLE_BUCKET_RDD_DELINKING = true
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -112,6 +112,16 @@ object StoreUtils extends Logging {
       } else tableName
     }
     lookupName
+  }
+
+  private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
+      bucketId: Int): Seq[String] = {
+    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+    distMembers.collect {
+      case m if SnappyContext.containsBlockId(m.toString) =>
+        Utils.getHostExecutorId(SnappyContext.getBlockId(
+          m.toString).get.blockId)
+    }.toSeq
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -124,16 +134,10 @@ object StoreUtils extends Logging {
       val numPartitions = region.getTotalNumberOfBuckets
 
       (0 until numPartitions).map { p =>
-        val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-        val prefNodes = distMembers.collect {
-          case m if SnappyContext.containsBlockId(m.toString) =>
-            Utils.getHostExecutorId(SnappyContext.getBlockId(
-              m.toString).get.blockId)
-        }
+        val prefNodes = getBucketPreferredLocations(region, p)
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
-        new MultiBucketExecutorPartition(p, buckets, numPartitions,
-          prefNodes.toSeq)
+        new MultiBucketExecutorPartition(p, buckets, numPartitions, prefNodes)
       }.toArray[Partition]
     }
   }
@@ -424,7 +428,7 @@ object StoreUtils extends Logging {
     sb.toString()
   }
 
-  def getPartitioningColumn(
+  def getPartitioningColumns(
       parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)

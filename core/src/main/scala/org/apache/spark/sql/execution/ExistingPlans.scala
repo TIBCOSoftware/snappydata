@@ -19,7 +19,8 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.errors._
+import org.apache.spark.sql.CachedDataFrame
+import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
@@ -148,6 +149,32 @@ private[sql] object PartitionedPhysicalScan {
 
   def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
     SparkPlanInfo.fromSparkPlan(plan)
+}
+
+/**
+ * A wrapper plan to immediately execute the child plan without having to do
+ * an explicit collect. Only use for plans returning small results.
+ */
+case class ExecutePlan(child: SparkPlan) extends UnaryExecNode {
+
+  override def output: Seq[Attribute] = child.output
+
+  protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
+    val callSite = sqlContext.sparkContext.getCallSite()
+    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession, callSite,
+      child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
+      child.executeCollect()
+    }
+  }
+
+  override def executeCollect(): Array[InternalRow] = sideEffectResult
+
+  override def executeTake(limit: Int): Array[InternalRow] =
+    sideEffectResult.take(limit)
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+  }
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {

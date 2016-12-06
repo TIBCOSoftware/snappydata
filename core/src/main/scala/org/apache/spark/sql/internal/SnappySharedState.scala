@@ -17,21 +17,57 @@
 package org.apache.spark.sql.internal
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.CacheManager
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
+import org.apache.spark.sql.{Dataset, SnappySession, SparkSession}
+import org.apache.spark.storage.StorageLevel
 
-/**
- * Right now we are not overriding anything from Spark's built in SharedState. We need to
- * re-visit if we need this at all.
- *
- */
-private[sql] class SnappySharedState(override val sparkContext: SparkContext)
-    extends SharedState(sparkContext) {
+private[sql] class SnappySharedState(override val sparkContext: SparkContext,
+    sessionId: Int) extends SharedState(sparkContext) {
+
+  /**
+   * Class for caching query results reused in future executions.
+   */
+  override val cacheManager = new SnappyCacheManager(sessionId)
 
   /**
    * A Hive client used to interact with the metastore.
    */
-  lazy val metadataHive = new HiveClientUtil(sparkContext).client
+  private[sql] lazy val metadataHive = new HiveClientUtil(sparkContext).client
 
   override lazy val externalCatalog =
     new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+}
+
+private[sql] class SnappyCacheManager(sessionId: Int) extends CacheManager {
+
+  override def cacheQuery(query: Dataset[_], tableName: Option[String],
+      storageLevel: StorageLevel): Unit = {
+    super.cacheQuery(query, tableName, storageLevel)
+    SnappySession.removeSession(sessionId)
+  }
+
+  override def uncacheQuery(query: Dataset[_], blocking: Boolean): Boolean = {
+    if (super.uncacheQuery(query, blocking)) {
+      SnappySession.removeSession(sessionId)
+      true
+    } else false
+  }
+
+  override def clearCache(): Unit = {
+    super.clearCache()
+    SnappySession.removeSession(sessionId)
+  }
+
+  override def invalidateCache(plan: LogicalPlan): Unit = {
+    super.invalidateCache(plan)
+    SnappySession.removeSession(sessionId)
+  }
+
+  override def invalidateCachedPath(sparkSession: SparkSession,
+      resourcePath: String): Unit = {
+    super.invalidateCachedPath(sparkSession, resourcePath)
+    SnappySession.removeSession(sessionId)
+  }
 }

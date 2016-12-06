@@ -47,9 +47,9 @@ object Constant {
 
   val SPARK_PREFIX = "spark."
 
-  val SPARK_SNAPPY_PREFIX = SPARK_PREFIX + PROPERTY_PREFIX
+  val SPARK_SNAPPY_PREFIX: String = SPARK_PREFIX + PROPERTY_PREFIX
 
-  val SPARK_STORE_PREFIX = SPARK_PREFIX + STORE_PROPERTY_PREFIX
+  val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -196,16 +196,16 @@ object Property extends Enumeration {
     } else None
   }
 
-  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+  val Locators: Type = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+  val McastPort: Type = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
 
-  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+  val JobserverEnabled: Type = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
@@ -213,18 +213,18 @@ object Property extends Enumeration {
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetastoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+  val MetastoreDBURL: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
     "An explicit JDBC URL to use for external meta-data storage. " +
         "Normally this is set to use the SnappyData store by default and " +
         "should not be touched unless there are special requirements. " +
         "Use with caution since an incorrect configuration can result in " +
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetastoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+  val MetastoreDriver: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
     s"Explicit JDBC driver class for ${MetastoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
+  val ColumnBatchSizeMb: SQLType = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in MB) that will be used to split the data into chunks " +
@@ -270,7 +270,7 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
    * than as serialized blobs to display better in external tools.
    *
    * Possible values are 'true/1' or 'false/0'
@@ -358,9 +358,9 @@ object JOS extends Enumeration {
    */
   val ReplicateWithFilters = Value("RWF")
 
-  val ColocatedWithFilters = Value("CWF")
+  val CollocatedWithFilters = Value("CWF")
 
-  val LargestColocationChain = Value("LCC")
+  val LargestCollocationChain = Value("LCC")
 
-  val NonColocatedWithFilters = Value("NCWF")
+  val NonCollocatedWithFilters = Value("NCWF")
 }

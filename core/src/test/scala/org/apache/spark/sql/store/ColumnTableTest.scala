@@ -899,7 +899,6 @@ class ColumnTableTest
   }
 
   test("Check cachedBatch num rows") {
-    System.setProperty("snappydata.testForceFlush", "true")
     val data = (1 to 200) map (i => Seq(i, +i, +i))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -908,11 +907,7 @@ class ColumnTableTest
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
         " USING column ")
-    try {
-      parDF.write.insertInto(tableName)
-    } finally {
-      System.clearProperty("snappydata.testForceFlush")
-    }
+    parDF.write.insertInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
 

@@ -49,10 +49,10 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.execution.row.{ResultSetEncodingAdapter, ResultSetTraversal, UnsafeRowEncodingAdapter, UnsafeRowHolder}
+import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -93,16 +93,18 @@ private[sql] final case class ColumnTableScan(
 
   private def generateStatPredicate(ctx: CodegenContext): String = {
 
-    val columnBatchStatistics = relation match {
-      case columnRelation: BaseColumnFormatRelation =>
-        columnRelation.getColumnBatchStatistics(schemaAttributes)
-      case _ => null
+    val (columnBatchStatsMap, columnBatchStats) = relation match {
+      case _: BaseColumnFormatRelation =>
+        val allStats = schemaAttributes.map(a => a ->
+            ColumnStatsSchema(a.name, a.dataType))
+        (AttributeMap(allStats), allStats.flatMap(_._2.schema))
+      case _ => (null, null)
     }
 
     def getColumnBatchStatSchema: Seq[AttributeReference] =
-      if (columnBatchStatistics ne null) columnBatchStatistics.schema else Nil
+      if (columnBatchStats ne null) columnBatchStats else Nil
 
-    def statsFor(a: Attribute) = columnBatchStatistics.forAttribute(a)
+    def statsFor(a: Attribute) = columnBatchStatsMap(a)
 
     // Returned filter predicate should return false iff it is impossible
     // for the input expression to evaluate to `true' based on statistics
@@ -161,7 +163,7 @@ private[sql] final case class ColumnTableScan(
         }
 
       case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-      case IsNotNull(a: Attribute) => statsFor(a).count - statsFor(a).nullCount > 0
+      case IsNotNull(a: Attribute) => statsFor(a).count > statsFor(a).nullCount
     }
 
     // This code is picked up from InMemoryTableScanExec
@@ -170,7 +172,7 @@ private[sql] final case class ColumnTableScan(
         allFilters.flatMap { p =>
           val filter = buildFilter.lift(p)
           val boundFilter = filter.map(BindReferences.bindReference(
-            _, columnBatchStatistics.schema, allowFailures = true))
+            _, columnBatchStats, allowFailures = true))
 
           boundFilter.foreach(_ =>
             filter.foreach(f =>
@@ -319,10 +321,11 @@ private[sql] final case class ColumnTableScan(
     ctx.currentVars = null
     val cachedBatchClass = classOf[CachedBatch].getName
     val execRowClass = classOf[OffHeapCompactExecRowWithLobs].getName
-    val decoderClass = classOf[ColumnEncoding].getName
+    val encodingClass = classOf[ColumnEncoding].getName
+    val decoderClass = classOf[ColumnDecoder].getName
     val wasNullClass = classOf[ResultWasNull].getName
-    val rsAdapterClass = classOf[ResultSetEncodingAdapter].getName
-    val rowAdapterClass = classOf[UnsafeRowEncodingAdapter].getName
+    val rsDecoderClass = classOf[ResultSetDecoder].getName
+    val rowDecoderClass = classOf[UnsafeRowDecoder].getName
     val rowFormatterClass = classOf[RowFormatter].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
@@ -401,11 +404,11 @@ private[sql] final case class ColumnTableScan(
 
       ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
 
-      val rowDecoderCode = s"$decoder = new $rsAdapterClass($rs, $rsPosition);"
+      val rowDecoderCode = s"$decoder = new $rsDecoderClass($rs, $rsPosition);"
       if (otherRDDs.isEmpty) {
         if (isForSampleReservoirAsRegion) {
           ctx.addMutableState(decoderClass, decoder,
-            s"$decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);")
+            s"$decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);")
           initRowTableDecoders.append(rowDecoderCode).append('\n')
         } else {
           ctx.addMutableState(decoderClass, decoder, rowDecoderCode)
@@ -414,7 +417,7 @@ private[sql] final case class ColumnTableScan(
         ctx.addMutableState(decoderClass, decoder,
           s"""
             if ($inputIsOtherRDD) {
-              $decoder = new $rowAdapterClass($unsafeHolder, $baseIndex);
+              $decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);
             } else {
               $rowDecoderCode
             }
@@ -435,11 +438,10 @@ private[sql] final case class ColumnTableScan(
       }
       columnBufferInitCode.append(
         s"""
-          $decoder = $decoderClass.getColumnDecoder(
-            $buffer, $planSchema.apply($index));
+          $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
+            $planSchema.apply($index));
           // intialize the decoder and store the starting cursor position
-          $cursor = $decoder.initializeDecoding(
-            $buffer, $planSchema.apply($index));
+          $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
         """)
       bufferInitCode.append(
         s"""

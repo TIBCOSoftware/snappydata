@@ -17,19 +17,18 @@
 package org.apache.spark.sql.execution.joins
 
 import java.io.IOException
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Callable, ExecutionException}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
-import io.snappydata.Constant
+import com.google.common.cache.CacheBuilder
 
+import org.apache.spark.TaskContext
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -41,8 +40,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
-import org.apache.spark.{Partition, SparkEnv, TaskContext}
+import org.apache.spark.sql.types.{LongType, TypeUtilities}
 
 /**
  * :: DeveloperApi ::
@@ -114,11 +112,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     // buildRDD.iterator to work in the compute of mapPartitionsPreserve below
     materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
 
-    val schema = buildPlan.schema
-    streamRDD.mapPartitionsPreserveWithPartition { (context, _, itr) =>
+    streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
       val start = System.nanoTime()
-      val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
-        buildPartition, context)
+      val hashed = HashedRelation(buildRDD.iterator(split, context),
+        buildKeys, taskMemoryManager = context.taskMemoryManager())
       buildTime += (System.nanoTime() - start) / 1000000L
       val estimatedSize = hashed.estimatedSize
       buildDataSize += estimatedSize
@@ -368,21 +365,21 @@ case class LocalJoin(leftKeys: Seq[Expression],
   private def prepareHashedRelation(ctx: CodegenContext,
       relationTerm: String, buildRDDTerm: String,
       buildPartTerm: String): String = {
+    val relationClass = classOf[HashedRelation].getName
     val startName = ctx.freshName("start")
     val sizeName = ctx.freshName("estimatedSize")
     val contextName = ctx.freshName("context")
     val buildKeysVar = ctx.addReferenceObj("buildKeys", buildKeys)
-    val buildSchemaVar = ctx.addReferenceObj("buildSchema", buildPlan.schema)
     val buildDataSize = metricTerm(ctx, "buildDataSize")
     val buildTime = metricTerm(ctx, "buildTime")
     s"""
        |final long $startName = System.nanoTime();
        |final org.apache.spark.TaskContext $contextName =
        |  org.apache.spark.TaskContext.get();
-       |$relationTerm = org.apache.spark.sql.execution.joins.HashedRelationCache
-       |  .get($buildSchemaVar, $buildKeysVar, $buildRDDTerm, $buildPartTerm,
-       |  $contextName, 1);
-       |$buildTime.${metricAdd(s"(System.nanoTime() - $startName) / 1000000L")};
+       |$relationTerm = $relationClass$$.MODULE$$.apply(
+       |  $buildRDDTerm.iterator($buildPartTerm, $contextName), $buildKeysVar,
+       |  64, $contextName.taskMemoryManager());
+       |$buildTime.add((System.nanoTime() - $startName) / 1000000L);
        |final long $sizeName = $relationTerm.estimatedSize();
        |$buildDataSize.${metricAdd(sizeName)};
        |$contextName.taskMetrics().incPeakExecutionMemory($sizeName);
@@ -795,98 +792,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
        |  $consumeResult
        |}
      """.stripMargin
-  }
-}
-
-object HashedRelationCache {
-
-  type KeyType = (StructType, Seq[Expression])
-
-  @volatile private[this] var _relationCache: Option[(Cache[
-      KeyType, HashedRelation], TaskMemoryManager)] = None
-  private[this] val relationCacheSize = new AtomicLong(0L)
-
-  private[this] def initCache(): (Cache[KeyType, HashedRelation],
-      TaskMemoryManager) = {
-    val env = SparkEnv.get
-    val cacheTimeoutSecs = Constant.DEFAULT_CACHE_TIMEOUT_SECS
-    val cache = CacheBuilder.newBuilder()
-        .maximumSize(50)
-        .expireAfterAccess(cacheTimeoutSecs, TimeUnit.SECONDS)
-        .removalListener(new RemovalListener[KeyType, HashedRelation] {
-          override def onRemoval(notification: RemovalNotification[KeyType,
-              HashedRelation]): Unit = {
-            relationCacheSize.decrementAndGet()
-            notification.getValue.close()
-          }
-        }).build[KeyType, HashedRelation]()
-    (cache, new TaskMemoryManager(env.memoryManager, -1L))
-  }
-
-  private def getCache: (Cache[KeyType, HashedRelation], TaskMemoryManager) = {
-    val c = _relationCache
-    c match {
-      case Some(relationCache) => relationCache
-      case None => synchronized {
-        _relationCache match {
-          case Some(cache) => cache
-          case None =>
-            val relationCache = initCache()
-            _relationCache = Some(relationCache)
-            relationCache
-        }
-      }
-    }
-  }
-
-  def get(schema: StructType, buildKeys: Seq[Expression], rdd: RDD[InternalRow],
-      split: Partition, context: TaskContext,
-      tries: Int = 1): HashedRelation = {
-    try {
-      val (cache, memoryManager) = getCache
-      cache.get(schema -> buildKeys, new Callable[HashedRelation] {
-        override def call(): HashedRelation = {
-          val relation = HashedRelation(rdd.iterator(split, context),
-            buildKeys, taskMemoryManager = memoryManager)
-          relationCacheSize.incrementAndGet()
-          relation
-        }
-      }).asReadOnlyCopy()
-    } catch {
-      case e: ExecutionException =>
-        // in case of OOME from MemoryManager, try after clearing the cache
-        val cause = e.getCause
-        cause match {
-          case _: OutOfMemoryError =>
-            if (tries <= 10 && relationCacheSize.get() > 0) {
-              getCache._1.invalidateAll()
-              get(schema, buildKeys, rdd, split, context, tries + 1)
-            } else {
-              throw new RuntimeException(cause.getMessage, cause)
-            }
-          case _ => throw new RuntimeException(cause.getMessage, cause)
-        }
-      case e: Exception => throw new RuntimeException(e.getMessage, e)
-    }
-  }
-
-  def remove(schema: StructType, buildKeys: Seq[Expression]): Unit = {
-    getCache._1.invalidate(schema -> buildKeys)
-  }
-
-  def clear(): Unit = {
-    if (relationCacheSize.get() > 0) {
-      getCache._1.invalidateAll()
-    }
-  }
-
-  def close(): Unit = synchronized {
-    _relationCache match {
-      case Some(cache) =>
-        cache._1.invalidateAll()
-        _relationCache = None
-      case None => // nothing to be done
-    }
   }
 }
 

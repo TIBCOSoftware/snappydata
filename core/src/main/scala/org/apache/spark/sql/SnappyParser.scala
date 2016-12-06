@@ -57,20 +57,26 @@ class SnappyParser(session: SnappySession)
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
-    // follow the behavior in MS SQL Server
-    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
     if (scientific) {
       Literal(s.toDouble, DoubleType)
     } else {
-      val decimal = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
-      // try to use SYSTEM_DEFAULT instead of creating new DecimalType which
-      // is expensive (due to typeTag etc resolved by reflection in AtomicType)
-      val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-      if (decimal.precision <= sysDefaultType.precision &&
-        decimal.scale <= sysDefaultType.scale) {
-        Literal(Decimal(decimal), sysDefaultType)
-      } else {
-        Literal(decimal)
+      // try double and fallback to decimal if it does not parse
+      try {
+        Literal(s.toDouble, DoubleType)
+      } catch {
+        case _: NumberFormatException =>
+          val decimal = new java.math.BigDecimal(
+            s, BigDecimal.defaultMathContext)
+          // try to use SYSTEM_DEFAULT instead of creating new DecimalType
+          // which is expensive (due to typeTag etc resolved by reflection
+          //   in AtomicType)
+          val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+          if (decimal.precision <= sysDefaultType.precision &&
+              decimal.scale <= sysDefaultType.scale) {
+            Literal(Decimal(decimal), sysDefaultType)
+          } else {
+            Literal(decimal)
+          }
       }
     }
   }

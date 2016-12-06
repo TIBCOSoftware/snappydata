@@ -47,8 +47,8 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
   @transient
   protected lazy val rand = new Random
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(
-    connProperties.dialect)
+  lazy val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(connProperties.dialect)
 
   def getConnectedExternalStore(tableName: String,
     onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsStore(
@@ -67,8 +67,10 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
 
   override def storeCachedBatch(tableName: String, batch: CachedBatch,
       partitionId: Int = -1, batchId: Option[UUID] = None): Unit = {
-    storeCurrentBatch(tableName, batch, batchId.getOrElse(UUID.randomUUID()),
-      getPartitionID(tableName, partitionId))
+    // noinspection RedundantDefaultArgument
+    tryExecute(tableName, doInsert(tableName, batch, batchId,
+      getPartitionID(tableName, partitionId)),
+      closeOnSuccess = true, onExecutor = true)
   }
 
   protected def getPartitionID(tableName: String,
@@ -77,12 +79,12 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
   }
 
   protected def doInsert(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): (Connection => Any) = {
+      batchId: Option[UUID], partitionId: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
-        stmt.setString(1, batchId.toString)
+        stmt.setString(1, batchId.getOrElse(UUID.randomUUID()).toString)
         stmt.setInt(2, partitionId)
         stmt.setInt(3, batch.numRows)
         // Use UnsafeRow for efficient serialization else shows perf impact.
@@ -96,12 +98,6 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
         stmt.close()
       }
     }
-  }
-
-  def storeCurrentBatch(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): Unit = {
-    tryExecute(tableName, doInsert(tableName, batch, batchId, partitionId),
-      closeOnSuccess = true, onExecutor = true)
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
@@ -121,7 +117,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
     istr
   }
 
-  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
+  protected def makeInsertStmnt(tableName: String, numOfColumns: Int): String = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
         s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")

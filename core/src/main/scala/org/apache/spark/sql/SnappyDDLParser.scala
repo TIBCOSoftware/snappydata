@@ -27,7 +27,6 @@ import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -300,13 +299,11 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
-        ((ifExists: Any, tableIdent: TableIdentifier) => DropTable(tableIdent,
-          ifExists.asInstanceOf[Option[Boolean]].isDefined))
+    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> DropTable
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
-    TRUNCATE ~ TABLE ~ tableIdentifier ~> TruncateTable
+    TRUNCATE ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> TruncateTable
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -564,25 +561,27 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   }
 }
 
-private[sql] case class DropTable(
-    tableIdent: TableIdentifier,
-    ifExists: Boolean) extends RunnableCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists)
-    Seq.empty
-  }
-}
-
-private[sql] case class TruncateTable(
+private[sql] case class DropTable(ifExists: Any,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.truncateTable(catalog.newQualifiedTableName(tableIdent))
+    snc.dropTable(catalog.newQualifiedTableName(tableIdent),
+      ifExists.asInstanceOf[Option[Boolean]].isDefined)
+    Seq.empty
+  }
+}
+
+private[sql] case class TruncateTable(ifExists: Any,
+    tableIdent: TableIdentifier) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
+      ifExists.asInstanceOf[Option[Boolean]].isDefined,
+      ignoreIfUnsupported = false)
     Seq.empty
   }
 }
@@ -619,11 +618,11 @@ case class DMLExternalTable(
     tableName: TableIdentifier,
     query: LogicalPlan,
     command: String)
-    extends Command {
+    extends LeafNode {
 
-  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
-  override lazy val resolved: Boolean = query.resolved
+  override def children: Seq[LogicalPlan] = query :: Nil
 
+  override def output: Seq[Attribute] = query.output
 }
 
 private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {

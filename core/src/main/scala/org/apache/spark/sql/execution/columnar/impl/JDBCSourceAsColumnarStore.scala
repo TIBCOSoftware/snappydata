@@ -21,7 +21,7 @@ import java.util.UUID
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.SparkShellRDDHelper
@@ -75,22 +75,25 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
   }
 
   override protected def doInsert(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): (Connection => Any) = {
+      batchId: Option[UUID], partitionId: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
-        super.doInsert(tableName, batch, batchId, partitionId)(connection)
         connectionType match {
           case ConnectionType.Embedded =>
             val resolvedName = ExternalStoreUtils.lookupName(tableName,
               connection.getSchema)
             val region = Misc.getRegionForTable(resolvedName, true)
-            region.asInstanceOf[AbstractRegion] match {
+                .asInstanceOf[LocalRegion]
+            val batchUUID = Some(batchId.getOrElse(region.newJavaUUID()))
+            super.doInsert(tableName, batch, batchUUID, partitionId)(connection)
+            region match {
               case pr: PartitionedRegion =>
                 pr.asInstanceOf[PartitionedRegion]
                     .getPrStats.incPRNumRowsInCachedBatches(batch.numRows)
               case _ => // do nothing
             }
-          case _ => // do nothing
+          case _ =>
+            super.doInsert(tableName, batch, batchId, partitionId)(connection)
         }
       }
     }
@@ -105,7 +108,8 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
           val resolvedName = ExternalStoreUtils.lookupName(tableName,
             connection.getSchema)
           val region = Misc.getRegionForTable(resolvedName, true)
-          region.asInstanceOf[AbstractRegion] match {
+              .asInstanceOf[LocalRegion]
+          region match {
             case pr: PartitionedRegion =>
               if (partitionId == -1) {
                 val primaryBucketIds = pr.getDataStore.
