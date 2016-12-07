@@ -276,9 +276,9 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
   private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
     val sc = sparkContext
-    Property.MetastoreDBURL.getOption(sparkConf) match {
+    Property.MetaStoreDBURL.getOption(sparkConf) match {
       case Some(url) =>
-        val driver = Property.MetastoreDriver.getOption(sparkConf).orNull
+        val driver = Property.MetaStoreDriver.getOption(sparkConf).orNull
         (false, url, driver)
       case None => SnappyContext.getClusterMode(sc) match {
         case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
