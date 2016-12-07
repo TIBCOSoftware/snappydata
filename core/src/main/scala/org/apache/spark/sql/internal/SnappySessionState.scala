@@ -17,12 +17,13 @@
 
 package org.apache.spark.sql.internal
 
+import java.util.Properties
+
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 
-import org.apache.spark.Partition
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
@@ -43,6 +44,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.streaming.Duration
+import org.apache.spark.{Partition, SparkConf}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -215,7 +217,7 @@ class SnappySessionState(snappySession: SnappySession)
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }
 
-private[sql] class SnappyConf(@transient val session: SnappySession)
+class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable with CatalystConf {
 
   /**
@@ -258,7 +260,7 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
   }
 }
 
-class SQLConfigEntry private(entry: ConfigEntry[_]) {
+class SQLConfigEntry private(private[sql] val entry: ConfigEntry[_]) {
 
   def key: String = entry.key
 
@@ -270,8 +272,7 @@ class SQLConfigEntry private(entry: ConfigEntry[_]) {
 
   def defaultValueString: String = entry.defaultValueString
 
-  def getConf[T](conf: SQLConf): T =
-    conf.getConf[T](entry.asInstanceOf[ConfigEntry[T]])
+  def valueConverter[T]: String => T = entry.asInstanceOf[ConfigEntry[T]].valueConverter
 
   override def toString: String = entry.toString
 }
@@ -320,6 +321,88 @@ object SQLConfigEntry {
       case c => throw new IllegalArgumentException(
         s"Unknown type of configuration key: $c")
     }
+  }
+}
+
+trait AltName {
+
+  def name: String
+
+  def altName: String
+
+  def configEntry: SQLConfigEntry
+
+  def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+
+  def getOption(conf: SparkConf): Option[String] = if (altName == null) {
+    conf.getOption(name)
+  } else {
+    conf.getOption(name) match {
+      case s: Some[String] => // check if altName also present and fail if so
+        if (conf.contains(altName)) {
+          throw new IllegalArgumentException(
+            s"Both $name and $altName configured. Only one should be set.")
+        } else s
+      case None => conf.getOption(altName)
+    }
+  }
+
+  def getProperty(properties: Properties): String = if (altName == null) {
+    properties.getProperty(name)
+  } else {
+    val v = properties.getProperty(name)
+    if (v != null) {
+      // check if altName also present and fail if so
+      if (properties.getProperty(altName) != null) {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName specified. Only one should be set.")
+      }
+      v
+    } else properties.getProperty(altName)
+  }
+
+  def unapply(key: String): Boolean = name.equals(key) ||
+      (altName != null && altName.equals(key))
+}
+
+trait SQLAltName extends AltName {
+
+  private def get[T](conf: SQLConf, entry: SQLConfigEntry): T = {
+    conf.getConf[T](entry.entry.asInstanceOf[ConfigEntry[T]])
+  }
+
+  private def get[T](conf: SQLConf, name: String,
+      defaultValue: String): T = {
+    configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
+  }
+
+  def get[T](conf: SQLConf): T = if (altName == null) {
+    get[T](conf, configEntry)
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) get[T](conf, configEntry)
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else {
+      get[T](conf, altName, configEntry.defaultValueString)
+    }
+  }
+
+  def getOption[T](conf: SQLConf): Option[T] = if (altName == null) {
+    if (conf.contains(name)) Some(get[T](conf, name, ""))
+    else defaultValue[T]
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) Some(get[T](conf, name, ""))
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else if (conf.contains(altName)) {
+      Some(get[T](conf, altName, ""))
+    } else defaultValue[T]
   }
 }
 
