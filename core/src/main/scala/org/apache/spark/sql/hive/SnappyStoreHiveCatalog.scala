@@ -722,7 +722,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _: IndexColumnFormatRelation => ExternalTableType.Index
       case _: JDBCAppendableRelation => ExternalTableType.Column
       case _: StreamPlan => ExternalTableType.Stream
-      case _ => ExternalTableType.Row
+      case _ => ExternalTableType.External
     }
   }
 
@@ -894,4 +894,5 @@ object ExternalTableType {
   val Stream = ExternalTableType("STREAM")
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
+  val External = ExternalTableType("EXTERNAL")
 }
