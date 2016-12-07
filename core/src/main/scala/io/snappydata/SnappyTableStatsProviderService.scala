@@ -38,31 +38,39 @@ import io.snappydata.Constant._
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
-  @volatile
-  private var tableSizeInfo = Map[String, SnappyRegionStats]()
+
+  @volatile private var tableSizeInfo = Map[String, SnappyRegionStats]()
+
+  private var _snc: Option[SnappyContext] = None
+
+  private def snc: SnappyContext = synchronized {
+    _snc.getOrElse {
+      val context = SnappyContext()
+      _snc = Option(context)
+      context
+    }
+  }
 
   @volatile private var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
   def start(sc: SparkContext): Unit = {
-    val delay =
-      sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
-          .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
+    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
     doRun = true
     Misc.getGemFireCache.getCCPTimer.schedule(
       new SystemTimer.SystemTimerTask {
-        var logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
+        private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
         override def run2(): Unit = {
           try {
             if (doRun) {
               running = true
               try {
-                tableSizeInfo = getAggregatedTableStatsOnDemand(sc)
+                tableSizeInfo = getAggregatedTableStatsOnDemand
               } finally synchronized {
                 running = false
                 notifyAll()
@@ -90,6 +98,7 @@ object SnappyTableStatsProviderService extends Logging {
     synchronized {
       if (running) wait(20000)
     }
+    _snc = None
   }
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
@@ -125,13 +134,14 @@ object SnappyTableStatsProviderService extends Logging {
   }
 
 
-  def getAggregatedTableStatsOnDemand(sc: SparkContext):
-  Map[String, SnappyRegionStats] = {
+  def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
+    val snc = this.snc
+    if (snc == null) return Map.empty
+
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     if (!doRun) return Map.empty
-    val snc = SnappyContext(sc)
-    val samples = getSampleTableList(snc)
+    // val samples = getSampleTableList(snc)
     serverStats.foreach(stat => {
       val oldRecord = aggregatedStats.get(stat.getRegionName)
       if (oldRecord.isDefined) {
@@ -143,6 +153,7 @@ object SnappyTableStatsProviderService extends Logging {
     Utils.immutableMap(aggregatedStats)
   }
 
+  /*
   private def getSampleTableList(snc: SnappyContext): Seq[String] = {
     try {
       snc.sessionState.catalog
@@ -152,6 +163,7 @@ object SnappyTableStatsProviderService extends Logging {
         Seq.empty[String]
     }
   }
+  */
 
   private def getTableStatsFromAllServers: Seq[SnappyRegionStats] = {
     val result = FunctionService.onMembers(GfxdMessage.getAllDataStores)

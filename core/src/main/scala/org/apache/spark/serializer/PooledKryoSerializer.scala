@@ -32,7 +32,6 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.BlockAndExecutorId
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
@@ -41,6 +40,7 @@ import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{BlockAndExecutorId, CachedDataFrame, PartitionResult}
 import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadcast, RemoveRdd, RemoveShuffle, UpdateBlockInfo}
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
@@ -127,6 +127,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
       new KryoSerializableSerializer)
+    kryo.register(CachedDataFrame.getClass, new KryoSerializableSerializer)
     kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
     kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
     kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
@@ -136,6 +137,7 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
+    kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
     try {
@@ -179,7 +181,7 @@ object KryoSerializerPool {
 
   private[serializer] val zeroBytes = new Array[Byte](0)
 
-  val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
+  private[serializer] val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
     val conf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf())
     val bufferSizeKb = conf.getSizeAsKb("spark.kryoserializer.buffer", "4k")
     val bufferSize = ByteUnit.KiB.toBytes(bufferSizeKb).toInt

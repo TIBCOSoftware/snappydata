@@ -51,16 +51,16 @@ class CatalogConsistencyTest
         snc.snappySession.sessionCatalog.newQualifiedTableName(table))
     }
     val se = intercept[SQLException] {
-     routeQueryDisabledConn.createStatement().executeQuery(
-         "select * from " + table)
+      routeQueryDisabledConn.createStatement().executeQuery(
+        "select * from " + table)
     }
     assert(se.getSQLState.equals("42X05"))
 
     if (isColumnTable) {
       val se = intercept[SQLException] {
-      routeQueryDisabledConn.createStatement().executeQuery(
-        "select * from " + ColumnFormatRelation.cachedBatchTableName(table))
-    }
+        routeQueryDisabledConn.createStatement().executeQuery(
+          "select * from " + ColumnFormatRelation.cachedBatchTableName(table))
+      }
       assert(se.getSQLState.equals("42X05"))
     }
   }
@@ -85,7 +85,6 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
 
     // remove the table entry from Hive store but not from store DD
     snc.snappySession.sessionCatalog.unregisterDataSourceTable(
@@ -98,19 +97,18 @@ class CatalogConsistencyTest
 
     val routeQueryDisabledConn = getConnection(routeQuery = false)
 
-    // should not throw an exception on a JDBC connection route-query=false as entry exists in the store
+    // should not throw an exception on a JDBC connection route-query=false
+    // as entry exists in the store
     val rs = routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
     rs.close()
 
     // repair the catalog
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
-    //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false))
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -120,16 +118,15 @@ class CatalogConsistencyTest
 
     // repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
-    //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
     }
     // should throw an exception since the catalog is repaired and table entry
     // should have been removed
     val se2 = intercept[SQLException] {
-     routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
+      routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
     }
     assert(se2.getSQLState.equals("42X05"))
 
@@ -143,7 +140,6 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -152,7 +148,8 @@ class CatalogConsistencyTest
     val rs = routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
     rs.close()
 
-    // remove the column buffer DD entry by dropping table just from the store(don't drop the row buffer)
+    // remove the column buffer DD entry by dropping table just from the store
+    // (don't drop the row buffer)
     routeQueryDisabledConn.createStatement().execute("drop table " +
         ColumnFormatRelation.cachedBatchTableName("column_table1"))
     // remove the table entry from Hive store
@@ -162,7 +159,7 @@ class CatalogConsistencyTest
     // make sure that the table does not exist in Hive metastore
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
     }
 
     // should not throw an exception as row buffer exists for column_table1
@@ -187,7 +184,6 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -206,7 +202,6 @@ class CatalogConsistencyTest
 
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
-    //FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", true)
 
@@ -258,7 +253,6 @@ class CatalogConsistencyTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("row_table1", "row", dataDF.schema, props)
-//    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
 
     // remove the table entry from Hive store but not from store DD
     snc.snappySession.sessionCatalog.unregisterDataSourceTable(
@@ -277,7 +271,6 @@ class CatalogConsistencyTest
     assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
 
     snc.createTable("row_table1", "row", dataDF.schema, props)
-//    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
 
     snc.createTable("row_table2", "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
@@ -332,50 +325,4 @@ class CatalogConsistencyTest
     assert(r.length == 5)
 
   }
-
-  test("Catalog is repaired after restart of the cluster") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-
-    snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
-    snc.createTable("column_table2", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
-
-    val props2 = Map("PERSISTENT" -> "sync")
-    snc.createTable("row_table1", "row", dataDF.schema, props2)
-//    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table1")
-
-    snc.createTable("row_table2", "row", dataDF.schema, props2)
-    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table2")
-
-    // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"), None)
-
-    intercept[TableNotFoundException] {
-      val r = snc.sql("SELECT * FROM row_table1")
-    }
-    intercept[TableNotFoundException] {
-      val r = snc.sql("SELECT * FROM column_table1")
-    }
-
-    // restart the cluster, the catalog should be repaired after the restart
-    stopAll()
-    // boot up the snc before getting a netconnection
-    snc
-
-    val routeQueryDisabledConn = getConnection(routeQuery = false)
-    assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
-    assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
-
-
-    val result6 = snc.sql("SELECT * FROM row_table2")
-    assert(result6.collect.length == 5)
-  }
-
-
 }

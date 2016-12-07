@@ -21,6 +21,7 @@ import io.snappydata.impl.LeadImpl
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
+import org.apache.spark.sql.store.StoreUtils
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -29,6 +30,13 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      numPartitions: Int, numBuckets: Int): Partitioning = OrderlessHashPartitioning(
-    partitionColumns, numPartitions, numBuckets)
+      numPartitions: Int, numBuckets: Int): Partitioning = {
+    if (StoreUtils.ENABLE_BUCKET_RDD_DELINKING) {
+      OrderlessHashPartitioning(
+        partitionColumns, numPartitions, numBuckets)
+    } else {
+      OrderlessHashPartitioning(
+        partitionColumns, numPartitions, 0)
+    }
+  }
 }
