@@ -36,6 +36,7 @@ buildscript {
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.13-1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
+    classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
   }
 }
 
@@ -58,6 +59,7 @@ allprojects {
   apply plugin: 'scalaStyle'
   apply plugin: 'idea'
   apply plugin: 'eclipse'
+  apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
   version = '0.6'
@@ -1114,4 +1116,16 @@ task publishDocs(type:Exec) {
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', docs
+}
+
+if (project.hasProperty('trackBuildTime') ) {
+  buildtimetracker {
+    reporters {
+      summary {
+            ordered false
+            threshold 5000
+            barstyle "unicode"
+      }
+    }
+  }
 }
