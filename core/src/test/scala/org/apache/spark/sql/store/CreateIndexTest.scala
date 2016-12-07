@@ -26,7 +26,8 @@ import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterEachTestData, Suite, Tes
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation,
+IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.sql.execution.row.RowFormatRelation
@@ -49,6 +50,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   override def afterAll(): Unit = {
     System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.testing")
+    System.clearProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key)
     super.afterAll()
   }
 
@@ -56,6 +58,8 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     try {
       val snContext = context.getAndSet(null)
       if (snContext != null) {
+        snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key,
+          io.snappydata.Property.EnableExperimentalFeatures.configEntry.defaultValueString)
         indexesToDrop.reverse.foreach(i => snContext.sql(s"DROP INDEX $i "))
         tablesToDrop.reverse.foreach(t => snContext.sql(s"DROP TABLE $t "))
         indexesToDrop.clear()
@@ -69,6 +73,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   test("Test choice of index according to where predicate") {
     val tableName = "tabOne"
     val snContext = SnappyContext(sc)
+    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     context.set(snContext)
 
     def createBaseTable(): Unit = {
@@ -105,22 +110,22 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql(s"create index $indexThree on $tableName (COL1, COL3)")
     indexesToDrop += indexThree
 
-    val executeQ = QueryExecutor(snContext)
+    val executeQ = CreateIndexTest.QueryExecutor(snContext)
 
     executeQ(s"select * from $tableName where col1 = 111") {
-      validateIndex(Seq(indexOne))(_)
+      CreateIndexTest.validateIndex(Seq(indexOne))(_)
     }
 
     executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-      validateIndex(Seq.empty, tableName)(_)
+      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
     }
 
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
-      validateIndex(Seq(indexTwo))(_)
+      CreateIndexTest.validateIndex(Seq(indexTwo))(_)
     }
 
     executeQ(s"select * from $tableName where col1 = 111 and col3 = 'halo' ") {
-      validateIndex(Seq(indexThree))(_)
+      CreateIndexTest.validateIndex(Seq(indexThree))(_)
     }
   }
 
@@ -128,6 +133,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val tableName: String = "tcol1"
     val snContext = SnappyContext(sc)
     context.set(snContext)
+    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
 
     val props = Map(
       "PARTITION_BY" -> "col1")
@@ -229,6 +235,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   }
 
   test("Test two table joins") {
+    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
@@ -266,64 +273,64 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s" (COL2, COL3) Options (colocate_with  '$index4')")
     indexesToDrop += index31
 
-    val executeQ = QueryExecutor(snContext)
+    val executeQ = CreateIndexTest.QueryExecutor(snContext)
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1") {
-      validateIndex(Seq(index2), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index2), table3)(_)
     }
 
     executeQ(s"select * from $table1 t1, $table3 t2 where t1.col1 = t2.col1  ") {
-      validateIndex(Seq(index2), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index2), table3)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(Seq(index4), table2)(_)
+      CreateIndexTest.validateIndex(Seq(index4), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") {
-      validateIndex(Seq(index4), table2)(_)
+      CreateIndexTest.validateIndex(Seq(index4), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col3 " +
         s"and t1.col3 = t2.col2 ") {
-      validateIndex(Seq.empty, table1, table2)(_)
+      CreateIndexTest.validateIndex(Seq.empty, table1, table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table2 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // tab2 vs index31
-      validateIndex(Seq(index31), table2)(df)
+      CreateIndexTest.validateIndex(Seq(index31), table2)(df)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2 = t2.col2 " +
         s"and t1.col3 = t2.col3 ") { df => // index4 vs index31
-      validateIndex(Seq(index31, index4))(df)
+      CreateIndexTest.validateIndex(Seq(index31, index4))(df)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 /*+ index( ) */ join $table3 t2 on t1.col2" +
         s" = t2.col2 and t1.col3 = t2.col3 ") {
       // previous query not picking up index.
-      validateIndex(Seq.empty, table1, table3)(_)
+      CreateIndexTest.validateIndex(Seq.empty, table1, table3)(_)
     }
 
     executeQ(s"select * from $table1 /*+ ${QueryHint.Index}($index1) */, $table3 " +
         s"where $table1.col1 = $table3.col1") {
-      validateIndex(Seq(index1), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 t1 /*+ ${QueryHint.Index}($index1) */, $table3 t2 " +
         s"where t1.col1 = t2.col1") {
-      validateIndex(Seq(index1), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 /*+ ${QueryHint.Index}($index1) */ as t1, $table3 t2 " +
         s"where t1.col1 = t2.col1") {
-      validateIndex(Seq(index1), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select * from $table1 tab1 join $table2 tab2 on tab1.col2 = tab2.col2") {
-      validateIndex(Seq.empty, table1, table2)(_)
+      CreateIndexTest.validateIndex(Seq.empty, table1, table2)(_)
     }
 
     try {
@@ -340,6 +347,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   }
 
   test("Test two table joins corner cases") {
+    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
 
     val table1 = "tabOne"
     val table2 = "tabTwo"
@@ -369,26 +377,26 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s" (COL2, COL3) Options (colocate_with  '$index2')")
     indexesToDrop += index31
 
-    val executeQ = QueryExecutor(snContext)
+    val executeQ = CreateIndexTest.QueryExecutor(snContext)
 
     executeQ(s"select * from $table1 tab1 join $table3 tab2 on tab1.col1 = tab2.col1 " +
         s"where tab1.col1 = 111 ") {
-      validateIndex(Seq(index1), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select $table1.col2, $table3.col3 from $table1, $table3 " +
         s"where $table1.col1 = $table3.col1 and $table3.col1 = 111 ") {
-      validateIndex(Seq(index1), table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table3)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"where t1.col3 = t2.col3 ", true) {
-      validateIndex(Seq(index2), table2)(_)
+      CreateIndexTest.validateIndex(Seq(index2), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table2 t2 on t1.col2 = t2.col2 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") { df =>
-      // validateIndex(Seq(index2", table2"))(_)
+      // CreateIndexTest.validateIndex(Seq(index2", table2"))(_)
       val msg = "TODO:SB: Fix this "
       logInfo(msg)
       info(msg)
@@ -401,6 +409,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     val snContext = SnappyContext(sc)
     context.set(snContext)
+    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     def createBaseTables(): Unit = {
@@ -473,7 +482,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s" (COL4) Options (colocate_with  '$table4')")
     indexesToDrop += index3
 
-    val executeQ = QueryExecutor(snContext, false, false)
+    val executeQ = CreateIndexTest.QueryExecutor(snContext, false, false)
     /*
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
@@ -482,34 +491,34 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 ") {
-      validateIndex(Seq(index1), table2)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table3 t3 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
         s"and t1.col1 = t3.col1 and t1.col3 = t3.col3") {
       // t1 -> t2, t1 -> t3
-      validateIndex(Seq(index1), table2, table3)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table2, table3)(_)
     }
 
     executeQ(s"select t1.col2, t4.col3 from $table1 t1, $table4 t4 " +
         s"where t1.col4 = t4.col4 and t1.col1 = t4.col2 ") {
       // still results into shuffle.
-      validateIndex(Seq(index3), table4)(_)
+      CreateIndexTest.validateIndex(Seq(index3), table4)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2, $table4 t4 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
         s"and t1.col4 = t4.col4 ") {
       // t1 -> t2, t1 -> t4
-      validateIndex(Seq(index1), table2, table4)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table2, table4)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table4 t4, $table2 t2 " +
         s"where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
         s"and t1.col4 = t4.col4 ") {
       // t1 -> t4, t1 -> t2
-      validateIndex(Seq(index1), table2, table4)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table2, table4)(_)
     }
 
     executeQ(s"select t1.col4, xx.col5 from $table1 t1, " +
@@ -517,7 +526,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"$table2 t2 where t1.col2 = t2.col2 and t1.col3 = t2.col3 " +
         s"and t1.col4 = xx.col5 ") {
       // t1 -> t4, t1 -> t2
-      validateIndex(Seq(index1), table2, table4)(_)
+      CreateIndexTest.validateIndex(Seq(index1), table2, table4)(_)
     }
 
     executeQ(s"select t1.col4, xx.col5 from $table1 t1, " +
@@ -525,7 +534,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"$table2 t2 where xx.col2 = t2.col2 and xx.col3 = t2.col3 " +
         s"and t1.col4 = xx.col5 ") {
       // t1 -> t4, t2 -> t4
-      validateIndex(Seq.empty, table1, table2, table4)(_)
+      CreateIndexTest.validateIndex(Seq.empty, table1, table2, table4)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table4 t4, $rtable5 t5, $table2 t2 " +
@@ -533,14 +542,14 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"and t1.col2 = t5.col2 and t1.col3 = t5.col3 " +
         s"and t5.col2 = t2.col2 and t5.col3 = t2.col3 ") {
       // t1 -> t4, t1 -> t5 -> t2
-      validateIndex(Seq(index3), rtable5, table2, table4)(_)
+      CreateIndexTest.validateIndex(Seq(index3), rtable5, table2, table4)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $rtable5 t5, $table2 t2 " +
         s"where t1.col2 = t5.col2 and t1.col3 = t5.col3 " +
         s"and t5.col2 = t2.col2 and t5.col3 = t2.col3 ") {
       // t1 -> t4, t1 -> t5 -> t2
-      validateIndex(Seq(index1), rtable5, table2)(_)
+      CreateIndexTest.validateIndex(Seq(index1), rtable5, table2)(_)
     }
 
     // ReplicateWithFilters
@@ -548,7 +557,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"where t1.col2 = t5.col2 and t1.col3 = t5.col3 " +
         s"and t5.col2 = t2.col2 and t5.col3 = t2.col3 " +
         s"and t5.col4 = 'p1' ") { df => // t1 -> t4, t1 -> t5 -> t2
-      validateIndex(Seq(index1), rtable5, table2)(df)
+      CreateIndexTest.validateIndex(Seq(index1), rtable5, table2)(df)
       val leaf = df.queryExecution.sparkPlan.collectFirst({ case s: SortMergeJoinExec => s }).
           getOrElse(fail("SortMergeJoin not found"))
       leaf.find({
@@ -565,7 +574,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"and t5.col4 = t6.col4 " +
         s"and t6.col2 = t2.col2 and t6.col3 = t2.col3 " +
         s"and t5.col4 = 'p1' ", true) { df => // t1 -> t4, t1 -> t5 -> t2
-      validateIndex(Seq(index1), rtable5, rtable6, table2)(df)
+      CreateIndexTest.validateIndex(Seq(index1), rtable5, rtable6, table2)(df)
       val leaf = df.queryExecution.sparkPlan.collectFirst({ case s: SortMergeJoinExec => s }).
           getOrElse(fail("SortMergeJoin not found"))
       leaf.find({
@@ -591,6 +600,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     val snContext = SnappyContext(sc)
     context.set(snContext)
+    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
     snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
@@ -624,15 +634,15 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(table1)
 
-    val executeQ = QueryExecutor(snContext, false, false)
+    val executeQ = CreateIndexTest.QueryExecutor(snContext, false, false)
 
     val selDF = executeQ(s"select * from $table1") {
-      validateIndex(Seq.empty, s"$table1")(_)
+      CreateIndexTest.validateIndex(Seq.empty, s"$table1")(_)
     }
 
     val baseRows = selDF.collect().toSet
     executeQ(s"select * from $table1 --+${QueryHint.Index}($index1)") { df =>
-      validateIndex(Seq(index1))(df)
+      CreateIndexTest.validateIndex(Seq(index1))(df)
       assert(df.collect().toSet.equals(baseRows))
     }
   }
@@ -706,13 +716,16 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   def doPrint(s: Any): Unit = {
     // println(s)
   }
+}
 
-  private case class QueryExecutor(snContext: SnappyContext,
+object CreateIndexTest extends SnappyFunSuite {
+
+  case class QueryExecutor(snContext: SnappyContext,
       showResults: Boolean = false,
       withExplain: Boolean = false) {
 
-    private[store] def apply(sqlText: String, explainQ: Boolean = false)
-        (implicit validate: DataFrame => Unit = _ => ()) = {
+    def apply(sqlText: String, explainQ: Boolean = false)
+        (implicit validate: DataFrame => Unit = _ => ()): DataFrame = {
       val msg = s"Executing $sqlText"
       logInfo(msg) // log it
       info(msg) // inform it
@@ -738,7 +751,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
   }
 
-  private def validateIndex(index: Seq[String], tables: String*)(df: DataFrame): Unit = {
+  def validateIndex(index: Seq[String], tables: String*)(df: DataFrame): Unit = {
     val (indexesMatched, indexesUnMatched) = df.queryExecution.optimizedPlan.collect {
       case l@LogicalRelation(idx: IndexColumnFormatRelation, _, _) => idx
     }.partition(rel => index.exists(i => rel.table.indexOf(i.toUpperCase) > 0))
@@ -765,8 +778,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       fail(s"Expected tables ${tables.mkString(",")} but not found " +
           s"${tablesNotFound.mkString(",")} with additional tables ${unexpected.mkString(",")}")
     }
-
-
   }
 
 }

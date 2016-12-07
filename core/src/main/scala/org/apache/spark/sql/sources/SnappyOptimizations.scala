@@ -20,6 +20,7 @@ package org.apache.spark.sql.sources
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.Constant
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
@@ -408,7 +409,13 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
-
+    val enabled: Boolean = io.snappydata.Property.EnableExperimentalFeatures.
+        configEntry.getConf[Boolean](snappySession.snappyContext.conf) ||
+        java.lang.Boolean.getBoolean(io.snappydata.Property.EnableExperimentalFeatures
+            .configEntry.key)
+    if (!enabled) {
+      return plan
+    }
     if (snappySession.queryHints.exists {
       case (hint, _) => hint.startsWith(Index) &&
           !joinOrderHints.contains(ContinueOptimizations)
