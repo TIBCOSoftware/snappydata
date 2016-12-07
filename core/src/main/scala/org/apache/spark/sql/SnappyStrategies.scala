@@ -94,7 +94,7 @@ private[sql] trait SnappyStrategies {
      */
     private def canBuildLocalHashMap(plan: LogicalPlan): Boolean = {
       plan.statistics.sizeInBytes <
-          io.snappydata.Property.LocalHashJoinSize.configEntry.getConf[Long](conf)
+          io.snappydata.Property.HashJoinSize.get[Long](conf)
     }
 
     private def canBuildRight(joinType: JoinType): Boolean = joinType match {
