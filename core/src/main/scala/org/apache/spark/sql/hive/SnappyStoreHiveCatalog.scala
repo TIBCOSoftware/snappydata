@@ -589,6 +589,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       properties = tableProperties.toMap)
 
     withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
+    SnappySession.clearPlanCache()
   }
 
 
@@ -717,7 +718,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case x: IndexColumnFormatRelation => ExternalTableType.Index
       case x: JDBCAppendableRelation => ExternalTableType.Column
       case x: StreamPlan => ExternalTableType.Stream
-      case _ => ExternalTableType.Row
+      case _ => ExternalTableType.External
     }
   }
 
@@ -889,4 +890,5 @@ object ExternalTableType {
   val Stream = ExternalTableType("STREAM")
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
+  val External = ExternalTableType("EXTERNAL")
 }

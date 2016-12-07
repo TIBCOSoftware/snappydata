@@ -269,7 +269,6 @@ private[sql] final case class ColumnTableScan(
     // TODO [sumedh]: Asif, why this special treatment for weightage column
     // in the code here? Why not as a normal AttributeReference in the plan
     // (or an extension of it if some special treatment is required)?
-    // Also can't there be more than one weightage variables in the plan?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
     val (weightVarName, weightAssignCode) = if (isForSampleReservoirAsRegion &&
