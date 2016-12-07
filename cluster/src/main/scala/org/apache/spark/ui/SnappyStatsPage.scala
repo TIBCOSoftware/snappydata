@@ -17,7 +17,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql.execution.ui
+package org.apache.spark.ui
 
 import javax.servlet.http.HttpServletRequest
 

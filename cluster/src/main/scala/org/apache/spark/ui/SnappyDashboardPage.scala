@@ -17,7 +17,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql.execution.ui
+package org.apache.spark.ui
 
 import javax.servlet.http.HttpServletRequest
 
@@ -35,7 +35,7 @@ import org.apache.spark.util.Utils
 /**
  * Created by skapse on 18/10/16.
  */
-class SnappyDashboardPage (parent: SnappyDashboardTab)
+private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     extends WebUIPage("") with Logging {
 
   override def render(request: HttpServletRequest): Seq[Node] = {

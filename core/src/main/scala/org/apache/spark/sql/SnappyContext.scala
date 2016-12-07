@@ -40,14 +40,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 
-import org.apache.spark.sql.execution.joins.HashedRelationCache
-import org.apache.spark.sql.execution.ui.{SnappyDashboardTab, SnappyStatsTab}
-
-import org.apache.spark.sql.execution.joins.HashedRelationCache
-import org.apache.spark.sql.execution.ui.SnappyStatsTab
-
 import org.apache.spark.sql.execution.joins.{HashedObjectCache, HashedRelationCache}
-import org.apache.spark.sql.execution.ui.SnappyStatsTab
 
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
@@ -1021,10 +1014,7 @@ object SnappyContext extends Logging {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
-          sc.ui.foreach( u => {
-            new SnappyStatsTab(u)
-            new SnappyDashboardTab(u)
-          })
+          updateUI(sc)
           initMemberBlockMap(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
@@ -1037,6 +1027,10 @@ object SnappyContext extends Logging {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()
     }
+  }
+
+  private def updateUI(sc: SparkContext): Unit = {
+    ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
   }
 
   private def invokeServices(sc: SparkContext): Unit = {

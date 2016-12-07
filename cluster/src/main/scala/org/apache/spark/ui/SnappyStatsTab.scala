@@ -17,20 +17,15 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql.execution.ui
+package org.apache.spark.ui
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.ui.JettyUtils._
-import org.apache.spark.ui.{SparkUITab, SparkUI}
+import org.apache.spark.Logging
+import org.apache.spark.ui.{SparkUI, SparkUITab}
 
-/**
- * Created by skapse on 18/10/16.
- */
-private[sql] class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
+/** Web UI showing storage status of all Snappy Tables */
+private[ui] class SnappyStatsTab(sparkUI: SparkUI)
+    extends SparkUITab(sparkUI, "Snappy Store") with Logging {
   val parent = sparkUI
-  // Attaching dashboard ui page
-  attachPage(new SnappyDashboardPage(this))
+  attachPage(new SnappyStatsPage(this))
   parent.attachTab(this)
-  //var handlers = parent.getHandlers
-  parent.attachHandler(createRedirectHandler("/", "/dashboard/", basePath = basePath))
 }
