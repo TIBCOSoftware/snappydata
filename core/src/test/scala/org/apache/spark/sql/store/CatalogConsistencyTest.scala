@@ -325,49 +325,4 @@ class CatalogConsistencyTest
     assert(r.length == 5)
 
   }
-
-  test("Catalog is repaired after restart of the cluster") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-
-    snc.createTable("column_table1", "column", dataDF.schema, props)
-    snc.createTable("column_table2", "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
-
-    val props2 = Map("PERSISTENT" -> "sync")
-    snc.createTable("row_table1", "row", dataDF.schema, props2)
-    //    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table1")
-
-    snc.createTable("row_table2", "row", dataDF.schema, props2)
-    dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table2")
-
-    // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"), None)
-
-    intercept[TableNotFoundException] {
-      val r = snc.sql("SELECT * FROM row_table1")
-    }
-    intercept[TableNotFoundException] {
-      val r = snc.sql("SELECT * FROM column_table1")
-    }
-
-    // restart the cluster, the catalog should be repaired after the restart
-    stopAll()
-    // boot up the snc before getting a netconnection
-    snc
-
-    val routeQueryDisabledConn = getConnection(routeQuery = false)
-    assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
-    assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
-
-
-    val result6 = snc.sql("SELECT * FROM row_table2")
-    assert(result6.collect.length == 5)
-  }
-
-
 }
