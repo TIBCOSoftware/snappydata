@@ -97,7 +97,7 @@ case class SnappyHashAggregateExec(
   // this is a var to allow CollectAggregateExec to switch temporarily
   @transient private[execution] var childProducer = child
 
-  private def getChild: SparkPlan = {
+  private def getChildProducer: SparkPlan = {
     if (childProducer eq null) {
       childProducer = child
     }
@@ -300,7 +300,7 @@ case class SnappyHashAggregateExec(
          |  // initialize aggregation buffer
          |  $initBufVar
          |
-         |  ${getChild.asInstanceOf[CodegenSupport].produce(ctx, this)}
+         |  ${getChildProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
          |}
        """.stripMargin)
 
