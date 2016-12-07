@@ -19,7 +19,8 @@ package org.apache.spark.examples.snappydata
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.sql.{SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
+import org.apache.spark.sql.types.{StructType, StructField}
+import org.apache.spark.sql.{Row, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
  * This is a sample code snippet to work with domain objects and SnappyStore column tables.
@@ -44,23 +45,18 @@ object WorkingWithObjects extends SnappySQLJob {
     // Create a Dataset using Spark APIs
     val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
 
-
     //Drop the table if it exists.
-    snSession.dropTable("people", ifExists = true)
+    snSession.dropTable("Persons", ifExists = true)
 
-    //Create a columnar table with the DataFrame schema
-    snSession.createTable(tableName = "people",
-      provider = "column",
-      schema = people.schema,
-      options = Map.empty[String,String],
-      allowExisting = false)
+    //Create a columnar table with the a Struct to store Address
+    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>) using column options()")
 
     // Write the created DataFrame to the columnar table.
-    people.write.insertInto("people")
+    people.write.insertInto("Persons")
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snSession.table("people").schema)
+    println(snSession.table("Persons").schema)
     println
 
 
@@ -69,19 +65,21 @@ object WorkingWithObjects extends SnappySQLJob {
       Person("Rob Stark", Address("San Diego", "California")),
       Person("Michael", Address("Null", "California"))).toDS()
 
-    morePeople.write.insertInto("people")
+    morePeople.write.insertInto("Persons")
 
     // Query it like any other table
-    val nameAndAddress = snSession.sql("SELECT name, address.city, address.state FROM people")
+    val nameAndAddress = snSession.sql("SELECT name, address FROM Persons")
 
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row => {
-      builder.append(s"${row(0)} ,")
-      builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} \n")
-
+    //Reconstruct the objects from obtained Row
+    val allPersons = nameAndAddress.collect.map(row => {
+      Person(row(0).asInstanceOf[String],
+        Address(
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],
+          row(1).asInstanceOf[Row](1).asInstanceOf[String]
+        )
+      )
     })
-    builder.toString
+    allPersons
   }
 
   def main(args: Array[String]) {
@@ -98,6 +96,7 @@ object WorkingWithObjects extends SnappySQLJob {
     val snSession = new SnappySession(spark.sparkContext)
     val config = ConfigFactory.parseString("")
     val results = runSnappyJob(snSession, config)
-    println("Printing All People \n################## \n" + results)
+    println("Printing All Persons \n################## \n")
+    results.asInstanceOf[Array[Person]].foreach(println)
   }
 }
