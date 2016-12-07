@@ -44,44 +44,7 @@ Explain all steps
 #### Machines without shared path
 
 ## Setting up Cluster on AWS
-Launch the CloudBuilder from <mark>[LINK TEXT](http://link).</mark> 
-
-1. On the **Select Template page**, the URL for the file is pre-populated. Click **Next** to continue.   <br>
-<p style="text-align: center;"><img alt="STEP" src="/Images/cluster_selecttemplate.png"></p>
-
-2. On the **Specify Details **page, you can:
-	* Change the stack name
-	* Select Instance Type
-	* Select KeyPairName
-	* Search VPCID
-
-	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
-<p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_specifydetails.png"></p>
-Click **Next**. <br>
-
-4. On the **Options** page, click **Next** to continue using the provided default value.
-4. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
-
-5. On the **Review** page, verify the details and click **Create** to create a stack. 
-
-	> Note: This operation may take a few minutes to complete. 
-<p style="text-align: center;"><img alt="Create" src="/Images/cluster_createstack.png"></p>
-<a id="Stack"></a>
-6. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
-When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
-<p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_refresh.png"></p>
-<a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
-	<p style="text-align: center;"><img alt="Public IP" src="/Images/cluster_links.png"></p>
-> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
-
-	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
-	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
-	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
-
-For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
-
->Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
+To be done
 ## Setting up Cluster on Azure
 To Be done
 

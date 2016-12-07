@@ -86,7 +86,7 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println()
 
     pw.println("****Create a column table using API****")
-    // create a partitioned row table using SQL
+    // create a partitioned column table using SQL
     pw.println()
     pw.println("Creating a column table(CUSTOMER) using API")
 
@@ -142,7 +142,7 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println()
 
     pw.println("****Create a column table using SQL****")
-    // create a partitioned row table using SQL
+    // create a partitioned column table using SQL
     pw.println()
     pw.println("Creating a column table(CUSTOMER) using SQL")
 
@@ -187,6 +187,33 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("****Done****")
   }
 
+  /**
+   * Creates a column table where schema is inferred from parquet data file
+   */
+  def createColumnTableInferredSchema(snSession: SnappySession, pw: PrintWriter): Unit = {
+    pw.println()
+
+    pw.println("****Create a column table using API where schema is inferred from parquet file****")
+    // create a partitioned column table using SQL
+    pw.println()
+    snSession.dropTable("CUSTOMER", ifExists = true)
+
+    val customerDF = snSession.read.parquet(s"$dataFolder/customerparquet")
+
+    // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // For complete list of attributes refer the documentation
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+
+    pw.println()
+    val result = snSession.sql("SELECT COUNT(*) FROM CUSTOMER").collect()
+    pw.println("Number of records in CUSTOMER table after loading data are " + result(0).get(0))
+
+    pw.println("****Done****")
+  }
+
+
   def main(args: Array[String]): Unit = {
     parseArgs(args)
 
@@ -206,6 +233,7 @@ object CreateColumnTable extends SnappySQLJob {
     val pw = new PrintWriter(System.out, true)
     createColumnTableUsingAPI(snSession, pw)
     createColumnTableUsingSQL(snSession, pw)
+    createColumnTableInferredSchema(snSession, pw)
     pw.close()
   }
 

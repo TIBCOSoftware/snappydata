@@ -68,7 +68,7 @@ object TPCH_Memsql {
        if(isResultCollection){
          rs = queryExecution(queryNumber, stmt)
          //rs = stmt.executeQuery(query)
-         queryPrintStream.println(s"$resultFormat")
+         //queryPrintStream.println(s"$resultFormat")
          val rsmd = rs.getMetaData()
          val columnsNumber = rsmd.getColumnCount();
          var count : Int = 0
@@ -285,7 +285,8 @@ object TPCH_Memsql {
          "     S_ACCTBAL desc," +
          "     N_NAME," +
          "     S_NAME," +
-         "     P_PARTKEY"
+         "     P_PARTKEY" +
+         " limit 100"
 
    }
 
@@ -316,7 +317,8 @@ object TPCH_Memsql {
          "     o_orderdate," +
          "     o_shippriority" +
          " order by" +
-         "     o_orderdate"
+         "     o_orderdate" +
+         " limit 10"
    }
 
    def getResultString3(): String = {
@@ -575,7 +577,8 @@ object TPCH_Memsql {
          "         C_ADDRESS," +
          "         C_COMMENT" +
          " order by" +
-         "         revenue desc"
+         "         revenue desc" +
+         " limit 20"
 
    }
 
@@ -891,7 +894,8 @@ object TPCH_Memsql {
          "         o_totalprice" +
          " order by" +
          "         o_totalprice desc," +
-         "         o_orderdate"
+         "         o_orderdate" +
+         " limit 100"
    }
 
    def getResultString18(): String = {
@@ -1034,7 +1038,8 @@ object TPCH_Memsql {
          "         S_NAME" +
          " order by" +
          "         numwait desc," +
-         "         S_NAME"
+         "         S_NAME" +
+         " limit 100"
    }
 
    def getResultString21(): String = {

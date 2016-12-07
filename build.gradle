@@ -100,7 +100,6 @@ allprojects {
     slf4jVersion = '1.7.21'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    sparkCSVVersion = '1.4.0'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'

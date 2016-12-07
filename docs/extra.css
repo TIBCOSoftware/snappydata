@@ -18,6 +18,7 @@ h1{
     color: #000000;
     font-size: 20pt;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background-color: #e8e9ea;
 }
 
 
@@ -25,7 +26,6 @@ h2{
     color: #335183;
     font-size: 18pt;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-    background-color: #e8e9ea;
 }
 
 
@@ -71,6 +71,26 @@ code {
 pre .cs, pre .c {
     font-weight: inherit;
     font-style: inherit;
+}
+
+/*
+Formatting for text for review/comments purpose only
+*/
+
+mark {
+    color: red;
+    font-size: 14px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background-color: #f6f3d7;
+}
+
+
+note {
+    color: green;
+    font-size: 14px;
+    font-style: italic;
+    background-color: #e8e9ea;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 /*

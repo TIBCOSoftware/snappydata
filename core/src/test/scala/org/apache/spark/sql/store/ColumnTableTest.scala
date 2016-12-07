@@ -956,7 +956,7 @@ class ColumnTableTest
       case e: AnalysisException => {
         assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
             "dependent objects: APP.EXEC_DETAILS_COL;")
-        //Execute second time to see we are getting same exception instead of table not found
+        // Execute second time to see we are getting same exception instead of table not found
         try {
           snc.sql("DROP TABLE ORDER_DETAILS_COL");
         } catch {
@@ -964,17 +964,17 @@ class ColumnTableTest
             assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
                 "dependent objects: APP.EXEC_DETAILS_COL;")
           }
-          case _ => throw new AssertionError;
+          case t: Throwable => throw new AssertionError(t.getMessage, t);
         }
       } // Expected Exception hence ignore
-      case _ => throw new AssertionError;
+      case _: Throwable => throw new AssertionError;
     }
 
     try {
-      snc.sql("DROP TABLE EXEC_DETAILS_COL");
+      snc.sql("DROP TABLE EXEC_DETAILS_COL")
       snc.sql("DROP TABLE ORDER_DETAILS_COL");
     } catch {
-      case _ => assert(false)
+      case t: Throwable => throw new AssertionError(t.getMessage, t);
     }
   }
 }

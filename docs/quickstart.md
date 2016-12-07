@@ -1,36 +1,34 @@
-##Getting started in 5 minutes or less
+#Getting started in 5 minutes or less
 
-You have multiple choices for getting started with SnappyData.
-Depending on your preference you can work locally on your local machine, on premise network, on AWS or with a docker image. We will adding support for Azure in the near future. 
+You have multiple choices for getting started with SnappyData. Depending on your preference you can work locally on your local machine, on premise network, on AWS or with a docker image. We will adding support for Azure in the near future. 
 If you decide to get going on your local machine you should have 6GB of RAM for SnappyData.
 
-###Getting started with your Spark distribution
+##Getting started with your Spark distribution
 
 If you are a Spark developer and is already using Spark 2.0 , fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
 Follow the below instructions to try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 10X advantage over Spark's native caching performance. 
 
 
-* From command line go to your Spark installation directory
+**Open a command terminal. and go to the location of the Spark installation directory:**
 ```scala
 $ cd <Spark_Install_dir>
-$ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11"
+$ ./bin/spark-shell --driver-memory=6g --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
-This will open a Spark shell and download the relevant SnappyData files to your local machine. It may take some time to download the files. 
-NOTE: I(jags) CHANGED THE PACKAGE NAME. CONFIRM WITH AMOGH.  
+
+This opens a Spark shell and downloads the relevant SnappyData files to your local machine. It may take some time to download the files. 
 
 <a id="Start_quickStart"></a>
+The following section provides details of how to interact with SnappyData:
 
-<p>In the following section we will see how to interact with SnappyData.
 Your application code is almost all Spark. You bootstrap SnappyData using a SnappySession (derived from SparkSession). In this simple test, we create some tables, load data and query the tables using Spark SQL.
-Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. You can check the detailed documentation after trying out this section.
-While SnappyData supports Scala/Java/Python/SQL APIs for this quickstart you can choose to work with Scala APIs or SQL depending on your preference.</p>
+Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. You can check the detailed documentation after trying out this section. <mark>link? </mark>
 
-#####Getting started using Spark Scala APIs
+While SnappyData supports Scala/Java/Python/SQL APIs for this quickstart you can choose to work with Scala APIs or SQL depending on your preference.
 
-* Create a SnappySession
+###Getting started using Spark Scala APIs
 
- A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
+**Create a SnappySession** :A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 
 ```scala
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
@@ -38,18 +36,18 @@ scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala> import snappy.implicits._
 ```
 
-* Create a small DataSet using Spark's APIs
+**Create a small DataSet using Spark's APIs**
 ```scala
 scala> val ds = Seq((1,"a"), (2, "b"), (3, "c")).toDS()
 ```
-* Define a schema for the table.
+**Define a schema for the table.**
 ```scala
 scala>  import org.apache.spark.sql.types._
 scala>  val tableSchema = StructType(Array(StructField("CustKey", IntegerType, false),
           StructField("CustName", StringType, false)))
 ```
 
-* Create a column table with a simple schema [String, Int] and default options. For detailed option see [here]
+**Create a column table with a simple schema [String, Int] and default options**. For detailed option see <mark>[here]</mark>
 ```scala
 //Column tables manage data is columnar form and offer superier performance for analytic class queries.
 scala>  snappy.createTable(tableName = "colTable",
@@ -58,16 +56,16 @@ scala>  snappy.createTable(tableName = "colTable",
           options = Map.empty[String, String], // Map for options.
           allowExisting = false)
 ```
- Snappy (SnappySession) extends SparkSession so you can simply use all the Spark APIs
+#### Snappy (SnappySession) extends SparkSession so you can simply use all the Spark APIs
 
-* Insert the created DataSet to the column table "colTable"
+**Insert the created DataSet to the column table "colTable"**
 ```scala
 scala>  ds.write.insertInto("colTable")
 // Check the total row count.
 scala>  snappy.table("colTable").count
 ```
- Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.
-The following code snippet create a Row object using Spark's API and inserts the Row to the table.
+**Create a Row object using Spark's API and inserts the Row to the table**
+Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.
 
 ```scala
 // Insert a new record
@@ -77,8 +75,7 @@ scala>  snappy.insert("colTable", Row(10, "f"))
 scala>  snappy.table("colTable").count
 ```
 
-
-* Create a "row" table with a simple schema [String, Int] and default options. For detailed option see [here]
+**Create a "row" table with a simple schema [String, Int] and default options. **For detailed option see <mark>[here]</mark>
 
 ```scala
 //Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
@@ -89,20 +86,20 @@ scala>  snappy.createTable(tableName = "rowTable",
           allowExisting = false)
 ```
 
-* Insert the created DataSet to the row table "rowTable"
+**Insert the created DataSet to the row table "rowTable"**
 ```scala
 scala>  ds.write.insertInto("rowTable")
 //Check the row count
 scala>  snappy.table("rowTable").count
 ```
-* Insert a new record
+**Insert a new record**
 ```scala
 scala>  snappy.insert("rowTable", Row(4, "d"))
 //Check the row count now
 scala>  snappy.table("rowTable").count
 ```
 
-* Change some data in a row table.
+**Change some data in a row table**
 ```scala
 //Updating a row for customer with custKey = 1
 scala>  snappy.update(tableName = "rowTable", filterExpr = "CUSTKEY=1",
@@ -125,7 +122,7 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 
 We illustrate SQL using Spark SQL invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell; example in the How-to section).
 
-* Create a column table with a simple schema [Int, String] and default options. For details on the options see [here]
+Create a column table with a simple schema [Int, String] and default options. For details on the options see <mark>[here]</mark>
 ```scala
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
 ```
@@ -142,14 +139,14 @@ scala>  snappy.sql("insert into colTable values(3, '3')")
 scala>  snappy.sql("select count(*) from colTable").show
 ```
 
-* Create a row table with primary key
+**Create a row table with primary key**
 
 ```scala
 //Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, " +
             "CustName String) using row options()")
 ```
- If you create a table using standard SQL (i.e. no 'row options' clause) it will create a replicated Row table.
+If you create a table using standard SQL (i.e. no 'row options' clause) it will create a replicated Row table.
  
 ```scala
 //Insert couple of records to the row table
@@ -175,24 +172,20 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark shell
 ```
 
-Now that we have seen the basic working of SnappyData tables, let's run [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance. 
+Now that we have seen the basic working of SnappyData tables, let's run [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
-
-
-###Getting started by installing SnappyData on-premise
-Download the latest version of SnappyData from the
-[SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/)
-page, which lists the latest and previous releases of SnappyData.
+##Getting started by installing SnappyData on-premise
+Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 ```
 $tar -xvf <snappy_binaries>
 $cd snappy
 $./bin/spark-shell --driver-memory 4g
 ```
-This will open a Spark shell. Then follow the steps mentioned [here](#Start_quickStart)
+It opens a Spark shell. Follow the steps mentioned [here](#Start_quickStart)
 
 
-###Getting started on AWS
+##Getting started on AWS
 
 You can quickly create a single host SnappyData cluster (i.e. one lead node , one data node and a locator in a single machine) through the AWS CloudFormation.
 
@@ -205,19 +198,52 @@ Before you begin,:
 *  Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
 
 
-Click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?bucket=snappydata-cloudbuilder&templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) to launch the instacne.
- 
- 1. After clicking in the above URL you should see a login screen like below. Enter your credentails. After login in you should be in "Select Template" page.
- 2. In "Select Template" page default region is selected for you. If you want you can change the region . Click next to go to "Specify Details" page.
- 3. By default  a c4.2xlarge instance ( with 8 CPU core and 15 GB RAM) is selected. This is the prefered instance size for running this quickstart.  Click next to go to "Options" page.
- 4. Keep the selected defaults as is. Click next to go to "Review" page
- 5. On the Review page, verify the details and click Create to create a stack.
- 6. The next page lists the existing stacks. Click Refresh to view the updated list and the status of the stack creation. When the cluster has started, the status of the stack changes to CREATE_COMPLETE.
- 7. Click on the Outputs tab, and click on the URL. This will take you to a Zeppelin notebook to run quickstart or other demos.   
-   
-Jags: These are instructions for launching a single instance. How do I launch multi-node?   
+Launch the instance from [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?bucket=snappydata-cloudbuilder&templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json)
 
-###Getting started with Docker image
+1. The Login Screen is displayed. Enter your AWS login credentials. Your default region is displayed automatically. You can change the region in the console.
+ 
+2. The **Select Template page** is displayed. The URL for the template (JSON format) is pre-populated. Click **Next** to continue.   
+<p style="text-align: center;"><img alt="STEP" src="/Images/cluster_selecttemplate.png"></p>
+<br>
+
+3. On the **Specify Details** page, you can:<br>
+    * Change the stack name: Enter a name for the stack
+    * Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.
+    * Select KeyPairName: Select a keypair from the list of keypairs available to you. This is a mandatory field.
+    * Search VPCID: Select the VPC ID from the dropdown list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
+<Note> NOTE: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note>
+<p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_specifydetails.png"></p>
+
+4. Click **Next**. <br>
+
+5. On the **Options** page, click **Next** to continue using the provided default value.<br>
+
+6. On the **Review** page, verify the details and click **Create** to create a stack. <br>
+<Note> **NOTE**: This operation may take a few minutes to complete.  </Note>
+<p style="text-align: center;"><img alt="Create" src="/Images/cluster_createstack.png"></p>
+<a id="Stack"></a>
+
+7. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
+When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
+<p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_refresh.png"></p>
+<a id="Stack"></a>
+8. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+	<p style="text-align: center;"><img alt="Public IP" src="/Images/cluster_links.png"></p>
+<Note>Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
+
+	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
+	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
+	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
+</Note>
+For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
+
+<Note>Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</Note>
+
+<mark>
+Jags: These are instructions for launching a single instance. How do I launch multi-node?   
+Reply from Amogh: Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set up a multi-node cluster using the EC2 scripts.
+</mark>
+##Getting started with Docker image
 
 SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to try the quickstart program and more with SnappyData easily.
 
@@ -242,7 +268,7 @@ Once your are inside the Spark shell with the "$ scala>" prompt you can follow t
 
 
 <a id="Start Benchmark"></a>
-###SnappyData in-memory insert/Query performance is 20X Spark 2.0 caching?
+##SnappyData in-memory insert/Query performance is 20X Spark 2.0 caching?
 Here we will walk through a simple benchmark to compare SnappyData to Spark 2.0 performance. We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then do the same using SnappyData's column table. 
  Preferably you should have at least 8GB of RAM reserved for this test.
 
@@ -318,13 +344,12 @@ scala>  snappy.sql("drop table if exists snappyTable")
 scala>  snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
 ```
 * Insert the created a DataFrame into the table. Measure its performance
-
 ```scala
 scala>  benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
 ```
 
 * Now lets run the same benchmark we ran against Spark DataFrame.
-```scala
+ ```scala
 scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
 ```
 
