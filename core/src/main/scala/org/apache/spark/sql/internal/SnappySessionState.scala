@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliase
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -93,7 +93,8 @@ class SnappySessionState(snappySession: SnappySession)
       }
 
       modified :+
-          Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan)
+          Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
+          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets)
     }
   }
 
@@ -123,6 +124,23 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
+  /**
+   * This rule sets the flag at query level to link the partitions to
+   * be created for tables to be the same as number of buckets. This will avoid
+   * exchange on one side of a non-collocated join in most cases.
+   */
+  object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      plan.foreach {
+        case j: Join if !planner.asInstanceOf[SnappyStrategies]
+            .LocalJoinStrategies.isLocalJoin(j) =>
+          // disable for the entire query for consistency
+          snappySession.linkBucketsToPartitions(flag = true)
+        case _ => // nothing for others
+      }
+      plan
+    }
+  }
 
   override lazy val conf: SnappyConf = new SnappyConf(snappySession)
 
@@ -208,7 +226,8 @@ class SnappySessionState(snappySession: SnappySession)
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
     leaderPartitions.getOrElseUpdate(leaderRegion,
-      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion))
+      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
+        snappySession.hasLinkBucketsToPartitions))
   }
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =

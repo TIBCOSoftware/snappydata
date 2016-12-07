@@ -607,6 +607,12 @@ object NWQueries extends SnappyFunSuite {
     snc.sql("drop table if exists territories")
   }
 
+  /**
+   * Enable this flag for local testing in case a change causes multiple cases
+   * of mismatches to be introduced.
+   */
+  private val WARN_FOR_PARTITION_MISMATCH = false
+
   def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, numRows: Int,
       numPartitions: Int, c: Class[_]): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
@@ -615,6 +621,19 @@ object NWQueries extends SnappyFunSuite {
     assert(count == numRows,
       "Mismatch got df.count -> " + count + " but expected numRows -> "
           + numRows + " for queryNum = " + queryNum)
+    val expectedPartitions = (numPartitions - 4) to (numPartitions + 4)
+    if (WARN_FOR_PARTITION_MISMATCH) {
+      if (!expectedPartitions.contains(df.rdd.partitions.length)) {
+        logWarning("Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+            " but expected numPartitions -> " + numPartitions +
+            " for queryNum = " + queryNum)
+      }
+    } else {
+      assert(expectedPartitions.contains(df.rdd.partitions.length),
+        "Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+            " but expected numPartitions -> " + numPartitions +
+            " for queryNum = " + queryNum)
+    }
   }
 
   private def assertQueryCommon(df: DataFrame, sqlString: String,
@@ -648,10 +667,18 @@ object NWQueries extends SnappyFunSuite {
     val df = snc.sql(sqlString)
     assertQueryCommon(df, sqlString, queryNum, numRows, c)
 
-    assert(df.rdd.partitions.length == numPartitions,
-      "Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
-          " but expected numPartitions -> " + numPartitions +
-          " for queryNum = " + queryNum)
+    if (WARN_FOR_PARTITION_MISMATCH) {
+      if (df.rdd.partitions.length != numPartitions) {
+        logWarning("Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+            " but expected numPartitions -> " + numPartitions +
+            " for queryNum = " + queryNum)
+      }
+    } else {
+      assert(df.rdd.partitions.length == numPartitions,
+        "Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+            " but expected numPartitions -> " + numPartitions +
+            " for queryNum = " + queryNum)
+    }
   }
 
   def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
@@ -660,9 +687,17 @@ object NWQueries extends SnappyFunSuite {
     assertQueryCommon(df, sqlString, queryNum, numRows, c)
 
     val rddNumPartitions = df.rdd.partitions.length
-    assert(numPartitions.contains(rddNumPartitions),
-      "Mismatch got df.rdd.partitions.length -> " + rddNumPartitions +
-          " but expected one of numPartitions -> " + numPartitions.toSeq +
-          " for queryNum=" + queryNum)
+    if (WARN_FOR_PARTITION_MISMATCH) {
+      if (!numPartitions.contains(rddNumPartitions)) {
+        logWarning("Mismatch got df.rdd.partitions.length -> " + rddNumPartitions +
+            " but expected one of numPartitions -> " + numPartitions.toSeq +
+            " for queryNum=" + queryNum)
+      }
+    } else {
+      assert(numPartitions.contains(rddNumPartitions),
+        "Mismatch got df.rdd.partitions.length -> " + rddNumPartitions +
+            " but expected one of numPartitions -> " + numPartitions.toSeq +
+            " for queryNum=" + queryNum)
+    }
   }
 }
