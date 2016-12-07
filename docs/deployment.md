@@ -7,7 +7,7 @@ In this section we discuss the various execution modes. You can run the SnappyDa
 | Embedded SnappyData Store Mode|The Spark computations and in-memory data store run collocated in the same JVM|
 
 ##Local Mode
-<mark> Description TO be done </mark>
+<mark> Description To be done </mark>
 
 Key Points
 
@@ -44,9 +44,16 @@ Key Points:
 
 When storing to **Row tables** or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to Snappy tables, the data is always batched for the highest possible throughput.
 
-When queries are executed, while the entire query planning and execution is coordinated by the Spark engine (Catalyst), the smart connector still carries out a number of optimizations.
+When queries are executed, while the entire query planning and execution is coordinated by the Spark engine (Catalyst), the smart connector still carries out a number of optimizations. They are as listed below:
 
-<mark>(get a list from Sumedh to include here).</mark> 
+* Route jobs to same machines as SnappyData data nodes if the executor nodes are co-hosted on the same machines as the data nodes. Job for each partition tries to fetch only from same machine data store where possible.
+* Column table scan using optimized code generation: Once a column batch is fetched, then it uses the same optimized scan as in the embedded mode
+* Collocated joins: If the underlying tables are collocated partition-wise, and executor nodes are co-hosting SnappyData data nodes, then the column batches will be fetched from local machines and the join itself will be partition-wise not requiring any exchange.
+* Optimized hash maps for groupBy aggregates without any UnsafeRow conversions like in embedded mode
+* Hash join using optimized hash maps avoiding any UnsafeRow conversions like in embedded mode
+* GroupBy and hash join on single dictionary column uses an optimized path using dictionary indexes like in embedded mode
+* Optimized column batch inserts like in embedded mode with job routing to same machines as data stores if possible (soon to be merged)
+* CollectAggregate plan which allows accumulation of aggregate results on the driver itself (rather than a SinglePartition Exchange at the end for non-groupBy aggregates)
 
 **SQL connectivity**: SQL clients (using JDBC or ODBC) can connect and work with the Snappydata store cluster and have no dependency on Spark. So,the Spark application can connect and run native Spark applications using the SnappyData Smart Connector while concurrent SQL clients are executing directly on the Snappydata store cluster.
 
