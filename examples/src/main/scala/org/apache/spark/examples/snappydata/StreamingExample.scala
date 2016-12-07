@@ -163,9 +163,6 @@ object StreamingExample {
     println("Total no of distinct bids received in all windows so far")
     snsc.snappySession.sql("select bidCount from totalBids").show()
 
-
-    println("****Exiting****")
-    snsc.awaitTerminationOrTimeout(50)
   }
 
   def publishKafkaMessages(utils: EmbeddedKafkaUtils, topic: String): Unit = {
