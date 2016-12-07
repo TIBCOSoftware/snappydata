@@ -44,7 +44,8 @@ pre code {
   display: block;
   padding: 12px;
   background-color: #f5f6f6;
-  font-size: 12px;
+  font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
+  font-size:12px;
 }
 
 code {
