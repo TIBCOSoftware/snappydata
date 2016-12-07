@@ -35,8 +35,7 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy: Boolean, itr: Int = 0, useIndex: Boolean = false, warmup: Integer = 0,
-      runsForAverage: Integer = 1, avgPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, itr : Int = 0, useIndex: Boolean = false, warmup : Integer = 0, runsForAverage :Integer=1, avgPrintStream:PrintStream=null): Unit = {
 
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
     val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
@@ -48,7 +47,6 @@ object TPCH_Snappy {
 
     val queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
     val queryPrintStream: PrintStream = new PrintStream(queryFileStream)
-
 
     val resultFormat = queryNumber match {
       case "q" => getResultString
@@ -166,9 +164,10 @@ object TPCH_Snappy {
         }
         res
       case "q2" =>
-        val result = sqlContext.sql(getTempQuery2)
+        val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
-        val df = sqlContext.sql(getQuery2)
+        val df = sqlContext.sql(getQuery2())
+        //val df = sqlContext.sql(getQuery2_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q2")
@@ -237,6 +236,7 @@ object TPCH_Snappy {
         var df: DataFrame = null
         var res1: Array[Row] = null
         df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))
+//        val df = sqlContext.sql(getQuery11_Original())
         res1 = df.collect()
         if (genPlan) {
           printPlan(df, "Q11")
@@ -252,7 +252,8 @@ object TPCH_Snappy {
       case "q13" =>
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
-        val df = sqlContext.sql(getQuery13)
+        val df = sqlContext.sql(getQuery13())
+        //val df = sqlContext.sql(getQuery13_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q13")
@@ -288,8 +289,8 @@ object TPCH_Snappy {
       case "q17" =>
         val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
-
         val df = sqlContext.sql(getQuery17(useIndex))
+        //val df = sqlContext.sql(getQuery17_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q17")
@@ -310,9 +311,9 @@ object TPCH_Snappy {
         }
         res
       case "q20" =>
-        val result = sqlContext.sql(getTempQuery20(useIndex))
-        result.createOrReplaceTempView("ViewQ20")
-        val df = sqlContext.sql(getQuery20)
+//        val result = sqlContext.sql(getTempQuery20(useIndex))
+//        result.createOrReplaceTempView("ViewQ20")
+        val df = sqlContext.sql(getQuery20_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q20")
@@ -332,6 +333,7 @@ object TPCH_Snappy {
         var df: DataFrame = null
         var res1 = res
         df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
+        //val df = sqlContext.sql(getQuery22_Original())
         res1 = df.collect()
         if (genPlan) {
           printPlan(df, "Q22")
@@ -590,7 +592,7 @@ object TPCH_Snappy {
         "|avg_disc|count_order"
   }
 
-  def getTempQuery2: String = {
+  def getTempQuery2(): String = {
     " select" +
         "     min(ps_supplycost) as v_supplycost, ps_partkey as v_partkey" +
         " from" +
@@ -604,41 +606,87 @@ object TPCH_Snappy {
         "     ps_partkey"
   }
 
-  def getQuery2: String = {
-    " select" +
-        "     s_acctbal," +
-        "     s_name," +
-        "     n_name," +
-        "     p_partkey," +
-        "     p_mfgr," +
-        "     s_address," +
-        "     s_phone," +
-        "     s_comment" +
-        " from" +
-        "     PART," +
-        "     PARTSUPP," +
-        "     SUPPLIER," +
-        "     NATION," +
-        "     REGION," +
-        "     ViewQ2" +
-        " where" +
-        "     p_partkey = ps_partkey" +
-        "     and s_suppkey = ps_suppkey" +
-        "     and p_size = 24" +
-        "     and p_type like '%STEEL'" +
-        "     and s_nationkey = n_nationkey" +
-        "     and n_regionkey = r_regionkey" +
-        "     and r_name = 'ASIA'" +
-        "     and p_partkey = v_partkey" +
-        "     and ps_supplycost =  v_supplycost" +
-        " order by" +
-        "     s_acctbal desc," +
-        "     n_name," +
-        "     s_name," +
-        "     p_partkey"
+  def getQuery2(): String = {
+      " select" +
+          "     s_acctbal," +
+          "     s_name," +
+          "     n_name," +
+          "     p_partkey," +
+          "     p_mfgr," +
+          "     s_address," +
+          "     s_phone," +
+          "     s_comment" +
+          " from" +
+          "     PART," +
+          "     PARTSUPP," +
+          "     SUPPLIER," +
+          "     NATION," +
+          "     REGION," +
+          "     ViewQ2" +
+          " where" +
+          "     p_partkey = ps_partkey" +
+          "     and s_suppkey = ps_suppkey" +
+          "     and p_size = 24" +
+          "     and p_type like '%STEEL'" +
+          "     and s_nationkey = n_nationkey" +
+          "     and n_regionkey = r_regionkey" +
+          "     and r_name = 'ASIA'" +
+          "     and p_partkey = v_partkey" +
+          "     and ps_supplycost =  v_supplycost" +
+          " order by" +
+          "     s_acctbal desc," +
+          "     n_name," +
+          "     s_name," +
+          "     p_partkey" +
+          " limit 100"
   }
 
-  def getResultString2: String = {
+  def getQuery2_Original(): String = {
+    " select" +
+      "     S_ACCTBAL," +
+      "     S_NAME," +
+      "     N_NAME," +
+      "     P_PARTKEY," +
+      "     P_MFGR," +
+      "     S_ADDRESS," +
+      "     S_PHONE," +
+      "     S_COMMENT" +
+      " from" +
+      "     PART," +
+      "     SUPPLIER," +
+      "     PARTSUPP," +
+      "     NATION," +
+      "     REGION" +
+      " where" +
+      "     P_PARTKEY = PS_PARTKEY" +
+      "     and S_SUPPKEY = PS_SUPPKEY" +
+      "     and P_SIZE = 24" +
+      "     and P_TYPE like '%STEEL'" +
+      "     and S_NATIONKEY = N_NATIONKEY" +
+      "     and N_REGIONKEY = R_REGIONKEY" +
+      "     and R_NAME = 'ASIA'" +
+      "     and PS_SUPPLYCOST = (" +
+      "         select" +
+      "             min(PS_SUPPLYCOST)" +
+      "         from" +
+      "             PARTSUPP, SUPPLIER," +
+      "             NATION, REGION" +
+      "         where" +
+      "             P_PARTKEY = PS_PARTKEY" +
+      "             and S_SUPPKEY = PS_SUPPKEY" +
+      "             and S_NATIONKEY = N_NATIONKEY" +
+      "             and N_REGIONKEY = R_REGIONKEY" +
+      "             and R_NAME = 'ASIA'" +
+      "            )" +
+      " order by" +
+      "     S_ACCTBAL desc," +
+      "     N_NAME," +
+      "     S_NAME," +
+      "     P_PARTKEY" +
+      " limit 100"
+  }
+
+  def getResultString2():String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
@@ -656,14 +704,15 @@ object TPCH_Snappy {
         "     C_MKTSEGMENT = 'BUILDING'" +
         "     and C_CUSTKEY = o_custkey" +
         "     and l_orderkey = o_orderkey" +
-        "      and o_orderdate < add_months('1995-03-15',0)" +
-        "     and l_shipdate > add_months('1995-03-15',0) " +
+        "      and o_orderdate < '1995-03-15'" +
+        "     and l_shipdate > '1995-03-15' " +
         " group by" +
         "     l_orderkey," +
         "     o_orderdate," +
         "     o_shippriority" +
         " order by" +
-        "     o_orderdate"
+        "     o_orderdate" +
+      " limit 10"
   }
 
   def getResultString3: String = {
@@ -678,7 +727,7 @@ object TPCH_Snappy {
         " from" +
         "     ORDERS" +
         " where" +
-        "     o_orderdate >= add_months('1993-07-01',0)" +
+        "     o_orderdate >= '1993-07-01'" +
         "     and o_orderdate < add_months('1993-07-01',3)" +
         "     and exists (" +
         "         select" +
@@ -699,34 +748,33 @@ object TPCH_Snappy {
     "o_orderpriority|order_count"
   }
 
-  def getQuery5: String = {
-    // 1. REGION = ASIA;
-    // 2. DATE = 1994-01-01.
-    " select" +
-        "        n_name," +
-        "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
-        " from" +
-        "        ORDERS," +
-        "        LINEITEM," +
-        "        SUPPLIER," +
-        "        NATION," +
-        "        REGION," +
-        "        CUSTOMER" +
-        " where" +
-        "        C_CUSTKEY = o_custkey" +
-        "        and l_orderkey = o_orderkey" +
-        "        and l_suppkey = s_suppkey" +
-        "        and C_NATIONKEY = s_nationkey" +
-        "        and s_nationkey = n_nationkey" +
-        "        and n_regionkey = r_regionkey" +
-        "        and r_name = 'ASIA'" +
-        "        and o_orderdate >= add_months('1994-01-01',0)" +
-        // "        and o_orderdate < date '[DATE]' + interval '1' year" +
-        "        and o_orderdate < add_months('1994-01-01', 12)" +
-        " group by" +
-        "        n_name" +
-        " order by" +
-        "        revenue desc"
+  def getQuery5(): String = {
+    //1. REGION = ASIA;
+    //2. DATE = 1994-01-01.
+      " select" +
+          "        n_name," +
+          "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
+          " from" +
+          "        ORDERS," +
+          "        LINEITEM," +
+          "        SUPPLIER," +
+          "        NATION," +
+          "        REGION," +
+          "        CUSTOMER" +
+          " where" +
+          "        C_CUSTKEY = o_custkey" +
+          "        and l_orderkey = o_orderkey" +
+          "        and l_suppkey = s_suppkey" +
+          "        and C_NATIONKEY = s_nationkey" +
+          "        and s_nationkey = n_nationkey" +
+          "        and n_regionkey = r_regionkey" +
+          "        and r_name = 'ASIA'" +
+          "        and o_orderdate >= '1994-01-01'" +
+          "        and o_orderdate < add_months('1994-01-01', 12)" +
+          " group by" +
+          "        n_name" +
+          " order by" +
+          "        revenue desc"
   }
 
   def getResultString5: String = {
@@ -742,7 +790,7 @@ object TPCH_Snappy {
         " from" +
         "        LINEITEM" +
         " where" +
-        "        l_shipdate >= add_months('1994-01-01',0)" +
+        "        l_shipdate >= '1994-01-01'" +
         "        and l_shipdate < add_months('1994-01-01', 12)" +
         "        and l_discount between 0.06 - 0.01 and 0.06 + 0.01" +
         "        and l_quantity < 24"
@@ -755,46 +803,45 @@ object TPCH_Snappy {
   def getQuery7: String = {
     //    1. NATION1 = FRANCE;
     //    2. NATION2 = GERMANY.
-    "select" +
-        "         supp_nation," +
-        "         cust_nation," +
-        "         l_year, " +
-        "         sum(volume) as revenue" +
-        " from (" +
-        "         select" +
-        "                 n1.n_name as supp_nation," +
-        "                 n2.n_name as cust_nation," +
-        //        "                 extract m(year from l_shipdate) as l_year," +
-        "                 year(l_shipdate) as l_year," +
-        "                 l_extendedprice * (1 - l_discount) as volume" +
-        "         from" +
-        "                 SUPPLIER," +
-        "                 LINEITEM," +
-        "                 ORDERS," +
-        "                 CUSTOMER," +
-        "                 NATION n1," +
-        "                 NATION n2" +
-        "         where" +
-        "                 s_suppkey = l_suppkey" +
-        "                 and o_orderkey = l_orderkey" +
-        "                 and C_CUSTKEY = o_custkey" +
-        "                 and s_nationkey = n1.n_nationkey" +
-        "                 and C_NATIONKEY = n2.n_nationkey" +
-        "                 and (" +
-        "                         (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')" +
-        "                      or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')" +
-        "                 )" +
-        "                 and l_shipdate between add_months('1995-01-01',0) and add_months" +
-        "('1996-12-31',0)" +
-        "         ) as shipping" +
-        " group by" +
-        "         supp_nation," +
-        "         cust_nation," +
-        "         l_year" +
-        " order by" +
-        "         supp_nation," +
-        "         cust_nation," +
-        "         l_year"
+      "select" +
+          "         supp_nation," +
+          "         cust_nation," +
+          "         l_year, " +
+          "         sum(volume) as revenue" +
+          " from (" +
+          "         select" +
+          "                 n1.n_name as supp_nation," +
+          "                 n2.n_name as cust_nation," +
+          //        "                 extract m(year from l_shipdate) as l_year," +
+          "                 year(l_shipdate) as l_year," +
+          "                 l_extendedprice * (1 - l_discount) as volume" +
+          "         from" +
+          "                 SUPPLIER," +
+          "                 LINEITEM," +
+          "                 ORDERS," +
+          "                 CUSTOMER," +
+          "                 NATION n1," +
+          "                 NATION n2" +
+          "         where" +
+          "                 s_suppkey = l_suppkey" +
+          "                 and o_orderkey = l_orderkey" +
+          "                 and C_CUSTKEY = o_custkey" +
+          "                 and s_nationkey = n1.n_nationkey" +
+          "                 and C_NATIONKEY = n2.n_nationkey" +
+          "                 and (" +
+          "                         (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')" +
+          "                      or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')" +
+          "                 )" +
+          "                 and l_shipdate between '1995-01-01' and '1996-12-31'" +
+          "         ) as shipping" +
+          " group by" +
+          "         supp_nation," +
+          "         cust_nation," +
+          "         l_year" +
+          " order by" +
+          "         supp_nation," +
+          "         cust_nation," +
+          "         l_year"
   }
 
   def getResultString7: String = {
@@ -805,85 +852,83 @@ object TPCH_Snappy {
     //    1. NATION = BRAZIL;
     //    2. REGION = AMERICA;
     //    3. TYPE = ECONOMY ANODIZED STEEL.
-    if (!useIndex) {
-      "select" +
-          "         o_year," +
-          "         sum(case" +
-          "                 when nation = 'BRAZIL'" +
-          "                 then volume" +
-          "                 else 0" +
-          "                 end) / sum(volume) as mkt_share" +
-          "         from (" +
-          "                 select" +
-          "                         year(o_orderdate) as o_year," +
-          "                         l_extendedprice * (1-l_discount) as volume," +
-          "                         n2.n_name as nation" +
-          "                 from" +
-          "                         LINEITEM," +
-          "                         ORDERS," +
-          "                         CUSTOMER," +
-          "                         SUPPLIER," +
-          "                         NATION n1," +
-          "                         REGION," +
-          "                         NATION n2," +
-          "                         PART" +
-          "                 where" +
-          "                         p_partkey = l_partkey" +
-          "                         and s_suppkey = l_suppkey" +
-          "                         and l_orderkey = o_orderkey" +
-          "                         and o_custkey = C_CUSTKEY" +
-          "                         and C_NATIONKEY = n1.n_nationkey" +
-          "                         and n1.n_regionkey = r_regionkey" +
-          "                         and r_name = 'AMERICA'" +
-          "                         and s_nationkey = n2.n_nationkey" +
-          "                         and o_orderdate between add_months('1995-01-01',0) and " +
-          "add_months('1996-12-31',0)" +
-          "                         and p_type = 'ECONOMY ANODIZED STEEL'" +
-          "         ) as all_nations" +
-          " group by" +
-          "         o_year" +
-          " order by" +
-          "         o_year"
-    } else {
-      "select" +
-          "         o_year," +
-          "         sum(case" +
-          "                 when nation = 'BRAZIL'" +
-          "                 then volume" +
-          "                 else 0" +
-          "                 end) / sum(volume) as mkt_share" +
-          "         from (" +
-          "                 select" +
-          "                         year(o_orderdate) as o_year," +
-          "                         l_extendedprice * (1-l_discount) as volume," +
-          "                         n2.n_name as nation" +
-          "                 from" +
-          "                         LINEITEM_PART," +
-          "                         PART," +
-          "                         SUPPLIER," +
-          "                         ORDERS," +
-          "                         CUSTOMER," +
-          "                         NATION n1," +
-          "                         NATION n2," +
-          "                         REGION" +
-          "                 where" +
-          "                         p_partkey = l_partkey" +
-          "                         and s_suppkey = l_suppkey" +
-          "                         and l_orderkey = o_orderkey" +
-          "                         and o_custkey = C_CUSTKEY" +
-          "                         and C_NATIONKEY = n1.n_nationkey" +
-          "                         and n1.n_regionkey = r_regionkey" +
-          "                         and r_name = 'AMERICA'" +
-          "                         and s_nationkey = n2.n_nationkey" +
-          "                         and o_orderdate between add_months('1995-01-01',0) and " +
-          "add_months('1996-12-31',0)" +
-          "                         and p_type = 'ECONOMY ANODIZED STEEL'" +
-          "         ) as all_nations" +
-          " group by" +
-          "         o_year" +
-          " order by" +
-          "         o_year"
-    }
+      if(!useIndex) {
+        "select" +
+            "         o_year," +
+            "         sum(case" +
+            "                 when nation = 'BRAZIL'" +
+            "                 then volume" +
+            "                 else 0" +
+            "                 end) / sum(volume) as mkt_share" +
+            "         from (" +
+            "                 select" +
+            "                         year(o_orderdate) as o_year," +
+            "                         l_extendedprice * (1-l_discount) as volume," +
+            "                         n2.n_name as nation" +
+            "                 from" +
+            "                         LINEITEM," +
+            "                         ORDERS," +
+            "                         CUSTOMER," +
+            "                         SUPPLIER," +
+            "                         NATION n1," +
+            "                         REGION," +
+            "                         NATION n2," +
+            "                         PART" +
+            "                 where" +
+            "                         p_partkey = l_partkey" +
+            "                         and s_suppkey = l_suppkey" +
+            "                         and l_orderkey = o_orderkey" +
+            "                         and o_custkey = C_CUSTKEY" +
+            "                         and C_NATIONKEY = n1.n_nationkey" +
+            "                         and n1.n_regionkey = r_regionkey" +
+            "                         and r_name = 'AMERICA'" +
+            "                         and s_nationkey = n2.n_nationkey" +
+            "                         and o_orderdate between '1995-01-01' and '1996-12-31'" +
+            "                         and p_type = 'ECONOMY ANODIZED STEEL'" +
+            "         ) as all_nations" +
+            " group by" +
+            "         o_year" +
+            " order by" +
+            "         o_year"
+      }else{
+        "select" +
+            "         o_year," +
+            "         sum(case" +
+            "                 when nation = 'BRAZIL'" +
+            "                 then volume" +
+            "                 else 0" +
+            "                 end) / sum(volume) as mkt_share" +
+            "         from (" +
+            "                 select" +
+            "                         year(o_orderdate) as o_year," +
+            "                         l_extendedprice * (1-l_discount) as volume," +
+            "                         n2.n_name as nation" +
+            "                 from" +
+            "                         LINEITEM_PART," +
+            "                         PART," +
+            "                         SUPPLIER," +
+            "                         ORDERS," +
+            "                         CUSTOMER," +
+            "                         NATION n1," +
+            "                         NATION n2," +
+            "                         REGION" +
+            "                 where" +
+            "                         p_partkey = l_partkey" +
+            "                         and s_suppkey = l_suppkey" +
+            "                         and l_orderkey = o_orderkey" +
+            "                         and o_custkey = C_CUSTKEY" +
+            "                         and C_NATIONKEY = n1.n_nationkey" +
+            "                         and n1.n_regionkey = r_regionkey" +
+            "                         and r_name = 'AMERICA'" +
+            "                         and s_nationkey = n2.n_nationkey" +
+            "                         and o_orderdate between '1995-01-01' and '1996-12-31'" +
+            "                         and p_type = 'ECONOMY ANODIZED STEEL'" +
+            "         ) as all_nations" +
+            " group by" +
+            "         o_year" +
+            " order by" +
+            "         o_year"
+      }
   }
 
   def getResultString8: String = {
@@ -966,40 +1011,40 @@ object TPCH_Snappy {
     "NATION|YEAR|SUM_PROFIT"
   }
 
-  def getQuery10: String = {
-    // 1.    DATE = 1993-10-01.
-    "select" +
-        "         C_CUSTKEY," +
-        "         C_NAME," +
-        "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
-        "         C_ACCTBAL," +
-        "         n_name," +
-        "         C_ADDRESS," +
-        "         C_PHONE," +
-        "         C_COMMENT" +
-        " from" +
-        "         ORDERS," +
-        "         LINEITEM," +
-        "         CUSTOMER," +
-        "         NATION" +
-        " where" +
-        "         C_CUSTKEY = o_custkey" +
-        "         and l_orderkey = o_orderkey" +
-        "         and o_orderdate >= add_months('1993-10-01',0)" +
-        "         and o_orderdate < add_months('1993-10-01', 3)" +
-        "         and l_returnflag = 'R'" +
-        "         and C_NATIONKEY = n_nationkey" +
-        " group by" +
-        "         C_CUSTKEY," +
-        "         C_NAME," +
-        "         C_ACCTBAL," +
-        "         C_PHONE," +
-        "         n_name," +
-        "         C_ADDRESS," +
-        "         C_COMMENT" +
-        " order by" +
-        "         revenue desc"
-    // }
+  def getQuery10(): String = {
+    //1.    DATE = 1993-10-01.
+      "select" +
+          "         C_CUSTKEY," +
+          "         C_NAME," +
+          "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+          "         C_ACCTBAL," +
+          "         n_name," +
+          "         C_ADDRESS," +
+          "         C_PHONE," +
+          "         C_COMMENT" +
+          " from" +
+          "         ORDERS," +
+          "         LINEITEM," +
+          "         CUSTOMER," +
+          "         NATION" +
+          " where" +
+          "         C_CUSTKEY = o_custkey" +
+          "         and l_orderkey = o_orderkey" +
+          "         and o_orderdate >= '1993-10-01'" +
+          "         and o_orderdate < add_months('1993-10-01', 3)" +
+          "         and l_returnflag = 'R'" +
+          "         and C_NATIONKEY = n_nationkey" +
+          " group by" +
+          "         C_CUSTKEY," +
+          "         C_NAME," +
+          "         C_ACCTBAL," +
+          "         C_PHONE," +
+          "         n_name," +
+          "         C_ADDRESS," +
+          "         C_COMMENT" +
+          " order by" +
+          "         revenue desc" +
+        " limit 100"
   }
 
   def getResultString10: String = {
@@ -1042,7 +1087,39 @@ object TPCH_Snappy {
         "         value desc"
   }
 
-  def getResultString11: String = {
+  def getQuery11_Original(): String = {
+    //    1. NATION = GERMANY;
+    //    2. FRACTION = 0.0001.
+    "select" +
+      "         PS_PARTKEY," +
+      "         sum(PS_SUPPLYCOST * PS_AVAILQTY) as value" +
+      " from" +
+      "         PARTSUPP," +
+      "         SUPPLIER," +
+      "         NATION" +
+      " where" +
+      "         PS_SUPPKEY = S_SUPPKEY" +
+      "         and S_NATIONKEY = N_NATIONKEY" +
+      "         and N_NAME = 'GERMANY'" +
+      " group by" +
+      "         PS_PARTKEY having" +
+      "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > (" +
+      "                 select" +
+      "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
+      "                 from" +
+      "                         PARTSUPP," +
+      "                         SUPPLIER," +
+      "                         NATION" +
+      "                 where" +
+      "                         PS_SUPPKEY = S_SUPPKEY" +
+      "                         and S_NATIONKEY = N_NATIONKEY" +
+      "                         and N_NAME = 'GERMANY'" +
+      "         )" +
+      " order by" +
+      "         value desc"
+  }
+
+  def getResultString11():String = {
     "PS_PARTKEY|VALUE"
   }
 
@@ -1075,7 +1152,7 @@ object TPCH_Snappy {
         "         and l_shipmode in ('MAIL', 'SHIP')" +
         "         and l_commitdate < l_receiptdate" +
         "         and l_shipdate < l_commitdate" +
-        "         and l_receiptdate >= add_months('1994-01-01',0)" +
+        "         and l_receiptdate >= '1994-01-01'" +
         "         and l_receiptdate < add_months('1994-01-01',12)" +
         " group by" +
         "         l_shipmode" +
@@ -1111,7 +1188,7 @@ object TPCH_Snappy {
     }
   }
 
-  def getQuery13: String = {
+  def getQuery13(): String = {
     //    1. WORD1 = special.
     //    2. WORD2 = requests.
     "select" +
@@ -1126,43 +1203,67 @@ object TPCH_Snappy {
         "         c_count desc"
   }
 
-  def getResultString13: String = {
+  def getQuery13_Original(): String = {
+      //    1. WORD1 = special.
+      //    2. WORD2 = requests.
+      "select" +
+          "         c_count, " +
+          "         count(*) as custdist" +
+          " from (" +
+          "         select" +
+          "                 C_CUSTKEY," +
+          "                 count(o_orderkey)" +
+          "         from" +
+          "                 CUSTOMER left outer join ORDERS on" +
+          "                 C_CUSTKEY = o_custkey" +
+          "                 and o_comment not like '%special%requests%'" +
+          "         group by" +
+          "                 C_CUSTKEY" +
+          "         )as c_orders (C_CUSTKEY, c_count)" +
+          " group by" +
+          "         c_count" +
+          " order by" +
+          "         custdist desc," +
+          "         c_count desc"
+  }
+
+  def getResultString13():String = {
     "C_COUNT|CUSTDIST"
   }
 
   def getQuery14(useIndex: Boolean): String = {
-    // 1.DATE = 1995-09-01.
-    if (!useIndex) {
-      "select" +
-          "         100.00 * sum(case" +
-          "                 when p_type like 'PROMO%'" +
-          "                 then l_extendedprice*(1-l_discount)" +
-          "                 else 0" +
-          "                 end" +
-          "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
-          " from" +
-          "         LINEITEM," +
-          "         PART" +
-          " where" +
-          "         l_partkey = p_partkey" +
-          "         and l_shipdate >= add_months('1995-09-01',0)" +
-          "         and l_shipdate < add_months ('1995-09-01', 1)"
-    } else {
-      "select" +
-          "         100.00 * sum(case" +
-          "                 when p_type like 'PROMO%'" +
-          "                 then l_extendedprice*(1-l_discount)" +
-          "                 else 0" +
-          "                 end" +
-          "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
-          " from" +
-          "         LINEITEM_PART," +
-          "         PART" +
-          " where" +
-          "         l_partkey = p_partkey" +
-          "         and l_shipdate >= add_months('1995-09-01',0)" +
-          "         and l_shipdate < add_months ('1995-09-01', 1)"
-    }
+    //1.DATE = 1995-09-01.
+      if (!useIndex) {
+        "select" +
+            "         100.00 * sum(case" +
+            "                 when p_type like 'PROMO%'" +
+            "                 then l_extendedprice*(1-l_discount)" +
+            "                 else 0" +
+            "                 end" +
+            "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+            " from" +
+            "         LINEITEM," +
+            "         PART" +
+            " where" +
+            "         l_partkey = p_partkey" +
+            "         and l_shipdate >= '1995-09-01'" +
+            "         and l_shipdate < add_months ('1995-09-01', 1)"
+      }else{
+        "select" +
+            "         100.00 * sum(case" +
+            "                 when p_type like 'PROMO%'" +
+            "                 then l_extendedprice*(1-l_discount)" +
+            "                 else 0" +
+            "                 end" +
+            "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+            " from" +
+            "         LINEITEM_PART," +
+            "         PART" +
+            " where" +
+            "         l_partkey = p_partkey" +
+            "         and l_shipdate >= '1995-09-01'" +
+            "         and l_shipdate < add_months ('1995-09-01', 1)"
+      }
   }
 
   def getResultString14: String = {
@@ -1176,7 +1277,7 @@ object TPCH_Snappy {
         " from" +
         "         LINEITEM" +
         " where" +
-        "         l_shipdate >= add_months('1996-01-01',0)" +
+        "         l_shipdate >= '1996-01-01'" +
         "         and l_shipdate < add_months('1996-01-01',3) " +
         " group by" +
         "         l_suppkey"
@@ -1284,34 +1385,59 @@ object TPCH_Snappy {
   def getQuery17(useIndex: Boolean): String = {
     //    1. BRAND = Brand#23;
     //    2. CONTAINER = MED BOX.
-    if (!useIndex) {
-      "select" +
-          "         sum(l_extendedprice) / 7.0 as avg_yearly" +
-          " from" +
-          "         LINEITEM," +
-          "         PART," +
-          "         ViewQ17" +
-          " where" +
-          "         p_partkey = l_partkey" +
-          "         and p_brand = 'Brand#23'" +
-          // "         and p_container = 'MED BOX'" +
-          "         and p_container = 'SM PACK'" +
-          "         and l_quantity < v_quantity" +
-          "         and v_partkey = p_partkey"
-    } else {
-      "select" +
-          "         sum(l_extendedprice) / 7.0 as avg_yearly" +
-          " from" +
-          "         LINEITEM_PART," +
-          "         PART," +
-          "         ViewQ17" +
-          " where" +
-          "         p_partkey = l_partkey" +
-          "         and p_brand = 'Brand#23'" +
-          "         and p_container = 'MED BOX'" +
-          "         and l_quantity < v_quantity" +
-          "         and v_partkey = p_partkey"
-    }
+      if (!useIndex) {
+        "select" +
+            "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+            " from" +
+            "         LINEITEM," +
+            "         PART," +
+            "         ViewQ17" +
+            " where" +
+            "         p_partkey = l_partkey" +
+            "         and p_brand = 'Brand#23'" +
+            //"         and p_container = 'MED BOX'" +
+            "         and p_container = 'SM PACK'" +
+            "         and l_quantity < v_quantity" +
+            "         and v_partkey = p_partkey"
+      }else{
+        "select" +
+            "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+            " from" +
+            "         LINEITEM_PART," +
+            "         PART," +
+            "         ViewQ17" +
+            " where" +
+            "         p_partkey = l_partkey" +
+            "         and p_brand = 'Brand#23'" +
+            // "         and p_container = 'MED BOX'" +
+            "         and p_container = 'SM PACK'" +
+            "         and l_quantity < v_quantity" +
+            "         and v_partkey = p_partkey"
+      }
+  }
+
+  def getQuery17_Original(): String = {
+    //    1. BRAND = Brand#23;
+    //    2. CONTAINER = MED BOX.
+    "select" +
+      "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+      " from" +
+      "         LINEITEM," +
+      "         PART" +
+      " where" +
+      "         P_PARTKEY = l_partkey" +
+      "         and P_BRAND = 'Brand#23'" +
+      "         and P_CONTAINER = 'SM PACK'" +
+      "         and l_quantity < (" +
+      "                 select" +
+      "                         0.2 * avg(l_quantity)" +
+      "                 from" +
+      "                         LINEITEM" +
+      "                 where" +
+      "                         l_partkey = P_PARTKEY" +
+      "         )"
+    //" )"
+
   }
 
   def getResultString17: String = {
@@ -1455,7 +1581,7 @@ object TPCH_Snappy {
           " from" +
           "               LINEITEM" +
           " where" +
-          "               l_shipdate >= add_months('1994-01-01',0)" +
+          "               l_shipdate >= '1994-01-01'" +
           "               and l_shipdate < add_months('1994-01-01', 12)" +
           " group by" +
           "               l_partkey, l_suppkey"
@@ -1467,45 +1593,88 @@ object TPCH_Snappy {
           " from" +
           "               LINEITEM_PART" +
           " where" +
-          "               l_shipdate >= add_months('1994-01-01',0)" +
+          "               l_shipdate >= '1994-01-01'" +
           "               and l_shipdate < add_months('1994-01-01', 12)" +
           " group by" +
           "               l_partkey, l_suppkey"
     }
   }
 
-  def getQuery20: String = {
+
+/*  def getQuery20(): String = {
+    //    1. COLOR = forest.
+    //    2. DATE = 1994-01-01.
+    //    3. NATION = CANADA.
+      "select" +
+          "         s_name," +
+          "         s_address" +
+          " from" +
+          "         SUPPLIER, NATION" +
+          " where" +
+          "         s_suppkey in (" +
+          "                 select" +
+          "                         ps_suppkey" +
+          "                 from" +
+          "                         PARTSUPP, ViewQ20" +
+          "                 where" +
+          "                         ps_partkey in (" +
+          "                                 select" +
+          "                                         p_partkey" +
+          "                                 from" +
+          "                                         PART" +
+          "                                 where" +
+          "                                         p_name like 'khaki%'" +
+          "                         )" +
+          "                         and ps_availqty > v_quantity" +
+          "                         and v_partkey = ps_partkey" +
+          "                         and v_suppkey = ps_suppkey" +
+          "         )" +
+          "         and s_nationkey = n_nationkey" +
+          "         and n_name = 'CANADA'" +
+          " order by" +
+          "         s_name"
+  }*/
+
+  def getQuery20_Original(): String = {
     //    1. COLOR = forest.
     //    2. DATE = 1994-01-01.
     //    3. NATION = CANADA.
     "select" +
-        "         s_name," +
-        "         s_address" +
-        " from" +
-        "         SUPPLIER, NATION" +
-        " where" +
-        "         s_suppkey in (" +
-        "                 select" +
-        "                         ps_suppkey" +
-        "                 from" +
-        "                         PARTSUPP, ViewQ20" +
-        "                 where" +
-        "                         ps_partkey in (" +
-        "                                 select" +
-        "                                         p_partkey" +
-        "                                 from" +
-        "                                         PART" +
-        "                                 where" +
-        "                                         p_name like 'khaki%'" +
-        "                         )" +
-        "                         and ps_availqty > v_quantity" +
-        "                         and v_partkey = ps_partkey" +
-        "                         and v_suppkey = ps_suppkey" +
-        "         )" +
-        "         and s_nationkey = n_nationkey" +
-        "         and n_name = 'CANADA'" +
-        " order by" +
-        "         s_name"
+      "         S_NAME," +
+      "         S_ADDRESS" +
+      " from" +
+      "         SUPPLIER, NATION" +
+      " where" +
+      "         S_SUPPKEY in (" +
+      "                 select" +
+      "                         PS_SUPPKEY" +
+      "                 from" +
+      "                         PARTSUPP" +
+      "                 where" +
+      "                         PS_PARTKEY in (" +
+      "                                 select" +
+      "                                         P_PARTKEY" +
+      "                                 from" +
+      "                                         PART" +
+      "                                 where" +
+      "                                         P_NAME like 'khaki%'" +
+      "                         )" +
+      "                         and PS_AVAILQTY > (" +
+      "                                 select" +
+      "                                         0.5 * sum(l_quantity)" +
+      "                                 from" +
+      "                                         LINEITEM" +
+      "                                 where" +
+      "                                         l_partkey = PS_PARTKEY" +
+      "                                         and l_suppkey = PS_SUPPKEY" +
+      "                                         and l_shipdate >= '1994-01-01'" +
+      "                                         and l_shipdate < add_months('1994-01-01', 12)" +
+      "                         )" +
+      "         )" +
+      "         and S_NATIONKEY = N_NATIONKEY" +
+      "         and N_NAME = 'CANADA'" +
+      " order by" +
+      "         S_NAME"
   }
 
   def getResultString20: String = {
@@ -1571,7 +1740,7 @@ object TPCH_Snappy {
 
   }
 
-  def getQuery22(value: String, useIndex: Boolean): String = {
+  def getQuery22(value:String, useIndex: Boolean): String = {
     if (!useIndex) {
       "select" +
           "         cntrycode," +
@@ -1619,7 +1788,54 @@ object TPCH_Snappy {
     }
   }
 
-  def getResultString22: String = {
+  def getQuery22_Original(): String = {
+    //    1. I1 = 13.
+    //    2. I2 = 31.
+    //    3. I3 = 23.
+    //    4. I4 = 29.
+    //    5. I5 = 30.
+    //    6. I6 = 18.
+    //    7. I7 = 17.
+    "select" +
+      "         cntrycode," +
+      "         count(*) as numcust," +
+      "         sum(C_ACCTBAL) as totacctbal" +
+      " from (" +
+      "         select" +
+      "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
+      "                 C_ACCTBAL" +
+      "         from" +
+      "                 CUSTOMER        " +
+      "         where" +
+      "                 SUBSTR(C_PHONE,1,2) in" +
+      "                         ('13','31','23','29','30','18','17')" +
+      "                 and C_ACCTBAL > (" +
+      "                         select" +
+      "                                 avg(C_ACCTBAL)" +
+      "                         from" +
+      "                                 CUSTOMER" +
+      "                         where" +
+      "                                 C_ACCTBAL > 0.00" +
+      "                                 and SUBSTR(C_PHONE,1,2) in" +
+      "                                         ('13','31','23','29','30','18','17')" +
+      "                 )" +
+      "                 and not exists (" +
+      "                         select" +
+      "                                 *" +
+      "                         from" +
+      "                                 ORDERS" +
+      "                         where" +
+      "                                 o_custkey = C_CUSTKEY" +
+      "                 )" +
+      "         ) as custsale" +
+      " group by" +
+      "         cntrycode" +
+      " order by" +
+      "         cntrycode"
+  }
+
+
+  def getResultString22():String = {
     "CNTRYCODE|NUMCUST|TOTACCTBAL"
   }
 
