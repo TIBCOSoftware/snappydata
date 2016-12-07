@@ -25,11 +25,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec, RowTableScan}
-import org.apache.spark.sql.store.StoreUtils
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
-
-/*
 
   def testReplicatedTableQueries(): Unit = {
     val snc = SnappyContext(sc)
@@ -54,8 +51,6 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
   }
-*/
-
 
   def testInsertionOfRecordInColumnTable(): Unit = {
 
@@ -322,10 +317,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def validatePartitionedColumnTableQueries(snc: SnappyContext): Unit = {
 
-    val numScanPartitions = if (StoreUtils.ENABLE_BUCKET_RDD_DELINKING) {
-      Utils.mapExecutors(snc, () =>
-        Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
-    } else 113
+    val numScanPartitions = Utils.mapExecutors(snc, () =>
+      Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
@@ -567,18 +560,16 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def createAndLoadColumnTableUsingJDBC(stmt: Statement): Unit = {
 
-     stmt.executeUpdate(NWQueries.products_table + " USING column options (" +
-         "partition_by 'ProductID,SupplierID', buckets '3', redundancy '3')")
-     NWQueries.products.collect().foreach(row => {
-       val colValues = row.toSeq
-       val sqlQuery:String = s"INSERT INTO products VALUES(${colValues(0)}, " +
-       s"'${colValues(1).toString.replace("'","")}',${colValues(2)}, ${colValues(3)}, " +
-       s"'${colValues(4).toString.replace("'","")}',${colValues(5)}, ${colValues(6)}, " +
-       s"${colValues(7)}, ${colValues(8)},  ${colValues(9)})"
-       stmt.executeUpdate(sqlQuery)
-
-     })
-
+    stmt.executeUpdate(NWQueries.products_table + " USING column options (" +
+        "partition_by 'ProductID,SupplierID', buckets '3', redundancy '3')")
+    NWQueries.products.collect().foreach(row => {
+      val colValues = row.toSeq
+      val sqlQuery: String = s"INSERT INTO products VALUES(${colValues(0)}, " +
+          s"'${colValues(1).toString.replace("'", "")}',${colValues(2)}, ${colValues(3)}, " +
+          s"'${colValues(4).toString.replace("'", "")}',${colValues(5)}, ${colValues(6)}, " +
+          s"${colValues(7)}, ${colValues(8)},  ${colValues(9)})"
+      stmt.executeUpdate(sqlQuery)
+    })
   }
 }
 
