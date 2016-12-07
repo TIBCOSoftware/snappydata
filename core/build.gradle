@@ -37,6 +37,11 @@ dependencies {
   provided 'org.scala-lang:scala-reflect:' + scalaVersion
   provided 'org.scala-lang:scala-compiler:' + scalaVersion
 
+  compile 'org.slf4j:slf4j-api:' + slf4jVersion
+  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
   provided "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
@@ -69,6 +74,8 @@ dependencies {
   compile 'com.zaxxer:HikariCP:2.4.7'
   //compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
   compile 'org.twitter4j:twitter4j-stream:4.0.4'
+  compile 'org.objenesis:objenesis:2.4'
+  compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   provided 'com.rabbitmq:amqp-client:3.5.7'
   
   testCompile project(':dunit')
@@ -77,6 +84,7 @@ dependencies {
 
   testCompile "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests"
   testCompile "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests"
+  testCompile "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests"
 
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }

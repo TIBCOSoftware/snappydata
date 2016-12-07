@@ -18,12 +18,13 @@
 package org.apache.spark.sql.internal
 
 import scala.collection.concurrent.TrieMap
+import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 
 import org.apache.spark.Partition
-import org.apache.spark.internal.Logging
-import org.apache.spark.internal.config.ConfigEntry
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
+import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
@@ -33,13 +34,14 @@ import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
-import org.apache.spark.sql.execution.{QueryExecution, SparkOptimizer, SparkPlan, SparkPlanner, datasources}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.{AnalysisException, SnappyAggregation, SnappySession, SnappySqlParser, SnappyStrategies, Strategy}
 import org.apache.spark.streaming.Duration
 
 
@@ -65,6 +67,7 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
+          AnalyzeDMLExternalTables(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
@@ -127,12 +130,12 @@ class SnappySessionState(snappySession: SnappySession)
    * The partition mapping selected for the lead partitioned region in
    * a collocated chain for current execution
    */
-  private[this] val leaderPartitions = new TrieMap[PartitionedRegion,
+  private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
       Array[Partition]]()
 
   /**
-    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-    */
+   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+   */
   object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
     def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
@@ -146,30 +149,60 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
+        d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
 
+  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+      case c: DMLExternalTable if !c.query.resolved =>
+        c.copy(query = analyzeQuery(c.query))
+    }
+
+    private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
+      val qe = sparkSession.sessionState.executePlan(query)
+      qe.assertAnalyzed()
+      qe.analyzed
     }
   }
 
   /**
-    * Internal catalog for managing table and database states.
-    */
+   * Internal catalog for managing table and database states.
+   */
   override lazy val catalog = new SnappyStoreHiveCatalog(
-      sharedState.externalCatalog,
-      snappySession,
-      metadataHive,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+    sharedState.externalCatalog,
+    snappySession,
+    metadataHive,
+    functionResourceLoader,
+    functionRegistry,
+    conf,
+    newHadoopConf())
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
 
   override def executePlan(plan: LogicalPlan): QueryExecution = {
+    clearExecutionData()
+    contextFunctions.executePlan(snappySession, plan)
+  }
+
+  protected[sql] def queryPreparations: Seq[Rule[SparkPlan]] = Seq(
+    python.ExtractPythonUDFs,
+    PlanSubqueries(snappySession),
+    EnsureRequirements(snappySession.sessionState.conf),
+    CollapseCodegenStages(snappySession.sessionState.conf),
+    ReuseExchange(snappySession.sessionState.conf))
+
+  private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
+    clearExecutionData()
+    queryPreparations.foldLeft(plan) { case (sp, rule) => rule.apply(sp) }
+  }
+
+  private[spark] def clearExecutionData(): Unit = {
     conf.refreshNumShufflePartitions()
     leaderPartitions.clear()
-    contextFunctions.executePlan(snappySession, plan)
   }
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
@@ -183,7 +216,7 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 private[sql] class SnappyConf(@transient val session: SnappySession)
-    extends SQLConf with Serializable with CatalystConf with Logging {
+    extends SQLConf with Serializable with CatalystConf {
 
   /**
    * Records the number of shuffle partitions to be used determined on runtime
@@ -194,9 +227,9 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
       .SHUFFLE_PARTITIONS.defaultValue match {
     case _ if session == null => -1
     case Some(d) => if (super.numShufflePartitions == d) {
-      session.sparkContext.schedulerBackend.defaultParallelism()
+      SnappyContext.totalCoreCount.get()
     } else -1
-    case None => session.sparkContext.schedulerBackend.defaultParallelism()
+    case None => SnappyContext.totalCoreCount.get()
   }
 
   private[this] def checkShufflePartitionsKey(key: String): Unit = {
@@ -205,8 +238,7 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
     if (dynamicShufflePartitions != -1 && session != null) {
-      dynamicShufflePartitions = session.sparkContext.schedulerBackend
-          .defaultParallelism()
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
     }
   }
 
@@ -223,6 +255,71 @@ private[sql] class SnappyConf(@transient val session: SnappySession)
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
     checkShufflePartitionsKey(entry.key)
     super.setConf[T](entry, value)
+  }
+}
+
+class SQLConfigEntry private(entry: ConfigEntry[_]) {
+
+  def key: String = entry.key
+
+  def doc: String = entry.doc
+
+  def isPublic: Boolean = entry.isPublic
+
+  def defaultValue[T]: Option[T] = entry.defaultValue.asInstanceOf[Option[T]]
+
+  def defaultValueString: String = entry.defaultValueString
+
+  def getConf[T](conf: SQLConf): T =
+    conf.getConf[T](entry.asInstanceOf[ConfigEntry[T]])
+
+  override def toString: String = entry.toString
+}
+
+object SQLConfigEntry {
+
+  private def handleDefault[T](entry: TypedConfigBuilder[T],
+      defaultValue: Option[T]): SQLConfigEntry = defaultValue match {
+    case Some(v) => new SQLConfigEntry(entry.createWithDefault(v))
+    case None => new SQLConfigEntry(entry.createOptional)
+  }
+
+  def sparkConf[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
+      isPublic: Boolean = true): SQLConfigEntry = {
+    classTag[T] match {
+      case ClassTag.Int => handleDefault[Int](ConfigBuilder(key)
+          .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
+      case ClassTag.Long => handleDefault[Long](ConfigBuilder(key)
+          .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
+      case ClassTag.Double => handleDefault[Double](ConfigBuilder(key)
+          .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
+      case ClassTag.Boolean => handleDefault[Boolean](ConfigBuilder(key)
+          .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
+      case c if c.runtimeClass == classOf[String] =>
+        handleDefault[String](ConfigBuilder(key).doc(doc).stringConf,
+          defaultValue.asInstanceOf[Option[String]])
+      case c => throw new IllegalArgumentException(
+        s"Unknown type of configuration key: $c")
+    }
+  }
+
+  def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
+      isPublic: Boolean = true): SQLConfigEntry = {
+    classTag[T] match {
+      case ClassTag.Int => handleDefault[Int](SQLConfigBuilder(key)
+          .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
+      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
+          .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
+      case ClassTag.Double => handleDefault[Double](SQLConfigBuilder(key)
+          .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
+      case ClassTag.Boolean => handleDefault[Boolean](SQLConfigBuilder(key)
+          .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
+      case c if c.runtimeClass == classOf[String] =>
+        handleDefault[String](SQLConfigBuilder(key).doc(doc).stringConf,
+          defaultValue.asInstanceOf[Option[String]])
+      case c => throw new IllegalArgumentException(
+        s"Unknown type of configuration key: $c")
+    }
   }
 }
 
@@ -343,9 +440,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   }
 
   /**
-    * If necessary, cast data types and rename fields to the expected
-    * types and names.
-    */
+   * If necessary, cast data types and rename fields to the expected
+   * types and names.
+   */
   // TODO: do we really need to rename?
   def castAndRenameChildOutput[T <: LogicalPlan](
       plan: T,

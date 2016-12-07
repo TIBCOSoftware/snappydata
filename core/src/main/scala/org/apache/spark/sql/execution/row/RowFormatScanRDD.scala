@@ -19,9 +19,10 @@ package org.apache.spark.sql.execution.row
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -29,14 +30,14 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.zaxxer.hikari.pool.ProxyResultSet
 
-import org.apache.spark.rdd.RDD
+import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -46,23 +47,21 @@ import org.apache.spark.{Partition, TaskContext}
  * as JDBCRDD has a lot of methods as private.
  */
 class RowFormatScanRDD(@transient val session: SnappySession,
-    getConnection: () => Connection,
-    schema: StructType,
-    tableName: String,
-    isPartitioned: Boolean,
-    columns: Array[String],
-    val pushProjections: Boolean,
-    val useResultSet: Boolean,
-    connProperties: ConnectionProperties,
-    filters: Array[Filter] = Array.empty[Filter],
-    partitions: Array[Partition] = Array.empty[Partition])
-    extends RDD[Any](session.sparkContext, Nil) {
+    protected var tableName: String,
+    protected var isPartitioned: Boolean,
+    @transient private val columns: Array[String],
+    var pushProjections: Boolean,
+    var useResultSet: Boolean,
+    protected var connProperties: ConnectionProperties,
+    @transient private val filters: Array[Filter] = Array.empty[Filter],
+    @transient protected val parts: Array[Partition] = Array.empty[Partition])
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
    */
-  protected val filterWhereClause: String = {
+  protected var filterWhereClause: String = {
     val numFilters = filters.length
     if (numFilters > 0) {
       val sb = new StringBuilder().append(" WHERE ")
@@ -76,6 +75,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.toString()
       } else ""
     } else ""
+  }
+
+  protected lazy val resultSetField = {
+    val field = classOf[ProxyResultSet].getDeclaredField("delegate")
+    field.setAccessible(true)
+    field
   }
 
   // below should exactly match ExternalStoreUtils.handledFilter
@@ -149,7 +154,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   /**
    * `columns`, but as a String suitable for injection into a SQL query.
    */
-  protected val columnList: String = {
+  protected var columnList: String = {
     if (!pushProjections) "*"
     else if (columns.length > 0) {
       val sb = new StringBuilder()
@@ -163,7 +168,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
-    val conn = getConnection()
+    val conn = ExternalStoreUtils.getConnection(tableName,
+      connProperties, forExecutor = true)
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
@@ -171,7 +177,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
-          case p: MultiBucketExecutorPartition => p.buckets.mkString(",")
+          case p: MultiBucketExecutorPartition => p.bucketsString
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
@@ -220,13 +226,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
-          case _ => Set(thePart.index)
+          case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
         new CompactExecRowIteratorOnScan(container, bucketIds)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
-        new CompactExecRowIteratorOnRS(conn, stmt,
-          rs.asInstanceOf[EmbedResultSet], context)
+        val ers = rs match {
+          case e: EmbedResultSet => e
+          case p: ProxyResultSet =>
+            resultSetField.get(p).asInstanceOf[EmbedResultSet]
+        }
+        new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
       }
     }
   }
@@ -237,8 +247,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
-    if (partitions.length > 0) {
-      return partitions
+    if (parts != null && parts.length > 0) {
+      return parts
     }
     val conn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,
@@ -254,6 +264,62 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       }
     } finally {
       conn.close()
+    }
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    super.write(kryo, output)
+
+    output.writeString(tableName)
+    output.writeBoolean(isPartitioned)
+    output.writeBoolean(pushProjections)
+    output.writeBoolean(useResultSet)
+
+    output.writeString(columnList)
+    val filterArgs = filterWhereArgs
+    val len = if (filterArgs eq null) 0 else filterArgs.size
+    if (len == 0) {
+      output.writeVarInt(0, true)
+    } else {
+      var i = 0
+      output.writeVarInt(len, true)
+      output.writeString(filterWhereClause)
+      while (i < len) {
+        kryo.writeClassAndObject(output, filterArgs(i))
+        i += 1
+      }
+    }
+    // need connection properties only if computing ResultSet
+    if (pushProjections || useResultSet || !isPartitioned || len > 0) {
+      ConnectionPropertiesSerializer.write(kryo, output, connProperties)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    super.read(kryo, input)
+
+    tableName = input.readString()
+    isPartitioned = input.readBoolean()
+    pushProjections = input.readBoolean()
+    useResultSet = input.readBoolean()
+
+    columnList = input.readString()
+    val numFilters = input.readVarInt(true)
+    if (numFilters == 0) {
+      filterWhereClause = ""
+      filterWhereArgs = null
+    } else {
+      filterWhereClause = input.readString()
+      filterWhereArgs = new ArrayBuffer[Any](numFilters)
+      var i = 0
+      while (i < numFilters) {
+        filterWhereArgs += kryo.readClassAndObject(input)
+        i += 1
+      }
+    }
+    // read connection properties only if computing ResultSet
+    if (pushProjections || useResultSet || !isPartitioned || numFilters > 0) {
+      connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     }
   }
 }
@@ -284,13 +350,13 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](val container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int]) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
   protected final var hasNextValue = true
   protected final var doMove = true
 
   protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
 
   protected def currentVal: T
@@ -315,7 +381,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
 
   override protected val currentVal: AbstractCompactExecRow = container

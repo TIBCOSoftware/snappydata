@@ -60,7 +60,7 @@ Read the [Spark cluster overview](http://spark.apache.org/docs/latest/cluster-ov
 val conf = new SparkConf().
               // Here the spark context connects with Spark's master running on 7077. 
               setMasterURL("spark://localhost:7077").
-              set("snappydata.store.locators", "localhost:10334") 
+              set("spark.snappydata.store.locators", "localhost:10334") 
 val sc = new SparkContext(conf) 
 // use sc to use Spark and Snappy features. 
 // The following code connects with the snappy locator to fetch hive metastore. 

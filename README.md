@@ -195,7 +195,7 @@ First, make sure you have started the SnappyData servers as described [above](ht
 To start the Spark/Scala REPL session enter the following command from the root, /snappy/ directory:
 
 ````
-./bin/spark-shell  --master local[*] --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
+./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
 ````
 
 From here, all the classic [Spark transformations](http://spark.apache.org/docs/latest/programming-guide.html#transformations) are possible. For example, the well-known as example from [Spark’s basic programming intro](http://spark.apache.org/docs/latest/quick-start.html#basics):

@@ -21,7 +21,7 @@ import twitter4j._
 import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.ConfigurationBuilder
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream._

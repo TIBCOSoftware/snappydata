@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Fetches already created tables. Airline table is already persisted in
@@ -32,10 +32,27 @@ import org.apache.spark.sql.{SnappyJobValid, DataFrame, SnappyContext, SnappyJob
  * comparison. Sample airline table and persist it in Snappy store.
  * Run a aggregate query on all the three tables and return the results in
  * a Map.This Map will be sent over REST.
+ *
+ * Run this on your local machine:
+ * <p/>
+ * `$ sbin/snappy-start-all.sh`
+ * <p/>
+ * Create tables
+ *
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
+ *
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
  */
+
 object AirlineDataJob extends SnappySQLJob {
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"
@@ -128,5 +145,5 @@ object AirlineDataJob extends SnappySQLJob {
     // scalastyle:on println
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

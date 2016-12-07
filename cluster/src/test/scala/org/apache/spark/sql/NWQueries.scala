@@ -22,7 +22,7 @@ import org.apache.spark.sql.execution._
 
 object NWQueries extends SnappyFunSuite {
 
-  val Q1: String = "SELECT * FROM Categories"
+  val Q1: String = "SELECT CategoryID,CategoryName,Description FROM Categories"
 
   val Q2: String = "SELECT * FROM Customers"
 
@@ -136,7 +136,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
       " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-      "('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'))"
+      "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
 
   val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
       "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
@@ -175,7 +175,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q35: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
       " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-      " e.City, c.City" +
+      " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
       " GROUP BY e.City, c.City " +
@@ -192,10 +192,10 @@ object NWQueries extends SnappyFunSuite {
       " sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal" +
       " from order_details" +
       " group by OrderID" +
-      ") b on a.OrderID = b.OrderID" +
+      " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
       " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
-      " order by a.ShippedDate"
+      " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
       " a.CategoryName," +
@@ -221,7 +221,8 @@ object NWQueries extends SnappyFunSuite {
       " order by a.CategoryName, b.ProductName, ProductSales"
 
   /*
-    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
+    org.apache.spark.sql.AnalysisException: The correlated scalar subquery can only contain
+    equality predicates: (UNITPRICE#976#1042 >= UNITPRICE#976);
     val Q38: String = "select distinct ProductName as Ten_Most_Expensive_Products," +
         " UnitPrice" +
         " from Products as a" +
@@ -239,7 +240,7 @@ object NWQueries extends SnappyFunSuite {
       " b.ShipPostalCode," +
       " b.ShipCountry," +
       " b.CustomerID," +
-      " c.CompanyName," +
+      " c.CompanyName as custCompanyName," +
       " c.Address," +
       " c.City," +
       " c.Region," +
@@ -250,7 +251,7 @@ object NWQueries extends SnappyFunSuite {
       " b.OrderDate," +
       " b.RequiredDate," +
       " b.ShippedDate," +
-      " a.CompanyName," +
+      " a.CompanyName as shippersCompanyName," +
       " e.ProductID," +
       " f.ProductName," +
       " e.UnitPrice," +
@@ -268,7 +269,7 @@ object NWQueries extends SnappyFunSuite {
 
   val Q39: String = "select s.supplierid,s.companyname,p.productid,p.productname " +
       "from suppliers s join products p on(s.supplierid= p.supplierid) and" +
-      " s.companyname IN('Grandma Kelly''s Homestead','Tokyo Traders','Exotic Liquids')"
+      " s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids')"
 
   val Q40: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
       "ON c.CustomerID = o.CustomerID"
@@ -286,22 +287,42 @@ object NWQueries extends SnappyFunSuite {
 
   val Q44: String = "SELECT * FROM orders LEFT SEMI JOIN order_details"
 
-  val Q45: String = "SELECT * FROM orders JOIN order_details"
-  val Q46: String = "SELECT * FROM orders LEFT JOIN order_details"
-  val Q47: String = "SELECT * FROM orders RIGHT JOIN order_details"
-  val Q48: String = "SELECT * FROM orders FULL OUTER JOIN order_details"
-  val Q49: String = "SELECT * FROM orders FULL JOIN order_details"
+  val Q45: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders JOIN order_details"
+  val Q46: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders LEFT JOIN order_details"
+  val Q47: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders RIGHT JOIN order_details"
+  val Q48: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL OUTER JOIN order_details"
+  val Q49: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL JOIN order_details"
 
-  val Q50: String = "SELECT * FROM orders JOIN order_details" +
+  val Q50: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q51: String = "SELECT * FROM orders LEFT JOIN order_details" +
+  val Q51: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders LEFT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q52: String = "SELECT * FROM orders RIGHT JOIN order_details" +
+  val Q52: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders RIGHT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q53: String = "SELECT * FROM orders FULL OUTER JOIN order_details" +
+  val Q53: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL OUTER JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
-  val Q54: String = "SELECT * FROM orders FULL JOIN order_details" +
-      " ON Orders.OrderID =   Order_Details.OrderID"
+  val Q54: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
+      "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
+      "ShipCountry FROM orders FULL JOIN order_details" +
+      " ON Orders.OrderID = Order_Details.OrderID"
 
   // Number of units in stock by category and supplier continent
   val Q55: String = "select c.CategoryName as Product_Category," +
@@ -330,12 +351,12 @@ object NWQueries extends SnappyFunSuite {
   // This query shows sales figures by categories - mainly just aggregation with sub-query.
   // The inner query aggregates to product level, and the outer query further aggregates
   // the result set from inner-query to category level.
-  val Q56: String = "select CategoryName, format(sum(ProductSales), 2) as CategorySales" +
+  val Q56: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
       " from" +
       " (" +
       " select distinct a.CategoryName," +
       " b.ProductName," +
-      " format(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
       " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
       " from Categories as a" +
       " inner join Products as b on a.CategoryID = b.CategoryID" +
@@ -410,41 +431,41 @@ object NWQueries extends SnappyFunSuite {
     "Q55" -> Q55
   )
 
-  val regions = snc.read.format("com.databricks.spark.csv")
+  val regions = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/regions.csv").getPath))
+      .csv((getClass.getResource("/northwind/regions.csv").getPath))
   val regions_table = "create table regions (" +
       "RegionID int, " +
       "RegionDescription string)"
 
-  val categories = snc.read.format("com.databricks.spark.csv")
+  val categories = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/categories.csv").getPath))
+      .csv((getClass.getResource("/northwind/categories.csv").getPath))
   val categories_table = "create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
       "Description string, " +
       "Picture blob)"
 
-  val shippers = snc.read.format("com.databricks.spark.csv")
+  val shippers = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/shippers.csv").getPath))
+      .csv((getClass.getResource("/northwind/shippers.csv").getPath))
   val shippers_table = "create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
       "Phone string)"
 
-  val employees = snc.read.format("com.databricks.spark.csv")
+  val employees = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/employees.csv").getPath))
+      .csv((getClass.getResource("/northwind/employees.csv").getPath))
   val employees_table = "create table employees(" +
       "EmployeeID int, " +
       "LastName string,  " +
@@ -465,11 +486,11 @@ object NWQueries extends SnappyFunSuite {
       "ReportsTo int, " +
       "PhotoPath string)"
 
-  val customers = snc.read.format("com.databricks.spark.csv")
+  val customers = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/customers.csv").getPath))
+      .csv((getClass.getResource("/northwind/customers.csv").getPath))
   val customers_table = "create table customers(" +
       "CustomerID string, " +
       "CompanyName string, " +
@@ -483,11 +504,11 @@ object NWQueries extends SnappyFunSuite {
       "Phone string, " +
       "Fax string)"
 
-  val orders = snc.read.format("com.databricks.spark.csv")
+  val orders = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/orders.csv").getPath))
+      .csv((getClass.getResource("/northwind/orders.csv").getPath))
   val orders_table = "create table orders (" +
       "OrderID int, " +
       "CustomerID string, " +
@@ -504,11 +525,11 @@ object NWQueries extends SnappyFunSuite {
       "ShipPostalCode string, " +
       "ShipCountry string)"
 
-  val order_details = snc.read.format("com.databricks.spark.csv")
+  val order_details = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/order-details.csv").getPath))
+      .csv((getClass.getResource("/northwind/order-details.csv").getPath))
   val order_details_table = "create table order_details (" +
       "OrderID int, " +
       "ProductID int, " +
@@ -516,11 +537,11 @@ object NWQueries extends SnappyFunSuite {
       "Quantity smallint, " +
       "Discount double)"
 
-  val products = snc.read.format("com.databricks.spark.csv")
+  val products = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/products.csv").getPath))
+      .csv((getClass.getResource("/northwind/products.csv").getPath))
   val products_table = "create table products(" +
       // "ProductID int not null, " +
       "ProductID int, " +
@@ -534,11 +555,11 @@ object NWQueries extends SnappyFunSuite {
       "ReorderLevel smallint, " +
       "Discontinued smallint) "
 
-  val suppliers = snc.read.format("com.databricks.spark.csv")
+  val suppliers = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/suppliers.csv").getPath))
+      .csv((getClass.getResource("/northwind/suppliers.csv").getPath))
   val suppliers_table = "create table suppliers(" +
       "SupplierID int, " +
       "CompanyName string, " +
@@ -553,21 +574,21 @@ object NWQueries extends SnappyFunSuite {
       "Fax string, " +
       "HomePage string) "
 
-  val territories = snc.read.format("com.databricks.spark.csv")
+  val territories = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/territories.csv").getPath))
+      .csv((getClass.getResource("/northwind/territories.csv").getPath))
   val territories_table = "create table territories(" +
       "TerritoryID string, " +
       "TerritoryDescription string, " +
       "RegionID string)"
 
-  val employee_territories = snc.read.format("com.databricks.spark.csv")
+  val employee_territories = snc.read
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
-      .load((getClass.getResource("/northwind/employee-territories.csv").getPath))
+      .csv((getClass.getResource("/northwind/employee-territories.csv").getPath))
   val employee_territories_table = "create table employee_territories(" +
       "EmployeeID int, " +
       "TerritoryID string)"

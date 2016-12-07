@@ -55,7 +55,7 @@ class SnappyDashboardPage (parent: SnappyDashboardTab)
     //val membersBuf = SnappyTableStatsProviderService.getAggregatedMemberStatsOnDemand
     val membersBuf = SnappyTableStatsProviderService.getMembersStatsFromService
 
-    val tablesBuf = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand(SnappyContext.globalSparkContext)
+    val tablesBuf = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand
 
     updateClusterStats(clusterStatsMap, membersBuf, tablesBuf)
 
