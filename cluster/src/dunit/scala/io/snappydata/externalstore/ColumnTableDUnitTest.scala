@@ -368,6 +368,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob4(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
 
     snc.sql(s"CREATE TABLE $tableNameWithPartition" +
         s"(Key1 INT ,Value STRING, other1 STRING, other2 STRING )" +
@@ -421,7 +422,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob5(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
       Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
     1 to 1000 foreach { _ =>
@@ -461,6 +462,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
+    println("spark.sql.inMemoryColumnarStorage.batchSize " +
+        sc.getConf.get("spark.sql.inMemoryColumnarStorage.batchSize"))
 
     val regionSize = region.size() +
         GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()
