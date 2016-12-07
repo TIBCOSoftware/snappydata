@@ -48,16 +48,6 @@ You can create a SnappySession as follows.
  JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
  SnappySession snappy = new SnappySession(spark.sparkContext());
 ```
-###### Python
-```python
- from pyspark.sql.snappy import SnappyContext
- from pyspark import SparkContext, SparkConf
-
- conf = SparkConf().setAppName("ExampleTest").setMaster("local[*]")
- sc = SparkContext(conf=conf)
- # get the SnappyContext
- snc = SnappyContext(sc)
-```
 
 Similarly if you want to create a SnappyStreamingContext
 ###### Scala
@@ -83,7 +73,6 @@ Similarly if you want to create a SnappyStreamingContext
  JavaSnappyStreamingContext jsnsc = new JavaSnappyStreamingContext(jsc, batchDuration);
 ```
 
-###### Python
 
 If you are in embedded mode applications typically submit Jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext. 
 These jobs are the primary mechanism to interact with SnappyData using the Spark API. 
@@ -213,16 +202,6 @@ $ bin/snappy-job.sh submit  \
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
-Python users can also submit the python script using spark-submit in "Smart Connector" mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "spark.snappydata.store.locators" property denotes the locator url of the snappy cluster and it is used to connect to the snappy cluster.
-```bash
-$ bin/spark-submit \
-  --master spark://[host]:7077 \
-  --conf spark.snappydata.store.locators=localhost:10334 \
-  --conf spark.ui.port=4042  
-  python/examples/AirlineDataPythonApp.py
-```
-
-
 ##### Streaming jobs
 
 An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying ```--stream``` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as ```--context <context-name>``` with the submit command.
@@ -344,7 +323,8 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 
 ## Building Snappy applications using Spark API
 
-_Create columnar tables using API. Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs._
+### SnappySession Usage
+###### Create columnar tables using API. Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs.
 
 ###### Scala
 ```scala
@@ -406,37 +386,10 @@ _Create columnar tables using API. Other than `create` and `drop` table, rest ar
    System.out.println(r);
  }
 ```
-###### Python
-
-```python
- from pyspark.sql.types import *
-
- data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
- rdd = sc.parallelize(data)
- schema=StructType([StructField("col1", IntegerType()),
-                    StructField("col2", IntegerType()),
-                    StructField("col3", IntegerType())])
-
- dataDF = snc.createDataFrame(rdd, schema)
-
- # create a column table
- snc.dropTable("COLUMN_TABLE", True)
- #"column" is the table format (that is row or column)
- #dataDF.schema provides the schema for table
- snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
-
- #append dataDF into the table
- dataDF.write.insertInto("COLUMN_TABLE")
- results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
-
- print("contents of column table are:")
- results1.select("col1", "col2", "col3"). show()
-```
-
 
 The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster was expanded) a bucket is the smallest unit that can be moved around. For more details about the properties ('props1' map in above example) and createTable API refer to documentation for [row and column tables](rowAndColumnTables.md)
 
-_Create row tables using API, update the contents of row table_
+###### Create row tables using API, update the contents of row table
 
 ```scala
 // create a row format table called ROW_TABLE
@@ -470,7 +423,10 @@ results4.foreach(println)
 ```
 
 
-#### SnappyStreamingContext
+
+
+
+### SnappyStreamingContext Usage
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
 Below example shows how to use the SnappyStreamingContext to apply a schema to existing DStream and then query the SchemaDStream with simple SQL. It also shows the SnappyStreamingContext ability to deal with sql queries.
@@ -548,37 +504,6 @@ Below example shows how to use the SnappyStreamingContext to apply a schema to e
 
  jsnsc.sql("select count(*) from streamingExample").show();
 ```
-
-###### Python
-```python
-from pyspark.streaming.snappy.context import SnappyStreamingContext
-from pyspark.sql.types import *
-
-def  rddList(start, end): 
-  return sc.parallelize(range(start,  end)).map(lambda i : ( i, "Text" + str(i)))
-
-def saveFunction(df):
-   df.write.format("column").mode("append").saveAsTable("streamingExample")
-  
-schema=StructType([StructField("loc", IntegerType()), 
-                   StructField("text", StringType())])
-
-snsc = SnappyStreamingContext(sc, 1)
-
-snsc.queueStream([rddList(1,10) , rddList(10,20), rddList(20,30)])
-
-snsc._snappycontext.dropTable("streamingExample" , True)
-snsc._snappycontext.createTable("streamingExample", "column", schema)
-
-dstream = snsc.queueStream(getQueueOfRDDs())
-schemadstream = snsc.createSchemaDStream(dstream, schema)
-schemadstream.foreachDataFrame(lambda df: saveFunction(df))
-snsc.start()
-
-snsc.sql("select count(*) from streamingExample").show()
-```
-> Note - Currently Snappy dont have Python API's added for continuous queries and SDE/Sampling.
-
 
 <!--
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
@@ -680,7 +605,7 @@ The below mentioned DDL extensions are required to configure a table based on us
     TRUNCATE TABLE tablename1;
 
 ##### API extensions provided in SnappyContext
-We have added several APIs in [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
+We have added several APIs in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
 
     //  Applicable for both row & column tables
     def insert(tableName: String, rows: Row*): Int .
