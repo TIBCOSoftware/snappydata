@@ -2,7 +2,7 @@ In this section we discuss the various execution modes. You can run the SnappyDa
 
 | Deployment Modes        |Description            |
 | ------------- |:-------------:|
-| Local Mode|A single JVM that runs the Spark application|
+| Local Mode|This is for development where client application, the executors and data store are all running in the same JVM|
 | Snappy Smart Connector Mode|Allows you to work with the SnappyData store cluster from any compatabile Spark distrubution|
 | Embedded SnappyData Store Mode|The Spark computations and in-memory data store run collocated in the same JVM|
 
@@ -11,27 +11,31 @@ In this section we discuss the various execution modes. You can run the SnappyDa
 
 Key Points
 
-* No cluster Required
-* For development purposes only
+* No cluster required
 * Launch Single JVM (Single-node Cluster)
 * Launches executor threads locally for processing
 * Embeds the SnappyData in-memory store in-process
+* For development purposes only
+
 
 <mark>Example: TO BE DONE (Getting Started - Launch Apache Spark shell and provide SnappyDat dependency as a Spark package)
 </mark>
 
-If you have downloaded SnappyData,  you can use the bundeled Spark distribution in which case you do not have to specify any external dependencies to work with the Snappy store.
+If you have downloaded SnappyData, you can use the bundled Spark distribution in which case you do not have to specify any external dependencies to work with the SnappyData store.
 
-Can I use the Local mode for developing using an IDE?
+### Using the Local mode for developing using an IDE
 
-<mark> TO BE DONE </mark>
+As the name implies, use this mode to execute everything locally in the application JVM. The local mode is described in the Spark Programming guide.
 
-Can I run a Spark (non-IDE) program and specify the dependecies?
+
+### Running a Spark (non-IDE) program and specify the dependencies
 
 <mark> TO BE DONE </mark>
 
 ## SnappyData Smart Connector Mode
-<mark> Description TO be done </mark>
+In certain cases Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
+
+Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
 Key Points:
 
