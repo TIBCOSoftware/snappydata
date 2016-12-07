@@ -1,33 +1,57 @@
 html {
-    font-size: 90%;
+    font-size: 11pt;
+    font-style: sans-serif;
 }
 
 h1{
     color: #000000;
-    font-weight: 500
-    font-style: "Tahoma", sans-serif;
+    font-size: 20pt;
+    font-style: sans-serif;
 }
 
 
 h2{
     color: #335183;
-    font-weight: 400
-    font-style: "Tahoma", sans-serif;
+    font-size: 18pt;
+    font-style: sans-serif;
     background-color: #e8e9ea;
 }
 
 
 h3{
     color: #404040;
-    font-weight: 300
-    font-style: "Tahoma", sans-serif;
-    border-bottom: thin double #000000;
+    font-size: 16pt;
+    font-style: sans-serif;
+    border-bottom: thin double #e0e0e0;
 }
 
-h4, h5, h6 {
+h4 {
     color: #404040;
-    font-weight: 300
-    font-style: "Tahoma", sans-serif;
+    font-size: 14pt;
+    font-style: sans-serif;
+    font-style: italic;
+}
+
+
+pre code {
+  white-space: pre;
+  word-wrap: normal;
+  display: block;
+  padding: 12px;
+  background-color: #f5f6f6;
+  font-size: 12px;
+}
+
+code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 2px 5px;
+}
+
+
+pre .cs, pre .c {
+    font-weight: inherit;
+    font-style: inherit;
 }
 
 .wy-menu-vertical li > a:before {

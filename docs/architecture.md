@@ -1,7 +1,6 @@
-## Architecture overview
 This section presents a high level overview of SnappyData’s core components, as well as our data pipeline as streams are ingested into our in-memory store and subsequently interacted with and analyzed.
 
-### Core components
+## Core components
 Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
 
 <p style="text-align: center;"><img alt="Core components" src="../CoreComponents.png"></p>
@@ -18,7 +17,7 @@ In addition to the “exact” dataset, data can also be summarized using probab
 
 To understand the data flow architecture, we first walk through a real time use case that involves stream processing, ingesting into an in-memory store and interactive analytics. 
 
-### Data ingestion pipeline
+## Data ingestion pipeline
 The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
 <p style="text-align: center;"><img alt="Data Ingestion Pipeline" src="../DataIngestionPipeline.png"></p>
 
@@ -35,7 +34,7 @@ Once the SnappyData cluster is started and before any live streams can be proces
 6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use Synopsis Data Engine to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
 
 
-### Hybrid Cluster Manager
+## Hybrid Cluster Manager
 
 As shown in Figure above, spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a singleton (SparkContext) object which it uses to communicate with its set of executors.
 
@@ -78,10 +77,10 @@ Read our [docs](.) for details on the architecture.
 
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the [Spark API section](./clustersparkapi.md).
 
-#### High Concurrency in SnappyData
+### High Concurrency in SnappyData
 Thousands of concurrent ODBC and JDBC clients can simultaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incoming requests from these clients into (i) low latency requests and (ii) high latency ones. For low latency operations, we completely bypass Spark’s scheduling mechanism and directly operate on the data. We route high latency operations (e.g., compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a responsive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.
 
-#### State Sharing in SnappyData
+### State Sharing in SnappyData
 A SnappyData cluster is designed to be a long running clustered database. State is managed in tables that can be shared across any number of connecting applications. Data is stored in memory and replicated to at least one other node in the system. Data can be persisted to disk in shared nothing disk files for quick recovery. (See section 4 for more details on table types and redundancy.) Nodes in the cluster stay up for a long time and their lifecycle is independent of application lifetimes. SnappyData achieves this goal by decoupling its process startup and shutdown mechanisms from those used by Spark.
 
 

@@ -1,4 +1,4 @@
-#Overview of SnappyData iSight-Cloud #
+##Overview
 iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
 
 iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
@@ -10,7 +10,7 @@ In this document, we describe the features provided by SnappyData for analyzing 
 
 Refer to the the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
-##Key Components##
+###Key Components###
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that are important for SnappyData are, Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
@@ -18,7 +18,7 @@ This section provides a brief description of the key terms used in this document
 * **Apache Zeppelin**: Apache Zeppelin is a web-based notebook that enables interactive data analytics. It allows you to make data-driven, interactive and collaborative documents with SQL queries or directly use the Spark API to process data.
 * **Interpreters**: A software module which is loaded into Apache Zeppelin upon startup. Interpreters allow various third party products including SnappyData to interact with Apache Zeppelin. The SnappyData interpreter gives users the ability to execute SQL queries or use the data frame API to visualize data.
 
-#Quick Start Steps#
+##Quick Start Steps##
 
 To understand the product follow these easy steps that can get you started quickly:
 
@@ -32,16 +32,16 @@ To understand the product follow these easy steps that can get you started quick
 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 <a id="SettingUp"></a>
-#Setting Up SnappyData Cloud Cluster#
+##Setting Up SnappyData Cloud Cluster##
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using script.
 
 <a id="DeployingClusterCloudFormation"></a>
-##Deploying SnappyData Cloud Cluster with iSight CloudBuilder##
+###Deploying SnappyData Cloud Cluster with iSight CloudBuilder##
 Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
 
 [![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
-###Prerequisites###
+###Prerequisites##
 Before you begin,:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources
@@ -198,7 +198,8 @@ The values are:
 ```<folder_name>``` | The folder name where the data is stored. Default value: nytaxifaredata 
 
 <a id="LoggingZeppelin"></a>
-#Using Apache Zeppelin#
+
+##Using Apache Zeppelin
 
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
 Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
@@ -295,7 +296,7 @@ It also displays data information for various tables created in the cluster on d
 
 The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.
 
-####Accessing the Console####
+###Accessing the Console###
 To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
 
 1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 

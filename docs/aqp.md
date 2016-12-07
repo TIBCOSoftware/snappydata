@@ -1,4 +1,4 @@
-# Overview of Synopsis Data Engine (SDE)#
+## Overview of Synopsis Data Engine (SDE)
 The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. 
 
 For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering) , while the engineer continues to slice and dice the data sets without any interruptions. 
@@ -9,7 +9,7 @@ While in-memory analytics can be fast, it is still expensive and cumbersome to p
 
 Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for a priori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
 
-## How does it work?
+### How does it work?
 The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can however be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. 
 
 <p style="text-align: center;"><img alt="SDE_Architecture" src="/Images/sde_architecture.png"></p>
@@ -96,17 +96,17 @@ Here are some general guidelines to use when creating samples:
 
 * When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
-> #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 
 
-## Running queries
+## Running Queries
 
 Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
 
 Here is the syntax:
 
-#### SELECT ... FROM .. WHERE .. GROUP BY ...
-####    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+> > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+> > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
@@ -167,7 +167,7 @@ set spark.sql.aqp.behavior=$behavior;
 
 
 ## More Examples
-#####Example 1: #####
+###Example 1 
 create a sample table with qcs 'medallion'
 
 ```
@@ -192,7 +192,7 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
 ```
 
-#####Example 2: #####
+###Example 2 
 create an additional sample table with qcs 'hack_license'
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
@@ -210,7 +210,7 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
 snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
 ```
 
-#####Example 3: #####
+###Example 3 
 Create a sample table using function "hour(pickup_datetime) as QCS.
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
@@ -226,7 +226,7 @@ select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) f
 snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
 ```
 
-#####Example 4:#####
+###Example 4
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```
@@ -243,7 +243,7 @@ Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(
 snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
 ```
 
-##Sample Selection:##
+##Sample Selection
 
 Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
@@ -389,7 +389,7 @@ Here is an example of a time based query on the TopK structure which returns the
 	
 If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp.
 
-*SQL API for creating a TopK table in SnappyData specifying timestampColumn* 
+####SQL API for creating a TopK table in SnappyData specifying timestampColumn
 
 In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
@@ -399,7 +399,7 @@ snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
 ``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
 
-*Scala API for creating a TopK table* 
+####Scala API for creating a TopK table 
 
 ```scala
     val topKOptionMap = Map(
