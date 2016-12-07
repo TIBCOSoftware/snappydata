@@ -2,11 +2,17 @@ html {
     font-size: 10pt;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-
+/*
+Formatting for body text
+*/
 p{
 font-size: 14px;
 font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
+
+/*
+Formatting for headings
+*/
 
 h1{
     color: #000000;
@@ -37,6 +43,9 @@ h4 {
     font-style: italic;
 }
 
+/*
+Formatting for code snippets 
+*/
 
 pre code {
   white-space: pre;
@@ -47,6 +56,10 @@ pre code {
   font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
   font-size:12px;
 }
+
+/*
+Formatting for inline code  
+*/
 
 code {
     white-space: pre-wrap;
@@ -60,10 +73,9 @@ pre .cs, pre .c {
     font-style: inherit;
 }
 
-.wy-menu-vertical li > a:before {
-    content: url("Images/arrow-20x20-collapsed.png");
-    float: left;
-}
+/*
+Defines the indetation for the navigation pane
+*/
 
 .wy-menu-vertical li.current > a::before {
     content: url("Images/arrow-20x20-expanded.png");
@@ -71,7 +83,7 @@ pre .cs, pre .c {
 }
 
 .wy-menu-vertical li > a[class="toctree-l4"]{
-  margin-left: 15px;
+  margin-left: 10px;
 }
 
 .wy-menu-vertical li > a[class="toctree-l4"]::before {
