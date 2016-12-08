@@ -675,12 +675,8 @@ The code snippet below inserts Person objects into a column table. The source co
     //Drop the table if it exists.
     snSession.dropTable("people", ifExists = true)
 
-    //Create a columnar table with the DataFrame schema
-    snSession.createTable(tableName = "people",
-      provider = "column",
-      schema = people.schema,
-      options = Map.empty[String,String],
-      allowExisting = false)
+    //Create a columnar table with the a Struct to store Address
+    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>) using column options()")
 
     // Write the created DataFrame to the columnar table.
     people.write.insertInto("people")
@@ -701,18 +697,17 @@ The code snippet below inserts Person objects into a column table. The source co
 **Execute query on the table and return results**
 ```
     // Query it like any other table
-    val nameAndAddress = snSession.sql("SELECT name, address.city, address.state FROM people")
+    val nameAndAddress = snSession.sql("SELECT name, address FROM Persons")
 
-    // return the result
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row => {
-      builder.append(s"${row(0)} ,")
-      builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} \n")
-
+    //Reconstruct the objects from obtained Row
+    val allPersons = nameAndAddress.collect.map(row => {
+      Person(row(0).asInstanceOf[String],
+        Address(
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct is returned as a Row.
+          row(1).asInstanceOf[Row](1).asInstanceOf[String]
+        )
+      )
     })
-    builder.toString
-
 ```
 
 <a id="howto-sde"></a>
