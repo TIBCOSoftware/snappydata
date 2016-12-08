@@ -67,6 +67,7 @@ object CreateColumnTable extends SnappySQLJob {
     dataFolder = s"${jobConfig.getString("data_resource_folder")}"
     createColumnTableUsingAPI(snappySession, pw)
     createColumnTableUsingSQL(snappySession, pw)
+    createColumnTableInferredSchema(snappySession, pw)
     pw.close()
     s"Check ${getCurrentDirectory}/CreateColumnTable.out for output of this job"
   }

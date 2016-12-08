@@ -50,7 +50,6 @@ object JDBCExample {
     println("Inserting a record in PARTSUPP table via batch inserts")
     val preparedStmt1 = conn1.prepareStatement("INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)")
 
-    var x = 0
     for (x <- 1 to 10) {
       preparedStmt1.setInt(1, x*100)
       preparedStmt1.setInt(2, x)

@@ -114,7 +114,7 @@ object SynopsisDataExample extends SnappySQLJob {
     pw.println("Executing approaximate queries")
 
     pw.println()
-    println("Which airline had the most flights each year?")
+    pw.println("Which airline had the most flights each year?")
     // the 'with error 0.20' clause in the query below signals query engine to execute the
     // query on the sample table instead of the base table and maximum 20% error is allowed,
     // refer to http://snappydatainc.github.io/snappydata/aqp/#running-queries for more details

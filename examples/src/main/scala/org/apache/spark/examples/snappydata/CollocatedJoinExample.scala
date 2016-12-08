@@ -125,6 +125,8 @@ object CollocatedJoinExample extends SnappySQLJob {
     pw.println("____________________________________________________________")
     result.foreach(pw.println)
 
+    snSession.sql("DROP TABLE ORDERS")
+    snSession.sql("DROP TABLE CUSTOMER")
     pw.println("****Done****")
   }
 
