@@ -20,19 +20,25 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution,
+HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation,
+IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan,
+SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
@@ -129,11 +135,20 @@ private[sql] object PartitionedPhysicalScan {
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
           a.map(_.name).toArray, f.toArray, useResultSet = false)
+        val resolver = columnScan.sqlContext.sessionState.analyzer.resolver
         val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
           Seq.empty, table)
-        val bufferExchange = ShuffleExchange(columnScan.outputPartitioning,
-          rowBufferScan)
-        ZipPartitionScan(columnScan, bufferExchange)
+        val otherPartKeys = partitionColumns.map(e =>
+          e.transform {
+            case a: AttributeReference => rowBufferScan.output.find(
+              rba => resolver(rba.name, a.name)).
+                getOrElse(throw new AnalysisException(s"RowBuffer output column $a not found in " +
+                    s"${rowBufferScan.output.mkString(",")}"))
+          })
+        assert(columnScan.outputPartitioning.satisfies(
+          ClusteredDistribution(columnScan.partitionColumns)))
+        ZipPartitionScan(columnScan, columnScan.partitionColumns,
+          rowBufferScan, otherPartKeys)
       case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, relation, allFilters, schemaAttributes)
@@ -168,15 +183,23 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 }
 
 private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenSupport,
-    otherPlan: SparkPlan, otherRDD: RDD[InternalRow] = null,
-    relation: PartitionedDataSourceScan = null) extends LeafExecNode with CodegenSupport {
+    basePartKeys: Seq[Expression],
+    otherPlan: SparkPlan,
+    otherPartKeys: Seq[Expression],
+    otherRDD: Option[RDD[InternalRow]] = None,
+    relation: Option[PartitionedDataSourceScan] = None) extends LeafExecNode with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
+  override def children: Seq[SparkPlan] = basePlan :: otherPlan :: Nil
+
+  override def requiredChildDistribution: Seq[Distribution] =
+    ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
+
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD)(_.execute()))
+    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD.get)(_.execute()))
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
@@ -186,7 +209,7 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     val row = ctx.freshName("row")
     val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
       (ref, ordinal) =>
-      val baseIndex = Option(otherPlan).fold(relation.schema.fieldIndex(ref.name))(_ => ordinal)
+      val baseIndex = Option(otherPlan).fold(relation.get.schema.fieldIndex(ref.name))(_ => ordinal)
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
