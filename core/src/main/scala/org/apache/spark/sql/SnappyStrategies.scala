@@ -71,8 +71,14 @@ private[sql] trait SnappyStrategies {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildRight(joinType) && canBuildLocalHashMap(right) ||
             !RowOrdering.isOrderable(leftKeys) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildRight, false)
+        if (canBuildLeft(joinType) && canBuildLocalHashMap(left) &&
+            left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft, false)
+        } else {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight, false)
+        }
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildLeft(joinType) && canBuildLocalHashMap(left) ||
             !RowOrdering.isOrderable(leftKeys) =>
