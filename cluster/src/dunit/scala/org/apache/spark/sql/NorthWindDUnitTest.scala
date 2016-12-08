@@ -58,14 +58,15 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
     val conn = getANetConnection(netPort)
 
-
     val s = conn.createStatement()
     createAndLoadColumnTableUsingJDBC(s)
     val rs: ResultSet = s.executeQuery(s"SELECT * from products")
     assert(rs.next())
     conn.close()
-
   }
+
+  private lazy val totalProcessors = Utils.mapExecutors(sc, (_, _) =>
+    Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -110,7 +111,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, 1, classOf[LocalJoin])
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[LocalJoin])
         case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 1, classOf[LocalJoin])
-        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1, classOf[LocalJoin])
+        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, totalProcessors,
+          classOf[LocalJoin])
         case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1, classOf[LocalJoin])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 1, classOf[LocalJoin])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 1, classOf[LocalJoin])
@@ -124,12 +126,12 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           classOf[CartesianProductExec])
         case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 1,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 5,
+        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 1,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 5,
-          classOf[BroadcastNestedLoopJoinExec])
-        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 5,
-          classOf[BroadcastNestedLoopJoinExec])
+        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650,
+          totalProcessors * 2 + 1, classOf[BroadcastNestedLoopJoinExec])
+        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650,
+          totalProcessors * 2 + 1, classOf[BroadcastNestedLoopJoinExec])
         case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 1, classOf[LocalJoin])
         case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 1,
           classOf[SortMergeJoinExec])
@@ -190,11 +192,13 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   private def validatePartitionedRowTableQueries(snc: SnappyContext): Unit = {
+    val numDefaultPartitions = ((totalProcessors - 4) to (totalProcessors + 4)).toArray
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
-        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 13, classOf[RowTableScan])
+        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, numDefaultPartitions,
+          classOf[RowTableScan])
         case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, 1, classOf[RowTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 1, classOf[RowTableScan])
         case "Q6" => NWQueries.assertQuery(snc, NWQueries.Q6, "Q6", 9, 1, classOf[RowTableScan])
@@ -204,69 +208,78 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 1, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 1, classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 1, classOf[FilterExec])
-        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 13, classOf[FilterExec])
+        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, numDefaultPartitions,
+          classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 1, classOf[FilterExec])
         case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 1, classOf[FilterExec])
         case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, 1, classOf[FilterExec])
         case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, 1, classOf[FilterExec])
         case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, 1, classOf[ProjectExec])
-        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 13, classOf[ProjectExec])
+        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, numDefaultPartitions,
+          classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1, classOf[RowTableScan])
         case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 1, classOf[ProjectExec])
         case "Q23" => NWQueries.assertQuery(snc, NWQueries.Q23, "Q23", 1, 1, classOf[RowTableScan])
         case "Q24" => NWQueries.assertQuery(snc, NWQueries.Q24, "Q24", 4, 5, classOf[ProjectExec])
         case "Q25" => NWQueries.assertJoin(snc, NWQueries.Q25, "Q25", 1, 1, classOf[RowTableScan])
-        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, 200,
+        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 4,
+        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, 4,
+        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, totalProcessors,
           classOf[RowTableScan])
-        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 4,
+        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 4,
+        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, 200, classOf[LocalJoin])
+        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, totalProcessors,
+          classOf[LocalJoin])
         case "Q32" => NWQueries.assertJoin(snc, NWQueries.Q32, "Q32", 8, 9, classOf[LocalJoin])
-        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 10, classOf[LocalJoin])
-        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, 200,
+        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 9, classOf[LocalJoin])
+        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, totalProcessors,
           classOf[BroadcastHashJoinExec])
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[LocalJoin])
-        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 165,
+        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1,
+        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 200,
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 4, classOf[LocalJoin])
-        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 4, classOf[LocalJoin])
-        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 4, classOf[LocalJoin])
-        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 200, classOf[LocalJoin])
-        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 4,
+        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 123,
+          classOf[LocalJoin])
+        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, totalProcessors,
+          classOf[LocalJoin])
+        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 13,
+          classOf[LocalJoin])
+        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, totalProcessors,
+          classOf[LocalJoin])
+        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 13,
           classOf[SortMergeJoinExec])
-        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 4,
+        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 13,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 8,
+        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 13,
           classOf[CartesianProductExec])
-        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 8,
+        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 13,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 8,
+        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 37,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 8,
+        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 37,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 8,
+        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 37,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 4, classOf[LocalJoin])
-        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 4,
+        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 13,
+          classOf[LocalJoin])
+        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 4,
+        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, 4,
+        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, 4,
+        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, 1, classOf[LocalJoin])
+        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, totalProcessors,
+          classOf[LocalJoin])
         case "Q56" => NWQueries.assertJoin(snc, NWQueries.Q56, "Q56", 8, 1, classOf[LocalJoin])
       }
     }
@@ -316,40 +329,40 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   private def validatePartitionedColumnTableQueries(snc: SnappyContext): Unit = {
-
-    val numScanPartitions = Utils.mapExecutors(snc, () =>
-      Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+    val numDefaultPartitions = ((totalProcessors - 4) to (totalProcessors + 4)).toArray
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
-        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 13,
+        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, numDefaultPartitions,
           classOf[ColumnTableScan])
-        case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, numScanPartitions,
+        case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, totalProcessors,
           classOf[ColumnTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 10, classOf[ColumnTableScan])
         case "Q6" => NWQueries.assertQuery(snc, NWQueries.Q6, "Q6", 9, 10, classOf[ColumnTableScan])
         case "Q7" => NWQueries.assertQuery(snc, NWQueries.Q7, "Q7", 9, 10, classOf[ColumnTableScan])
-        case "Q8" => NWQueries.assertQuery(snc, NWQueries.Q8, "Q8", 6, numScanPartitions,
+        case "Q8" => NWQueries.assertQuery(snc, NWQueries.Q8, "Q8", 6, totalProcessors,
           classOf[FilterExec])
-        case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, numScanPartitions,
+        case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, totalProcessors,
           classOf[ProjectExec])
-        case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, numScanPartitions,
+        case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, totalProcessors,
           classOf[FilterExec])
-        case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, numScanPartitions,
+        case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, totalProcessors,
           classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
-        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 13, classOf[FilterExec])
+        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, numDefaultPartitions,
+          classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 1, classOf[FilterExec])
-        case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, numScanPartitions,
+        case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, totalProcessors,
           classOf[FilterExec])
-        case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, numScanPartitions,
+        case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, totalProcessors,
           classOf[FilterExec])
-        case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, numScanPartitions,
+        case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, totalProcessors,
           classOf[FilterExec])
-        case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, numScanPartitions,
+        case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, totalProcessors,
           classOf[ProjectExec])
-        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 13, classOf[ProjectExec])
+        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, numDefaultPartitions,
+          classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1,
           classOf[ColumnTableScan])
@@ -358,52 +371,64 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           classOf[ColumnTableScan])
         case "Q24" => NWQueries.assertQuery(snc, NWQueries.Q24, "Q24", 4, 5, classOf[ProjectExec])
         case "Q25" => NWQueries.assertJoin(snc, NWQueries.Q25, "Q25", 1, 1, classOf[RowTableScan])
-        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, 1,
+        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 4,
+        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, 4,
+        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, totalProcessors,
           classOf[ColumnTableScan])
-        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 4,
+        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 123,
           classOf[SortMergeJoinExec])
-        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 4,
+        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 123,
           classOf[SortMergeJoinExec])
-        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, 200, classOf[LocalJoin])
+        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, totalProcessors,
+          classOf[LocalJoin])
         case "Q32" => NWQueries.assertJoin(snc, NWQueries.Q32, "Q32", 8, 9, classOf[LocalJoin])
-        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 1, classOf[LocalJoin])
-        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, 1, classOf[LocalJoin])
+        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, totalProcessors,
+          classOf[LocalJoin])
+        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, totalProcessors,
+          classOf[LocalJoin])
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[LocalJoin])
-        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 1, classOf[LocalJoin])
-        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 1, classOf[LocalJoin])
-        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1, classOf[LocalJoin])
-        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 1, classOf[LocalJoin])
-        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 1, classOf[LocalJoin])
-        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 1, classOf[LocalJoin])
-        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 1, classOf[LocalJoin])
-        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 1,
+        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, totalProcessors,
+          classOf[LocalJoin])
+        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, totalProcessors,
+          classOf[LocalJoin])
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, totalProcessors,
+          classOf[LocalJoin])
+        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 123,
+          classOf[LocalJoin])
+        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, totalProcessors,
+          classOf[LocalJoin])
+        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 13,
+          classOf[LocalJoin])
+        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, totalProcessors,
+          classOf[LocalJoin])
+        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 13,
           classOf[SortMergeJoinExec])
-        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 1,
+        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 13,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 1,
+        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 13,
           classOf[CartesianProductExec])
-        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 1,
+        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 13,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 5,
+        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 13,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 5,
+        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 37,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 5,
+        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 37,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 1, classOf[LocalJoin])
-        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 1,
+        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 13,
+          classOf[LocalJoin])
+        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 1,
+        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, 1,
+        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, 1,
+        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, 13,
           classOf[SortMergeJoinExec])
-        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, 1, classOf[LocalJoin])
+        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, totalProcessors,
+          classOf[LocalJoin])
         case "Q56" => NWQueries.assertJoin(snc, NWQueries.Q56, "Q56", 8, 1, classOf[LocalJoin])
       }
     }
@@ -458,15 +483,13 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def validateColocatedTableQueries(snc: SnappyContext): Unit = {
 
-    val totalProcessors = Utils.mapExecutors(snc, () =>
-      Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
-    val shufflePartitions = totalProcessors
+    val numDefaultPartitions = ((totalProcessors - 4) to (totalProcessors + 4)).toArray
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
-        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 19,
+        case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, numDefaultPartitions,
           classOf[ColumnTableScan])
-        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, 19,
+        case "Q3" => NWQueries.assertQuery(snc, NWQueries.Q3, "Q3", 830, numDefaultPartitions,
           classOf[RowTableScan])
         case "Q4" => NWQueries.assertQuery(snc, NWQueries.Q4, "Q4", 9, 3, classOf[RowTableScan])
         case "Q5" => NWQueries.assertQuery(snc, NWQueries.Q5, "Q5", 9, 10, classOf[RowTableScan])
@@ -477,82 +500,83 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 3, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 3, classOf[ProjectExec])
         case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
-        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 19,
+        case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, numDefaultPartitions,
           classOf[FilterExec])
-        case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, shufflePartitions,
+        case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, totalProcessors,
           classOf[FilterExec])
         case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 3, classOf[FilterExec])
         case "Q16" => NWQueries.assertQuery(snc, NWQueries.Q16, "Q16", 8, 3, classOf[FilterExec])
         case "Q17" => NWQueries.assertQuery(snc, NWQueries.Q17, "Q17", 3, 3, classOf[FilterExec])
         case "Q18" => NWQueries.assertQuery(snc, NWQueries.Q18, "Q18", 9, 3, classOf[ProjectExec])
-        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 19,
+        case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, numDefaultPartitions,
           classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1, classOf[RowTableScan])
         case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 2, classOf[ProjectExec])
         case "Q23" => NWQueries.assertQuery(snc, NWQueries.Q23, "Q23", 1, 1, classOf[RowTableScan])
         case "Q24" => NWQueries.assertQuery(snc, NWQueries.Q24, "Q24", 4, 5, classOf[ProjectExec])
-        case "Q25" => NWQueries.assertJoin(snc, NWQueries.Q25, "Q25", 1, 4,
+        case "Q25" => NWQueries.assertJoin(snc, NWQueries.Q25, "Q25", 1, 10,
           classOf[ColumnTableScan])
-        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, 4,
+        case "Q26" => NWQueries.assertJoin(snc, NWQueries.Q26, "Q26", 86, 19,
           classOf[BroadcastHashJoinExec])
-        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 4,
+        case "Q27" => NWQueries.assertJoin(snc, NWQueries.Q27, "Q27", 9, 123,
           classOf[SortMergeJoinExec])
-        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, 4,
+        case "Q28" => NWQueries.assertJoin(snc, NWQueries.Q28, "Q28", 12, totalProcessors,
           classOf[ColumnTableScan])
-        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 4,
+        case "Q29" => NWQueries.assertJoin(snc, NWQueries.Q29, "Q29", 8, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 4,
+        case "Q30" => NWQueries.assertJoin(snc, NWQueries.Q30, "Q30", 8, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, shufflePartitions,
+        case "Q31" => NWQueries.assertJoin(snc, NWQueries.Q31, "Q31", 830, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q32" => NWQueries.assertJoin(snc, NWQueries.Q32, "Q321", 8, 9,
+        case "Q32" => NWQueries.assertJoin(snc, NWQueries.Q32, "Q32", 8, 9,
           classOf[BroadcastHashJoinExec])
-        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 10,
+        case "Q33" => NWQueries.assertJoin(snc, NWQueries.Q33, "Q33", 37, 9,
           classOf[BroadcastHashJoinExec])
-        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, shufflePartitions,
+        case "Q34" => NWQueries.assertJoin(snc, NWQueries.Q34, "Q34", 5, totalProcessors,
           classOf[BroadcastHashJoinExec])
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4,
           classOf[BroadcastHashJoinExec])
-        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, shufflePartitions,
+        case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 4,
+        case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1,
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, totalProcessors,
           classOf[LocalJoin])
-        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 4,
+        case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 123,
           classOf[BroadcastHashJoinExec])
-        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 4,
+        case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 19,
           classOf[BroadcastHashJoinExec])
-        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 4,
+        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 4,
+        case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, totalProcessors,
           classOf[BroadcastHashJoinExec])
-        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 4,
+        case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 4,
+        case "Q44" => NWQueries.assertJoin(snc, NWQueries.Q44, "Q44", 830, 19,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 8,
+        case "Q45" => NWQueries.assertJoin(snc, NWQueries.Q45, "Q45", 1788650, 19,
           classOf[CartesianProductExec])
-        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 8,
+        case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 19,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 8,
+        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 329,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 8,
+        case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 43,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 8,
+        case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 43,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 4,
+        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, totalProcessors,
           classOf[LocalJoin])
-        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 4,
+        case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 4,
+        case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, 200,
+        case "Q53" => NWQueries.assertJoin(snc, NWQueries.Q53, "Q53", 2155, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, 200,
+        case "Q54" => NWQueries.assertJoin(snc, NWQueries.Q54, "Q54", 2155, totalProcessors,
           classOf[SortMergeJoinExec])
-        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, 1, classOf[LocalJoin])
+        case "Q55" => NWQueries.assertJoin(snc, NWQueries.Q55, "Q55", 21, totalProcessors,
+          classOf[LocalJoin])
         case "Q56" => NWQueries.assertJoin(snc, NWQueries.Q56, "Q56", 8, 1, classOf[LocalJoin])
       }
     }
@@ -564,7 +588,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "partition_by 'ProductID,SupplierID', buckets '3', redundancy '3')")
     NWQueries.products.collect().foreach(row => {
       val colValues = row.toSeq
-      val sqlQuery: String = s"INSERT INTO products VALUES(${colValues(0)}, " +
+      val sqlQuery: String = s"INSERT INTO products VALUES(${colValues.head}, " +
           s"'${colValues(1).toString.replace("'", "")}',${colValues(2)}, ${colValues(3)}, " +
           s"'${colValues(4).toString.replace("'", "")}',${colValues(5)}, ${colValues(6)}, " +
           s"${colValues(7)}, ${colValues(8)},  ${colValues(9)})"
