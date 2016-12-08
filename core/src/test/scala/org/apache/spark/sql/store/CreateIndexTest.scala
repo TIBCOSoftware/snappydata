@@ -57,6 +57,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     try {
       val snContext = SnappyContext(sc)
       snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+      snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, -1L)
       context.set(snContext)
     } finally {
       super.beforeEach()
@@ -67,8 +68,10 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     try {
       val snContext = context.getAndSet(null)
       if (snContext != null) {
-        snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key,
+        snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
           io.snappydata.Property.EnableExperimentalFeatures.configEntry.defaultValueString)
+        snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, SQLConf
+            .AUTO_BROADCASTJOIN_THRESHOLD.defaultValue.get)
         indexesToDrop.reverse.foreach(i => snContext.sql(s"DROP INDEX $i "))
         tablesToDrop.reverse.foreach(t => snContext.sql(s"DROP TABLE $t "))
         indexesToDrop.clear()
@@ -255,7 +258,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val rightIdx = Seq(3, 4, 5, 6)
 
     val snContext = context.get
-    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     createBase3Tables(snContext, table1, table2, table3)
 
@@ -361,7 +363,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val index31 = s"${table3}_IdxOne"
 
     val snContext = context.get
-    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     createBase3Tables(snContext, table1, table2, table3)
 
@@ -409,7 +410,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         "T_three", "T_four", "R_one", "R_two")
 
     val snContext = context.get
-    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     def createBaseTables(): Unit = {
       snContext.sql(s"drop table if exists $table1")
@@ -598,7 +598,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val index31 = s"${table3}_IdxOne"
 
     val snContext = context.get
-    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
     snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
 

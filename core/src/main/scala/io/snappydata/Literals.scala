@@ -194,7 +194,7 @@ object Property extends Enumeration {
 
   val HashJoinSize: SQLType = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less" +
-        "than localhashjoinsize. Default value is 100 MB.", Some(100*1024*1024))
+        "than hashjoinsize. Default value is 100 MB.", Some(100*1024*1024))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](s"${Constant
       .PROPERTY_PREFIX}enable-experimental-features",
