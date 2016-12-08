@@ -272,7 +272,11 @@ class SQLConfigEntry private(private[sql] val entry: ConfigEntry[_]) {
 
   def defaultValueString: String = entry.defaultValueString
 
-  def valueConverter[T]: String => T = entry.asInstanceOf[ConfigEntry[T]].valueConverter
+  def valueConverter[T]: String => T =
+    entry.asInstanceOf[ConfigEntry[T]].valueConverter
+
+  def stringConverter[T]: T => String =
+    entry.asInstanceOf[ConfigEntry[T]].stringConverter
 
   override def toString: String = entry.toString
 }
@@ -403,6 +407,14 @@ trait SQLAltName extends AltName {
     } else if (conf.contains(altName)) {
       Some(get[T](conf, altName, ""))
     } else defaultValue[T]
+  }
+
+  def set[T](conf: SQLConf, value: T, useAltName: Boolean = false): Unit = {
+    if (useAltName) {
+      conf.setConfString(altName, configEntry.stringConverter(value))
+    } else {
+      conf.setConf[T](configEntry.asInstanceOf[ConfigEntry[T]], value)
+    }
   }
 }
 
