@@ -413,7 +413,7 @@ trait SQLAltName extends AltName {
     if (useAltName) {
       conf.setConfString(altName, configEntry.stringConverter(value))
     } else {
-      conf.setConf[T](configEntry.asInstanceOf[ConfigEntry[T]], value)
+      conf.setConf[T](configEntry.entry.asInstanceOf[ConfigEntry[T]], value)
     }
   }
 
