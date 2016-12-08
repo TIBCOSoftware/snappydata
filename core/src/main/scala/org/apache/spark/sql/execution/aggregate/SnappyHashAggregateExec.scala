@@ -585,10 +585,10 @@ case class SnappyHashAggregateExec(
        |$bufferEval
        |
        |// common sub-expressions
+       |$inputCodes
        |$effectiveCodes
        |
        |// evaluate aggregate functions
-       |$inputCodes
        |${evaluateVariables(updateEvals)}
        |
        |// update generated class object fields
