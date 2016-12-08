@@ -313,9 +313,13 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  private[sql] def clearContext(): Unit = synchronized {
+    contextObjects.clear()
+  }
+
   private[sql] def clearQueryData(): Unit = synchronized {
     queryHints.clear()
-    contextObjects.clear()
+    clearContext()
   }
 
   def clear(): Unit = {

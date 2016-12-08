@@ -58,13 +58,20 @@ class SnappySessionState(snappySession: SnappySession)
   protected lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
 
-  lazy val metadataHive = sharedState.metadataHive.newSession()
+  protected lazy val metadataHive = sharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-    override val extendedResolutionRules =
+  override lazy val analyzer: Analyzer = new QueryAnalyzer
+
+  private[sql] class QueryAnalyzer extends Analyzer(catalog, conf) {
+
+    override lazy val batches: Seq[Batch] =
+      (Batch("Clear Contexts", Once, new ClearContext(snappySession)) +:
+          super.batches).asInstanceOf[Seq[Batch]]
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       new PreprocessTableInsertOrPut(conf) ::
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
@@ -234,6 +241,14 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+}
+
+class ClearContext(session: SnappySession) extends Rule[LogicalPlan] {
+
+  override def apply(plan: LogicalPlan): LogicalPlan = {
+    session.clearContext()
+    plan
+  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
