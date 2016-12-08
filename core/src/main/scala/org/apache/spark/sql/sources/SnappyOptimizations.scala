@@ -24,7 +24,8 @@ import io.snappydata.Constant
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression,
+PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
@@ -410,9 +411,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
   override def apply(plan: LogicalPlan): LogicalPlan = {
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
     val enabled: Boolean = io.snappydata.Property.EnableExperimentalFeatures.
-        configEntry.getConf[Boolean](snappySession.snappyContext.conf) ||
-        java.lang.Boolean.getBoolean(io.snappydata.Property.EnableExperimentalFeatures
-            .configEntry.key)
+        get[Boolean](snappySession.snappyContext.conf)
     if (!enabled) {
       return plan
     }
@@ -426,7 +425,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val newAttributesMap = new ArrayBuffer[(AttributeReference, AttributeReference)]()
     val visited = new mutable.HashSet[LogicalPlan]
 
-    def notVisited(input: Seq[LogicalPlan]) = ! input.exists(p => {
+    def notVisited(input: Seq[LogicalPlan]) = !input.exists(p => {
       val rel = Entity.unwrapBaseColumnRelation(p)
       // already resolved to some index. lets not try anything here.
       // this is just for speed, where this rule gets executed so many times.

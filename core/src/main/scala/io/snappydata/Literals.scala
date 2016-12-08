@@ -199,7 +199,8 @@ object Property extends Enumeration {
   val EnableExperimentalFeatures = SQLVal[Boolean](s"${Constant
       .PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
-        "optimizer choice during query planning. Default is turned off.", Some(false))
+        "optimizer choice during query planning. Default is turned off.",
+    Some(false), Constant.SPARK_PREFIX)
 }
 
 // extractors for properties
