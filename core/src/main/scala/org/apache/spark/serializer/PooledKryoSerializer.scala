@@ -16,7 +16,7 @@
  */
 package org.apache.spark.serializer
 
-import java.io.{EOFException, IOException, InputStream, OutputStream}
+import java.io.{EOFException, Externalizable, IOException, InputStream, OutputStream}
 import java.lang.ref.SoftReference
 import java.nio.ByteBuffer
 
@@ -24,6 +24,7 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 
 import org.apache.spark.broadcast.TorrentBroadcast
@@ -139,6 +140,11 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
+
+    // use Externalizable by default as last fallback, if available,
+    // rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable],
+      new ExternalizableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(

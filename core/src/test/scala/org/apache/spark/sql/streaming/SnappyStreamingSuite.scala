@@ -45,7 +45,7 @@ import twitter4j.{Status, TwitterObjectFactory}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -144,7 +144,7 @@ class SnappyStreamingSuite
 
   test("SnappyData Kafka Streaming") {
     val topic = "kafka_topic"
-    val sent = Map("a" -> 1, "b" -> 1, "c" -> 1)
+    var sent = Map("1" -> 1, "2" -> 1, "3" -> 1)
     kafkaUtils.createTopic(topic)
     kafkaUtils.sendMessages(topic, sent)
 
@@ -161,15 +161,32 @@ class SnappyStreamingSuite
 
     val stream = ssnc.getSchemaDStream("kafkaStream")
 
+    val repartitioned = stream.repartition(2)
+    val filtered = repartitioned.filter(row => row.getString(0).startsWith("2"))
+
     val result = new mutable.HashMap[String, Long]()
-    stream.foreachDataFrame(df => {
+
+    filtered.foreachDataFrame(df => {
       df.collect().foreach(row => {
         result.synchronized {
           result.put(row.getString(0), 1)
         }
       })
     })
+
+    // scalastyle:off println
+    filtered.glom().foreachRDD(rdd => rdd.foreach(_.foreach(println)))
+    val mapped = filtered.map(row => row.getString(0).toInt)
+    mapped.foreachRDD(rdd => rdd.foreach(println))
+    mapped.reduce(_ + _).foreachRDD(rdd => println(rdd.first()))
+    mapped.count().foreachRDD(rdd => println(rdd.first()))
+    // mapped.mapPartitions { _ => Seq.empty.toIterator }
+    mapped.mapPartitions { x => Iterator(x.sum)}
+    mapped.transform(rdd => rdd.map(_.toString))
+    // scalastyle:on println
+
     ssnc.start()
+    sent = Map("2" -> 1)
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       assert(result.synchronized {
         sent === result

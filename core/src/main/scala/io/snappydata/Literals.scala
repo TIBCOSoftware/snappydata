@@ -16,12 +16,9 @@
  */
 package io.snappydata
 
-import java.util.Properties
-
 import scala.reflect.ClassTag
 
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.internal.SQLConfigEntry
+import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
 /**
  * Constant names suggested per naming convention
@@ -47,9 +44,9 @@ object Constant {
 
   val SPARK_PREFIX = "spark."
 
-  val SPARK_SNAPPY_PREFIX = SPARK_PREFIX + PROPERTY_PREFIX
+  val SPARK_SNAPPY_PREFIX: String = SPARK_PREFIX + PROPERTY_PREFIX
 
-  val SPARK_STORE_PREFIX = SPARK_PREFIX + STORE_PROPERTY_PREFIX
+  val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -115,71 +112,36 @@ object Constant {
  */
 object Property extends Enumeration {
 
-  case class ValueAlt(name: String, altName: String,
-      configEntry: SQLConfigEntry) extends Property.Val(name) {
-
-    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
-
-    def defaultValueString: String = configEntry.defaultValueString
-
-    def getOption(conf: SparkConf): Option[String] = if (altName == null) {
-      conf.getOption(name)
-    } else {
-      conf.getOption(name) match {
-        case s: Some[String] => // check if altName also present and fail if so
-          if (conf.contains(altName)) {
-            throw new IllegalArgumentException(
-              s"Both $name and $altName configured. Only one should be set.")
-          } else s
-        case None => conf.getOption(altName)
-      }
-    }
-
-    def getProperty(properties: Properties): String = if (altName == null) {
-      properties.getProperty(name)
-    } else {
-      val v = properties.getProperty(name)
-      if (v != null) {
-        // check if altName also present and fail if so
-        if (properties.getProperty(altName) != null) {
-          throw new IllegalArgumentException(
-            s"Both $name and $altName specified. Only one should be set.")
-        }
-        v
-      } else properties.getProperty(altName)
-    }
-
-    def unapply(key: String): Boolean = name.equals(key) ||
-        (altName != null && altName.equals(key))
+  case class SparkValue(name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) with AltName {
 
     override def toString(): String =
       if (altName == null) name else name + '/' + altName
   }
 
-  case class SQLValue(name: String, configEntry: SQLConfigEntry)
-      extends Property.Val(name) {
+  case class SQLValue(name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) with SQLAltName {
 
-    def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
-
-    def defaultValueString: String = configEntry.defaultValueString
-
-    override def toString(): String = name
+    override def toString(): String =
+      if (altName == null) name else name + '/' + altName
   }
 
-  type Type = ValueAlt
+  type Type = SparkValue
 
   type SQLType = SQLValue
 
   protected final def Val[T: ClassTag](name: String, doc: String,
       defaultValue: Option[T], prefix: String = null,
-      isPublic: Boolean = true): ValueAlt = {
-    ValueAlt(name, if (prefix == null) null else prefix + name,
+      isPublic: Boolean = true): SparkValue = {
+    SparkValue(name, if (prefix == null) null else prefix + name,
       SQLConfigEntry.sparkConf(name, doc, defaultValue, isPublic))
   }
 
   protected final def SQLVal[T: ClassTag](name: String, doc: String,
-      defaultValue: Option[T], isPublic: Boolean = true): SQLValue = {
-    SQLValue(name, SQLConfigEntry(name, doc, defaultValue, isPublic))
+      defaultValue: Option[T], prefix: String = null,
+      isPublic: Boolean = true): SQLValue = {
+    SQLValue(name, if (prefix == null) null else prefix + name,
+      SQLConfigEntry(name, doc, defaultValue, isPublic))
   }
 
   def getPropertyValue(propertyName: String): Option[String] = {
@@ -196,39 +158,43 @@ object Property extends Enumeration {
     } else None
   }
 
-  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+  val Locators: Type = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+  val McastPort: Type = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
 
-  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+  val JobServerEnabled: Type = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
-  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
+  val Embedded: Type = Val(s"${Constant.PROPERTY_PREFIX}embedded",
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetastoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+  val MetaStoreDBURL: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
     "An explicit JDBC URL to use for external meta-data storage. " +
         "Normally this is set to use the SnappyData store by default and " +
         "should not be touched unless there are special requirements. " +
         "Use with caution since an incorrect configuration can result in " +
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetastoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
-    s"Explicit JDBC driver class for ${MetastoreDBURL.name} setting.",
+  val MetaStoreDriver: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+    s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSizeMb = SQLVal(s"${Constant.PROPERTY_PREFIX}columnBatchSizeMb",
+  val ColumnBatchSize: SQLType = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
-        "the unit (in MB) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval.", Some(32))
+        "the unit (in bytes) that will be used to split the data into chunks " +
+        "for efficient storage and retrieval.", Some(32 * 1024 * 1024))
+
+  val HashJoinSize: SQLType = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
+    "The join would be converted into a hash join if the table is of size less" +
+        "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 }
 
 // extractors for properties
