@@ -27,6 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQ
 import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineArbiter
 import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineRule.ExecutionEngine
 import io.snappydata.test.dunit.{DistributedTestBase, AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.util.TestException
 import junit.framework.Assert
 
 import org.apache.spark.Logging
@@ -77,9 +78,12 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     queryHintWithException(SnappyContext())
   }
 
+  def testExecutionEngineTableWithGetAllConvertible(): Unit = {
+    queryGetAllConvertibleEngineRule(SnappyContext())
+  }
 
   def testExecutionEngineTableWithIndex(): Unit = {
-    indexSelectivityEngineRule(SnappyContext())
+    queryIndexEngineRule(SnappyContext())
   }
 
   override def startNetServer: String = {
@@ -247,7 +251,8 @@ trait ExecutionEngineArbiterTestBase {
     try {
       runAndValidateQuery(conn, false,
         s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Store\n limit 1")
-      Assert.fail("Expected sytax erro as query was supposed to be executed on store with limit clause")
+      DistributedTestBase.fail("Expected syntax error as query was supposed to be executed on store with limit clause",
+        new TestException("Expected Exception"))
     }
     catch {
       case sqe: SQLException =>
@@ -255,6 +260,53 @@ trait ExecutionEngineArbiterTestBase {
           throw sqe
         }
     }
+  }
+
+  def queryGetAllConvertibleEngineRule(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    val sc = snc.sparkContext
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt(10))
+    }
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(testTable, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
+    snc.sql(s"create index col2index on $testTable(col2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    val query: String = s"select col1, col3 from $testTable where col2 IN (2,8,6)"
+    runAndValidateQuery(conn, false, query)
+  }
+
+  def queryIndexEngineRule(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    val sc = snc.sparkContext
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(testTable, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
+    snc.sql(s"create index col2index on $testTable(col2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    var query: String = s"select col1, col3 from $testTable where col2 = 2"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col1, col3 from $testTable where col2 > 1"
+    runAndValidateQuery(conn, true, query)
   }
 
   def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
