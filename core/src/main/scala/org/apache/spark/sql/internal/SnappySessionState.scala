@@ -67,10 +67,6 @@ class SnappySessionState(snappySession: SnappySession)
 
   private[sql] class QueryAnalyzer extends Analyzer(catalog, conf) {
 
-    override lazy val batches: Seq[Batch] =
-      (Batch("Clear Contexts", Once, new ClearContext(snappySession)) +:
-          super.batches).asInstanceOf[Seq[Batch]]
-
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       new PreprocessTableInsertOrPut(conf) ::
           new FindDataSourceTable(snappySession) ::
@@ -230,6 +226,7 @@ class SnappySessionState(snappySession: SnappySession)
   private[spark] def clearExecutionData(): Unit = {
     conf.refreshNumShufflePartitions()
     leaderPartitions.clear()
+    snappySession.clearContext()
   }
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
@@ -241,14 +238,6 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
-}
-
-class ClearContext(session: SnappySession) extends Rule[LogicalPlan] {
-
-  override def apply(plan: LogicalPlan): LogicalPlan = {
-    session.clearContext()
-    plan
-  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
