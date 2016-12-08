@@ -13,11 +13,11 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+- How Tos: howto.md
 - Architecture: architecture.md
 - Configuring the Cluster: configuration.md
 - Programming Guide: programming_guide.md
-- SnappyData Store Execution Modes: deployment.md
-- How Tos: howto.md
+- SnappyData Affinity Modes: deployment.md
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
 - API: apidocsintro.md
