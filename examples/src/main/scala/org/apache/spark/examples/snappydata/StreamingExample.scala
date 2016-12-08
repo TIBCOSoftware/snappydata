@@ -54,8 +54,8 @@ import org.apache.spark.util.Utils
  * This example starts embedded Kafka and publishes messages(advertising bids)
  * on it to be processed in SnappyData as streaming data. In SnappyData, streams
  * are managed declaratively by creating a stream table(adImpressionStream). A
- * continuous query is executed on the stream and its result is ingested in a column
- * table(aggrAdImpressions).
+ * continuous query is executed on the stream and its result is processed and
+ * publisher_bid_counts table is modified based on the streaming data
  *
  * We also update a row table to maintain the no of distinct bids so far(example
  * of storing and updating a state of streaming data)
@@ -112,46 +112,48 @@ object StreamingExample {
           s" topics '$topic')"
     )
 
-    println()
-    // Next, create a column table to ingest aggregate data in one window
-    println("Creating a column table to ingest aggregate data in one window")
-    snsc.sql("create table aggrAdImpressions(time_stamp timestamp, publisher string," +
-        " geo string, avg_bid double, imps long, uniques long) " +
-        "using column ")
-
-    println()
-    println("Creating a row table to maintain total no of distinct bids received in streaming window")
-    snsc.sql("create table totalBids(bidCount int) using row ")
-    snsc.sql("insert into totalBids values(0)")
+    // create a row table that will maintain no of bids per publisher
+    snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) using row")
+    snsc.sql("insert into publisher_bid_counts values('publisher1', 0)")
+    snsc.sql("insert into publisher_bid_counts values('publisher2', 0)")
+    snsc.sql("insert into publisher_bid_counts values('publisher3', 0)")
+    snsc.sql("insert into publisher_bid_counts values('publisher4', 0)")
 
     println()
     // Execute this query once every second. Output is a SchemaDStream.
     println("Registering a continuous query to to be executed every second on the stream table")
-    // you can register continuous queries that will be executed as per the mentioned time window
-    val resultStream: SchemaDStream = snsc.registerCQ(
-      "select min(time_stamp), publisher, geo, avg(bid) as avg_bid," +
-          " count(*) as imps , count(distinct(cookie)) as uniques" +
-          " from adImpressionStream window (duration 1 seconds, slide 1 seconds)" +
-          " group by publisher, geo")
+    val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
+        "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 
     // this conf is used to get a connection a JDBC connection
     val conf = new ConnectionConfBuilder(snsc.snappySession).build()
 
     println()
-    // process the stream data received in a window
+    // process the stream data returned by continuous query and update publisher_bid_counts table
     resultStream.foreachDataFrame(df => {
-      println("Data returned by the registered continuous query")
-      df.show
+      if (df.count() > 0L) {
+        println("Data received in streaming window")
+        df.show()
 
-      println("Ingesting the result of continuous query into aggrAdImpressions table")
-      df.write.insertInto("aggrAdImpressions")
+        println("Updating table publisher_bid_counts")
+        val conn = ConnectionUtil.getConnection(conf)
+        val result = df.collect()
+        val stmt = conn.prepareStatement("update publisher_bid_counts set " +
+            s"bidCount = bidCount + ? where publisher = ?")
 
-      val numBids = df.count()
-      println("Number of distinct bids in this window=" + numBids)
-      val conn = ConnectionUtil.getConnection(conf)
-      val stmt = conn.prepareStatement("update totalBids set bidCount = bidCount + " + numBids)
-      stmt.executeUpdate()
-      conn.close()
+        result.foreach(row => {
+          val publisher = row.getString(0)
+          val bidCount = row.getLong(1)
+          stmt.setLong(1, bidCount)
+          stmt.setString(2, publisher)
+          stmt.addBatch()
+        }
+        )
+        stmt.executeBatch()
+        conn.close()
+      } else {
+        println("No data received in streaming window")
+      }
     })
 
     snsc.start
@@ -160,13 +162,18 @@ object StreamingExample {
     publishKafkaMessages(utils, topic)
 
     Thread.sleep(3000)
-    println("Total no of distinct bids received in all windows so far")
-    snsc.snappySession.sql("select bidCount from totalBids").show()
 
+    println("***Total no of bids per publisher are***")
+    snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
+
+    println("Exiting")
+    utils.shutdown()
+    snsc.stop(false)
+    System.exit(0)
   }
 
   def publishKafkaMessages(utils: EmbeddedKafkaUtils, topic: String): Unit = {
-    for (i <- 1 until 10) {
+    for (i <- 0 until 10) {
       val currentTime = System.currentTimeMillis()
 
       // bids with comma separated fields
@@ -183,6 +190,8 @@ object StreamingExample {
       println("Published message containing 6 rows")
       Thread.sleep(1000)
     }
+
+    println("Done publishing all messages")
 
   }
 }
