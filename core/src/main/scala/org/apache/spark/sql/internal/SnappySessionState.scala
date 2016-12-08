@@ -63,9 +63,7 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val analyzer: Analyzer = new QueryAnalyzer
-
-  private[sql] class QueryAnalyzer extends Analyzer(catalog, conf) {
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       new PreprocessTableInsertOrPut(conf) ::
