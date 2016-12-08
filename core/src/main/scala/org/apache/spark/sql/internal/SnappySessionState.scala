@@ -416,6 +416,10 @@ trait SQLAltName extends AltName {
       conf.setConf[T](configEntry.asInstanceOf[ConfigEntry[T]], value)
     }
   }
+
+  def remove(conf: SQLConf, useAltName: Boolean = false): Unit = {
+    conf.unsetConf(if (useAltName) altName else name)
+  }
 }
 
 class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
