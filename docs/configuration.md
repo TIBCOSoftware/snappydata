@@ -1,8 +1,35 @@
-SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver and Server node embeds a Spark Executor. Server node also embeds a snappy store. As discussed in Getting Started, SnappyData cluster can be started with default configurations using script sbin/snappy-start-all.sh. This script starts up a locator, one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. Also, each component can be configured individually using configuration files. In this document, we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData. 
+SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver 
+and Server node embeds a Spark Executor. Server node also embeds a snappy store. 
+
+SnappyData cluster can be started with default configurations using script sbin/snappy-start-all.sh. This script starts up a locator, 
+one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. 
+Also, each component can be configured individually using configuration files. In this document, 
+we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData.
 
 ## Configuration Files
 
-Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as conf/locators, conf/leads and conf/servers respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members. 
+Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as conf/locators, conf/leads and conf/servers respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
+##### Configuring Locators
+
+Locators provide discovery service for the cluster. It informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
+In this file, you can specify:
+* The host name on which a SnappyData locator is started
+* The startup directory where the logs and configuration files for that locator instance are located
+* SnappyData specific properties that can be passed
+
+Create the configuration files (conf/locators) for locators in `SNAPPY_HOME`.
+
+##### Configuring Leads
+
+Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
+
+Create the configuration files (conf/leads) for leads in `SNAPPY_HOME`.
+
+##### Configuring Data Servers
+Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
+
+Create the configuration files (conf/servers) for data servers in `SNAPPY_HOME`.
+
 
 ### SnappyData Specific Properties
 
@@ -93,5 +120,25 @@ Currently, log files for SnappyData components go inside the working directory. 
 $ cat conf/log4j.properties 
 log4j.rootCategory=DEBUG, file
 ```
+
+### Configuring SSH Login without Password
+By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
+This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with SnappyData.
+
+To install and configure SSH, do the following:
+
+1. **Install SSH** <br>
+	To install SSH,  type:
+    `sudo apt-get install ssh`
+    Mac OS X has a built-in SSH client.
+
+2. **Generate an RSA key pair**<br>
+    To generate an RSA key pair run the following command on the client computer,
+    `ssh-keygen -t rsa`
+    Press Enter when prompted to enter file in which to save the key, and for the passpharase.
+
+3.  **Copy the Public Key**<br>
+    Once the key pair is generated, copy the contents of the public key file, to the authorized key on the remote 	site, by typing
+    `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
 
 
