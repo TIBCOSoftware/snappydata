@@ -1,12 +1,11 @@
 ### RENAME THIS CHAPTER AS INTRODUCTION .... NO NEED FOR TOC ....
-### COPY THE INTRO SECTION FROM THE ../README.MD 
 
 ## Table of Contents
 * [Introduction](#introduction)
 * [Key Features](#key-features)
 * [Spark Challenges for Mixed Workloads (OLTP, OLAP)](#SparkChallenges)
 
-###Where to go next?
+###Where to go next?  THIS SEEMS OUT OF PLACE?
 
 * [Download, Install and Set up SnappyData](http://snappydatainc.github.io/install/): Provides informartion related to  installing and setting up SnappyData.
 * [Getting Started](http://snappydatainc.github.io/quickstart/): Provides you with few easy ways to quickly get started. 
@@ -17,10 +16,17 @@
 We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
 
 ## Introduction
-SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. 
-We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics).
+### SnappyData fuses Apache Spark with an in-memory database to deliver a data engine capable of processing streams, transactions and interactive analytics in a single cluster.
 
-<p style="text-align: center;"><img alt="SnappyDataOverview" src="./Images/SnappyDataOverview.png"></p>
+### The Challenge with Spark and remote data sources
+Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While, this provides rich unified access to data this can also be quite in-efficient and expensive. Analytic processing requires massive data sets to be repeatedly copied, data reformatted to suit Spark and ultimately fails to deliver the promise of interactive analytic performance, in many cases. For instance, running a aggregation on a large Cassandra table will necessitate streaming the entire table into Spark to do the aggregation, each time. Caching within Spark is immutable and would result in stale insight. 
+
+### The SnappyData Approach
+Instead, we take a very different approach. SnappyData fuses an low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark(Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. The net effect is an order of magnitude performance improvement even compared to native spark caching and more than 2 orders of magnitude better Spark performance when working with external data sources. 
+
+Essentially, we turn Spark into a in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries. 
+
+<p style="text-align: center;"><img alt="SnappyData Architecture" src="./Images/SnappyArchitecture.png"></p>
 
 Conceptually, you could think of SnappyData as an **in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark Datasets.
 
