@@ -56,7 +56,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   override def beforeEach(): Unit = {
     try {
       val snContext = SnappyContext(sc)
-      snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+      io.snappydata.Property.EnableExperimentalFeatures.set(snContext.conf, true)
       snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, -1L)
       context.set(snContext)
     } finally {
@@ -68,10 +68,8 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     try {
       val snContext = context.getAndSet(null)
       if (snContext != null) {
-        snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
-          io.snappydata.Property.EnableExperimentalFeatures.configEntry.defaultValueString)
-        snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, SQLConf
-            .AUTO_BROADCASTJOIN_THRESHOLD.defaultValue.get)
+        io.snappydata.Property.EnableExperimentalFeatures.remove(snContext.conf)
+        snContext.conf.unsetConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD)
         indexesToDrop.reverse.foreach(i => snContext.sql(s"DROP INDEX $i "))
         tablesToDrop.reverse.foreach(t => snContext.sql(s"DROP TABLE $t "))
         indexesToDrop.clear()
