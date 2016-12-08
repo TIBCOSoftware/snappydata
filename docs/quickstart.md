@@ -26,7 +26,7 @@ Tables in SnappyData exhibit many operational capabilities like disk persistence
 
 While SnappyData supports Scala/Java/Python/SQL APIs for this quickstart you can choose to work with Scala APIs or SQL depending on your preference.
 
-###Getting started using Spark Scala APIs
+##Getting started using Spark Scala APIs
 
 **Create a SnappySession** :A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 
@@ -56,7 +56,7 @@ scala>  snappy.createTable(tableName = "colTable",
           options = Map.empty[String, String], // Map for options.
           allowExisting = false)
 ```
-#### Snappy (SnappySession) extends SparkSession so you can simply use all the Spark APIs
+Snappy (SnappySession) extends SparkSession so you can simply use all the Spark APIs
 
 **Insert the created DataSet to the column table "colTable"**
 ```scala
@@ -118,7 +118,7 @@ scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
-#####Getting started using SQL
+##Getting started using SQL
 
 We illustrate SQL using Spark SQL invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell; example in the How-to section).
 

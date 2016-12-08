@@ -5,9 +5,9 @@ Figure 1 depicts the core components of SnappyData, where Spark’s original com
 
 <p style="text-align: center;"><img alt="Core components" src="../CoreComponents.png"></p>
 
-The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](rowAndColumnTables.md) section for details on the syntax and available features. 
+The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](programming_guide.md#tables-in-snappydata) section for details on the syntax and available features. 
 
-We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions to make the language compatible to the SQL standard. One could perceive SnappyData as a SQL database that uses Spark API as its language for stored procedures. Our [stream processing](streamingWithSQL.md) is primarily through Spark Streaming, but it is integrated and runs in-situ with our store.
+We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions to make the language compatible to the SQL standard. One could perceive SnappyData as a SQL database that uses Spark API as its language for stored procedures. Our [stream processing](programming_guide.md#stream-processing-using-sql) is primarily through Spark Streaming, but it is integrated and runs in-situ with our store.
 
 The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are capable of working with external cluster managers, such as YARN or Mesos (not yet supported). We route all OLTP operations immediately to appropriate data partitions without incurring any scheduling overhead.
 
@@ -75,7 +75,7 @@ Unlike Apache Spark, which is primarily a computational engine, the SnappyData c
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA).
 Read our [docs](.) for details on the architecture.
 
-In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the [Spark API section](./clustersparkapi.md).
+In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the [Spark API section](./programming_guide.md#snappysession-and-snappystreamingcontext).
 
 ### High Concurrency in SnappyData
 Thousands of concurrent ODBC and JDBC clients can simultaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incoming requests from these clients into (i) low latency requests and (ii) high latency ones. For low latency operations, we completely bypass Spark’s scheduling mechanism and directly operate on the data. We route high latency operations (e.g., compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a responsive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.
