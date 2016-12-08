@@ -411,7 +411,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
   override def apply(plan: LogicalPlan): LogicalPlan = {
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
     val enabled: Boolean = io.snappydata.Property.EnableExperimentalFeatures.
-        get[Boolean](snappySession.snappyContext.conf)
+        get(snappySession.snappyContext.conf)
     if (!enabled) {
       return plan
     }
