@@ -50,8 +50,17 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   override def afterAll(): Unit = {
     System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.testing")
-    System.clearProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key)
     super.afterAll()
+  }
+
+  override def beforeEach(): Unit = {
+    try {
+      val snContext = SnappyContext(sc)
+      snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+      context.set(snContext)
+    } finally {
+      super.beforeEach()
+    }
   }
 
   override def afterEach(): Unit = {
@@ -72,9 +81,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
   test("Test choice of index according to where predicate") {
     val tableName = "tabOne"
-    val snContext = SnappyContext(sc)
-    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
-    context.set(snContext)
+    val snContext = context.get
 
     def createBaseTable(): Unit = {
       val props = Map(
@@ -131,9 +138,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
   test("Test create Index on Column Table using Snappy API") {
     val tableName: String = "tcol1"
-    val snContext = SnappyContext(sc)
-    context.set(snContext)
-    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+    val snContext = context.get
 
     val props = Map(
       "PARTITION_BY" -> "col1")
@@ -235,7 +240,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   }
 
   test("Test two table joins") {
-    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     val table1 = "tabOne"
     val table2 = "tabTwo"
     val table3 = "tabThree"
@@ -250,8 +254,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val leftIdx = Seq(1, 2)
     val rightIdx = Seq(3, 4, 5, 6)
 
-    val snContext = SnappyContext(sc)
-    context.set(snContext)
+    val snContext = context.get
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     createBase3Tables(snContext, table1, table2, table3)
@@ -347,7 +350,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   }
 
   test("Test two table joins corner cases") {
-    System.setProperty(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
 
     val table1 = "tabOne"
     val table2 = "tabTwo"
@@ -358,8 +360,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     val index31 = s"${table3}_IdxOne"
 
-    val snContext = SnappyContext(sc)
-    context.set(snContext)
+    val snContext = context.get
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     createBase3Tables(snContext, table1, table2, table3)
@@ -407,9 +408,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val (table1, table2, table3, table4, rtable5, rtable6) = ("T_one", "T_two",
         "T_three", "T_four", "R_one", "R_two")
 
-    val snContext = SnappyContext(sc)
-    context.set(snContext)
-    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+    val snContext = context.get
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     def createBaseTables(): Unit = {
@@ -598,9 +597,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     val index31 = s"${table3}_IdxOne"
 
-    val snContext = SnappyContext(sc)
-    context.set(snContext)
-    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+    val snContext = context.get
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
     snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
@@ -648,7 +645,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   }
 
   test("Test create Index on Row Table using Snappy API") {
-    val snContext = org.apache.spark.sql.SnappyContext(sc)
+    val snContext = context.get
     val tableName: String = "trow1"
     val props = Map("PARTITION_BY" -> "col2")
 
