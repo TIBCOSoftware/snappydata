@@ -1,4 +1,5 @@
-In this section we discuss the various execution modes. You can run the SnappyData store in the following modes:
+In this section we discuss the various affinity modes in which deals with the co-location of related data and computation. 
+You can run the SnappyData store in the following modes:
 
 | Deployment Modes        |Description            |
 | ------------- |:-------------:|
@@ -7,8 +8,6 @@ In this section we discuss the various execution modes. You can run the SnappyDa
 | Embedded SnappyData Store Mode|The Spark computations and in-memory data store run collocated in the same JVM|
 
 ##Local Mode
-<mark> Description To be done </mark>
-
 Key Points
 
 * No cluster required
@@ -26,7 +25,7 @@ If you have downloaded SnappyData, you can use the bundled Spark distribution in
 ### Using the Local mode for developing using an IDE
 
 As the name implies, use this mode to execute everything locally in the application JVM. The local mode is described in the Spark Programming guide.
-
+<mark> TO BE DONE </mark>
 
 ### Running a Spark (non-IDE) program and specify the dependencies
 
