@@ -89,6 +89,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       membersBuf: mutable.Map[java.util.UUID, mutable.Map[String, Any]],
       tablesBuf: Map[String, SnappyRegionStats] ) : Unit = {
 
+    var isClusterStateNormal = true
     var numLead = 0
     var numLocator = 0
     var numServers = 0
@@ -98,6 +99,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     membersBuf.foreach(mb => {
       val m = mb._2
+
+      if(!m("status").toString.equalsIgnoreCase("running")){
+        isClusterStateNormal = false
+      }
+
       if(m("lead").toString.toBoolean){
         numLead += 1
       }
@@ -115,6 +121,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     numClientsToDataServers = numClients - numClientsToLocator
 
+    clusterStatsMap += ("status" -> {if(isClusterStateNormal) "Normal" else "Warning"})
     clusterStatsMap += ("numMembers" -> membersBuf.size)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
@@ -141,14 +148,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def clusterStats(clusterDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = clusterDetails.getOrElse("status","")
-    val statusImgUri = if(status.equals("severe")) {
-      "/static/snappydata/severe-status-70x68.png"
-    } else if(status.equals("error")) {
-      "/static/snappydata/error-status-70x68.png"
-    } else if(status.equals("warning")) {
-      "/static/snappydata/warning-status-70x68.png"
+    val statusImgUri = if(status.toString.equalsIgnoreCase("normal")) {
+      "/static/snappydata/running-status-icon-70x68.png"
     } else {
-      "/static/snappydata/normal-status-70x68.png"
+      "/static/snappydata/warning-status-icon-70x68.png"
     }
 
     <div>
@@ -298,14 +301,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def memberRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = memberDetails.getOrElse("status","")
-    val statusImgUri = if(status.toString.toLowerCase.equals("severe")) {
-      "/static/snappydata/severe-status-20x19.png"
-    } else if(status.toString.toLowerCase.equals("error")) {
-      "/static/snappydata/error-status-20x19.png"
-    } else if(status.toString.toLowerCase.equals("warning")) {
-      "/static/snappydata/warning-status-20x19.png"
+    val statusImgUri = if(status.toString.toLowerCase.equals("running")) {
+      "/static/snappydata/running-status-icon-20x19.png"
     } else {
-      "/static/snappydata/normal-status-20x19.png"
+      "/static/snappydata/stopped-status-icon-20x19.png"
     }
 
     val nameOrId = {

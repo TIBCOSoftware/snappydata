@@ -111,7 +111,7 @@ object SnappyTableStatsProviderService extends Logging {
     // reset all existing members status as down
     membersInfo.map(tmp => {
      val mbr = tmp._2
-      mbr.put("status" , "warning")
+      mbr.put("status" , "stopped")
     })
 
     val collector = new GfxdListResultCollector(null, true);
@@ -134,7 +134,7 @@ object SnappyTableStatsProviderService extends Logging {
         map.put(key, memMap.get(key))
         println(">>>>>>>>>>>>>>>>>>>" + key + " >>>> " + memMap.get(key))
       }
-      map.put("status", "normal")
+      map.put("status", "running")
 
       val totalMemory:Long = memMap.get("maxMemory").asInstanceOf[Long]
       //val freeMemory:Long = memMap.get("freeMemory").asInstanceOf[Long]
