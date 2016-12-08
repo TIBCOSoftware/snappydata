@@ -19,8 +19,7 @@ package org.apache.spark.sql.execution.datasources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet,
-Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
@@ -60,8 +59,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     case _ => Nil
   }
 
-  // Based on Public API.
-  protected def pruneFilterProject(
+  private def pruneFilterProject(
       relation: LogicalRelation,
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
@@ -82,8 +80,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       })
   }
 
-  // Based on Catalyst expressions.
-  protected def pruneFilterProjectRaw(
+  private def pruneFilterProjectRaw(
       relation: LogicalRelation,
       projects: Seq[NamedExpression],
       filterPredicates: Seq[Expression],
