@@ -349,7 +349,7 @@ object SQLConfigEntry {
   }
 }
 
-trait AltName {
+trait AltName[T] {
 
   def name: String
 
@@ -357,7 +357,7 @@ trait AltName {
 
   def configEntry: SQLConfigEntry
 
-  def defaultValue[T]: Option[T] = configEntry.defaultValue[T]
+  def defaultValue: Option[T] = configEntry.defaultValue[T]
 
   def getOption(conf: SparkConf): Option[String] = if (altName == null) {
     conf.getOption(name)
@@ -390,47 +390,47 @@ trait AltName {
       (altName != null && altName.equals(key))
 }
 
-trait SQLAltName extends AltName {
+trait SQLAltName[T] extends AltName[T] {
 
-  private def get[T](conf: SQLConf, entry: SQLConfigEntry): T = {
-    conf.getConf[T](entry.entry.asInstanceOf[ConfigEntry[T]])
+  private def get(conf: SQLConf, entry: SQLConfigEntry): T = {
+    conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
   }
 
-  private def get[T](conf: SQLConf, name: String,
+  private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
     configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
   }
 
-  def get[T](conf: SQLConf): T = if (altName == null) {
-    get[T](conf, configEntry)
+  def get(conf: SQLConf): T = if (altName == null) {
+    get(conf, configEntry)
   } else {
     if (conf.contains(name)) {
-      if (!conf.contains(altName)) get[T](conf, configEntry)
+      if (!conf.contains(altName)) get(conf, configEntry)
       else {
         throw new IllegalArgumentException(
           s"Both $name and $altName configured. Only one should be set.")
       }
     } else {
-      get[T](conf, altName, configEntry.defaultValueString)
+      get(conf, altName, configEntry.defaultValueString)
     }
   }
 
-  def getOption[T](conf: SQLConf): Option[T] = if (altName == null) {
-    if (conf.contains(name)) Some(get[T](conf, name, ""))
-    else defaultValue[T]
+  def getOption(conf: SQLConf): Option[T] = if (altName == null) {
+    if (conf.contains(name)) Some(get(conf, name, ""))
+    else defaultValue
   } else {
     if (conf.contains(name)) {
-      if (!conf.contains(altName)) Some(get[T](conf, name, ""))
+      if (!conf.contains(altName)) Some(get(conf, name, ""))
       else {
         throw new IllegalArgumentException(
           s"Both $name and $altName configured. Only one should be set.")
       }
     } else if (conf.contains(altName)) {
-      Some(get[T](conf, altName, ""))
-    } else defaultValue[T]
+      Some(get(conf, altName, ""))
+    } else defaultValue
   }
 
-  def set[T](conf: SQLConf, value: T, useAltName: Boolean = false): Unit = {
+  def set(conf: SQLConf, value: T, useAltName: Boolean = false): Unit = {
     if (useAltName) {
       conf.setConfString(altName, configEntry.stringConverter(value))
     } else {
