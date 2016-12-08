@@ -135,16 +135,18 @@ private[sql] object PartitionedPhysicalScan {
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
           a.map(_.name).toArray, f.toArray, useResultSet = false)
-        val resolver = columnScan.sqlContext.sessionState.analyzer.resolver
+
+        def resolveCol(left: Attribute, right: AttributeReference) =
+          columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
+
         val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
           Seq.empty, table)
-        val otherPartKeys = partitionColumns.map(e =>
-          e.transform {
-            case a: AttributeReference => rowBufferScan.output.find(
-              rba => resolver(rba.name, a.name)).
-                getOrElse(throw new AnalysisException(s"RowBuffer output column $a not found in " +
-                    s"${rowBufferScan.output.mkString(",")}"))
-          })
+        val otherPartKeys = partitionColumns.map(_.transform {
+          case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
+            throw new AnalysisException(s"RowBuffer output column $a not found in " +
+                s"${rowBufferScan.output.mkString(",")}")
+          }
+        })
         assert(columnScan.outputPartitioning.satisfies(
           ClusteredDistribution(columnScan.partitionColumns)))
         ZipPartitionScan(columnScan, columnScan.partitionColumns,
