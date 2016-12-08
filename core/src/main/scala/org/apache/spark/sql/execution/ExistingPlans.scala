@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
@@ -86,8 +87,11 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else if (partitionColumns.nonEmpty) {
       val callbacks = ToolsCallbackInit.toolsCallback
       if (callbacks != null) {
-        callbacks.getOrderlessHashPartitioning(partitionColumns,
-          numPartitions, numBuckets)
+        // when buckets are linked to partitions then numBuckets have
+        // to be sent as zero to skip considering buckets in partitioning
+        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions,
+          if (session.hasLinkBucketsToPartitions) 0 else numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }

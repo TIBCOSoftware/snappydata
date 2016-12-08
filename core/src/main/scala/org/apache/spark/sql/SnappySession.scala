@@ -55,6 +55,7 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -168,15 +169,29 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
-  private val contextObjects =
-    new mutable.HashMap[(CodegenContext, (String, Any)), Any]
+  private val contextObjects = new mutable.HashMap[Any, Any]
 
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
+  private[sql] def getContextObject[T](key: Any): Option[T] = {
+    contextObjects.get(key).asInstanceOf[Option[T]]
+  }
+
+  /**
+   * Get a previously registered CodegenSupport context object
+   * by [[addContextObject]].
+   */
   private[sql] def getContextObject[T](ctx: CodegenContext, objectType: String,
       key: Any): Option[T] = {
-    contextObjects.get(ctx -> (objectType -> key)).asInstanceOf[Option[T]]
+    getContextObject[T](ctx -> (objectType -> key))
+  }
+
+  /**
+   * Register a new context object for this query.
+   */
+  private[sql] def addContextObject[T](key: Any, value: T): Unit = {
+    contextObjects.put(key, value)
   }
 
   /**
@@ -184,15 +199,31 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   private[sql] def addContextObject[T](ctx: CodegenContext, objectType: String,
       key: Any, value: T): Unit = {
-    contextObjects.put(ctx -> (objectType -> key), value)
+    addContextObject(ctx -> (objectType -> key), value)
   }
 
   /**
    * Remove a context object registered using [[addContextObject]].
    */
+  private[sql] def removeContextObject(key: Any): Unit = {
+    contextObjects.remove(key)
+  }
+
+  /**
+   * Remove a CodegenSupport context object registered by [[addContextObject]].
+   */
   private[sql] def removeContextObject(ctx: CodegenContext, objectType: String,
       key: Any): Unit = {
-    contextObjects.remove(ctx -> (objectType -> key))
+    removeContextObject(ctx -> (objectType -> key))
+  }
+
+  private[sql] def linkBucketsToPartitions(flag: Boolean): Unit = {
+    addContextObject(StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED, flag)
+  }
+
+  private[sql] def hasLinkBucketsToPartitions: Boolean = {
+    getContextObject[Boolean](StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED)
+        .getOrElse(false)
   }
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
@@ -282,9 +313,13 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  private[sql] def clearContext(): Unit = synchronized {
+    contextObjects.clear()
+  }
+
   private[sql] def clearQueryData(): Unit = synchronized {
     queryHints.clear()
-    contextObjects.clear()
+    clearContext()
   }
 
   def clear(): Unit = {

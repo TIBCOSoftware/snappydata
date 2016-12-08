@@ -81,13 +81,20 @@ private[sql] trait SnappyStrategies {
       case _ => Nil
     }
 
+    def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
+      case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+        (canBuildRight(joinType) && canLocalJoin(right)) ||
+            (canBuildLeft(joinType) && canLocalJoin(left))
+      case _ => false
+    }
+
     /**
      * Matches a plan whose size is small enough to build a hash table.
      *
      */
     private def canBuildLocalHashMap(plan: LogicalPlan): Boolean = {
       plan.statistics.sizeInBytes <
-          io.snappydata.Property.HashJoinSize.get[Long](conf)
+          io.snappydata.Property.HashJoinSize.get(conf)
     }
 
     private def canBuildRight(joinType: JoinType): Boolean = joinType match {

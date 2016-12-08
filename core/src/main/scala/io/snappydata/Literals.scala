@@ -100,7 +100,7 @@ object Constant {
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 
-  final val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+  val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 }
@@ -112,34 +112,30 @@ object Constant {
  */
 object Property extends Enumeration {
 
-  case class SparkValue(name: String, altName: String,
-      configEntry: SQLConfigEntry) extends Property.Val(name) with AltName {
+  case class SparkValue[T](name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) with AltName[T] {
 
     override def toString(): String =
       if (altName == null) name else name + '/' + altName
   }
 
-  case class SQLValue(name: String, altName: String,
-      configEntry: SQLConfigEntry) extends Property.Val(name) with SQLAltName {
+  case class SQLValue[T](name: String, altName: String,
+      configEntry: SQLConfigEntry) extends Property.Val(name) with SQLAltName[T] {
 
     override def toString(): String =
       if (altName == null) name else name + '/' + altName
   }
-
-  type Type = SparkValue
-
-  type SQLType = SQLValue
 
   protected final def Val[T: ClassTag](name: String, doc: String,
       defaultValue: Option[T], prefix: String = null,
-      isPublic: Boolean = true): SparkValue = {
+      isPublic: Boolean = true): SparkValue[T] = {
     SparkValue(name, if (prefix == null) null else prefix + name,
       SQLConfigEntry.sparkConf(name, doc, defaultValue, isPublic))
   }
 
   protected final def SQLVal[T: ClassTag](name: String, doc: String,
       defaultValue: Option[T], prefix: String = null,
-      isPublic: Boolean = true): SQLValue = {
+      isPublic: Boolean = true): SQLValue[T] = {
     SQLValue(name, if (prefix == null) null else prefix + name,
       SQLConfigEntry(name, doc, defaultValue, isPublic))
   }
@@ -158,64 +154,70 @@ object Property extends Enumeration {
     } else None
   }
 
-  val Locators: Type = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort: Type = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
 
-  val JobServerEnabled: Type = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+  val JobServerEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
-  val Embedded: Type = Val(s"${Constant.PROPERTY_PREFIX}embedded",
+  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetaStoreDBURL: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
     "An explicit JDBC URL to use for external meta-data storage. " +
         "Normally this is set to use the SnappyData store by default and " +
         "should not be touched unless there are special requirements. " +
         "Use with caution since an incorrect configuration can result in " +
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetaStoreDriver: Type = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
     s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSize: SQLType = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
+  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in bytes) that will be used to split the data into chunks " +
         "for efficient storage and retrieval.", Some(32 * 1024 * 1024))
 
-  val HashJoinSize: SQLType = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
+  val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less" +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+
+  val EnableExperimentalFeatures = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
+    "SQLConf property that enables snappydata experimental features like distributed index " +
+        "optimizer choice during query planning. Default is turned off.",
+    Some(false), Constant.SPARK_PREFIX)
 }
 
 // extractors for properties
 
 object SparkProperty {
-  def unapply(property: Property.Type): Option[String] =
+  def unapply(property: Property.SparkValue[_]): Option[String] =
     Property.getPropertyValue(property.name)
 }
 
 object SparkSQLProperty {
-  def unapply(property: Property.SQLType): Option[String] =
+  def unapply(property: Property.SQLValue[_]): Option[String] =
     Property.getPropertyValue(property.name)
 }
 
 object SnappySparkProperty {
-  def unapply(property: Property.Type): Option[String] =
+  def unapply(property: Property.SparkValue[_]): Option[String] =
     Property.getSnappyPropertyValue(property.name)
 }
 
 object SnappySparkSQLProperty {
-  def unapply(property: Property.SQLType): Option[String] =
+  def unapply(property: Property.SQLValue[_]): Option[String] =
     Property.getSnappyPropertyValue(property.name)
 }
 
