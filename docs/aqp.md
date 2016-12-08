@@ -75,7 +75,7 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 ```
 
 
-###QCS (Query Column Set) and Sample selection###
+###QCS (Query Column Set) and Sample Selection###
 For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
 
 QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like `hour (pickup_datetime)`.
@@ -86,6 +86,7 @@ For instance, in the above example, taxi drivers that have very few records may 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 
 
 Here are some general guidelines to use when creating samples:
+
 * Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine automatically rejects all samples and runs the query on the base table. These queries typically would execute optimally anyway on the underlying data store.
 
 * Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
@@ -96,7 +97,7 @@ Here are some general guidelines to use when creating samples:
 
 * When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
-> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+<Note> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</Note>
 
 
 ## Running Queries
@@ -163,13 +164,9 @@ set spark.sql.aqp.confidence=$confidence;
 set spark.sql.aqp.behavior=$behavior;
 ```
 
-
-
-
 ## More Examples
-###Example 1 
-create a sample table with qcs 'medallion'
-
+###Example 1
+Create a sample table with qcs 'medallion' 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
   OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -192,8 +189,9 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
 ```
 
-###Example 2 
-create an additional sample table with qcs 'hack_license'
+###Example 2
+Create additional sample table with qcs 'hack_license' 
+
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
 (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -210,8 +208,9 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
 snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
 ```
 
-###Example 3 
-Create a sample table using function "hour(pickup_datetime) as QCS.
+###Example 3
+Create a sample table using function "hour(pickup_datetime) as QCS
+
 ```
 Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 ```
@@ -254,35 +253,35 @@ Sample selection logic selects most appropriate sample, based on this relatively
 * When multiple stratified samples with subset of QCSs match, sample with most matching columns is used. Largest size of sample gets selected if multiple such samples are available. 
 
 
-###High-level Accuracy Contracts (HAC)###
+##High-level Accuracy Contracts (HAC)###
 SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
 
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
-####Behavior Clause####
+###Behavior Clause
 Synopsis Data Engine has HAC support using the following behavior clause. 
 
-##### `<do_nothing>`#####
+#### `<do_nothing>`
 The SDE engine returns the estimate as is. 
 <p style="text-align: center;"><img alt="DO NOTHING" src="/Images/aqp_donothing.png"></p>
 <br>
 
-##### `<local_omit>`#####
+#### `<local_omit>`
 For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
 <p style="text-align: center;"><img alt="LOCAL OMIT" src="/Images/aqp_localomit.png"></p>
 <br>
 
-##### `<strict>`#####
+#### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
 <p style="text-align: center;"><img alt="Strict" src="/Images/aqp_strict.png"></p>
 <br>
 
-##### `<run_on_full_table>`#####
+#### `<run_on_full_table>`
 If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
 <p style="text-align: center;"><img alt="RUN OF FULL TABLE" src="/Images/aqp_runonfulltable.png"></p>
 <br>
 
-##### `<partial_run_on_base_table>`#####
+#### `<partial_run_on_base_table>`
 If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
 <p style="text-align: center;"><img alt="PARTIAL RUN ON BASE TABLE" src="/Images/aqp_partialrunonbasetable.png"></p>
 <br>

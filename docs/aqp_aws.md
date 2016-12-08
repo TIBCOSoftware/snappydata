@@ -72,7 +72,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.	
 <p style="text-align: center;"><img alt="STEP" src="/Images/aws_ebsvolumesize.png"></p>
->Note: Currently only Amazon Elastic Block Storage (EBS) is supported. 
+<Note>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. </Note>
 
 5. Enter your email address.  <br>
 <p style="text-align: center;"><img alt="STEP" src="/Images/aws_email.png"></p>
@@ -80,11 +80,11 @@ Refer to the Amazon documentation for more information on  [generating your own 
 6. Click **Generate**. 
 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
-> Note: 
 
-	> * The region you select must match the key pair you created.
-				
-	> * If you are not already logged into AWS, you are redirected to the AWS sign-in page. 
+    <Note> Note: </Note>
+
+	* <Note> The region you select must match the key pair you created.</Note>
+	* <Note>  If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	</Note>
 <p style="text-align: center;"><img alt="STEP" src="/Images/aws_selectedregion.png"></p>
 
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
@@ -92,13 +92,13 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 9. You can change the stack name or click **Next** to use the provided default value.
 
-	> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.
+	<Note> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note>
 
 10. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
 
 11. On the **Review** page, verify the details and click **Create** to create a stack. 
 
-	> Note: This operation may take a few minutes to complete. 
+	<Note> Note: This operation may take a few minutes to complete.</Note> 
 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation. 
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
@@ -106,16 +106,16 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 <a id="Stack"></a>
 13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	<p style="text-align: center;"><img alt="Public IP" src="/Images/aws_links.png"></p>
-> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
+<Note> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
 
 	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
-	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
+	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*</Note>
+
+<Note> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</Note>
 
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
-
->Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 <a id="DeployingClusterScript"></a>
 ##Deploying SnappyData Cloud Cluster on AWS using Scripts##
@@ -172,13 +172,14 @@ For comprehensive list of command options, run `./snappy-ec2` in the command pro
 SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). 
 
 
-> Note:
+<Note> Note:</Note>
 
-> * The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
+*	<Note> The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.</Note>
 	
-> * You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
+* <Note> You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.</Note>
 	
 > * Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
+</Note>
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
@@ -211,11 +212,12 @@ Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for m
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
->  Note:
+<Note>  Note:</Note>
 
-> *  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.
-> *  It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
-
+* <Note>  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</Note>
+ 
+* <Note>  It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
+</Note>
 ###SQL Interpreter###
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
 ####Multi-Line Statements####
@@ -242,7 +244,7 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 ```
 <p style="text-align: center;"><img alt="Example" src="/Images/DirectivesinApacheZeppelin.png"></p>
 
-> Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
+<Note> Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.</Note>
 
 ###Scala Interpreter###
 The `%snappydata.spark` code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.

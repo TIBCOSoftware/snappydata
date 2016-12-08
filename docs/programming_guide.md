@@ -561,7 +561,8 @@ Create a SnappyStore table using Spark APIs
 Drop a SnappyStore table using Spark APIs
 
     snappy.dropTable(tableName, ifExists = true)
-
+    
+<a id="ddl"></a>
 #### DDL extensions to SnappyStore tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
