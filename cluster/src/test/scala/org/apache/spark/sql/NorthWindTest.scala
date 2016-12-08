@@ -598,7 +598,7 @@ class NorthWindTest
           classOf[CartesianProductExec])
         case "Q46" => NWQueries.assertJoin(snc, NWQueries.Q46, "Q46", 1788650, 19,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 329,
+        case "Q47" => NWQueries.assertJoin(snc, NWQueries.Q47, "Q47", 1788650, 23,
           classOf[BroadcastNestedLoopJoinExec])
         case "Q48" => NWQueries.assertJoin(snc, NWQueries.Q48, "Q48", 1788650, 23,
           classOf[BroadcastNestedLoopJoinExec])

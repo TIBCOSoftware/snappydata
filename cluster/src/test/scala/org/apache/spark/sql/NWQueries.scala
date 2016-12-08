@@ -623,17 +623,10 @@ object NWQueries extends SnappyFunSuite {
       "Mismatch got df.count -> " + count + " but expected numRows -> "
           + numRows + " for queryNum = " + queryNum)
     val expectedPartitions = (numPartitions - 4) to (numPartitions + 4)
-    if (WARN_FOR_PARTITION_MISMATCH || c == classOf[CartesianProductExec]) {
-      if (!expectedPartitions.contains(df.rdd.partitions.length)) {
-        logWarning("Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
-            " but expected numPartitions -> " + numPartitions +
-            " for queryNum = " + queryNum)
-      }
-    } else {
-      assert(expectedPartitions.contains(df.rdd.partitions.length),
-        "Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
-            " but expected numPartitions -> " + numPartitions +
-            " for queryNum = " + queryNum)
+    if (!expectedPartitions.contains(df.rdd.partitions.length)) {
+      logWarning("Mismatch got df.rdd.partitions.length -> " + df.rdd.partitions.length +
+          " but expected numPartitions -> " + numPartitions +
+          " for queryNum = " + queryNum)
     }
   }
 
