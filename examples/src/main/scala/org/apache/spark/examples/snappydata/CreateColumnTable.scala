@@ -188,7 +188,7 @@ object CreateColumnTable extends SnappySQLJob {
   }
 
   /**
-   * Creates a column table where schema is inferred from parquet data file
+   * Creates a column table where schema is inferred from Parquet/CSV data file
    */
   def createColumnTableInferredSchema(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
@@ -209,6 +209,22 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println()
     val result = snSession.sql("SELECT COUNT(*) FROM CUSTOMER").collect()
     pw.println("Number of records in CUSTOMER table after loading data are " + result(0).get(0))
+
+    pw.println("****Create a column table using API where schema is inferred from CSV file****")
+    pw.println()
+    snSession.dropTable("CUSTOMER", ifExists = true)
+    val customer_csv_DF = snSession.read.format("com.databricks.spark.csv").option("header", "true")
+        .option("inferSchema", "true")
+        .load(s"$dataFolder/customer_with_headers.csv")
+
+    // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // For complete list of attributes refer the documentation
+    customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+
+    pw.println()
+    val result2 = snSession.sql("SELECT COUNT(*) FROM CUSTOMER").collect()
+    pw.println("Number of records in CUSTOMER table after loading data are " + result2(0).get(0))
 
     pw.println("****Done****")
   }

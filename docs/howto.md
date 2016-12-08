@@ -11,7 +11,9 @@ You can run the examples any of the following ways:
 
 * **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples runs collocated with Spark+SnappyData Store in the same JVM. 
 
-* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData [job](#howto-job). In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details how to run a job.
+* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData [job](#howto-job). In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
+
+> **Note**: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.
 
 The following topics are covered in this section:
 
@@ -76,6 +78,8 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
+You can check SnappyData UI by opening `http://leadHostname:4040` in browser (replace leadHostName by the host name of your lead node). Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
 ```
@@ -89,8 +93,8 @@ The SnappyData Locator has stopped.
 
 To start the cluster on multiple hosts:
 
-1. Easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes. 
-2. Create the configuration files **conf/servers**, **conf/locators**, **conf/leads** and mention the hostnames on which to start the server, locators, lead respectively. The packages template files (e.g. conf/servers.template) can be copied. 
+1. Easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+2. Create the configuration files **conf/servers**, **conf/locators**, **conf/leads** and mention the hostnames on which to start the server, locators, lead respectively. The packages template files (e.g. conf/servers.template) can be copied.
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
 > Note: It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for [cluster configuration](http://snappydatainc.github.io/snappydata/configuration/) for more details.
@@ -114,13 +118,23 @@ class CreatePartitionedRowTable extends SnappySQLJob {
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 }
 ```
-Jags: WHY IS THIS MAVEN THING RELEVANT? FOR COMPILE TIME WITHIN IDE, SAY SO .. HOW ABOUT SBT?
-**Maven dependencies**
-Use the following Maven dependencies for your program that implements the SnappyData job:
+
+**Dependencies**
+To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.
+Example Maven dependency:
 ```
-groupId: io.snappydata
-artifactId: snappydata-cluster_2.11
-version: 0.7
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-cluster_2.11</artifactId>
+    <version>0.7</version>
+</dependency>
+```
+Example SBT dependency:
+
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
 ```
 
 **Running the job**
@@ -237,7 +251,53 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 
 2 rows selected
 
-// ADD EXAMPLE TO LIST MEMBERS.. MAYBE MORE ... WE DON'T YET HAVE A SNAPPY-SHELL REFERENCE
+```
+
+View the members of cluster by using `show members` command
+```
+snappy> show members;
+ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+192.168.63.1(21412)<v1>:61964 |192.168.63.1                  |datastore(normal)             |RUNNING             |localhost/127.0.0.1[1528]     |                              
+192.168.63.1(21594)<v2>:29474 |192.168.63.1                  |accessor(normal)              |RUNNING             |                              |IMPLICIT_LEADER_SERVERGROUP   
+localhost(21262)<v0>:22770    |localhost                     |locator(normal)               |RUNNING             |localhost/127.0.0.1[1527]     |                              
+
+3 rows selected
+
+```
+
+View the list tables by using `show tables` command
+
+```
+snappy> show tables;
+TABLE_SCHEM          |TABLE_NAME                    |TABLE_TYPE  |REMARKS             
+--------------------------------------------------------------------------------------
+SYS                  |ASYNCEVENTLISTENERS           |SYSTEM TABLE|                    
+SYS                  |GATEWAYRECEIVERS              |SYSTEM TABLE|                    
+SYS                  |GATEWAYSENDERS                |SYSTEM TABLE|                    
+SYS                  |SYSALIASES                    |SYSTEM TABLE|                    
+SYS                  |SYSCHECKS                     |SYSTEM TABLE|                    
+SYS                  |SYSCOLPERMS                   |SYSTEM TABLE|                    
+SYS                  |SYSCOLUMNS                    |SYSTEM TABLE|                    
+SYS                  |SYSCONGLOMERATES              |SYSTEM TABLE|                    
+SYS                  |SYSCONSTRAINTS                |SYSTEM TABLE|                    
+SYS                  |SYSDEPENDS                    |SYSTEM TABLE|                    
+SYS                  |SYSDISKSTORES                 |SYSTEM TABLE|                    
+SYS                  |SYSFILES                      |SYSTEM TABLE|                    
+SYS                  |SYSFOREIGNKEYS                |SYSTEM TABLE|                    
+SYS                  |SYSHDFSSTORES                 |SYSTEM TABLE|                    
+SYS                  |SYSKEYS                       |SYSTEM TABLE|                    
+SYS                  |SYSROLES                      |SYSTEM TABLE|                    
+SYS                  |SYSROUTINEPERMS               |SYSTEM TABLE|                    
+SYS                  |SYSSCHEMAS                    |SYSTEM TABLE|                    
+SYS                  |SYSSTATEMENTS                 |SYSTEM TABLE|                    
+SYS                  |SYSSTATISTICS                 |SYSTEM TABLE|                    
+SYS                  |SYSTABLEPERMS                 |SYSTEM TABLE|                    
+SYS                  |SYSTABLES                     |SYSTEM TABLE|                    
+SYS                  |SYSTRIGGERS                   |SYSTEM TABLE|                    
+SYS                  |SYSVIEWS                      |SYSTEM TABLE|                    
+SYSIBM               |SYSDUMMY1                     |SYSTEM TABLE|                    
+APP                  |PARTSUPP                      |TABLE       |     
 
 ```
 
@@ -262,7 +322,7 @@ The code snippet below shows how to create a replicated row table using API.
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -361,7 +421,7 @@ The code snippet below shows how to create a column table using Dataframe API.
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateColumnTable")
-        .master("local[4]")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -412,13 +472,25 @@ The same table can be created using SQL as shown below:
 
 You can execute select queries on column table, join the column table with other tables and append data to it.
 
-<a id="howto-collacatedJoin"></a>
+<a id="howto-load"></a>
 ## How to Load Data in SnappyData Tables
 You can use Spark's DataFrameReader API in order to load data in SnappyData tables using different formats (Parquet, CSV, JSON etc.).
 
 **Code Example**
 
-In this example a column table is created as follows:
+**Get a SnappySession**:
+
+```
+    val spark: SparkSession = SparkSession
+        .builder
+        .appName("CreateColumnTable")
+        .master("local[*]")
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+```
+
+Create a column table is created as follows:
 
 ```
     snSession.sql("CREATE TABLE CUSTOMER ( " +
@@ -433,7 +505,7 @@ In this example a column table is created as follows:
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
-Load data in the CUSTOMER from a CSV file by using DataFrameReader API:
+Load data in the CUSTOMER table from a CSV file by using DataFrameReader API:
 
 ```
     val tableSchema = snSession.table("CUSTOMER").schema
@@ -443,14 +515,40 @@ Load data in the CUSTOMER from a CSV file by using DataFrameReader API:
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-In case you have a Parquet file, you can use code similar to following:
+In case you have a Parquet file, use code as given below:
 
 ```
 val customerDF = snc.read.parquet(s"$dataDir/customer_parquet")
 customerDF.write.insertInto("CUSTOMER")
 ```
 
-The source code to load the data from a CSV file is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala]((https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+**Inferring schema from data file**
+A schema for the table can be inferred from the data file. In this case, you need not create a table before loading the data. In the code snippet below, we create a DataFrame for a Parquet file and then use saveAsTable API to create a table with data loadedfrom it
+```
+    val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
+    // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+```
+
+In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.
+
+```
+    val customerDF = snSession.read.format("com.databricks.spark.csv").option("header", "true")
+        .option("inferSchema", "true")
+        .load(s"$quickstart/src/main/resources/customer_with_headers.csv")
+
+    // props1 map specifies the properties for the table to be created
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // For complete list of attributes refer the documentation
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+
+```
+
+
+The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala]((https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
 
 <a id="howto-collacatedJoin"></a>
@@ -467,8 +565,8 @@ A partitioned table can be collocated with another partitioned table by using "C
 ```
     val spark: SparkSession = SparkSession
         .builder
-        .appName("CreateReplicatedRowTable")
-        .master("local[4]")
+        .appName("CollocatedJoinExample")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -548,7 +646,6 @@ for (x <- 1 to 10) {
 }
 preparedStmt1.executeBatch()
 preparedStmt1.close()
-
 ```
 
 <a id="howto-JSON"></a>
@@ -566,8 +663,8 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
     val spark: SparkSession = SparkSession
         .builder
-        .appName("CreateReplicatedRowTable")
-        .master("local[4]")
+        .appName("WorkingWithJson")
+        .master("local[*]")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -798,7 +895,7 @@ Join the the sample table and reference table to find out which airlines arrive 
         "group by UniqueCarrier, description order by arrivalDelay " +
         "with error").collect()
 
-   result.foreach(r => pw.println(r(0) + ", " + r(1) + ", " + r(2) + ", " + r(3)))
+   result.foreach(r => println(r(0) + ", " + r(1) + ", " + r(2) + ", " + r(3)))
 ```
 
 
