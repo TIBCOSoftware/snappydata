@@ -51,7 +51,8 @@ object SnappyTableStatsProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, SnappyRegionStats]()
   @volatile
-  private var membersInfo = mutable.Map.empty[java.util.UUID, mutable.Map[String, Any]]
+  //private var membersInfo = mutable.Map.empty[java.util.UUID, mutable.Map[String, Any]]
+  private var membersInfo = mutable.Map.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
 
@@ -111,7 +112,7 @@ object SnappyTableStatsProviderService extends Logging {
     // reset all existing members status as down
     membersInfo.map(tmp => {
      val mbr = tmp._2
-      mbr.put("status" , "stopped")
+      mbr.put("status" , "Stopped")
     })
 
     val collector = new GfxdListResultCollector(null, true);
@@ -134,7 +135,8 @@ object SnappyTableStatsProviderService extends Logging {
         map.put(key, memMap.get(key))
         println(">>>>>>>>>>>>>>>>>>>" + key + " >>>> " + memMap.get(key))
       }
-      map.put("status", "running")
+      map.put("status", "Running")
+      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
       val totalMemory:Long = memMap.get("maxMemory").asInstanceOf[Long]
       //val freeMemory:Long = memMap.get("freeMemory").asInstanceOf[Long]
@@ -144,18 +146,17 @@ object SnappyTableStatsProviderService extends Logging {
       map.put("memoryUsage", memoryUsage)
       map.put("cpuUsage", memMap.get("cpuActive").toString.toDouble)
 
-      println(">>>>>>>>>>>>>>>>>>> cpuUsage >>>> " + map.get("cpuUsage"))
-      //println(">>>>>>>>>>>>>>>>>>> usedMemory >>>> " + map.get("usedMemory"))
-      println(">>>>>>>>>>>>>>>>>>> memoryUsage >>>> " + map.get("memoryUsage"))
-      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-      membersInfo.put(memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID], map)
-
+      val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
+      if(dssUUID != null){
+        membersInfo.put(dssUUID.toString, map)
+      }else{
+        membersInfo.put(memMap.get("id").asInstanceOf[String], map)
+      }
     }
 
   }
 
-  def getMembersStatsFromService: mutable.Map[java.util.UUID, mutable.Map[String, Any]] = {
+  def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
     membersInfo
   }
 

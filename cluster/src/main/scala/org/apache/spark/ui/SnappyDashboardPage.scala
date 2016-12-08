@@ -52,7 +52,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numClients" -> 0)
     clusterStatsMap += ("memoryUsage" -> 0)
 
-    //val membersBuf = SnappyTableStatsProviderService.getAggregatedMemberStatsOnDemand
     val membersBuf = SnappyTableStatsProviderService.getMembersStatsFromService
 
     val tablesBuf = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand
@@ -86,7 +85,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def updateClusterStats(
       clusterStatsMap: mutable.HashMap[String, Any],
-      membersBuf: mutable.Map[java.util.UUID, mutable.Map[String, Any]],
+      membersBuf: mutable.Map[String, mutable.Map[String, Any]],
       tablesBuf: Map[String, SnappyRegionStats] ) : Unit = {
 
     var isClusterStateNormal = true
@@ -104,7 +103,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         isClusterStateNormal = false
       }
 
-      if(m("lead").toString.toBoolean){
+      if(m("lead").toString.toBoolean || m("activeLead").toString.toBoolean){
         numLead += 1
       }
       if(m("locator").toString.toBoolean){
@@ -180,10 +179,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div class="keyStatsValue">{clusterDetails.getOrElse("numServers","NA")}</div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("servers")}</div>
       </div>
-      <!-- <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numClients","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("clients")}</div>
-      </div> -->
       <div class="keyStates">
         <div class="keyStatsValue">{clusterDetails.getOrElse("numTables","NA")}</div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("tables")}</div>
@@ -204,7 +199,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def memberStats(membersBuf: mutable.Map[java.util.UUID,mutable.Map[String, Any]]): Seq[Node] = {
+  private def memberStats(membersBuf: mutable.Map[String,mutable.Map[String, Any]]): Seq[Node] = {
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
@@ -224,6 +219,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("host")}
               </span>
             </th>
+            <th style="text-align:center;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("memberType")}
+              </span>
+            </th>
             <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
@@ -237,21 +237,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 100px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("clients")}
-              </span>
-            </th>
-            <th style="text-align:center;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("leadTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("lead")}
-              </span>
-            </th>
-            <th style="text-align:center;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("locatorTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("locator")}
-              </span>
-            </th>
-            <th style="text-align:center; ">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("serverTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("server")}
               </span>
             </th>
           </tr>
@@ -316,6 +301,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     }
 
+    val memberType = {
+      if(memberDetails.getOrElse("lead", false).toString.toBoolean){
+        if(memberDetails.getOrElse("activeLead", false).toString.toBoolean)
+           <strong data-toggle="tooltip" title="" data-original-title="Active Lead">LEAD</strong>
+        else
+          "LEAD"
+      } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
+        "LOCATOR"
+      } else {
+        "DATA SERVER "
+      }
+    }
+
     <tr>
       <td>
         <div style="float: left; border-right: thin inset; height: 24px; padding: 0 5px;">
@@ -329,6 +327,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div style="width:100%; padding-left:10px;">{memberDetails.getOrElse("host","NA")}</div>
       </td>
       <td>
+        <div style="text-align:center;">{memberType}</div>
+      </td>
+      <td>
         {makeProgressBar(memberDetails.getOrElse("cpuUsage",0.toDouble).asInstanceOf[Double])}
       </td>
       <td>
@@ -337,19 +338,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="text-align:right; padding-right:15px;">{memberDetails.getOrElse("clients","NA")}</div>
       </td>
-      <td>
-        <div style="text-align:center;">{SnappyDashboardPage.booleanToEnglish(memberDetails.getOrElse("lead",false).toString.toBoolean)}</div>
-      </td>
-      <td>
-        <div style="text-align:center;">{SnappyDashboardPage.booleanToEnglish(memberDetails.getOrElse("locator",false).toString.toBoolean)}</div>
-      </td>
-      <td>
-        <div style="text-align:center;">{SnappyDashboardPage.booleanToEnglish(memberDetails.getOrElse("cacheServer",false).toString.toBoolean)}</div>
-      </td>
     </tr>
   }
 
-  //private def tableRow(tableDetails:mutable.Map[String, Any]): Seq[Node] = {
   private def tableRow(tableDetails: SnappyRegionStats): Seq[Node] = {
 
     val numFormatter = java.text.NumberFormat.getIntegerInstance
@@ -436,6 +427,8 @@ object SnappyDashboardPage{
   memberStatsColumn += ("memoryUsageTooltip" -> "Memory used by Member")
   memberStatsColumn += ("clients" -> "Clients")
   memberStatsColumn += ("clientsTooltip" -> "Number of Clients connected to Member")
+  memberStatsColumn += ("memberType" -> "Type")
+  memberStatsColumn += ("memberTypeTooltip" -> "Member is Lead / Locator / Data Server")
   memberStatsColumn += ("lead" -> "Lead")
   memberStatsColumn += ("leadTooltip" -> "Member is Lead")
   memberStatsColumn += ("locator" -> "Locator")
@@ -458,11 +451,4 @@ object SnappyDashboardPage{
   tableStatsColumn += ("sizeTooltip" -> "Tables Size")
 
 
-
-  def booleanToEnglish(value: Boolean): String = {
-    if(value)
-      "YES"
-    else
-      "NO"
-  }
 }
