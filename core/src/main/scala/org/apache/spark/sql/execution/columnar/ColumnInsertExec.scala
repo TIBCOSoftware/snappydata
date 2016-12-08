@@ -47,8 +47,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   @transient private var callStoreCachedBatch: String = _
   @transient private var initEncoders: String = _
 
-  private val columnBatchSizeInBytes = Property.ColumnBatchSizeMb
-      .configEntry.getConf[Int](sqlContext.conf) * 1024 * 1024
+  private val columnBatchSize = Property.ColumnBatchSize.get(sqlContext.conf)
 
   @transient private lazy val (metricAdd, metricGet) =
     Utils.metricMethods(sparkContext)
@@ -123,7 +122,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
        |int $defaultRowSize = 0;
        |$declarations
        |int $defaultBatchSizeTerm = Math.max(
-       |  ($columnBatchSizeInBytes - 8) / $defaultRowSize, 16);
+       |  ($columnBatchSize - 8) / $defaultRowSize, 16);
        |// ceil to nearest multiple of 16 since size is checked every 16 rows
        |$defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / 16) + 1) * 16;
        |$initEncoders
@@ -225,7 +224,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
        |  // check if batch size has exceeded max allowed
        |  long $sizeTerm = 0L;
        |  ${calculateSize.toString()}
-       |  if ($sizeTerm >= $columnBatchSizeInBytes) {
+       |  if ($sizeTerm >= $columnBatchSize) {
        |    $callStoreCachedBatch;
        |    $batchSizeTerm = 0;
        |    $initEncoders

@@ -103,7 +103,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.JobserverEnabled.name, "true").
+          set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR")
       Utils.setDefaultSerializerAndCodec(conf)
 
@@ -314,7 +314,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
-    changeOrAppend(Property.JobserverEnabled.name, "false",
+    changeOrAppend(Property.JobServerEnabled.name, "false",
       ignoreIfPresent = true)
 
     conf
@@ -334,7 +334,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       internalStart(sc)
     }
 
-    val jobServerEnabled = Property.JobserverEnabled.getProperty(
+    val jobServerEnabled = Property.JobServerEnabled.getProperty(
       bootProperties).toBoolean
     if (_directApiInvoked) {
       assert(jobServerEnabled,
