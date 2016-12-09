@@ -260,8 +260,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
               </span>
             </th>
             <th style="text-align:center;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("typeTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.tableStatsColumn("type")}
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("storageModelTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.tableStatsColumn("storageModel")}
+              </span>
+            </th>
+            <th style="text-align:center;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
             <th style="text-align:center; width: 300px;">
@@ -270,8 +275,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
               </span>
             </th>
             <th style="text-align:center; width: 300px;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("sizeTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.tableStatsColumn("size")}
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 300px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
             </th>
           </tr>
@@ -344,7 +354,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def tableRow(tableDetails: SnappyRegionStats): Seq[Node] = {
 
     val numFormatter = java.text.NumberFormat.getIntegerInstance
-    val columnTable = if (tableDetails.isColumnTable) " COLUMN " else " ROW "
+    val storageModel = if (tableDetails.isColumnTable) " COLUMN " else " ROW "
+    val distributionType = if (tableDetails.isReplicatedTable) " REPLICATED " else " PARTITIONED "
 
     <tr>
       <td>
@@ -353,8 +364,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </div>
       </td>
       <td>
-        <div style="width:100%; padding-left:10px;">
-          {columnTable}
+        <div style="width:100%; text-align:center;">
+          {storageModel}
+        </div>
+      </td>
+      <td>
+        <div style="width:100%; text-align:center;">
+          {distributionType}
         </div>
       </td>
       <td>
@@ -365,6 +381,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="padding-right:10px; text-align:right;">
           {Utils.bytesToString(tableDetails.getSizeInMemory)}
+        </div>
+      </td>
+      <td>
+        <div style="padding-right:10px; text-align:right;">
+          {Utils.bytesToString(tableDetails.getTotalSize)}
         </div>
       </td>
     </tr>
@@ -443,12 +464,16 @@ object SnappyDashboardPage{
   tableStatsColumn += ("idTooltip" -> "Tables unique Identifier")
   tableStatsColumn += ("name" -> "Name")
   tableStatsColumn += ("nameTooltip" -> "Tables Name")
-  tableStatsColumn += ("type" -> "Type")
-  tableStatsColumn += ("typeTooltip" -> "Tables Type")
+  tableStatsColumn += ("storageModel" -> "Storage Model")
+  tableStatsColumn += ("storageModelTooltip" -> "Storage Model is either COLUMN or ROW ")
+  tableStatsColumn += ("distributionType" -> "Distribution Type")
+  tableStatsColumn += ("distributionTypeTooltip" -> "Distribution Type is either PARTITIONED or REPLICATED table ")
   tableStatsColumn += ("rowCount" -> "Row Count")
   tableStatsColumn += ("rowCountTooltip" -> "Total Rows in Table")
-  tableStatsColumn += ("size" -> "Size")
-  tableStatsColumn += ("sizeTooltip" -> "Tables Size")
+  tableStatsColumn += ("sizeInMemory" -> "In Memory Size")
+  tableStatsColumn += ("sizeInMemoryTooltip" -> "Tables Size in Memory")
+  tableStatsColumn += ("totalSize" -> "Total Size")
+  tableStatsColumn += ("totalSizeTooltip" -> "Total Size of Tables")
 
 
 }
