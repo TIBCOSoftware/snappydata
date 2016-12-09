@@ -51,7 +51,6 @@ object SnappyTableStatsProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, SnappyRegionStats]()
   @volatile
-  //private var membersInfo = mutable.Map.empty[java.util.UUID, mutable.Map[String, Any]]
   private var membersInfo = mutable.Map.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
@@ -137,14 +136,6 @@ object SnappyTableStatsProviderService extends Logging {
       }
       map.put("status", "Running")
       println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-      val totalMemory:Long = memMap.get("maxMemory").asInstanceOf[Long]
-      //val freeMemory:Long = memMap.get("freeMemory").asInstanceOf[Long]
-      val usedMemory:Long = memMap.get("usedMemory").asInstanceOf[Long] //maxMemory - freeMemory
-      val memoryUsage:Double = (usedMemory * 100) / totalMemory
-      //map.put("usedMemory", usedMemory)
-      map.put("memoryUsage", memoryUsage)
-      map.put("cpuUsage", memMap.get("cpuActive").toString.toDouble)
 
       val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
       if(dssUUID != null){

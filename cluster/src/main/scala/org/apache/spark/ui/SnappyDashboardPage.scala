@@ -234,6 +234,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("usedMemory")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("totalMemory")}
+              </span>
+            </th>
             <th style="text-align:center; width: 100px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("clients")}
@@ -269,17 +279,17 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th style="text-align:center; width: 300px;">
+            <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("rowCountTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; width: 300px;">
+            <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 300px;">
+            <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
@@ -324,6 +334,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     }
 
+    val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
+    val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+    val memoryUsage: Double = (usedMemory * 100) / totalMemory
+
     <tr>
       <td>
         <div style="float: left; border-right: thin inset; height: 24px; padding: 0 5px;">
@@ -340,10 +354,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div style="text-align:center;">{memberType}</div>
       </td>
       <td>
-        {makeProgressBar(memberDetails.getOrElse("cpuUsage",0.toDouble).asInstanceOf[Double])}
+        {makeProgressBar(memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble)}
       </td>
       <td>
-        {makeProgressBar(memberDetails.getOrElse("memoryUsage",0.toDouble).asInstanceOf[Double])}
+        {makeProgressBar(memoryUsage)}
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(usedMemory)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(totalMemory).toString}</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{memberDetails.getOrElse("clients","NA")}</div>
@@ -438,7 +458,7 @@ object SnappyDashboardPage{
   memberStatsColumn += ("idTooltip" -> "Members unique Identifier")
   memberStatsColumn += ("name" -> "Name")
   memberStatsColumn += ("nameTooltip" -> "Members Name")
-  memberStatsColumn += ("nameOrId" -> "Name/Id")
+  memberStatsColumn += ("nameOrId" -> "Member")
   memberStatsColumn += ("nameOrIdTooltip" -> "Members Name/Id")
   memberStatsColumn += ("host" -> "Host")
   memberStatsColumn += ("hostTooltip" -> "Physical machine on which member is running")
@@ -446,6 +466,10 @@ object SnappyDashboardPage{
   memberStatsColumn += ("cpuUsageTooltip" -> "CPU used by Member")
   memberStatsColumn += ("memoryUsage" -> "Memory Usage")
   memberStatsColumn += ("memoryUsageTooltip" -> "Memory used by Member")
+  memberStatsColumn += ("usedMemory" -> "Used Memory")
+  memberStatsColumn += ("usedMemoryTooltip" -> "Used Memory")
+  memberStatsColumn += ("totalMemory" -> "Total Memory")
+  memberStatsColumn += ("totalMemoryTooltip" -> "Total Memory")
   memberStatsColumn += ("clients" -> "Clients")
   memberStatsColumn += ("clientsTooltip" -> "Number of Clients connected to Member")
   memberStatsColumn += ("memberType" -> "Type")
