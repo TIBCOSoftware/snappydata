@@ -1,3 +1,4 @@
+#Overview
 SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver 
 and Server node embeds a Spark Executor. Server node also embeds a snappy store. 
 

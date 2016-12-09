@@ -123,9 +123,9 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 ###Prerequisites###
 Before you begin, do the following:
 
-* Ensure you have an existing AWS account with required permissions to launch EC2 resources.
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
 
-*  EC2 key pair created in the region where you want to launch the SnappyData cluster.
+* EC2 key pair created in the region where you want to launch the SnappyData cluster.
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`.
 
 	If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file. You can find this information from the AWS IAM console.

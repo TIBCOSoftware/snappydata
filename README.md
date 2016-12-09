@@ -1,25 +1,34 @@
 
-## Table of Contents
-
 [![Join the chat at https://gitter.im/SnappyDataInc/snappydata](https://badges.gitter.im/SnappyDataInc/snappydata.svg)](https://gitter.im/SnappyDataInc/snappydata?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-* [Introduction](#introduction)
-* [Download](#download-binary-distribution)
-* [Community Support](#community-support)
-* [Link with SnappyData Distribution](#link-with-snappydata-distribution)
-* [Building SnappyData from Source](#building-snappydata-from-source)
-* [Setting up passwordless SSH](#setting-up-passwordless-ssh)
-* [Quick Start with SQL](#quick-start-with-sql)
-* [Quick Start with Scala/Spark/Snappy Programming](#quick-start-with-scalasparksnappy-programming)
 
-## Introduction
-SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). 
+### SnappyData fuses Apache Spark with an in-memory database to deliver a data engine capable of processing streams, transactions and interactive analytics in a single cluster.
 
-![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
+### The Challenge with Spark and remote data sources
+Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While, this provides rich unified access to data this can also be quite in-efficient and expensive. Analytic processing requires massive data sets to be repeatedly copied, data reformatted to suit Spark and ultimately fails to deliver the promise of interactive analytic performance, in many cases. For instance, running a aggregation on a large Cassandra table will necessitate streaming the entire table into Spark to do the aggregation, each time. Caching within Spark is immutable and would result in stale insight. 
 
+### The SnappyData Approach
+Instead, we take a very different approach. SnappyData fuses an low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark(Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. The net effect is an order of magnitude performance improvement even compared to native spark caching and more than 2 orders of magnitude better Spark performance when working with external data sources. 
+
+Essentially, we turn Spark into a in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries. Or, it is a in-memory scale out Hybrid Database that can execute Spark code, SQL or even Objects. 
+
+** IF YOU ARE ALREADY USING SPARK, EXPERIENCE 10X(??) SPEED UP FOR YOUR QUERY PERFORMANCE. TRY OUT THIS [TEST](LINK TO AMAZING SPEED TEST)
+// ADD FINAL 10X OR 20X SPEED UP NUMBER ONCE THE FINAL BUILD IS DONE.
+
+##### Snappy Architecture (Resize this image)
+![SnappyData Architecture](https://drive.google.com/uc?export=view&id=0B6s-Dkb7LKolaE1hS2V2SEF2NUE)
+
+## Getting Started
+You have multiple options to get going with Snappydata. Easiest option is if you are already using Spark 2.0+. You can simply get going by adding Snappydata as a package dependency. See all the options for running SnappyData [here](PROVIDE APPROPRIATE LINK)
+
+## 5 minute Quickstart
+(Again provide the same link as above)
+
+## Documentation
+The current documentation can be found [here](I am here, there, everywhere)
+
+// SHOULD WE REMOVE THIS SECTION? ... ALREADY IN THE DOCS
 ## Download binary distribution
-You can download the latest version of SnappyData here:
-
-* SnappyData 0.6 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.zip)
+You can download the latest version of SnappyData from the [releases](https://github.com/SnappyDataInc/snappydata/releases) page. 
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -34,23 +43,24 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappydata-core_2.11
-version: 0.6
+version: 0.7
 
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 0.6
+version: 0.7
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.6"`
+`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.7"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.6"`
+`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
+// IS THE BELOW ALSO COVERED IN THE DOCS ... IF SO, REMOVE FROM HERE. 
 ## Working with SnappyData Source Code
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
@@ -89,204 +99,11 @@ Finally, copy your key to authorized keys:
 
 More detail on passwordless ssh can be found [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2) and [here](http://stackoverflow.com/questions/7134535/setup-passphraseless-ssh-to-localhost-on-os-x).
 
-## Quick start with SQL  
+## Ad Analytics using SnappyData
+Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+The example also goes through an benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra. 
 
-This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP and OLTP SQL. To explore a more complete hybrid workload programming example (streaming ingestion to column tables and interactive analytic queries) go through this AdAnalytics sample [application](https://github.com/SnappyDataInc/snappy-poc)
-
-The following script starts up a minimal set of essential components to form a SnappyData cluster - A locator, one data server 
-and one lead node. All nodes are started on localhost.
-The locator is primarily responsible for making all the nodes aware of each other, it allows the cluster to expand or shrink dynamically and provides a consistent membership view to each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver and orchestrates execution of Spark Jobs. 
-The Data server is the work horse - manages all in-memory data, the OLTP execution engine and Spark executors. 
-
-See the  [‘Getting Started’](docs/GettingStarted.md) section for more details. 
-
-From the product install directory run this script:
-
-````shell
-./sbin/snappy-start-all.sh
-````
-> NOTE there is a "start-all.sh" script in /sbin/ as well that starts up just Spark. Make sure you use snappy-start-all.sh
-
-This may take 30 seconds or more to bootstrap the entire cluster on your local machine (logs are in the 'work' sub-directory). 
-The output should look something like this …
-````
-$ sbin/snappy-start-all.sh 
-localhost: Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
-...
-localhost: SnappyData Locator pid: 56703 status: running
-
-localhost: Starting SnappyData Server using locators for peer discovery: jramnara-mbpro[10334]   
-       (port used for members to form a p2p cluster)
-localhost: SnappyData Server pid: 56819 status: running
-localhost:   Distributed system now has 2 members.
-
-localhost: Starting SnappyData Leader using locators for peer discovery: jramnara-mbpro[10334]
-localhost: SnappyData Leader pid: 56932 status: running
-localhost:   Distributed system now has 3 members.
-
-localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
-
-````
-At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC.
-You can [monitor the Spark cluster at port 4040](http://localhost:4040).
-
-For SQL, the SnappyData SQL Shell `snappy-shell` provides a simple way to inspect the catalog,  run admin operations, 
-manage the schema and run interactive queries. 
-
-From product install directory run: 
-````
-$ ./bin/snappy-shell
-````
-Now, you are ready to try connecting and running SQL on SnappyData. 
-On the `snappy-shell` prompt:
-
-Connect to the cluster with
-
-````snappy> connect client 'localhost:1527';````
-
-And check member status with:
-
-````snappy> show members;````
-
-Now, lets create one column and one row table and load some data. Simply copy/paste to the shell. 
-```sql
-snappy> run './quickstart/scripts/create_and_load_column_table.sql';
-snappy> run './quickstart/scripts/create_and_load_row_table.sql';
-```
-
-Now, you can run analytical queries or execute execute transactions on this data. OLAP queries are automatically executed 
-through Spark driver and executors. 
-
-```sql
-snappy> run './quickstart/scripts/olap_queries.sql';
-```
-
-You can study the memory consumption, query execution plan, etc. from the [Spark console](http://localhost:4040).
-
-Congratulations! 
-
-## Where to go next?
-
-Next, we recommend going through more in-depth examples in [Getting Started](docs/GettingStarted.md). Here you will find more details on the 
-concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
-You can also go through our very preliminary [docs](http://snappydatainc.github.io/snappydata/) and provide us your comments. 
-
-We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
-
-If you're interested in the Scala/Spark side of things, go through the [programming quick start below](#quick-start-with-scalasparksnappy-programming).
+## Contributing to SnappyData
 
 If you are interested in contributing, please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
-
-If you want to quickly setup a cluster on Amazon Cloud, you may find our [ec2 script](docs/snappyOnAWS.md) useful.
-
-## Quick start with Scala/Spark/Snappy Programming
-
-Click the screenshot below to watch the screencast that goes along with this section:
-[![Screencast](http://i.imgur.com/ZbMltwl.png)](https://www.youtube.com/watch?v=S297Wd-2UTs)
-
-SnappyData provides the same [Spark/Scala REPL session](http://spark.apache.org/docs/latest/quick-start.html) that any Spark user is familiar with. You simply start it with a special configuration to have access to SnappyData extensions. Remember as you follow this guide that paste mode can always be entered in the REPL using `:paste` and you exit paste mode with `ctrl+d`.
-
-First, make sure you have started the SnappyData servers as described [above](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#quick-start-with-sql) (entered from the root directory):
-
-````
-./sbin/snappy-start-all.sh
-````
-
-To start the Spark/Scala REPL session enter the following command from the root, /snappy/ directory:
-
-````
-./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
-````
-
-From here, all the classic [Spark transformations](http://spark.apache.org/docs/latest/programming-guide.html#transformations) are possible. For example, the well-known as example from [Spark’s basic programming intro](http://spark.apache.org/docs/latest/quick-start.html#basics):
-
-````scala
-scala> val textFile = sc.textFile("RELEASE")
-textFile: org.apache.spark.rdd.RDD[String]
-
-scala> textFile.count()
-res1: Long = 2
-
-scala> val linesWithThree = textFile.filter(line => line.contains("3"))
-linesWithThree: org.apache.spark.rdd.RDD[String]
-
-scala> linesWithThree.collect()
-res14: Array[String] = Array(Snappy Spark 0.1.0-SNAPSHOT 3a85dca6b4e039dd5a1be43f1f52bcb2034bfc03 built for Hadoop 2.4.1)
-````
-**But what about SnappyData extensions?** To use SnappyData extensions, we must either import or create a new SnappyContext object, which gets passed the existing SparkContext (sc):
-
-````scala
-val snc = org.apache.spark.sql.SnappyContext(sc)
-````
-Let’s create a new column table (the table optimized for OLAP querying):
-````scala
-case class Data(COL1: Int, COL2: Int, COL3: Int)
-val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-
-val dataDF = snc.createDataFrame(rdd)
-````
-Here we’ve defined some data which we’ve placed into a case class and parallelized into rdd’s. classic Spark programming. Next, we create a DataFrame, but we use the previously defined SnappyContext, this allows us to use all the SnappyData extensions on the DataFrame.
-
-Now, let’s create a column table using what we’ve already defined:
-
-````scala
-val props1 = Map("Buckets" -> "2")
-snc.createTable("COLUMN_TABLE", "column", dataDF.schema, props1)
-````
-`props1` allows us to define the optional `“Buckets”` attribute which specifies the smallest unit that can be moved around in the SnappyStore when data migrates. Within `createTable`, we’ve defined the table’s name, the type of table, the table’s schema, and provided the Buckets information contained in `props1`.
-
-Now, let’s insert the data in append-mode:
-
-````scala
-dataDF.write.format("column").mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props1).saveAsTable("COLUMN_TABLE")
-```
-
-Here we’ve written the data contained in dataDF to our newly created column table using Append mode. Let’s print the table using SQL and see what’s inside:
-
-````scala
-val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
-  results1.foreach(println)
-````
-
-Easy enough. But how do we create a **row table** out of the same data, i.e. a table that can be **mutated and updated**?
-
-First, let’s create the actual table using the `createTable` method. `”Buckets”` is not used this time.
-
-````scala
-val props2 = Map.empty[String, String]
-  snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
-````
-
-Let’s insert the dataDF data as we did before, in append mode:
-
-````scala
-dataDF.write.format("row").mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props2).saveAsTable("ROW_TABLE")
-````
-
-Now, let’s check our results before we mutate some data to compare the difference:
-
-````scala
- val results2 = snc.sql("SELECT * from ROW_TABLE")
-  results2.foreach(println)
-````
-
-Okay, there’s our row table. Now let’s do some mutation:
-
-````scala
-  snc.update("ROW_TABLE", "COL3 = 3", org.apache.spark.sql.Row(99), "COL3" )
-````
-
-Here we’re updating all the values in ROW_TABLE in column 3 that equal 3 to the value 99. Let’s print our mutated table and make sure it worked:
-
-````scala
-val results3 = snc.sql("SELECT * FROM ROW_TABLE")
- results3.foreach(println)
-````
-
-And voila! Mutations in Spark. This is a very simple, abbreviated example of what SnappyData can do. It becomes much more interesting when working on streaming data, joining streams with reference data, using approximate query processing and more. To learn more about these advanced use cases, check out our [Getting Started with the Spark API](https://github.com/SnappyDataInc/snappydata/blob/master/docs/GettingStarted.md#getting-started-with-spark-api) and [Developing apps using the Spark API](http://snappydatainc.github.io/snappydata/jobs/). To read more specifically about the SnappyContext check out our [SnappyContext Documentation](http://snappydatainc.github.io/snappydata/jobs/#snappycontext).
-
-We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
 
