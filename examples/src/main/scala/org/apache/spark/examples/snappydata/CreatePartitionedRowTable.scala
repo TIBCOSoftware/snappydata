@@ -147,10 +147,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
   def createPartitionedRowTableUsingSQL(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println()
 
-    pw.println("****Create a row table using SQL****")
-    // create a partitioned row table using SQL
-    pw.println()
-    pw.println("Creating a partitioned row table(PARTSUPP) using SQL")
+    pw.println("****Creating a partitioned row table(PARTSUPP) using SQL****")
 
     snSession.sql("DROP TABLE IF EXISTS PARTSUPP")
 

@@ -194,7 +194,6 @@ object CreateColumnTable extends SnappySQLJob {
 
     pw.println("****Create a column table using API where schema is inferred from parquet file****")
     // create a partitioned column table using SQL
-    pw.println()
     snSession.dropTable("CUSTOMER", ifExists = true)
 
     val customerDF = snSession.read.parquet(s"$dataFolder/customerparquet")
@@ -210,7 +209,6 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("Number of records in CUSTOMER table after loading data are " + result(0).get(0))
 
     pw.println("****Create a column table using API where schema is inferred from CSV file****")
-    pw.println()
     snSession.dropTable("CUSTOMER", ifExists = true)
 
     val customer_csv_DF = snSession.read.option("header", "true")
