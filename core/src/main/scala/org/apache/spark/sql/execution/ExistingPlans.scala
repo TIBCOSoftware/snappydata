@@ -185,21 +185,18 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 }
 
 /** Combines two SparkPlan or one SparkPlan and another RDD and acts as a LeafExecNode for the
- *  higher operators.  Typical usage is like combining additional plan or rdd with
- *  ColumnTableScan without breaking WholeStageCodegen.
- * @param basePlan left plan that must be code generated.
- * @param basePartKeys left partitioner expression
- * @param otherPlan optional. otherRDD can be used instead of this.
+ * higher operators.  Typical usage is like combining additional plan or rdd with
+ * ColumnTableScan without breaking WholeStageCodegen.
+ *
+ * @param basePlan      left plan that must be code generated.
+ * @param basePartKeys  left partitioner expression
+ * @param otherPlan     optional. otherRDD can be used instead of this.
  * @param otherPartKeys right partitioner expression
- * @param otherRDD another rdd instead of right plan.
- * @param relation the underlying relation object of the rdd.
  */
 private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
-    otherPartKeys: Seq[Expression],
-    otherRDD: Option[RDD[InternalRow]] = None,
-    relation: Option[PartitionedDataSourceScan] = None) extends LeafExecNode with CodegenSupport {
+    otherPartKeys: Seq[Expression]) extends LeafExecNode with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
@@ -211,7 +208,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD.get)(_.execute()))
+    inputCode.inputRDDs ++ Some(otherPlan.execute())
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
@@ -219,9 +216,8 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
 
     val row = ctx.freshName("row")
-    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
-      (ref, ordinal) =>
-      val baseIndex = Option(otherPlan).fold(relation.get.schema.fieldIndex(ref.name))(_ => ordinal)
+    val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
+      val baseIndex = ordinal
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
