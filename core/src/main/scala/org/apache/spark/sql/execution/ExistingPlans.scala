@@ -184,7 +184,17 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def connectionType: ConnectionType.Value
 }
 
-private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenSupport,
+/** Combines two SparkPlan or one SparkPlan and another RDD and acts as a LeafExecNode for the
+ *  higher operators.  Typical usage is like combining additional plan or rdd with
+ *  ColumnTableScan without breaking WholeStageCodegen.
+ * @param basePlan left plan that must be code generated.
+ * @param basePartKeys left partitioner expression
+ * @param otherPlan optional. otherRDD can be used instead of this.
+ * @param otherPartKeys right partitioner expression
+ * @param otherRDD another rdd instead of right plan.
+ * @param relation the underlying relation object of the rdd.
+ */
+private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
     otherPartKeys: Seq[Expression],

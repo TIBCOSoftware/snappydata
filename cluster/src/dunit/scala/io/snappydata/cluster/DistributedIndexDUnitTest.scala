@@ -95,8 +95,6 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
 //    }
 
-    System.setProperty("LOG-NOW", "xxx")
-    getLogWriter.info("SB: About to execute queries")
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
       CreateIndexTest.validateIndex(Seq(indexTwo))(_)
     }
@@ -104,8 +102,6 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     executeQ(s"select * from $tableName where col1 = 111 and col3 = 'halo' ") {
       CreateIndexTest.validateIndex(Seq(indexThree))(_)
     }
-    getLogWriter.info("SB: Done executing the queries")
-    System.clearProperty("LOG-NOW")
   }
 
 }
