@@ -1627,7 +1627,7 @@ object SnappySession extends Logging {
     }
   }
 
-  private[spark] def clearPlanCache(): Unit = {
+  def clearPlanCache(): Unit = {
     planCache.invalidateAll()
   }
 
