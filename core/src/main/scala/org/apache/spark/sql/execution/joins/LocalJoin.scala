@@ -115,7 +115,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     // materialize dependencies in the entire buildRDD graph for
     // buildRDD.iterator to work in the compute of mapPartitionsPreserve below
-    if (buildRDD.partitions.size == 1) {
+    if (buildRDD.partitions.length == 1) {
       materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
       val schema = buildPlan.schema
       streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
@@ -361,7 +361,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val relationTerm = ctx.freshName("relation")
     val relationIsUnique = ctx.freshName("keyIsUnique")
     val buildRDDRef = ctx.addReferenceObj("buildRDD", buildRDD)
-    if (buildRDD.partitions.size == 1) {
+    if (buildRDD.partitions.length == 1) {
       val buildPartRef = ctx.addReferenceObj("buildPartition", buildRDD.partitions(0))
       ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
         prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))

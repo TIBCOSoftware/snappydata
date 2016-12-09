@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.execution.exchange.Exchange
+import org.apache.spark.sql.execution.joins.{HashJoin, SortMergeJoinExec}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -305,14 +305,21 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val updateMinMax = integralKeys.map { index =>
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
-    // for SnappyData column or row tables there is no need to make
-    // a copy of non-primitive values into the map since they are immutable
-    var hasExchange = false
-    val doCopy = child.find {
+
+    // For SnappyData column or row tables there is no need to make
+    // a copy of non-primitive values into the map since they are immutable.
+    // Also checks for other common plans known to provide immutable objects.
+    // TODO: can be extended for more plans as per their behaviour.
+    def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
       case _: PartitionedPhysicalScan => true
-      case _: Exchange => hasExchange = true; false
+      case FilterExec(_, c) => providesImmutableObjects(c)
+      case ProjectExec(_, c) => providesImmutableObjects(c)
+      // joins will always have immutable objects regardless of their children
+      case _: HashJoin | _: SortMergeJoinExec => true
       case _ => false
-    }.isEmpty || hasExchange
+    }
+    val doCopy = !providesImmutableObjects(child)
+
     val multiValuesUpdateCode = if (valueClassName.isEmpty) {
       s"""
         // no value field, only count
