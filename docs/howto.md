@@ -522,7 +522,7 @@ You can use Spark's DataFrameReader API in order to load data in SnappyData tabl
 **For Parquet file, use code as given below:**
 
 ```
-val customerDF = snc.read.parquet(s"$dataDir/customer_parquet")
+val customerDF = snSession.read.parquet(s"$dataDir/customer_parquet")
 customerDF.write.insertInto("CUSTOMER")
 ```
 
