@@ -1,32 +1,35 @@
 #Overview
-SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver 
-and Server node embeds a Spark Executor. Server node also embeds a snappy store. 
+SnappyData, a database server cluster, has three main components - Locator, Server and Lead. 
 
-SnappyData cluster can be started with default configurations using script sbin/snappy-start-all.sh. This script starts up a locator, 
-one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. 
+The Lead node embeds a Spark driver and Server node embeds a Spark Executor. Server node also embeds a SnappyData store.
+
+SnappyData cluster can be started with default configurations using script `sbin/snappy-start-all.sh`. This script starts up a locator, one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. 
 Also, each component can be configured individually using configuration files. In this document, 
 we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData.
 
 ## Configuration Files
 
-Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as conf/locators, conf/leads and conf/servers respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
-##### Configuring Locators
+Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as **conf/locators**, **conf/leads** and **conf/servers** respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
+
+#### Configuring Locators
 
 Locators provide discovery service for the cluster. It informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
+
 In this file, you can specify:
+
 * The host name on which a SnappyData locator is started
 * The startup directory where the logs and configuration files for that locator instance are located
 * SnappyData specific properties that can be passed
 
 Create the configuration files (conf/locators) for locators in `SNAPPY_HOME`.
 
-##### Configuring Leads
+#### Configuring Leads
 
 Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 
 Create the configuration files (conf/leads) for leads in `SNAPPY_HOME`.
 
-##### Configuring Data Servers
+#### Configuring Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
 
 Create the configuration files (conf/servers) for data servers in `SNAPPY_HOME`.
@@ -34,35 +37,49 @@ Create the configuration files (conf/servers) for data servers in `SNAPPY_HOME`.
 
 ### SnappyData Specific Properties
 
-The following are the few important SnappyData properties that you would like to configure. 
+The following are the few important SnappyData properties that you can configure:
 
-1. **_-peer-discovery-port_**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334. 
-2. **_-client-port_**: Port that a member listens on for client connections. 
-3. **_-locators_**: List of other locators as comma-separated host:port values. For locators, the list must include all other locators in use. For Servers and Leads, the list must include all the locators of the distributed system.
-4. **_-dir_**: SnappyData members need to have working directory. The member working directory provides a default location for log, persistence, and status files for each member. If not specified, SnappyData creates the member directory in _SNAPPY_HOME\work_. 
-5. **_-classpath_**: This can be used to provide any application specific code to the lead and servers. We envisage having setJar like functionality going forward but for now, the application jars have to be provided during startup. 
-6. **_-heap-size_**: Set a fixed heap size and for the Java VM. 
-7. **_-J_**: Use this to configure any JVM specific property. For e.g. -J-XX:MaxPermSize=512m. 
+1. **-peer-discovery-port**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334. 
 
-For a detail list of SnappyData configurations for Leads and Servers, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-server.html). For a detail list of SnappyData configurations for Locators, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-locator.html).
+2. **-client-port**: Port that a member listens on for client connections. 
+
+3. **-locators**: List of other locators as comma-separated host:port values. For locators, the list must include all other locators in use. For Servers and Leads, the list must include all the locators of the distributed system.
+
+4. **-dir**: SnappyData members need to have working directory. The member working directory provides a default location for log, persistence, and status files for each member.<br> If not specified, SnappyData creates the member directory in _SNAPPY_HOME\work_. 
+
+5. **-classpath**: This can be used to provide any application specific code to the lead and servers. We envisage having setJar like functionality going forward but for now, the application jars have to be provided during startup. 
+
+6. **-heap-size**: Set a fixed heap size and for the Java VM. 
+
+7. **-J**: Use this to configure any JVM specific property. For e.g. -J-XX:MaxPermSize=512m. 
+
+For a detailed list of SnappyData configurations for Leads and Servers, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-server.html). For a detailed list of SnappyData configurations for Locators, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-locator.html).
 
 ### HDFS with SnappyData Store
 
-If using SnappyData store persistence to Hadoop as documented [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html), then you will need to add the [hbase jar](http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar) explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from maven. Then add to conf/spark-env.sh:
+If using SnappyData store persistence to Hadoop as documented [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html), then add the [hbase jar](http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar) explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to conf/spark-env.sh:
 
-export SPARK_DIST_CLASSPATH=/path/to/hbase-0.94.27.jar
+`export SPARK_DIST_CLASSPATH=</path/to/>hbase-0.94.27.jar`
 
-(subsitute the actual path for /path/to/ above)
+Subsitute the actual path for `</path/to/>` above
 
 ### Spark Specific Properties 
 
-Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
->#####Note:
-Currently we do not honour properties specified using spark-config.sh. 
+Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. 
+
+Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
+
+<Note>Note: Currently we do not honour properties specified using spark-config.sh. </note>
 
 ### Example for Multiple-Host Configuration
 
-Let's say you want to start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l). Also, you would like to change the Spark UI port from 4040 to 9090. Also, you would like to set spark.executor.cores as 10 on all servers. The following can be your conf files. 
+Let's say you want to:
+
+* Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l). 
+* Change the Spark UI port from 4040 to 9090. 
+* Set spark.executor.cores as 10 on all servers. 
+
+The following can be your conf files. 
 
 ```bash
 $ cat conf/locators
@@ -77,8 +94,7 @@ $ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
-> ##### Note: 
-Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. 
+<Note> Note: Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. </Note>
 
 ### Environment settings
 
@@ -86,10 +102,12 @@ Any Spark or SnappyData specific environment settings can be done by creating a 
 
 ### Hadoop Provided settings
 If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without hadoop from the download link.
-This will allow you to provide hadoop at runtime.
-To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh an entry as below.
+This allows you to provide hadoop at runtime.
 
+To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
+```
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
+```
 
 ### Per Component Configuration 
 
@@ -103,7 +121,7 @@ LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 
 ### snappy-shell Command Line Utility
 
-Instead of starting SnappyData members using ssh scripts, they can be individually configured and started using command line. 
+Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using command line. 
 
 ```bash 
 $ bin/snappy-shell locator start  -dir=/node-a/locator1 

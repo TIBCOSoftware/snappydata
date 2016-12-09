@@ -1,16 +1,22 @@
 #Getting Started in 5 Minutes or Less
 
-You have multiple choices for getting started with SnappyData. Depending on your preference you can, work on your local machine, on premise network, on AWS or with a docker image.  
+Welcome to the Getting Started section! <br>
+We provide you multiple choices for getting started with SnappyData. 
+Depending on your preference you can try any of the following options:
 
-<Note>Note: </Note>
+* [Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
+* [Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
+* [20X Faster than Spark 2.0 Caching](#20x-faster-than-spark-20-caching)
+* [Getting Started using SQL](#getting-started-using-sql)
+* [Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
+* [Getting Started on AWS](#getting-started-on-aws)
+* [Getting Started with Docker Image](#getting-started-with-docker-image)
 
-*  <Note> If you decide to work on your local machine you should have 6GB of RAM.</Note>
-
-* <Note>  Support for Azure will be provided in the future releases.</Note>
+<Note>Note: Support for Microsoft Azure will be provided in future releases</Note>
 
 ##Getting Started with your Spark Distribution
 
-If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark shell.
+If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
 This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 10X advantage over Spark's native caching performance. 
 
@@ -21,7 +27,7 @@ $ cd <Spark_Install_dir>
 $ ./bin/spark-shell --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
 
-This opens a Spark shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection, it may take some time to download the files. 
+This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection, it may take some time to download the files. 
 
 ###Interacting with SnappyData
 <a id="Start_quickStart"></a>
@@ -125,6 +131,97 @@ scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
+<a id="Start Benchmark"></a>
+##20X Faster than Spark 2.0 Caching
+Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0 performance. 
+We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
+
+ <Note> Note: Preferably you should have at least 8GB of RAM reserved for this test.</Note>
+
+**Start the Spark Shell using any of the options mentioned below.**
+
+*  **If you are using your own Spark 2.0 installation:**
+
+```scala 
+$ ./bin/spark-shell --driver-memory=8g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+```
+
+*  **If you have downloaded SnappyData **
+
+```scala
+$ ./bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+```
+
+*** If you are using Docker**
+```scala
+$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
+```
+### To get the Performance Numbers:
+Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.
+
+* **Define a function "benchmark"**, which tells us the average time to run queries after doing initial warm ups.
+```scala
+scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
+          for (i <- 1 to warmups) {
+            f
+          }
+          val startTime = System.nanoTime
+          for (i <- 1 to times) {
+            f
+          }
+          val endTime = System.nanoTime
+          println(s"Average time taken in $name for $times runs: " +
+            (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
+        }
+```
+<mark>Jags: 50 million is not sufficient to showcase the performance difference? Rishi, can u check? 8gb can hold much more.</mark>
+
+* **Create a DataFrame and temp table using Spark's range method** <br>Cache it in Spark to get optimal performance. This creates a DataFrame of 50 million records.
+```scala
+scala>  var testDF = spark.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
+scala>  testDF.cache
+scala>  testDF.createOrReplaceTempView("sparkCacheTable")
+```
+
+* **Run a query and to check the performance** <br>
+The queries is using average of a field, without any where clause. This ensures that it touches all records while scanning.
+```scala
+scala>  benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
+```
+* **Clean up the JVM**. This ensures that all in memory artifacts for Spark is cleaned up.
+```scala
+scala>  testDF.unpersist()
+scala>  System.gc()
+scala>  System.runFinalization()
+```
+
+* **Create a SnappyContex**t
+```scala
+scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+```
+* ** Create similar 50 million record DataFrame**
+```scala
+scala>  testDF = snappy.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
+```
+* **Create the table**
+```scala
+scala>  snappy.sql("drop table if exists snappyTable")
+scala>  snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
+```
+* **Insert the created DataFrame into the table and measure its performance**
+```scala
+scala>  benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
+```
+
+* **Now let us run the same benchmark against Spark DataFrame**
+```scala
+scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
+```
+
+```
+scala> :q // Quit the Spark Shell
+```
+
 ##Getting Started using SQL
 
 We illustrate SQL using Spark SQL invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell; example in the [How-to](howto/#howto-snappyShell) section).
@@ -176,7 +273,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 ```
 
 ```
-scala> :q //Quit the Spark shell
+scala> :q //Quit the Spark Shell
 ```
 
 Now that we have seen the basic working of SnappyData tables, let's run the [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
@@ -273,95 +370,7 @@ $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver
 It starts downloading the image files to your local machine. Depending on your network connection, it may take some time.
 Once your are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
 
-<a id="Start Benchmark"></a>
-##20X Faster than Spark 2.0 Caching
-Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0 performance. 
-We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
- <Note> Note: Preferably you should have at least 8GB of RAM reserved for this test.</Note>
 
-**Start the Spark Shell using any of the options mentioned below.**
-
-*  **If you are using your own Spark 2.0 installation:**
-
-```scala 
-$ ./bin/spark-shell --driver-memory=8g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
-```
-
-*  **If you have downloaded SnappyData **
-
-```scala
-$ ./bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
-```
-
-*** If you are using Docker**
-```scala
-$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=8g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=2g"
-```
-### To get the Performance numbers:
-Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.
-
-* **Define a function "benchmark"**, which tells us the average time to run queries after doing initial warm ups.
-```scala
-scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
-          for (i <- 1 to warmups) {
-            f
-          }
-          val startTime = System.nanoTime
-          for (i <- 1 to times) {
-            f
-          }
-          val endTime = System.nanoTime
-          println(s"Average time taken in $name for $times runs: " +
-            (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
-        }
-```
-<mark>Jags: 50 million is not sufficient to showcase the performance difference? Rishi, can u check? 8gb can hold much more.</mark>
-
-* **Create a DataFrame and temp table using Spark's range method** <br>Cache it in Spark to get optimal performance. This creates a DataFrame of 50 million records.
-```scala
-scala>  var testDF = spark.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
-scala>  testDF.cache
-scala>  testDF.createOrReplaceTempView("sparkCacheTable")
-```
-
-* **Run a query and to check the performance** <br>
-The queries is using average of a field, without any where clause. This ensures that it touches all records while scanning.
-```scala
-scala>  benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
-```
-* **Clean up the JVM**. This ensures that all in memory artifacts for Spark is cleaned up.
-```scala
-scala>  testDF.unpersist()
-scala>  System.gc()
-scala>  System.runFinalization()
-```
-
-* **Create a SnappyContex**t
-```scala
-scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
-```
-* ** Create similar 50 million record DataFrame**
-```scala
-scala>  testDF = snappy.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
-```
-* **Create the table**
-```scala
-scala>  snappy.sql("drop table if exists snappyTable")
-scala>  snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
-```
-* **Insert the created DataFrame into the table and measure its performance**
-```scala
-scala>  benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
-```
-
-* **Now let us run the same benchmark against Spark DataFrame**
-```scala
-scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
-```
-
-```
-scala> :q // Quit the Spark shell
-```
 For more examples of the common operations you can refer to the [How tos](howto.md) section. 
 
 If you have questions or queries you can contact us through our [community channels](techsupport.md#community).

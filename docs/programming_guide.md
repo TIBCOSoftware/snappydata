@@ -288,7 +288,7 @@ scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
 ```
 
-Any spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra `spark.snappydata.store.locators` property in the conf.
+Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra `spark.snappydata.store.locators` property in the conf.
 
 ```bash
 # Start the Spark standalone cluster from SnappyData base directory 

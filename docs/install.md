@@ -19,17 +19,17 @@ Download the latest version of SnappyData from the [SnappyData Release](https://
 
 The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
 
-* ** SnappyData 0.6 download link **
-[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-bin.zip)
-* **SnappyData 0.6(hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.6/snappydata-0.6-without-hadoop-bin.zip)
+* ** SnappyData 0.7 download link **
+[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip)
+* **SnappyData 0.7(hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip)
 
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
 * Open the command prompt and run the following command to extract the downloaded archive file and go to SnappyData home directory. 
 ```bash
-$ tar -xzf snappydata-0.6-bin.tar.gz   
-$ cd snappydata-0.6-bin/
+$ tar -xzf snappydata-0.7-bin.tar.gz   
+$ cd snappydata-0.7-bin/
 ```
 * To start a basic cluster with one data node, one lead and one locator
 ```
@@ -53,8 +53,8 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 1. Copy the downloaded binaries in the shared folder.
 2. Extract the downloaded archive file and go to SnappyData home directory.<br> 
  ```bash
-$ tar -xzf snappydata-0.6-bin.tar.gz   
-$ cd snappydata-0.6-bin/
+$ tar -xzf snappydata-0.7-bin.tar.gz   
+$ cd snappydata-0.7-bin/
  ```
 3. Then configure the cluster as per [How to Configure SnappyData cluster](configuration.md).
 After configuring each of the components you can simply run the `start-all.ssh` script:<br>
@@ -95,13 +95,14 @@ $ bin/snappy-shell server stop
 
 ### Introduction
 
-The `snappy-ec2` script present in the SnappyData's ec2 directory, enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
+The `snappy-ec2` script present in the SnappyData's **ec2** directory, enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
 
 The `snappy-ec2` script has been derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
 ###Prerequisites
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources. 
+* Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. <br> Refer to the Amazon documentation for more information on [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 <br>If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file. You can find this information from the AWS IAM console.
 
@@ -326,10 +327,7 @@ Options:
 1. Launching cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions
 2. Support for option --user is incomplete
 
-## Setting up Cluster on Azure
-<mark>To Be done</mark>
-
-## Setting up Cluster with Docker images
+## Setting up Cluster with Docker Images
 <mark>To Be done</mark>
 
 ## Building from Source
