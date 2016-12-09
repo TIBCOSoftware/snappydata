@@ -30,7 +30,7 @@ If you have downloaded SnappyData, you can use the bundled Spark distribution in
 As the name implies, use this mode to execute everything locally in the application JVM. The local mode is described in the Spark Programming guide.
 <mark> TO BE DONE </mark>
 
-![Local Mode](/Images/SnappyLocalMode.png)
+![Local Mode](./Images/SnappyLocalMode.png)
 
 ### Running a Spark (non-IDE) program and specify the dependencies
 
@@ -41,7 +41,7 @@ In certain cases Spark applications run as independent sets of processes on a cl
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
-![Smart Connector Mode](/Images/SnappyConnectorMode.png)
+![Smart Connector Mode](./Images/SnappyConnectorMode.png)
 
 
 Key Points:
@@ -96,7 +96,7 @@ Step 3: Launch the Apache Spark program using external cluster manager
 
 ## Embedded SnappyData Store Mode
 In this mode the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. 
-![Embedded Mode](/Images/SnappyEmbeddedMode.png)
+![Embedded Mode](./Images/SnappyEmbeddedMode.png)
 
 You can either start SnappyData members using the `_snappy_start_all_ script` or you can start them individually.
 
