@@ -167,9 +167,7 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println()
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
     val tableSchema = snSession.table("CUSTOMER").schema
-    val customerDF = snSession.read.
-        format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"$dataFolder/customer.csv")
+    val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -214,9 +212,9 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println("****Create a column table using API where schema is inferred from CSV file****")
     pw.println()
     snSession.dropTable("CUSTOMER", ifExists = true)
-    val customer_csv_DF = snSession.read.format("com.databricks.spark.csv").option("header", "true")
-        .option("inferSchema", "true")
-        .load(s"$dataFolder/customer_with_headers.csv")
+
+    val customer_csv_DF = snSession.read.option("header", "true")
+        .option("inferSchema", "true").csv(s"$dataFolder/customer_with_headers.csv")
 
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),

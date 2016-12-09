@@ -238,13 +238,13 @@ snappy> connect client 'locatorHostName:1527';
 Once connected you can execute SQL queries using `snappy-shell`
 
 ```
-snappy> CREATE TABLE PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
+snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
-snappy> INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100);
+snappy> INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
 
-snappy> INSERT INTO PARTSUPP VALUES(200, 2, 50, 10);
+snappy> INSERT INTO APP.PARTSUPP VALUES(200, 2, 50, 10);
 
-snappy> SELECT * FROM PARTSUPP;
+snappy> SELECT * FROM APP.PARTSUPP;
 PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST    
 -----------------------------------------------------
 100        |1          |5000       |100.00           
@@ -267,39 +267,15 @@ localhost(21262)<v0>:22770    |localhost                     |locator(normal)   
 
 ```
 
-View the list tables by using `show tables` command
+View the list tables in a schema by using `show tables in <schema>` command
 
 ```
-snappy> show tables;
-TABLE_SCHEM          |TABLE_NAME                    |TABLE_TYPE  |REMARKS             
---------------------------------------------------------------------------------------
-SYS                  |ASYNCEVENTLISTENERS           |SYSTEM TABLE|                    
-SYS                  |GATEWAYRECEIVERS              |SYSTEM TABLE|                    
-SYS                  |GATEWAYSENDERS                |SYSTEM TABLE|                    
-SYS                  |SYSALIASES                    |SYSTEM TABLE|                    
-SYS                  |SYSCHECKS                     |SYSTEM TABLE|                    
-SYS                  |SYSCOLPERMS                   |SYSTEM TABLE|                    
-SYS                  |SYSCOLUMNS                    |SYSTEM TABLE|                    
-SYS                  |SYSCONGLOMERATES              |SYSTEM TABLE|                    
-SYS                  |SYSCONSTRAINTS                |SYSTEM TABLE|                    
-SYS                  |SYSDEPENDS                    |SYSTEM TABLE|                    
-SYS                  |SYSDISKSTORES                 |SYSTEM TABLE|                    
-SYS                  |SYSFILES                      |SYSTEM TABLE|                    
-SYS                  |SYSFOREIGNKEYS                |SYSTEM TABLE|                    
-SYS                  |SYSHDFSSTORES                 |SYSTEM TABLE|                    
-SYS                  |SYSKEYS                       |SYSTEM TABLE|                    
-SYS                  |SYSROLES                      |SYSTEM TABLE|                    
-SYS                  |SYSROUTINEPERMS               |SYSTEM TABLE|                    
-SYS                  |SYSSCHEMAS                    |SYSTEM TABLE|                    
-SYS                  |SYSSTATEMENTS                 |SYSTEM TABLE|                    
-SYS                  |SYSSTATISTICS                 |SYSTEM TABLE|                    
-SYS                  |SYSTABLEPERMS                 |SYSTEM TABLE|                    
-SYS                  |SYSTABLES                     |SYSTEM TABLE|                    
-SYS                  |SYSTRIGGERS                   |SYSTEM TABLE|                    
-SYS                  |SYSVIEWS                      |SYSTEM TABLE|                    
-SYSIBM               |SYSDUMMY1                     |SYSTEM TABLE|                    
-APP                  |PARTSUPP                      |TABLE       |     
+snappy> show tables in app;
+TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
+-----------------------------------------------------------------------------------
+APP                 |PARTSUPP                      |TABLE     |                    
 
+1 row selected
 ```
 
 <a id="howto-row"></a>
@@ -448,11 +424,10 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
     snSession.createTable("CUSTOMER", "column", tableSchema, props1)
 
+     val tableSchema = snSession.table("CUSTOMER").schema
     // insert some data in it
     // loading data in CUSTOMER table from a text file with delimited columns
-    val customerDF = snSession.read.
-        format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"quickstart/src/resources/customer.csv")
+    val customerDF = snSession.read.schema(schema = tableSchema).csv("quickstart/src/main/resources/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 ```
 
@@ -510,9 +485,7 @@ Load data in the CUSTOMER table from a CSV file by using DataFrameReader API:
 
 ```
     val tableSchema = snSession.table("CUSTOMER").schema
-    val customerDF = snSession.read.
-        format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"quickstart/src/main/resources/customer.csv")
+    val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 ```
 
@@ -536,16 +509,14 @@ A schema for the table can be inferred from the data file. In this case, you nee
 In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.
 
 ```
-    val customerDF = snSession.read.format("com.databricks.spark.csv").option("header", "true")
-        .option("inferSchema", "true")
-        .load(s"$quickstart/src/main/resources/customer_with_headers.csv")
+    val customer_csv_DF = snSession.read.option("header", "true")
+        .option("inferSchema", "true").csv("quickstart/src/main/resources/customer_with_headers.csv")
 
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
     // For complete list of attributes refer the documentation
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
-    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
-
+    customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
 
