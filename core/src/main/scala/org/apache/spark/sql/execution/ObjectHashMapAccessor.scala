@@ -306,13 +306,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
     // for SnappyData column or row tables there is no need to make
-    // a copy of non-primitive values into the map
+    // a copy of non-primitive values into the map since they are immutable
     var hasExchange = false
     val doCopy = child.find {
-      case _: PartitionedPhysicalScan if !hasExchange => true
+      case _: PartitionedPhysicalScan => true
       case _: Exchange => hasExchange = true; false
       case _ => false
-    }.isEmpty
+    }.isEmpty || hasExchange
     val multiValuesUpdateCode = if (valueClassName.isEmpty) {
       s"""
         // no value field, only count
