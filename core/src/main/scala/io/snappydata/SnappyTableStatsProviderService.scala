@@ -79,13 +79,11 @@ object SnappyTableStatsProviderService extends Logging {
               // check if there has been a substantial change in table
               // stats, and clear the plan cache if so
               if (prevTableSizeInfo.size != tableSizeInfo.size) {
-                println(s"cleaning cache 1")
                 SnappySession.clearPlanCache()
               } else {
                 val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
                 val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
                 if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
-                  println(s"cleaning cache 2")
                   SnappySession.clearPlanCache()
                 }
               }
