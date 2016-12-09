@@ -38,12 +38,11 @@ import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, 
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{r, _}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
-import org.apache.spark.sql.{SnappyAggregation, SnappySession}
-import org.apache.spark.{Dependency, Partition, ShuffleDependency, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, ShuffleDependency, SparkEnv, TaskContext}
 
 /**
  * :: DeveloperApi ::
@@ -61,7 +60,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan,
-    val replicatedTableJoin: Boolean)
+    replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "LocalJoin"
@@ -386,7 +385,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   private def doConsumeOptimized(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
-    val evaluatedInputVars = evaluateVariables(input)
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
@@ -411,14 +409,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    val mapAccesCode = mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
+    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, joinType)
-    s"""
-       $evaluatedInputVars
-       $mapAccesCode
-     """
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {

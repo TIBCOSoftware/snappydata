@@ -35,7 +35,8 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy: Boolean, itr : Int = 0, useIndex: Boolean = false, warmup : Integer = 0, runsForAverage :Integer=1, avgPrintStream:PrintStream=null): Unit = {
+      isSnappy: Boolean, itr: Int = 0, useIndex: Boolean = false, warmup: Int = 0,
+      runsForAverage: Int = 1, avgPrintStream: PrintStream = null): Unit = {
 
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
     val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
@@ -731,7 +732,7 @@ object TPCH_Snappy {
         "     and o_orderdate < add_months('1993-07-01',3)" +
         "     and exists (" +
         "         select" +
-        "             *" +
+        "             1" +
         "         from" +
         "             LINEITEM" +
         "         where" +
@@ -1698,7 +1699,7 @@ object TPCH_Snappy {
         "         and l1.l_receiptdate > l1.l_commitdate" +
         "         and exists (" +
         "                 select" +
-        "                         *" +
+        "                         1" +
         "                 from" +
         "                         LINEITEM l2" +
         "                 where" +
@@ -1707,7 +1708,7 @@ object TPCH_Snappy {
         "         )" +
         "         and not exists (" +
         "                 select" +
-        "                         *" +
+        "                         1" +
         "                 from" +
         "                         LINEITEM l3" +
         "                 where" +
@@ -1821,7 +1822,7 @@ object TPCH_Snappy {
       "                 )" +
       "                 and not exists (" +
       "                         select" +
-      "                                 *" +
+      "                                 1" +
       "                         from" +
       "                                 ORDERS" +
       "                         where" +

@@ -144,11 +144,12 @@ object TPCHUtils {
     }
   }
 
-  def queryExecution(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    snc.sql(s"set spark.sql.shuffle.partitions= 4")
+  def queryExecution(snc: SnappyContext, isSnappy: Boolean, warmup: Int = 0,
+      runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
     queries.foreach(query => TPCH_Snappy.execute(query, snc,
-      isResultCollection = true, isSnappy = isSnappy, avgPrintStream = System.out))
+      isResultCollection, isSnappy, warmup = warmup,
+      runsForAverage = runsForAverage, avgPrintStream = System.out))
   }
 }
