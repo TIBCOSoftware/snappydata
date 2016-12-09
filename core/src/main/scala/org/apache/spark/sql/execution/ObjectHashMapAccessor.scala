@@ -767,7 +767,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
       keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
-      initCode: String, checkCondition: Option[ExprCode],
+      initCode: String, checkCond: (Option[ExprCode], String),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       buildKeyVars: Seq[ExprCode], buildVars: Seq[ExprCode], input: Seq[ExprCode],
       resultVars: Seq[ExprCode], dictArrayVar: String,
@@ -936,15 +936,15 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // getConsumeResultCode (except existence join having existsVar but that
     //    is always evaluated) -- see the evaluateRequiredVariables call in
     // base CodegenSupport.consume
-    var inputCodes = joinType match {
+    val checkCondition = checkCond._1
+    val inputCodes = if (checkCondition.isDefined) {
+      // evaluate all of input
+      evaluateVariables(input) + '\n' + checkCond._2
+    } else joinType match {
       case Inner | LeftOuter | RightOuter =>
         evaluateRequiredVariables(consumer.output, resultVars, cParent.usedInputs)
       case _ =>
         evaluateRequiredVariables(consumer.output, input, cParent.usedInputs)
-    }
-    inputCodes = checkCondition match {
-      case Some(ev) => inputCodes + '\n' + evaluateVariables(Seq(ev))
-      case None => inputCodes
     }
 
     // Code fragments for different join types.
@@ -1078,9 +1078,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     s"""if ($entryVar == null) continue;
 
       $declareLocalVars
-      $inputCodes
 
       $mapKeyCodes
+      $inputCodes
       while (true) {
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
@@ -1128,9 +1128,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // loop through all the matches with moveNextValue
     // null check for entryVar is already done inside mapKeyCodes
     s"""$declareLocalVars
-      $inputCodes
 
       $mapKeyCodes
+      $inputCodes
       while (true) {
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
@@ -1160,9 +1160,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"""if ($entryVar == null) continue;
 
         $declareLocalVars
-        $inputCodes
 
         $mapKeyCodes
+        $inputCodes
         $breakLoop: while (true) {
           do { // single iteration loop meant for breaking out with "continue"
             ${ev.code}
@@ -1196,12 +1196,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // iteration loop, hence code layout is bit different from other joins
       val matched = ctx.freshName("matched")
       // need the key/value assignments for condition evaluation
-      s"""
+      s"""$declareLocalVars
+
+        $mapKeyCodes
+        $inputCodes
         boolean $matched = false;
         if ($entryVar != null) {
-          $declareLocalVars
-
-          $mapKeyCodes
           $breakLoop: while (true) {
             do { // single iteration loop meant for breaking out with "continue"
               // fail if condition matches for any row
@@ -1222,7 +1222,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // anti-join failure if there is any match
         if ($matched) continue;
 
-        $inputCodes
         $consumeResult"""
   }
 
@@ -1239,11 +1238,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case Some(ev) =>
       val breakLoop = ctx.freshName("breakLoop")
       // need the key/value assignments for condition evaluation
-      s"""boolean $existsVar = false;
-        if ($entryVar != null) {
-          $declareLocalVars
+      s"""$declareLocalVars
 
-          $mapKeyCodes
+        $mapKeyCodes
+        $inputCodes
+        boolean $existsVar = false;
+        if ($entryVar != null) {
           $breakLoop: while (true) {
             do { // single iteration loop meant for breaking out with "continue"
               ${ev.code}
@@ -1261,7 +1261,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             $moveNextValue
           }
         }
-        $inputCodes
         $consumeResult"""
   }
 

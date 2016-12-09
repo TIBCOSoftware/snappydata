@@ -519,21 +519,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): Option[ExprCode] = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
     case Some(expr) =>
       // evaluate the variables from build side that used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
-      ctx.currentVars = input ++ buildVars
+      ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      Some(ev.copy(code =
-          s"""
-            $eval
-            ${ev.code}
-          """))
-    case None => None
+      (Some(ev), eval)
+    case None => (None, "")
   }
 
   /**

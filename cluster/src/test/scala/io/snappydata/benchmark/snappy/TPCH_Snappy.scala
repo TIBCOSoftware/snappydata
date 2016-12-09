@@ -732,7 +732,7 @@ object TPCH_Snappy {
         "     and o_orderdate < add_months('1993-07-01',3)" +
         "     and exists (" +
         "         select" +
-        "             1" +
+        "             l_orderkey" +
         "         from" +
         "             LINEITEM" +
         "         where" +
@@ -853,7 +853,7 @@ object TPCH_Snappy {
     //    1. NATION = BRAZIL;
     //    2. REGION = AMERICA;
     //    3. TYPE = ECONOMY ANODIZED STEEL.
-      if(!useIndex) {
+    if (!useIndex) {
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -868,13 +868,13 @@ object TPCH_Snappy {
             "                         n2.n_name as nation" +
             "                 from" +
             "                         LINEITEM," +
+            "                         PART," +
             "                         ORDERS," +
             "                         CUSTOMER," +
             "                         SUPPLIER," +
             "                         NATION n1," +
             "                         REGION," +
-            "                         NATION n2," +
-            "                         PART" +
+            "                         NATION n2" +
             "                 where" +
             "                         p_partkey = l_partkey" +
             "                         and s_suppkey = l_suppkey" +
@@ -891,7 +891,7 @@ object TPCH_Snappy {
             "         o_year" +
             " order by" +
             "         o_year"
-      }else{
+    } else {
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -951,10 +951,10 @@ object TPCH_Snappy {
           "amount" +
           "         from" +
           "                 LINEITEM," +
+          "                 PART," +
           "                 ORDERS," +
           "                 SUPPLIER," +
           "                 NATION," +
-          "                 PART," +
           "                 PARTSUPP" +
           "         where" +
           "                 s_suppkey = l_suppkey" +
@@ -1699,7 +1699,7 @@ object TPCH_Snappy {
         "         and l1.l_receiptdate > l1.l_commitdate" +
         "         and exists (" +
         "                 select" +
-        "                         1" +
+        "                         l2.l_orderkey" +
         "                 from" +
         "                         LINEITEM l2" +
         "                 where" +
@@ -1708,7 +1708,7 @@ object TPCH_Snappy {
         "         )" +
         "         and not exists (" +
         "                 select" +
-        "                         1" +
+        "                         l3.l_orderkey" +
         "                 from" +
         "                         LINEITEM l3" +
         "                 where" +
@@ -1822,7 +1822,7 @@ object TPCH_Snappy {
       "                 )" +
       "                 and not exists (" +
       "                         select" +
-      "                                 1" +
+      "                                 o_custtkey" +
       "                         from" +
       "                                 ORDERS" +
       "                         where" +
