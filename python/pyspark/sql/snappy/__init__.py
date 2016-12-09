@@ -28,5 +28,6 @@ Important classes of Snappy SQL and DataFrames:
 from __future__ import absolute_import
 
 from pyspark.sql.snappy.context import SnappyContext
+from pyspark.sql.snappy.snappysession import SnappySession
 
-__all__ = ['SnappyContext']
+__all__ = ['SnappySession', 'SnappyContext']
