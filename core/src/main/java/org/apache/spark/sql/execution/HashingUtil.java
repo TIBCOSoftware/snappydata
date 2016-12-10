@@ -21,18 +21,24 @@ package org.apache.spark.sql.execution;
  */
 public abstract class HashingUtil {
 
+  /** 2<sup>32</sup> &middot; &phi;, &phi; = (&#x221A;5 &minus; 1)/2. */
+  private static final int INT_PHI = 0x9E3779B9;
+
   private static final int C1 = 0xcc9e2d51;
   private static final int C2 = 0x1b873593;
 
-  /**
-   * Simpler mixing for integer values that are reasonably hashed.
-   * Constant taken from h2 tests (CalculateHashConstant.java).
+  /** Quickly mixes the bits of an integer.
+   *
+   * <p>This method mixes the bits of the argument by multiplying by the
+   * golden ratio and XORshifting the result. It is borrowed from
+   * <a href="https://github.com/OpenHFT/Koloboke">Koloboke</a>, and
+   * it has slightly worse behaviour than MurmurHash3 (in open-addressed
+   * hash tables the average number of probes is slightly larger),
+   * but it's much faster.
    */
-  public static int hashInt(int v) {
-    v = ((v >>> 16) ^ v) * 0x45d9f3b;
-    v = ((v >>> 16) ^ v) * 0x45d9f3b;
-    v = (v >>> 16) ^ v;
-    return v;
+  public static int hashInt(final int v) {
+    final int h = v * INT_PHI;
+    return h ^ (h >>> 16);
   }
 
   public static int hashLong(long v) {

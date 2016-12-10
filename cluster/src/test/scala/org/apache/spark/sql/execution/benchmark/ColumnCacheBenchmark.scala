@@ -55,7 +55,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         .setIfMissing("spark.master", "local[1]")
         .setAppName("microbenchmark")
     conf.set("spark.sql.shuffle.partitions", "1")
-    conf.set("spark.sql.autoBroadcastJoinThreshold", "1")
     conf.set("snappydata.store.eviction-heap-percentage", "90")
     conf.set("snappydata.store.critical-heap-percentage", "95")
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
@@ -150,7 +149,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         params.foreach { case (k, v) => sparkSession.conf.set(k, v) }
         params.foreach { case (k, v) => snappySession.conf.set(k, v) }
         if (!nullable) {
-          testDF = sparkSession.internalCreateDataFrame(testDF.queryExecution.toRdd,
+          testDF = ColumnCacheBenchmark.applySchema(testDF,
             StructType(testDF.schema.fields.map(_.copy(nullable = false))))
           testDF.createOrReplaceTempView("test")
         }
@@ -231,5 +230,12 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       snappy = true)
 
     benchmark.run()
+  }
+}
+
+object ColumnCacheBenchmark {
+
+  def applySchema(df: DataFrame, newSchema: StructType): DataFrame = {
+    df.sqlContext.internalCreateDataFrame(df.queryExecution.toRdd, newSchema)
   }
 }

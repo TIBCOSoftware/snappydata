@@ -107,10 +107,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static File createJobClass(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
-                "import org.apache.spark.sql.SnappyContext;\n" +
-                "import org.apache.spark.sql.SnappyJobValid;\n" +
-                "import org.apache.spark.sql.SnappyJobValidation;\n" +
-                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
+                "import org.apache.spark.sql.*;\n" +
                 "\n" +
                 "import java.io.File;\n" +
                 "import java.io.FileOutputStream;\n" +
@@ -119,9 +116,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
-                "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
                 "        PrintWriter pw = null;\n" +
                 "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
@@ -141,7 +139,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "    }" +
                 "\n" +
                 "    @Override\n" +
-                "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
                 "        return new SnappyJobValid();\n" +
                 "    }\n" +
                 "}";
@@ -153,10 +151,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static File createJobClassWithDifferentLogStatements(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
-                "import org.apache.spark.sql.SnappyContext;\n" +
-                "import org.apache.spark.sql.SnappyJobValid;\n" +
-                "import org.apache.spark.sql.SnappyJobValidation;\n" +
-                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
+                "import org.apache.spark.sql.*;\n" +
                 "\n" +
                 "import java.io.File;\n" +
                 "import java.io.FileOutputStream;\n" +
@@ -165,9 +160,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
-                "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
                 "        PrintWriter pw = null;\n" +
                 "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
@@ -187,7 +183,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "    }" +
                 "\n" +
                 "    @Override\n" +
-                "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
                 "        return new SnappyJobValid();\n" +
                 "    }\n" +
                 "}";
@@ -199,10 +195,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static File createJobAccessingClassFromPreviousJobExecution(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
-                "import org.apache.spark.sql.SnappyContext;\n" +
-                "import org.apache.spark.sql.SnappyJobValid;\n" +
-                "import org.apache.spark.sql.SnappyJobValidation;\n" +
-                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
+                "import org.apache.spark.sql.*;\n" +
                 "\n" +
                 "import java.io.File;\n" +
                 "import java.io.FileOutputStream;\n" +
@@ -211,9 +204,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
-                "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
                 "        PrintWriter pw = null;\n" +
                 "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
@@ -233,7 +227,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "    }" +
                 "\n" +
                 "    @Override\n" +
-                "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
                 "        return new SnappyJobValid();\n" +
                 "    }\n" +
                 "}";

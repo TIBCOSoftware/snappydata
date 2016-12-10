@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, Left
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.DefaultPlanner
 import org.apache.spark.sql.streaming._
 
@@ -68,11 +69,28 @@ private[sql] trait SnappyStrategies {
       left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
             joinType, joins.BuildLeft, true)
+
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildRight(joinType) && canBroadcast(right) =>
+        Seq(joins.BroadcastHashJoinExec(
+          leftKeys, rightKeys, joinType, BuildRight, condition, planLater(left), planLater(right)))
+
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildLeft(joinType) && canBroadcast(left) =>
+        Seq(joins.BroadcastHashJoinExec(
+          leftKeys, rightKeys, joinType, BuildLeft, condition, planLater(left), planLater(right)))
+
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildRight(joinType) && canBuildLocalHashMap(right) ||
             !RowOrdering.isOrderable(leftKeys) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildRight, false)
+        if (canBuildLeft(joinType) && canBuildLocalHashMap(left) &&
+            left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft, false)
+        } else {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight, false)
+        }
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildLeft(joinType) && canBuildLocalHashMap(left) ||
             !RowOrdering.isOrderable(leftKeys) =>
@@ -86,6 +104,14 @@ private[sql] trait SnappyStrategies {
         (canBuildRight(joinType) && canLocalJoin(right)) ||
             (canBuildLeft(joinType) && canLocalJoin(left))
       case _ => false
+    }
+
+    /**
+     * Matches a plan whose output should be small enough to be used in broadcast join.
+     */
+    private def canBroadcast(plan: LogicalPlan): Boolean = {
+      plan.statistics.isBroadcastable ||
+          plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
     }
 
     /**

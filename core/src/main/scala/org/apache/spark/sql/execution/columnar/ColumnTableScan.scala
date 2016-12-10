@@ -471,7 +471,9 @@ private[sql] final case class ColumnTableScan(
       """
     } else if (isOffHeap) {
       val filterCode = if (filterFunction.isEmpty) {
-        s"final $execRowClass $batch = ($execRowClass)$colInput.next();"
+        val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+        s"""final $execRowClass $batch = ($execRowClass)$colInput.next();
+          $columnBatchesSeen.${metricAdd("1")};"""
       } else {
         s"""$execRowClass $batch;
           while (true) {
@@ -491,8 +493,10 @@ private[sql] final case class ColumnTableScan(
       """
     } else {
       val filterCode = if (filterFunction.isEmpty) {
+        val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
         s"""final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
-          $buffers = (byte[][])$colInput.next();"""
+          $buffers = (byte[][])$colInput.next();
+          $columnBatchesSeen.${metricAdd("1")};"""
       } else {
         s"""$rowFormatterClass $rowFormatter;
            while (true) {

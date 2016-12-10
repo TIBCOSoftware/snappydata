@@ -345,7 +345,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    val evaluatedInputVars = evaluateVariables(input)
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
@@ -370,14 +369,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    val mapAccesCode = mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
+    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, joinType)
-    s"""
-       $evaluatedInputVars
-       $mapAccesCode
-     """
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
@@ -407,21 +402,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): Option[ExprCode] = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
     case Some(expr) =>
       // evaluate the variables from build side that used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
-      ctx.currentVars = input ++ buildVars
+      ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      Some(ev.copy(code =
-          s"""
-            $eval
-            ${ev.code}
-          """))
-    case None => None
+      (Some(ev), eval)
+    case None => (None, "")
   }
 }
 

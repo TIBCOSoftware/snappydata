@@ -276,22 +276,30 @@ class BaseColumnFormatRelation(
     try {
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case GemFireXDDialect =>
-            GemFireXDDialect.initializeTable(table,
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-            GemFireXDDialect.initializeTable(ColumnFormatRelation.
-                cachedBatchTableName(table),
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do nothing
-        }
-        return
-      }
 
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
-        // sys.error(s"Table $table already exists.")
-        return
+      if (tableExists) {
+        mode match {
+          case SaveMode.Ignore =>
+            // TODO: Suranjan for split mode when driver acts as client
+            // we will need to change this code and add a flag to
+            // CREATE_ALL_BUCKETS to create only when no buckets created
+            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
+              dialect match {
+                case GemFireXDDialect =>
+                  GemFireXDDialect.initializeTable(table,
+                    sqlContext.conf.caseSensitiveAnalysis, conn)
+                  GemFireXDDialect.initializeTable(ColumnFormatRelation.
+                      cachedBatchTableName(table),
+                    sqlContext.conf.caseSensitiveAnalysis, conn)
+                case _ => // Do nothing
+              }
+            }
+            return
+          case SaveMode.ErrorIfExists =>
+            // sys.error(s"Table $table already exists.") TODO: Why so?
+            return
+          case _ => // Ignore
+        }
       }
     } finally {
       conn.close()
