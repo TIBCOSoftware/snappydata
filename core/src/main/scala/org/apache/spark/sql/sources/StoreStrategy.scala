@@ -54,7 +54,8 @@ object StoreStrategy extends Strategy {
     case drop: DropTable =>
       ExecutedCommandExec(drop) :: Nil
 
-    case plan: EncoderPlan[Any] =>
+    case p: EncoderPlan[_] =>
+      val plan = p.asInstanceOf[EncoderPlan[Any]]
       EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
         plan.encoder, plan.isFlat, plan.output) :: Nil
 

@@ -159,6 +159,9 @@ class SnappySessionState(snappySession: SnappySession)
   private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
       Array[Partition]]()
 
+  /** Used internally to enforce shuffle partitions for an execution. */
+  @volatile private[sql] var forceShufflePartitions: Int = 0
+
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
@@ -275,11 +278,16 @@ class SnappyConf(@transient val session: SnappySession)
     if (dynamicShufflePartitions != -1 && session != null) {
       dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
     }
+    session.sessionState.forceShufflePartitions = 0
   }
 
   override def numShufflePartitions: Int = {
-    val partitions = this.dynamicShufflePartitions
-    if (partitions > 0) partitions else super.numShufflePartitions
+    val partitions = session.sessionState.forceShufflePartitions
+    if (partitions > 0) partitions
+    else {
+      val partitions = this.dynamicShufflePartitions
+      if (partitions > 0) partitions else super.numShufflePartitions
+    }
   }
 
   override def setConfString(key: String, value: String): Unit = {

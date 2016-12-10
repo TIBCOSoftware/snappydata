@@ -20,24 +20,24 @@ import io.snappydata.Property
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.PartitionedPreferredLocationsRDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, BoundReference, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{PartitionedPreferredLocationsRDD, SnappySession}
 
 /**
  * Generated code plan for bulk insertion into a column table.
  */
 case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
-    partitionColumns: Seq[Expression], relation: BaseColumnFormatRelation)
-    extends UnaryExecNode with CodegenSupport {
+    partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
+    relation: BaseColumnFormatRelation) extends UnaryExecNode with CodegenSupport {
 
   @transient private var encoderCursorTerms: Seq[(String, String)] = _
   @transient private var batchSizeTerm: String = _
@@ -55,12 +55,30 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
 
-  private val partitioned = partitionColumns.nonEmpty
+  private val partitioned = partitionExpressions.nonEmpty
+
+  // Enforce default shuffle partitions to match table buckets.
+  // Only one insert plan possible in the plan tree, so no clashes.
+  if (partitioned) {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    session.sessionState.forceShufflePartitions = relation.numBuckets
+  }
 
   /** Specifies how data is partitioned for the table. */
   override lazy val outputPartitioning: Partitioning = {
-    if (partitioned) HashPartitioning(partitionColumns, relation.numBuckets)
+    if (partitioned) HashPartitioning(partitionExpressions, relation.numBuckets)
     else super.outputPartitioning
+  }
+
+  /** Specifies the partition requirements on the child. */
+  override def requiredChildDistribution: Seq[Distribution] = {
+    if (partitioned) {
+      // For partitionColumns find the matching child columns
+      val schema = relation.schema
+      val childPartitioningAttributes = partitionColumns.map(partColumn =>
+        child.output(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+      ClusteredDistribution(childPartitioningAttributes) :: Nil
+    } else UnspecifiedDistribution :: Nil
   }
 
   override lazy val metrics = Map(

@@ -166,11 +166,12 @@ class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation, child: SparkPlan,
       overwrite: Boolean): SparkPlan = {
-    val partitionExprs = partitionColumns.map(colName =>
+    val partitionExpressions = partitionColumns.map(colName =>
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    ExecutePlan(ColumnInsertExec(child, overwrite, partitionExprs, this))
+    ExecutePlan(ColumnInsertExec(child, overwrite, partitionColumns,
+      partitionExpressions, this))
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
