@@ -447,7 +447,7 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
+class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
         with SnappyStrategies {

@@ -117,7 +117,7 @@ object TPCHColumnPartitionedTable {
     println("Created Table LINEITEM")
   }
 
-  var CREATE_PARQUET = false
+  var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
   def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
@@ -136,8 +136,7 @@ object TPCHColumnPartitionedTable {
 
       orderDF = ColumnCacheBenchmark.applySchema(orderDF1, newSchema)
       if (CREATE_PARQUET) {
-        orderDF.write.format("parquet").option("compression", "none")
-            .save(s"$path/orders")
+        orderDF.write.format("parquet").save(s"$path/orders")
       }
     }
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
@@ -198,8 +197,7 @@ object TPCHColumnPartitionedTable {
 
       lineItemDF = ColumnCacheBenchmark.applySchema(lineItemDF1, newSchema)
       if (CREATE_PARQUET) {
-        lineItemDF.write.format("parquet").option("compression", "none")
-            .save(s"$path/lineitem")
+        lineItemDF.write.format("parquet").save(s"$path/lineitem")
       }
     }
     val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
@@ -263,8 +261,7 @@ object TPCHColumnPartitionedTable {
 
       customerDF = ColumnCacheBenchmark.applySchema(customerDF1, newSchema)
       if (CREATE_PARQUET) {
-        customerDF.write.format("parquet").option("compression", "none")
-            .save(s"$path/customer")
+        customerDF.write.format("parquet").save(s"$path/customer")
       }
     }
     val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
@@ -301,8 +298,7 @@ object TPCHColumnPartitionedTable {
 
       partDF = ColumnCacheBenchmark.applySchema(partDF1, newSchema)
       if (CREATE_PARQUET) {
-        partDF.write.format("parquet").option("compression", "none")
-            .save(s"$path/part")
+        partDF.write.format("parquet").save(s"$path/part")
       }
     }
     val newSchema = TPCHTableSchema.newPartSchema(partDF.schema)
@@ -340,8 +336,7 @@ object TPCHColumnPartitionedTable {
 
       partSuppDF = ColumnCacheBenchmark.applySchema(partSuppDF1, newSchema)
       if (CREATE_PARQUET) {
-        partSuppDF.write.format("parquet").option("compression", "none")
-            .save(s"$path/partsupp")
+        partSuppDF.write.format("parquet").save(s"$path/partsupp")
       }
     }
     val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)

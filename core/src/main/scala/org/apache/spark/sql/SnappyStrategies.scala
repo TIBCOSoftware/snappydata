@@ -61,24 +61,48 @@ private[sql] trait SnappyStrategies {
 
   object LocalJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
       left, right) if canBuildRight(joinType) && canLocalJoin(right) =>
         makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildRight, true)
+          joinType, joins.BuildRight, replicatedTableJoin = true)
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
       left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildLeft, replicatedTableJoin = true)
+
+      // check for collocated joins before going for broadcast
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if isCollocatedJoin(left, leftKeys, right, rightKeys) =>
+        val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left)
+        if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft, true)
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
+        } else if (canBuildRight(joinType) && canBuildLocalHashMap(right)) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight, replicatedTableJoin = false)
+        } else if (buildLeft) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
+        } else if (RowOrdering.isOrderable(leftKeys)) {
+          joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+            planLater(left), planLater(right)) :: Nil
+        } else Nil
 
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildRight(joinType) && canBroadcast(right) =>
-        Seq(joins.BroadcastHashJoinExec(
-          leftKeys, rightKeys, joinType, BuildRight, condition, planLater(left), planLater(right)))
-
+        if (canBuildLeft(joinType) && canBroadcast(left) &&
+            left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+          Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+            BuildLeft, condition, planLater(left), planLater(right)))
+        } else {
+          Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+            BuildRight, condition, planLater(left), planLater(right)))
+        }
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildLeft(joinType) && canBroadcast(left) =>
-        Seq(joins.BroadcastHashJoinExec(
-          leftKeys, rightKeys, joinType, BuildLeft, condition, planLater(left), planLater(right)))
+        Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+          BuildLeft, condition, planLater(left), planLater(right)))
 
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildRight(joinType) && canBuildLocalHashMap(right) ||
@@ -86,16 +110,17 @@ private[sql] trait SnappyStrategies {
         if (canBuildLeft(joinType) && canBuildLocalHashMap(left) &&
             left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft, false)
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
         } else {
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildRight, false)
+            joinType, joins.BuildRight, replicatedTableJoin = false)
         }
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
         if canBuildLeft(joinType) && canBuildLocalHashMap(left) ||
             !RowOrdering.isOrderable(leftKeys) =>
         makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildLeft, false)
+          joinType, joins.BuildLeft, replicatedTableJoin = false)
+
       case _ => Nil
     }
 
@@ -132,6 +157,55 @@ private[sql] trait SnappyStrategies {
     private def canBuildLeft(joinType: JoinType): Boolean = joinType match {
       case Inner | RightOuter => true
       case _ => false
+    }
+
+    private def getCollocatedPartitioning(leftPlan: LogicalPlan, leftKeys: Seq[Expression],
+        rightPlan: LogicalPlan, rightKeys: Seq[Expression]): (Seq[Expression], Seq[Int], Int) = {
+
+      def getCompatiblePartitioning(plan: LogicalPlan,
+          joinKeys: Seq[Expression]): (Seq[Expression], Seq[Int], Int) = plan match {
+        case PhysicalOperation(_, _, r@LogicalRelation(
+        scan: PartitionedDataSourceScan, _, _)) =>
+          val partCols = scan.partitionColumns.map(colName =>
+            r.resolveQuoted(colName, self.snappySession.sessionState.analyzer.resolver)
+                .getOrElse(throw new AnalysisException(
+                  s"""Cannot resolve column "$colName" among (${r.output})""")))
+          // check if join keys match (or are subset of) partitioning columns
+          val keyOrder = joinKeys.map { k =>
+            val i = partCols.indexWhere(_.semanticEquals(k))
+            if (i < 0) return (Nil, Nil, -1)
+            i
+          }
+          (partCols, keyOrder, scan.numBuckets)
+
+        case PhysicalOperation(_, _, ExtractEquiJoinKeys(_, lKeys, rKeys,
+        _, left, right)) =>
+          // If join is a result of collocated join, then the result can
+          // also be a collocated join with other tables if compatible
+          getCollocatedPartitioning(left, lKeys, right, rKeys)
+
+        case _ => (Nil, Nil, -1)
+      }
+
+      val (leftCols, leftKeyOrder, leftNumPartitions) = getCompatiblePartitioning(
+        leftPlan, leftKeys)
+      val (_, rightKeyOrder, rightNumPartitions) = getCompatiblePartitioning(
+        rightPlan, rightKeys)
+      if (leftNumPartitions > 0 && leftNumPartitions == rightNumPartitions &&
+          leftKeyOrder == rightKeyOrder) {
+        logInfo(s"SW: isCollocated = true with keyOrder=$leftKeyOrder " +
+            s"leftKeys=$leftKeys rightKeys=$rightKeys left=$leftPlan right=$rightPlan")
+        (leftCols, leftKeyOrder, leftNumPartitions)
+      } else {
+        logInfo(s"SW: isCollocated = false with keyOrder=$leftKeyOrder " +
+            s"leftKeys=$leftKeys rightKeys=$rightKeys left=$leftPlan right=$rightPlan")
+        (Nil, Nil, -1)
+      }
+    }
+
+    private def isCollocatedJoin(leftPlan: LogicalPlan, leftKeys: Seq[Expression],
+        rightPlan: LogicalPlan, rightKeys: Seq[Expression]): Boolean = {
+      getCollocatedPartitioning(leftPlan, leftKeys, rightPlan, rightKeys)._3 > 0
     }
 
     private def canLocalJoin(plan: LogicalPlan): Boolean = {
