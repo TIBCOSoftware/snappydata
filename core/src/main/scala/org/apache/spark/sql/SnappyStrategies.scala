@@ -193,12 +193,8 @@ private[sql] trait SnappyStrategies {
         rightPlan, rightKeys)
       if (leftNumPartitions > 0 && leftNumPartitions == rightNumPartitions &&
           leftKeyOrder == rightKeyOrder) {
-        logInfo(s"SW: isCollocated = true with keyOrder=$leftKeyOrder " +
-            s"leftKeys=$leftKeys rightKeys=$rightKeys left=$leftPlan right=$rightPlan")
         (leftCols, leftKeyOrder, leftNumPartitions)
       } else {
-        logInfo(s"SW: isCollocated = false with keyOrder=$leftKeyOrder " +
-            s"leftKeys=$leftKeys rightKeys=$rightKeys left=$leftPlan right=$rightPlan")
         (Nil, Nil, -1)
       }
     }
