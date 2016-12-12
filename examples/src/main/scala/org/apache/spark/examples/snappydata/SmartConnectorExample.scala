@@ -16,7 +16,7 @@
  */
 package org.apache.spark.examples.snappydata
 
-import org.apache.spark.sql.{SnappySession, SnappyContext, SparkSession}
+import org.apache.spark.sql.{SnappySession, SparkSession}
 
 /**
  * This example shows how an application can interact with SnappyStore in Split cluster mode.
@@ -51,17 +51,17 @@ import org.apache.spark.sql.{SnappySession, SnappyContext, SparkSession}
  * After running this example you can also query the table from Snappy shell
  * e.g. select count(*) from TestColumnTable.
  *
- * bin/run-example snappydata.SplitModeApplicationExample
+ * bin/run-example snappydata.SmartConnectorExample
  *
  */
 
-object SplitModeApplicationExample {
+object SmartConnectorExample {
 
   def main(args: Array[String]): Unit = {
 
     val spark: SparkSession = SparkSession
         .builder
-        .appName("SplitModeApplicationExample")
+        .appName("SmartConnectorExample")
         // It can be any master URL
         .master("local[4]")
         // snappydata.store.locators property enables the application to interact with SnappyData store

@@ -147,15 +147,22 @@ $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 
 **Step 2: Launch the Apache Spark program **
 
-
+***_In the Local mode_***
 ```bash
-# In the Local mode
+
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
+<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
 
-```bash
-# Using external cluster manager
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+This will open a scala shell. Create a SnappySession to interact with the SnappyData store.
+```scala
+// Create a SnappySession to work with SnappyData store
+$scala > val snSession = new SnappySession(spark.sparkContext)
 ```
 
-<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
+***_Using external cluster manager_***
+```bash
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+```
+For writing a Smart Connector application program refer to [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
+
