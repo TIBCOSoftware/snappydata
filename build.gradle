@@ -799,17 +799,12 @@ def copyTestsCommonResources(def bdir) {
 
 def runScript(def execName, def workDir, def param, env = null) {
   def stdout = new ByteArrayOutputStream()
-  if (null == env) {
-    env = new HashMap<String,Object>()
-  }
-  env.put('PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python")
   exec {
     executable "${execName}"
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment env
-
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }

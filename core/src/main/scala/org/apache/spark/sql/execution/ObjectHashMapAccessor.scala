@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
+import org.apache.spark.sql.execution.joins.{HashJoin, SortMergeJoinExec}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -121,7 +122,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    * checked using its value rather than a separate bit mask.
    */
   private[this] val NULL_NON_PRIM = -2
-  private[this] val lastKeyIndexVar = "lastKeyIndex"
+  private[this] val numMultiValuesVar = "numMultiValues"
   private[this] val multiValuesVar = "multiValues"
 
   private type ClassVar = (DataType, String, ExprCode, Int)
@@ -178,9 +179,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
               ${valClassVars.map(e => s"${e._2} ${e._3.value};").mkString("\n")}
             }
           """, s" extends $valueClass", "",
-              s"$valueClass[] $multiValuesVar;")
+              s"int $numMultiValuesVar;\n$valueClass[] $multiValuesVar;")
         } else if (multiMap) {
-          ("", "", nullDecls, s"int $lastKeyIndexVar;")
+          ("", "", nullDecls, s"int $numMultiValuesVar;")
         } else ("", "", nullDecls, "")
       val classCode =
         s"""
@@ -239,7 +240,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       val nullable = p._2
       val javaType = dataType match {
         // use raw byte arrays for strings to minimize overhead
-        case StringType => "byte[]"
+        case StringType if !multiMap => "byte[]"
         case _ => ctx.javaType(dataType)
       }
       val (nullVar, nullIndex) = if (nullable) {
@@ -304,32 +305,49 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val updateMinMax = integralKeys.map { index =>
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
+
+    // For SnappyData column or row tables there is no need to make
+    // a copy of non-primitive values into the map since they are immutable.
+    // Also checks for other common plans known to provide immutable objects.
+    // TODO: can be extended for more plans as per their behaviour.
+    def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
+      case _: PartitionedPhysicalScan => true
+      case FilterExec(_, c) => providesImmutableObjects(c)
+      case ProjectExec(_, c) => providesImmutableObjects(c)
+      // joins will always have immutable objects regardless of their children
+      case _: HashJoin | _: SortMergeJoinExec => true
+      case _ => false
+    }
+    val doCopy = !providesImmutableObjects(child)
+
     val multiValuesUpdateCode = if (valueClassName.isEmpty) {
       s"""
         // no value field, only count
-        final int lastKeyIndex = $entryVar.$lastKeyIndexVar;
-        $entryVar.$lastKeyIndexVar = lastKeyIndex + 1;
         // mark map as not unique on second insert for same key
-        if (lastKeyIndex == 0) $hashMapTerm.setKeyIsUnique(false);"""
+        if ($entryVar.$numMultiValuesVar++ == 0) $hashMapTerm.setKeyIsUnique(false);"""
     } else {
       s"""
         // add to multiValues array
-        final int valueIndex;
-        $valueClassName[] values = $entryVar.$multiValuesVar;
-        if (values != null) {
-          valueIndex = values.length;
-          $valueClassName[] newValues = new $valueClassName[valueIndex + 1];
-          System.arraycopy(values, 0, newValues, 0, valueIndex);
-          values = newValues;
+        final int valueIndex = $entryVar.$numMultiValuesVar;
+        $valueClassName[] values;
+        if (valueIndex != 0) {
+          values = $entryVar.$multiValuesVar;
+          if (valueIndex == values.length) {
+            // increment by 4 or 25%, whichever is larger
+            int increment = Math.max(4, valueIndex >>> 2);
+            $valueClassName[] newValues = new $valueClassName[valueIndex + increment];
+            System.arraycopy(values, 0, newValues, 0, valueIndex);
+            values = $entryVar.$multiValuesVar = newValues;
+          }
         } else {
-          valueIndex = 0;
-          values = new $valueClassName[1];
+          // start with size 3 for total size 4
+          values = $entryVar.$multiValuesVar = new $valueClassName[3];
         }
 
         final $valueClassName newValue = new $valueClassName();
         values[valueIndex] = newValue;
-        $entryVar.$multiValuesVar = values;
-        ${generateUpdate("newValue", Nil, valueVars, forKey = false)}
+        $entryVar.$numMultiValuesVar++;
+        ${generateUpdate("newValue", Nil, valueVars, forKey = false, doCopy)}
 
         // mark map as not unique on second insert for same key
         if (valueIndex == 0) $hashMapTerm.setKeyIsUnique(false);"""
@@ -362,9 +380,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         } else {
           $entryVar = new $className(${hashVar(0)});
           // initialize the key fields
-          ${generateUpdate(entryVar, Nil, keyVars, forKey = true)}
+          ${generateUpdate(entryVar, Nil, keyVars, forKey = true, doCopy)}
           // initialize the value fields
-          ${generateUpdate(entryVar, Nil, valueVars, forKey = false)}
+          ${generateUpdate(entryVar, Nil, valueVars, forKey = false, doCopy)}
           // insert into the map and rehash if required
           $dataTerm[$posVar] = $entryVar;
           if ($hashMapTerm.handleNewInsert()) {
@@ -527,7 +545,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         case _ =>
           val (localVar, localDeclaration) = {
             dataType match {
-              case StringType =>
+              case StringType if !multiMap =>
                 // wrap the bytes in UTF8String
                 val lv = ctx.freshName("localField")
                 (lv, new StringBuilder().append(s"final UTF8String $lv = ").append(
@@ -756,7 +774,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
       keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
-      initCode: String, checkCondition: Option[ExprCode],
+      initCode: String, checkCond: (Option[ExprCode], String),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       buildKeyVars: Seq[ExprCode], buildVars: Seq[ExprCode], input: Seq[ExprCode],
       resultVars: Seq[ExprCode], dictArrayVar: String,
@@ -830,7 +848,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           $entryIndexVar++;
         } else if ($numEntriesVar == -1) {
           // multi-entries count hit first time
-          $numEntriesVar = $entryVar.$lastKeyIndexVar;
+          $numEntriesVar = $entryVar.$numMultiValuesVar;
           if ($numEntriesVar <= 0) break;
           $entryIndexVar = 1;
         } else {
@@ -855,9 +873,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           $dupRow
         } else if ($numEntriesVar == -1) {
           // multi-values array hit first time
-          if (($valuesVar = $entryVar.$multiValuesVar) != null) {
+          if (($numEntriesVar = $entryVar.$numMultiValuesVar) > 0) {
             $entryIndexVar = 1;
-            $numEntriesVar = $valuesVar.length;
+            $valuesVar = $entryVar.$multiValuesVar;
             $localValueVar = $valuesVar[0];
             $nullsUpdate
             $dupRow
@@ -920,6 +938,22 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         }"""
     }
 
+    // evaluate inputs for use by consumer if required
+    // the evaluations below match the input vars being sent to
+    // getConsumeResultCode (except existence join having existsVar but that
+    //    is always evaluated) -- see the evaluateRequiredVariables call in
+    // base CodegenSupport.consume
+    val checkCondition = checkCond._1
+    val inputCodes = if (checkCondition.isDefined) {
+      // evaluate all of input
+      evaluateVariables(input) + '\n' + checkCond._2
+    } else joinType match {
+      case Inner | LeftOuter | RightOuter =>
+        evaluateRequiredVariables(consumer.output, resultVars, cParent.usedInputs)
+      case _ =>
+        evaluateRequiredVariables(consumer.output, input, cParent.usedInputs)
+    }
+
     // Code fragments for different join types.
     // This is to ensure only a single parent.consume() because the branches
     // can be taken alternately in the worst case so then it can lead to
@@ -928,22 +962,22 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val entryConsume = joinType match {
       case Inner => genInnerJoinCodes(entryVar, mapKeyCodes, checkCondition,
         numRows, getConsumeResultCode(numRows, resultVars),
-        keyIsUnique, declareLocalVars, moveNextValue)
+        keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftOuter | RightOuter =>
         // instantiate code for buildVars before calling getConsumeResultCode
         val buildInitCode = evaluateVariables(buildVars)
         genOuterJoinCodes(entryVar, buildVars, buildInitCode, mapKeyCodes,
           checkCondition, numRows, getConsumeResultCode(numRows, resultVars),
-          keyIsUnique, declareLocalVars, moveNextValue)
+          keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftSemi => genSemiJoinCodes(entryVar, mapKeyCodes, checkCondition,
         numRows, getConsumeResultCode(numRows, input),
-        keyIsUnique, declareLocalVars, moveNextValue)
+        keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftAnti => genAntiJoinCodes(entryVar, mapKeyCodes, checkCondition,
         numRows, getConsumeResultCode(numRows, input),
-        keyIsUnique, declareLocalVars, moveNextValue)
+        keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case _: ExistenceJoin =>
         // declare and add the exists variable to resultVars
@@ -951,7 +985,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         genExistenceJoinCodes(entryVar, existsVar, mapKeyCodes,
           checkCondition, numRows, getConsumeResultCode(numRows,
             input :+ ExprCode("", "false", existsVar)), keyIsUnique,
-          declareLocalVars, moveNextValue)
+          declareLocalVars, moveNextValue, inputCodes)
 
       case _ => throw new IllegalArgumentException(
         s"LocalJoin should not take $joinType as the JoinType")
@@ -1036,8 +1070,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   private def genInnerJoinCodes(entryVar: String, mapKeyCodes: String,
       checkCondition: Option[ExprCode], numRows: String,
-      consumeResult: String, keyIsUnique: String,
-      declareLocalVars: String, moveNextValue: String): String = {
+      consumeResult: String, keyIsUnique: String, declareLocalVars: String,
+      moveNextValue: String, inputCodes: String): String = {
 
     val consumeCode = checkCondition match {
       case None => consumeResult
@@ -1053,6 +1087,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       $declareLocalVars
 
       $mapKeyCodes
+      $inputCodes
       while (true) {
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
@@ -1066,11 +1101,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       }"""
   }
 
+  // scalastyle:off
   private def genOuterJoinCodes(entryVar: String, buildVars: Seq[ExprCode],
       buildInitCode: String, mapKeyCodes: String,
       checkCondition: Option[ExprCode], numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
-      moveNextValue: String): String = {
+      moveNextValue: String, inputCodes: String): String = {
+  // scalastyle:on
 
     val consumeCode = checkCondition match {
       case None =>
@@ -1100,6 +1137,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     s"""$declareLocalVars
 
       $mapKeyCodes
+      $inputCodes
       while (true) {
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
@@ -1116,7 +1154,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def genSemiJoinCodes(entryVar: String, mapKeyCodes: String,
       checkCondition: Option[ExprCode], numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
-      moveNextValue: String): String = checkCondition match {
+      moveNextValue: String, inputCodes: String): String = checkCondition match {
 
     case None =>
       // no key/value assignments required
@@ -1131,6 +1169,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         $declareLocalVars
 
         $mapKeyCodes
+        $inputCodes
         $breakLoop: while (true) {
           do { // single iteration loop meant for breaking out with "continue"
             ${ev.code}
@@ -1152,7 +1191,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def genAntiJoinCodes(entryVar: String, mapKeyCodes: String,
       checkCondition: Option[ExprCode], numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
-      moveNextValue: String): String = checkCondition match {
+      moveNextValue: String, inputCodes: String): String = checkCondition match {
 
     case None =>
       // success if no match for an anti-join (no value iteration)
@@ -1164,12 +1203,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // iteration loop, hence code layout is bit different from other joins
       val matched = ctx.freshName("matched")
       // need the key/value assignments for condition evaluation
-      s"""
+      s"""$declareLocalVars
+
+        $mapKeyCodes
+        $inputCodes
         boolean $matched = false;
         if ($entryVar != null) {
-          $declareLocalVars
-
-          $mapKeyCodes
           $breakLoop: while (true) {
             do { // single iteration loop meant for breaking out with "continue"
               // fail if condition matches for any row
@@ -1196,7 +1235,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def genExistenceJoinCodes(entryVar: String, existsVar: String,
       mapKeyCodes: String, checkCondition: Option[ExprCode], numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
-      moveNextValue: String): String = checkCondition match {
+      moveNextValue: String, inputCodes: String): String = checkCondition match {
 
     case None =>
       // only one match needed, so no value iteration
@@ -1206,11 +1245,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case Some(ev) =>
       val breakLoop = ctx.freshName("breakLoop")
       // need the key/value assignments for condition evaluation
-      s"""boolean $existsVar = false;
-        if ($entryVar != null) {
-          $declareLocalVars
+      s"""$declareLocalVars
 
-          $mapKeyCodes
+        $mapKeyCodes
+        $inputCodes
+        boolean $existsVar = false;
+        if ($entryVar != null) {
           $breakLoop: while (true) {
             do { // single iteration loop meant for breaking out with "continue"
               ${ev.code}
@@ -1260,22 +1300,31 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def genVarAssignCode(colVar: String, resultVar: ExprCode,
       dataType: DataType, doCopy: Boolean): String = dataType match {
     // if doCopy is true, then create a copy of some non-primitives that just
-    // hold a reference to UnsafeRow bytes (and can change under the hood)
-    case StringType if doCopy =>
+    // holds a reference to UnsafeRow bytes (and can change under the hood)
+    case StringType if doCopy && !multiMap =>
       s"$colVar = ${resultVar.value}.getBytes();"
-    case StringType =>
-      // try to copy just reference of the byte[] if possible
+    case StringType if !multiMap =>
+      // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
       val platformClass = classOf[Platform].getName
       val bytes = ctx.freshName("stringBytes")
-      val obj = bytes + "Obj"
-      s"""Object $obj; byte[] $bytes;
+      s"""byte[] $bytes;
         if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
-            && ($obj = $stringVar.getBaseObject()) instanceof byte[]
-            && ($bytes = (byte[])$obj).length == $stringVar.numBytes()) {
+            && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $bytes;
         } else {
           $colVar = $stringVar.getBytes();
+        }"""
+    // multimap holds a reference to UTF8String itself
+    case StringType if doCopy =>
+      // copy just reference of the object if underlying byte[] is immutable
+      val stringVar = resultVar.value
+      val platformClass = classOf[Platform].getName
+      s"""if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
+            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
+          $colVar = $stringVar;
+        } else {
+          $colVar = $stringVar.clone();
         }"""
     case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"
@@ -1386,7 +1435,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val equalsCode = if (isPrimitive) s"($thisColVar == $otherCol)"
     else dataType match {
       // strings are stored as raw byte arrays
-      case StringType =>
+      case StringType if !multiMap =>
         val byteMethodsClass = classOf[ByteArrayMethods].getName
         val platformClass = classOf[Platform].getName
         if (thisVar.isEmpty) {

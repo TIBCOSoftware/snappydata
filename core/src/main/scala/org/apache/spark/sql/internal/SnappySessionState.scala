@@ -23,6 +23,7 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -32,10 +33,12 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliase
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
+import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -138,6 +141,8 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !planner.asInstanceOf[SnappyStrategies]
             .LocalJoinStrategies.isLocalJoin(j) =>
           // disable for the entire query for consistency
+          snappySession.linkBucketsToPartitions(flag = true)
+        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
           snappySession.linkBucketsToPartitions(flag = true)
         case _ => // nothing for others
       }
@@ -255,8 +260,15 @@ class SnappyConf(@transient val session: SnappySession)
     case None => SnappyContext.totalCoreCount.get()
   }
 
-  private[this] def checkShufflePartitionsKey(key: String): Unit = {
-    if (key == SQLConf.SHUFFLE_PARTITIONS.key) dynamicShufflePartitions = -1
+  private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
+    // clear plan cache when some size related key that effects plans changes
+    case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
+         Property.HashJoinSize.name => session.clearPlanCache()
+    case SQLConf.SHUFFLE_PARTITIONS.key =>
+      // stop dynamic determination of shuffle partitions
+      if (doSet) dynamicShufflePartitions = -1
+      else dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case _ => // ignore others
   }
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
@@ -271,13 +283,23 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def setConfString(key: String, value: String): Unit = {
-    checkShufflePartitionsKey(key)
+    keyUpdateActions(key, doSet = true)
     super.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    checkShufflePartitionsKey(entry.key)
+    keyUpdateActions(entry.key, doSet = true)
     super.setConf[T](entry, value)
+  }
+
+  override def unsetConf(key: String): Unit = {
+    keyUpdateActions(key, doSet = false)
+    super.unsetConf(key)
+  }
+
+  override def unsetConf(entry: ConfigEntry[_]): Unit = {
+    keyUpdateActions(entry.key, doSet = false)
+    super.unsetConf(entry)
   }
 }
 
@@ -443,7 +465,7 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-class DefaultPlanner(snappySession: SnappySession, conf: SQLConf,
+class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
         with SnappyStrategies {
