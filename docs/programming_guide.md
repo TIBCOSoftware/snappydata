@@ -645,7 +645,7 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 ) USING column options(BUCKETS '5')" )
 ```
 
-To access the complex data from JDBC you can see [org.apache.spark.examples.snappydata.JDBCWithComplexTypes] for examples.
+To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
 Note : Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 

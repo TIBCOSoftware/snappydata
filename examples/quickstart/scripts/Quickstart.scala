@@ -17,107 +17,71 @@
 /**
  * This script demonstrate the performance difference between Spark and Snappydata.
  * To execute this script on spark you can use below command:
- * ./spark-shell --driver-memory 4g --master local[1] --packages "SnappyDataInc:snappydata:0.6
+ * ./spark-shell --driver-memory 4g --master local[*] --packages "SnappyDataInc:snappydata:0.7
  * .2-s_2.11" -i Quickstart
  * .scala
  *
  * To execute this script on spark you can use same command as above without specifying packages
  * as follows:
- * ./spark-shell --driver-memory 4g --master local[1] -i Quickstart.scala
+ * ./spark-shell --driver-memory 4g -driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
  */
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 
-
 //Benchmark function that will execute a function and returns time taken to execute that function
-def benchmark(name: String)(f: => Unit): Double = {
+def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) : Double = {
+  for (i <- 1 to warmups) {
+    f
+  }
   val startTime = System.nanoTime
-  f
+  for (i <- 1 to times) {
+    f
+  }
   val endTime = System.nanoTime
-  val timeTaken = (endTime - startTime).toDouble / 1000000000
-  println(s"Time taken in $name: " + timeTaken + " seconds")
+  val timeTaken = (endTime - startTime).toDouble / (times * 1000000.0)
+  println(s"Average time taken in $name for $times runs: $timeTaken millis")
   timeTaken
 }
 
 //Create spark session
-val spark = SparkSession.builder.master("local[1]").appName("spark, " +
+val spark = SparkSession.builder.master("local[*]").appName("spark, " +
     "Snappy Perf test").getOrCreate()
 
 //Create Dataframe can register temp table
 spark.conf.set(SQLConf.COMPRESS_CACHED.key,false)
-var sparkDataFrame = spark.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
-sparkDataFrame.cache
-sparkDataFrame.createOrReplaceTempView("sparkCacheTable")
+var testDF = spark.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
+testDF.cache
+testDF.createOrReplaceTempView("sparkCacheTable")
 
 
-benchmark("spark.sql(\"select avg(k), avg(id) from sparkCacheTable\")") {
-  spark.sql("select avg(k), avg(id) from sparkCacheTable").show
-}
+val timeTakenSpark = benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
 
-benchmark("spark.sql(\"select avg(k), avg(id) from sparkCacheTable\").show") {
-  spark.sql("select avg(k), avg(id) from sparkCacheTable").show
-}
 
-val timeRequiredForQ1Spark = benchmark("spark.sql(\"select avg(k), avg(id) from " +
-    "sparkCacheTable\").show") {
-  spark.sql("select avg(k), avg(id) from sparkCacheTable").show
-}
-
-val timeRequiredForQ2Spark = benchmark("spark.sql(\"select avg(k), avg(id) from sparkCacheTable " +
-    "group by " +
-    "(id%100)\").show") {
-  spark.sql("select avg(k), avg(id) from sparkCacheTable group by (id%100)").show
-}
-
-sparkDataFrame.unpersist()
+testDF.unpersist()
 System.gc()
 System.runFinalization()
 
 
 //Create SnappySession to execute queries from spark
-val snappy = org.apache.spark.sql.SnappyContext.apply().snappySession
+val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 snappy.conf.set(SQLConf.COMPRESS_CACHED.key,false)
-var testDF = snappy.range(100000000).selectExpr("id", "floor(rand() * 10000) as k")
+testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 
 snappy.sql("drop table if exists snappyTable")
-snappy.sql("create table snappyTable (id bigint not null, k bigint not null) using column")
-testDF.write.insertInto("snappyTable")
+snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
+benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
+
+val timeTakenSnappy = benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
 
 
-benchmark("snappy.sql(\"select avg(k), avg(id) from snappyTable\")") {
-  snappy.sql("select avg(k), avg(id) from snappyTable").show
+val diff = (timeTakenSpark / timeTakenSnappy)
+println(s"\n\nSnappy is $diff times faster than spark \n\n")
+
+if(java.lang.Boolean.getBoolean("snappy_benchmark_perf")){
+  if (!(diff >= 3)) {
+    println("Cannot meet the required performance")
+  }
 }
-
-
-benchmark("snappy.sql(\"select avg(k), avg(id) from snappyTable\").show") {
-  snappy.sql("select avg(k), avg(id) from snappyTable").show
-}
-
-val timeRequiredForQ1Snappy = benchmark("snappy.sql(\"select avg(k), avg(id) from snappyTable\")" +
-    ".show") {
-  snappy.sql("select avg(k), avg(id) from snappyTable").show
-}
-val q1Diff = (timeRequiredForQ1Spark / timeRequiredForQ1Snappy)
-println(s"\n\nSnappy is $q1Diff times faster than spark \n\n")
-if (!(q1Diff >= 10)) {
-  println("Cannot meet the required performance")
-}
-
-
-
-val timeRequiredForQ2Snappy = benchmark("snappy.sql(\"select avg(k), avg(id) from \" + " +
-    "\"snappyTable group by " +
-    "(id%100)\").show") {
-  snappy.sql("select avg(k), avg(id) from " + "snappyTable group by (id%100)").show
-}
-
-val q2Diff = (timeRequiredForQ2Spark / timeRequiredForQ2Snappy)
-println(s"\n\nSnappy is $q2Diff times faster than spark \n\n")
-if (!(q2Diff >= 3)) {
-  println("Cannot meet the required performance")
-}
-
-
 
 System.exit(0)
