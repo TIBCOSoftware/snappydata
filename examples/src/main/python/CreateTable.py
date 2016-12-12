@@ -1,7 +1,7 @@
 from pyspark.conf import SparkConf
 from pyspark.sql.snappy import SnappySession
 from pyspark.sql.types import StructField, StructType, IntegerType, DecimalType
-from pyspark.sql.snappy import SnappyContext
+from pyspark.context import SparkContext
 from decimal import *
 
 # A Python example showing how create table in SnappyData and run queries
