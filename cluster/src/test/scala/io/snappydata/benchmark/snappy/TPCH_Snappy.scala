@@ -1045,7 +1045,7 @@ object TPCH_Snappy {
           "         C_COMMENT" +
           " order by" +
           "         revenue desc" +
-        " limit 100"
+        " limit 20"
   }
 
   def getResultString10: String = {
@@ -1479,7 +1479,7 @@ object TPCH_Snappy {
         "    o_totalprice" +
         "    order by" +
         "        o_totalprice desc," +
-        "    o_orderdate"
+        "    o_orderdate limit 100"
   }
 
   def getResultString18: String = {
@@ -1634,7 +1634,8 @@ object TPCH_Snappy {
           "         and n_name = 'CANADA'" +
           " order by" +
           "         s_name"
-  }*/
+  }
+  */
 
   def getQuery20_Original(): String = {
     //    1. COLOR = forest.
@@ -1722,7 +1723,7 @@ object TPCH_Snappy {
         "         s_name" +
         " order by" +
         "         numwait desc," +
-        "         s_name"
+        "         s_name limit 100"
   }
 
   def getResultString21: String = {
@@ -1741,7 +1742,7 @@ object TPCH_Snappy {
 
   }
 
-  def getQuery22(value:String, useIndex: Boolean): String = {
+  def getQuery22(value: String, useIndex: Boolean): String = {
     if (!useIndex) {
       "select" +
           "         cntrycode," +
