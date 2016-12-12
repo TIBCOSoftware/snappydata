@@ -1021,21 +1021,23 @@ Developers can write programs in Python to use SnappyData features
 **First create SnappyContext:**
 
 ```
-    conf = SparkConf().setAppName('Python Example').setMaster("local[*]")
-    sc = SparkContext(conf=conf)
-    # get the SnappyContext
-    snContext = SnappyContext(sc)
+ from pyspark.sql.snappy import SnappySession
+ from pyspark import SparkContext, SparkConf
+
+ conf = SparkConf().setAppName(appName).setMaster(master)
+ sc = SparkContext(conf=conf)
+ snappy = SnappySession(sc)
 ```
 
 **Create table using SnappyContext**
 
 ```
     # Creating partitioned table PARTSUPP using SQL
-    snContext.sql("DROP TABLE IF EXISTS PARTSUPP")
+    snappy.sql("DROP TABLE IF EXISTS PARTSUPP")
     # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
     # For complete list of table attributes refer the documentation
     # http://snappydatainc.github.io/snappydata/programming_guide
-    snContext.sql("CREATE TABLE PARTSUPP ( " +
+    snappy.sql("CREATE TABLE PARTSUPP ( " +
                   "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
                   "PS_SUPPKEY     INTEGER NOT NULL," +
                   "PS_AVAILQTY    INTEGER NOT NULL," +
@@ -1046,29 +1048,29 @@ Developers can write programs in Python to use SnappyData features
 **Inserting data in table using INSERT query**
 
 ```
-    snContext.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
-    snContext.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
-    snContext.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
-    snContext.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
+    snappy.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
+    snappy.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
+    snappy.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
+    snappy.sql("INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)")
     # Printing the contents of the PARTSUPP table
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
 **Update the data using SQL**
 
 ```
     # Update the available quantity for PARTKEY 100
-    snContext.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
+    snappy.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
     # Printing the contents of the PARTSUPP table after update
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 ```    
 
 **Delete records from the table**
 ```
     # Delete the records for PARTKEY 400
-    snContext.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
+    snappy.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
     # Printing the contents of the PARTSUPP table after delete
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
 **Create table using API**
@@ -1076,7 +1078,7 @@ This same table can be created by using createTable API. First we create a schem
 
 ```
     # drop the table if it exists
-    snContext.dropTable('PARTSUPP', True)
+    snappy.dropTable('PARTSUPP', True)
 
     schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
                      StructField('PS_SUPPKEY', IntegerType(), False),
@@ -1087,26 +1089,26 @@ This same table can be created by using createTable API. First we create a schem
     # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
     # For complete list of table attributes refer the documentation at
     # http://snappydatainc.github.io/snappydata/programming_guide
-    snContext.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
+    snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
 
     # Inserting data in PARTSUPP table using dataframe
     tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
               (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
     rdd = sc.parallelize(tuples)
-    tuplesDF = snContext.createDataFrame(rdd, schema)
+    tuplesDF = snappy.createDataFrame(rdd, schema)
     tuplesDF.write.insertInto("PARTSUPP")
     #Printing the contents of the PARTSUPP table
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 
     # Update the available quantity for PARTKEY 100
-    snContext.update("PARTSUPP", "PS_PARTKEY =100", [50000], ["PS_AVAILQTY"])
+    snappy.update("PARTSUPP", "PS_PARTKEY =100", [50000], ["PS_AVAILQTY"])
     # Printing the contents of the PARTSUPP table after update
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 
     # Delete the records for PARTKEY 400
-    snContext.delete("PARTSUPP", "PS_PARTKEY =400")
+    snappy.delete("PARTSUPP", "PS_PARTKEY =400")
     # Printing the contents of the PARTSUPP table after delete
-    snContext.sql("SELECT * FROM PARTSUPP").show()
+    snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
 The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/examples/src/main/python/CreateTable.py)

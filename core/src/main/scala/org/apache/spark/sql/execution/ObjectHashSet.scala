@@ -77,8 +77,9 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   def keyIsUnique: Boolean = _keyIsUnique
 
-  def setKeyIsUnique(unique: Boolean): Unit =
-    _keyIsUnique = unique
+  def setKeyIsUnique(unique: Boolean): Unit = {
+    if (_keyIsUnique != unique) _keyIsUnique = unique
+  }
 
   private def initArray(values: Array[Long], init: Long): Unit = {
     var index = 0

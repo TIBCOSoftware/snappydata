@@ -17,8 +17,10 @@
 
 package org.apache.spark.sql
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.sql.internal.SQLConf
 
 /**
  * Suite to run TPCH in a single VM. Disabled, by default,
@@ -29,8 +31,13 @@ class TPCHSuite extends SnappyFunSuite with BeforeAndAfterAll  {
 
   ignore("Test TPCH") {
     val snc = SnappyContext(sc)
+    snc.conf.setConfString(SQLConf.COLUMN_BATCH_SIZE.key, "10000")
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "104857600")
+    Property.HashJoinSize.set(snc.conf, 1L * 1024 * 1024 * 1024)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     TPCHUtils.queryExecution(snc, isSnappy = true)
+    // TPCHUtils.queryExecution(snc, isSnappy = true, warmup = 6, runsForAverage = 10,
+    //  isResultCollection = false)
     TPCHUtils.validateResult(snc, isSnappy = true)
   }
 }

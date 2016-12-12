@@ -799,17 +799,12 @@ def copyTestsCommonResources(def bdir) {
 
 def runScript(def execName, def workDir, def param, env = null) {
   def stdout = new ByteArrayOutputStream()
-  if (null == env) {
-    env = new HashMap<String,Object>()
-  }
-  env.put('PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python")
   exec {
     executable "${execName}"
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment env
-
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.1-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -948,11 +943,17 @@ task runQuickstart {
     // overflow on disk
     Map<String,Object> env = new HashMap<String,Object>()
     env.put("_JAVA_OPTIONS","-Xms256m -Xmx4g")
+    String extraArgs = '-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g '
+    if(project.hasProperty('snappy.perf')){
+      extraArgs = extraArgs.concat("-Dsnappy_benchmark_perf=true")
+    }
     String quickStartResult = runScript("${snappyProductDir}/bin/spark-shell", workingDir,
-        [' --driver-memory ', '4g', '-i',
-         "${snappyProductDir}/quickstart/scripts/Quickstart.scala", '--master', 'local[1]'], env)
+        ['--driver-memory=4g',"--driver-java-options=$extraArgs", '-i',
+         "${snappyProductDir}/quickstart/scripts/Quickstart.scala"], env)
+
     if (quickStartResult.toLowerCase().
         contains('cannot meet the required performance')) {
+      println(quickStartResult)
       throw new GradleException('Failed to assert required performance in Quickstart')
     } else {
       println(quickStartResult)
