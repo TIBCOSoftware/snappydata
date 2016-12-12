@@ -32,16 +32,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
     "q20", "q21", "q22")
 
-  /*
-  test("snappy test") {
-    val snc = SnappyContext(sc)
-    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 10000")
-    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
-    queryExecution(snc, isSnappy = true)
-    validateResult(snc, isSnappy = true)
-  }
-  */
-
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
@@ -144,11 +134,12 @@ object TPCHUtils {
     }
   }
 
-  def queryExecution(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    snc.sql(s"set spark.sql.shuffle.partitions= 4")
+  def queryExecution(snc: SnappyContext, isSnappy: Boolean, warmup: Int = 0,
+      runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
     queries.foreach(query => TPCH_Snappy.execute(query, snc,
-      isResultCollection = true, isSnappy = isSnappy, avgPrintStream = System.out))
+      isResultCollection, isSnappy, warmup = warmup,
+      runsForAverage = runsForAverage, avgPrintStream = System.out))
   }
 }

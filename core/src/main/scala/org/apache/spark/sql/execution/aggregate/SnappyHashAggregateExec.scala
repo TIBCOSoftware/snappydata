@@ -97,6 +97,13 @@ case class SnappyHashAggregateExec(
   // this is a var to allow CollectAggregateExec to switch temporarily
   @transient private[execution] var childProducer = child
 
+  private def getChildProducer: SparkPlan = {
+    if (childProducer eq null) {
+      childProducer = child
+    }
+    childProducer
+  }
+
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 
   override def producedAttributes: AttributeSet =
@@ -286,9 +293,6 @@ case class SnappyHashAggregateExec(
       (resultVars, evaluateVariables(resultVars))
     }
 
-    if (childProducer eq null) {
-      childProducer = child
-    }
     val doAgg = ctx.freshName("doAggregateWithoutKey")
     ctx.addNewFunction(doAgg,
       s"""
@@ -296,7 +300,7 @@ case class SnappyHashAggregateExec(
          |  // initialize aggregation buffer
          |  $initBufVar
          |
-         |  ${childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
+         |  ${getChildProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
          |}
        """.stripMargin)
 
@@ -552,6 +556,8 @@ case class SnappyHashAggregateExec(
       initVars, initCode, input, dictionaryArrayTerm)
 
     ctx.currentVars = bufferVars ++ input
+    val inputCodes = evaluateRequiredVariables(child.output,
+      ctx.currentVars.takeRight(child.output.length), child.references)
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
     val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(
@@ -579,6 +585,7 @@ case class SnappyHashAggregateExec(
        |$bufferEval
        |
        |// common sub-expressions
+       |$inputCodes
        |$effectiveCodes
        |
        |// evaluate aggregate functions

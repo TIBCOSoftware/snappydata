@@ -34,6 +34,7 @@ import py4j
 from pyspark.tests import ReusedPySparkTestCase
 from pyspark.sql.tests import Row
 from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.snappy import SnappySession
 
 try:
     import xmlrunner
@@ -54,14 +55,14 @@ class SnappyContextTests(ReusedPySparkTestCase):
     tablename = "TESTTABLE"
 
     def test_new_session(self):
-        sqlcontext1 = SnappyContext(self.sc)
-        sqlcontext1.setConf("test_key", "a")
+        sqlSession1 = SnappySession(self.sc)
+        sqlSession1.conf.set("test_key", "a")
 
-        sqlcontext2 = sqlcontext1.newSession()
-        sqlcontext2.setConf("test_key", "b")
+        sqlSession2 = sqlSession1.newSession()
+        sqlSession2.conf.set("test_key", "b")
 
-        self.assertEqual(sqlcontext1.getConf("test_key", ""), "a")
-        self.assertEqual(sqlcontext2.getConf("test_key", ""), "b")
+        self.assertEqual(sqlSession1.conf.get("test_key", ""), "a")
+        self.assertEqual(sqlSession2.conf.get("test_key", ""), "b")
 
     def test_row_table_with_sql_api(self):
         ddl = "CREATE TABLE " + SnappyContextTests.tablename + \
@@ -129,60 +130,60 @@ class SnappyContextTests(ReusedPySparkTestCase):
     def test_delete(self):
         self.drop_table(True)
         self.create_table_using_datasource("row")
-        sqlcontext = SnappyContext(self.sc)
-        self.assertTrue(sqlcontext.delete(SnappyContextTests.tablename, "col1=1"), 2)
+        sparkSession = SnappySession(self.sc)
+        self.assertTrue(sparkSession.delete(SnappyContextTests.tablename, "col1=1"), 2)
         self.drop_table()
 
     def put_table(self):
-        sqlcontext = SnappyContext(self.sc)
+        sparkSession = SnappySession(self.sc)
         newrow = [1L, 2L, 3L], [2L, 3L, 4L]
-        sqlcontext.put(SnappyContextTests.tablename, newrow)
+        sparkSession.put(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
         newrow = [1L, 2L, 3L]
-        sqlcontext.put(SnappyContextTests.tablename , newrow)
+        sparkSession.put(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
     def insert_table(self):
-        sqlcontext = SnappyContext(self.sc)
+        sparkSession = SnappySession(self.sc)
         newrow = [1L, 2L, 3L], [2L, 3L, 4L]
-        sqlcontext.insert(SnappyContextTests.tablename, newrow)
+        sparkSession.insert(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
         newrow = [1L, 2L, 3L]
-        sqlcontext.insert(SnappyContextTests.tablename , newrow)
+        sparkSession.insert(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
     def update_table(self):
-        sqlcontext = SnappyContext(self.sc)
-        modifiedrows = sqlcontext.update(SnappyContextTests.tablename, "COL2 =2", [7L], ["COL1"])
+        sparkSession = SnappySession(self.sc)
+        modifiedrows = sparkSession.update(SnappyContextTests.tablename, "COL2 =2", [7L], ["COL1"])
         self.assertTrue(modifiedrows == 3)
 
     def truncate_table(self):
-        sqlcontext = SnappyContext(self.sc)
-        sqlcontext.truncateTable(SnappyContextTests.tablename)
+        sparkSession = SnappySession(self.sc)
+        sparkSession.truncateTable(SnappyContextTests.tablename)
 
     def verify_table_rows(self, rowcount):
-        sqlcontext = SnappyContext(self.sc)
-        result = sqlcontext.sql("SELECT COUNT(*) FROM " + SnappyContextTests.tablename).collect()
+        sparkSession = SnappySession(self.sc)
+        result = sparkSession.sql("SELECT COUNT(*) FROM " + SnappyContextTests.tablename).collect()
         self.assertTrue(result[0][0] == rowcount)
 
     def drop_table(self, ifexists=False):
-        sqlcontext = SnappyContext(self.sc)
-        sqlcontext.dropTable(SnappyContextTests.tablename, ifexists)
+        sparkSession = SnappySession(self.sc)
+        sparkSession.dropTable(SnappyContextTests.tablename, ifexists)
 
     def create_table_using_sql(self, ddl, provider):
-        sqlcontext = SnappyContext(self.sc)
-        dataDF = sqlcontext._sc.parallelize(SnappyContextTests.testdata, 5).toDF()
-        sqlcontext.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
-        sqlcontext.sql(ddl)
-        dataDF.write.format(provider).mode("append").saveAsTable(SnappyContextTests.tablename)
+        sparkSession = SnappySession(self.sc)
+        dataDF = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF()
+        sparkSession.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
+        sparkSession.sql(ddl)
+        dataDF.write.insertInto(SnappyContextTests.tablename)
 
     def create_table_using_datasource(self, provider, schemaddl=False):
-        sqlcontext = SnappyContext(self.sc)
-        df = sqlcontext._sc.parallelize(SnappyContextTests.testdata, 5).toDF(["COL1", "COL2", "COL3"])
+        sparkSession = SnappySession(self.sc)
+        df = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF(["COL1", "COL2", "COL3"])
         if schemaddl is False:
-            sqlcontext.createTable(SnappyContextTests.tablename, provider, df.schema)
+            sparkSession.createTable(SnappyContextTests.tablename, provider, df.schema)
         else:
-            sqlcontext.createTable(SnappyContextTests.tablename, provider, "(COL1 INT , COL2 INT , COL3 INT)")
+            sparkSession.createTable(SnappyContextTests.tablename, provider, "(COL1 INT , COL2 INT , COL3 INT)")
         df.write.format("row").mode("append").saveAsTable(SnappyContextTests.tablename)
 
 

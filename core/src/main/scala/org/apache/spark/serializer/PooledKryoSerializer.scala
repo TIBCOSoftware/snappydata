@@ -16,7 +16,7 @@
  */
 package org.apache.spark.serializer
 
-import java.io.{EOFException, IOException, InputStream, OutputStream}
+import java.io.{EOFException, Externalizable, IOException, InputStream, OutputStream}
 import java.lang.ref.SoftReference
 import java.nio.ByteBuffer
 
@@ -24,6 +24,7 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 
 import org.apache.spark.broadcast.TorrentBroadcast
@@ -139,6 +140,11 @@ final class PooledKryoSerializer(conf: SparkConf)
       new KryoSerializableSerializer)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
+
+    // use Externalizable by default as last fallback, if available,
+    // rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable],
+      new ExternalizableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(
@@ -286,7 +292,7 @@ private[spark] final class PooledKryoSerializerInstance(
   }
 
   override def serializeStream(stream: OutputStream): SerializationStream = {
-    new KryoReuseSerializationStream(stream)
+    new KryoStringFixSerializationStream(stream)
   }
 
   override def deserializeStream(stream: InputStream): DeserializationStream = {
@@ -309,18 +315,15 @@ private[spark] final class PooledKryoSerializerInstance(
   }
 }
 
-private[serializer] class KryoReuseSerializationStream(
+private[serializer] class KryoStringFixSerializationStream(
     stream: OutputStream) extends SerializationStream {
 
   private[this] val poolObject = KryoSerializerPool.borrow()
 
-  // use incoming stream itself if it is an output
-  private[this] var output = stream match {
-    case out: Output => out
-    case _ =>
-      val out = poolObject.newOutput()
-      out.setOutputStream(stream)
-      out
+  private[this] var output = {
+    val out = poolObject.newOutput()
+    out.setOutputStream(stream)
+    out
   }
 
   override def writeObject[T: ClassTag](t: T): SerializationStream = {
@@ -437,7 +440,8 @@ private[spark] final class KryoInputStringFix(size: Int)
   }
 
   private def readAscii_slow: String = {
-    position -= 1 // Re-read the first byte.
+    // Re-read the first byte.
+    position -= 1
     // Copy chars currently in buffer.
     var charCount = limit - position
     if (charCount > this.chars.length) {

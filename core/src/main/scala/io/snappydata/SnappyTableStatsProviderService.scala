@@ -41,7 +41,7 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegion
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
 
 import org.apache.spark.{Logging, SparkContext}
@@ -78,6 +78,7 @@ object SnappyTableStatsProviderService extends Logging {
         override def run2(): Unit = {
           try {
             if (doRun) {
+              val prevTableSizeInfo = tableSizeInfo
               running = true
               try {
                 tableSizeInfo = getAggregatedTableStatsOnDemand
@@ -86,6 +87,17 @@ object SnappyTableStatsProviderService extends Logging {
               } finally synchronized {
                 running = false
                 notifyAll()
+              }
+              // check if there has been a substantial change in table
+              // stats, and clear the plan cache if so
+              if (prevTableSizeInfo.size != tableSizeInfo.size) {
+                SnappySession.clearAllCache()
+              } else {
+                val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
+                val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
+                if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
+                  SnappySession.clearAllCache()
+                }
               }
             }
 
@@ -198,7 +210,6 @@ object SnappyTableStatsProviderService extends Logging {
   def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
     val snc = this.snc
     if (snc == null) return Map.empty
-
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     if (!doRun) return Map.empty
