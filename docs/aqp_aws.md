@@ -42,9 +42,9 @@ Watch the following  video to learn how easy it is to use iSight CloudBuilder, w
 [![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
 ###Prerequisites##
-Before you begin,:
+Before you begin:
 
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources via CloudFormation.
 * Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 *  Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster
 
@@ -123,7 +123,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 ###Prerequisites###
 Before you begin, do the following:
 
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources via CloudFormation.
 
 * EC2 key pair created in the region where you want to launch the SnappyData cluster.
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`.
