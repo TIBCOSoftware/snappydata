@@ -32,7 +32,7 @@ import org.apache.spark.sql.{Row, SnappyContext, SnappyJobValid, SnappyJobValida
 
 case class Address(city: String, state: String)
 
-case class Person(name: String, address: Address)
+case class Person(name: String, address: Address, emergencyContacts : Map[String, String])
 
 object WorkingWithObjects extends SnappySQLJob {
 
@@ -43,13 +43,15 @@ object WorkingWithObjects extends SnappySQLJob {
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
     // Create a Dataset using Spark APIs
-    val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
+    val people = Seq(Person("Tom", Address("Columbus", "Ohio"), Map("frnd1"-> "8998797979", "frnd2" -> "09878786886"))
+      , Person("Ned", Address("San Diego", "California"), Map.empty[String,String])).toDS()
 
     //Drop the table if it exists.
     snSession.dropTable("Persons", ifExists = true)
 
     //Create a columnar table with the a Struct to store Address
-    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>) using column options()")
+    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>, " +
+        "emergencyContacts Map<String,String>) using column options()")
 
     // Write the created DataFrame to the columnar table.
     people.write.insertInto("Persons")
@@ -61,14 +63,15 @@ object WorkingWithObjects extends SnappySQLJob {
 
 
     // Append more people to the column table
-    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio")),
-      Person("Rob Stark", Address("San Diego", "California")),
-      Person("Michael", Address("Null", "California"))).toDS()
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio"), Map.empty[String,String]),
+      Person("Rob Stark", Address("San Diego", "California"), Map.empty[String,String]),
+      Person("Michael", Address("Null", "California"), Map.empty[String,String])).toDS()
 
     morePeople.write.insertInto("Persons")
 
     // Query it like any other table
-    val nameAndAddress = snSession.sql("SELECT name, address FROM Persons")
+    val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
+
 
     //Reconstruct the objects from obtained Row
     val allPersons = nameAndAddress.collect.map(row => {
@@ -76,7 +79,8 @@ object WorkingWithObjects extends SnappySQLJob {
         Address(
           row(1).asInstanceOf[Row](0).asInstanceOf[String],
           row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        )
+        ),
+        row(2).asInstanceOf[Map[String, String]]
       )
     })
     allPersons

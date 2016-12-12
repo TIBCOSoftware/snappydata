@@ -634,7 +634,20 @@ For column table it is restricted to Spark syntax for column definition
 ```scala
 snappy.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
 ```
-Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
+
+You can also define complex types (Map, Array and StructType) as columns for column tables.
+```scala
+snappy.sql("CREATE TABLE tableName (
+col1 INT , 
+col2 Array<Decimal>, 
+col3 Map<Timestamp, Struct<x: Int, y: String, z: Decimal(10,5)>>, 
+col6 Struct<a: Int, b: String, c: Decimal(10,5)>
+) USING column options(BUCKETS '5')" )
+```
+
+To access the complex data from JDBC you can see [org.apache.spark.examples.snappydata.JDBCWithComplexTypes] for examples.
+
+Note : Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 #### Spark API for Managing Tables
 
