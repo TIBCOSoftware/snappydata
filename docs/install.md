@@ -103,11 +103,11 @@ The scripts are available on Github in the [snappy-cloud-tools repository](https
 
 ###Prerequisites
 
-* Ensure that you have Python installed.
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
-* Create an EC2 key pair in the region where you want to launch the SnappyData Cloud cluster.
-* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/> Refer to the Amazon Web Services EC2 documentation for more information on [generating your own key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
+* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster.
+* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/> Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 <br>If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
+* Ensure Python v 2.7 or later is installed on your local computer.
 
 	For example:<br/>
 ```export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112```<br/>
@@ -119,7 +119,7 @@ The scripts are available on Github in the [snappy-cloud-tools repository](https
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or the aws/ec2 directory of your local clone of snappy-cloud-tools repository.
 
-The script-command can invoked in following format.
+The script-command can be invoked in following format.
 
 `./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>`
 
@@ -134,14 +134,12 @@ For example, if you launch a cluster named **my-cluster**, the locator is availa
 When running the script you can also specify properties like number of stores and region.
 For example, using the following command, you can start a SnappyData cluster named **snappydata-cluster** with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.
 
-The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for AWS Key Pair named 'my-ec2-key'.
+The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 ```
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
 ```
 To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
-
-For comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
 
 ####Specifying Properties
 
