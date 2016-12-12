@@ -4,8 +4,7 @@ The following installation options are available:
 * [Install On Premise](#nstall-on-premise)
 * [Setting up Cluster on AWS](#setting-up-cluster-on-aws)
 * [Setting up Cluster on Azure](#setting-up-cluster-on-azure)
-* [Setting up Cluster with Docker Images](#setting-up-cluster-with-docker-images)
-* [Building from source](#building-from-source)
+* [Building from Source](#building-from-source)
 
 
 ## Install On-Premise
@@ -92,8 +91,6 @@ $ bin/snappy-shell server stop
 ## Setting up Cluster on AWS
 
 <Note> Note: The EC2 script is still under development. Feel free to try it out and provide your feedback.</Note>
-
-### Introduction
 
 The `snappy-ec2` script present in the SnappyData's **ec2** directory, enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
 
@@ -324,11 +321,10 @@ Options:
 
 ### Limitations
 
-1. Launching cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions
-2. Support for option --user is incomplete
+* Launching cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions
+* Support for option --user is incomplete
 
-## Setting up Cluster with Docker Images
-<mark>To Be done</mark>
+
 
 ## Building from Source
 Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). 
