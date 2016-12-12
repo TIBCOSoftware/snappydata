@@ -1045,7 +1045,7 @@ object TPCH_Snappy {
           "         C_COMMENT" +
           " order by" +
           "         revenue desc" +
-        " limit 20"
+        " limit 100"
   }
 
   def getResultString10: String = {
