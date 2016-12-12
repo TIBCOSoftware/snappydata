@@ -19,6 +19,8 @@
 
 package org.apache.spark.ui
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
@@ -59,6 +61,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     updateClusterStats(clusterStatsMap, membersBuf, tablesBuf)
 
     // Generate Pages HTML
+    val pageTitleNode = createPageTitleNode(pageHeaderText)
+
     val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle, SnappyDashboardPage.clusterStatsTitleTooltip)
 
     val clusterDetails = clusterStats(clusterStatsMap)
@@ -77,9 +81,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val tablesStatsDetails = tablesStatsTitle ++ tablesStatsTable
 
-    val pageContent = keyStatsSection ++ membersStatsDetails ++ tablesStatsDetails
+    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ tablesStatsDetails
 
-    UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500))
+    UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
 
   }
 
@@ -130,6 +134,21 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numClientsToLocator" -> numClientsToLocator)
     clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
 
+  }
+
+  private def createPageTitleNode(title:String): Seq[Node] = {
+
+    val sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss")
+    val lastUpdatedOn = sdf.format(new Date())
+
+    <div class="row-fluid">
+      <div class="span12">
+        <h3 style="vertical-align: bottom; display: inline-block;">
+          {title}
+        </h3>
+        <span style="float:right; font-size: 12px;" data-toggle="tooltip" title="" data-original-title="Reload page to refresh Dashboard." >Last updated on {lastUpdatedOn}</span>
+      </div>
+    </div>
   }
 
   private def createTitleNode(title:String, tooltip:String): Seq[Node] = {
