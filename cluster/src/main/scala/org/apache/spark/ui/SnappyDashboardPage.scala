@@ -114,7 +114,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         numLocator += 1
         numClientsToLocator = m("clients").toString.toInt
       }
-      if(m("cacheServer").toString.toBoolean){
+      if(m("cacheServer").toString.toBoolean
+          && !m("activeLead").toString.toBoolean
+          && !m("lead").toString.toBoolean
+          && !m("locator").toString.toBoolean){
         numServers += 1
       }
 
@@ -233,11 +236,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("nameOrId")}
               </span>
             </th>
-            <th style="text-align:center;">
+            <!-- <th style="text-align:center;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("hostTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("host")}
               </span>
-            </th>
+            </th> -->
             <th style="text-align:center;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
@@ -366,9 +369,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="width:100%; padding-left:10px;">{nameOrId}</div>
       </td>
-      <td>
+      <!-- <td>
         <div style="width:100%; padding-left:10px;">{memberDetails.getOrElse("host","NA")}</div>
-      </td>
+      </td> -->
       <td>
         <div style="text-align:center;">{memberType}</div>
       </td>
@@ -461,7 +464,7 @@ object SnappyDashboardPage{
   val clusterStats = scala.collection.mutable.HashMap.empty[String, Any]
   clusterStats += ("status" -> "Cluster Status")
   clusterStats += ("members" -> "Members")
-  clusterStats += ("servers" -> "Servers")
+  clusterStats += ("servers" -> "Data Servers")
   clusterStats += ("leads" -> "Leads")
   clusterStats += ("locators" -> "Locators")
   clusterStats += ("clients" -> "Clients")
