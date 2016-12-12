@@ -4,8 +4,9 @@ You can run the SnappyData store in the following modes:
 | Modes        |Description            |
 | ------------- |:-------------:|
 | Local Mode|This is for development where client application, the executors and data store are all running in the same JVM|
-| Snappy Smart Connector Mode|Allows you to work with the SnappyData store cluster from any compatabile Spark distrubution|
 | Embedded SnappyData Store Mode|The Spark computations and in-memory data store run collocated in the same JVM|
+| Snappy Smart Connector Mode|Allows you to work with the SnappyData store cluster from any compatabile Spark distrubution|
+
 
 ##Local Mode
 
@@ -34,7 +35,30 @@ As the name implies, use this mode to execute everything locally in the applicat
 
 ### Running a Spark (non-IDE) program and specify the dependencies
 
-<mark> TO BE DONE </mark>
+```bash
+./bin/spark-shell --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+```
+
+
+
+## Embedded SnappyData Store Mode
+In this mode the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. 
+![Embedded Mode](./Images/SnappyEmbeddedMode.png)
+
+You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
+
+Some of the advantages of this mode are:
+
+* **Highest performance**: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).
+
+* **Driver High Availabiltiy**: When Spark jobs are submitted, then can now run in a HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.
+
+* **Less complex**: There is only a single cluster to start, monitor, debug and tune.
+
+Example: Submit a Spark Job to the SnappyData Cluster
+```
+bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
+```
 
 ## SnappyData Smart Connector Mode
 In certain cases Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
@@ -51,7 +75,7 @@ Key Points:
 * The Spark cluster connects to SnappyData as a Spark Data source
 * Supports any of the Spark supported resource managers (example, Spark Standalone Manager, YARN or Mesos)
 
-**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related in-efficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters. 
+**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related in-efficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters.
 
 When storing to **Row tables** or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to Snappy tables, the data is always batched for the highest possible throughput.
 
@@ -60,55 +84,41 @@ When queries are executed, while the entire query planning and execution is coor
 * Route jobs to same machines as SnappyData data nodes if the executor nodes are co-hosted on the same machines as the data nodes. Job for each partition tries to fetch only from same machine data store where possible.
 * Column table scan using optimized code generation: Once a column batch is fetched, then it uses the same optimized scan as in the embedded mode
 * Collocated joins: If the underlying tables are collocated partition-wise, and executor nodes are co-hosting SnappyData data nodes, then the column batches will be fetched from local machines and the join itself will be partition-wise not requiring any exchange.
-* Optimized hash maps for groupBy aggregates without any UnsafeRow conversions like in embedded mode
-* Hash join using optimized hash maps avoiding any UnsafeRow conversions like in embedded mode
-* GroupBy and hash join on single dictionary column uses an optimized path using dictionary indexes like in embedded mode
+* Optimized hash maps for groupBy aggregates without any UnsafeRow conversions.
+* Hash join using optimized hash maps avoiding any UnsafeRow conversions.
+* GroupBy and hash join on single dictionary column uses an optimized path using dictionary indexes.
 * Optimized column batch inserts like in embedded mode with job routing to same machines as data stores if possible (soon to be merged)
 * CollectAggregate plan which allows accumulation of aggregate results on the driver itself (rather than a SinglePartition Exchange at the end for non-groupBy aggregates)
 
 **SQL connectivity**: SQL clients (using JDBC or ODBC) can connect and work with the Snappydata store cluster and have no dependency on Spark. So,the Spark application can connect and run native Spark applications using the SnappyData Smart Connector while concurrent SQL clients are executing directly on the Snappydata store cluster.
 
-<mark>Example: TO BE DONE (Run Apache Spark in local/cluster mode connecting to a SnappyData Cluster)
+The following example launches a Spark local mode cluster and uses Smart Connector to access SnappyData cluster.
 
 Step 1: Start the SnappyData cluster
-You can either start SnappyData members using the `_snappy_start_all_ script` or you can start them individually.
+You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
 
 ```bash
-# start members using the ssh scripts 
+# start members using the ssh scripts
 $ sbin/snappy-start-all.sh
 ```
 
 ```
 # start members individually
-$ bin/snappy-shell locator start  -dir=/node-a/locator1 
+$ bin/snappy-shell locator start  -dir=/node-a/locator1
 $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 ```
 
-Step 2: Launch the Apache Spark program in the Local mode
+Step 2: Launch the Apache Spark program 
 
-<mark> ADD IMAGE </mark> 
 
-Step 3: Launch the Apache Spark program using external cluster manager
-
-```
+```bash
+# In the Local mode
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
 
-## Embedded SnappyData Store Mode
-In this mode the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. 
-![Embedded Mode](./Images/SnappyEmbeddedMode.png)
-
-You can either start SnappyData members using the `_snappy_start_all_ script` or you can start them individually.
-
-Some of the advantages of this mode are:
-
-* **Highest performance**: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).
-
-* **Driver High Availabiltiy**: When Spark jobs are submitted, then can now run in a HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.
-
-* **Less complex**: There is only a single cluster to start, monitor, debug and tune.
-
-Example: Submit a Spark Job to the SnappyData Cluster
+```bash
+# Using external cluster manager
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
-bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
-```
+
+Note the _*spark.snappydata.store.locators*_ property which points to the locator of a running SnappyData cluster.
