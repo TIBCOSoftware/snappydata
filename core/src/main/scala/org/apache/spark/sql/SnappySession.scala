@@ -322,7 +322,14 @@ class SnappySession(@transient private val sc: SparkContext,
     clearContext()
   }
 
-  def clear(): Unit = {
+  def clearPlanCache(): Unit = synchronized {
+    SnappySession.clearSessionCache(id)
+  }
+
+  def clear(): Unit = synchronized {
+    clearContext()
+    clearQueryData()
+    clearPlanCache()
     snappyContextFunctions.clear()
   }
 
@@ -1472,7 +1479,7 @@ private class FinalizeSession(session: SnappySession)
 
   override protected def doFinalize(): Boolean = {
     if (sessionId != SnappySession.INVALID_ID) {
-      SnappySession.removeSession(sessionId)
+      SnappySession.clearSessionCache(sessionId)
       sessionId = SnappySession.INVALID_ID
     }
     true
@@ -1492,14 +1499,14 @@ object SnappySession extends Logging {
 
     override def profileCreated(profile: Profile): Unit = {
       // clear all plans pessimistically for now
-      clearPlanCache()
+      clearAllCache()
     }
 
     override def profileUpdated(profile: Profile): Unit = {}
 
     override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
       // clear all plans pessimistically for now
-      clearPlanCache()
+      clearAllCache()
     }
   }
 
@@ -1617,7 +1624,7 @@ object SnappySession extends Logging {
     else ID.incrementAndGet()
   }
 
-  private[spark] def removeSession(sessionId: Long): Unit = {
+  private[spark] def clearSessionCache(sessionId: Long): Unit = {
     val iter = planCache.asMap().keySet().iterator()
     while (iter.hasNext) {
       val item = iter.next()
@@ -1627,7 +1634,7 @@ object SnappySession extends Logging {
     }
   }
 
-  def clearPlanCache(): Unit = {
+  def clearAllCache(): Unit = {
     planCache.invalidateAll()
   }
 
