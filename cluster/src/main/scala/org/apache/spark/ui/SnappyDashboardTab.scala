@@ -23,7 +23,6 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.JettyUtils._
-import org.apache.spark.ui.{SparkUITab, SparkUI}
 
 /**
  * Created by skapse on 18/10/16.

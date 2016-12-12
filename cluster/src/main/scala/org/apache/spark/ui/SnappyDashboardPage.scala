@@ -24,14 +24,12 @@ import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.xml.{NodeBuffer, Node}
+import scala.xml.Node
+
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.ui.{ToolTips, UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
 /**
@@ -168,7 +166,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def clusterStats(clusterDetails:mutable.Map[String, Any]): Seq[Node] = {
 
-    val status = clusterDetails.getOrElse("status","")
+    val status = clusterDetails.getOrElse("status", "")
+    val statusNode = {
+      if (status.toString.equalsIgnoreCase("normal")) {
+        <div class="keyStatsValue statusTextNormal">
+          {status}
+        </div>
+      } else {
+        <div class="keyStatsValue statusTextWarning">
+          {status}
+        </div>
+      }
+    }
+
     val statusImgUri = if(status.toString.equalsIgnoreCase("normal")) {
       "/static/snappydata/running-status-icon-70x68.png"
     } else {
@@ -181,7 +191,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           <img style="padding-left:10px; padding-top: 15px;" src={statusImgUri} />
         </div>
         <div class="clusterHealthTextBox">
-          <div class="keyStatsValue statusTextNormal">{status}</div>
+          {statusNode}
           <div class="keyStatesText">{SnappyDashboardPage.clusterStats("status")}</div>
         </div>
       </div>

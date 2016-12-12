@@ -19,8 +19,6 @@
 
 package io.snappydata
 
-import java.util
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -41,9 +39,8 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegion
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
-import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
-
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
@@ -144,10 +141,8 @@ object SnappyTableStatsProviderService extends Logging {
       while(keyItr.hasNext){
         val key = keyItr.next()
         map.put(key, memMap.get(key))
-        println(">>>>>>>>>>>>>>>>>>>" + key + " >>>> " + memMap.get(key))
       }
       map.put("status", "Running")
-      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
       val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
       if(dssUUID != null){
