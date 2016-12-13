@@ -24,9 +24,6 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.JettyUtils._
 
-/**
- * Created by skapse on 18/10/16.
- */
 class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
   val parent = sparkUI
   // Attaching dashboard ui page and tab

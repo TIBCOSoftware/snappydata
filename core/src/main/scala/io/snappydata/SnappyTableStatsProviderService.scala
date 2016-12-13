@@ -103,6 +103,8 @@ object SnappyTableStatsProviderService extends Logging {
             case e: Exception => if (!e.getMessage.contains(
               "com.gemstone.gemfire.cache.CacheClosedException")) {
               logger.warning(e)
+            } else {
+              logger.error(e)
             }
           }
         }

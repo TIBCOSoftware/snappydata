@@ -32,9 +32,6 @@ import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.Utils
 
-/**
- * Created by skapse on 18/10/16.
- */
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     extends WebUIPage("") with Logging {
 
