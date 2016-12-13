@@ -200,9 +200,9 @@ scala>  System.runFinalization()
 scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
 
-** Create similar 50 million record DataFrame**
+** Create similar 100 million record DataFrame**
 ```scala
-scala>  testDF = snappy.range(50000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
+scala>  testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 ```
 
 **Create the table**
@@ -284,9 +284,9 @@ Now that we have seen the basic working of SnappyData tables, let's run the [ben
 ##Getting Started by Installing SnappyData On-Premise
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
-```
-$tar -xvf <snappy_binaries>
-$cd snappy
+```bash
+$ tar -xzf snappydata-0.7-bin.tar.gz
+$ cd snappydata-0.7-bin/
 $./bin/spark-shell
 ```
 It opens a Spark Shell. Follow the steps mentioned [here](#Start_quickStart)
@@ -365,9 +365,9 @@ $ docker run hello-world
 
 **Get the Docker Image: ** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
 ```scala
-$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory 6g
+$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
 ```
-It starts downloading the image files to your local machine. Depending on your network connection, it may take some time.
+It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
 Once your are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
 
 
