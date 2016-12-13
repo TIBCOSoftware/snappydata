@@ -43,6 +43,27 @@ h4 {
     font-style: italic;
 }
 
+
+/*
+Defines the indetation for the navigation pane
+*/
+
+.wy-menu-vertical li.current > a::before {
+    content: url("Images/arrow-20x20-expanded.png");
+    float: left;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]{
+  margin-left: 10px;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]::before {
+  content: url("Images/dash-20x20-collapsed.png");
+  float: left;
+}
+
+
+
 /*
 Formatting for code snippets 
 */
@@ -74,16 +95,8 @@ pre .cs, pre .c {
 }
 
 /*
-Formatting for text for review/comments purpose only
+Formatting for information in the Note
 */
-
-mark {
-    color: red;
-    font-size: 14px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-    background-color: #f6f3d7;
-}
-
 
 note {
     color: green;
@@ -92,20 +105,21 @@ note {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
+/* Image Alignment - Center
+*/
+img {
+    display: block;
+    background-color: transparent;
+    border: none;
+    margin: 0px auto;
+
 /*
-Defines the indetation for the navigation pane
+Formatting for text for review/comments purpose only
 */
 
-.wy-menu-vertical li.current > a::before {
-    content: url("Images/arrow-20x20-expanded.png");
-    float: left;
-}
-
-.wy-menu-vertical li > a[class="toctree-l4"]{
-  margin-left: 10px;
-}
-
-.wy-menu-vertical li > a[class="toctree-l4"]::before {
-  content: url("Images/dash-20x20-collapsed.png");
-  float: left;
+mark {
+    color: red;
+    font-size: 10px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background-color: #f6f3d7;
 }
