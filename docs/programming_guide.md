@@ -272,6 +272,54 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
 
+##Managing JAR Files
+
+SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code(for example code shared across multiple jobs) in SnappyData cluster.
+
+**Installing a JAR** Use SQLJ.INSTALL_JAR procedure to install a JAR file
+
+Syntax:
+
+```bash
+SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
+```
+* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluser, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+* QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
+* DEPLOY: This argument is currently ignored.
+
+Example of installing a JAR:
+```bash
+snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
+```
+
+**Replacing a JAR** Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
+
+Syntax:
+```bash
+SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
+```
+* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluser, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+* QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
+
+Example of replacing a JAR
+```bash
+CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
+```
+
+**Removing a JAR** Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
+Syntax:
+```bash
+SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
+```
+* QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
+* UNDEPLOY: This argument is currently ignored.
+
+Example of removing a JAR
+```bash
+CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
+```
+
+
 ## Using SnappyData Shell
 The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. 
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
