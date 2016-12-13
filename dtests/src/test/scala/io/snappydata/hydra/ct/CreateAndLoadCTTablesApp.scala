@@ -41,7 +41,7 @@ object CreateAndLoadCTTablesApp {
       case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
       case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,persistenceMode)
       case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
-      case _ => // the default, catch-all
+      case _ => pw.println(s"Did not find any match for ${tableType} to create tables") 
     }
     CTTestUtil.loadTables(snc)
     pw.println(s"Create and load for ${tableType} tables has completed successfully")
