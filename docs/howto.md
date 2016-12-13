@@ -190,7 +190,8 @@ For more information on this mode, refer to the [deployment](deployment#snappyda
 
 **Code Example**
 
-The code example for this mode is in [SplitModeApplicationExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SplitModeApplicationExample.scala) 
+**Code Example:**
+The code example for this mode is in [SplitModeApplicationExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**
 
@@ -199,7 +200,7 @@ The code below shows how to initialize a SparkSession. Here the property `snappy
 ```
     val spark: SparkSession = SparkSession
         .builder
-        .appName("SplitModeApplicationExample")
+        .appName("SmartConnectorExample")
         // It can be any master URL
         .master("local[4]")
         // snappydata.store.locators property enables the application to interact with SnappyData store
