@@ -26,6 +26,12 @@ import scala.util.Try
  * Before running this example, ensure that SnappyData cluster is started and
  * running. To start the cluster execute the following command:
  * sbin/snappy-start-all.sh
+ *
+ * <p>
+ *  Run the example using following command:
+ * <pre>
+ *     bin/run-example snappydata.JDBCExample
+ * </pre>
  */
 object JDBCExample {
   def doOperationsUsingJDBC(clientPort: String): Unit = {

@@ -429,7 +429,8 @@ object NWQueries extends SnappyFunSuite {
     "Q52" -> Q52,
     "Q53" -> Q53,
     "Q54" -> Q54,
-    "Q55" -> Q55
+    "Q55" -> Q55,
+    "Q56" -> Q56
   )
 
   val regions = snc.read

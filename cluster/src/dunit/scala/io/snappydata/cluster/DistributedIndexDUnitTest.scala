@@ -19,9 +19,15 @@ package io.snappydata.cluster
 import java.sql.{Connection, DriverManager}
 
 import scala.collection.mutable.ListBuffer
-import io.snappydata.test.dunit.AvailablePortHelper
+import com.gemstone.gemfire.cache.CacheException
+import com.pivotal.gemfirexd.internal.engine.access.index.{OpenMemIndex, SortedMap2IndexScanController}
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserverHolder, GemFireXDQueryObserverAdapter, GemFireXDQueryObserver}
+import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
+import com.pivotal.gemfirexd.internal.iapi.store.access.conglomerate.Conglomerate
+import com.pivotal.gemfirexd.internal.impl.sql.compile.StatementNode
+import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.store.CreateIndexTest
 import org.apache.spark.sql.{SaveMode, SnappyContext}
@@ -165,6 +171,141 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     getLogWriter.info("SB: Done executing the queries")
     System.clearProperty("LOG-NOW")
+  }
+
+  def testCreateDropRowTable(): Unit = {
+    val tableName = "tabTwo"
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val snContext = SnappyContext(sc)
+    snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
+    snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+
+    val s = conn.createStatement()
+    s.executeUpdate(s"create table $tableName (COL1 Int, COL2 Int, COL3 Int) using row")
+    s.executeUpdate(s"insert into $tableName values (111, 11, 81)")
+    s.executeUpdate(s"insert into $tableName values (222, 22, 91)")
+    s.executeUpdate(s"insert into $tableName values (333, 11, 81)")
+    s.executeUpdate(s"insert into $tableName values (444, 22, 91)")
+    s.executeUpdate(s"insert into $tableName values (555, 33, 91)")
+    s.executeUpdate(s"insert into $tableName values (666, 33, 91)")
+
+    ClusterManagerTestBase.logger.info("Creating indexes")
+    val indexOne = s"${tableName}_IdxOne"
+    val indexTwo = s"${tableName}_IdxTwo"
+    val indexThree = s"${tableName}_IdxThree"
+    //    snContext.sql(s"create index $indexOne on $tableName (COL1)")
+    //    indexesToDrop += indexOne
+    s.executeUpdate(s"create index $indexTwo on $tableName (COL2, COL3)")
+    indexesToDrop += indexTwo
+    s.executeUpdate(s"create index $indexThree on $tableName (COL1, COL3)")
+    indexesToDrop += indexThree
+
+    // val executeQ = CreateIndexTest.QueryExecutor(snContext)
+    //    executeQ(s"select * from $tableName where col1 = 111") {
+    //      CreateIndexTest.validateIndex(Seq(indexOne))(_)
+    //    }
+
+    //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
+    //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+    //    }
+
+    System.setProperty("LOG-NOW", "xxx")
+    getLogWriter.info("SB: About to execute queries")
+
+    val query1 = s"select * from $tableName where col2 = 22 and col3 = 91"
+    setIndexObserver(s"$indexTwo", s"$query1")
+    val rs1 = s.executeQuery(s"$query1")
+    while(rs1.next()) {
+      getLogWriter.info("q1= " + rs1.getInt(1))
+    }
+
+    val query2 = s"select * from $tableName where col1 =111 and col3 = 81"
+    setIndexObserver(s"$indexThree", s"$query2")
+    val rs2 = s.executeQuery(s"$query2")
+    while(rs2.next()) {
+      getLogWriter.info("q2= " + rs2.getInt(1))
+    }
+
+    unsetObserver()
+    s.execute(s"drop index $indexTwo")
+    s.execute(s"drop index $indexThree")
+
+    getLogWriter.info("SB: Done executing the queries")
+    System.clearProperty("LOG-NOW")
+  }
+
+  def setIndexObserver(indexName: String, queryString: String): Unit = {
+    val hook = new SerializableRunnable {
+      override def run() {
+        val executionEngineObserver: GemFireXDQueryObserver = new GemFireXDQueryObserverAdapter() {
+          var indexPicked: Boolean = false
+          var caseOfGivenTable: Boolean = false
+
+          override def afterQueryParsing(query: String, qt: StatementNode, lcc:
+          LanguageConnectionContext): Unit = {
+            caseOfGivenTable = if (query != null) {
+              query.equalsIgnoreCase(queryString)
+            } else false
+          }
+
+          override def overrideDerbyOptimizerIndexUsageCostForHash1IndexScan(memIndex: OpenMemIndex,
+              optimzerEvalutatedCost: Double): Double = Double.MaxValue
+
+          override def overrideDerbyOptimizerCostForMemHeapScan(gfContainer: GemFireContainer,
+              optimzerEvalutatedCost: Double): Double = Double.MaxValue
+
+          override def overrideDerbyOptimizerIndexUsageCostForSortedIndexScan(memIndex:
+          OpenMemIndex, optimzerEvalutatedCost: Double): Double = 1
+
+          override def scanControllerOpened(sc: AnyRef, conglom: Conglomerate) {
+            if (caseOfGivenTable) {
+              indexPicked = sc match {
+                case smisc: SortedMap2IndexScanController =>
+                  smisc.getQualifiedIndexName.split(":base-table:")(0).equalsIgnoreCase(s"APP" +
+                      s".$indexName")
+                case _ => false
+              }
+            }
+          }
+
+          override def close(): Unit = {
+            if (caseOfGivenTable) {
+              assert(indexPicked)
+            }
+          }
+        }
+
+        GemFireXDQueryObserverHolder.setInstance(executionEngineObserver)
+      }
+    }
+
+    hook.run()
+    vm0.invoke(hook)
+    vm1.invoke(hook)
+    vm2.invoke(hook)
+    vm3.invoke(hook)
+  }
+
+  def unsetObserver(): Unit = {
+    val hook = new SerializableRunnable {
+      override def run() {
+        try {
+          GemFireXDQueryObserverHolder.clearInstance()
+        }
+        catch {
+          case e: Exception => throw new CacheException(e){}
+        }
+      }
+    }
+
+    hook.run()
+    vm0.invoke(hook)
+    vm1.invoke(hook)
+    vm2.invoke(hook)
+    vm3.invoke(hook)
   }
 
 }
