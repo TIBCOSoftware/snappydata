@@ -107,31 +107,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    val numOutputRows = longMetric("numOutputRows")
-    val buildDataSize = longMetric("buildDataSize")
-    val buildTime = longMetric("buildTime")
-
-    // materialize dependencies in the entire buildRDD graph for
-    // buildRDD.iterator to work in the compute of mapPartitionsPreserve below
-    if (buildRDD.partitions.length == 1) {
-      materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
-      streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
-        val start = System.nanoTime()
-        val hashed = HashedRelation(buildRDD.iterator(split, context),
-          buildKeys, taskMemoryManager = context.taskMemoryManager())
-        buildTime += (System.nanoTime() - start) / 1000000L
-        val estimatedSize = hashed.estimatedSize
-        buildDataSize += estimatedSize
-        context.taskMetrics().incPeakExecutionMemory(estimatedSize)
-        context.addTaskCompletionListener(_ => hashed.close())
-        join(itr, hashed, numOutputRows)
-      }
-    } else {
-      streamRDD.zipPartitions(buildRDD) { (streamIter, buildIter) =>
-        val hashed = buildHashedRelation(buildIter)
-        join(streamIter, hashed, numOutputRows)
-      }
-    }
+    WholeStageCodegenExec(this).execute()
   }
 
   private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {

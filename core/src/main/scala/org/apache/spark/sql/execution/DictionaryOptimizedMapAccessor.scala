@@ -131,7 +131,7 @@ object DictionaryOptimizedMapAccessor {
         keyVar.code = s"$key = ${keyVarEx.assignCode};"
         s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       } else {
-        keyVar.code = s"$key = ${keyVar.isNull} ? null : (${keyVarEx.assignCode});"
+        keyVar.code = s"$key = ${keyVar.isNull} ? null : ${keyVarEx.assignCode};"
         s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       }
     }
