@@ -11,7 +11,7 @@ The following installation options are available:
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With On-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
 ### Prerequisites
-* Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the _JAVA_HOME_ environment variable is set on each computer.
+Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the _JAVA_HOME_ environment variable is set on each computer.
 
 ##Download SnappyData
 Download the latest version of SnappyData from the [SnappyData Release](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
@@ -20,17 +20,18 @@ The packages are available in compressed files (.zip and .tar format). On this p
 
 * ** SnappyData 0.7 download link **
 [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip)
+
 * **SnappyData 0.7(hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip)
 
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
-* Open the command prompt and run the following command to extract the downloaded archive file and go to SnappyData home directory. 
+Open the command prompt and run the following command to extract the downloaded archive file and go to SnappyData home directory. 
 ```bash
 $ tar -xzf snappydata-0.7-bin.tar.gz   
 $ cd snappydata-0.7-bin/
 ```
-* To start a basic cluster with one data node, one lead and one locator
+Start a basic cluster with one data node, one lead and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
@@ -45,18 +46,22 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 ##### Prerequisites
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
+
 * Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration#configuring-ssh-login-without-password).
 
 ##### Steps to Set up the Cluster
 
 1. Copy the downloaded binaries in the shared folder.
-2. Extract the downloaded archive file and go to SnappyData home directory.<br> 
- ```bash
+
+2. Extract the downloaded archive file and go to SnappyData home directory.
+```bash
 $ tar -xzf snappydata-0.7-bin.tar.gz   
 $ cd snappydata-0.7-bin/
- ```
-3. Then configure the cluster as per [How to Configure SnappyData cluster](configuration.md).
-After configuring each of the components you can simply run the `start-all.ssh` script:<br>
+```
+
+3.Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
+
+4. After configuring each of the components, run the `start-all.ssh` script:
 ```
 ./sbin/snappy-start-all.sh
 ```
@@ -69,11 +74,13 @@ If SSH is not supported then follow the instructions in the **Machines without s
 #### Prerequisites
 
 1. Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
+
 2. On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for log, persistence, and status files for each member, and is also used as the default location for locating the members configuration files.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
 #### To Configure the Cluster:
 1. Copy and extract the downloaded binaries on each machine.
+
 2. Individually configure and start each member
 
 <Note> Note: We are providing all configuration parameter as command line arguments rather than reading from a conf file.</Note>
@@ -92,45 +99,51 @@ $ bin/snappy-shell server stop
 
 <Note> Note: The EC2 script is still under development. Feel free to try it out and provide your feedback.</Note>
 
-### Introduction
-
 The `snappy-ec2` script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
 
 The `snappy-ec2` script has been derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
-The scripts are available on Github in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a .tar.gz file [here](https://github.com/SnappyDataInc/snappy-cloud-tools/releases).
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a [**.tar.gz**](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
+
 
 ###Prerequisites
 
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
-* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster.
-* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/> Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
-<br>If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+
+* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
+<br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
+
+* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/> 
+If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
+
+	For example:
+```export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112```
+```export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10```
+
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-	For example:<br/>
-```export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112```<br/>
-```export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10```
 
 ### Cluster Management
 
 ####Launching SnappyData Cluster
 
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or the aws/ec2 directory of your local clone of snappy-cloud-tools repository.
+In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
 
-The script-command can be invoked in following format.
+Enter the command in following format.
 
 `./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>`
 
-Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file, and `<action>` refers to the action to be performed (for example, launch, start, stop).
+Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
  
-By default, the script starts one instance of the locator, lead and server on separate EC2 instances.
-The script identifies each cluster by it's unique cluster name you provide, and internally ties members (locators, leads and stores/servers) of the cluster with EC2 security groups. 
+By default, the script starts one instance of locator, lead and server each.
+The script identifies each cluster by it's unique cluster name (you provided), and internally ties members (locators, leads and stores/servers) of the cluster with EC2 security groups. 
+
 The  names and details of the members are automatically derived from the provided cluster name. 
 
 For example, if you launch a cluster named **my-cluster**, the locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
 
 When running the script you can also specify properties like number of stores and region.
+
 For example, using the following command, you can start a SnappyData cluster named **snappydata-cluster** with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.
 
 The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
@@ -146,8 +159,7 @@ If you want to configure each of the locator, lead or servers with specific prop
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
-The important difference here though is that, instead of the hostnames of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. 
-N stands for Nth locator, lead or server. The script replaces these with the actual hostname of the members when they are launched.
+The important difference here is that, instead of the hostnames of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual hostname of the members when they are launched.
 
 The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
@@ -165,13 +177,13 @@ The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are giv
 {{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
 {{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
 ````
-When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, read them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective conf files.
+When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective conf files.
 
 The script also reads **snappy-env.sh**, if present in this location.
 
 ####Stopping a Cluster
 
-When you stop a cluster, it shuts down the EC2 instances and you will loose any data saved on its local instance stores. But the data saved on EBS volumes, if any, will be retained unless the spot-instances were used.
+When you stop a cluster, it shuts down the EC2 instances and any data saved on its local instance stores is lost. However, the data saved on EBS volumes, if any, is retained unless the spot-instances were used.
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 ````
@@ -324,11 +336,11 @@ Options:
 
 
 ### Limitations
-
 Some of the known limitations of the script are:
 
-1. Launching cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions.
-2. Support for option --user is incomplete.
+* Launching the cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions
+
+* Support for option --user is incomplete
 
 ## Setting up Cluster with Docker Images
 <mark>To Be done</mark>
@@ -442,13 +454,21 @@ Running individual tests within some suite works using the _--tests_ argument.
 Intellij is the IDE commonly used by the snappydata developers. Those who really prefer Eclipse can try the scala-IDE and gradle support, but has been seen to not work as well (e.g. gradle support is not integrated with scala plugin etc).  To import into Intellij:
 
 - Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in _spark_.
+
 - Select import project, then point to the snappydata directory. Use external Gradle import. When using JDK 7, add _-XX:MaxPermSize=350m_ to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore _"Gradle location is unknown warning"_. Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the _"Unindexed remote maven repositories found"_ warning message, if seen.
+
 - Once import finishes, go to _File->Settings->Editor->Code Style->Scala_. Set the scheme as _Project_. Check that the same has been set in Java Code Style too. Then OK to close it. Next copy _codeStyleSettings.xml_ in snappydata top-level directory to .idea directory created by Intellij. Check that settings are now applied in _File->Settings->Editor->Code Style->Java_ which should show Indent as 2 and continuation indent as 4 (same for Scala).
+
 - If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
+
 - Generate avro and GemFireXD required sources by expanding: _snappydata_2.11->Tasks->other_. Right click on _generateSources_ and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if _./gradlew clean_ has been run, or you have made changes to _javacc/avro/messages.xml_ source files. *If you get unexpected _"Database not found"_ or _NullPointerException_ errors in GemFireXD layer, then first thing to try is to run the _generateSources_ target again.*
+
 - Increase the compiler heap sizes or else the build can take quite long especially with integrated _spark_ and _store_. In _File->Settings->Build, Execution, Deployment->Compiler increase _, _Build process heap size_ to say 1536 or 2048. Similarly increase JVM maximum heap size in _Languages & Frameworks->Scala Compiler Server_ to 1536 or 2048.
+
 - Test the full build.
+
 - For JDK 7: _Open Run->Edit Configurations_. Expand Defaults, and select Application. Add _-XX:MaxPermSize=350m_ in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.
+
 - For JUnit configuration also append _/build-artifacts_ to the working directory i.e. the directory should be _\$MODULE_DIR\$/build-artifacts_. Likewise change working directory for ScalaTest to be inside _build-artifacts_ otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
 
 

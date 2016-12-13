@@ -20,7 +20,7 @@ In this mode you can execute all the components (client application, executors a
 * Embeds the SnappyData in-memory store in-process
 * For development purposes only
  
-<p style="text-align: center;"><img alt="Local Mode" src="/Images/SnappyLocalMode.png"></p>
+![Local Mode](Images/SnappyLocalMode.png)
 
 **Example**: **Using the Local mode for developing SnappyData programs**
 
@@ -74,7 +74,7 @@ Some of the advantages of this mode are:
 
 * **Less complex**: There is only a single cluster to start, monitor, debug and tune.
 
-<p style="text-align: center;"><img alt="Embedded Mode" src="/Images/SnappyEmbeddedMode.png"></p>
+![Embedded Mode](Images/SnappyEmbeddedMode.png)
 
 In this mode one can write Spark programs using jobs. For more details refer [SnappyData Jobs](programming_guide#snappydata-jobs) section.
 
@@ -102,7 +102,7 @@ In certain cases, Spark applications run as independent sets of processes on a c
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
-<p style="text-align: center;"><img alt="Smart Connector Mode" src="/Images/SnappyConnectorMode.png"></p>
+![Smart Connector Mode](Images/SnappyConnectorMode.png)
 
 **Key Points:**
 

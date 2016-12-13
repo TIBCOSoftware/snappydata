@@ -35,7 +35,7 @@ Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine
 Create the configuration files (conf/servers) for data servers in `SNAPPY_HOME`.
 
 
-### SnappyData Specific Properties
+#### SnappyData Specific Properties
 
 The following are the few important SnappyData properties that you can configure:
 
@@ -55,28 +55,30 @@ The following are the few important SnappyData properties that you can configure
 
 For a detailed list of SnappyData configurations for Leads and Servers, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-server.html). For a detailed list of SnappyData configurations for Locators, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-locator.html).
 
-### HDFS with SnappyData Store
+## HDFS with SnappyData Store
 
 If using SnappyData store persistence to Hadoop as documented [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html), then add the [hbase jar](http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar) explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to conf/spark-env.sh:
 
-`export SPARK_DIST_CLASSPATH=</path/to/>hbase-0.94.27.jar`
+```export SPARK_DIST_CLASSPATH=</path/to/>hbase-0.94.27.jar```
 
 Subsitute the actual path for `</path/to/>` above
 
-### Spark Specific Properties 
+## Spark Specific Properties 
 
 Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. 
 
 Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
 
-<Note>Note: Currently we do not honour properties specified using spark-config.sh. </note>
+<Note>Note: Currently we do not honour properties specified using spark-config.sh. </Note>
 
-### Example for Multiple-Host Configuration
+## Example for Multiple-Host Configuration
 
 Let's say you want to:
 
-* Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l). 
+* Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l).
+
 * Change the Spark UI port from 4040 to 9090. 
+
 * Set spark.executor.cores as 10 on all servers. 
 
 The following can be your conf files. 
@@ -94,13 +96,14 @@ $ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
+
 <Note> Note: Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. </Note>
 
-### Environment settings
+## Environment Settings
 
 Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in _SNAPPY_HOME/conf_. 
 
-### Hadoop Provided settings
+## Hadoop Provided Settings
 If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without hadoop from the download link.
 This allows you to provide hadoop at runtime.
 
@@ -109,7 +112,7 @@ To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ```
 
-### Per Component Configuration 
+## Per Component Configuration 
 
 Most of the time, components would be sharing the same properties. For e.g. you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in conf/snappy-env.sh. 
 
@@ -119,7 +122,7 @@ SERVER_STARTUP_OPTIONS="-heap-size=4096m"
 LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 ```
 
-### snappy-shell Command Line Utility
+## snappy-shell Command Line Utility
 
 Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using command line. 
 
@@ -131,7 +134,7 @@ $ bin/snappy-shell locator stop
 $ bin/snappy-shell server stop
 ```
   
-### Logging 
+## Logging 
 
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. There is a log4j.properties file that is shipped with the jar. We recommend not to change it at this moment. However, to change the logging levels, you can create a conf/log4j.properties with the following details: 
 
@@ -140,7 +143,7 @@ $ cat conf/log4j.properties
 log4j.rootCategory=DEBUG, file
 ```
 
-### Configuring SSH Login without Password
+## Configuring SSH Login without Password
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
 This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with SnappyData.
 
