@@ -9,7 +9,7 @@ io/snappydata/hydra/distJoin/distJoinWithLeadHA.conf
   queryPlan=false
   shufflePartitions=4
   inMemoryColumnarStorageCompressed=false
-  dataLocation="$GEMFIRE/../../../dtests/src/resources/data/"
+  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
 
 io/snappydata/hydra/distJoin/distJoinWithServerHA.conf
@@ -23,5 +23,5 @@ io/snappydata/hydra/distJoin/distJoinWithServerHA.conf
   queryPlan=false
   shufflePartitions=4
   inMemoryColumnarStorageCompressed=false
-  dataLocation="$GEMFIRE/../../../dtests/src/resources/data/"
+  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
