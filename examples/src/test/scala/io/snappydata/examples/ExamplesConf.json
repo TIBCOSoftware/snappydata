@@ -1,0 +1,20 @@
+{
+  "examples" :
+  [{
+    "run" : "./bin/snappy-job.sh submit --lead localhost:8090 --app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar",
+    "setup" : {
+      "setupType" : "shell",
+      "commands" :["connect client 'localhost:1527';", "run create_and_load_column_table.sql"]
+    },
+    "tearDown": ""
+  },
+
+    {
+      "run" : "./bin/snappy-job.sh submit --lead localhost:8090 --app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar",
+      "setup" : {
+        "setupType" : "shell",
+        "commands" :["connect client 'localhost:1527';", "run create_and_load_column_table.sql"]
+      },
+      "tearDown": ""
+    }]
+}
