@@ -27,12 +27,9 @@ $ cd <Spark_Install_dir>
 $ ./bin/spark-shell --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
 
-This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection, it may take some time to download the files. 
+This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
 
-###Interacting with SnappyData
-<a id="Start_quickStart"></a>
-The following section provides details of how to interact with SnappyData. 
-Most of your application code is in Spark. You bootstrap SnappyData using a SnappySession (derived from SparkSession). In this simple test, we create some tables, load data and query the tables using Spark SQL.
+In this quick start we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row oriented tables, querying and updating these tables. 
 
 Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](programming_guide.md#ddl). 
 
