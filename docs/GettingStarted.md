@@ -10,7 +10,7 @@ At SnappyData, we take a very different approach. SnappyData fuses an low latenc
 
 Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries.
 
-<p style="text-align: center;"><img alt="SnappyData Architecture" src="./Images/SnappyArchitecture.png"></p>
+![SnappyData Architecture](Images/SnappyArchitecture.png)
 
 Conceptually, you can think of SnappyData as an **in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark Datasets.
 
@@ -63,8 +63,10 @@ While Spark deserves much of the credit for being the first of its kind to offer
 * **Synopsis Data Engine support built into Spark**: To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art SDE techniques, as well as a number of novel features.<br>
 SnappyData is the first SDE engine to :
 
-	-	Provide automatic bias correction for arbitrarily complex SQL queries  
+	-	Provide automatic bias correction for arbitrarily complex SQL queries
+  
 	-	Provide an intuitive means for end users to express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts  
+
 	-	Provide error estimates for arbitrarily complex queries on streams (Unlike traditional load shedding techniques that are restricted to simple queries)
 
 ## Spark Challenges for Mixed Workloads (OLTP, OLAP)
@@ -73,6 +75,7 @@ Spark is designed as a computational engine for processing batch jobs. Each Spar
 A second but related challenge is Spark’s design for how user requests (i.e., jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
 
 1. A single point of contention for all requests, and 
+
 2. A barrier for achieving high availability (HA). Executors are shutdown if the driver fails, requiring a full refresh of any cached state.
 
 Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, we need to manage more complex data structures (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mutability characteristics and conformance to SQL.

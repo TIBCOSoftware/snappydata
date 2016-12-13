@@ -298,24 +298,28 @@ You can quickly create a single host SnappyData cluster (i.e. one lead node, one
 
 
 ###Prerequisites###
+
 Before you begin:
 
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources via CloudFormation.
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources from CloudFormation
+
 * Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
-* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster.
 
+*  Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
-Now, you are ready to launch the cluster on EC2 instance. Simply click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) and follow the instructions below.
+To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) and follow the instructions below.
 
-1. The link takes you to the AWS Login Screen where you can enter your AWS login credentials to proceed further.
+1. The AWS Login Screen is displayed. Enter your AWS login credentials. 
  
-2. The **Select Template page** is displayed. You are placed into a default region as shown in top-right corner of the page. You can switch to a different region by clicking on the region name and selecting another one. The URL for the template (JSON format) is pre-populated. Click **Next** to continue.
+2. The **Select Template page** is displayed. The URL for the template (JSON format) is pre-populated. Click **Next** to continue.
+<note> Note: You are placed in your default region. You can either continue in the selected region or change it in the console. </Note>
 <p style="text-align: center;"><img alt="STEP" src="/Images/cluster_selecttemplate.png"></p>
 <br>
 
-3. On the **Specify Details** page:<br>
-    * Provide the stack name: The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.
-    * Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.
+
+3. On the **Specify Details** page, you can:<br>
+    * Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.
+	* Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.
     * Select KeyPairName: Select a keypair from the list of keypairs available to you. This is a mandatory field.
     * Search VPCID: Select the VPC ID from the dropdown list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
 <p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_specifydetails.png"></p>
@@ -328,8 +332,9 @@ Now, you are ready to launch the cluster on EC2 instance. Simply click [here](ht
 <p style="text-align: center;"><img alt="Create" src="/Images/cluster_createstack.png"></p>
 <a id="Stack"></a>
 
-7. The next page lists the existing stacks. Click **Refresh** to view the updated list and select your new stack to view its status.
-When the cluster is up and running, the status of the stack would change to **CREATE_COMPLETE**. This process may take a few (4-5) minutes to complete.<br/>
+
+7. The next page lists the existing stacks. Click **Refresh** to view the updated list. Select the stack to view its status. 
+When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. This process may take 4-5 minutes to complete.<br>
 <p style="text-align: center;"><img alt="Refresh" src="/Images/cluster_refresh.png"></p>
 <a id="Stack"></a>
 <Note>Note: If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes behind the failure are:
@@ -339,8 +344,9 @@ When the cluster is up and running, the status of the stack would change to **CR
 	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
 </Note>
 
-8. Now your cluster is up and you can explore it via Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
+9. Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
 	<p style="text-align: center;"><img alt="Public IP" src="/Images/cluster_links.png"></p>
+
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 

@@ -14,7 +14,7 @@ You can run the examples in any of the following ways:
 
 * **As a Job**:	Many of the Scala examples are also implemented as a SnappyData [job](#howto-job). In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
 
-> **Note**: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.
+<Note> Note: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.</note>
 
 The following topics are covered in this section:
 
@@ -186,9 +186,6 @@ Refer to the [Building Snappy applications using Spark API](./jobs) section of t
 SnappyData comes with a smart connector for Spark applications to work with the SnappyData cluster from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.
 
 For more information on this mode, refer to the [deployment](deployment#snappydata-smart-connector-mode) section of documentation
-
-
-**Code Example**
 
 **Code Example:**
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)

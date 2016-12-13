@@ -12,7 +12,7 @@ Unlike existing optimization techniques based on OLAP cubes or in-memory extract
 ### How does it work?
 The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can however be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. 
 
-<p style="text-align: center;"><img alt="SDE_Architecture" src="/Images/sde_architecture.png"></p>
+![SDE Architecture](Images/sde_architecture.png)
 
 ## Key Concepts
 SnappyData SDE relies on two methods for approximations - **Stratified Sampling** and **Sketching**. A brief introduction to these concepts is provided below.
@@ -23,17 +23,17 @@ Sampling is quite intuitive and commonly used by data scientists and explorers. 
 Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
 This is depicted in the following figure:
 
-<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling1.png"></p>
+![Uniform Random Sampling](Images/aqp_stratifiedsampling1.png)
 
 If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
 
-<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling2.png"></p>
+![Uniform Random Sampling](Images/aqp_stratifiedsampling2.png)
 
 But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
 
 Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. 
 
-<p style="text-align: center;"><img alt="Stratified Sampling" src="/Images/aqp_stratifiedsampling3.png"></p>
+![Stratified Sampling](Images/aqp_stratifiedsampling3.png)
 
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
@@ -139,7 +139,7 @@ confidence: Double = Constant.DEFAULT_CONFIDENCE,
 behavior: String = "DO_NOTHING"): DataFrame
 ```
 
-Query examples using the DataFrame API ..
+Query examples using the DataFrame API
 ``` 
 snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10) 
 snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
@@ -165,7 +165,7 @@ set spark.sql.aqp.behavior=$behavior;
 ```
 
 ## More Examples
-###Example 1
+####Example 1
 Create a sample table with qcs 'medallion' 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
@@ -189,7 +189,7 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
 ```
 
-###Example 2
+####Example 2
 Create additional sample table with qcs 'hack_license' 
 
 ```
@@ -208,7 +208,7 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
 snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
 ```
 
-###Example 3
+####Example 3
 Create a sample table using function "hour(pickup_datetime) as QCS
 
 ```
@@ -225,7 +225,7 @@ select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) f
 snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
 ```
 
-###Example 4
+####Example 4
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```
@@ -247,9 +247,13 @@ snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_dis
 Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
 * If the query is not an aggregation query (based on COUNT, AVG, SUM) then reject the use of any samples. The query is executed on the base table. Else,
+
 * If query QCS (columns involved in Where/GroupBy/Having matches the sample QCS, then, select that sample
+
 * If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used
+
 * If superset of sample QCS is not available, a sample where the sample QCS is subset of query QCS is used
+
 * When multiple stratified samples with subset of QCSs match, sample with most matching columns is used. Largest size of sample gets selected if multiple such samples are available. 
 
 
@@ -263,28 +267,26 @@ Synopsis Data Engine has HAC support using the following behavior clause.
 
 #### `<do_nothing>`
 The SDE engine returns the estimate as is. 
-<p style="text-align: center;"><img alt="DO NOTHING" src="/Images/aqp_donothing.png"></p>
-<br>
+
+![DO NOTHING](Images/aqp_donothing.png)
 
 #### `<local_omit>`
 For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
-<p style="text-align: center;"><img alt="LOCAL OMIT" src="/Images/aqp_localomit.png"></p>
-<br>
+![LOCAL OMIT](Images/aqp_localomit.png)
+
 
 #### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-<p style="text-align: center;"><img alt="Strict" src="/Images/aqp_strict.png"></p>
-<br>
+![Strict](Images/aqp_strict.png)
 
 #### `<run_on_full_table>`
 If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
-<p style="text-align: center;"><img alt="RUN OF FULL TABLE" src="/Images/aqp_runonfulltable.png"></p>
-<br>
+
+![RUN OF FULL TABLE](Images/aqp_runonfulltable.png)
 
 #### `<partial_run_on_base_table>`
 If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
-<p style="text-align: center;"><img alt="PARTIAL RUN ON BASE TABLE" src="/Images/aqp_partialrunonbasetable.png"></p>
-<br>
+![PARTIAL RUN ON BASE TABLE](Images/aqp_partialrunonbasetable.png)
 
 In the following example, any one of the above behavior clause can be applied. 
 
@@ -345,7 +347,7 @@ Synopses data structures are typically much smaller than the base data sets that
 ### Creating TopK tables###
 TopK queries are used to rank attributes to answer "best, most interesting, most important" class of questions. TopK structures store elements ranking them based on their relevance to the query. [TopK](http://stevehanov.ca/blog/index.php?id=122) queries aim to retrieve, from a potentially very large resultset, only the *k (k >= 1)* best answers.
  
-*SQL API for creating a TopK table in SnappyData* 
+####SQL API for creating a TopK table in SnappyData
  
 ``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
@@ -353,7 +355,7 @@ snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
 ``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-*Scala API for creating a TopK table* 
+####Scala API for creating a TopK table
    
 	
 	val topKOptionMap = Map(
@@ -368,7 +370,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-*Querying the TopK table* 
+####Querying the TopK table
 	
 	
 	select * from topkTweets order by EstimatedValue desc 
