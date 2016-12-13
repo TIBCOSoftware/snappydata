@@ -4,8 +4,7 @@ The following installation options are available:
 * [Install On Premise](#nstall-on-premise)
 * [Setting up Cluster on AWS](#setting-up-cluster-on-aws)
 * [Setting up Cluster on Azure](#setting-up-cluster-on-azure)
-* [Setting up Cluster with Docker Images](#setting-up-cluster-with-docker-images)
-* [Building from source](#building-from-source)
+* [Building from Source](#building-from-source)
 
 
 ## Install On-Premise

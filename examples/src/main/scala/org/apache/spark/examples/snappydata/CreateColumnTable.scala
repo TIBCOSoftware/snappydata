@@ -104,8 +104,9 @@ object CreateColumnTable extends SnappySQLJob {
     ))
 
     // props1 map specifies the properties for the table to be created
-    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
     // For complete list of attributes refer the documentation
+    // http://snappydatainc.github.io/snappydata/programming_guide#tables-in-snappydata
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
     snSession.createTable("CUSTOMER", "column", tableSchema, props1)
 
@@ -150,8 +151,9 @@ object CreateColumnTable extends SnappySQLJob {
     snSession.sql("DROP TABLE IF EXISTS CUSTOMER")
 
     // Create the table using SQL command
-    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
-    // For complete list of table attributes refer the documentation
+    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+    // For complete list of attributes refer the documentation
+    // http://snappydatainc.github.io/snappydata/programming_guide#tables-in-snappydata
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +

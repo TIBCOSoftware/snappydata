@@ -20,35 +20,47 @@ By default, when the cluster is started, the data store is bootstrapped and when
 
 
 ## Key Features
-- **100% compatible with Spark** - Use SnappyData as a database, but also use any of the Spark APIs - ML, Graph, etc.
-- **In-memory row and column stores**: Run the store collocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)
-- **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
-- **SQL based extensions for streaming processing**: Use native Spark streaming, DataFrame APIs or declaratively specify your streams and how you want it processed. You do not need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
-- **Not-Only SQL**: Use either as a SQL database or work with JSON or even arbitrary Application Objects. Essentially, any Spark RDD/DataSet can also be persisted into SnappyData tables (type system same as Spark DataFrames). 
-- **Interactive analytics using Synopsis Data Engine (SDE)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce the in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background, and can be completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions.
-- **Mutate, transact on data in Spark**: You can use SQL to insert, update, delete data in tables as one would expect. We also provide extensions to Spark’s context so you can mutate data in your Spark programs. Any tables in SnappyData is visible as DataFrames without having to maintain multiples copies of your data: cached RDDs in Spark and then separately in your data store.
-- **Optimizations - Indexing**: You can index your RowStore and the GemFire SQL optimizer, which automatically uses in-memory indexes when available.
-- **Optimizations - collocation**: SnappyData implements several optimizations to improve data locality and avoid shuffling data for queries on partitioned data sets. All related data can be collocated using declarative custom partitioning strategies (e.g. common shared business key). Reference data tables can be modeled as replicated tables when tables cannot share a common key. Replicas are always consistent.
-- **High availability not just Fault tolerance**: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster. It is deeply integrated with a membership-based distributed system to detect and handle failures, instantaneously providing applications continuous HA.
-- **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled.
+
+* **100% compatible with Spark** - Use SnappyData as a database, but also use any of the Spark APIs - ML, Graph, etc.
+
+* **In-memory row and column stores**: Run the store collocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)
+
+* **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
+
+* **SQL based extensions for streaming processing**: Use native Spark streaming, DataFrame APIs or declaratively specify your streams and how you want it processed. You do not need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
+
+* **Not-Only SQL**: Use either as a SQL database or work with JSON or even arbitrary Application Objects. Essentially, any Spark RDD/DataSet can also be persisted into SnappyData tables (type system same as Spark DataFrames). 
+
+* **Interactive analytics using Synopsis Data Engine (SDE)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce the in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background, and can be completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions.
+
+* **Mutate, transact on data in Spark**: You can use SQL to insert, update, delete data in tables as one would expect. We also provide extensions to Spark’s context so you can mutate data in your Spark programs. Any tables in SnappyData is visible as DataFrames without having to maintain multiples copies of your data: cached RDDs in Spark and then separately in your data store.
+
+* **Optimizations - Indexing**: You can index your RowStore and the GemFire SQL optimizer, which automatically uses in-memory indexes when available.
+
+* **Optimizations - collocation**: SnappyData implements several optimizations to improve data locality and avoid shuffling data for queries on partitioned data sets. All related data can be collocated using declarative custom partitioning strategies (e.g. common shared business key). Reference data tables can be modeled as replicated tables when tables cannot share a common key. Replicas are always consistent.
+
+* **High availability not just Fault tolerance**: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster. It is deeply integrated with a membership-based distributed system to detect and handle failures, instantaneously providing applications continuous HA.
+
+* **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled.
 
 <a id="SparkChallenges"></a>
 
 ## Extensions to the Spark Runtime
 
-SnappyData makes the following contributions to deliver a unified and optimized runtime.  
-1. __Integrating an operational in-memory data store with Spark’s computational model:__ We introduce a number of extensions to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. <br> We extend this design by allowing low latency and fine grained operations to interleave and get higher priority, without involving the scheduler. Furthermore, to support high concurrency, we extend the runtime with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby state is shared across many clients and applications.
+SnappyData makes the following contributions to deliver a unified and optimized runtime.
 
-2. __Unified API for OLAP, OLTP, and Streaming:__ Spark builds on a common set of abstractions to provide a rich API for a diverse range of applications, such as MapReduce, Machine learning, stream processing, and SQL.
+* **Integrating an operational in-memory data store with Spark’s computational model**: We introduce a number of extensions to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. <br> We extend this design by allowing low latency and fine grained operations to interleave and get higher priority, without involving the scheduler. Furthermore, to support high concurrency, we extend the runtime with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby state is shared across many clients and applications. <br>
+
+* **Unified API for OLAP, OLTP, and Streaming**: Spark builds on a common set of abstractions to provide a rich API for a diverse range of applications, such as MapReduce, Machine learning, stream processing, and SQL.
 While Spark deserves much of the credit for being the first of its kind to offer a unified API, we further extend its API to: 
 	
 	* Allow for OLTP operations, e.g., transactions and mutations (inserts/updates/deletions) on tables  
 	* Be conformant with SQL standards, e.g., allowing tables alterations, constraints, indexes, and   
 	* Support declarative stream processing in SQL
 
-3. __Optimizing Spark application execution times:__ Our goal is to eliminate the need for yet another external store (e.g., a KV store) for Spark applications. With a deeply integrated store, SnappyData improves overall performance by minimizing network traffic and serialization costs. In addition, by promoting collocated schema designs (tables and streams) where related data is collocated in the same process space, SnappyData eliminates the need for shuffling altogether in several scenarios.
+* **Optimizing Spark application execution times**: Our goal is to eliminate the need for yet another external store (e.g., a KV store) for Spark applications. With a deeply integrated store, SnappyData improves overall performance by minimizing network traffic and serialization costs. In addition, by promoting collocated schema designs (tables and streams) where related data is collocated in the same process space, SnappyData eliminates the need for shuffling altogether in several scenarios.
 
-4. __Synopsis Data Engine support built into Spark:__ To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art SDE techniques, as well as a number of novel features.<br>
+* **Synopsis Data Engine support built into Spark**: To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art SDE techniques, as well as a number of novel features.<br>
 SnappyData is the first SDE engine to :
 
 	-	Provide automatic bias correction for arbitrarily complex SQL queries  
