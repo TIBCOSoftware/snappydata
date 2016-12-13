@@ -51,8 +51,8 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 1. Copy the downloaded binaries in the shared folder.
 2. Extract the downloaded archive file and go to SnappyData home directory.<br> 
- ```bash
-$ tar -xzf snappydata-0.7-bin.tar.gz   
+ ```
+$ tar -xzf snappydata-0.7-bin.tar.gz
 $ cd snappydata-0.7-bin/
  ```
 3. Then configure the cluster as per [How to Configure SnappyData cluster](configuration.md).
