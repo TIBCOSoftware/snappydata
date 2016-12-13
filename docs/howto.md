@@ -1016,7 +1016,7 @@ Join the the sample table and reference table to find out which airlines arrive 
 
 Developers can write programs in Python to use SnappyData features
 
-**First create SnappyContext:**
+**First create SnappySession:**
 
 ```
  from pyspark.sql.snappy import SnappySession
@@ -1027,7 +1027,7 @@ Developers can write programs in Python to use SnappyData features
  snappy = SnappySession(sc)
 ```
 
-**Create table using SnappyContext**
+**Create table using SnappySession**
 
 ```
     # Creating partitioned table PARTSUPP using SQL
