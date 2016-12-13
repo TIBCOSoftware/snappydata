@@ -23,11 +23,33 @@ import org.apache.spark.sql.types.{StructType, StructField}
 import org.apache.spark.sql.{Row, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
 /**
- * This is a sample code snippet to work with domain objects and SnappyStore column tables.
- * Run with
+ * This is a sample code snippet to work with domain objects and SnappyStore
+ * column tables.
+ *
+ * <p></p>
+ * This example can be run either in local mode (in which case the example runs
+ * collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+ * to an already running SnappyData cluster.
+ *
+ * <p></p>
+ * To run the example in local mode go to your SnappyData product distribution
+ * directory and type following command on the command prompt
  * <pre>
  * bin/run-example snappydata.WorkingWithObjects
  * </pre>
+ *
+ * To submit this example as a job to an already running cluster
+ * <pre>
+ *   cd $SNAPPY_HOME
+ *   bin/snappy-job.sh submit
+ *   --app-name WorkingWithObjects
+ *   --class org.apache.spark.examples.snappydata.WorkingWithObjects
+ *   --app-jar examples/jars/quickstart.jar
+ *   --lead [leadHost:port]
+ *
+ * Check the status of your job id
+ * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ *
  */
 
 case class Address(city: String, state: String)

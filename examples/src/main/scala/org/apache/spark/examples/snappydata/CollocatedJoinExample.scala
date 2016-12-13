@@ -26,12 +26,12 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, Snappy
 /**
  * An example that shows how to join between collocated tables
  *
- * <p></p>
- * This example can be run either in local mode(in which it will spawn a single
- * node SnappyData system) or can be submitted as a job to an already running
- * SnappyData cluster.
+ * <p>
+ * This example can be run either in local mode (in which case the example runs
+ * collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+ * to an already running SnappyData cluster.
  *
- * <p></p>
+ * <p>
  * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
@@ -41,15 +41,19 @@ import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, Snappy
  * To submit this example as a job to an already running cluster
  * <pre>
  *   cd $SNAPPY_HOME
+ *
  *   bin/snappy-job.sh submit
  *   --app-name CollocatedJoinExample
  *   --class org.apache.spark.examples.snappydata.CollocatedJoinExample
  *   --app-jar examples/jars/quickstart.jar
  *   --lead [leadHost:port]
- *
+ *</pre>
+ * <pre>
  * Check the status of your job id
  * bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+ * </pre>
  *
+ * <p>
  * The output of the job will be redirected to a file named CollocatedJoinExample.out
  */
 object CollocatedJoinExample extends SnappySQLJob {

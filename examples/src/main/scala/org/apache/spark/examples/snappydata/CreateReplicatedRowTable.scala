@@ -29,9 +29,9 @@ import org.apache.spark.sql.{SnappySession, SparkSession, Row, SnappyJobValid, S
  * using SQL or APIs.
  *
  * <p></p>
- * This example can be run either in local mode(in which it will spawn a single
- * node SnappyData system) or can be submitted as a job to an already running
- * SnappyData cluster.
+ * This example can be run either in local mode (in which case the example runs
+ * collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+ * to an already running SnappyData cluster.
  *
  * <p></p>
  * To run the example in local mode go to you SnappyData product distribution

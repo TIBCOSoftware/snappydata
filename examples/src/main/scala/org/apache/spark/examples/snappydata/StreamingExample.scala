@@ -81,7 +81,7 @@ object StreamingExample {
     val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 
     println()
-    println("Initializing a embedded Kafka")
+    println("Initializing embedded Kafka")
     val utils = new EmbeddedKafkaUtils()
     utils.setup()
     val topic = "kafka_topic"
