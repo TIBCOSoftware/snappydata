@@ -2,17 +2,17 @@
 SnappyData fuses Apache Spark with an in-memory database to deliver a data engine capable of processing streams, transactions and interactive analytics in a single cluster.
 
 ### The Challenge with Spark and Remote Data Sources
-Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While, this provides rich unified access to data this can also be quite in-efficient and expensive. Analytic processing requires massive data sets to be repeatedly copied, data reformatted to suit Spark and ultimately fails to deliver the promise of interactive analytic performance, in many cases. 
-For instance, running aggregation on a large Cassandra table necessitates streaming the entire table into Spark to do the aggregation, each time. Caching within Spark is immutable and results in stale insight.
+Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a DataSet(RDD) getting materialized. This can be quite in-efficient and expensive if the data set has to be repeatedly processed. Caching within Spark is immutable and still requires the application to periodically refresh the data set. Let alone having to bear the burdon of duplicating the dataset. Analytic processing requires massive data sets to be repeatedly copied, data reformatted to suit Spark and ultimately fails to deliver the promise of interactive analytic performance, in many cases. 
+For instance, running aggregation on a large Cassandra table necessitates streaming the entire table into Spark to do the aggregation, each time. 
 
 ### The SnappyData Approach
-At SnappyData, we take a very different approach. SnappyData fuses an low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. The net effect is an order of magnitude performance improvement even compared to native Spark caching and more than two orders of magnitude better Spark performance when working with external data sources. 
+At SnappyData, we take a very different approach. SnappyData fuses an low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are more optimized through better vectorization and code generation. The net effect is an order of magnitude performance improvement even compared to native Spark caching and more than two orders of magnitude better Spark performance when working with external data sources. 
 
 Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries.
 
 ![SnappyData Architecture](Images/SnappyArchitecture.png)
 
-Conceptually, you can think of SnappyData as an **in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark Datasets.
+Conceptually, you can think of SnappyData as an **in-memory database that uses Spark's API and SQL as its interface and computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced Spark Datasets.
 
 Any Spark DataFrame can be easily managed as a SnappyData Table or conversely any table can be accessed as a DataFrame.
 
@@ -59,6 +59,8 @@ While Spark deserves much of the credit for being the first of its kind to offer
 	* Support declarative stream processing in SQL
 
 * **Optimizing Spark application execution times**: Our goal is to eliminate the need for yet another external store (e.g., a KV store) for Spark applications. With a deeply integrated store, SnappyData improves overall performance by minimizing network traffic and serialization costs. In addition, by promoting collocated schema designs (tables and streams) where related data is collocated in the same process space, SnappyData eliminates the need for shuffling altogether in several scenarios.
+
+** BELOW SECTION NEEDS TO BE RE-WRITTEN .... (EXPLAIN SYNOPSES DATA? )
 
 * **Synopsis Data Engine support built into Spark**: To deliver analytics at truly interactive speeds, we have equipped SnappyData with state-of-the-art SDE techniques, as well as a number of novel features.<br>
 SnappyData is the first SDE engine to :
