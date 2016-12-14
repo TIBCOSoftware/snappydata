@@ -22,12 +22,15 @@ This section contains instructions and examples using which, you can try out Sna
 
 
 **Open a command terminal and go to the location of the Spark installation directory:**
-```scala
+```bash
 $ cd <Spark_Install_dir>
-$ ./bin/spark-shell --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
 
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
+All SnappyData metadata as well persistent data will be stored in the directory "quickstartdatadir".
 
 In this quick start we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row oriented tables, querying and updating these tables. 
 
@@ -139,18 +142,22 @@ We load millions of rows into a cached Spark DataFrame, run some analytic querie
 
 **If you are using your own Spark 2.0 installation:**
 
-```scala 
-$ ./bin/spark-shell --driver-memory=4g --packages "SnappyDataInc:snappydata:0.7.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+```bash
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --packages "SnappyDataInc:snappydata:0.7.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 **If you have downloaded SnappyData **
 
-```scala
-$ ./bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+```bash
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 ** If you are using Docker**
-```scala
+```bash
 $ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 ### To get the Performance Numbers
@@ -284,9 +291,11 @@ Download the latest version of SnappyData from the [SnappyData Release Page](htt
 ```bash
 $ tar -xzf snappydata-0.7-bin.tar.gz
 $ cd snappydata-0.7-bin/
-$./bin/spark-shell
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir
 ```
-It opens a Spark Shell. Follow the steps mentioned [here](#Start_quickStart)
+It opens a Spark Shell. All SnappyData metadata as well persistent data will be stored in the directory "quickstartdatadir". Follow the steps mentioned [here](#Start_quickStart)
 
 
 ##Getting Started on AWS
