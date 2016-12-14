@@ -22,6 +22,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
 
+import org.apache.spark.ui.SparkUI
+import org.apache.spark.ui.SnappyDashboardTab
+
 object ToolsCallbackImpl extends ToolsCallback {
 
   override def invokeLeadStartAddonService(sc: SparkContext): Unit = {
@@ -29,6 +32,13 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      numPartitions: Int, numBuckets: Int): Partitioning = OrderlessHashPartitioning(
-    partitionColumns, numPartitions, numBuckets)
+      numPartitions: Int, numBuckets: Int): Partitioning = {
+    OrderlessHashPartitioning(partitionColumns, numPartitions, numBuckets)
+  }
+
+  override def updateUI(scUI: Option[Any]): Unit = {
+    scUI.foreach( ui => {
+      new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
+    })
+  }
 }

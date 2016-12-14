@@ -20,6 +20,7 @@
 package io.snappydata
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.CancelException
@@ -30,19 +31,24 @@ import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
+import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
 
-  @volatile private var tableSizeInfo = Map[String, SnappyRegionStats]()
+  @volatile
+  private var tableSizeInfo = Map[String, SnappyRegionStats]()
+  @volatile
+  private var membersInfo = mutable.Map.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
 
@@ -57,6 +63,7 @@ object SnappyTableStatsProviderService extends Logging {
   @volatile private var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
+
   def start(sc: SparkContext): Unit = {
     val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
         "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
@@ -68,19 +75,36 @@ object SnappyTableStatsProviderService extends Logging {
         override def run2(): Unit = {
           try {
             if (doRun) {
+              val prevTableSizeInfo = tableSizeInfo
               running = true
               try {
                 tableSizeInfo = getAggregatedTableStatsOnDemand
+                // get members details
+                getAggregatedMemberStatsOnDemand
               } finally synchronized {
                 running = false
                 notifyAll()
               }
+              // check if there has been a substantial change in table
+              // stats, and clear the plan cache if so
+              if (prevTableSizeInfo.size != tableSizeInfo.size) {
+                SnappySession.clearAllCache()
+              } else {
+                val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
+                val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
+                if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
+                  SnappySession.clearAllCache()
+                }
+              }
             }
+
           } catch {
             case _: CancelException => // ignore
             case e: Exception => if (!e.getMessage.contains(
               "com.gemstone.gemfire.cache.CacheClosedException")) {
               logger.warning(e)
+            } else {
+              logger.error(e)
             }
           }
         }
@@ -92,6 +116,51 @@ object SnappyTableStatsProviderService extends Logging {
       delay, delay)
   }
 
+
+  def getAggregatedMemberStatsOnDemand: Unit = {
+
+    // reset all existing members status as down
+    membersInfo.map(tmp => {
+     val mbr = tmp._2
+      mbr.put("status" , "Stopped")
+    })
+
+    val collector = new GfxdListResultCollector(null, true);
+    val msg:MemberStatisticsMessage = new MemberStatisticsMessage(collector)
+
+    msg.executeFunction()
+
+    val memStats = collector.getResult
+
+    val itr = memStats.iterator()
+
+    while(itr.hasNext){
+      val o = itr.next().asInstanceOf[ListResultCollectorValue]
+      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+      val map = scala.collection.mutable.HashMap.empty[String, Any]
+      val keyItr = memMap.keySet().iterator()
+
+      while(keyItr.hasNext){
+        val key = keyItr.next()
+        map.put(key, memMap.get(key))
+      }
+      map.put("status", "Running")
+
+      val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
+      if(dssUUID != null){
+        membersInfo.put(dssUUID.toString, map)
+      }else{
+        membersInfo.put(memMap.get("id").asInstanceOf[String], map)
+      }
+    }
+
+  }
+
+  def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
+    membersInfo
+  }
+
+
   def stop(): Unit = {
     doRun = false
     // wait for it to end for sometime
@@ -100,6 +169,7 @@ object SnappyTableStatsProviderService extends Logging {
     }
     _snc = None
   }
+
 
   def getTableStatsFromService(fullyQualifiedTableName: String):
   Option[SnappyRegionStats] = {
@@ -133,23 +203,21 @@ object SnappyTableStatsProviderService extends Logging {
     }
   }
 
-
   def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
     val snc = this.snc
     if (snc == null) return Map.empty
-
     val serverStats = getTableStatsFromAllServers
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     if (!doRun) return Map.empty
     // val samples = getSampleTableList(snc)
-    serverStats.foreach(stat => {
-      val oldRecord = aggregatedStats.get(stat.getRegionName)
-      if (oldRecord.isDefined) {
-        aggregatedStats.put(stat.getRegionName, oldRecord.get.getCombinedStats(stat))
-      } else {
-        aggregatedStats.put(stat.getRegionName, stat)
+    serverStats.foreach { stat =>
+      aggregatedStats.get(stat.getRegionName) match {
+        case Some(oldRecord) =>
+          aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
+        case None =>
+          aggregatedStats.put(stat.getRegionName, stat)
       }
-    })
+    }
     Utils.immutableMap(aggregatedStats)
   }
 

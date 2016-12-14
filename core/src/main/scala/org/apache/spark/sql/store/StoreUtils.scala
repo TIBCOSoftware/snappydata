@@ -103,7 +103,7 @@ object StoreUtils extends Logging {
   // with all the optimizations under SNAP-1135, RDD-bucket delinking is
   // largely not required (max 5-10% advantage in the best case) since
   // without the delinking exchange on one side can be avoided where possible
-  val ENABLE_BUCKET_RDD_DELINKING = false
+  private[sql] val PROPERTY_BUCKET_PARTITION_LINKED = "linkBucketsToPartitions"
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -115,10 +115,11 @@ object StoreUtils extends Logging {
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
-      region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion,
+      linkBucketsToPartitions: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (ENABLE_BUCKET_RDD_DELINKING && callbacks != null) {
+    if (!linkBucketsToPartitions && callbacks != null) {
       allocateBucketsToPartitions(session, region)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets

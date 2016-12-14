@@ -39,8 +39,9 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
+
 import org.apache.spark.sql.execution.joins.{HashedObjectCache, HashedRelationCache}
-import org.apache.spark.sql.execution.ui.SnappyStatsTab
+
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
@@ -843,7 +844,7 @@ object SnappyContext extends Logging {
     if (id.blockId == null || !id.blockId.isDriver) {
       totalCoreCount.addAndGet(id.numProcessors)
     }
-    SnappySession.clearPlanCache()
+    SnappySession.clearAllCache()
   }
 
   private[spark] def removeBlockId(
@@ -853,7 +854,7 @@ object SnappyContext extends Logging {
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
-        SnappySession.clearPlanCache()
+        SnappySession.clearAllCache()
         s
       case None => None
     }
@@ -866,7 +867,7 @@ object SnappyContext extends Logging {
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
     totalCoreCount.set(0)
-    SnappySession.clearPlanCache()
+    SnappySession.clearAllCache()
   }
 
   /** Returns the current SparkContext or null */
@@ -894,7 +895,7 @@ object SnappyContext extends Logging {
         numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
       totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearPlanCache()
+      SnappySession.clearAllCache()
     }
   }
 
@@ -1013,7 +1014,6 @@ object SnappyContext extends Logging {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
-          sc.ui.foreach(new SnappyStatsTab(_))
           initMemberBlockMap(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
@@ -1028,6 +1028,7 @@ object SnappyContext extends Logging {
     }
   }
 
+
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -1037,6 +1038,7 @@ object SnappyContext extends Logging {
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
+        ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
@@ -1048,6 +1050,9 @@ object SnappyContext extends Logging {
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
+        if(ToolsCallbackInit.toolsCallback != null){
+          ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
+        }
       case _ => // ignore
     }
   }

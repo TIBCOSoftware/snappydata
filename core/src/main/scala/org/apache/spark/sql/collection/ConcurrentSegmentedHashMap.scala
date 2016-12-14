@@ -159,6 +159,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       lock.unlock()
     }
     if (added != null && added.booleanValue()) _size.incrementAndGet()
+
     added
   }
 
@@ -187,6 +188,14 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
         lock.lock()
       }
       (seg, lock)
+    }
+
+
+    def addNumToSize(): Unit = {
+      if (numAdded > 0) {
+        _size.addAndGet(numAdded)
+        numAdded = 0
+      }
     }
 
     // split into max batch sizes to avoid buffering up too much
@@ -227,12 +236,15 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
             while (idx < nhashes) {
               added = seg.changeValue(keys(idx), bucketId(hashes(idx)), change, isLocal)
               if (added != null) {
-                if (added.booleanValue()) numAdded += 1
+                if (added.booleanValue()) {
+                  numAdded += 1
+                }
                 idx += 1
               } else {
                 // indicates that loop must be broken immediately
                 // need to take the latest reference of segmnet
                 // after segmnetAbort is successful
+                addNumToSize()
                 lock.unlock()
                 lockedState = false
                 // Because two threads can concurrently call segmentAbort
@@ -240,25 +252,17 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                 // one thread would correctly identify if the other has cleared
                 // the segments. So after the changeSegment, it should unconditionally
                 // refresh the segments
-                // try {
-                //   if (change.segmentAbort(seg)) {
-                // break out of loop when segmentAbort returns true
-                //     idx = nhashes
                 change.segmentAbort(seg)
                 val segmentAndLock = getLockedValidSegmentAndLock(i)
                 lockedState = true
                 seg = segmentAndLock._1
                 lock = segmentAndLock._2
-                // }
                 idx += 1
-
-                // } finally {
-                //   lock.lock()
-                // }
               }
             }
           } finally {
             if (lockedState) {
+              addNumToSize()
               lock.unlock()
             }
           }
@@ -270,8 +274,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       iter.setSlice(0, MAX_BULK_INSERT_SIZE)
       for (b <- groupedKeys) if (b != null) b.clear()
       for (b <- groupedHashes) if (b != null) b.clear()
+
+
     }
-    if (numAdded > 0) _size.addAndGet(numAdded)
+
   }
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)

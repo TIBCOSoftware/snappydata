@@ -61,7 +61,7 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
         case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
         case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,jobConfig.getString("persistenceMode"))
         case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
-        case _ => // the default, catch-all
+        case _ => pw.println(s"Did not find any match for ${tableType} to create tables")
       }
       CTTestUtil.loadTables(snc);
       pw.println(s"Create and load ${tableType} tables completed.")
@@ -76,3 +76,4 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
+

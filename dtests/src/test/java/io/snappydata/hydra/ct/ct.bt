@@ -62,7 +62,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=0,1  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
-  tableType="PersistentPartitionedRow"
+  tableType="PersistentPartitionRow"
   scriptName="ct_create_and_load_persistentPartitioned_row_table.sql"
   fullResultSetValidation= false
 
@@ -227,3 +227,4 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
   tableType="Column"
   numVMsToStop=1
   fullResultSetValidation= false
+

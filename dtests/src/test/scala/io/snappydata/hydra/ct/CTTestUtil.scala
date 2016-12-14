@@ -41,9 +41,9 @@ object CTTestUtil {
         pw.println(s"Result mismatch for join query ${queryNum} : found ${df.count} rows but " +
             s"expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
         hasValidationFailed = true
-        pw.flush()
       }
     }
+    pw.flush()
     return hasValidationFailed
   }
 
@@ -55,8 +55,8 @@ object CTTestUtil {
       pw.println(s"Result mismatch for query ${queryNum} : found ${df.count} rows but " +
           s"expected ${numRows} rows. Query is :${sqlString} for ${CTTestUtil.tableType} table.")
       hasValidationFailed = true
-      pw.flush()
     }
+    pw.flush()
     return hasValidationFailed
   }
 
@@ -183,3 +183,4 @@ object CTTestUtil {
   }
 
 }
+

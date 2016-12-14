@@ -967,7 +967,7 @@ class ColumnTableTest
           case t: Throwable => throw new AssertionError(t.getMessage, t);
         }
       } // Expected Exception hence ignore
-      case _ => throw new AssertionError;
+      case _: Throwable => throw new AssertionError;
     }
 
     try {
