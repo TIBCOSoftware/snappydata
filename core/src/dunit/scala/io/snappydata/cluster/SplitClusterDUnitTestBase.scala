@@ -337,6 +337,8 @@ trait SplitClusterDUnitTestObject extends Logging {
   }
 }
 
+case class IndexData(col1: Int, col2: Int, col3: Decimal)
+
 case class Data(col1: Int, col2: String, col3: Decimal)
 
 case class ComplexData(col1: Int, col2: Array[Decimal], col3: String,
