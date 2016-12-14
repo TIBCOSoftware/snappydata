@@ -24,7 +24,7 @@ The data pipeline involving analytics while streams are being ingested and subse
 
 ![Data Ingestion Pipeline](DataIngestionPipeline.png)
 
-Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
+1. Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
 
 1. We rely on Spark Streaming’s parallel receivers to consume data from multiple sources. These receivers produce a DStream, whereby the input is batched over small time intervals and emitted as a stream of RDDs. This batched data is typically transformed, enriched and emitted as one or more additional streams. The raw incoming stream may be persisted into HDFS for batch analytics.
 
@@ -39,9 +39,10 @@ Once the SnappyData cluster is started and before any live streams can be proces
 
 ## Hybrid Cluster Manager
 
-As shown in Figure above, Spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a singleton (SparkContext) object which it uses to communicate with its set of executors.
+Spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a singleton (SparkContext) object which it uses to communicate with its set of executors. This is represented in the following figure.
+![Hybrid Cluster](Images/hybrid_cluster.png)
 
-While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, SnappyData must meet additional requirements (1–4) as an operational database.
+While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, SnappyData must meet the following additional requirements as an operational database.
 
 1. **High Concurrency** : SnappyData use cases involve a mixture of compute-intensive workloads and low latency (sub-millisecond) OLTP operations such as point lookups (index-based search), and insert/update of a single record. The fair scheduler of Spark is not designed to meet the low latency requirements of such operations.
 
@@ -53,7 +54,7 @@ While Spark’s approach is appropriate and geared towards compute-heavy tasks t
 After an overview of our cluster architecture, we explain how SnappyData meets each of these requirements in the subsequent sections.
 
 ### SnappyData Cluster Architecture
-A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct types of members (see figure 4).
+A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct types of members as represented in the below figure.
 
 1. Locator. Locator members provide discovery service for the cluster. They inform a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
 
@@ -75,9 +76,9 @@ To interact with SnappyData, we provide interfaces for developers familiar with 
 
 Unlike Apache Spark, which is primarily a computational engine, the SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
 
-1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors.
+1. **Long running executors**: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors.
 
-2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA).
+2. **Driver runs in HA configuration**: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA).
 
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you can choose to skip the SQL part go directly to the [Spark API section](./programming_guide.md#snappysession-and-snappystreamingcontext).
 
