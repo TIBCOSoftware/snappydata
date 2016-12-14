@@ -298,6 +298,7 @@ public class SnappyTest implements Serializable {
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
+                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -312,10 +313,10 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() +
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -spark.driver.extraClassPath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
                         getSnappyTestsJar() + ":" + getStoreTestsJar();
-                ;
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1321,7 +1322,7 @@ public class SnappyTest implements Serializable {
         Process pr = null;
         try {
             String command;
-            if (pName.equals("Master")) command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            if (pName.equals("Master")) command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
             else command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
@@ -1562,7 +1563,7 @@ public class SnappyTest implements Serializable {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
-        if(appName == null) appName = SnappyPrms.getUserAppName();
+        if (appName == null) appName = SnappyPrms.getUserAppName();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         try {
@@ -2086,7 +2087,7 @@ public class SnappyTest implements Serializable {
      * Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the
      * restart to complete before returning.
      */
-    public static void HydraTask_cycleStoreVms() {
+    public static void HydraTask_cycleStoreVms() throws InterruptedException {
 
         if (cycleVms) {
             int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
@@ -2100,7 +2101,7 @@ public class SnappyTest implements Serializable {
      * Stops snappy primary lead member, then restarts it.  Waits for the
      * restart to complete before returning.
      */
-    public static synchronized void HydraTask_cycleLeadVM() {
+    public static synchronized void HydraTask_cycleLeadVM() throws InterruptedException {
         if (cycleVms) {
             int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
             int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
@@ -2109,7 +2110,8 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
+    protected void
+    cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) throws InterruptedException {
         if (!cycleVms) {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
@@ -2180,7 +2182,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) {
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) throws InterruptedException {
         if (isLead) {
             log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
             return stopStartVMs(numToKill, cycleLeadVMTarget, true);
@@ -2190,13 +2192,13 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
+    protected List<ClientVmInfo> stopStartLeadVM(int numToKill) throws InterruptedException {
         log().info("cycle lead vm starts at: " + System.currentTimeMillis());
         return stopStartVMs(numToKill, cycleLeadVMTarget, true);
     }
 
     @SuppressWarnings("unchecked")
-    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) {
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) throws InterruptedException {
         Object[] tmpArr = null;
         if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target);
         else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
@@ -2231,7 +2233,7 @@ public class SnappyTest implements Serializable {
         return vmList;
     }
 
-    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, boolean isLead) {
+    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, boolean isLead) throws InterruptedException {
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         if (vmList.size() != stopModeList.size()) {
@@ -2253,7 +2255,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void recycleVM(String vmDir, String stopMode, String clientName, boolean isLead) {
+    protected void recycleVM(String vmDir, String stopMode, String clientName, boolean isLead) throws InterruptedException {
         if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
             if (isLead) killVM(vmDir, clientName, true);
             else killVM(vmDir, clientName, false);
@@ -2285,7 +2287,8 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info(clientName + " stopped successfully...");
     }
 
-    protected void startVM(String vmDir, String clientName, boolean isLead) {
+    protected void startVM(String vmDir, String clientName, boolean isLead) throws InterruptedException {
+        Thread.sleep(100000);
         if (isLead) {
             regenerateConfigData(vmDir, "leads", clientName, true);
             startSnappyLead();
