@@ -127,18 +127,18 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     vm3.invoke(hook)
   }
 
-  override def setTestHook(): Unit = {
-    val hook = new SerializableRunnable {
-      override def run() {
-        ExecutionEngineArbiter.setTestHookCostThreshold(100)
-      }
-    }
-    hook.run()
-    vm0.invoke(hook)
-    vm1.invoke(hook)
-    vm2.invoke(hook)
-    vm3.invoke(hook)
-  }
+//  override def setTestHook(): Unit = {
+//    val hook = new SerializableRunnable {
+//      override def run() {
+//        ExecutionEngineArbiter.setTestHookCostThreshold(100)
+//      }
+//    }
+//    hook.run()
+//    vm0.invoke(hook)
+//    vm1.invoke(hook)
+//    vm2.invoke(hook)
+//    vm3.invoke(hook)
+//  }
 
 
 }
@@ -150,7 +150,7 @@ trait ExecutionEngineArbiterTestBase {
 
   def stopNetServer: Unit
 
-  def setTestHook: Unit
+  //def setTestHook: Unit
 
   def createRowTableAndInsertData(snc: SnappyContext, tableName: String,
       props: Map[String, String] = Map.empty): Unit = {
@@ -205,11 +205,11 @@ trait ExecutionEngineArbiterTestBase {
     s.close()
   }
 
-  def runAndValidateQueryForCostBasedRouting(conn: Connection, isSparkExecution: Boolean, query:
-  String, isUpdate: Boolean = false): Unit = {
-    setTestHook
-    runAndValidateQuery(conn, isSparkExecution, query, isUpdate)
-  }
+//  def runAndValidateQueryForCostBasedRouting(conn: Connection, isSparkExecution: Boolean, query:
+//  String, isUpdate: Boolean = false): Unit = {
+//    setTestHook
+//    runAndValidateQuery(conn, isSparkExecution, query, isUpdate)
+//  }
 
   def distinctExecutionEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
@@ -309,7 +309,7 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, true, query)
   }
 
-  def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
+/*  def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
 
     val sc = snc.sparkContext
@@ -353,7 +353,7 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQueryForCostBasedRouting(conn, true,
       s"select col1, col3 from $testTable WHERE col2 > 3")
 
-  }
+  }*/
 
   def queryHint(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
