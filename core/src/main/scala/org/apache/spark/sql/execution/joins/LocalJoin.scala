@@ -387,7 +387,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, dictionaryArrayTerm, joinType)
+      resultVars, dictionaryArrayTerm, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
