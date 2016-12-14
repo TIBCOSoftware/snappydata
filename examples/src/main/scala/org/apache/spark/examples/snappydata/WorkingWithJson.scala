@@ -16,6 +16,8 @@
  */
 package org.apache.spark.examples.snappydata
 
+import java.io.File
+
 import scala.util.Try
 
 import com.typesafe.config.{Config, ConfigFactory}
@@ -118,10 +120,15 @@ object WorkingWithJson extends SnappySQLJob {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
+    val dataDirAbsolutePath: String = createAndGetDataDir
+
     val spark: SparkSession = SparkSession
         .builder
         .appName("WorkingWithJson")
         .master("local[*]")
+        // sys-disk-dir attribute specifies the directory where persistent data is saved
+        .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
+        .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -130,6 +137,14 @@ object WorkingWithJson extends SnappySQLJob {
     println("Printing All People \n################## \n" + results)
 
     spark.stop()
+  }
+
+  def createAndGetDataDir: String = {
+    // creating a directory to save all persistent data
+    val dataDir = "./" + "snappydata_examples_data"
+    new File(dataDir).mkdir()
+    val dataDirAbsolutePath = new File(dataDir).getAbsolutePath
+    dataDirAbsolutePath
   }
 
   private def parseArgs(args: Array[String]): Unit = {

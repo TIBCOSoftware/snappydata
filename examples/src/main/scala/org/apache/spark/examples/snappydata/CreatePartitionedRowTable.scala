@@ -16,7 +16,7 @@
  */
 package org.apache.spark.examples.snappydata
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 
 import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
@@ -200,11 +200,16 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
+    val dataDirAbsolutePath: String = createAndGetDataDir
+
     println("Creating a SnappySession")
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreatePartitionedRowTable")
         .master("local[*]")
+         // sys-disk-dir attribute specifies the directory where persistent data is saved
+        .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
+        .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -213,6 +218,14 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     createPartitionedRowTableUsingSQL(snSession, pw)
     createPartitionedRowTableUsingAPI(snSession, pw)
     pw.close()
+  }
+
+  def createAndGetDataDir: String = {
+    // creating a directory to save all persistent data
+    val dataDir = "./" + "snappydata_examples_data"
+    new File(dataDir).mkdir()
+    val dataDirAbsolutePath = new File(dataDir).getAbsolutePath
+    dataDirAbsolutePath
   }
 
 

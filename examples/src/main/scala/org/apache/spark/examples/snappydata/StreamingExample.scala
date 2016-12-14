@@ -71,11 +71,16 @@ object StreamingExample {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
+    val dataDirAbsolutePath = createAndGetDataDir
+
     println("Initializing a SnappyStreamingContext")
     val spark: SparkSession = SparkSession
         .builder
         .appName(getClass.getSimpleName)
         .master("local[*]")
+        // sys-disk-dir attribute specifies the directory where persistent data is saved
+        .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
+        .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
         .getOrCreate
 
     val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
@@ -167,9 +172,17 @@ object StreamingExample {
     snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
 
     println("Exiting")
-    utils.shutdown()
     snsc.stop(false)
+    utils.shutdown()
     System.exit(0)
+  }
+
+  def createAndGetDataDir: String = {
+    // creating a directory to save all persistent data
+    val dataDir = "./" + "snappydata_examples_data"
+    new File(dataDir).mkdir()
+    val dataDirAbsolutePath = new File(dataDir).getAbsolutePath
+    dataDirAbsolutePath
   }
 
   def publishKafkaMessages(utils: EmbeddedKafkaUtils, topic: String): Unit = {
