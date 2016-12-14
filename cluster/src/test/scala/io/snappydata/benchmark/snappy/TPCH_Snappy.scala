@@ -35,7 +35,8 @@ object TPCH_Snappy {
   }
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy: Boolean, itr : Int = 0, useIndex: Boolean = false, warmup : Integer = 0, runsForAverage :Integer=1, avgPrintStream:PrintStream=null): Unit = {
+      isSnappy: Boolean, itr: Int = 0, useIndex: Boolean = false, warmup: Int = 0,
+      runsForAverage: Int = 1, avgPrintStream: PrintStream = null): Unit = {
 
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
     val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
@@ -731,7 +732,7 @@ object TPCH_Snappy {
         "     and o_orderdate < add_months('1993-07-01',3)" +
         "     and exists (" +
         "         select" +
-        "             *" +
+        "             l_orderkey" +
         "         from" +
         "             LINEITEM" +
         "         where" +
@@ -852,7 +853,7 @@ object TPCH_Snappy {
     //    1. NATION = BRAZIL;
     //    2. REGION = AMERICA;
     //    3. TYPE = ECONOMY ANODIZED STEEL.
-      if(!useIndex) {
+    if (!useIndex) {
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -867,13 +868,13 @@ object TPCH_Snappy {
             "                         n2.n_name as nation" +
             "                 from" +
             "                         LINEITEM," +
+            "                         PART," +
             "                         ORDERS," +
             "                         CUSTOMER," +
             "                         SUPPLIER," +
             "                         NATION n1," +
             "                         REGION," +
-            "                         NATION n2," +
-            "                         PART" +
+            "                         NATION n2" +
             "                 where" +
             "                         p_partkey = l_partkey" +
             "                         and s_suppkey = l_suppkey" +
@@ -890,7 +891,7 @@ object TPCH_Snappy {
             "         o_year" +
             " order by" +
             "         o_year"
-      }else{
+    } else {
         "select" +
             "         o_year," +
             "         sum(case" +
@@ -950,10 +951,10 @@ object TPCH_Snappy {
           "amount" +
           "         from" +
           "                 LINEITEM," +
+          "                 PART," +
           "                 ORDERS," +
           "                 SUPPLIER," +
           "                 NATION," +
-          "                 PART," +
           "                 PARTSUPP" +
           "         where" +
           "                 s_suppkey = l_suppkey" +
@@ -1478,7 +1479,7 @@ object TPCH_Snappy {
         "    o_totalprice" +
         "    order by" +
         "        o_totalprice desc," +
-        "    o_orderdate"
+        "    o_orderdate limit 100"
   }
 
   def getResultString18: String = {
@@ -1633,7 +1634,8 @@ object TPCH_Snappy {
           "         and n_name = 'CANADA'" +
           " order by" +
           "         s_name"
-  }*/
+  }
+  */
 
   def getQuery20_Original(): String = {
     //    1. COLOR = forest.
@@ -1698,7 +1700,7 @@ object TPCH_Snappy {
         "         and l1.l_receiptdate > l1.l_commitdate" +
         "         and exists (" +
         "                 select" +
-        "                         *" +
+        "                         l2.l_orderkey" +
         "                 from" +
         "                         LINEITEM l2" +
         "                 where" +
@@ -1707,7 +1709,7 @@ object TPCH_Snappy {
         "         )" +
         "         and not exists (" +
         "                 select" +
-        "                         *" +
+        "                         l3.l_orderkey" +
         "                 from" +
         "                         LINEITEM l3" +
         "                 where" +
@@ -1721,7 +1723,7 @@ object TPCH_Snappy {
         "         s_name" +
         " order by" +
         "         numwait desc," +
-        "         s_name"
+        "         s_name limit 100"
   }
 
   def getResultString21: String = {
@@ -1740,7 +1742,7 @@ object TPCH_Snappy {
 
   }
 
-  def getQuery22(value:String, useIndex: Boolean): String = {
+  def getQuery22(value: String, useIndex: Boolean): String = {
     if (!useIndex) {
       "select" +
           "         cntrycode," +
@@ -1821,7 +1823,7 @@ object TPCH_Snappy {
       "                 )" +
       "                 and not exists (" +
       "                         select" +
-      "                                 *" +
+      "                                 o_custtkey" +
       "                         from" +
       "                                 ORDERS" +
       "                         where" +

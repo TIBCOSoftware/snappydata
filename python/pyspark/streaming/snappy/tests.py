@@ -32,6 +32,7 @@ from pyspark.streaming.tests import PySparkStreamingTestCase, BasicOperationTest
 from pyspark.streaming.snappy.context import SnappyStreamingContext , SparkConf, SparkContext
 from pyspark.sql.types import *
 from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.types import *
 try:
     import xmlrunner
 except ImportError:
@@ -47,6 +48,7 @@ else:
     import unittest
 
 class SnappyBasicOperationTests(BasicOperationTests):
+
     def setUp(self):
         self.ssc = SnappyStreamingContext(self.sc, self.duration)
 
@@ -60,6 +62,66 @@ class SnappyBasicOperationTests(BasicOperationTests):
                 jStreamingContextOption.get().stop(False)
         except:
             pass
+
+class SnappyProgrammingGuideTests(unittest.TestCase):
+    timeout = 10  # seconds
+    duration = .5
+
+    @classmethod
+    def setUpClass(cls):
+        class_name = cls.__name__
+        conf = SparkConf().set("spark.default.parallelism", 1)
+        cls.sc = SparkContext(appName=class_name, conf=conf)
+        cls.sc.setCheckpointDir("/tmp")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.sc.stop()
+            # Clean up in the JVM just in case there has been some issues in Python API
+        try:
+            jSparkContextOption = SparkContext._jvm.SparkContext.get()
+            if jSparkContextOption.nonEmpty():
+               jSparkContextOption.get().stop()
+        except:
+             pass
+
+    def setUp(self):
+         self.ssc = SnappyStreamingContext(self.sc, self.duration)
+
+    def tearDown(self):
+         if self.ssc is not None:
+            self.ssc.stop(False)
+         # Clean up in the JVM just in case there has been some issues in Python API
+         try:
+            jStreamingContextOption = SnappyStreamingContext._jvm.SparkContext.getActive()
+            if jStreamingContextOption.nonEmpty():
+               jStreamingContextOption.get().stop(False)
+         except:
+            pass
+
+    def test_schema_dstream(self):
+        def rddList(start, end):
+          return self.sc.parallelize(range(start, end)).map(lambda i: (i, "Text" + str(i)))
+
+        def saveFunction(df):
+           df.write.format("column").mode("append").saveAsTable("streamingExample")
+
+        schema = StructType([StructField("loc", IntegerType()),
+                             StructField("text", StringType())])
+
+        snsc = SnappyStreamingContext(self.sc, 1)
+
+        dstream = snsc.queueStream([rddList(1, 10), rddList(10, 20), rddList(20, 30)])
+
+        snsc._snappycontext.dropTable("streamingExample", True)
+        snsc._snappycontext.createTable("streamingExample", "column", schema)
+
+        schemadstream = snsc.createSchemaDStream(dstream, schema)
+        schemadstream.foreachDataFrame(lambda df: saveFunction(df))
+        snsc.start()
+        time.sleep(1)
+
+        snsc.sql("select count(*) from streamingExample").show()
 
 
 class SnappyStreamingListenerTests(StreamingListenerTests):
@@ -143,7 +205,7 @@ class SnappyStreamingContextTests(StreamingContextTests):
         self.ssc.start()
         self.ssc.awaitTermination(2)
         result = SnappyContext(self.sc).sql("select count(*) from testTable").collect()
-        self.assertTrue(result[0]._c0 == 1)
+        self.assertEqual(result[0][0], 1)
 
     def test_text_file_stream(self):
         d = tempfile.mkdtemp()
@@ -382,7 +444,7 @@ class SnappyCheckpointTests(CheckpointTests):
 
 if __name__ == "__main__":
     testcases = [SnappyBasicOperationTests, SnappyWindowFunctionTests, SnappyStreamingContextTests,
-                 SnappyCheckpointTests, SnappyStreamingListenerTests]
+             SnappyCheckpointTests, SnappyStreamingListenerTests, SnappyProgrammingGuideTests]
     sys.stderr.write("Running tests: %s \n" % (str(testcases)))
     failed = False
     for testcase in testcases:

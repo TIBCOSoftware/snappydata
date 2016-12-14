@@ -38,12 +38,11 @@ import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, 
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{r, _}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
-import org.apache.spark.sql.{SnappyAggregation, SnappySession}
-import org.apache.spark.{Dependency, Partition, ShuffleDependency, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, ShuffleDependency, SparkEnv, TaskContext}
 
 /**
  * :: DeveloperApi ::
@@ -61,7 +60,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan,
-    val replicatedTableJoin: Boolean)
+    replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "LocalJoin"
@@ -110,32 +109,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    val numOutputRows = longMetric("numOutputRows")
-    val buildDataSize = longMetric("buildDataSize")
-    val buildTime = longMetric("buildTime")
-
-    // materialize dependencies in the entire buildRDD graph for
-    // buildRDD.iterator to work in the compute of mapPartitionsPreserve below
-    if (buildRDD.partitions.size == 1) {
-      materializeDependencies(buildRDD, new mutable.HashSet[RDD[_]]())
-      val schema = buildPlan.schema
-      streamRDD.mapPartitionsPreserveWithPartition { (context, split, itr) =>
-        val start = System.nanoTime()
-        val hashed = HashedRelationCache.get(schema, buildKeys, buildRDD,
-          buildRDD.partitions(0), context)
-        buildTime += (System.nanoTime() - start) / 1000000L
-        val estimatedSize = hashed.estimatedSize
-        buildDataSize += estimatedSize
-        context.taskMetrics().incPeakExecutionMemory(estimatedSize)
-        context.addTaskCompletionListener(_ => hashed.close())
-        join(itr, hashed, numOutputRows)
-      }
-    } else {
-      streamRDD.zipPartitions(buildRDD) { (streamIter, buildIter) =>
-        val hashed = buildHashedRelation(buildIter)
-        join(streamIter, hashed, numOutputRows)
-      }
-    }
+    WholeStageCodegenExec(this).execute()
   }
 
   private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {
@@ -362,7 +336,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val relationTerm = ctx.freshName("relation")
     val relationIsUnique = ctx.freshName("keyIsUnique")
     val buildRDDRef = ctx.addReferenceObj("buildRDD", buildRDD)
-    if (buildRDD.partitions.size == 1) {
+    if (buildRDD.partitions.length == 1) {
       val buildPartRef = ctx.addReferenceObj("buildPartition", buildRDD.partitions(0))
       ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
         prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))
@@ -386,7 +360,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   private def doConsumeOptimized(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
-    val evaluatedInputVars = evaluateVariables(input)
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
@@ -411,14 +384,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    val mapAccesCode = mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
+    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, joinType)
-    s"""
-       $evaluatedInputVars
-       $mapAccesCode
-     """
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
@@ -525,21 +494,17 @@ case class LocalJoin(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): Option[ExprCode] = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
     case Some(expr) =>
       // evaluate the variables from build side that used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
-      ctx.currentVars = input ++ buildVars
+      ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      Some(ev.copy(code =
-          s"""
-            $eval
-            ${ev.code}
-          """))
-    case None => None
+      (Some(ev), eval)
+    case None => (None, "")
   }
 
   /**

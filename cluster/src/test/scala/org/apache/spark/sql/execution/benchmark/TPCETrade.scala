@@ -382,7 +382,7 @@ object TPCETradeTest extends Logging {
         doGC()
       }
       def cleanup(): Unit = {
-        SnappySession.clearPlanCache()
+        SnappySession.clearAllCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
       }
