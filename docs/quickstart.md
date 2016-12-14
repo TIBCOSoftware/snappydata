@@ -32,6 +32,7 @@ $ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
 All SnappyData metadata as well persistent data will be stored in the directory "quickstartdatadir".
 
+<a id="Start_quickStart"></a>
 In this quick start we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row oriented tables, querying and updating these tables. 
 
 Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](programming_guide.md#ddl). 
