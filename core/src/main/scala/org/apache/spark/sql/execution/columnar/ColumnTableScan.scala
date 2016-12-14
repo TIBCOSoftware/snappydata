@@ -661,6 +661,7 @@ private[sql] final case class ColumnTableScan(
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     var jtDecl = s"final $jt $col;"
+    val nullVar = ctx.freshName("nullVal")
     val colAssign = sqlType match {
       case DateType => s"$col = $decoder.readDate($buffer, $cursorVar);"
       case TimestampType =>
@@ -683,9 +684,14 @@ private[sql] final case class ColumnTableScan(
             """.stripMargin
         dictionaryAssignCode =
             s"$dictIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);"
+        val nullCheckAddon =
+          if (notNullVar != null) s"if ($notNullVar < 0) $nullVar = $col == null;\n"
+          else ""
         assignCode =
-          s"$dictionary != null ? $dictionary[$dictIndex] " +
-              s": $decoder.readUTF8String($buffer, $cursorVar)"
+          s"($dictionary != null ? $dictionary[$dictIndex] " +
+              s": $decoder.readUTF8String($buffer, $cursorVar));\n" +
+              s"$nullCheckAddon"
+
         s"$dictionaryAssignCode\n$col = $assignCode;"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
@@ -705,7 +711,6 @@ private[sql] final case class ColumnTableScan(
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
     if (notNullVar != null) {
-      val nullVar = ctx.freshName("nullVal")
       // For ResultSets wasNull() is always a post-facto operation
       // i.e. works only after get has been invoked. However, for column
       // table buffers as well as UnsafeRow adapter, this is not the case

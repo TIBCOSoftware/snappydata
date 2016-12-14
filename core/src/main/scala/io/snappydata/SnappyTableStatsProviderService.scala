@@ -203,7 +203,6 @@ object SnappyTableStatsProviderService extends Logging {
     }
   }
 
-
   def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
     val snc = this.snc
     if (snc == null) return Map.empty
@@ -211,14 +210,14 @@ object SnappyTableStatsProviderService extends Logging {
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     if (!doRun) return Map.empty
     // val samples = getSampleTableList(snc)
-    serverStats.foreach(stat => {
-      val oldRecord = aggregatedStats.get(stat.getRegionName)
-      if (oldRecord.isDefined) {
-        aggregatedStats.put(stat.getRegionName, oldRecord.get.getCombinedStats(stat))
-      } else {
-        aggregatedStats.put(stat.getRegionName, stat)
+    serverStats.foreach { stat =>
+      aggregatedStats.get(stat.getRegionName) match {
+        case Some(oldRecord) =>
+          aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
+        case None =>
+          aggregatedStats.put(stat.getRegionName, stat)
       }
-    })
+    }
     Utils.immutableMap(aggregatedStats)
   }
 
