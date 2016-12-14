@@ -26,4 +26,6 @@ trait ToolsCallback {
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       numPartitions: Int, numBuckets: Int): Partitioning
+
+  def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
 }
