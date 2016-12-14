@@ -40,6 +40,7 @@ The data pipeline involving analytics while streams are being ingested and subse
 ## Hybrid Cluster Manager
 
 Spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a singleton (SparkContext) object which it uses to communicate with its set of executors. This is represented in the following figure.
+
 ![Hybrid Cluster](Images/hybrid_cluster.png)
 
 While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, SnappyData must meet the following additional requirements as an operational database.
