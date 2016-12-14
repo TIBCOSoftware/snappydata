@@ -1,9 +1,10 @@
 #Overview
 The following installation options are available:
 
-* [Install On Premise](#nstall-on-premise)
-* [Setting up Cluster on AWS](#setting-up-cluster-on-aws)
+* [Install On Premise](#install-on-premise)
+* [Setting up Cluster on Amazon Web Services (AWS)](#setting-up-cluster-on-amazon-web-services-aws)
 * [Setting up Cluster on Azure](#setting-up-cluster-on-azure)
+* [Setting up Cluster with Docker Images](#setting-up-cluster-with-docker-images)
 * [Building from Source](#building-from-source)
 
 
@@ -13,7 +14,7 @@ SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With On-premi
 ### Prerequisites
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the _JAVA_HOME_ environment variable is set on each computer.
 
-##Download SnappyData
+### Download SnappyData
 Download the latest version of SnappyData from the [SnappyData Release](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
@@ -95,9 +96,35 @@ $ bin/snappy-shell locator stop
 $ bin/snappy-shell server stop
 ``` 
 
-## Setting up Cluster on AWS
+## Setting up Cluster on Amazon Web Services (AWS)
 
-<Note> Note: The EC2 script is still under development. Feel free to try it out and provide your feedback.</Note>
+
+### Using AWS Management Console
+
+You can launch SnappyData cluster on EC2 instance(s) using the AMI provided by SnappyData in AWS Marketplace.
+If you are new to launching EC2 instances, please refer to this [AWS documentation page](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html) before proceeding further.
+
+Here, we describe how you can find the SnappyData AMI on AWS Marketplace, launch your instance with the AMI and start SnappyData cluster on it.
+
+* Log in to the AWS Web console using your AWS account-specific login url and go to the EC2 dashboard.
+
+* Select the AWS Region where you want to launch the instances and click on the 'Launch Instance' button.
+
+* On the next (**Choose an Amazon Machin Image (AMI)**) page, select **Community AMIs** tab from the left pane, and enter 'SnappyData' in the search text box.
+
+* You may see multiple AMIs listed which match 'SnappyData'. Select the AMI with latest SnappyData release version.
+>The name of the SnappyData AMIs start with 'SnappyData' followed by a release version and (optionally) other details.
+
+* On the next (**Choose an Instance Type**) page, select the instance type as per the requirement of your usecase.
+>Here, you can either go directly to the review page by clicking on the **Review and Launch** button and launch the instance with default configurations or to the configuration page by clicking on **Next: Configure Instance Details** button where you can do more customizations.
+
+* Once you have created and launched the instance with the SnappyData AMI, you can find its public hostname or IP address on the EC2 dashboard's Instances tab. Connect to it via ssh using the private key file of the Key Pair the instance was launched with.
+><Note> Note: Each of your instances launched here already has the SnappyData binaries downloaded and extracted under the location /snappydata/downloads/. It also has the Java 8 installed.</Note>
+
+* The next steps are similar to the ones which describe on-premise installation of SnappyData, except that you do not have to download the SnappyData binaries and Java 8. These steps are [described here](#install-on-premise).
+
+
+### Using SnappyData EC2 Scripts
 
 The `snappy-ec2` script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
 
@@ -105,8 +132,10 @@ The `snappy-ec2` script has been derived from the `spark-ec2` script available i
 
 The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a [**.tar.gz**](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
 
+<Note> Note: The EC2 script is under development. Feel free to try it out and provide your feedback.</Note>
 
-###Prerequisites
+
+#### Prerequisites
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources
 
@@ -123,9 +152,9 @@ If you already have set up the AWS Command Line Interface on your local machine,
 * Ensure Python v 2.7 or later is installed on your local computer.
 
 
-### Cluster Management
+#### Cluster Management
 
-####Launching SnappyData Cluster
+##### Launching SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
 
@@ -153,7 +182,7 @@ The examples below assume that you have the key file (my-ec2-key.pem) in your ho
 ```
 To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
 
-####Specifying Properties
+##### Specifying Properties
 
 If you want to configure each of the locator, lead or servers with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuration/#configuration-files) for example on how to write these conf files.
 
@@ -181,14 +210,14 @@ When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/hom
 
 The script also reads **snappy-env.sh**, if present in this location.
 
-####Stopping a Cluster
+##### Stopping a Cluster
 
 When you stop a cluster, it shuts down the EC2 instances and any data saved on its local instance stores is lost. However, the data saved on EBS volumes, if any, is retained unless the spot-instances were used.
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 ````
 
-####Starting a Cluster
+##### Starting a Cluster
 
 When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
 ````
@@ -196,11 +225,11 @@ When you start a cluster, it uses the existing EC2 instances associated with the
 ````
 <Note>Note: The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case, if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
 </Note>
-####Adding Servers to  a Cluster
+##### Adding Servers to  a Cluster
 
 This is not yet fully supported via the script. You may have to manually launch an instance with `(cluster-name)-stores` group and then use launch command with --resume option.
 
-####Listing Members of a Cluster
+##### Listing Members of a Cluster
 
 **To get the first locator's hostname:**
 ````
@@ -208,7 +237,7 @@ This is not yet fully supported via the script. You may have to manually launch 
 ````
 **To get the first lead's hostname, use get-lead command:**
 
-####Connecting to a Cluster
+##### Connecting to a Cluster
 
 You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. From there, you can SSH to any other member of the cluster without password.
 The SnappyData product directory is located under /home/ec2-user/snappydata/ on all the members.
@@ -216,7 +245,7 @@ The SnappyData product directory is located under /home/ec2-user/snappydata/ on 
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ````
 
-####Destroying a Cluster
+##### Destroying a Cluster
 
 Destroying a cluster destroys all the data on the local instance stores as well as on the attached EBS volumes permanently.
 ````
@@ -224,14 +253,14 @@ Destroying a cluster destroys all the data on the local instance stores as well 
 ````
 This retains the security groups created for this cluster. To delete them as well, use it with --delete-group option.
 
-####Starting Cluster with Apache Zeppelin
+##### Starting Cluster with Apache Zeppelin
 
 Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. You can start it either on a lead node's instance (`--with-zeppelin=embedded`)  or on a separate instance (`--with-zeppelin=non-embedded`).
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin=embedded launch cluster-name
 ````
 
-####More options
+#### More options
 
 For a complete list of options this script has, run `./snappy-ec2`. The options are also provided below for quick reference.
 ````
