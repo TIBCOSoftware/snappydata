@@ -787,6 +787,39 @@ Usage SnappySession.delete(): Delete all rows in table that match passed filter 
     snappy.delete(tableName, "ITEMREF = 3")
 ```
 
+#### String / Char / Varchar Datatypes
+SnappyData supports Char and Varchar datatypes in addition to Spark's String data type. For performance reasons, it is recommended that you use Char / Varchar type, if your column data fits in maximum Char / Varchar column size (32768). For larger data, String type can be used as it stores data in Clob format internally.
+
+Create a table that uses Char/Varchar using SQL:
+```Scala
+CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
+```
+
+Create a table that uses Char/Varchar using API:
+
+```Scala
+    import org.apache.spark.sql.collection.Utils
+    import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+
+    val snappy: SnappySession = new SnappySession(spark.sparkContext)
+    
+    // define schema for table
+    val varcharSize = 100
+    val charSize = 25
+    val schema = StructType(Array(
+      StructField("col_varchar", StringType, false, Utils.varcharMetadata(varcharSize)),
+      StructField("col_char", StringType, false, Utils.charMetadata(charSize))
+    ))
+    
+    // create the table
+    snappy.createTable(tableName, "row", schema, Map.empty[String, String])
+```
+
+If a String type is used for a column, the query engine will return the data in varchar format to ensure optimal performance for select queries executed using SnappySession. However user can use a queryhint if the data is desired in Clob format (or is larger that max Char/Varchar size).
+
+
+
+
 #### Row Buffers for Column Tables
 
 Generally, the Column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
