@@ -39,9 +39,11 @@ private[sql] final case class RowTableScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Option[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation]) {
+      partitionColumns, partitionColumnAliases,
+      baseRelation.asInstanceOf[BaseRelation]) {
 
   override def doProduce(ctx: CodegenContext): String = {
     // a parent plan may set a custom input (e.g. LocalJoin)
