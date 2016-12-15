@@ -136,9 +136,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
 
   /**
-   * Return if the partitioning is a subset of given join keys, and if so
-   * then return the subset as well as the indices of subset keys in the
-   * join keys (in order)
+   * Optionally return result if partitioning is a subset of given join keys,
+   * and if so then return the subset as well as the indices of subset keys
+   * in the join keys (in order).
    */
   private def getSubsetAndIndices(part: Partitioning,
       keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = part match {
