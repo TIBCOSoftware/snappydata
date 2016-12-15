@@ -142,7 +142,7 @@ To launch the instance and start SnappyData cluster:
 13. Follow the [steps described here](#i) to continue. </br>
 
 
-
+<a id="EC2"></a>
 ### Using SnappyData EC2 Scripts
 
 The `snappy-ec2` script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.
@@ -455,11 +455,11 @@ The above aliases can serve as useful shortcuts to pull and push all projects fr
 
 ### Building
 
-Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include addition of gradle build scripts to allow building them independently as well as a subproject of snappydata. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The gradlew wrapper script will download all the other build dependencies as required.
+Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include addition of Gradle build scripts to allow building them independently as well as a subproject of snappydata. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The gradlew wrapper script will download all the other build dependencies as required.
 
 If a user does not want to deal with submodules and only work on snappydata project, then can clone only the snappydata repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.
 
-If working on all the separate projects integrated inside the top-level snappydata clone, the gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The _spark_ and _store_ submodules can also be built and published independently.
+If working on all the separate projects integrated inside the top-level snappydata clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The _spark_ and _store_ submodules can also be built and published independently.
 
 Useful build and test targets:
 ```
@@ -484,7 +484,7 @@ Useful build and test targets:
 
 The default build directory is _build-artifacts/scala-2.11_ for projects. Exception is _store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
 
-The usual gradle test run targets (_test_, _check_) work as expected for junit tests. Separate targets have been provided for running scala tests (_scalaTest_) while the _check_ target will run both the junit and scalatests. One can run a single scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
+The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running scala tests (_scalaTest_) while the _check_ target will run both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 
 ```sh
 > ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
@@ -494,32 +494,44 @@ The usual gradle test run targets (_test_, _check_) work as expected for junit t
 Running individual tests within some suite works using the _--tests_ argument.
 
 
-### Setting up Intellij with gradle
+## Setting up Intellij with Gradle
 
-Intellij is the IDE commonly used by the snappydata developers. Those who really prefer Eclipse can try the scala-IDE and gradle support, but has been seen to not work as well (e.g. gradle support is not integrated with scala plugin etc).  To import into Intellij:
+Intellij is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support, but has been seen to not work as well (e.g. Gradle support is not integrated with Scala plugin etc).  
 
-- Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in _spark_.
+To import into Intellij:
 
-- Select import project, then point to the snappydata directory. Use external Gradle import. When using JDK 7, add _-XX:MaxPermSize=350m_ to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore _"Gradle location is unknown warning"_. Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the _"Unindexed remote maven repositories found"_ warning message, if seen.
+* Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.
 
-- Once import finishes, go to _File->Settings->Editor->Code Style->Scala_. Set the scheme as _Project_. Check that the same has been set in Java Code Style too. Then OK to close it. Next copy _codeStyleSettings.xml_ in snappydata top-level directory to .idea directory created by Intellij. Check that settings are now applied in _File->Settings->Editor->Code Style->Java_ which should show Indent as 2 and continuation indent as 4 (same for Scala).
+* Select **Import Project**, and then point to the SnappyData directory. Use external Gradle import. When using JDK 7, add **-XX:MaxPermSize=350m** to VM options in global Gradle settings. Select the default values, and click **Next** in the following screens.<br/> 
+<note> Note:</note> 
 
-- If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
+	- <note>Ignore the **"Gradle location is unknown warning"**.</note> 
+	- <note>Ensure that a JDK 7/8 installation has been selected.</note> 
+	- <note>Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message, if seen.</note>
 
-- Generate avro and GemFireXD required sources by expanding: _snappydata_2.11->Tasks->other_. Right click on _generateSources_ and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if _./gradlew clean_ has been run, or you have made changes to _javacc/avro/messages.xml_ source files. *If you get unexpected _"Database not found"_ or _NullPointerException_ errors in GemFireXD layer, then first thing to try is to run the _generateSources_ target again.*
+* When import is completed, go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by Intellij. Check that settings are now applied in **File> Settings> Editor> Code Style> Java** which should display Indent as 2 and continuation indent as 4 (same as Scala).
 
-- Increase the compiler heap sizes or else the build can take quite long especially with integrated _spark_ and _store_. In _File->Settings->Build, Execution, Deployment->Compiler increase _, _Build process heap size_ to say 1536 or 2048. Similarly increase JVM maximum heap size in _Languages & Frameworks->Scala Compiler Server_ to 1536 or 2048.
+* If the Gradle tab is not visible immediately, then select it from window list pop-up at the left-bottom corner of IDE. If you click on that window list icon, then the tabs is displayed permanently.
 
-- Test the full build.
+* Generate avro and GemFireXD required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The Run item may not be available if indexing is still in progress, so wait for it to complete. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if **./gradlew clean** has been run, or you have made changes to **javacc/avro/messages.xml** source files. 
 
-- For JDK 7: _Open Run->Edit Configurations_. Expand Defaults, and select Application. Add _-XX:MaxPermSize=350m_ in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.
+* If you get unexpected **"Database not found"** or **NullPointerException** errors in GemFireXD layer, then first thing to try is to run the **generateSources** target again.*
 
-- For JUnit configuration also append _/build-artifacts_ to the working directory i.e. the directory should be _\$MODULE_DIR\$/build-artifacts_. Likewise change working directory for ScalaTest to be inside _build-artifacts_ otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
+* Increase the compiler heap sizes or else the build can take quite long especially with integrated **spark** and **store**. In **File> Settings> Build, Execution, Deployment> Compiler increase**, **Build process heap size** to say 1536 or 2048. Similarly increase JVM maximum heap size in **Languages & Frameworks> Scala Compiler Server** to 1536 or 2048.
+
+* Test the full build.
+
+* For JDK 7: **Open Run> Edit Configurations**. Expand **Defaults**, and select **Application**. Add **-XX:MaxPermSize=350m** in the VM options. Similarly, add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.
+
+* For JUnit configuration also append **/build-artifacts** to the working directory. That is, the directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise change working directory for ScalaTest to be inside **build-artifacts** otherwise all intermediate log and other files (especially created by GemFireXD) pollutes the source tree and may need to be cleaned manually.
 
 
-### Running a scalatest/junit
+## Running a ScalaTest/JUnit
 
-Running scala/junit tests from Intellij should be straightforward -- just ensure that MaxPermSize has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.
-- When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that can start building the project again and won't be cleanly integrated with Intellij. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).
-- For JUnit tests, ensure that working directory is _\$MODULE_DIR\$/build-artifacts_ as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in tests. They will also pollute the checkouts with log files etc, so this will allow those to go into build-artifacts that is easier to clean. For that reason is may be preferable to do the same for scalatests.
-- Some of the tests use data files from the _tests-common_ directory. For such tests, run the gradle task _snappydata_2.11->Tasks->other->copyResourcesAll_ to copy the resources in build area where Intellij runs can find it.
+Running Scala/JUnit tests from Intellij is straightforward. Ensure that **MaxPermSize** has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.
+
+* When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise an external Gradle process is launched that can start building the project again and won't be cleanly integrated with Intellij. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).
+
+* For JUnit tests, ensure that working directory is **\$MODULE_DIR\$/build-artifacts** as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in tests. They also pollutes the files etc, so when launched this will allow those to go into build-artifacts that is easier to clean. For that reason it may be preferable to do the same for ScalaTests.
+
+* Some of the tests use data files from the **tests-common** directory. For such tests, run the Gradle task **snappydata_2.11> Tasks> other> copyResourcesAll** to copy the resources in build area where Intellij runs can find it.
