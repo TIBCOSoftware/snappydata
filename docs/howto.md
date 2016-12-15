@@ -12,7 +12,7 @@ You can run the examples in any of the following ways:
 
 * **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples runs collocated with Spark+SnappyData Store in the same JVM. 
 
-* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData [job](#howto-job). In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
+* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
 
 <Note> Note: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.</note>
 
@@ -25,7 +25,7 @@ The following topics are covered in this section:
 * [How to Create Column Tables and Run Queries](#howto-column)
 * [How to Load Data in SnappyData Tables](#howto-load)
 * [How to perform a Collocated Join](#howto-collacatedJoin)
-* [How to Connect using JDBC Driver and Run Queries](#howto-jdbc)
+* [How to Connect using JDBC Driver](#howto-jdbc)
 * [How to Store and Query JSON Objects](#howto-JSON)
 * [How to Store and Query Objects](#howto-objects)
 * [How to Use Stream Processing with SnappyData](#howto-streams)
@@ -79,7 +79,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://leadHostname:4040` in browser (replace **leadHostName** by the host name of your lead node). Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where **leadHostname** is the host name of your lead node). Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -95,7 +95,9 @@ The SnappyData Locator has stopped.
 To start the cluster on multiple hosts:
 
 1. Easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
-2. Create the configuration files **conf/servers**, **conf/locators**, **conf/leads** and mention the host names on which to start the server, locators, lead respectively. The packages template files (e.g. conf/servers.template) can be copied.
+
+2. In the **conf** folder, create the configuration files **servers.template**, **locators.template**, **leads.template**. Edit the files to include the host names on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, **conf/servers.template)**.
+
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
 <Note> Note: It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install/#install-on-premise) and [cluster configuration](configuration).
@@ -105,9 +107,9 @@ To start the cluster on multiple hosts:
 ## How to Run Spark Code inside the Cluster
 A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
-**Implementing a Job** 
-
-A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create table, load data, execute queries using the SnappySession. Any of the Spark APIs can be invoked by a SnappyJob.
+**Implementing a Job** : 
+A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create table, load data, execute queries using the SnappySession. <br/>
+Any of the Spark APIs can be invoked by a SnappyJob.
 
 ```
 class CreatePartitionedRowTable extends SnappySQLJob {
@@ -116,15 +118,15 @@ class CreatePartitionedRowTable extends SnappySQLJob {
 
   /**
   SnappyData calls this function to validate the job input and reject invalid job requests.
-  You can implement custom validations here, for example, validating that config parameters
+  You can implement custom validations here, for example, validating the configuration parameters
   **/
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 }
 ```
 
-**Dependencies**
-
+**Dependencies**:
 To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.
+
 Example Maven dependency:
 ```
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
@@ -141,12 +143,11 @@ Example SBT dependency:
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
 ```
 
-**Running the Job**
-
-Once you create a jar for SnappyData job, use `bin/snappy-job.sh` to submit the job to SnappyData cluster and run the job. This is similar to Spark-submit for any spark application. 
+**Running the Job**: 
+Once you create a jar file for SnappyData job, use `bin/snappy-job.sh` to submit the job to SnappyData cluster and run the job. This is similar to Spark-submit for any Spark application. 
 
 For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command.
-Here **quickstart.jar** contains the program and is bundled in the product distribution.
+Here **quickstart.jar** contains the program and is bundled in the product distribution.<br/>
 For example: The command submits the job and runs it as:
 
 ```
@@ -159,7 +160,7 @@ For example: The command submits the job and runs it as:
     --lead [leadHost:port]
 ```
 
-It returns output similar to:
+**Output**: It returns output similar to:
 
 ```
 {
@@ -171,27 +172,26 @@ It returns output similar to:
 }
 ```
 
-You can check the status of the job using the job id listed above:
+**Check Status**: You can check the status of the job using the Job ID listed above:
 
 ```
 bin/snappy-job.sh status -lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
-Refer to the [Building Snappy applications using Spark API](./jobs) section of the documentation for more details.
+Refer to the [Building Snappy applications using Spark API](programming_guide.md#building-snappydata-applications-using-spark-api) section of the documentation for more details.
 
 
 <a id="howto-splitmode"></a>
 ## How to Access SnappyData store from an Existing Spark Installation using Smart Connector
 
-SnappyData comes with a smart connector for Spark applications to work with the SnappyData cluster from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.
+SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.
 
-For more information on this mode, refer to the [deployment](deployment#snappydata-smart-connector-mode) section of documentation
+For more information on the various modes, refer to the [SnappyData Smart Connector](deployment#snappydata-smart-connector-mode) section of the documentation.
 
 **Code Example:**
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
-**Configure a SnappySession**
-
+**Configure a SnappySession**: 
 The code below shows how to initialize a SparkSession. Here the property `snappydata.store.locators` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.
 
 ```
@@ -208,8 +208,7 @@ The code below shows how to initialize a SparkSession. Here the property `snappy
 
 ```
 
-**Create Table and run Queries**
-
+**Create Table and Run Queries**: 
 You can now create tables and run queries in SnappyData store using you Apache Spark program
 
 ```
@@ -230,11 +229,10 @@ You can now create tables and run queries in SnappyData store using you Apache S
 
 
 <a id="howto-snappyShell"></a>
-## How to Use snappy SQL shell (snappy-shell)
+## How to Use SnappyData SQL shell (snappy-shell)
 `snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
 
-**Connect to a SnappyData Cluster **
-
+**Connect to a SnappyData Cluster **: 
 Use the `snappy-shell` and `connect client` command on the Snappy Shell.
 
 ```
@@ -244,7 +242,7 @@ snappy> connect client 'locatorHostName:1527';
 
  **1527** is the default port on which locatorHost listens for connections. 
 
-Once connected you can execute SQL queries using `snappy-shell`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-shell`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
@@ -263,8 +261,7 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 
 ```
 
-**View the members of cluster** 
-
+**View the members of cluster**: 
 Use the `show members` command
 ```
 snappy> show members;
@@ -278,8 +275,7 @@ localhost(21262)<v0>:22770    |localhost                     |locator(normal)   
 
 ```
 
-**View the list tables in a schema**
-
+**View the list tables in a schema**: 
 Use `show tables in <schema>` command
 ```
 snappy> show tables in app;
@@ -317,8 +313,7 @@ The code snippet below shows how to create a replicated row table using API.
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**Create the table using API**
-
+**Create the Table using API**:
 First we define the table schema and then create the using createTable API
 
 ```
@@ -339,8 +334,7 @@ First we define the table schema and then create the using createTable API
     snSession.createTable("SUPPLIER", "row", schema, props1)
 ```
 
-**Creating a row table using SQL**
-
+**Creating a Row table using SQL**:
 The same table can be created using SQL as shown below:
 ```
     // First drop the table if it exists
@@ -382,7 +376,7 @@ For example:
 ```    
     snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 ```
-**To print the contents of the SUPPLIER table after update**
+**To print contents of the SUPPLIER table after update**
 
 ```
     tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
@@ -411,7 +405,7 @@ Full source code for example to create and perform operations on column table ca
 
 ###Create a Column Table using DataFrame API
 
-The code snippet below shows how to create a column table using Dataframe API.
+The code snippet below shows how to create a column table using DataFrame API.
 
 **Get a SnappySession**:
 
@@ -469,7 +463,7 @@ The same table can be created using SQL as shown below:
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
-You can execute select queries on column table, join the column table with other tables and append data to it.
+You can execute selected queries on a column table, join the column table with other tables, and append data to it.
 
 <a id="howto-load"></a>
 ## How to Load Data in SnappyData Tables
@@ -521,7 +515,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 **Inferring schema from data file**
 
-A schema for the table can be inferred from the data file. In this case, you need not create a table before loading the data. In the code snippet below, we create a DataFrame for a Parquet file and then use saveAsTable API to create a table with data loadedfrom it
+A schema for the table can be inferred from the data file. In this case, you do not need to create a table before loading the data. In the code snippet below, we create a DataFrame for a Parquet file and then use saveAsTable API to create a table with data loaded from it.
 ```
     val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
     // props1 map specifies the properties for the table to be created
@@ -549,12 +543,14 @@ The source code to load the data from a CSV/Parquet files is in [CreateColumnTab
 <a id="howto-collacatedJoin"></a>
 ## How to Perform a Collocated Join
 
-When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Collocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
-When collocated tables are joined on the partitioning columns, the join happens locally on the node where data is present without the need of shuffling the data.
+When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Collocating the data of two tables based on a partitioning column's value is a best practice, if you frequently perform queries on those tables that join on that column.
+When collocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
 
 **Code Example: ORDERS table is collocated with CUSTOMER table**
 
-A partitioned table can be collocated with another partitioned table by using "COLOCATE_WITH" with attribute in the table options. For example, in the code snippet below ORDERS table is collocated with CUSTOMER table. The complete source for this example can be found in file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+A partitioned table can be collocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
+For example, in the code snippet below, the ORDERS table is collocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+
 **Get a SnappySession**:
 
 ```
@@ -598,7 +594,7 @@ A partitioned table can be collocated with another partitioned table by using "C
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
-**Perform a collocate join: **
+**Perform a Collocate join: **
 
 ```
     // Selecting orders for all customers
@@ -609,11 +605,12 @@ A partitioned table can be collocated with another partitioned table by using "C
 <a id="howto-jdbc"></a>
 ## How to Connect using JDBC Driver
 
-You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which the driver automatically connects to one of the servers.
+You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 
 **To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
 
-**Code Example: Connect to a SnappyData cluster using JDBC on default client port**
+**Code Example: **
+**Connect to a SnappyData cluster using JDBC on default client port**
 
 The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
 ```
@@ -646,7 +643,7 @@ preparedStmt1.close()
 ```
 
 <a id="howto-JSON"></a>
-## How to Store and Query JSON objects
+## How to Store and Query JSON Objects
 
 You can insert JSON data in SnappyData tables and execute queries on the tables.
 
@@ -667,7 +664,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**Create a DataFrame from the JSON file**
+**Create a DataFrame from the JSON file**:
 
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
@@ -676,10 +673,10 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
     people.printSchema()
 ```
 
-**Create a SnappyData table and insert the JSON data in it using the DataFrame**
+**Create a SnappyData table and insert the JSON data in it using the DataFrame**:
 
 ```
-    //Drop the table if it exists.
+    //Drop the table if it exists
     snSession.dropTable("people", ifExists = true)
 
    //Create a columnar table with the Json DataFrame schema
@@ -689,11 +686,11 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
       options = Map.empty[String,String],
       allowExisting = false)
 
-    // Write the created DataFrame to the columnar table.
+    // Write the created DataFrame to the columnar table
     people.write.insertInto("people")
 ```
 
-**Append more data from a second JSON file**
+**Append more data from a second JSON file**:
 
 ```
     // Append more people to the column table
@@ -735,7 +732,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 <a id="howto-objects"></a>
 ## How to Store and Query Objects
 
-You can use domain object to load the data into SnappyData tables and select the data by executing queries against the table.
+You can use domain object to load data into SnappyData tables and select the data by executing queries against the table.
 
 **Code Example: Insert Person object into the column table**
 
@@ -753,8 +750,7 @@ The code snippet below inserts Person objects into a column table. The source co
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**Create DataFrame objects**
-
+**Create DataFrame objects**:
 ```
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
@@ -764,8 +760,7 @@ The code snippet below inserts Person objects into a column table. The source co
     val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
 ```
 
-**Create a SnappyData table and insert data into it***
-
+**Create a SnappyData table and insert data into it**:
 
 ```
     //Drop the table if it exists.
@@ -790,7 +785,7 @@ The code snippet below inserts Person objects into a column table. The source co
     morePeople.write.insertInto("people")
 ```
 
-**Execute query on the table and return results**
+**Execute query on the table and return results**:
 
 ```
     // Query it like any other table
@@ -800,7 +795,7 @@ The code snippet below inserts Person objects into a column table. The source co
     val allPersons = nameAndAddress.collect.map(row => {
       Person(row(0).asInstanceOf[String],
         Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct is returned as a Row.
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
           row(1).asInstanceOf[Row](1).asInstanceOf[String]
         )
       )
@@ -809,15 +804,13 @@ The code snippet below inserts Person objects into a column table. The source co
 
 <a id="howto-streams"></a>
 ## How to Use Stream Processing with SnappyData
-SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming refer to [documentation](programming_guide/#stream-processing-using-sql)
+SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the [documentation](programming_guide/#stream-processing-using-sql).
 
-**Code Example**
+**Code Example**: 
+Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below shows how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
 
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below show how to declare a stream table, register continuos queries(CQ) and update SnappyData table using the stream data.
-
-**First get a SnappySession and a SnappyStreamingContext**
-
-Here SnappyStreamingContext is initialized with batch duration of 1 second.
+**First get a SnappySession and a SnappyStreamingContext**: 
+Here SnappyStreamingContext is initialized in batch duration of one second.
 ```
     val spark: SparkSession = SparkSession
         .builder
@@ -828,7 +821,7 @@ Here SnappyStreamingContext is initialized with batch duration of 1 second.
     val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 ```
 
-The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes this message and updates a table based on the stream data.
+The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.
 
 The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.
 ```
@@ -919,14 +912,12 @@ snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").s
 ```
 
 <a id="howto-sde"></a>
-## How to Use Synopsis Data Engine to Run Approaximate Queries
+## How to Use Synopsis Data Engine to Run Approximate Queries
 
-Synopsis Data Engine(SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time.
-
-For details on how SDE works refer to [SDE documentation](programming_guide/#tables-in-snappydataaqp)
+Synopsis Data Engine (SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire Dataset. The approach trades off query accuracy for fast response time.
+For more information on  SDE, refer to [SDE documentation](programming_guide/#tables-in-snappydataaqp).
 
 **Code Example:**
-
 The complete code example for SDE is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
 **First get a SnappySession**
@@ -943,7 +934,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
 **The base column table(AIRLINE) is created from temporary parquet table as follows:**
 
 ```
-    // create temporary staging table to load parquet data
+    // Create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINE " +
         "USING parquet OPTIONS(path " + s"'${dataFolder}/airlineParquetData')")
 
@@ -957,9 +948,8 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
         "ArrDelaySlot FROM STAGING_AIRLINE)")
 ```
 
-**Create a sample table for the above base table**
-
-Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For full details of various options related to Synopsis Data Engine refer to the [documentation](/aqp/#working-with-stratified-samples)
+**Create a sample table for the above base table**:
+Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the [SDE documentation](/aqp/#working-with-stratified-samples).
 
 
 ```
@@ -974,8 +964,7 @@ Attribute 'qcs' in the statement below specifies the columns used for stratifica
         "NASDelay, SecurityDelay, LateAircraftDelay, ArrDelaySlot FROM AIRLINE)")
 ```
 
-**Execute queries that return approaximate results using sample tables**
-
+**Execute queries that return approximate results using sample tables**:
 The query below returns airlines by number of flights in descending order. The 'with error 0.20' clause in the query below signals query engine to execute the query on the sample table instead of the base table and maximum 20% error is allowed.
 
 ```
@@ -987,8 +976,8 @@ The query below returns airlines by number of flights in descending order. The '
     result.foreach(r => println(r(0) + ", " + r(1) + ", " + r(2) + ", " + r(3)))
 ```
 
-**Join the sample table with a reference table**
-You can join the sample table with a reference table to execute queries. For example a reference table(AIRLINEREF) is created as follows from a parquet data file:
+**Join the sample table with a reference table**:
+You can join the sample table with a reference table to execute queries. For example a reference table (AIRLINEREF) is created as follows from a parquet data file.
 ```
     // create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINEREF USING " +
@@ -996,7 +985,7 @@ You can join the sample table with a reference table to execute queries. For exa
     snSession.sql("CREATE TABLE AIRLINEREF USING row AS (SELECT CODE, " +
         "DESCRIPTION FROM STAGING_AIRLINEREF)")
 ```
-Join the the sample table and reference table to find out which airlines arrive on schedule
+**Join the the sample table and reference table to find out which airlines arrive on schedule**:
 
 ```
     result = snSession.sql("select AVG(ArrDelay) arrivalDelay, " +
@@ -1014,9 +1003,9 @@ Join the the sample table and reference table to find out which airlines arrive 
 <a id="howto-python"></a>
 ## How to Use Python to Create Tables and Run Queries
 
-Developers can write programs in Python to use SnappyData features
+Developers can write programs in Python to use SnappyData features.
 
-**First create SnappySession:**
+**First create a SnappySession:**
 
 ```
  from pyspark.sql.snappy import SnappySession
@@ -1027,7 +1016,7 @@ Developers can write programs in Python to use SnappyData features
  snappy = SnappySession(sc)
 ```
 
-**Create table using SnappySession**
+**Create table using SnappySession**:
 
 ```
     # Creating partitioned table PARTSUPP using SQL
@@ -1043,7 +1032,7 @@ Developers can write programs in Python to use SnappyData features
                   "USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )")
 ```
 
-**Inserting data in table using INSERT query**
+**Inserting data in table using INSERT query**:
 
 ```
     snappy.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
@@ -1054,7 +1043,7 @@ Developers can write programs in Python to use SnappyData features
     snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
-**Update the data using SQL**
+**Update the data using SQL**:
 
 ```
     # Update the available quantity for PARTKEY 100
@@ -1063,7 +1052,7 @@ Developers can write programs in Python to use SnappyData features
     snappy.sql("SELECT * FROM PARTSUPP").show()
 ```    
 
-**Delete records from the table**
+**Delete records from the table**:
 ```
     # Delete the records for PARTKEY 400
     snappy.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
@@ -1071,8 +1060,8 @@ Developers can write programs in Python to use SnappyData features
     snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
-**Create table using API**
-This same table can be created by using createTable API. First we create a schema and then create the table, and mutate the table data using API:
+**Create table using API**:
+This same table can be created by using createTable API. First we create a schema and then create the table, and then mutate the table data using API:
 
 ```
     # drop the table if it exists
@@ -1089,7 +1078,7 @@ This same table can be created by using createTable API. First we create a schem
     # http://snappydatainc.github.io/snappydata/programming_guide
     snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
 
-    # Inserting data in PARTSUPP table using dataframe
+    # Inserting data in PARTSUPP table using DataFrame
     tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
               (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
     rdd = sc.parallelize(tuples)

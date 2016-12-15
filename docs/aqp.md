@@ -67,7 +67,7 @@ In this example below, a sample table is created for an S3 (external) dataset:
 
 ```
 CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY><AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
   options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
