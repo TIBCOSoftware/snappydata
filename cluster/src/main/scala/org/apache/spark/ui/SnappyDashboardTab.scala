@@ -21,6 +21,8 @@ package org.apache.spark.ui
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.gemxd.SnappyDataVersion
+
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.JettyUtils._
 
@@ -44,6 +46,10 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
 
   // Set updated tabs list
   parent.setTabs(newTabsList)
+
+  // Set SnappyData Product Version in SparkUI
+  SparkUI.setProductVersion(SnappyDataVersion.getSnappyDataProductVersion)
+
   //var handlers = parent.getHandlers
   parent.attachHandler(createRedirectHandler("/", "/dashboard/", basePath = basePath))
 }
