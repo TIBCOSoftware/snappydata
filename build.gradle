@@ -680,6 +680,13 @@ task product(type: Zip) {
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
+      // Copy the JDBC client jar to jars directory, even if its constituent jars
+      // are already present in this directory.
+      copy {
+        from clientProject.shadowJar.destinationDir
+        into "${snappyProductDir}/jars"
+        include clientProject.shadowJar.archiveName
+      }
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
