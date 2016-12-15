@@ -28,10 +28,6 @@ import scala.util.parsing.json.JSON
  */
 object ExampleTester {
 
-
-  val jobSubmit = "./bin/snappy-job.sh submit --lead localhost:8090 --app-jar examples/jars/quickstart.jar"
-  val jobStatus = "./bin/snappy-job.sh status --lead localhost:8090 --job-id "
-
   def snappyShell = s"$snappyHome/bin/snappy-shell"
 
   implicit class X(in: Seq[String]) {
@@ -41,14 +37,16 @@ object ExampleTester {
   }
 
   var snappyHome = ""
-  val examples = ExampleConf.examples
+  var localHostName = ""
+  val oldQuickStart = ExampleConf.oldQuickStart
 
   def main(args: Array[String]) {
     snappyHome = args(0)
+    localHostName = java.net.InetAddress.getLocalHost().getHostName();
 
     startupCluster()
     try {
-      examples map (c => runMainExample(c))
+      oldQuickStart map (c => runExample(c))
     } catch {
       case ex: Exception => ex.printStackTrace()
     } finally {
@@ -57,16 +55,57 @@ object ExampleTester {
 
   }
 
-  def startupCluster(): Unit = {
-    val pb = Process(s"$snappyHome/sbin/snappy-start-all.sh", new File(s"$snappyHome"))
-    val exitCode = pb !
 
+  def runExample(example: Example): Unit = {
+    println(s"Executing ${example.name}")
+    example match {
+      case ex: Job => runJob(ex.jobClass)
+      case snShell : SnappyShell => snShell.sqlCommand pipe snappyShell foreach println
+      case submit : SparkSubmit => sparkSubmit(submit.appClass, submit.confs, submit.appJar)
+      case _ =>
+    }
   }
 
-  def stopCluster(): Unit = {
-    val pb = Process(s"$snappyHome/sbin/snappy-stop-all.sh", new File(s"$snappyHome"))
-    val exitCode = pb !
+  def startupCluster(): Unit = {
+    new PrintWriter(s"$snappyHome/conf/servers") {
+      write(s"$localHostName\n$localHostName"); close
+    }
 
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
+
+    Process(s"$snappyHome/sbin/snappy-start-all.sh", new File(s"$snappyHome")) !
+      (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+
+    stdoutWriter.flush
+    stderrWriter.flush
+    println(stdoutStream.toString)
+    if (!stdoutStream.toString.contains("Distributed system now has 4 members")) {
+      throw new Exception(s"Failed to start Snappy cluster")
+    }
+
+    stdoutStream.reset
+    stderrStream.reset
+
+    Process(s"$snappyHome/sbin/start-all.sh", new File(s"$snappyHome")) !
+      (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+
+    stdoutWriter.flush
+    stderrWriter.flush
+    println(stdoutStream.toString)
+  }
+
+
+
+  def stopCluster(): Unit = {
+    Process(s"$snappyHome/sbin/snappy-stop-all.sh", new File(s"$snappyHome"))!
+    //Intentional blank line
+
+    new File(s"$snappyHome/conf/servers").deleteOnExit()
+
+    Process(s"$snappyHome/sbin/stop-all.sh", new File(s"$snappyHome")) !
   }
 
   /**
@@ -77,31 +116,19 @@ object ExampleTester {
   }
 
 
-  def runSetup(setup: Setup): Unit = {
-    setup match {
-      case shell: SnappyShellSetup =>
-        shell.sqlCommand pipe snappyShell foreach println
-      case shell: BashShellSetup =>
-      case nil => //do nothing
-    }
+  private def sparkSubmit(appClass: String, confs :Seq[String], appJar :String): Unit ={
+
+    val confStr = if(confs.size>0) confs.foldLeft("")((r,c) => s"$r --conf $c") else ""
+    val classStr = if(appClass.isEmpty) "" else s"--class  $appClass"
+    val sparkSubmit = s"./bin/spark-submit $classStr --master spark://$localHostName:7077 $confStr $appJar"
+    Process(sparkSubmit, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome)!
   }
-
-  def runMainExample(example: Example): Unit = {
-    println(s"Executing ${example.name}")
-    example match {
-      case ex: Job => {
-        runSetup(ex.setup)
-        runJob(ex.jobClass)
-      }
-      case shell: BashShellSetup => {
-
-      }
-      case _ =>
-    }
-  }
-
 
   private def runJob(jobClass: String): Unit = {
+
+    val jobSubmit = "./bin/snappy-job.sh submit --lead localhost:8090 --app-jar examples/jars/quickstart.jar"
+
+    val jobStatus = "./bin/snappy-job.sh status --lead localhost:8090 --job-id "
 
     val jobCommand = s"$jobSubmit --app-name ${jobClass}_${System.currentTimeMillis()} --class $jobClass"
 

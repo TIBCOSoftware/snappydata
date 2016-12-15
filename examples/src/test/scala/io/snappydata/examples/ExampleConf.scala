@@ -16,36 +16,56 @@
  */
 package io.snappydata.examples
 
-sealed trait Setup
-case class SnappyShellSetup(sqlCommand :Seq[String]) extends Setup
-case class BashShellSetup(shellCommand : String) extends Setup
+import io.snappydata.examples.SparkSubmit
 
-sealed trait Example{
-  def name : String
+
+sealed trait Example {
+  def name: String
 }
-case class Job(override val name : String, jobClass : String, setup: Setup) extends Example
-case class App(override val name :String , appClass : String, setup: Setup) extends Example
+
+//Snappy job should use this
+case class Job(override val name: String, jobClass: String) extends Example
+
+//Examples which should be run by ./bin/run-example should use this
+case class RunExample(override val name: String, appClass: String) extends Example
+
+//Simple applications with main method
+case class Application(override val name: String, appClass: String) extends Example
+
+//Spark-submit
+case class SparkSubmit(override val name: String, appClass: String, confs: Seq[String], appJar:String) extends Example
+
+case class SnappyShell(override val name: String, sqlCommand: Seq[String]) extends Example
 
 
 object ExampleConf {
 
-  val examples: Seq[Example] = Seq(
+  val oldQuickStart: Seq[Example] = Seq(
 
-    new Job("airlineDataJob",
-    "io.snappydata.examples.AirlineDataJob",
-      SnappyShellSetup(Seq("connect client 'localhost:1527';",
-        "run 'quickstart/scripts/create_and_load_column_table.sql';",
-        "run 'quickstart/scripts/create_and_load_row_table.sql';",
-        "run 'quickstart/scripts/create_and_load_sample_table.sql';",
-        "run 'quickstart/scripts/status_queries.sql';",
-        "run 'quickstart/scripts/olap_queries.sql';",
-        "run 'quickstart/scripts/oltp_queries.sql';",
-        "run 'quickstart/scripts/olap_queries.sql';",
-        "run 'quickstart/scripts/olap_approx_queries.sql';",
-        "exit;") )),
+    SnappyShell("quickStartScripts", Seq("connect client 'localhost:1527';",
+      "run 'quickstart/scripts/create_and_load_column_table.sql';",
+      "run 'quickstart/scripts/create_and_load_row_table.sql';",
+      "run 'quickstart/scripts/create_and_load_sample_table.sql';",
+      "run 'quickstart/scripts/status_queries.sql';",
+      "run 'quickstart/scripts/olap_queries.sql';",
+      "run 'quickstart/scripts/oltp_queries.sql';",
+      "run 'quickstart/scripts/olap_queries.sql';",
+      "run 'quickstart/scripts/olap_approx_queries.sql';",
+      "exit;")),
 
-  new Job("CreateAndLoadAirlineDataJob",
-    "io.snappydata.examples.CreateAndLoadAirlineDataJob",null)
+    Job("airlineDataJob",
+      "io.snappydata.examples.AirlineDataJob"),
+
+    Job("CreateAndLoadAirlineDataJob",
+      "io.snappydata.examples.CreateAndLoadAirlineDataJob"),
+
+    SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp",
+      confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
+      appJar = "examples/jars/quickstart.jar"),
+
+    SparkSubmit("PythonAirlineDataApp", appClass = "",
+      confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
+      appJar = "quickstart/python/AirlineDataPythonApp.py")
 
   )
 
