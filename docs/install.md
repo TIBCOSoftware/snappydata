@@ -3,13 +3,11 @@ The following installation options are available:
 
 * [Install On Premise](#install-on-premise)
 * [Setting up Cluster on Amazon Web Services (AWS)](#setting-up-cluster-on-amazon-web-services-aws)
-* [Setting up Cluster on Azure](#setting-up-cluster-on-azure)
-* [Setting up Cluster with Docker Images](#setting-up-cluster-with-docker-images)
 * [Building from Source](#building-from-source)
 
 
 ## Install On-Premise
-SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With On-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
+SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
 ### Prerequisites
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the _JAVA_HOME_ environment variable is set on each computer.
@@ -22,12 +20,12 @@ The packages are available in compressed files (.zip and .tar format). On this p
 * ** SnappyData 0.7 download link **
 [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip)
 
-* **SnappyData 0.7(hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip)
-
+* **SnappyData 0.7 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip)
+<a id="singlehost"></a>
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
-Open the command prompt and run the following command to extract the downloaded archive file and go to SnappyData home directory. 
+Open the command prompt and run the following command to extract the downloaded archive file and to go to location of the SnappyData home directory. 
 ```bash
 $ tar -xzf snappydata-0.7-bin.tar.gz   
 $ cd snappydata-0.7-bin/
@@ -36,51 +34,50 @@ Start a basic cluster with one data node, one lead and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
-For custom configuration and to start more nodes,  see the section [How to Configure SnappyData cluster](configuration.md)
+For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](configuration.md)
 
 ### Multi-Host Installation
 For real life use cases you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
 
 ### Machines with a Shared Path
-If all your machines can share a path over an NFS or similar protocol, then follow the steps below.
+If all your machines can share a path over an NFS or similar protocol, then follow the steps below:
 
-##### Prerequisites
+#### Prerequisites
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
 * Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration#configuring-ssh-login-without-password).
 
-##### Steps to Set up the Cluster
+#### Steps to set up the Cluster
 
 1. Copy the downloaded binaries in the shared folder.
 
 2. Extract the downloaded archive file and go to SnappyData home directory.
-```bash
-$ tar -xzf snappydata-0.7-bin.tar.gz   
-$ cd snappydata-0.7-bin/
-```
 
-3.Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
+		$ tar -xzf snappydata-0.7-bin.tar.gz 
+		$ cd snappydata-0.7-bin/
+ 
+3. Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
 
 4. After configuring each of the components, run the `start-all.ssh` script:
-```
-./sbin/snappy-start-all.sh
-```
+
+		./sbin/snappy-start-all.sh
 
 This creates a default folder named **work** and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.
 
-If SSH is not supported then follow the instructions in the **Machines without shared path** section.
 
 ### Machines without a Shared Path 
+If SSH is not supported then follow the instructions in this section.
+
 #### Prerequisites
 
-1. Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
+* Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-2. On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for log, persistence, and status files for each member, and is also used as the default location for locating the members configuration files.
+* On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for log, persistence, and status files for each member, and is also used as the default location for locating the members configuration files.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
-#### To Configure the Cluster:
-1. Copy and extract the downloaded binaries on each machine.
+#### To Configure the Cluster
+1. Copy and extract the downloaded binaries on each machine
 
 2. Individually configure and start each member
 
@@ -100,28 +97,50 @@ $ bin/snappy-shell server stop
 
 
 ### Using AWS Management Console
+You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 
-You can launch SnappyData cluster on EC2 instance(s) using the AMI provided by SnappyData in AWS Marketplace.
-If you are new to launching EC2 instances, please refer to this [AWS documentation page](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html) before proceeding further.
+#### Prerequisites
+Ensure that you have an existing AWS account with required permissions to launch EC2 resources
 
-Here, we describe how you can find the SnappyData AMI on AWS Marketplace, launch your instance with the AMI and start SnappyData cluster on it.
+#### Launching the Instance
+To launch the instance and start SnappyData cluster:
 
-* Log in to the AWS Web console using your AWS account-specific login url and go to the EC2 dashboard.
+1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials
 
-* Select the AWS Region where you want to launch the instances and click on the 'Launch Instance' button.
+2. The current region is displayed at the top of the screen. Select the region where you want to launch the instance
 
-* On the next (**Choose an Amazon Machin Image (AMI)**) page, select **Community AMIs** tab from the left pane, and enter 'SnappyData' in the search text box.
+3. Click **Launch Instance** from the Amazon EC2 console dashboard
 
-* You may see multiple AMIs listed which match 'SnappyData'. Select the AMI with latest SnappyData release version.
->The name of the SnappyData AMIs start with 'SnappyData' followed by a release version and (optionally) other details.
+4. On the **Choose an Amazon Machine Image (AMI)** page, select **Community AMIs** from the left pane
 
-* On the next (**Choose an Instance Type**) page, select the instance type as per the requirement of your usecase.
->Here, you can either go directly to the review page by clicking on the **Review and Launch** button and launch the instance with default configurations or to the configuration page by clicking on **Next: Configure Instance Details** button where you can do more customizations.
+5. Enter **SnappyData** in search box, and press **Enter** on your keyboard. 
 
-* Once you have created and launched the instance with the SnappyData AMI, you can find its public hostname or IP address on the EC2 dashboard's Instances tab. Connect to it via ssh using the private key file of the Key Pair the instance was launched with.
-><Note> Note: Each of your instances launched here already has the SnappyData binaries downloaded and extracted under the location /snappydata/downloads/. It also has the Java 8 installed.</Note>
+6. The search result is displayed. From the search results, click **Select** to choose the AMI with latest release version.
 
-* The next steps are similar to the ones which describe on-premise installation of SnappyData, except that you do not have to download the SnappyData binaries and Java 8. These steps are [described here](#install-on-premise).
+7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and click **Review and Launch** to launch the instance with default configurations. <br/><Note> Note: You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
+
+8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
+
+9. In the **Select an existing key pair or create a new key pair** dialog box, select a key pair.
+
+10. Click **Launch** to launch the instances.
+
+9. The dashboard which lists the instances is displayed. Click **Refresh** to view the updated list and the status of the instance creation.
+
+10. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
+
+12. Use SSH to connect to the instance. You require:
+
+	* The private key file of the key pair with which the instance was launched, and 
+	* Details of the public hostname or IP address of the instance. 
+
+	<note> Note: </note>
+	
+	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
+	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
+
+13. Follow the [steps described here](#i) to continue. </br>
+
 
 
 ### Using SnappyData EC2 Scripts
@@ -370,9 +389,6 @@ Some of the known limitations of the script are:
 * Launching the cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions
 
 * Support for option --user is incomplete
-
-## Setting up Cluster with Docker Images
-<mark>To Be done</mark>
 
 ## Building from Source
 Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). 
