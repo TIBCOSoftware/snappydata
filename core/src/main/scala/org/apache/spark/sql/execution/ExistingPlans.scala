@@ -19,26 +19,19 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution,
-HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation,
-IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan,
-SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
@@ -55,6 +48,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Option[Attribute]],
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
@@ -96,7 +90,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         // when buckets are linked to partitions then numBuckets have
         // to be sent as zero to skip considering buckets in partitioning
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions,
+        callbacks.getOrderlessHashPartitioning(partitionColumns,
+          partitionColumnAliases, numPartitions,
           if (session.hasLinkBucketsToPartitions) 0 else numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
@@ -121,6 +116,7 @@ private[sql] object PartitionedPhysicalScan {
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Option[Attribute]],
       rdd: RDD[Any],
       otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,
@@ -130,7 +126,8 @@ private[sql] object PartitionedPhysicalScan {
     relation match {
       case i: IndexColumnFormatRelation =>
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, relation, allFilters, schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, allFilters,
+          schemaAttributes)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
@@ -140,7 +137,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
-          Seq.empty, table)
+          Seq.empty, Seq.empty, table)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -153,18 +150,21 @@ private[sql] object PartitionedPhysicalScan {
           rowBufferScan, otherPartKeys)
       case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, relation, allFilters, schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, allFilters,
+          schemaAttributes)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
-          ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns, relation,
-            allFilters, schemaAttributes, isForSampleReservoirAsRegion = true)
+          ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
+            partitionColumnAliases, relation, allFilters, schemaAttributes,
+            isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
+            partitionColumns, partitionColumnAliases, relation, allFilters,
+            schemaAttributes)
         }
       case _: RowFormatRelation =>
         RowTableScan(output, rdd, numBuckets,
-          partitionColumns, relation)
+          partitionColumns, partitionColumnAliases, relation)
     }
 
   def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =

@@ -75,9 +75,10 @@ case class JDBCAppendableRelation(
   })
 
   override def sizeInBytes: Long = {
-    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
-    if (stats.isDefined) stats.get.getTotalSize
-    else super.sizeInBytes
+    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+      case Some(s) => s.getTotalSize
+      case None => super.sizeInBytes
+    }
   }
 
 

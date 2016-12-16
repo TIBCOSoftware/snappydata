@@ -216,14 +216,14 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     getLogWriter.info("SB: About to execute queries")
 
     val query1 = s"select * from $tableName where col2 = 22 and col3 = 91"
-    setIndexObserver(s"$indexTwo", s"$query1")
+    val query2 = s"select * from $tableName where col1 =111 and col3 = 81"
+    setIndexObserver(s"$indexTwo", s"$query1", s"$indexThree", s"$query2")
+
     val rs1 = s.executeQuery(s"$query1")
     while(rs1.next()) {
       getLogWriter.info("q1= " + rs1.getInt(1))
     }
 
-    val query2 = s"select * from $tableName where col1 =111 and col3 = 81"
-    setIndexObserver(s"$indexThree", s"$query2")
     val rs2 = s.executeQuery(s"$query2")
     while(rs2.next()) {
       getLogWriter.info("q2= " + rs2.getInt(1))
@@ -237,18 +237,27 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     System.clearProperty("LOG-NOW")
   }
 
-  def setIndexObserver(indexName: String, queryString: String): Unit = {
+  def setIndexObserver(indexTwo: String, queryTwo: String, indexThree: String, queryThree: String):
+  Unit = {
     val hook = new SerializableRunnable {
       override def run() {
         val executionEngineObserver: GemFireXDQueryObserver = new GemFireXDQueryObserverAdapter() {
-          var indexPicked: Boolean = false
-          var caseOfGivenTable: Boolean = false
+          var indexTwoPicked: Boolean = false
+          var caseOfIndexTwo: Boolean = false
+          var indexThreePicked: Boolean = false
+          var caseOfIndexThree: Boolean = false
 
           override def afterQueryParsing(query: String, qt: StatementNode, lcc:
           LanguageConnectionContext): Unit = {
-            caseOfGivenTable = if (query != null) {
-              query.equalsIgnoreCase(queryString)
-            } else false
+            if (query != null) {
+              if (!caseOfIndexTwo) {
+                caseOfIndexTwo = query.equalsIgnoreCase(queryTwo)
+              }
+
+              if (!caseOfIndexThree) {
+                caseOfIndexThree = query.equalsIgnoreCase(queryThree)
+              }
+            }
           }
 
           override def overrideDerbyOptimizerIndexUsageCostForHash1IndexScan(memIndex: OpenMemIndex,
@@ -261,19 +270,31 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           OpenMemIndex, optimzerEvalutatedCost: Double): Double = 1
 
           override def scanControllerOpened(sc: AnyRef, conglom: Conglomerate) {
-            if (caseOfGivenTable) {
-              indexPicked = sc match {
+            if (caseOfIndexTwo && !indexTwoPicked) {
+              indexTwoPicked = sc match {
                 case smisc: SortedMap2IndexScanController =>
                   smisc.getQualifiedIndexName.split(":base-table:")(0).equalsIgnoreCase(s"APP" +
-                      s".$indexName")
+                      s".$indexTwo")
+                case _ => false
+              }
+            }
+            if (caseOfIndexThree && !indexThreePicked) {
+              indexThreePicked = sc match {
+                case smisc: SortedMap2IndexScanController =>
+                  smisc.getQualifiedIndexName.split(":base-table:")(0).equalsIgnoreCase(s"APP" +
+                      s".$indexThree")
                 case _ => false
               }
             }
           }
 
           override def close(): Unit = {
-            if (caseOfGivenTable) {
-              assert(indexPicked)
+            if (caseOfIndexTwo) {
+              assert(indexTwoPicked)
+            }
+
+            if (caseOfIndexThree) {
+              assert(indexThreePicked)
             }
           }
         }
