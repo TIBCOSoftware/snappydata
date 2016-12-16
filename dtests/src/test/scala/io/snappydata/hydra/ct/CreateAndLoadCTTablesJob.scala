@@ -22,6 +22,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
+import util.TestException
 
 import org.apache.spark.sql.{SnappySession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
@@ -56,15 +57,21 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
         case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,redundancy,jobConfig.getString("persistenceMode"))
         //column tables
         case "Column" => CTTestUtil.createColumnTables(snc,redundancy)
-        case "PeristentColumn" => CTTestUtil.createPersistColumnTables(snc,jobConfig.getString("persistenceMode"))
+        case "PersistentColumn" => CTTestUtil.createPersistColumnTables(snc,jobConfig.getString("persistenceMode"))
         case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc,redundancy)
         case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
         case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,jobConfig.getString("persistenceMode"))
         case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
-        case _ => pw.println(s"Did not find any match for ${tableType} to create tables")
+        case _ =>
+          pw.println(s"Did not find any match for ${tableType} to create tables")
+          pw.close()
+          throw new TestException(s"Did not find any match for ${tableType} to create tables." +
+              s" See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
       }
       CTTestUtil.loadTables(snc);
-      pw.println(s"Create and load ${tableType} tables completed.")
+      println(s"Create and load for ${tableType} tables has completed successfully. " +
+          s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
+      pw.println(s"Create and load for ${tableType} tables has completed successfully")
       pw.close()
     } match {
       case Success(v) => pw.close()

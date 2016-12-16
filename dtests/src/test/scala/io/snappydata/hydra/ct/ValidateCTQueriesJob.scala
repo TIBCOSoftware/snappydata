@@ -30,7 +30,8 @@ class ValidateCTQueriesJob extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val outputFile = "ValidateCTQueries_" + jobConfig.getString("logFileName")
+    val threadID = Thread.currentThread().getId
+    val outputFile = "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
 
@@ -48,11 +49,18 @@ class ValidateCTQueriesJob extends SnappySQLJob {
         pw.println(s"Test will perform fullResultSetValidation")
       else
         pw.println(s"Test will not perform fullResultSetValidation")
-      val hasValidationFailed = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation, sqlContext)
-      if(hasValidationFailed) {
-        pw.println(s"Validation failed for ${tableType}")
-        //throw new TestException(s"Validation task failed for ${tableType}. Please check logs.")
+      val startTime = System.currentTimeMillis
+      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation, sqlContext)
+      val endTime = System.currentTimeMillis
+      val totalTime = (endTime - startTime) / 1000
+      pw.println(s"Total time for execution is :: ${totalTime} seconds.")
+      if(!failedQueries.isEmpty) {
+        println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
+        pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+        pw.close()
+        throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
       }
+      println(s"Validation for $tableType tables completed. See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Validation for $tableType tables completed.")
       pw.close()
     } match {

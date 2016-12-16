@@ -36,7 +36,7 @@ object CreateAndLoadCTTablesApp {
     val tableType = args(1)
     val redundancy = args(2)
     val persistenceMode = args(3)
-    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesSparkApp.out"),true));
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesApp.out"),true));
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     CTTestUtil.dropTables(snc)
     pw.println(s"Create and load for ${tableType} tables has started")
@@ -53,14 +53,20 @@ object CreateAndLoadCTTablesApp {
       case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,redundancy,persistenceMode)
       //column tables
       case "Column" => CTTestUtil.createColumnTables(snc,redundancy)
-      case "PeristentColumn" => CTTestUtil.createPersistColumnTables(snc,persistenceMode)
+      case "PersistentColumn" => CTTestUtil.createPersistColumnTables(snc,persistenceMode)
       case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc,redundancy)
       case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
       case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,persistenceMode)
       case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
-      case _ => pw.println(s"Did not find any match for ${tableType} to create tables") 
+      case _ =>
+        pw.println(s"Did not find any match for ${tableType} to create tables")
+        pw.close()
+        throw new Exception(s"Did not find any match for ${tableType} to create tables." +
+            s" See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesApp.out")
     }
     CTTestUtil.loadTables(snc)
+    println(s"Create and load for ${tableType} tables has completed successfully. " +
+        s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesApp.out")
     pw.println(s"Create and load for ${tableType} tables has completed successfully")
     pw.close()
   }
