@@ -244,7 +244,7 @@ snsc.sql("select count(*) from streamingExample").show()
 <!--
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
-To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
+To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job looks like:
 
 ##### Scala
 

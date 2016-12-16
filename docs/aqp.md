@@ -38,7 +38,7 @@ Stratified sampling on the other hand, allows the user to specify the common dim
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
 ### Online Sampling
-SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
 There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 minute time window, while still ensuring that all GEOs have good representation in the sample. 
 
 ### Sketching
@@ -49,7 +49,7 @@ While a [Count-min-sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketc
 
 ###Create Sample Tables###
 
-You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. 
+You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from a external data source such as S3 or HDFS. 
 
 Here is an SQL based example to create sample on tables locally available in the SnappyData cluster. 
 
@@ -375,12 +375,12 @@ The code above shows how to do the same thing using the SnappyData Scala API.
 	
 	select * from topkTweets order by EstimatedValue desc 
 	
-The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
+The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hash tags with the most re-tweets.
 
 ### Approximate TopK analytics for time series data###
-Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
+Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the time stamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most re-tweeted hash tags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hash tags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
-Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
+Here is an example of a time based query on the TopK structure which returns the most popular hash tags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
 	
 	
 	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where 
@@ -398,7 +398,7 @@ In the example below tweetTime is a field in the incoming dataset which carries 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
 ``` 
-The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
+The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hash tag field of tweetStreamTable as its key field and maintains the TopN hash tags that have the highest re-tweets value in the base table. This works for both static tables and streaming tables
 
 ####Scala API for creating a TopK table 
 

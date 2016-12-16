@@ -59,19 +59,19 @@ If all your machines can share a path over an NFS or similar protocol, then foll
  
 3. Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
 
-4. After configuring each of the components, run the `start-all.ssh` script:
+4. After configuring each of the components, run the `snappy-start-all.sh` script:
 
-		./sbin/snappy-start-all.sh
+		./sbin/snappy-start-all.sh 
 
 This creates a default folder named **work** and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.
 
+If SSH is not supported then follow the instructions in the Machines without a Shared Path section.
 
 ### Machines without a Shared Path 
-If SSH is not supported then follow the instructions in this section.
 
 #### Prerequisites
 
-* Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
+* Ensure that the **/etc/hosts** correctly configures the host and IP Address of each SnappyData member machine.
 
 * On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for log, persistence, and status files for each member, and is also used as the default location for locating the members configuration files.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
@@ -139,7 +139,7 @@ To launch the instance and start SnappyData cluster:
 	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
 	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
 
-13. Follow the [steps described here](#i) to continue. </br>
+13. Follow the [steps described here](#install-on-premise) to continue. </br>
 
 
 <a id="EC2"></a>
@@ -207,7 +207,7 @@ If you want to configure each of the locator, lead or servers with specific prop
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
-The important difference here is that, instead of the hostnames of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual hostname of the members when they are launched.
+The important difference here is that, instead of the host names of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual host name of the members when they are launched.
 
 The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
@@ -455,11 +455,11 @@ The above aliases can serve as useful shortcuts to pull and push all projects fr
 
 ### Building
 
-Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include addition of Gradle build scripts to allow building them independently as well as a subproject of snappydata. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The gradlew wrapper script will download all the other build dependencies as required.
+Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The Gradle wrapper script downloads all the other build dependencies as required.
 
-If a user does not want to deal with submodules and only work on snappydata project, then can clone only the snappydata repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.
+If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the snappydata repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.
 
-If working on all the separate projects integrated inside the top-level snappydata clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The _spark_ and _store_ submodules can also be built and published independently.
+If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The _spark_ and _store_ submodules can also be built and published independently.
 
 Useful build and test targets:
 ```
@@ -494,13 +494,13 @@ The usual Gradle test run targets (_test_, _check_) work as expected for JUnit t
 Running individual tests within some suite works using the _--tests_ argument.
 
 
-## Setting up Intellij with Gradle
+### Setting up Intellij with Gradle
 
 Intellij is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support, but has been seen to not work as well (e.g. Gradle support is not integrated with Scala plugin etc).  
 
 To import into Intellij:
 
-* Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.
+* Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plug-in. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.
 
 * Select **Import Project**, and then point to the SnappyData directory. Use external Gradle import. When using JDK 7, add **-XX:MaxPermSize=350m** to VM options in global Gradle settings. Select the default values, and click **Next** in the following screens.<br/> 
 <note> Note:</note> 
@@ -513,7 +513,7 @@ To import into Intellij:
 
 * If the Gradle tab is not visible immediately, then select it from window list pop-up at the left-bottom corner of IDE. If you click on that window list icon, then the tabs is displayed permanently.
 
-* Generate avro and GemFireXD required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The Run item may not be available if indexing is still in progress, so wait for it to complete. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if **./gradlew clean** has been run, or you have made changes to **javacc/avro/messages.xml** source files. 
+* Generate Apache Avro and GemFireXD required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files. 
 
 * If you get unexpected **"Database not found"** or **NullPointerException** errors in GemFireXD layer, then first thing to try is to run the **generateSources** target again.*
 
@@ -526,7 +526,7 @@ To import into Intellij:
 * For JUnit configuration also append **/build-artifacts** to the working directory. That is, the directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise change working directory for ScalaTest to be inside **build-artifacts** otherwise all intermediate log and other files (especially created by GemFireXD) pollutes the source tree and may need to be cleaned manually.
 
 
-## Running a ScalaTest/JUnit
+### Running a ScalaTest/JUnit
 
 Running Scala/JUnit tests from Intellij is straightforward. Ensure that **MaxPermSize** has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.
 

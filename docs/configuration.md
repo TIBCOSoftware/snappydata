@@ -9,7 +9,7 @@ we discuss how the components can be individually configured. We also discuss va
 
 ## Configuration Files
 
-Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as **conf/locators**, **conf/leads** and **conf/servers** respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
+Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as **conf/locators**, **conf/leads** and **conf/servers** respectively. These files contain the host names of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
 
 #### Configuring Locators
 
@@ -18,7 +18,9 @@ Locators provide discovery service for the cluster. It informs a new member join
 In this file, you can specify:
 
 * The host name on which a SnappyData locator is started
+
 * The startup directory where the logs and configuration files for that locator instance are located
+
 * SnappyData specific properties that can be passed
 
 Create the configuration files (conf/locators) for locators in `SNAPPY_HOME`.
@@ -61,15 +63,15 @@ If using SnappyData store persistence to Hadoop as documented [here](http://gemf
 
 ```export SPARK_DIST_CLASSPATH=</path/to/>hbase-0.94.27.jar```
 
-Subsitute the actual path for `</path/to/>` above
+Substitute the actual path for `</path/to/>` above
 
 ## Spark Specific Properties 
 
 Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. 
 
-Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
+Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prefix them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
 
-<Note>Note: Currently we do not honour properties specified using spark-config.sh. </Note>
+<Note>Note: Currently we do not honor properties specified using spark-config.sh. </Note>
 
 ## Example for Multiple-Host Configuration
 
@@ -104,8 +106,8 @@ node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=nod
 Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in _SNAPPY_HOME/conf_. 
 
 ## Hadoop Provided Settings
-If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without hadoop from the download link.
-This allows you to provide hadoop at runtime.
+If you want run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link.
+This allows you to provide Hadoop at runtime.
 
 To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 ```
@@ -157,10 +159,10 @@ To install and configure SSH, do the following:
 2. **Generate an RSA key pair**<br>
     To generate an RSA key pair run the following command on the client computer,
     `ssh-keygen -t rsa`
-    Press Enter when prompted to enter file in which to save the key, and for the passpharase.
+    Press **Enter** when prompted to enter file in which to save the key, and for the pass phrase.
 
 3.  **Copy the Public Key**<br>
-    Once the key pair is generated, copy the contents of the public key file, to the authorized key on the remote 	site, by typing
+    Once the key pair is generated, copy the contents of the public key file, to the authorized key on the remote site, by typing
     `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
 
 

@@ -127,7 +127,7 @@ class CreatePartitionedRowTable extends SnappySQLJob {
 **Dependencies**:
 To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.
 
-Example Maven dependency:
+**Example: Maven dependency**:
 ```
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
 <dependency>
@@ -136,7 +136,7 @@ Example Maven dependency:
     <version>0.7</version>
 </dependency>
 ```
-Example SBT dependency:
+**Example: SBT dependency**:
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
@@ -233,7 +233,7 @@ You can now create tables and run queries in SnappyData store using you Apache S
 `snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster **: 
-Use the `snappy-shell` and `connect client` command on the Snappy Shell.
+Use the `snappy-shell` and `connect client` command on the Snappy Shell
 
 ```
 $ bin/snappy-shell
@@ -860,20 +860,20 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
 }
 ```
 
-**To create a row table that is updated based on the streaming data**
+**To create a row table that is updated based on the streaming data**:
 
 ```
 snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) using row")
 ```
 
-**To declare a continuous query that is executed on the streaming data**. This query returns a number of bids per publisher in one batch.
+**To declare a continuous query that is executed on the streaming data**: This query returns a number of bids per publisher in one batch.
 
 ```
     val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
         "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 ```
 
-**To process that the result of above continuous query to update the row table publisher_bid_counts**
+**To process that the result of above continuous query to update the row table publisher_bid_counts**:
 
 ```
     // this conf is used to get a connection a JDBC connection
@@ -904,7 +904,7 @@ snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) usin
 
 ```
 
-**To display the total bids by each publisher by querying publisher_bid_counts table**
+**To display the total bids by each publisher by querying publisher_bid_counts table**:
 
 ```
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
@@ -917,10 +917,10 @@ snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").s
 Synopsis Data Engine (SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire Dataset. The approach trades off query accuracy for fast response time.
 For more information on  SDE, refer to [SDE documentation](programming_guide/#tables-in-snappydataaqp).
 
-**Code Example:**
+**Code Example**:
 The complete code example for SDE is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
-**First get a SnappySession**
+**Get a SnappySession**:
 ```
     val spark: SparkSession = SparkSession
         .builder
@@ -931,7 +931,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**The base column table(AIRLINE) is created from temporary parquet table as follows:**
+**The base column table(AIRLINE) is created from temporary parquet table as follows**:
 
 ```
     // Create temporary staging table to load parquet data
@@ -1005,7 +1005,7 @@ You can join the sample table with a reference table to execute queries. For exa
 
 Developers can write programs in Python to use SnappyData features.
 
-**First create a SnappySession:**
+**First create a SnappySession**:
 
 ```
  from pyspark.sql.snappy import SnappySession
