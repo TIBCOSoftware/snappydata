@@ -803,15 +803,15 @@ Several APIs have been added in [SnappySession](http://snappydatainc.github.io/s
     snappy.delete(tableName, "ITEMREF = 3")
 ```
 
-#### String / Char / Varchar Datatypes
-SnappyData supports Char and Varchar datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either Char or Varchar type, if your column data fits in maximum Char size (254) or Varchar size (32768), respectively. For larger column data size, String type should be used as we store its data in Clob format internally.
+#### String/CHAR/VARCHAR Data Types
+SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as we store its data in CLOB format internally.
 
-Create a table with columns of Char and Varchar datatype using SQL:
+**Create a table with columns of CHAR and VARCHAR datatype using SQL**:
 ```Scala
 CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
 ```
 
-**Create a table with columns of Char and Varchar datatype using API**:
+**Create a table with columns of CHAR and VARCHAR datatype using API**:
 ```Scala
     import org.apache.spark.sql.collection.Utils
     import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -831,17 +831,20 @@ CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
 ```
 
 
-**Note that STRING columns are handled differently when queried over a JDBC connection.**
+<note>Note: STRING columns are handled differently when queried over a JDBC connection.</note>
+
 To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
 
 
-* Using the system property **spark-string-as-clob** when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
+Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
+
 ```
 bin/snappy-shell leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
-* Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
+Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
+
 ```
 CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
 ```
@@ -860,11 +863,12 @@ CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
     snappy.createTable(tableName, "column", schema, Map.empty[String, String])
 ```
 
-* Using the query-hint **columnsAsClob** in the SELECT query.
+Using the query-hint `columnsAsClob in the SELECT query.
+
 ```
 SELECT * FROM tableName --+ columnsAsClob(*)
 ```
-> The usage of * above causes all the STRING columns in the table to be rendered as VARCHAR. You can also provide comma-separated specific column name(s) instead of * above so that data of only those column(s) is returned as CLOB.
+The usage of `*` above causes all the STRING columns in the table to be rendered as CLOB. You can also provide comma-separated specific column name(s) instead of `*` above so that data of only those column(s) is returned as CLOB.
 ```
 SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 ```
