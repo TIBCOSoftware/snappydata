@@ -34,7 +34,13 @@ The complete list of commands available through _snappy_shell_ can be found [her
 
 ## Using the Spark Shell and spark-submit
 
-SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store spark.snappydata.store.locators property needs to be provided while starting the spark-shell. When spark-shell is started with this property it provides [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) as SQLContext and thus enabling the user to run all SnappyData functionalities.
+SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. 
+But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally 
+intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. 
+To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer 
+in a parallel fashion. To connect to the SnappyData store spark.snappydata.store.locators property needs to be 
+provided while starting the spark-shell. To run all SnappyData functionalities you need to create 
+a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
 ```bash
 // from the SnappyData base directory  
@@ -43,8 +49,9 @@ SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store 
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
 scala>
 #Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
-scala> val airlineDF = sqlContext.table("airline").show
-scala> val resultset = sqlContext.sql("select * from airline")
+scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+scala> val airlineDF = snappy.table("airline").show
+scala> val resultset = snappy.sql("select * from airline")
 ```
 
 Any spark application can also use the SnappyData as store and spark as computational engine by providing an extra spark.snappydata.store.locators property in the conf.
@@ -53,7 +60,7 @@ Any spark application can also use the SnappyData as store and spark as computat
 # Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 
 # The results can be seen on the command line.
 ```
@@ -80,7 +87,7 @@ When the spark program connects to the cluster using a [SnappyContext](http://sn
 ```scala
 // Here is an Scala example 
   val sc = new org.apache.spark.SparkContext(conf)
-  val snContext = org.apache.spark.sql.SnappyContext(sc)
+  val snappy = new org.apache.spark.sql.SnappySession(sc)
 
   val props = Map[String, String]()
   // Save some application dataframe into a SnappyData row table
@@ -91,14 +98,17 @@ When the spark program connects to the cluster using a [SnappyContext](http://sn
 When running a native spark program, you can access SnappyData purely as a DataSource ...
 ```scala
 // Access SnappyData as a storage cluster .. 
-  val sc = new org.apache.spark.SparkContext(conf)
-  val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+  val spark: SparkSession = SparkSession
+          .builder
+          .appName("SparkApp")
+          .master("local[4]")
+          .getOrCreate
 
   val props = Map(
-    "url" -> "jdbc:snappydata://locatorHostName:1527/",
-    "poolImpl" -> "tomcat", 
-    "user" -> "app",
-    "password" -> "app"
+          "url" -> "jdbc:snappydata://locatorHostName:1527/",
+          "poolImpl" -> "tomcat", 
+          "user" -> "app",
+          "password" -> "app"
     )
 
   // Save some application dataframe into a JDBC DataSource

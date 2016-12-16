@@ -1,3 +1,5 @@
+## About SnappyData
+
 ## Key Features
 - **100% compatible with Spark** - Use SnappyData as a database but also use any of the Spark APIs - ML, Graph, etc
 - **in-memory row and column stores**: run the store collocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)
@@ -8,10 +10,10 @@
 - **Optimizations - Indexing**: You can index your row store and the GemFire SQL optimizer will automatically use in-memory indexes when available. 
 - **Optimizations - colocation**: SnappyData implements several optimizations to improve data locality and avoid shuffling data for queries on partitioned data sets. All related data can be collocated using declarative custom partitioning strategies(e.g. common shared business key). Reference data tables can be modeled as replicated tables when tables cannot share a common key. Replicas are always consistent. 
 - **High availability not just Fault tolerance**: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications continuous HA.
-- **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. 
+- **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled.
 
 
-## Spark challenges for mixed workloads (OLTP, OLAP)
+## Spark Challenges for Mixed Workloads (OLTP, OLAP)
 Spark is designed as a computational engine for processing batch jobs. Each Spark application (e.g., a Map-reduce job) runs as an independent set of processes (i.e., executor JVMs) on the cluster. These JVMs are re- used for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients requires an ex- ternal storage tier, such as HDFS. We, on the other hand, target a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database on the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and de-coupled from individual applications.
 
 A second but related challenge is Spark’s design for how user requests (i.e., jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces
@@ -22,8 +24,3 @@ A second but related challenge is Spark’s design for how user requests (i.e., 
 Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, we need to manage more complex data structures (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mu- tability characteristics and conformance to SQL.
 
 Finally, Spark’s strong and growing community has zero tolerance for incompatible forks. This means that no changes can be made to Spark’s execution model or its semantics for existing APIs. In other words, our changes have to be an extension.
-
-
-## <Describe how SnappyData address these challenges />
-
-
