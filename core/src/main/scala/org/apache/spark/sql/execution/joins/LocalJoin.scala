@@ -36,11 +36,10 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical.{BroadcastDistribution, ClusteredDistribution, Distribution, Partitioning, UnknownPartitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
 import org.apache.spark.{Partition, ShuffleDependency, SparkEnv, TaskContext}
 
@@ -60,6 +59,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan,
+    leftSizeInBytes: BigInt,
+    rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
@@ -86,10 +87,69 @@ case class LocalJoin(leftKeys: Seq[Expression],
   override def requiredChildDistribution: Seq[Distribution] =
     if (replicatedTableJoin) {
       UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+    } else {
+      // if left or right side is already distributed on a subset of keys
+      // then use the same partitioning (for the larger side to reduce exchange)
+      val leftClustered = ClusteredDistribution(leftKeys)
+      val rightClustered = ClusteredDistribution(rightKeys)
+      val leftPartitioning = left.outputPartitioning
+      val rightPartitioning = right.outputPartitioning
+      if (leftPartitioning.satisfies(leftClustered) ||
+          rightPartitioning.satisfies(rightClustered) ||
+          // if either side is broadcast then return defaults
+          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
+          rightPartitioning.isInstanceOf[BroadcastDistribution] ||
+          // if both sides are unknown then return defaults too
+          (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
+              rightPartitioning.isInstanceOf[UnknownPartitioning])) {
+        leftClustered :: rightClustered :: Nil
+      } else {
+        // try subsets of the keys on each side
+        val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys)
+        val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys)
+        leftSubset match {
+          case Some((l, li)) => rightSubset match {
+            case Some((r, ri)) =>
+            // check if key indices of both sides match
+            if (li == ri) {
+              ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
+            } else {
+              // choose the bigger plan
+              if (leftSizeInBytes > rightSizeInBytes) {
+                ClusteredDistribution(l) ::
+                    ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
+              } else {
+                ClusteredDistribution(ri.map(leftKeys.apply)) ::
+                    ClusteredDistribution(r) :: Nil
+              }
+            }
+            case None => ClusteredDistribution(l) ::
+                ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
+          }
+          case None => rightSubset match {
+            case Some((r, ri)) => ClusteredDistribution(ri.map(leftKeys.apply)) ::
+                ClusteredDistribution(r) :: Nil
+            case None => leftClustered :: rightClustered :: Nil
+          }
+        }
+      }
     }
-    else {
-      ClusteredDistribution(leftKeys) :: ClusteredDistribution(rightKeys) :: Nil
-    }
+
+  /**
+   * Optionally return result if partitioning is a subset of given join keys,
+   * and if so then return the subset as well as the indices of subset keys
+   * in the join keys (in order).
+   */
+  private def getSubsetAndIndices(part: Partitioning,
+      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = part match {
+    case e: Expression =>
+      val numColumns = e.children.length
+      if (keys.length > numColumns) {
+        keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
+            .find(p => part.satisfies(ClusteredDistribution(p._1)))
+      } else None
+    case _ => None
+  }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
     require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
@@ -387,7 +447,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, dictionaryArrayTerm, joinType)
+      resultVars, dictionaryArrayTerm, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {

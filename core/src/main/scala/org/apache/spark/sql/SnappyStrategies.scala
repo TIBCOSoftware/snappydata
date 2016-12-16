@@ -16,10 +16,11 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, ImperativeAggregate, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.physical.ClusteredDistribution
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
@@ -281,10 +282,11 @@ private[sql] trait SnappyStrategies {
         side: joins.BuildSide,
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
       joins.LocalJoin(leftKeys, rightKeys, side, condition,
-        joinType, planLater(left), planLater(right), replicatedTableJoin) :: Nil
+        joinType, planLater(left), planLater(right),
+        left.statistics.sizeInBytes, right.statistics.sizeInBytes,
+        replicatedTableJoin) :: Nil
     }
   }
-
 }
 
 /**

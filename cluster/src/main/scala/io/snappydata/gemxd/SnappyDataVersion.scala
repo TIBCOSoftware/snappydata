@@ -119,4 +119,9 @@ object SnappyDataVersion {
     loadProperties
     GemFireVersion.createVersionFile
   }
+
+  def getSnappyDataProductVersion: String ={
+    GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
+    GemFireVersion.getProductVersion
+  }
 }
