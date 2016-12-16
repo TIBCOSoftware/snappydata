@@ -386,7 +386,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 
 
 ## Using JDBC with SnappyData
-SnappyData ships with a few JDBC drivers. The connection URL typically points to one of the Locators. In the background the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusts underlying physical connections in case the servers fail. 
+SnappyData ships with a few JDBC drivers. The connection URL typically points to one of the Locators. In the background the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting the underlying physical connections in case the servers fail. 
 
 ```java
 
@@ -788,14 +788,14 @@ Usage SnappySession.delete(): Delete all rows in table that match passed filter 
 ```
 
 #### String / Char / Varchar Datatypes
-SnappyData supports Char and Varchar datatypes in addition to Spark's String data type. For performance reasons, it is recommended that you use Char / Varchar type, if your column data fits in maximum Char / Varchar column size (32768). For larger data, String type can be used as it stores data in Clob format internally.
+SnappyData supports Char and Varchar datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either Char or Varchar type, if your column data fits in maximum Char size (254) or Varchar size (32768), respectively. For larger column data size, String type should be used as we store its data in Clob format internally.
 
-Create a table that uses Char/Varchar using SQL:
+Create a table with columns of Char and Varchar datatype using SQL:
 ```Scala
 CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
 ```
 
-Create a table that uses Char/Varchar using API:
+Create a table with columns of Char and Varchar datatype using API:
 
 ```Scala
     import org.apache.spark.sql.collection.Utils
@@ -815,9 +815,33 @@ Create a table that uses Char/Varchar using API:
     snappy.createTable(tableName, "row", schema, Map.empty[String, String])
 ```
 
-If a String type is used for a column, the query engine will return the data in varchar format to ensure optimal performance for select queries executed using SnappySession. However user can use a queryhint if the data is desired in Clob format (or is larger that max Char/Varchar size).
+
+**Note that STRING columns are handled differently when queried over a JDBC connection.**
+To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
+<br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
 
 
+1. Using the system property **spark-string-as-clob** when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
+```
+bin/snappy-shell leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
+```
+
+2. Defining the column itself as CLOB, either using SQL or API.
+```
+CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
+```
+```
+StructField("Col2", StringType, false, Utils.stringMetadata())
+```
+
+3. Using the query-hint **columnsAsClob** in the SELECT query.
+```
+SELECT * FROM tableName --+ columnsAsClob(*)
+```
+>You can also provide comma-separated specific column name(s) instead of * above so that data of only those column(s) is returned as CLOB.
+```
+SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
+```
 
 
 #### Row Buffers for Column Tables

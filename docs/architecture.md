@@ -86,7 +86,7 @@ In this document, we showcase mostly the same set of features via the Spark API 
 ### High Concurrency in SnappyData
 Thousands of concurrent ODBC and JDBC clients can simultaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incoming requests from these clients into low latency requests and high latency ones.
 
-For low latency operations, we completely bypass Spark’s scheduling mechanism and directly operate on the data. We route high latency operations (for example. compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a responsive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.
+For low latency operations, we completely bypass Spark’s scheduling mechanism and directly operate on the data. We route high latency operations (for example, compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a responsive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.
 
 ### State Sharing in SnappyData
 A SnappyData cluster is designed to be a long running clustered database. State is managed in tables that can be shared across any number of connecting applications. Data is stored in memory and replicated to at least one other node in the system. Data can be persisted to disk in shared nothing disk files for quick recovery. Nodes in the cluster stay up for a long time and their lifecycle is independent of application lifetimes. SnappyData achieves this goal by decoupling its process startup and shutdown mechanisms from those used by Spark.
