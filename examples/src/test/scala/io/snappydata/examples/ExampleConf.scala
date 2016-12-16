@@ -33,24 +33,24 @@ case class RunExample(override val name: String, appClass: String) extends Examp
 case class Application(override val name: String, appClass: String) extends Example
 
 //Spark-submit
-case class SparkSubmit(override val name: String, appClass: String, confs: Seq[String], appJar:String) extends Example
+case class SparkSubmit(override val name: String, appClass: String, confs: Seq[String], appJar: String) extends Example
 
 case class SnappyShell(override val name: String, sqlCommand: Seq[String]) extends Example
 
 
 object ExampleConf {
 
-  val oldQuickStart: Seq[Example] = Seq(
+  def oldQuickStart(snappyHome: String): Seq[Example] = Seq(
 
     SnappyShell("quickStartScripts", Seq("connect client 'localhost:1527';",
-      "run 'quickstart/scripts/create_and_load_column_table.sql';",
-      "run 'quickstart/scripts/create_and_load_row_table.sql';",
-      "run 'quickstart/scripts/create_and_load_sample_table.sql';",
-      "run 'quickstart/scripts/status_queries.sql';",
-      "run 'quickstart/scripts/olap_queries.sql';",
-      "run 'quickstart/scripts/oltp_queries.sql';",
-      "run 'quickstart/scripts/olap_queries.sql';",
-      "run 'quickstart/scripts/olap_approx_queries.sql';",
+      s"run '$snappyHome/quickstart/scripts/create_and_load_column_table.sql';",
+      s"run '$snappyHome/quickstart/scripts/create_and_load_row_table.sql';",
+      s"run '$snappyHome/quickstart/scripts/create_and_load_sample_table.sql';",
+      s"run '$snappyHome/quickstart/scripts/status_queries.sql';",
+      s"run '$snappyHome/quickstart/scripts/olap_queries.sql';",
+      s"run '$snappyHome/quickstart/scripts/oltp_queries.sql';",
+      s"run '$snappyHome/quickstart/scripts/olap_queries.sql';",
+      s"run '$snappyHome/quickstart/scripts/olap_approx_queries.sql';",
       "exit;")),
 
     Job("airlineDataJob",

@@ -16,7 +16,9 @@
  */
 package io.snappydata.examples
 
-import java.io.{PrintWriter, ByteArrayOutputStream, ByteArrayInputStream, File}
+import java.io._
+
+import org.apache.commons.io.output.TeeOutputStream
 
 import scala.language.postfixOps
 import scala.sys.process.{Process, _}
@@ -38,7 +40,7 @@ object ExampleTester {
 
   var snappyHome = ""
   var localHostName = ""
-  val oldQuickStart = ExampleConf.oldQuickStart
+
 
   def main(args: Array[String]) {
     snappyHome = args(0)
@@ -46,66 +48,68 @@ object ExampleTester {
 
     startupCluster()
     try {
+      val oldQuickStart = ExampleConf.oldQuickStart(snappyHome)
       oldQuickStart map (c => runExample(c))
     } catch {
-      case ex: Exception => ex.printStackTrace()
+      case ex: Exception => {
+        ex.printStackTrace()
+        throw ex
+      }
     } finally {
       stopCluster
     }
-
   }
 
 
   def runExample(example: Example): Unit = {
+    println(s"############################################")
     println(s"Executing ${example.name}")
     example match {
       case ex: Job => runJob(ex.jobClass)
-      case snShell : SnappyShell => snShell.sqlCommand pipe snappyShell foreach println
-      case submit : SparkSubmit => sparkSubmit(submit.appClass, submit.confs, submit.appJar)
+      case snShell: SnappyShell => snShell.sqlCommand pipe snappyShell foreach println
+      case submit: SparkSubmit => sparkSubmit(submit.appClass, submit.confs, submit.appJar)
       case _ =>
     }
   }
 
-  def startupCluster(): Unit = {
-    new PrintWriter(s"$snappyHome/conf/servers") {
-      write(s"$localHostName\n$localHostName"); close
-    }
-
+  def executeProcess(command: String): (String, String) = {
     val stdoutStream = new ByteArrayOutputStream
     val stderrStream = new ByteArrayOutputStream
-    val stdoutWriter = new PrintWriter(stdoutStream)
-    val stderrWriter = new PrintWriter(stderrStream)
 
-    Process(s"$snappyHome/sbin/snappy-start-all.sh", new File(s"$snappyHome")) !
-      (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    val teeOut = new TeeOutputStream(stdout, stdoutStream)
+    val teeErr = new TeeOutputStream(stderr, stderrStream)
 
-    stdoutWriter.flush
-    stderrWriter.flush
-    println(stdoutStream.toString)
-    if (!stdoutStream.toString.contains("Distributed system now has 4 members")) {
+    val stdoutWriter = new PrintStream(teeOut)
+    val stderrWriter = new PrintStream(teeErr)
+    try {
+      Process(command, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome) !
+        (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+
+    } finally {
+      stdoutWriter.close
+      stderrWriter.close
+    }
+    (stdoutStream.toString, stderrStream.toString)
+  }
+
+  def startupCluster(): Unit = {
+    new PrintWriter(s"$snappyHome/conf/servers") {
+      write(s"$localHostName\n$localHostName");
+      close
+    }
+    val (out, err) = executeProcess(s"$snappyHome/sbin/snappy-start-all.sh")
+
+    if (!out.contains("Distributed system now has 4 members")) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
-
-    stdoutStream.reset
-    stderrStream.reset
-
-    Process(s"$snappyHome/sbin/start-all.sh", new File(s"$snappyHome")) !
-      (ProcessLogger(stdoutWriter.println, stderrWriter.println))
-
-    stdoutWriter.flush
-    stderrWriter.flush
-    println(stdoutStream.toString)
+    val (out1, err1) = executeProcess(s"$snappyHome/sbin/start-all.sh")
   }
 
 
-
   def stopCluster(): Unit = {
-    Process(s"$snappyHome/sbin/snappy-stop-all.sh", new File(s"$snappyHome"))!
-    //Intentional blank line
-
+    executeProcess(s"$snappyHome/sbin/snappy-stop-all.sh")
     new File(s"$snappyHome/conf/servers").deleteOnExit()
-
-    Process(s"$snappyHome/sbin/stop-all.sh", new File(s"$snappyHome")) !
+    executeProcess(s"$snappyHome/sbin/stop-all.sh")
   }
 
   /**
@@ -116,12 +120,12 @@ object ExampleTester {
   }
 
 
-  private def sparkSubmit(appClass: String, confs :Seq[String], appJar :String): Unit ={
+  private def sparkSubmit(appClass: String, confs: Seq[String], appJar: String): Unit = {
 
-    val confStr = if(confs.size>0) confs.foldLeft("")((r,c) => s"$r --conf $c") else ""
-    val classStr = if(appClass.isEmpty) "" else s"--class  $appClass"
+    val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
+    val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
     val sparkSubmit = s"./bin/spark-submit $classStr --master spark://$localHostName:7077 $confStr $appJar"
-    Process(sparkSubmit, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome)!
+    executeProcess(sparkSubmit)
   }
 
   private def runJob(jobClass: String): Unit = {
@@ -132,21 +136,9 @@ object ExampleTester {
 
     val jobCommand = s"$jobSubmit --app-name ${jobClass}_${System.currentTimeMillis()} --class $jobClass"
 
-    val stdoutStream = new ByteArrayOutputStream
-    val stderrStream = new ByteArrayOutputStream
-    val stdoutWriter = new PrintWriter(stdoutStream)
-    val stderrWriter = new PrintWriter(stderrStream)
+    val (out, err) = executeProcess(jobCommand)
 
-    val pb = Process(jobCommand, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome)
-    pb ! (ProcessLogger(stdoutWriter.println, stderrWriter.println))
-
-    stdoutWriter.flush
-    stderrWriter.flush
-
-    val jobSubmitStr = stdoutStream.toString
-    println(s"job submit output $stdoutStream")
-    stdoutStream.reset
-    stderrStream.reset
+    val jobSubmitStr = out
 
     val jsonStr = if (jobSubmitStr.charAt(2) == '{')
       jobSubmitStr.substring(2)
@@ -161,36 +153,21 @@ object ExampleTester {
     println("jobID " + jobID)
 
     var status = "RUNNING"
-    try {
-      while (status == "RUNNING") {
-        Thread.sleep(3000)
-        val statusCommand = s"$jobStatus $jobID"
-        val pb = Process(statusCommand, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome)
+    while (status == "RUNNING") {
+      Thread.sleep(3000)
+      val statusCommand = s"$jobStatus $jobID"
+      val (out, err) = executeProcess(statusCommand)
 
-        pb ! (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+      val jobSubmitStatus = out
 
-        stdoutWriter.flush
-        stderrWriter.flush
-
-        val jobSubmitStatus = stdoutStream.toString
-        println(s"job status output $stdoutStream")
-        stdoutStream.reset
-        stderrStream.reset
-
-        def statusjson = JSON.parseFull(jobSubmitStatus)
-        statusjson match {
-          case Some(map: Map[String, Any]) => {
-            val v = map.get("status").get
-            println("Current status of job: " + v)
-            status = v.toString
-          }
-          case other => "bad Result"
+      def statusjson = JSON.parseFull(jobSubmitStatus)
+      statusjson match {
+        case Some(map: Map[String, Any]) => {
+          val v = map.get("status").get
+          println("Current status of job: " + v)
+          status = v.toString
         }
-      }
-    } catch {
-      case e: Exception => {
-        stdoutWriter.close
-        stderrWriter.close
+        case other => "bad Result"
       }
     }
 

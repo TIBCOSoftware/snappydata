@@ -21,6 +21,8 @@ compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.scala.srcDir 'src/test/scala'
 
 dependencies {
 
@@ -57,4 +59,18 @@ task productExamples(dependsOn: 'jar') << {
     include "${project.jar.archiveName}"
     rename { filename -> exampleArchiveName }
   }
+}
+
+task cleanQuickstart << {
+  String workingDir = "${testResultsBase}/quickstart"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
+
+task runExamples(type: JavaExec, dependsOn: 'classes') {
+  dependsOn cleanQuickstart
+  main = 'io.snappydata.examples.ExampleTester'
+  classpath = sourceSets.test.runtimeClasspath
+  args snappyProductDir
+  workingDir = "${testResultsBase}/quickstart"
 }
