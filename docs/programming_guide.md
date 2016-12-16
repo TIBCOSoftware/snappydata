@@ -821,24 +821,35 @@ To ensure optimal performance for SELECT queries executed over JDBC connection (
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
 
 
-1. Using the system property **spark-string-as-clob** when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
+* Using the system property **spark-string-as-clob** when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 ```
 bin/snappy-shell leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
-2. Defining the column itself as CLOB, either using SQL or API.
+* Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
 ```
 CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
 ```
-```
-StructField("Col2", StringType, false, Utils.stringMetadata())
+```Scala
+    import org.apache.spark.sql.collection.Utils
+    import org.apache.spark.sql.types.{StringType, StructField, StructType}
+
+    val snappy: SnappySession = new SnappySession(spark.sparkContext)
+
+    // Define schema for table
+    val schema = StructType(Array(
+      // The parameter Utils.stringMetadata() ensures that this column is rendered as CLOB
+      StructField("Col2", StringType, false, Utils.stringMetadata())
+    ))
+
+    snappy.createTable(tableName, "column", schema, Map.empty[String, String])
 ```
 
-3. Using the query-hint **columnsAsClob** in the SELECT query.
+* Using the query-hint **columnsAsClob** in the SELECT query.
 ```
 SELECT * FROM tableName --+ columnsAsClob(*)
 ```
->You can also provide comma-separated specific column name(s) instead of * above so that data of only those column(s) is returned as CLOB.
+> The usage of * above causes all the STRING columns in the table to be rendered as VARCHAR. You can also provide comma-separated specific column name(s) instead of * above so that data of only those column(s) is returned as CLOB.
 ```
 SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 ```
