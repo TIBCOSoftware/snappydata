@@ -536,7 +536,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
           "P.OrderRef = R.OrderRef AND P.description = R.description"
     }
     val moreJoinKeys = snc.sql(moreJoinSQL)
-    checkForShuffle(moreJoinKeys.logicalPlan, snc, shuffleExpected = true)
+    checkForShuffle(moreJoinKeys.logicalPlan, snc,
+      shuffleExpected = !isDifferentJoinOrderSupported)
 
 
     val leftSemijoinDF = snc.sql("select P.OrderRef, P.description from " +
