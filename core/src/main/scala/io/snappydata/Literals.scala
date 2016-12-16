@@ -182,6 +182,10 @@ object Property extends Enumeration {
     s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
+  val UseSparkMemoryManager = Val(s"${Constant.SPARK_SNAPPY_PREFIX}useSparkUMM",
+    "If true then sets Spark UMM as the memory manager",
+    Some(false), prefix = null, isPublic = false)
+
   val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
