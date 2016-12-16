@@ -19,6 +19,7 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 
