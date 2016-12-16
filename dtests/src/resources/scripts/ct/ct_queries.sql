@@ -1,3 +1,6 @@
+elapsedtime on;
+set spark.sql.shuffle.partitions=29;
+
 select count(*) from ORDER_DETAILS;
 
 select max(single_order_did) from ORDER_DETAILS;
