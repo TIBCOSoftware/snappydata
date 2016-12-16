@@ -159,114 +159,99 @@ object TPCH_Snappy {
         sqlContext.sql(getSampledQuery10).collect()
       case "q1" =>
         val df = sqlContext.sql(getQuery1)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q1")
         }
-        res
+        df.collect()
       case "q2" =>
-        val result = sqlContext.sql(getTempQuery2())
+        /*val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
-        val df = sqlContext.sql(getQuery2())
-        //val df = sqlContext.sql(getQuery2_Original())
-        val res = df.collect()
+        val df = sqlContext.sql(getQuery2())*/
+        val df = sqlContext.sql(getQuery2_Original())
         if (genPlan) {
           printPlan(df, "Q2")
         }
-        res
+        df.collect()
       case "q3" =>
         val df = sqlContext.sql(getQuery3)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q3")
         }
-        res
+        df.collect()
       case "q4" =>
         val df = sqlContext.sql(getQuery4)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q4")
         }
-        res
+        df.collect()
       case "q5" =>
         val df = sqlContext.sql(getQuery5)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q5")
         }
-        res
+        df.collect()
       case "q6" =>
         val df = sqlContext.sql(getQuery6)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q6")
         }
-        res
+        df.collect()
       case "q7" =>
         val df = sqlContext.sql(getQuery7)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q7")
         }
-        res
+        df.collect()
       case "q8" =>
         val df = sqlContext.sql(getQuery8(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q8")
         }
-        res
+        df.collect()
       case "q9" =>
         val df = sqlContext.sql(getQuery9(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q9")
         }
-        res
+        df.collect()
       case "q10" =>
-
         val df = sqlContext.sql(getQuery10)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q10")
         }
-        res
+        df.collect()
       case "q11" =>
-        val result = sqlContext.sql(getTempQuery11)
+       /*val result = sqlContext.sql(getTempQuery11)
         val res: Array[Row] = result.collect()
         var df: DataFrame = null
         var res1: Array[Row] = null
-        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))
-//        val df = sqlContext.sql(getQuery11_Original())
-        res1 = df.collect()
+        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))*/
+        val df = sqlContext.sql(getQuery11_Original())
         if (genPlan) {
           printPlan(df, "Q11")
         }
-        res1
+        df.collect()
       case "q12" =>
         val df = sqlContext.sql(getQuery12)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q12")
         }
-        res
+        df.collect()
       case "q13" =>
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
         val df = sqlContext.sql(getQuery13())
-        //val df = sqlContext.sql(getQuery13_Original())
-        val res = df.collect()
+//        val df = sqlContext.sql(getQuery13_Original())
         if (genPlan) {
           printPlan(df, "Q13")
         }
-        res
+        df.collect()
       case "q14" =>
         val df = sqlContext.sql(getQuery14(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q14")
         }
-        res
+        df.collect()
       case "q15" =>
         var result = sqlContext.sql(getTempQuery15_1)
         result.createOrReplaceTempView("revenue")
@@ -275,71 +260,63 @@ object TPCH_Snappy {
         result.createOrReplaceTempView("ViewQ15")
 
         val df = sqlContext.sql(getQuery15)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q15")
         }
-        res
+        df.collect()
       case "q16" =>
         val df = sqlContext.sql(getQuery16)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q16")
         }
-        res
+        df.collect()
       case "q17" =>
-        val result = sqlContext.sql(getTempQuery17(useIndex))
+/*        val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
-        val df = sqlContext.sql(getQuery17(useIndex))
-        //val df = sqlContext.sql(getQuery17_Original())
-        val res = df.collect()
+        val df = sqlContext.sql(getQuery17(useIndex))*/
+        val df = sqlContext.sql(getQuery17_Original())
         if (genPlan) {
           printPlan(df, "Q17")
         }
-        res
+        df.collect()
       case "q18" =>
         val df = sqlContext.sql(getQuery18)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q18")
         }
-        res
+        df.collect()
       case "q19" =>
         val df = sqlContext.sql(getQuery19(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q19")
         }
-        res
+        df.collect()
       case "q20" =>
 //        val result = sqlContext.sql(getTempQuery20(useIndex))
 //        result.createOrReplaceTempView("ViewQ20")
         val df = sqlContext.sql(getQuery20_Original())
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q20")
         }
-        res
+        df.collect()
       case "q21" =>
         val df = sqlContext.sql(getQuery21)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q21")
         }
-        res
+        df.collect()
       case "q22" =>
-        val result = sqlContext.sql(getTempQuery22(useIndex))
+      val result = sqlContext.sql(getTempQuery22(useIndex))
         val res = result.collect()
         assert(res.length == 1)
         var df: DataFrame = null
         var res1 = res
         df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
-        //val df = sqlContext.sql(getQuery22_Original())
-        res1 = df.collect()
+//        val df = sqlContext.sql(getQuery22_Original())
         if (genPlan) {
           printPlan(df, "Q22")
         }
-        res1
+        df.collect()
     }
     cnts
   }
@@ -1045,7 +1022,7 @@ object TPCH_Snappy {
           "         C_COMMENT" +
           " order by" +
           "         revenue desc" +
-        " limit 100"
+        " limit 20"
   }
 
   def getResultString10: String = {
@@ -1317,6 +1294,50 @@ object TPCH_Snappy {
   }
 
   def getQuery16: String = {
+    //    1. BRAND = Brand#45.
+    //    2. TYPE = MEDIUM POLISHED .
+    //    3. SIZE1 = 49
+    //    4. SIZE2 = 14
+    //    5. SIZE3 = 23
+    //    6. SIZE4 = 45
+    //    7. SIZE5 = 19
+    //    8. SIZE6 = 3
+    //    9. SIZE7 = 36
+    //    10. SIZE8 = 9.
+    "select" +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size," +
+      "         count(distinct ps_suppkey) as supplier_cnt" +
+      " from" +
+      "         PARTSUPP," +
+      "         PART" +
+      " where" +
+      "         p_partkey = ps_partkey" +
+      "         and p_brand <> 'Brand#45'" +
+      "         and p_type not like 'MEDIUM POLISHED%'" +
+      "         and p_size in (49, 14, 23, 45, 19, 3, 36, 9)" +
+      "         and not exists (" +
+      "                 select" +
+      "                         s_suppkey" +
+      "                 from" +
+      "                         SUPPLIER" +
+      "                 where" +
+      "                         s_suppkey = ps_suppkey and" +
+      "                         s_comment like '%Customer%Complaints%'" +
+      "         )" +
+      " group by" +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size" +
+      " order by" +
+      "         supplier_cnt desc," +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size"
+  }
+
+  def getQuery16Original: String = {
     //    1. BRAND = Brand#45.
     //    2. TYPE = MEDIUM POLISHED .
     //    3. SIZE1 = 49
