@@ -19,14 +19,13 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.{SnappyContext, SparkSession}
 
 class QueryTest extends SnappyFunSuite {
 
   test("Test exists in select") {
-    val snContext = org.apache.spark.sql.SnappyContext(sc)
+    val snContext = SnappyContext(sc)
 
     snContext.sql("CREATE TABLE titles(title_id varchar(20), title varchar(80) " +
         "not null, type varchar(12) not null, pub_id varchar(4), price int not null, " +

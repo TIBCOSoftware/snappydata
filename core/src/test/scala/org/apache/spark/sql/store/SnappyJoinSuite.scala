@@ -420,6 +420,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, i % 10 + 1)))
+    val snc = SnappyContext(sc)
+    snc.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
     val refDf = snc.createDataFrame(dimension1)
     snc.sql("DROP TABLE IF EXISTS PR_TABLE9")
 
@@ -445,9 +447,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
         s"PR_TABLE9 P JOIN PR_TABLE10 R ON P.ORDERID = R.OrderId AND " +
         s"P.ORDERREF = R.OrderRef")
-    // shuffle will not happen now, even though buckets are different, rdd partitions are same
-    // checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
-
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
     assert(excatJoinKeys.count() === 500)
   }
 
@@ -494,8 +494,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef " +
         s"AND " +
         s"R.ORDERID = Q.OrderId AND R.ORDERREF = Q.OrderRef")
-    // shuffle will not happen now, even though buckets are different, rdd partitions are same
-    // checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
     assert(excatJoinKeys.count() === 500)
   }
 
