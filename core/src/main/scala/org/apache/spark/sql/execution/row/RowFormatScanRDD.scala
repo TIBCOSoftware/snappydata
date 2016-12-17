@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.row
 
+import java.lang.reflect.Field
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
@@ -43,8 +44,6 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
  * This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
- * Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
- * as JDBCRDD has a lot of methods as private.
  */
 class RowFormatScanRDD(@transient val session: SnappySession,
     protected var tableName: String,
@@ -77,7 +76,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     } else ""
   }
 
-  protected lazy val resultSetField = {
+  protected lazy val resultSetField: Field = {
     val field = classOf[ProxyResultSet].getDeclaredField("delegate")
     field.setAccessible(true)
     field
@@ -127,7 +126,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append(col).append(" IN (")
-      (1 until values.length).foreach(v => sb.append("?,"))
+      (1 until values.length).foreach(_ => sb.append("?,"))
       sb.append("?)")
       args ++= values
     case And(left, right) =>

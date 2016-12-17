@@ -20,7 +20,6 @@ import java.io.IOException
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -160,9 +159,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
   }
 
-  private lazy val streamRDD = streamedPlan.execute()
   private lazy val buildRDD = buildPlan.execute()
-
 
   /**
    * Overridden by concrete implementations of SparkPlan.
@@ -172,43 +169,23 @@ case class LocalJoin(leftKeys: Seq[Expression],
     WholeStageCodegenExec(this).execute()
   }
 
-  private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {
-    val buildDataSize = longMetric("buildDataSize")
-    val buildTime = longMetric("buildTime")
-    val start = System.nanoTime()
-    val context = TaskContext.get()
-    val relation = HashedRelation(iter, buildKeys, taskMemoryManager = context.taskMemoryManager())
-    buildTime += (System.nanoTime() - start) / 1000000
-    buildDataSize += relation.estimatedSize
-    // This relation is usually used until the end of task.
-    context.addTaskCompletionListener(_ => relation.close())
-    relation
-  }
-
-  private[spark] def materializeDependencies[T](rdd: RDD[T],
-      visited: mutable.HashSet[RDD[_]]): Unit = {
-    rdd.dependencies.foreach(dep =>
-      if (visited.add(dep.rdd)) materializeDependencies(dep.rdd, visited))
-  }
+  private lazy val buildPlanRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  lazy val buildCodegenRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
     // If the build side has shuffle dependencies.
-    if (buildCodegenRDDs.length == 1 && buildCodegenRDDs(0).dependencies.size >= 1 &&
-        buildCodegenRDDs(0).dependencies.exists(x =>
-        {x.isInstanceOf[ShuffleDependency[_, _, _]]})){
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs().map(rdd => {
+    if (buildPlanRDDs.nonEmpty) {
+      val buildShuffleDeps = buildPlanRDDs.flatMap(_.dependencies.filter(
+        _.isInstanceOf[ShuffleDependency[_, _, _]]))
+      if (buildShuffleDeps.nonEmpty) {
+        val rdd = streamRDDs.head
         new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
-          (rdd.dependencies ++ buildCodegenRDDs(0).dependencies.filter(
-            _.isInstanceOf[ShuffleDependency[_, _, _]])))
-      })
-    } else {
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
-    }
+          rdd.dependencies ++ buildShuffleDeps) +: streamRDDs.tail
+      } else streamRDDs
+    } else streamRDDs
   }
 
   override def doProduce(ctx: CodegenContext): String = {
@@ -234,7 +211,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
-    val rdds = buildCodegenRDDs
+    val rdds = buildPlanRDDs
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
       new CacheKey(exprIds, rdds.head.id))
