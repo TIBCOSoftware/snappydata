@@ -50,7 +50,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createAndLoadPartitionedTables(snc)
     NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
     validatePartitionedRowTableQueries(snc)
-    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "PartitionedRow", pw, sqlContext)
+    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "PartitionedRowTable", pw, sqlContext)
     pw.close()
   }
 
