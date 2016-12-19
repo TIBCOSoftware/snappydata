@@ -39,7 +39,7 @@ private[sql] final case class RowTableScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    partitionColumnAliases: Seq[Option[Attribute]],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,
@@ -48,28 +48,26 @@ private[sql] final case class RowTableScan(
   override def doProduce(ctx: CodegenContext): String = {
     // a parent plan may set a custom input (e.g. LocalJoin)
     // for that case no need to add the "shouldStop()" calls
-    var builderInput = true
     // PartitionedPhysicalRDD always has one input
     val input = ctx.freshName("input")
     ctx.addMutableState("scala.collection.Iterator",
       input, s"$input = inputs[0];")
-    builderInput = false
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null
 
     val code = dataRDD match {
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
-        doProduceWithoutProjection(ctx, input, builderInput, numOutputRows,
+        doProduceWithoutProjection(ctx, input, numOutputRows,
           output, baseRelation)
       case _ =>
-        doProduceWithProjection(ctx, input, builderInput, numOutputRows,
+        doProduceWithProjection(ctx, input, numOutputRows,
           output, baseRelation)
     }
     code
   }
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
-      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
+      numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
@@ -90,7 +88,7 @@ private[sql] final case class RowTableScan(
        |    final $compactRowClass $row = ($compactRowClass)$iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
+       |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
@@ -103,7 +101,7 @@ private[sql] final case class RowTableScan(
   }
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
-      builderInput: Boolean, numOutputRows: String, output: Seq[Attribute],
+      numOutputRows: String, output: Seq[Attribute],
       baseRelation: PartitionedDataSourceScan): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
@@ -122,7 +120,7 @@ private[sql] final case class RowTableScan(
        |    $iterator.next();
        |    $numRows++;
        |    ${consume(ctx, columnsRowInput).trim}
-       |    ${if (builderInput) "" else "if (shouldStop()) return;"}
+       |    if (shouldStop()) return;
        |  }
        |} catch (RuntimeException re) {
        |  throw re;
