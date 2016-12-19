@@ -39,7 +39,7 @@ private[sql] final case class RowTableScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    partitionColumnAliases: Seq[Option[Attribute]],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,

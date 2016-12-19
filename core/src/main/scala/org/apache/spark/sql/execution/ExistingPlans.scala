@@ -48,7 +48,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    partitionColumnAliases: Seq[Option[Attribute]],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
@@ -116,7 +116,7 @@ private[sql] object PartitionedPhysicalScan {
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Option[Attribute]],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       rdd: RDD[Any],
       otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,

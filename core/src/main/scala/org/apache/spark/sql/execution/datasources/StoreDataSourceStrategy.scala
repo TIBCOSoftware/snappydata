@@ -125,7 +125,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
     // check for joinedCols in projections
     val joinedAliases = if (projects.nonEmpty) {
-      joinedCols.map(j => projects.collectFirst {
+      joinedCols.map(j => projects.collect {
         case a@Alias(child, _) if child.semanticEquals(j) => a.toAttribute
       })
     } else Seq.empty

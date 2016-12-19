@@ -72,7 +72,7 @@ private[sql] final case class ColumnTableScan(
     otherRDDs: Seq[RDD[InternalRow]],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    partitionColumnAliases: Seq[Option[Attribute]],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan,
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
