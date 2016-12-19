@@ -618,6 +618,7 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        exclude 'slf4j*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
