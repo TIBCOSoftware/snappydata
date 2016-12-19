@@ -36,7 +36,8 @@ For row format tables column definition can take underlying GemFire XD syntax to
 But for column table it's restricted to Spark syntax for column definition e.g.
 
     snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
-Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition. 
+Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
+
 ##### Spark API for managing tables
 
 Get a reference to [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)
@@ -72,7 +73,7 @@ The below mentioned DDL extensions are required to configure a table based on us
    9. OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
    10.  EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
 
-##### Restrictions on column tables in the 0.6 release
+##### Restrictions on column tables
 1. Column tables can not specify any primary key, unique key constraints.
 2. Index on column table is not supported.
 2. Option EXPIRE is not applicable for column tables.

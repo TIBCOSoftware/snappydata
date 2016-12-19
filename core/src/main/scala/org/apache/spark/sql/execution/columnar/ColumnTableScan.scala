@@ -72,13 +72,14 @@ private[sql] final case class ColumnTableScan(
     otherRDDs: Seq[RDD[InternalRow]],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan,
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
     isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation])
-    with CodegenSupport {
+      partitionColumns, partitionColumnAliases,
+      baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
   override def getMetrics: Map[String, SQLMetric] = super.getMetrics ++ Map(
     "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,

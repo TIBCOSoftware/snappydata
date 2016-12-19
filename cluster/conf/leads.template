@@ -20,6 +20,17 @@
 # for that lead instance are kept. Apart from these two things, snappy
 # specific properties can also be passed. If the directory and properties
 # are not specified a default directory is created inside the SPARK_HOME directory.
-#
+# 
 # localhost   -dir=/tmp/data/lead (config args)
+#
+# Below is an example of how you can specify multiple locators for a lead and also
+# set its heap size to 64 GB.
+# 
+#     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
+# 
+# Another example which shows how to specify a JVM parameter and Spark properties.
+# 
+#     localhost   -dir=/tmp/data/server -J-XX:MaxPermSize=512m -spark.ui.port=3333 -spark.executor.cores=16
+#
+# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

@@ -19,9 +19,8 @@ package io.snappydata
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
-
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.ui.SnappyDashboardTab
 
@@ -32,13 +31,22 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       numPartitions: Int, numBuckets: Int): Partitioning = {
-    OrderlessHashPartitioning(partitionColumns, numPartitions, numBuckets)
+    OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
+      numPartitions, numBuckets)
+  }
+
+  override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)] = partitioning match {
+    case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
+      p.numPartitions, p.numBuckets)
+    case _ => None
   }
 
   override def updateUI(scUI: Option[Any]): Unit = {
-    scUI.foreach( ui => {
+    scUI.foreach { ui =>
       new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
-    })
+    }
   }
 }

@@ -680,6 +680,13 @@ task product(type: Zip) {
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
+      // Copy the JDBC client jar to jars directory, even if its constituent jars
+      // are already present in this directory.
+      copy {
+        from clientProject.shadowJar.destinationDir
+        into "${snappyProductDir}/jars"
+        include clientProject.shadowJar.archiveName
+      }
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
@@ -797,7 +804,7 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
-def runScript(def execName, def workDir, def param) {
+def runScript(def execName, def workDir, def param, env = null) {
   def stdout = new ByteArrayOutputStream()
   exec {
     executable "${execName}"
@@ -939,6 +946,26 @@ task runQuickstart {
       if (conffile.exists())
         conffile.delete()
     }
+    //Setting _JAVA_OPTIONS to avoid using gradle settings which is 256m which was causing rdd to
+    // overflow on disk
+    Map<String,Object> env = new HashMap<String,Object>()
+    env.put("_JAVA_OPTIONS","-Xms256m -Xmx4g")
+    String extraArgs = '-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g '
+    if(project.hasProperty('snappy.perf')){
+      extraArgs = extraArgs.concat("-Dsnappy_benchmark_perf=true")
+    }
+    String quickStartResult = runScript("${snappyProductDir}/bin/spark-shell", workingDir,
+        ['--driver-memory=4g',"--driver-java-options=$extraArgs", '-i',
+         "${snappyProductDir}/quickstart/scripts/Quickstart.scala"], env)
+
+    if (quickStartResult.toLowerCase().
+        contains('cannot meet the required performance')) {
+      println(quickStartResult)
+      throw new GradleException('Failed to assert required performance in Quickstart')
+    } else {
+      println(quickStartResult)
+    }
+
   }
 }
 

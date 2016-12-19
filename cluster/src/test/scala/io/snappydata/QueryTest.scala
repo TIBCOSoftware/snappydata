@@ -17,10 +17,15 @@
 
 package io.snappydata
 
+import scala.collection.JavaConverters._
+
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.{SnappyContext, SparkSession}
+
 class QueryTest extends SnappyFunSuite {
 
   test("Test exists in select") {
-    val snContext = org.apache.spark.sql.SnappyContext(sc)
+    val snContext = SnappyContext(sc)
 
     snContext.sql("CREATE TABLE titles(title_id varchar(20), title varchar(80) " +
         "not null, type varchar(12) not null, pub_id varchar(4), price int not null, " +
@@ -58,5 +63,31 @@ class QueryTest extends SnappyFunSuite {
         "SELECT * FROM sales WHERE sales.title_id = titles.title_id AND qty >30)")
 
     df.show()
+  }
+
+  test("SNAP-1159") {
+    val session = SnappyContext(sc).snappySession
+    session.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=10")
+    session.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
+    val data1 = session.range(20).selectExpr("id")
+    val data2 = session.range(80).selectExpr("id", "cast ((id / 4) as long) as k",
+      "(case when (id % 4) < 2 then cast((id % 4) as long) else null end) as v")
+    data1.write.format("column").saveAsTable("t1")
+    data2.write.format("column").saveAsTable("t2")
+
+    SparkSession.clearActiveSession()
+    val spark = SparkSession.builder().getOrCreate()
+    val sdata1 = spark.range(20).selectExpr("id")
+    val sdata2 = spark.createDataFrame(data2.collect().toSeq.asJava, data2.schema)
+    sdata1.createOrReplaceTempView("t1")
+    sdata2.createOrReplaceTempView("t2")
+
+    val query = "select k, v from t1 inner join t2 where t1.id = t2.k order by k, v"
+    val df = session.sql(query)
+    val result1 = df.collect().mkString(" ")
+    val result2 = spark.sql(query).collect().mkString(" ")
+    if (result1 != result2) {
+      fail(s"Expected result: $result2\nGot: $result1")
+    }
   }
 }

@@ -20,6 +20,7 @@
 package io.snappydata
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
 
@@ -46,9 +47,8 @@ import org.apache.spark.{Logging, SparkContext}
 object SnappyTableStatsProviderService extends Logging {
 
   @volatile
-  private var tableSizeInfo = Map[String, SnappyRegionStats]()
-  @volatile
-  private var membersInfo = mutable.Map.empty[String, mutable.Map[String, Any]]
+  private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  private val membersInfo = TrieMap.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
 
@@ -75,29 +75,8 @@ object SnappyTableStatsProviderService extends Logging {
         override def run2(): Unit = {
           try {
             if (doRun) {
-              val prevTableSizeInfo = tableSizeInfo
-              running = true
-              try {
-                tableSizeInfo = getAggregatedTableStatsOnDemand
-                // get members details
-                getAggregatedMemberStatsOnDemand
-              } finally synchronized {
-                running = false
-                notifyAll()
-              }
-              // check if there has been a substantial change in table
-              // stats, and clear the plan cache if so
-              if (prevTableSizeInfo.size != tableSizeInfo.size) {
-                SnappySession.clearAllCache()
-              } else {
-                val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
-                val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
-                if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
-                  SnappySession.clearAllCache()
-                }
-              }
+              aggregateStats()
             }
-
           } catch {
             case _: CancelException => // ignore
             case e: Exception => if (!e.getMessage.contains(
@@ -116,17 +95,47 @@ object SnappyTableStatsProviderService extends Logging {
       delay, delay)
   }
 
+  private def aggregateStats(): Unit = synchronized {
+    try {
+      if (doRun) {
+        val prevTableSizeInfo = tableSizeInfo
+        running = true
+        try {
+          tableSizeInfo = getAggregatedTableStatsOnDemand
+          // get members details
+          fillAggregatedMemberStatsOnDemand()
+        } finally {
+          running = false
+          notifyAll()
+        }
+        // check if there has been a substantial change in table
+        // stats, and clear the plan cache if so
+        if (prevTableSizeInfo.size != tableSizeInfo.size) {
+          SnappySession.clearAllCache()
+        } else {
+          val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
+          val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
+          if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
+            SnappySession.clearAllCache()
+          }
+        }
+      }
+    } catch {
+      case _: CancelException => // ignore
+      case e: Exception => if (!e.getMessage.contains(
+        "com.gemstone.gemfire.cache.CacheClosedException")) {
+        logWarning(e.getMessage, e)
+      } else {
+        logError(e.getMessage, e)
+      }
+    }
+  }
 
-  def getAggregatedMemberStatsOnDemand: Unit = {
+  def fillAggregatedMemberStatsOnDemand(): Unit = {
 
-    // reset all existing members status as down
-    membersInfo.map(tmp => {
-     val mbr = tmp._2
-      mbr.put("status" , "Stopped")
-    })
-
-    val collector = new GfxdListResultCollector(null, true);
-    val msg:MemberStatisticsMessage = new MemberStatisticsMessage(collector)
+    val existingMembers = membersInfo.keys.toArray
+    val collector = new GfxdListResultCollector(null, true)
+    val msg = new MemberStatisticsMessage(collector)
 
     msg.executeFunction()
 
@@ -134,26 +143,30 @@ object SnappyTableStatsProviderService extends Logging {
 
     val itr = memStats.iterator()
 
-    while(itr.hasNext){
+    val members = mutable.Map.empty[String, mutable.Map[String, Any]]
+    while (itr.hasNext) {
       val o = itr.next().asInstanceOf[ListResultCollectorValue]
       val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-      val map = scala.collection.mutable.HashMap.empty[String, Any]
+      val map = mutable.HashMap.empty[String, Any]
       val keyItr = memMap.keySet().iterator()
 
-      while(keyItr.hasNext){
+      while (keyItr.hasNext) {
         val key = keyItr.next()
         map.put(key, memMap.get(key))
       }
       map.put("status", "Running")
 
       val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-      if(dssUUID != null){
-        membersInfo.put(dssUUID.toString, map)
-      }else{
-        membersInfo.put(memMap.get("id").asInstanceOf[String], map)
+      if (dssUUID != null) {
+        members.put(dssUUID.toString, map)
+      } else {
+        members.put(memMap.get("id").asInstanceOf[String], map)
       }
     }
-
+    membersInfo ++= members
+    // mark members no longer running as stopped
+    existingMembers.filterNot(members.contains).foreach(m =>
+      membersInfo(m).put("status", "Stopped"))
   }
 
   def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
@@ -171,15 +184,19 @@ object SnappyTableStatsProviderService extends Logging {
   }
 
 
-  def getTableStatsFromService(fullyQualifiedTableName: String):
-  Option[SnappyRegionStats] = {
-    if (tableSizeInfo == null || !tableSizeInfo.contains(fullyQualifiedTableName)) {
-      None
-    } else tableSizeInfo.get(fullyQualifiedTableName)
+  def getTableStatsFromService(
+      fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
+    val tableSizes = this.tableSizeInfo
+    if (tableSizes.isEmpty || !tableSizes.contains(fullyQualifiedTableName)) {
+      // force run
+      aggregateStats()
+    }
+    tableSizeInfo.get(fullyQualifiedTableName)
   }
 
   def publishColumnTableRowCountStats(): Unit = {
     def asSerializable[C](c: C) = c.asInstanceOf[C with Serializable]
+
     val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
     for (region: LocalRegion <- regions) {
       if (region.getDataPolicy == DataPolicy.PARTITION ||
