@@ -252,17 +252,14 @@ object SnappyTableStatsProviderService extends Logging {
 
   private def getTableStatsFromAllServers: Seq[SnappyRegionStats] = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-
     val dataServers = GfxdMessage.getAllDataStores
     if( dataServers != null && dataServers.size() > 0 ){
-
       result = FunctionService.onMembers(dataServers)
         .withCollector(new GfxdListResultCollector())
         .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
         asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
         .asScala
     }
-
     result.flatMap(_.getRegionStats.asScala)
   }
 
