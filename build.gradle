@@ -728,27 +728,7 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    copy {
-      from("${clusterProject.projectDir}/ec2")
-      into "${snappyProductDir}/ec2"
-      exclude "deploy/home/ec2-user/snappydata/servers"
-      exclude "deploy/home/ec2-user/snappydata/leads"
-      exclude "deploy/home/ec2-user/snappydata/locators"
-      exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-      exclude "lib"
-    }
   }
-}
-
-task ec2Tar(type: Tar) {
-     dependsOn ':product'
-     from("cluster/ec2")
-     baseName = 'snappydata-ec2'
-     exclude "deploy/home/ec2-user/snappydata/servers"
-     exclude "deploy/home/ec2-user/snappydata/leads"
-     exclude "deploy/home/ec2-user/snappydata/locators"
-     exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-     exclude "lib"
 }
 
 if (rootProject.hasProperty('copyToDir')) {
@@ -791,7 +771,7 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip, ec2Tar
+  dependsOn product, distTar, distZip
 }
 
 def copyTestsCommonResources(def bdir) {
