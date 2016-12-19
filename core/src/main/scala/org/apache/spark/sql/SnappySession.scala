@@ -217,12 +217,12 @@ class SnappySession(@transient private val sc: SparkContext,
     removeContextObject(ctx -> (objectType -> key))
   }
 
-  private[sql] def linkBucketsToPartitions(flag: Boolean): Unit = {
-    addContextObject(StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED, flag)
+  private[sql] def linkPartitionsToBuckets(flag: Boolean): Unit = {
+    addContextObject(StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED, flag)
   }
 
-  private[sql] def hasLinkBucketsToPartitions: Boolean = {
-    getContextObject[Boolean](StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED)
+  private[sql] def hasLinkPartitionsToBuckets: Boolean = {
+    getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
         .getOrElse(false)
   }
 
