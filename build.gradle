@@ -302,9 +302,24 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def single = System.getProperty('dunit.single')
+    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+    FileTree includeTestFiles = dunitTests
+    def single = rootProject.hasProperty('dunit.single') ?
+        rootProject.property('dunit.single') : null
+    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+          getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+    int dunitTo = rootProject.hasProperty('dunit.to') ?
+          getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
     if (single == null || single.length() == 0) {
-      include '**/*DUnitTest.class'
+      int begin = dunitFrom != -1 ? dunitFrom : 0
+      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+      if (begin != 0 || end != includeTestFiles.size()) {
+        println("Picking tests :")
+        filteredSet.each { a -> println(a) }
+      }
+      include filteredSet
     } else {
       include single
     }
@@ -1001,6 +1016,12 @@ def writeProperties(def parent, def name, def comment, def propsMap) {
     writer.flush()
   } finally {
     writer.close()
+  }
+}
+
+int getLast(includeTestFiles, pattern) {
+  includeTestFiles.findLastIndexOf {
+    File f -> f.name.indexOf(pattern) >= 0
   }
 }
 
