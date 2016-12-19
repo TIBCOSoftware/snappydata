@@ -593,7 +593,11 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
     // collapse aggregates including removal of exchange completely if possible
     case agg@SnappyHashAggregateExec(Some(groupingAttributes), _,
     finalAggregateExpressions, _, resultExpressions, child, false)
-      if groupingAttributes.nonEmpty =>
+      if groupingAttributes.nonEmpty &&
+          // not for child classes (like AQP extensions)
+          agg.getClass == classOf[SnappyHashAggregateExec] &&
+          // also skip for bootstrap which depends on partial+final
+          !agg.output.exists(_.name.contains("bootstrap")) =>
       val partialAggregate = child match {
         case s: SnappyHashAggregateExec => s
         case e: Exchange => e.child.asInstanceOf[SnappyHashAggregateExec]
