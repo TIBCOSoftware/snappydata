@@ -138,9 +138,8 @@ object snappy extends Serializable {
         p: (Int) => Seq[String],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new PreserveLocationsRDD(
-        rdd,
-        (context: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(index, iter),
+      new PreserveLocationsRDD(rdd,
+        (_: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(index, iter),
         preservesPartitioning, p)
     }
   }
@@ -230,4 +229,3 @@ private[sql] case class SnappyDataFrameOperations(session: SnappySession,
   def appendToTempTableCache(tableName: String): Unit =
     session.appendToTempTableCache(df, tableName)
 }
-

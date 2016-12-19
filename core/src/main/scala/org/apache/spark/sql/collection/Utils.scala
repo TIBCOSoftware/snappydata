@@ -43,8 +43,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
@@ -700,7 +701,7 @@ object Utils {
     System.clearProperty("spark.io.compression.codec")
   }
 
-  lazy val metricWithPrimitiveMethods: Boolean = {
+  lazy val usingEnhancedSpark: Boolean = {
     try {
       classOf[SQLMetric].getMethod("longValue")
       true
@@ -710,7 +711,7 @@ object Utils {
   }
 
   def metricMethods(sc: SparkContext): (String => String, String => String) = {
-    if (metricWithPrimitiveMethods) {
+    if (usingEnhancedSpark) {
       (v => s"addLong($v)", v => s"$v.longValue()")
     } else {
       (v => s"add($v)",
@@ -722,6 +723,13 @@ object Utils {
   def generateJson(dataType: DataType, gen: JsonGenerator,
       row: InternalRow): Unit = {
     JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
+  }
+
+  def getNumColumns(partitioning: Partitioning): Int = partitioning match {
+    case c: PartitioningCollection =>
+      math.max(1, c.partitionings.map(getNumColumns).min)
+    case e: Expression => e.children.length
+    case _ => 1
   }
 }
 
@@ -947,5 +955,15 @@ object ToolsCallbackInit extends Logging {
             "DriverURL won't get published to others.")
         null
     }
+  }
+}
+
+object OrderlessHashPartitioningExtract {
+  def unapply(partitioning: Partitioning): Option[(Seq[Expression],
+      Seq[Seq[Attribute]], Int, Int)] = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks ne null) {
+      callbacks.checkOrderlessHashPartitioning(partitioning)
+    } else None
   }
 }

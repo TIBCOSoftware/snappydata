@@ -302,9 +302,24 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def single = System.getProperty('dunit.single')
+    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+    FileTree includeTestFiles = dunitTests
+    def single = rootProject.hasProperty('dunit.single') ?
+        rootProject.property('dunit.single') : null
+    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+          getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+    int dunitTo = rootProject.hasProperty('dunit.to') ?
+          getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
     if (single == null || single.length() == 0) {
-      include '**/*DUnitTest.class'
+      int begin = dunitFrom != -1 ? dunitFrom : 0
+      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+      if (begin != 0 || end != includeTestFiles.size()) {
+        println("Picking tests :")
+        filteredSet.each { a -> println(a) }
+      }
+      include filteredSet
     } else {
       include single
     }
@@ -603,6 +618,7 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        exclude 'slf4j*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
@@ -728,27 +744,7 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    copy {
-      from("${clusterProject.projectDir}/ec2")
-      into "${snappyProductDir}/ec2"
-      exclude "deploy/home/ec2-user/snappydata/servers"
-      exclude "deploy/home/ec2-user/snappydata/leads"
-      exclude "deploy/home/ec2-user/snappydata/locators"
-      exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-      exclude "lib"
-    }
   }
-}
-
-task ec2Tar(type: Tar) {
-     dependsOn ':product'
-     from("cluster/ec2")
-     baseName = 'snappydata-ec2'
-     exclude "deploy/home/ec2-user/snappydata/servers"
-     exclude "deploy/home/ec2-user/snappydata/leads"
-     exclude "deploy/home/ec2-user/snappydata/locators"
-     exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-     exclude "lib"
 }
 
 if (rootProject.hasProperty('copyToDir')) {
@@ -791,7 +787,7 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip, ec2Tar
+  dependsOn product, distTar, distZip
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -1021,6 +1017,12 @@ def writeProperties(def parent, def name, def comment, def propsMap) {
     writer.flush()
   } finally {
     writer.close()
+  }
+}
+
+int getLast(includeTestFiles, pattern) {
+  includeTestFiles.findLastIndexOf {
+    File f -> f.name.indexOf(pattern) >= 0
   }
 }
 

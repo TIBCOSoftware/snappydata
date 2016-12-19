@@ -20,7 +20,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution._
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
@@ -88,9 +87,6 @@ class SnappyContextFunctions {
     session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
       ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
-
-  def executePlan(session: SnappySession,
-      plan: LogicalPlan): QueryExecution = new QueryExecution(session, plan)
 
   def sql[T](fn: => T): T = fn
 }
