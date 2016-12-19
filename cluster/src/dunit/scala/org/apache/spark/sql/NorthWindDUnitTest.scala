@@ -693,11 +693,11 @@ object NorthWindDUnitTest {
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
       snappyDF = snappyDF.coalesce(1).orderBy(col1, col: _*)
       writeToFile(snappyDF, snappyDest, snc)
-      pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
+      pw.println(s"${queryNum} Result Collected in file $snappyDest")
     if (sparkFile.listFiles() == null) {
       sparkDF = sparkDF.coalesce(1).orderBy(col1, col: _*)
       writeToFile(sparkDF, sparkDest, snc)
-      pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+      pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
