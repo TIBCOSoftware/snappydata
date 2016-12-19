@@ -25,8 +25,11 @@ trait ToolsCallback {
   def invokeLeadStartAddonService(sc: SparkContext): Unit
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Option[Attribute]],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       numPartitions: Int, numBuckets: Int): Partitioning
+
+  def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)]
 
   def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
 }

@@ -31,15 +31,22 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Option[Attribute]],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       numPartitions: Int, numBuckets: Int): Partitioning = {
     OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
       numPartitions, numBuckets)
   }
 
+  override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)] = partitioning match {
+    case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
+      p.numPartitions, p.numBuckets)
+    case _ => None
+  }
+
   override def updateUI(scUI: Option[Any]): Unit = {
-    scUI.foreach( ui => {
+    scUI.foreach { ui =>
       new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
-    })
+    }
   }
 }
