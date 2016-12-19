@@ -133,7 +133,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * This rule sets the flag at query level to link the partitions to
    * be created for tables to be the same as number of buckets. This will avoid
-   * exchange on one side of a non-collocated join in most cases.
+   * exchange on one side of a non-collocated join in many cases.
    */
   object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
@@ -141,9 +141,9 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !planner.asInstanceOf[SnappyStrategies]
             .LocalJoinStrategies.isLocalJoin(j) =>
           // disable for the entire query for consistency
-          snappySession.linkBucketsToPartitions(flag = true)
+          snappySession.linkPartitionsToBuckets(flag = true)
         case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
-          snappySession.linkBucketsToPartitions(flag = true)
+          snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
       plan
@@ -208,18 +208,21 @@ class SnappySessionState(snappySession: SnappySession)
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
-
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
-    clearExecutionData()
-    contextFunctions.executePlan(snappySession, plan)
-  }
-
   protected[sql] def queryPreparations: Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     PlanSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
+    CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
     ReuseExchange(snappySession.sessionState.conf))
+
+  override def executePlan(plan: LogicalPlan): QueryExecution = {
+    clearExecutionData()
+    new QueryExecution(snappySession, plan) {
+      override protected def preparations: Seq[Rule[SparkPlan]] =
+        queryPreparations
+    }
+  }
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     clearExecutionData()
@@ -234,9 +237,17 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
-    leaderPartitions.getOrElseUpdate(leaderRegion,
+    leaderPartitions.getOrElseUpdate(leaderRegion, {
+      val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
+      if (linkPartitionsToBuckets) {
+        // also set the default shuffle partitions for this execution
+        // to minimize exchange
+        snappySession.sessionState.conf.setExecutionShufflePartitions(
+          region.getTotalNumberOfBuckets)
+      }
       StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
-        snappySession.hasLinkBucketsToPartitions))
+        linkPartitionsToBuckets)
+    })
   }
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
@@ -246,18 +257,24 @@ class SnappySessionState(snappySession: SnappySession)
 class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable with CatalystConf {
 
+  /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
+  @volatile private[this] var executionShufflePartitions: Int = _
+
   /**
    * Records the number of shuffle partitions to be used determined on runtime
    * from available cores on the system. A value <= 0 indicates that it was set
    * explicitly by user and should not use a dynamic value.
    */
-  @volatile private[this] var dynamicShufflePartitions: Int = SQLConf
-      .SHUFFLE_PARTITIONS.defaultValue match {
-    case _ if session == null => -1
-    case Some(d) => if (super.numShufflePartitions == d) {
-      SnappyContext.totalCoreCount.get()
-    } else -1
-    case None => SnappyContext.totalCoreCount.get()
+  @volatile private[this] var dynamicShufflePartitions: Int = _
+
+  SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
+    case Some(d) if session != null && super.numShufflePartitions == d =>
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case None if session != null =>
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case _ =>
+      executionShufflePartitions = -1
+      dynamicShufflePartitions = -1
   }
 
   private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
@@ -266,20 +283,39 @@ class SnappyConf(@transient val session: SnappySession)
          Property.HashJoinSize.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
-      if (doSet) dynamicShufflePartitions = -1
-      else dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      if (doSet) {
+        executionShufflePartitions = -1
+        dynamicShufflePartitions = -1
+      } else {
+        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
     case _ => // ignore others
   }
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
-    if (dynamicShufflePartitions != -1 && session != null) {
-      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    if (session ne null) {
+      if (executionShufflePartitions != -1) {
+        executionShufflePartitions = 0
+      }
+      if (dynamicShufflePartitions != -1) {
+        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
+    }
+  }
+
+  private[sql] def setExecutionShufflePartitions(n: Int): Unit = synchronized {
+    if (executionShufflePartitions != -1 && session != null) {
+      executionShufflePartitions = math.max(n, executionShufflePartitions)
     }
   }
 
   override def numShufflePartitions: Int = {
-    val partitions = this.dynamicShufflePartitions
-    if (partitions > 0) partitions else super.numShufflePartitions
+    val partitions = this.executionShufflePartitions
+    if (partitions > 0) partitions
+    else {
+      val partitions = this.dynamicShufflePartitions
+      if (partitions > 0) partitions else super.numShufflePartitions
+    }
   }
 
   override def setConfString(key: String, value: String): Unit = {
