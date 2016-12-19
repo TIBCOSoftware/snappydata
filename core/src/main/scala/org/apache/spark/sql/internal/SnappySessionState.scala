@@ -138,8 +138,7 @@ class SnappySessionState(snappySession: SnappySession)
   object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
-        case j: Join if !planner.asInstanceOf[SnappyStrategies]
-            .LocalJoinStrategies.isLocalJoin(j) =>
+        case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
         case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>

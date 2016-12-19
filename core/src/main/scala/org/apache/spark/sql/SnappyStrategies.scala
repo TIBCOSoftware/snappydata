@@ -398,7 +398,8 @@ object SnappyAggregation extends Strategy {
       aggregateExpressions = partialAggregateExpressions,
       aggregateAttributes = partialAggregateAttributes,
       __resultExpressions = partialResultExpressions,
-      child = child)
+      child = child,
+      hasDistinct = false)
 
     // 2. Create an Aggregate Operator for final aggregations.
     val finalAggregateExpressions = aggregateExpressions.map(_.copy(
@@ -414,7 +415,8 @@ object SnappyAggregation extends Strategy {
       aggregateExpressions = finalAggregateExpressions,
       aggregateAttributes = finalAggregateAttributes,
       __resultExpressions = resultExpressions,
-      child = partialAggregate)
+      child = partialAggregate,
+      hasDistinct = false)
 
     val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
       // Special CollectAggregateExec plan for top-level simple aggregations
@@ -622,7 +624,8 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
             aggregateExpressions = completeAggregateExpressions,
             aggregateAttributes = completeAggregateAttributes,
             __resultExpressions = resultExpressions,
-            child = partialAggregate.child))
+            child = partialAggregate.child,
+            hasDistinct = false))
 
         case _ => agg
       }

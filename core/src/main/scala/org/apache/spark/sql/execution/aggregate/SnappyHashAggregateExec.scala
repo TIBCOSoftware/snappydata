@@ -64,7 +64,7 @@ case class SnappyHashAggregateExec(
     aggregateAttributes: Seq[Attribute],
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
-    hasDistinct: Boolean = false)
+    hasDistinct: Boolean)
     extends UnaryExecNode with BatchConsumer {
 
   override def nodeName: String = "SnappyHashAggregate"
