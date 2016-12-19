@@ -42,6 +42,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
+import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, ToolsCallbackInit}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.{SnappySession, collection}
@@ -61,9 +62,9 @@ case class SnappyHashAggregateExec(
     groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[AggregateExpression],
     aggregateAttributes: Seq[Attribute],
-    initialInputBufferOffset: Int,
     __resultExpressions: Seq[NamedExpression],
-    child: SparkPlan)
+    child: SparkPlan,
+    hasDistinct: Boolean)
     extends UnaryExecNode with BatchConsumer {
 
   override def nodeName: String = "SnappyHashAggregate"
@@ -111,6 +112,34 @@ case class SnappyHashAggregateExec(
         AttributeSet(resultExpressions.diff(groupingExpressions)
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
+
+  private def getAliases(expressions: Seq[Expression],
+      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
+    expressions.zipWithIndex.map { case (e, i) =>
+      resultExpressions.collect {
+        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
+      } ++ (if (existing.isEmpty) Nil else existing(i))
+    }
+  }
+
+  override def outputPartitioning: Partitioning = {
+    val partitioning = super.outputPartitioning
+    val callbacks = ToolsCallbackInit.toolsCallback
+    // check for aliases in result expressions
+    if (callbacks ne null) {
+      partitioning match {
+        case OrderlessHashPartitioningExtract(expressions, aliases,
+        nPartitions, nBuckets) => callbacks.getOrderlessHashPartitioning(
+          expressions, getAliases(expressions, aliases), nPartitions, nBuckets)
+
+        case HashPartitioning(expressions, nPartitions) =>
+          callbacks.getOrderlessHashPartitioning(expressions,
+            getAliases(expressions, Nil), nPartitions, 0)
+
+        case _ => partitioning
+      }
+    } else partitioning
+  }
 
   override def requiredChildDistribution: List[Distribution] = {
     requiredChildDistributionExpressions match {
@@ -612,11 +641,12 @@ case class SnappyHashAggregateExec(
         val functionString = Utils.truncatedString(allAggregateExpressions,
           "[", ", ", "]")
         val outputString = Utils.truncatedString(output, "[", ", ", "]")
+        val modesStr = modes.mkString(",")
         if (verbose) {
-          s"$name(keys=$keyString, functions=$functionString, " +
-              s"output=$outputString)"
+          s"$name(keys=$keyString, modes=$modesStr, " +
+              s"functions=$functionString, output=$outputString)"
         } else {
-          s"$name(keys=$keyString, functions=$functionString)"
+          s"$name(keys=$keyString, modes=$modesStr, functions=$functionString)"
         }
       case Some(fallbackStartsAt) =>
         s"${name}WithControlledFallback $groupingExpressions " +
