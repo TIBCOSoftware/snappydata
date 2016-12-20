@@ -36,7 +36,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
     val sqlContext = SQLContext.getOrCreate(sc)
     val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ReplicatedTable" +
-      ".out"),  true));
+      ".out"), true));
     NorthWindDUnitTest.createAndLoadReplicatedTables(snc)
     NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
     validateReplicatedTableQueries(snc)
@@ -48,7 +48,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
     val sqlContext = SQLContext.getOrCreate(sc)
     val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_PartitionedRowTable" +
-      ".out"),  true));
+      ".out"), true));
     createAndLoadPartitionedTables(snc)
     NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
     validatePartitionedRowTableQueries(snc)
@@ -72,7 +72,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
     val sqlContext = SQLContext.getOrCreate(sc)
     val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ColocatedTable" +
-      ".out"),  true));
+      ".out"), true));
     NorthWindDUnitTest.createAndLoadColocatedTables(snc)
     NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
     validateColocatedTableQueries(snc)
@@ -697,9 +697,9 @@ object NorthWindDUnitTest {
     val snappyFile = new java.io.File(snappyDest)
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-      snappyDF = snappyDF.coalesce(1).orderBy(col1, col: _*)
-      writeToFile(snappyDF, snappyDest, snc)
-      pw.println(s"${queryNum} Result Collected in file $snappyDest")
+    snappyDF = snappyDF.coalesce(1).orderBy(col1, col: _*)
+    writeToFile(snappyDF, snappyDest, snc)
+    pw.println(s"${queryNum} Result Collected in file $snappyDest")
     if (sparkFile.listFiles() == null) {
       sparkDF = sparkDF.coalesce(1).orderBy(col1, col: _*)
       writeToFile(sparkDF, sparkDest, snc)
@@ -837,7 +837,7 @@ object NorthWindDUnitTest {
         case "Q36" => assertJoinFullResultSet(snc, NWQueries.Q36, 290, "Q36", tableType, pw,
           sqlContext)
         case "Q37" => //assertJoinFullResultSet(snc, NWQueries.Q37, 77, "Q37", tableType, pw,
-          //sqlContext)
+        //sqlContext)
         case "Q38" => assertJoinFullResultSet(snc, NWQueries.Q38, 2155, "Q38", tableType, pw,
           sqlContext)
         case "Q39" => assertJoinFullResultSet(snc, NWQueries.Q39, 9, "Q39", tableType, pw,
