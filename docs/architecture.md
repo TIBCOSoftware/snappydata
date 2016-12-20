@@ -9,7 +9,7 @@ The following depicts the core components of SnappyData, where Spark’s origina
 
 The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row-oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. Refer to the [Row/Column table](programming_guide.md#tables-in-snappydata) section for details on the syntax and available features. 
 
-We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions, to make the language compatible with the SQL standard. One could perceive SnappyData as an SQL database that uses Spark API as its language for stored procedures. Our [stream processing](programming_guide.md#stream-processing-using-sql) is primarily through Spark Streaming, but it is integrated and runs in situ with our store.
+We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions, to make the language compatible with the SQL standard. One could perceive SnappyData as an SQL database that uses Spark API as its language for stored procedures. Our [stream processing](programming_guide.md#stream-processing-using-sql) is primarily through Spark Streaming, but it is integrated and runs within our store.
 
 The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are capable of working with external cluster managers, such as YARN or Mesos (not yet supported). We route all OLTP operations immediately to appropriate data partitions without incurring any scheduling overhead.
 
