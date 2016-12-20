@@ -1612,8 +1612,10 @@ public class SnappyTest implements Serializable {
                 String locatorsList = getLocatorsList("locators");
                 String command = snappyJobScript + " --class " + userJob +
                         " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
+                        " --executor-memory " + SnappyPrms.getExecutorHeapSize() + " " +
                         " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                         " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
+
                 Log.getLogWriter().info("spark-submit command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
