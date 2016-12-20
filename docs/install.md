@@ -498,7 +498,7 @@ Running individual tests within some suite works using the _--tests_ argument.
 
 ### Setting up IntelliJ with Gradle
 
-IntelliJ is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well (e.g. Gradle support is not integrated with Scala plugin etc).  
+IntelliJ is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well (for example, Gradle support is not integrated with Scala plugin etc).  
 
 To import into IntelliJ:
 

@@ -39,7 +39,7 @@ Tables in SnappyData exhibit many operational capabilities like disk persistence
 
 While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.
 
-##Getting Started Using Spark Scala APIs:
+##Getting Started Using Spark Scala APIs
 
 **Create a SnappySession**: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 
@@ -236,7 +236,7 @@ scala> :q // Quit the Spark Shell
 
 ##Getting Started using SQL
 
-We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
+We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.
