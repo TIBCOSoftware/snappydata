@@ -1,18 +1,18 @@
 #Overview
-In this section we discuss the various modes available for collocation of related data and computation.
+In this section, we discuss the various modes available for collocation of related data and computation.
 
 You can run the SnappyData store in the following modes:
 
-* [Local Mode](#localmode): Used mainly for development, where the client application, the executors and data store are all running in the same JVM
+* [Local Mode](#localmode): Used mainly for development, where the client application, the executors, and data store are all running in the same JVM
 
 * [Embedded SnappyData Store Mode](#embeddedmode): The Spark computations and in-memory data store run collocated in the same JVM
 
-* [Snappy Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
+* [SnappyData Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
  
 <a id="localmode"></a>
 ##Local Mode
 
-In this mode, you can execute all the components (client application, executors and data store) locally in the applications JVM. It is a simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
+In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
 
 **Key Points**
 
@@ -69,20 +69,20 @@ If you already have Spark2.0 installed in your local machine you can directly us
 
 <a id="embeddedmode"></a>
 ## Embedded SnappyData Store Mode
-In this mode, the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources .
+In this mode, the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
 Spark executors are dynamically launched when the first Spark Job arrives.
 
 Some of the advantages of this mode are:
 
 * **High performance**: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).
 
-* **Driver High Availabiltiy**: When Spark jobs are submitted, they can now run in a HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.
+* **Driver High Availability**: When Spark jobs are submitted, they can now run in an HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.
 
 * **Less complex**: There is only a single cluster to start, monitor, debug and tune.
 
 ![Embedded Mode](Images/SnappyEmbeddedMode.png)
 
-In this mode one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide#snappydata-jobs) section.
+In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide#snappydata-jobs) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
 ```
@@ -96,7 +96,7 @@ You can either [start SnappyData members](install.md) using the `snappy-start-al
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 
 * If the join expression matches the partitioning scheme of tables, we do a partition to partition join instead of a shuffle based join.
-  Moreover if two tables are collocated (while defining the tables) we can avoid costly data movement.
+  Moreover, if two tables are collocated (while defining the tables) we can avoid costly data movement.
 
 * For replicated tables, which we know are present in all the data nodes,  a simple local join( local look up)  is done instead of a broadcast join.
 
@@ -122,7 +122,7 @@ Specifically, to run on a cluster, the SparkContext can connect to several types
 
 Some of the advantages of this mode are:
 
-**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related in-efficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters.
+**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters.
 
 When storing to **Row tables** or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to SnappyData tables, the data is always batched for the highest possible throughput.
 
@@ -171,5 +171,5 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 ```bash
 ./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
-The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
+The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
