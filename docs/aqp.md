@@ -73,6 +73,22 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
   options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 
 ```
+When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table. The sample table also inherits the **number of buckets**, **redundancy** and **persistence** properties from the base table.
+
+For sample tables, the **overflow** property is set to **False** by default. (For column tables the default value is  **True**). 
+
+For example:
+
+```
+CREATE TABLE BASETABLENAME <column details> 
+USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '7', Redundancy '1')
+
+CREATE TABLE SAMPLETABLENAME <column details> 
+USING COLUMN_SAMPLE OPTIONS (qcs '<column_name_b>',fraction '0.05', 
+strataReservoirSize '50', baseTable 'baseTableName')
+// In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
+
+```
 
 
 ###QCS (Query Column Set) and Sample Selection###
