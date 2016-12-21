@@ -362,7 +362,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 9. Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
 	![Public IP](Images/cluster_links.png)
 
-For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
+For more information, refer to the [Apache Zeppelin](aqp_aws#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 
 <Note>Note: </Note>
