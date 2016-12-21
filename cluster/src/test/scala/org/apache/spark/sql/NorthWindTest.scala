@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql
 
+import java.io.{File, FileOutputStream, PrintWriter}
+
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -36,8 +38,13 @@ class NorthWindTest
   }
 
   test("Test replicated row tables queries") {
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ReplicatedTable.out"), true));
     createAndLoadReplicatedTables(snc)
     validateReplicatedTableQueries(snc)
+    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
+    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ReplicatedTable", pw, sqlContext)
+    pw.close()
 
     // test SNAP-1152
     val df = snc.sql("SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
@@ -48,18 +55,33 @@ class NorthWindTest
   }
 
   test("Test partitioned row tables queries") {
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_PartitionedRowTable.out"), true));
     createAndLoadPartitionedTables(snc)
     validatePartitionedRowTableQueries(snc)
+    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
+    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "PartitionedRowTable", pw, sqlContext)
+    pw.close()
   }
 
   test("Test column tables queries") {
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ColumnTable.out"), true));
     createAndLoadColumnTables(snc)
     validatePartitionedColumnTableQueries(snc)
+    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
+    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColumnTable", pw, sqlContext)
+    pw.close()
   }
 
   test("Test colocated tables queries") {
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ColocatedTable.out"), true));
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
+    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
+    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColocatedTable", pw, sqlContext)
+    pw.close()
   }
 
   private lazy val totalProcessors = Utils.mapExecutors(snc, () =>
@@ -67,37 +89,37 @@ class NorthWindTest
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table)
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table)
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table)
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table)
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table)
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table)
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table)
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
@@ -181,42 +203,42 @@ class NorthWindTest
   private def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table)
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
         " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
         " using row options ( partition_by 'ProductID', buckets '17')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
         " USING row options (PARTITION_BY 'SupplierID', buckets '123' )")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
         " using row options (partition_by 'TerritoryID', buckets '3')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
         " using row options(partition_by 'EmployeeID', buckets '1')")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
 
   }
 
@@ -320,42 +342,42 @@ class NorthWindTest
   private def createAndLoadColumnTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table + " using column options()")
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table)
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
         " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
         " USING column options ( partition_by 'ProductID,SupplierID', buckets '17')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
         " USING column options (PARTITION_BY 'SupplierID', buckets '123' )")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
         " using column options (partition_by 'TerritoryID', buckets '3')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
         " using row options(partition_by 'EmployeeID', buckets '1')")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
   private def validatePartitionedColumnTableQueries(snc: SnappyContext): Unit = {
@@ -473,46 +495,46 @@ class NorthWindTest
   private def createAndLoadColocatedTables(snc: SnappyContext): Unit = {
 
     snc.sql(NWQueries.regions_table)
-    NWQueries.regions.write.insertInto("regions")
+    NWQueries.regions(snc).write.insertInto("regions")
 
     snc.sql(NWQueries.categories_table)
-    NWQueries.categories.write.insertInto("categories")
+    NWQueries.categories(snc).write.insertInto("categories")
 
     snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers.write.insertInto("shippers")
+    NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
         " using row options( partition_by 'EmployeeID', buckets '3')")
-    NWQueries.employees.write.insertInto("employees")
+    NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
         " using column options( partition_by 'CustomerID', buckets '19')")
-    NWQueries.customers.write.insertInto("customers")
+    NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
         " using row options (partition_by 'CustomerID', buckets '19', colocate_with 'customers')")
-    NWQueries.orders.write.insertInto("orders")
+    NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
         " using row options ( partition_by 'ProductID', buckets '329')")
-    NWQueries.order_details.write.insertInto("order_details")
+    NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
         " USING column options ( partition_by 'ProductID', buckets '329'," +
         " colocate_with 'order_details')")
-    NWQueries.products.write.insertInto("products")
+    NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
         " USING column options (PARTITION_BY 'SupplierID', buckets '123')")
-    NWQueries.suppliers.write.insertInto("suppliers")
+    NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
         " using column options (partition_by 'TerritoryID', buckets '3')")
-    NWQueries.territories.write.insertInto("territories")
+    NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
         " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories') ")
-    NWQueries.employee_territories.write.insertInto("employee_territories")
+    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
 
   }
 

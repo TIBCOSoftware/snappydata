@@ -21,9 +21,12 @@
 # specific properties can also be passed. If the directory and properties
 # are not specified a default directory is created inside the SPARK_HOME directory.
 #
-# localhost    -dir=/tmp/data/locator (config args)
+#     localhost    -dir=/tmp/data/locator (config args)
+# 
+# When a machine is not on any network, specify peer-discovery-address too along with hostname.
+# Also, if there are multiple locators in the cluster, specify hostname:port of other locators.
+# 
+#     localhost -peer-discovery-address=locator1 -peer-discovery-port=9988 -locators=locator2:8899
+# 
+# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost
-
-#When a machine is not on any network, specify peer-discovery-address too along with hostname
-# localhost -peer-discovery-address=localhost
-

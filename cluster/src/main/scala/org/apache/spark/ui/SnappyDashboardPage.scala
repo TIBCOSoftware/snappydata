@@ -45,7 +45,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numLeads" -> 0)
     clusterStatsMap += ("numLocators" -> 0)
     clusterStatsMap += ("numTables" -> 0)
-    clusterStatsMap += ("numServers" -> 0)
+    clusterStatsMap += ("numDataServers" -> 0)
     clusterStatsMap += ("numClients" -> 0)
     clusterStatsMap += ("memoryUsage" -> 0)
 
@@ -90,7 +90,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     var isClusterStateNormal = true
     var numLead = 0
     var numLocator = 0
-    var numServers = 0
+    var numDataServers = 0
     var numClients = 0
     var numClientsToLocator = 0
     var numClientsToDataServers = 0
@@ -109,11 +109,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         numLocator += 1
         numClientsToLocator = m("clients").toString.toInt
       }
-      if(m("cacheServer").toString.toBoolean
+      if(m("dataServer").toString.toBoolean
           && !m("activeLead").toString.toBoolean
           && !m("lead").toString.toBoolean
           && !m("locator").toString.toBoolean){
-        numServers += 1
+        numDataServers += 1
       }
 
       numClients += m("clients").toString.toInt
@@ -127,7 +127,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
     clusterStatsMap += ("numLocators" -> numLocator)
-    clusterStatsMap += ("numServers" -> numServers)
+    clusterStatsMap += ("numDataServers" -> numDataServers)
     clusterStatsMap += ("numClients" -> numClients)
     clusterStatsMap += ("numClientsToLocator" -> numClientsToLocator)
     clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
@@ -205,7 +205,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("locators")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numServers","NA")}</div>
+        <div class="keyStatsValue">{clusterDetails.getOrElse("numDataServers","NA")}</div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("servers")}</div>
       </div>
       <div class="keyStates">
@@ -358,8 +358,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           "LEAD"
       } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
         "LOCATOR"
+      } else if(memberDetails.getOrElse("dataServer",false).toString.toBoolean){
+        "DATA SERVER"
       } else {
-        "DATA SERVER "
+        "CONNECTOR"
       }
     }
 
