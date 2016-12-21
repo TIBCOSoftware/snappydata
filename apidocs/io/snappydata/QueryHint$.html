@@ -51,7 +51,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>SQL query hints as interpreted by the SnappyData SQL parser. The format
 mirrors closely the format used by Hive,Oracle query hints with a comment
-followed immediately by a '+' and then &quot;key(value)&quot; for the hint. Example:</p><p>SELECT * /*+ hint(value) */ FROM t1
+followed immediately by a '+' and then &quot;key(value)&quot; for the hint. Example:</p><p>SELECT * /<code>*</code>+ hint(value) *<code>/</code> FROM t1
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Enumeration">Enumeration</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -249,19 +249,19 @@ One can also provide '*' for serializing all the STRING columns as CLOB.</p><p>E
 SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
 SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
 </p></div></div>
-    </li><li name="io.snappydata.QueryHint#ComplexTypeAsClob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ComplexTypeAsClob:io.snappydata.QueryHint.Value"></a>
-      <a id="ComplexTypeAsClob:Value"></a>
+    </li><li name="io.snappydata.QueryHint#ComplexTypeAsJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ComplexTypeAsJson:io.snappydata.QueryHint.Value"></a>
+      <a id="ComplexTypeAsJson:Value"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">ComplexTypeAsClob</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.QueryHint.Value">Value</a></span>
+        <span class="name">ComplexTypeAsJson</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.QueryHint.Value">Value</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.QueryHint$@ComplexTypeAsClob:io.snappydata.QueryHint.Value" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.QueryHint$@ComplexTypeAsJson:io.snappydata.QueryHint.Value" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -270,7 +270,47 @@ as CLOBs (their string representation) for routed JDBC/ODBC queries rather
 than as serialized blobs to display better in external tools.</p><div class="fullcomment"><div class="comment cmt"><p>Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
 as CLOBs (their string representation) for routed JDBC/ODBC queries rather
 than as serialized blobs to display better in external tools.</p><p>Possible values are 'true/1' or 'false/0'</p><p>Example:<br>
-SELECT * FROM t1 --+ complexTypeAsClob(1)
+SELECT * FROM t1 --+ complexTypeAsJson(1)
+</p></div></div>
+    </li><li name="io.snappydata.QueryHint#Index" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Index:io.snappydata.QueryHint.Value"></a>
+      <a id="Index:Value"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Index</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.QueryHint.Value">Value</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.QueryHint$@Index:io.snappydata.QueryHint.Value" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Query hint followed by table to override optimizer choice of index per table.</p><div class="fullcomment"><div class="comment cmt"><p>Query hint followed by table to override optimizer choice of index per table.</p><p>Possible values are valid indexes defined on the table.</p><p>Example:<br>
+SELECT * FROM t1 /<code>*</code>+ index(xxx) *<code>/</code>, t2 --+ withIndex(yyy)
+</p></div></div>
+    </li><li name="io.snappydata.QueryHint#JoinOrder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JoinOrder:io.snappydata.QueryHint.Value"></a>
+      <a id="JoinOrder:Value"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">JoinOrder</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.QueryHint.Value">Value</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.QueryHint$@JoinOrder:io.snappydata.QueryHint.Value" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Query hint after FROM clause to indicate following tables have join order fixed and
+optimizer shouldn't try to re-order joined tables.</p><div class="fullcomment"><div class="comment cmt"><p>Query hint after FROM clause to indicate following tables have join order fixed and
+optimizer shouldn't try to re-order joined tables.</p><p>Possible comma separated values are <a href="JOS$.html" class="extype" name="io.snappydata.JOS">io.snappydata.JOS</a>.</p><p>Example:<br>
+SELECT * FROM /<code>*</code>+ joinOrder(fixed) *<code>/</code> t1, t2
 </p></div></div>
     </li><li name="scala.Enumeration#Value" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Value(i:Int,name:String):Enumeration.this.Value"></a>
@@ -641,6 +681,23 @@ SELECT * FROM t1 --+ complexTypeAsClob(1)
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="io.snappydata.QueryHint#toStr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toStr(h:io.snappydata.QueryHint.Type):String"></a>
+      <a id="toStr(Type):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toStr</span><span class="params">(<span name="h">h: <a href="#Type=io.snappydata.QueryHint.Value" class="extmbr" name="io.snappydata.QueryHint.Type">Type</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.QueryHint$@toStr(h:io.snappydata.QueryHint.Type):String" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.Enumeration#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

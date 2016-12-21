@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Development Team">
+  
+  <title>Getting Started - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Getting Started";
+    var mkdocs_page_input_path = "quickstart.md";
+    var mkdocs_page_url = "/quickstart/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Getting Started</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#getting-started-in-5-minutes-or-less">Getting Started in 5 Minutes or Less</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</a></li>
+                
+                    <li><a class="toctree-l4" href="#20x-faster-than-spark-20-caching">20X Faster than Spark 2.0 Caching</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-using-sql">Getting Started using SQL</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-on-aws">Getting Started on AWS</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../install/">Download and Install</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../howto/">How Tos</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Getting Started</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="getting-started-in-5-minutes-or-less">Getting Started in 5 Minutes or Less</h1>
+<p>Welcome to the Getting Started section! <br>
+We provide you multiple choices for getting started with SnappyData. 
+Depending on your preference you can try any of the following options:</p>
+<ul>
+<li><a href="#getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</a></li>
+<li><a href="#getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</a></li>
+<li><a href="#20x-faster-than-spark-20-caching">20X Faster than Spark 2.0 Caching</a></li>
+<li><a href="#getting-started-using-sql">Getting Started using SQL</a></li>
+<li><a href="#getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</a></li>
+<li><a href="#getting-started-on-aws">Getting Started on AWS</a></li>
+<li><a href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
+</ul>
+<p><Note>Note: Support for Microsoft Azure will be provided in future releases</Note></p>
+<h2 id="getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</h2>
+<p>If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.</p>
+<p>This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.</p>
+<p><strong>Open a command terminal and go to the location of the Spark installation directory:</strong></p>
+<pre><code class="bash">$ cd &lt;Spark_Install_dir&gt;
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
+</code></pre>
+
+<p>This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
+All SnappyData metadata as well as persistent data is stored in the directory <strong>quickstartdatadir</strong>.</p>
+<p><a id="Start_quickStart"></a>
+In this document, we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables.</p>
+<p>Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the <a href="../programming_guide/#ddl">detailed documentation</a>. </p>
+<p>While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.</p>
+<h2 id="getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</h2>
+<p><strong>Create a SnappySession</strong>: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.</p>
+<pre><code class="scala">scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+//Import snappy extensions
+scala&gt; import snappy.implicits._
+</code></pre>
+
+<p><strong>Create a small dataset using Spark's APIs</strong>:</p>
+<pre><code class="scala">scala&gt; val ds = Seq((1,&quot;a&quot;), (2, &quot;b&quot;), (3, &quot;c&quot;)).toDS()
+</code></pre>
+
+<p><strong>Define a schema for the table</strong>:</p>
+<pre><code class="scala">scala&gt;  import org.apache.spark.sql.types._
+scala&gt;  val tableSchema = StructType(Array(StructField(&quot;CustKey&quot;, IntegerType, false),
+          StructField(&quot;CustName&quot;, StringType, false)))
+</code></pre>
+
+<p><strong>Create a column table with a simple schema [String, Int] and default options</strong>:
+For detailed option refer to the <a href="../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<pre><code class="scala">//Column tables manage data is columnar form and offer superier performance for analytic class queries.
+scala&gt;  snappy.createTable(tableName = &quot;colTable&quot;,
+          provider = &quot;column&quot;, // Create a SnappyData Column table
+          schema = tableSchema,
+          options = Map.empty[String, String], // Map for options.
+          allowExisting = false)
+</code></pre>
+
+<p>SnappyData (SnappySession) extends SparkSession, so you can simply use all the Spark's APIs.</p>
+<p><strong>Insert the created DataSet to the column table "colTable"</strong>:</p>
+<pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;colTable&quot;)
+// Check the total row count.
+scala&gt;  snappy.table(&quot;colTable&quot;).count
+</code></pre>
+
+<p><strong>Create a row object using Spark's API and insert the Row to the table</strong>:
+Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.</p>
+<pre><code class="scala">// Insert a new record
+scala&gt;  import org.apache.spark.sql.Row
+scala&gt;  snappy.insert(&quot;colTable&quot;, Row(10, &quot;f&quot;))
+// Check the total row count after inserting the row.
+scala&gt;  snappy.table(&quot;colTable&quot;).count
+</code></pre>
+
+<p><strong>Create a "row" table with a simple schema [String, Int] and default options</strong>: 
+For detailed option refer to the <a href="../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<pre><code class="scala">//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
+scala&gt;  snappy.createTable(tableName = &quot;rowTable&quot;,
+          provider = &quot;row&quot;,
+          schema = tableSchema,
+          options = Map.empty[String, String],
+          allowExisting = false)
+</code></pre>
+
+<p><strong>Insert the created DataSet to the row table "rowTable"</strong>:</p>
+<pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;rowTable&quot;)
+//Check the row count
+scala&gt;  snappy.table(&quot;rowTable&quot;).count
+</code></pre>
+
+<p><strong>Insert a new record</strong>:</p>
+<pre><code class="scala">scala&gt;  snappy.insert(&quot;rowTable&quot;, Row(4, &quot;d&quot;))
+//Check the row count now
+scala&gt;  snappy.table(&quot;rowTable&quot;).count
+</code></pre>
+
+<p><strong>Change some data in a row table</strong>:</p>
+<pre><code class="scala">//Updating a row for customer with custKey = 1
+scala&gt;  snappy.update(tableName = &quot;rowTable&quot;, filterExpr = &quot;CUSTKEY=1&quot;,
+                newColumnValues = Row(&quot;d&quot;), updateColumns = &quot;CUSTNAME&quot;)
+
+scala&gt;  snappy.table(&quot;rowTable&quot;).orderBy(&quot;CUSTKEY&quot;).show
+
+//Delete the row for customer with custKey = 1
+scala&gt;  snappy.delete(tableName = &quot;rowTable&quot;, filterExpr = &quot;CUSTKEY=1&quot;)
+
+</code></pre>
+
+<pre><code class="scala">//Drop the existing tables
+scala&gt;  snappy.dropTable(&quot;rowTable&quot;, ifExists = true)
+scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
+</code></pre>
+
+<p><a id="Start Benchmark"></a></p>
+<h2 id="20x-faster-than-spark-20-caching">20X Faster than Spark 2.0 Caching</h2>
+<p>Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0 performance. 
+We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
+<p><Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test.</Note></p>
+<p><strong>Start the Spark Shell using any of the options mentioned below:</strong></p>
+<p><strong>If you are using your own Spark 2.0 installation:</strong></p>
+<pre><code class="bash"># Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.7.0-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+</code></pre>
+
+<p><strong>If you have downloaded SnappyData </strong>:</p>
+<pre><code class="bash"># Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+</code></pre>
+
+<p><strong> If you are using Docker</strong>:</p>
+<pre><code class="bash">$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+</code></pre>
+
+<h3 id="to-get-the-performance-numbers">To get the Performance Numbers</h3>
+<p>Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.</p>
+<p><strong>Define a function "benchmark"</strong>, which tells us the average time to run queries after doing the initial warm-ups.</p>
+<pre><code class="scala">scala&gt;  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: =&gt; Unit) {
+          for (i &lt;- 1 to warmups) {
+            f
+          }
+          val startTime = System.nanoTime
+          for (i &lt;- 1 to times) {
+            f
+          }
+          val endTime = System.nanoTime
+          println(s&quot;Average time taken in $name for $times runs: &quot; +
+            (endTime - startTime).toDouble / (times * 1000000.0) + &quot; millis&quot;)
+        }
+</code></pre>
+
+<p><strong>Create a DataFrame and temp table using Spark's range method</strong>:
+Cache it in Spark to get optimal performance. This creates a DataFrame of 100 million records.You can change the number of rows based on  your memory availability.</p>
+<pre><code class="scala">scala&gt;  var testDF = spark.range(100000000).selectExpr(&quot;id&quot;, &quot;concat('sym', cast((id % 100) as STRING)) as sym&quot;)
+scala&gt;  testDF.cache
+scala&gt;  testDF.createOrReplaceTempView(&quot;sparkCacheTable&quot;)
+</code></pre>
+
+<p><strong>Run a query and to check the performance</strong>:
+The queries use average of a field, without any where clause. This ensures that it touches all records while scanning.</p>
+<pre><code class="scala">scala&gt;  benchmark(&quot;Spark perf&quot;) {spark.sql(&quot;select sym, avg(id) from sparkCacheTable group by sym&quot;).collect()}
+</code></pre>
+
+<p><strong>Clean up the JVM</strong>:
+This ensures that all in memory artifacts for Spark is cleaned up.</p>
+<pre><code class="scala">scala&gt;  testDF.unpersist()
+scala&gt;  System.gc()
+scala&gt;  System.runFinalization()
+</code></pre>
+
+<p><strong>Create a SnappyContex</strong>:</p>
+<pre><code class="scala">scala&gt;  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong> Create similar 100 million record DataFrame</strong>:</p>
+<pre><code class="scala">scala&gt;  testDF = snappy.range(100000000).selectExpr(&quot;id&quot;, &quot;concat('sym', cast((id % 100) as varchar(10))) as sym&quot;)
+</code></pre>
+
+<p><strong>Create the table</strong>:</p>
+<pre><code class="scala">scala&gt;  snappy.sql(&quot;drop table if exists snappyTable&quot;)
+scala&gt;  snappy.sql(&quot;create table snappyTable (id bigint not null, sym varchar(10) not null) using column&quot;)
+</code></pre>
+
+<p><strong>Insert the created DataFrame into the table and measure its performance</strong>:</p>
+<pre><code class="scala">scala&gt;  benchmark(&quot;Snappy insert perf&quot;, 1, 0) {testDF.write.insertInto(&quot;snappyTable&quot;) }
+</code></pre>
+
+<p><strong>Now let us run the same benchmark against Spark DataFrame</strong>:</p>
+<pre><code class="scala">scala&gt;  benchmark(&quot;Snappy perf&quot;) {snappy.sql(&quot;select sym, avg(id) from snappyTable group by sym&quot;).collect()}
+</code></pre>
+
+<pre><code>scala&gt; :q // Quit the Spark Shell
+</code></pre>
+
+<h2 id="getting-started-using-sql">Getting Started using SQL</h2>
+<p>We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the <a href="../howto/#howto-snappyShell">How-to</a> section.</p>
+<p><strong>Create a column table with a simple schema [Int, String] and default options.</strong>
+For details on the options refer to the <a href="../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<pre><code class="scala">scala&gt;  snappy.sql(&quot;create table colTable(CustKey Integer, CustName String) using column options()&quot;)
+</code></pre>
+
+<pre><code>//Insert couple of records to the column table
+scala&gt;  snappy.sql(&quot;insert into colTable values(1, 'a')&quot;)
+scala&gt;  snappy.sql(&quot;insert into colTable values(2, 'b')&quot;)
+scala&gt;  snappy.sql(&quot;insert into colTable values(3, '3')&quot;)
+</code></pre>
+
+<pre><code class="scala">// Check the total row count now
+scala&gt;  snappy.sql(&quot;select count(*) from colTable&quot;).show
+</code></pre>
+
+<p><strong>Create a row table with primary key</strong>:</p>
+<pre><code class="scala">//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
+scala&gt;  snappy.sql(&quot;create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, &quot; +
+            &quot;CustName String) using row options()&quot;)
+</code></pre>
+
+<p>If you create a table using standard SQL (i.e. no 'row options' clause) it creates a replicated Row table.</p>
+<pre><code class="scala">//Insert couple of records to the row table
+scala&gt;  snappy.sql(&quot;insert into rowTable values(1, 'a')&quot;)
+scala&gt;  snappy.sql(&quot;insert into rowTable values(2, 'b')&quot;)
+scala&gt;  snappy.sql(&quot;insert into rowTable values(3, '3')&quot;)
+</code></pre>
+
+<pre><code class="scala">//Update some rows
+scala&gt;  snappy.sql(&quot;update rowTable set CustName='d' where custkey = 1&quot;)
+scala&gt;  snappy.sql(&quot;select * from rowTable order by custkey&quot;).show
+</code></pre>
+
+<pre><code class="scala">//Drop the existing tables
+scala&gt;  snappy.sql(&quot;drop table if exists rowTable &quot;)
+scala&gt;  snappy.sql(&quot;drop table if exists colTable &quot;)
+</code></pre>
+
+<pre><code>scala&gt; :q //Quit the Spark Shell
+</code></pre>
+
+<p>Now that we have seen the basic working of SnappyData tables, let us run the <a href="#Start Benchmark">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
+<h2 id="getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</h2>
+<p>Download the latest version of SnappyData from the <a href="https://github.com/SnappyDataInc/snappydata/releases/">SnappyData Release Page</a> page, which lists the latest and previous releases of SnappyData.</p>
+<pre><code class="bash">$ tar -xzf snappydata-0.7-bin.tar.gz
+$ cd snappydata-0.7-bin/
+# Create a directory for SnappyData artifacts
+$ mkdir quickstartdatadir
+$./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
+</code></pre>
+
+<p>It opens a Spark Shell. All SnappyData metadata as well as persistent data is stored in the directory <strong>quickstartdatadir</strong>. Follow the steps mentioned <a href="#Start_quickStart">here</a></p>
+<h2 id="getting-started-on-aws">Getting Started on AWS</h2>
+<p>You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Before you begin:</p>
+<ul>
+<li>
+<p>Ensure that you have an existing AWS account with required permissions to launch EC2 resources from CloudFormation</p>
+</li>
+<li>
+<p>Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.</p>
+</li>
+<li>
+<p>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster</p>
+</li>
+</ul>
+<p>To launch the cluster from EC2 click <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json">here</a> and follow the instructions below.</p>
+<ol>
+<li>
+<p>The AWS Login Screen is displayed. Enter your AWS login credentials. </p>
+</li>
+<li>
+<p>The <strong>Select Template page</strong> is displayed. The URL for the template (JSON format) is pre-populated. Click <strong>Next</strong> to continue.<br/>
+<note> Note: You are placed in your default region. You can either continue in the selected region or change it in the console. </Note>
+<img alt="STEP" src="../Images/cluster_selecttemplate.png" />
+<br></p>
+</li>
+<li>
+<p>On the <strong>Specify Details</strong> page, you can:<br></p>
+<ul>
+<li>
+<p>Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.</p>
+</li>
+<li>
+<p>Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.</p>
+</li>
+<li>
+<p>Select KeyPairName: Select a key pair from the list of key pairs available to you. This is a mandatory field.</p>
+</li>
+<li>
+<p>Search VPCID: Select the VPC ID from the drop-down list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
+<img alt="Refresh" src="../Images/cluster_specifydetails.png" /></p>
+</li>
+</ul>
+</li>
+<li>
+<p>Click <strong>Next</strong>. <br></p>
+</li>
+<li>
+<p>On the <strong>Options</strong> page, click <strong>Next</strong> to continue using the provided default values.<br></p>
+</li>
+<li>
+<p>On the <strong>Review</strong> page, verify the details and click <strong>Create</strong> to create a stack. <br>
+<img alt="Create" src="../Images/cluster_createstack.png" /></p>
+<a id="Stack"></a></p>
+</li>
+<li>
+<p>The next page lists the existing stacks. Click <strong>Refresh</strong> to view the updated list. Select the stack to view its status. 
+When the cluster has started, the status of the stack changes to <strong>CREATE_COMPLETE</strong>. This process may take 4-5 minutes to complete.<br>
+<img alt="Refresh" src="../Images/cluster_refresh.png" />
+<a id="Stack"></a>
+<Note>Note: If the status of the stack displays as <strong>ROLLBACK_IN_PROGRESS</strong> or <strong>DELETE_COMPLETE</strong>, the stack creation may have failed. Some common causes of the failure are:</p>
+<blockquote>
+<ul>
+<li><strong>Insufficient Permissions</strong>: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.</li>
+<li><strong>Invalid Keypair</strong>: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.</li>
+<li><strong>Limit Exceeded</strong>: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
+</Note></li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the <strong>Outputs</strong> tab.<br>
+    <img alt="Public IP" src="../Images/cluster_links.png" /></p>
+</li>
+</ol>
+<p>For more information, refer to the <a href="../aqp_aws#LoggingZeppelin">Apache Zeppelin</a> section or refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>.</p>
+<p><Note>Note: </Note></p>
+<ul>
+<li><Note> Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the <a href="../install/#EC2">EC2 scripts</a>.</Note></li>
+<li><Note>To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.</Note></li>
+</ul>
+<h2 id="getting-started-with-docker-image">Getting Started with Docker Image</h2>
+<p>SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to easily try the quick start program and more, with SnappyData.</p>
+<p>This section assumes you have already installed Docker and its configured properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
+<p><strong>Verify that Docker is installed</strong>: In the command prompt run the command:</p>
+<pre><code class="scala">$ docker run hello-world
+
+</code></pre>
+
+<p><Note>Note: Ensure that the Docker containers have access to at least 4GB of RAM on your machine</Note></p>
+<p><strong>Get the Docker Image: </strong> In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.</p>
+<pre><code class="scala">$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
+</code></pre>
+
+<p>It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
+Once you are inside the Spark Shell with the "$ scala&gt;" prompt, you can follow the steps explained <a href="#Start_quickStart">here</a></p>
+<h4 id="more-information">More Information</h4>
+<p>For more examples of the common operations, you can refer to the <a href="../howto/">How-tos</a> section. </p>
+<p>If you have questions or queries you can contact us through our <a href="../techsupport/#community">community channels</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../install/" class="btn btn-neutral float-right" title="Download and Install">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href=".." class="btn btn-neutral" title="Overview"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../install/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

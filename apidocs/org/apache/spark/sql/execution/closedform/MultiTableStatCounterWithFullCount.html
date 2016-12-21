@@ -166,18 +166,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#add" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="add(v:Double,weight:Double):Unit"></a>
-      <a id="add(Double,Double):Unit"></a>
+      <a id="add(v:Double):Unit"></a>
+      <a id="add(Double):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">add</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>, <span name="weight">weight: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">add</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount@add(v:Double,weight:Double):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount@add(v:Double):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -216,23 +216,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#cfMeanTotal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="cfMeanTotal:Double"></a>
-      <a id="cfMeanTotal:Double"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">cfMeanTotal</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount@cfMeanTotal:Double" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StatCounterWithFullCount.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount">StatCounterWithFullCount</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#cfmerge" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cfmerge(value:Double):Unit"></a>
       <a id="cfmerge(Double):Unit"></a>
@@ -761,7 +744,7 @@
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">leftWeight</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
@@ -988,13 +971,30 @@ adding up the internal statistics when other != this.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount">MultiTableStatCounterWithFullCount</a> → <a href="ClosedFormStats.html" class="extype" name="org.apache.spark.sql.execution.closedform.ClosedFormStats">ClosedFormStats</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#reset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reset(lw:Double,rw:Double,w:Double):Unit"></a>
+      <a id="reset(Double,Double,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reset</span><span class="params">(<span name="lw">lw: <span class="extype" name="scala.Double">Double</span></span>, <span name="rw">rw: <span class="extype" name="scala.Double">Double</span></span>, <span name="w">w: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount@reset(lw:Double,rw:Double,w:Double):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StatCounterWithFullCount.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount">StatCounterWithFullCount</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#rightWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rightWeight:Double"></a>
       <a id="rightWeight:Double"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">rightWeight</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
@@ -1302,6 +1302,23 @@ by N-1 instead of N.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#weight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="weight:Double"></a>
+      <a id="weight:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">weight</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.closedform.MultiTableStatCounterWithFullCount@weight:Double" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StatCounterWithFullCount.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount">StatCounterWithFullCount</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.closedform.StatCounterWithFullCount#weightedCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="weightedCount:Double"></a>
       <a id="weightedCount:Double"></a>

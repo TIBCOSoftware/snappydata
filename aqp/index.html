@@ -58,28 +58,28 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Getting Started</a>
+        <a class="" href="..">Overview</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../build-instructions/">Building from source, project layout</a>
+        <a class="" href="../quickstart/">Getting Started</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../snappyIntroduction/">Overview</a>
+        <a class="" href="../install/">Download and Install</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../features/">Key features</a>
+        <a class="" href="../howto/">How Tos</a>
         
     </li>
 <li>
@@ -93,28 +93,21 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../configuration/">Configuring the cluster</a>
+        <a class="" href="../configuration/">Configuring the Cluster</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        <a class="" href="../programming_guide/">Programming Guide</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../jobs/">Developing Apps using the Spark API</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+        <a class="" href="../deployment/">Affinity Modes</a>
         
     </li>
 <li>
@@ -129,43 +122,64 @@
                 
                     <li><a class="toctree-l4" href="#how-does-it-work">How does it work?</a></li>
                 
-                    <li><a class="toctree-l4" href="#key-concepts">Key Concepts</a></li>
+            
+                <li class="toctree-l3"><a href="#key-concepts">Key Concepts</a></li>
                 
-                    <li><a class="toctree-l4" href="#working-with-stratified-samples">Working with Stratified Samples</a></li>
+                    <li><a class="toctree-l4" href="#stratified-sampling">Stratified Sampling</a></li>
                 
-                    <li><a class="toctree-l4" href="#running-queries">Running queries</a></li>
+                    <li><a class="toctree-l4" href="#online-sampling">Online Sampling</a></li>
                 
-                    <li><a class="toctree-l4" href="#more-examples">More Examples</a></li>
+                    <li><a class="toctree-l4" href="#sketching">Sketching</a></li>
                 
-                    <li><a class="toctree-l4" href="#sample-selection">Sample Selection:</a></li>
+            
+                <li class="toctree-l3"><a href="#working-with-stratified-samples">Working with Stratified Samples</a></li>
                 
-                    <li><a class="toctree-l4" href="#sketching_1">Sketching</a></li>
+                    <li><a class="toctree-l4" href="#create-sample-tables">Create Sample Tables</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-sde">Using SDE</a></li>
+                    <li><a class="toctree-l4" href="#qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#running-queries">Running Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#using-the-spark-dataframe-api">Using the Spark DataFrame API</a></li>
+                
+                    <li><a class="toctree-l4" href="#supporting-bi-tools-or-existing-apps">Supporting BI tools or existing Apps</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#more-examples">More Examples</a></li>
+                
+                    <li><a class="toctree-l4" href="#example-1">Example 1</a></li>
+                
+                    <li><a class="toctree-l4" href="#example-2">Example 2</a></li>
+                
+                    <li><a class="toctree-l4" href="#example-3">Example 3</a></li>
+                
+                    <li><a class="toctree-l4" href="#example-4">Example 4</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sample-selection">Sample Selection</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</a></li>
+                
+                    <li><a class="toctree-l4" href="#behavior-clause">Behavior Clause</a></li>
+                
+                    <li><a class="toctree-l4" href="#error-functions">Error Functions</a></li>
+                
+                    <li><a class="toctree-l4" href="#reserved-keywords">Reserved Keywords</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sketching_1">Sketching</a></li>
+                
+                    <li><a class="toctree-l4" href="#creating-topk-tables">Creating TopK tables</a></li>
+                
+                    <li><a class="toctree-l4" href="#approximate-topk-analytics-for-time-series-data">Approximate TopK analytics for time series data</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-sde">Using SDE</a></li>
                 
             
             </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../deployment/">Deployment topologies</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../apidocsintro/">API</a>
         
     </li>
 <li>
@@ -178,8 +192,22 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
 
         
             
@@ -228,38 +256,38 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="overview-of-synopsis-data-engine-sde">Overview of Synopsis Data Engine (SDE)</h1>
+                <h2 id="overview-of-synopsis-data-engine-sde">Overview of Synopsis Data Engine (SDE)</h2>
 <p>The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. </p>
-<p>For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering) , while the engineer continues to slice and dice the data sets without any interruptions. </p>
-<p>When accessed using a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds, while the full answer can be computed in the background. Depending on the immediate answer, users can choose to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer, or if after viewing the initial results they are no longer interested in viewing the final results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.</p>
+<p>For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering), while the engineer continues to slice and dice the data sets without any interruptions. </p>
+<p>When accessed using a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds, while the full answer can be computed in the background. Depending on the immediate answer, users can choose to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer or if after viewing the initial results they are no longer interested in viewing the final results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.</p>
 <p>While in-memory analytics can be fast, it is still expensive and cumbersome to provision large clusters. Instead, SDE allows you to retain data in existing databases and disparate sources, and only caches a fraction of the data using stratified sampling and other techniques. In many cases, data explorers can use their laptops and run high-speed interactive analytics over billions of records. </p>
 <p>Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for a priori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.</p>
-<h2 id="how-does-it-work">How does it work?</h2>
-<p>The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can however be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. </p>
-<p><img alt="SDE_Architecture" src="../Images/sde_architecture.png" /></p>
+<h3 id="how-does-it-work">How does it work?</h3>
+<p>The following diagram provides a simplified view of how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can, however, be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. </p>
+<p><img alt="SDE Architecture" src="../Images/sde_architecture.png" /></p>
 <h2 id="key-concepts">Key Concepts</h2>
 <p>SnappyData SDE relies on two methods for approximations - <strong>Stratified Sampling</strong> and <strong>Sketching</strong>. A brief introduction to these concepts is provided below.</p>
 <h3 id="stratified-sampling">Stratified Sampling</h3>
 <p>Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.</p>
 <p>Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
 This is depicted in the following figure:</p>
-<p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling1.png" /></p>
+<p><img alt="Uniform Random Sampling" src="../Images/aqp_stratifiedsampling1.png" /></p>
 <p>If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
-<p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling2.png" /></p>
+<p><img alt="Uniform Random Sampling" src="../Images/aqp_stratifiedsampling2.png" /></p>
 <p>But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. </p>
-<p>Stratified sampling on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata has enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. </p>
+<p>Stratified sampling, on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata have enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. </p>
 <p><img alt="Stratified Sampling" src="../Images/aqp_stratifiedsampling3.png" /></p>
 <p>To understand these concepts in further detail, refer to the <a href="https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf">handbook</a>. It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.</p>
 <h3 id="online-sampling">Online Sampling</h3>
-<p>SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark dataframe APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each strata in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
-There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5 minute time window, while still ensuring that all GEOs have good representation in the sample. </p>
+<p>SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each startum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample. </p>
 <h3 id="sketching">Sketching</h3>
-<p>While stratified sampling ensures that data dimensions with low representation is captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
+<p>While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
 While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-min-sketch</a> is well described, SDE extends this with support for providing top-K estimates over time series data. </p>
 <h2 id="working-with-stratified-samples">Working with Stratified Samples</h2>
 <h3 id="create-sample-tables">Create Sample Tables</h3>
-<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark dataframes, or sourced from a external data source such as S3 or HDFS. </p>
-<p>Here is an SQL based example to create sample on tables locally available in the SnappyData cluster. </p>
+<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. </p>
+<p>Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
   OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
   AS (SELECT * FROM NYCTAXI);
@@ -272,22 +300,37 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 <p>Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:</p>
 <pre><code>CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  OPTIONS(path 's3a://&lt;AWS_SECRET_ACCESS_KEY&gt;&lt;AWS_ACCESS_KEY_ID&gt;@zeppelindemo/nyctaxifaredata_cleaned');
+  OPTIONS(path 's3a://&lt;AWS_SECRET_ACCESS_KEY&gt;:&lt;AWS_ACCESS_KEY_ID&gt;@zeppelindemo/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
   options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
 
 </code></pre>
 
-<h3 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample selection</h3>
+<p>When creating a base table, if you have applied the <strong>partition by</strong> clause, the clause is also applied to the sample table. The sample table also inherits the <strong>number of buckets</strong>, <strong>redundancy</strong> and <strong>persistence</strong> properties from the base table.</p>
+<p>For sample tables, the <strong>overflow</strong> property is set to <strong>False</strong> by default. (For column tables the default value is  <strong>True</strong>). </p>
+<p>For example:</p>
+<pre><code>CREATE TABLE BASETABLENAME &lt;column details&gt; 
+USING COLUMN OPTIONS (partition_by '&lt;column_name_a&gt;', Buckets '7', Redundancy '1')
+
+CREATE TABLE SAMPLETABLENAME &lt;column details&gt; 
+USING COLUMN_SAMPLE OPTIONS (qcs '&lt;column_name_b&gt;',fraction '0.05', 
+strataReservoirSize '50', baseTable 'baseTableName')
+// In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
+
+</code></pre>
+
+<h3 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</h3>
 <p>For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). </p>
 <p>QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like <code>hour (pickup_datetime)</code>.</p>
-<p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes you can get pretty accurate answers with a very small fraction. With most data sets that follow normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
-For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers(lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. </p>
+<p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers (a lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. </p>
 <p>One can create multiple sample tables using different sample QCS and sample fraction for a given base table. </p>
-<p>Here are some general guidelines to use when creating samples:
-* Note that samples are only applicable when running aggregation queries. For point lookups or selective queries the engine automatically rejects all samples and runs the query on the base table. These queries typically would execute optimally anyway on the underlying data store.</p>
+<p>Here are some general guidelines to use when creating samples:</p>
 <ul>
+<li>
+<p>Note that samples are only applicable when running aggregation queries. For point lookups or selective queries, the engine automatically rejects all samples and runs the query on the base table. These queries typically would execute optimally anyway on the underlying data store.</p>
+</li>
 <li>
 <p>Start by identifying the most common columns used in GroupBy/Where and Having clauses. </p>
 </li>
@@ -295,20 +338,22 @@ For instance, in the above example, taxi drivers that have very few records may 
 <p>Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. </p>
 </li>
 <li>
-<p>Avoid using unique columns or timestamps for your QCS. For instance, in the example above 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is possibility that each record in the data set has a different times tamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. </p>
+<p>Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. </p>
 </li>
 <li>
-<p>When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. </p>
+<p>When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. </p>
 </li>
 </ul>
-<blockquote>
-<h4 id="note-the-value-of-the-qcs-column-should-not-be-empty-or-set-to-null-for-stratified-sampling-or-an-error-may-be-reported-when-the-query-is-executed">Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</h4>
-</blockquote>
-<h2 id="running-queries">Running queries</h2>
+<p><Note> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</Note></p>
+<h2 id="running-queries">Running Queries</h2>
 <p>Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. </p>
 <p>Here is the syntax:</p>
-<h4 id="select-from-where-group-by">SELECT ... FROM .. WHERE .. GROUP BY ...</h4>
-<h4 id="with-error-fractionconfidencefraction-behavior-string">WITH ERROR <code>&lt;fraction&gt;</code>[CONFIDENCE<code>&lt;fraction&gt;</code>] [BEHAVIOR <code>&lt;string&gt;]</code></h4>
+<blockquote>
+<blockquote>
+<p>SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH ERROR <code>&lt;fraction&gt;</code>[CONFIDENCE<code>&lt;fraction&gt;</code>] [BEHAVIOR <code>&lt;string&gt;]</code></p>
+</blockquote>
+</blockquote>
 <ul>
 <li><strong>WITH ERROR</strong> - this is a mandatory clause. The values are  0 &lt; value(double) &lt; 1 . </li>
 <li><strong>CONFIDENCE</strong> - this is optional clause. The values are confidence 0 &lt; value(double) &lt; 1 . The default value is 0.95</li>
@@ -322,7 +367,7 @@ For instance, in the above example, taxi drivers that have very few records may 
 
 SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc 
   with error 
-// tolerate any error in answer. Just give me a quick response.
+// tolerate any error in the answer. Just give me a quick response.
 
 SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_ desc with error 0.10 confidence 0.95 behavior ‘local_omit’
 // tolerate a maximum error of 10% in each row in the answer with a confidence interval of 0.95.
@@ -336,7 +381,7 @@ confidence: Double = Constant.DEFAULT_CONFIDENCE,
 behavior: String = &quot;DO_NOTHING&quot;): DataFrame
 </code></pre>
 
-<p>Query examples using the DataFrame API ..</p>
+<p>Query examples using the DataFrame API</p>
 <pre><code>snc.table(baseTable).agg(Map(&quot;ArrDelay&quot; -&gt; &quot;sum&quot;)).orderBy( desc(&quot;Month_&quot;)).withError(0.10) 
 snc.table(baseTable).agg(Map(&quot;ArrDelay&quot; -&gt; &quot;sum&quot;)).orderBy( desc(&quot;Month_&quot;)).withError(0.10, 0.95, 'local_omit’) 
 </code></pre>
@@ -357,8 +402,8 @@ set spark.sql.aqp.behavior=$behavior;
 </code></pre>
 
 <h2 id="more-examples">More Examples</h2>
-<h5 id="example-1">Example 1:</h5>
-<p>create a sample table with qcs 'medallion'</p>
+<h4 id="example-1">Example 1</h4>
+<p>Create a sample table with qcs 'medallion' </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
   OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
 </code></pre>
@@ -378,23 +423,23 @@ set spark.sql.aqp.behavior=$behavior;
   upper_bound(&quot;avgTripDist&quot;)).withError(.6, .90, &quot;do_nothing&quot;).sort(col(&quot;medallion&quot;).desc).limit(100)
 </code></pre>
 
-<h5 id="example-2">Example 2:</h5>
-<p>create an additional sample table with qcs 'hack_license'</p>
+<h4 id="example-2">Example 2</h4>
+<p>Create additional sample table with qcs 'hack_license' </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
 (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
 </code></pre>
 
 <p><strong>SQL Query:</strong></p>
 <pre><code>select  hack_license, count(*) count from NYCTAXI group by hack_license order by count desc limit 10 with error
-// the engine will automically use the HackLicense sample for more accurate answer to this query.
+// the engine will automitically use the HackLicense sample for a more accurate answer to this query.
 </code></pre>
 
 <p><strong>DataFrame API Query:</strong></p>
 <pre><code>snc.table(basetable).groupBy(&quot;hack_license&quot;).count().withError(.6,.90,&quot;do_nothing&quot;).sort(col(&quot;count&quot;).desc).limit(10)
 </code></pre>
 
-<h5 id="example-3">Example 3:</h5>
-<p>Create a sample table using function "hour(pickup_datetime) as QCS.</p>
+<h4 id="example-3">Example 3</h4>
+<p>Create a sample table using function "hour(pickup_datetime) as QCS</p>
 <pre><code>Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 </code></pre>
 
@@ -406,7 +451,7 @@ set spark.sql.aqp.behavior=$behavior;
 <pre><code>snc.table(basetable).groupBy(hour(col(&quot;pickup_datetime&quot;))).agg(Map(&quot;trip_time_in_secs&quot; -&gt; &quot;sum&quot;)).withError(0.6,0.90,&quot;do_nothing&quot;).limit(10)
 </code></pre>
 
-<h5 id="example-4">Example 4:</h5>
+<h4 id="example-4">Example 4</h4>
 <p>If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.</p>
 <pre><code>Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 </code></pre>
@@ -419,40 +464,45 @@ set spark.sql.aqp.behavior=$behavior;
 <pre><code>snc.table(basetable).groupBy(&quot;hack_license&quot;,&quot;pickup_datetime&quot;).agg(Map(&quot;trip_distance&quot; -&gt; &quot;sum&quot;)).alias(&quot;daily_trips&quot;).       filter(year(col(&quot;pickup_datetime&quot;)).equalTo(2013) and month(col(&quot;pickup_datetime&quot;)).equalTo(9)).withError(0.6,0.90,&quot;do_nothing&quot;).sort(col(&quot;sum(trip_distance)&quot;).desc).limit(10)
 </code></pre>
 
-<h2 id="sample-selection">Sample Selection:</h2>
+<h2 id="sample-selection">Sample Selection</h2>
 <p>Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:</p>
 <ul>
-<li>If the query is not an aggregation query (based on COUNT, AVG, SUM) then reject the use of any samples. The query is executed on the base table. Else,</li>
-<li>If query QCS (columns involved in Where/GroupBy/Having matches the sample QCS, then, select that sample</li>
-<li>If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used</li>
-<li>If superset of sample QCS is not available, a sample where the sample QCS is subset of query QCS is used</li>
-<li>When multiple stratified samples with subset of QCSs match, sample with most matching columns is used. Largest size of sample gets selected if multiple such samples are available. </li>
+<li>
+<p>If the query is not an aggregation query (based on COUNT, AVG, SUM) then reject the use of any samples. The query is executed on the base table. Else,</p>
+</li>
+<li>
+<p>If query QCS (columns involved in Where/GroupBy/Having matched the sample QCS, then, select that sample</p>
+</li>
+<li>
+<p>If exact match is not available, then, if the sample QCS is a superset of query QCS, that sample is used</p>
+</li>
+<li>
+<p>If superset of sample QCS is not available, a sample where the sample QCS is a subset of query QCS is used</p>
+</li>
+<li>
+<p>When multiple stratified samples with a subset of QCSs match, a sample with most matching columns is used. The largest size of the sample gets selected if multiple such samples are available. </p>
+</li>
 </ul>
-<h3 id="high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</h3>
+<h2 id="high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</h2>
 <p>SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.</p>
 <p>When an error constraint is not met, the action to be taken is defined in the behavior clause. </p>
-<h4 id="behavior-clause">Behavior Clause</h4>
+<h3 id="behavior-clause">Behavior Clause</h3>
 <p>Synopsis Data Engine has HAC support using the following behavior clause. </p>
-<h5 id="do_nothing"><code>&lt;do_nothing&gt;</code></h5>
-<p>The SDE engine returns the estimate as is. 
-<img alt="DO NOTHING" src="../Images/aqp_donothing.png" />
-<br></p>
-<h5 id="local_omit"><code>&lt;local_omit&gt;</code></h5>
+<h4 id="do_nothing"><code>&lt;do_nothing&gt;</code></h4>
+<p>The SDE engine returns the estimate as is. </p>
+<p><img alt="DO NOTHING" src="../Images/aqp_donothing.png" /></p>
+<h4 id="local_omit"><code>&lt;local_omit&gt;</code></h4>
 <p>For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
-<img alt="LOCAL OMIT" src="../Images/aqp_localomit.png" />
-<br></p>
-<h5 id="strict"><code>&lt;strict&gt;</code></h5>
+<img alt="LOCAL OMIT" src="../Images/aqp_localomit.png" /></p>
+<h4 id="strict"><code>&lt;strict&gt;</code></h4>
 <p>If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
-<img alt="Strict" src="../Images/aqp_strict.png" />
-<br></p>
-<h5 id="run_on_full_table"><code>&lt;run_on_full_table&gt;</code></h5>
-<p>If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
-<img alt="RUN OF FULL TABLE" src="../Images/aqp_runonfulltable.png" />
-<br></p>
-<h5 id="partial_run_on_base_table"><code>&lt;partial_run_on_base_table&gt;</code></h5>
+<img alt="Strict" src="../Images/aqp_strict.png" /></p>
+<h4 id="run_on_full_table"><code>&lt;run_on_full_table&gt;</code></h4>
+<p>If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.</p>
+<p><img alt="RUN OF FULL TABLE" src="../Images/aqp_runonfulltable.png" /></p>
+<h4 id="partial_run_on_base_table"><code>&lt;partial_run_on_base_table&gt;</code></h4>
 <p>If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
-<img alt="PARTIAL RUN ON BASE TABLE" src="../Images/aqp_partialrunonbasetable.png" />
-<br></p>
+<img alt="PARTIAL RUN ON BASE TABLE" src="../Images/aqp_partialrunonbasetable.png" /></p>
 <p>In the following example, any one of the above behavior clause can be applied. </p>
 <pre><code>SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error &lt;fraction&gt; [CONFIDENCE &lt;fraction&gt;] [BEHAVIOR &lt;behavior&gt;]
 </code></pre>
@@ -468,10 +518,10 @@ set spark.sql.aqp.behavior=$behavior;
 <p><strong>relative_error(column alias)</strong> : Indicates ratio of absolute error to estimate.</p>
 </li>
 <li>
-<p><strong>lower_bound(column alias)</strong> : Lower value of a estimate interval for a given confidence.</p>
+<p><strong>lower_bound(column alias)</strong> : Lower value of an estimate interval for a given confidence.</p>
 </li>
 <li>
-<p><strong>upper_bound(column alias)</strong>: Upper value of a estimate interval for a given confidence.</p>
+<p><strong>upper_bound(column alias)</strong>: Upper value of an estimate interval for a given confidence.</p>
 </li>
 </ul>
 <p>Confidence is the probability that the value of a parameter falls within a specified range of values.</p>
@@ -497,19 +547,19 @@ For example, if you have a data frame for the airline table, then the below quer
 <p>Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword <code>sample_</code> is reserved for SnappyData.</p>
 <p>If the aggregate function is aliased in the query as <code>sample_&lt;any string&gt;</code>, then what you get is true answers on the sample table, and not the estimates of the base table.</p>
 <p><code>select count() rowCount, count() as sample_count from airline with error 0.1</code></p>
-<p>rowCount returns estimate of number of rows in airline table.
-sample_count returns number of rows (true answer) in sample table of airline table.</p>
+<p>rowCount returns estimate of a number of rows in airline table.
+sample_count returns a number of rows (true answer) in sample table of airline table.</p>
 <h2 id="sketching_1">Sketching</h2>
 <p>Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A <a href="https://en.wikipedia.org/wiki/Bloom_filter">BloomFilter</a> is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-Min-Sketch</a> which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures much more useful. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.</p>
 <h3 id="creating-topk-tables">Creating TopK tables</h3>
 <p>TopK queries are used to rank attributes to answer "best, most interesting, most important" class of questions. TopK structures store elements ranking them based on their relevance to the query. <a href="http://stevehanov.ca/blog/index.php?id=122">TopK</a> queries aim to retrieve, from a potentially very large resultset, only the <em>k (k &gt;= 1)</em> best answers.</p>
-<p><em>SQL API for creating a TopK table in SnappyData</em> </p>
+<h4 id="sql-api-for-creating-a-topk-table-in-snappydata">SQL API for creating a TopK table in SnappyData</h4>
 <pre><code>snsc.sql(&quot;create topK table MostPopularTweets on tweetStreamTable &quot; +
         &quot;options(key 'hashtag', frequencyCol 'retweets')&quot;)
 </code></pre>
 
 <p>The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.</p>
-<p><em>Scala API for creating a TopK table</em> </p>
+<h4 id="scala-api-for-creating-a-topk-table">Scala API for creating a TopK table</h4>
 <pre><code>val topKOptionMap = Map(
     "epoch" -&gt; System.currentTimeMillis().toString,
     "timeInterval" -&gt; "1000ms",
@@ -521,26 +571,26 @@ sample_count returns number of rows (true answer) in sample table of airline tab
     "HashTag", schema, topKOptionMap)
 </code></pre>
 <p>The code above shows how to do the same thing using the SnappyData Scala API.</p>
-<p><em>Querying the TopK table</em> </p>
+<h4 id="querying-the-topk-table">Querying the TopK table</h4>
 <pre><code>select * from topkTweets order by EstimatedValue desc
 </code></pre>
-<p>The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.</p>
+<p>The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most re-tweets.</p>
 <h3 id="approximate-topk-analytics-for-time-series-data">Approximate TopK analytics for time series data</h3>
-<p>Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.</p>
-<p>Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.</p>
+<p>Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the time stamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most re-tweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.</p>
+<p>Here is an example of a time-based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.</p>
 <pre><code>select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where 
     startTime='2016-01-26 10:07:26.121' and endTime='2016-01-26 11:14:06.121' 
     order by EstimatedValue desc
 </code></pre>
 <p>If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp.</p>
-<p><em>SQL API for creating a TopK table in SnappyData specifying timestampColumn</em> </p>
+<h4 id="sql-api-for-creating-a-topk-table-in-snappydata-specifying-timestampcolumn">SQL API for creating a TopK table in SnappyData specifying timestampColumn</h4>
 <p>In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.</p>
 <pre><code class="scala">snsc.sql(&quot;create topK table MostPopularTweets on tweetStreamTable &quot; +
         &quot;options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )&quot;)
 </code></pre>
 
-<p>The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables</p>
-<p><em>Scala API for creating a TopK table</em> </p>
+<p>The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest re-tweets value in the base table. This works for both static tables and streaming tables</p>
+<h4 id="scala-api-for-creating-a-topk-table_1">Scala API for creating a TopK table</h4>
 <pre><code class="scala">    val topKOptionMap = Map(
         &quot;epoch&quot; -&gt; System.currentTimeMillis().toString,
         &quot;timeInterval&quot; -&gt; &quot;1000ms&quot;,
@@ -564,10 +614,10 @@ sample_count returns number of rows (true answer) in sample table of airline tab
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../streamingWithSQL/" class="btn btn-neutral float-right" title="Stream processing using SQL">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../aqp_aws/" class="btn btn-neutral float-right" title="Using iSight-Cloud">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../rowAndColumnTables/" class="btn btn-neutral" title="Row and Column tables"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../deployment/" class="btn btn-neutral" title="Affinity Modes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -597,10 +647,10 @@ sample_count returns number of rows (true answer) in sample table of airline tab
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../rowAndColumnTables/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../deployment/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../streamingWithSQL/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../aqp_aws/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

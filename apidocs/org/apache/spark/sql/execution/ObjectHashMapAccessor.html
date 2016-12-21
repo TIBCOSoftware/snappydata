@@ -41,7 +41,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
@@ -458,6 +458,24 @@ tree on which the function is defined.
       <p class="shortcomment cmt">Finds and returns the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectLeaves" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectLeaves():Seq[BaseType]"></a>
+      <a id="collectLeaves():Seq[SparkPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Seq containing the leaves in this tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the leaves in this tree.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#constraints" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet"></a>
@@ -1014,53 +1032,53 @@ resulting collections.
       <p class="shortcomment cmt">Generate code to compare equality of a given object (objVar) against
 key column variables.</p>
     </li><li name="org.apache.spark.sql.execution.ObjectHashMapAccessor#generateHashCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="generateHashCode(hashVar:String,keyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):String"></a>
-      <a id="generateHashCode(String,Seq[ExprCode],Seq[Expression]):String"></a>
+      <a id="generateHashCode(hashVar:Array[String],keyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],skipDeclaration:Boolean,register:Boolean):String"></a>
+      <a id="generateHashCode(Array[String],Seq[ExprCode],Seq[Expression],Boolean,Boolean):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateHashCode</span><span class="params">(<span name="hashVar">hashVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyVars">keyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="keyExpressions">keyExpressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">generateHashCode</span><span class="params">(<span name="hashVar">hashVar: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="keyVars">keyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="keyExpressions">keyExpressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="skipDeclaration">skipDeclaration: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="register">register: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateHashCode(hashVar:String,keyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateHashCode(hashVar:Array[String],keyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],skipDeclaration:Boolean,register:Boolean):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Generate code to calculate the hash code for given column variables that
 correspond to the key columns in this class.</p>
     </li><li name="org.apache.spark.sql.execution.ObjectHashMapAccessor#generateMapGetOrInsert" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="generateMapGetOrInsert(objVar:String,valueInitVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],valueInitCode:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String"></a>
-      <a id="generateMapGetOrInsert(String,Seq[ExprCode],String,Seq[ExprCode]):String"></a>
+      <a id="generateMapGetOrInsert(objVar:String,valueInitVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],valueInitCode:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],dictArrayVar:String):String"></a>
+      <a id="generateMapGetOrInsert(String,Seq[ExprCode],String,Seq[ExprCode],String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateMapGetOrInsert</span><span class="params">(<span name="objVar">objVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueInitVars">valueInitVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="valueInitCode">valueInitCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">generateMapGetOrInsert</span><span class="params">(<span name="objVar">objVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueInitVars">valueInitVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="valueInitCode">valueInitCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="dictArrayVar">dictArrayVar: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateMapGetOrInsert(objVar:String,valueInitVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],valueInitCode:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateMapGetOrInsert(objVar:String,valueInitVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],valueInitCode:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],dictArrayVar:String):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Generate code to lookup the map or insert a new key, value if not found.</p>
     </li><li name="org.apache.spark.sql.execution.ObjectHashMapAccessor#generateMapLookup" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="generateMapLookup(entryVar:String,localValueVar:String,keyIsUnique:String,numRows:String,nullMaskVars:Array[String],initCode:String,checkCondition:Option[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],streamKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],streamKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],resultVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],joinType:org.apache.spark.sql.catalyst.plans.JoinType):String"></a>
-      <a id="generateMapLookup(String,String,String,String,Array[String],String,Option[ExprCode],Seq[Expression],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],JoinType):String"></a>
+      <a id="generateMapLookup(entryVar:String,localValueVar:String,keyIsUnique:String,numRows:String,nullMaskVars:Array[String],initCode:String,checkCond:(Option[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],String),streamKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],streamKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],resultVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],dictArrayVar:String,joinType:org.apache.spark.sql.catalyst.plans.JoinType,buildSide:org.apache.spark.sql.execution.joins.BuildSide):String"></a>
+      <a id="generateMapLookup(String,String,String,String,Array[String],String,(Option[ExprCode],String),Seq[Expression],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],Seq[ExprCode],String,JoinType,BuildSide):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateMapLookup</span><span class="params">(<span name="entryVar">entryVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="localValueVar">localValueVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyIsUnique">keyIsUnique: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numRows">numRows: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullMaskVars">nullMaskVars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="initCode">initCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="checkCondition">checkCondition: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="streamKeys">streamKeys: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="streamKeyVars">streamKeyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="buildKeyVars">buildKeyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="buildVars">buildVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="resultVars">resultVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="joinType">joinType: <a href="../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">generateMapLookup</span><span class="params">(<span name="entryVar">entryVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="localValueVar">localValueVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyIsUnique">keyIsUnique: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numRows">numRows: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullMaskVars">nullMaskVars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="initCode">initCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="checkCond">checkCond: (<span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>], <span class="extype" name="scala.Predef.String">String</span>)</span>, <span name="streamKeys">streamKeys: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="streamKeyVars">streamKeyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="buildKeyVars">buildKeyVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="buildVars">buildVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="resultVars">resultVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="dictArrayVar">dictArrayVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="joinType">joinType: <a href="../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="buildSide">buildSide: <a href="joins/package$$BuildSide.html" class="extype" name="org.apache.spark.sql.execution.joins.BuildSide">BuildSide</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateMapLookup(entryVar:String,localValueVar:String,keyIsUnique:String,numRows:String,nullMaskVars:Array[String],initCode:String,checkCondition:Option[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],streamKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],streamKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],resultVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],joinType:org.apache.spark.sql.catalyst.plans.JoinType):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@generateMapLookup(entryVar:String,localValueVar:String,keyIsUnique:String,numRows:String,nullMaskVars:Array[String],initCode:String,checkCond:(Option[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],String),streamKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],streamKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildKeyVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],buildVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],resultVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],dictArrayVar:String,joinType:org.apache.spark.sql.catalyst.plans.JoinType,buildSide:org.apache.spark.sql.execution.joins.BuildSide):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1234,6 +1252,23 @@ appear in the <a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spa
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.ObjectHashMapAccessor#initDictionaryCodeForSingleKeyCase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="initDictionaryCodeForSingleKeyCase(dictionaryArrayTerm:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):String"></a>
+      <a id="initDictionaryCodeForSingleKeyCase(String,Seq[ExprCode],Seq[Expression],Seq[Attribute]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initDictionaryCodeForSingleKeyCase</span><span class="params">(<span name="dictionaryArrayTerm">dictionaryArrayTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="keyExpressions">keyExpressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>] = <span class="symbol">keyExpressions</span></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>] = <span class="symbol">output</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@initDictionaryCodeForSingleKeyCase(dictionaryArrayTerm:String,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -1357,6 +1392,40 @@ For example, this can be used to show sub-queries.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1375,18 +1444,18 @@ For example, this can be used to show sub-queries.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashMapAccessor@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

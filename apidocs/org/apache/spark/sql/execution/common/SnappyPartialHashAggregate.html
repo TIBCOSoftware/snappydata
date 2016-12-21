@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.common.SnappyPartialHashAggregate#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_requiredChildDistributionExpressions:Option[Seq[org.apache.spark.sql.catalyst.expressions.Expression]],_groupingExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],_aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],_aggregateAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],_initialInputBufferOffset:Int,_baseResultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],dumbo:Boolean,_child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.common.SnappyPartialHashAggregate"></a>
+      <a id="&lt;init&gt;(_requiredChildDistributionExpressions:Option[Seq[org.apache.spark.sql.catalyst.expressions.Expression]],_groupingExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],_aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],_aggregateAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],_baseResultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],dumbo:Boolean,_child:org.apache.spark.sql.execution.SparkPlan,_hasDistinct:Boolean):org.apache.spark.sql.execution.common.SnappyPartialHashAggregate"></a>
       <a id="&lt;init&gt;:SnappyPartialHashAggregate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyPartialHashAggregate</span><span class="params">(<span name="_requiredChildDistributionExpressions">_requiredChildDistributionExpressions: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]]</span>, <span name="_groupingExpressions">_groupingExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="_aggregateExpressions">_aggregateExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>, <span name="_aggregateAttributes">_aggregateAttributes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="_initialInputBufferOffset">_initialInputBufferOffset: <span class="extype" name="scala.Int">Int</span></span>, <span name="_baseResultExpressions">_baseResultExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="dumbo">dumbo: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span>
+        <span class="name">SnappyPartialHashAggregate</span><span class="params">(<span name="_requiredChildDistributionExpressions">_requiredChildDistributionExpressions: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]]</span>, <span name="_groupingExpressions">_groupingExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="_aggregateExpressions">_aggregateExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>, <span name="_aggregateAttributes">_aggregateAttributes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="_baseResultExpressions">_baseResultExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="dumbo">dumbo: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="_hasDistinct">_hasDistinct: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@&lt;init&gt;(_requiredChildDistributionExpressions:Option[Seq[org.apache.spark.sql.catalyst.expressions.Expression]],_groupingExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],_aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],_aggregateAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],_initialInputBufferOffset:Int,_baseResultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],dumbo:Boolean,_child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.common.SnappyPartialHashAggregate" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@&lt;init&gt;(_requiredChildDistributionExpressions:Option[Seq[org.apache.spark.sql.catalyst.expressions.Expression]],_groupingExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],_aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],_aggregateAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],_baseResultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],dumbo:Boolean,_child:org.apache.spark.sql.execution.SparkPlan,_hasDistinct:Boolean):org.apache.spark.sql.execution.common.SnappyPartialHashAggregate" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -309,18 +309,18 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#batchConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String"></a>
-      <a id="batchConsume(CodegenContext,Seq[ExprCode]):String"></a>
+      <a id="batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,plan:org.apache.spark.sql.execution.SparkPlan,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String"></a>
+      <a id="batchConsume(CodegenContext,SparkPlan,Seq[ExprCode]):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">batchConsume</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">batchConsume</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="plan">plan: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,plan:org.apache.spark.sql.execution.SparkPlan,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -330,6 +330,26 @@ by a <a href="../DataSourceScanExec.html" class="extype" name="org.apache.spark.
 optimizations, initializations etc).</p><p>Implementations should use this for additional optimizations that can be
 done at batch level when a batched scan is being done. They should not
 depend on this being invoked since many scans will not be batched.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> → <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#canConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canConsume(plan:org.apache.spark.sql.execution.SparkPlan):Boolean"></a>
+      <a id="canConsume(SparkPlan):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canConsume</span><span class="params">(<span name="plan">plan: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@canConsume(plan:org.apache.spark.sql.execution.SparkPlan):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true if the given plan returning batches of data can be consumed
+by this plan.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the given plan returning batches of data can be consumed
+by this plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> → <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#canonicalized" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:PlanType"></a>
@@ -464,6 +484,24 @@ tree on which the function is defined.
       <p class="shortcomment cmt">Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectLeaves" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectLeaves():Seq[BaseType]"></a>
+      <a id="collectLeaves():Seq[SparkPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Seq containing the leaves in this tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the leaves in this tree.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#constraints" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet"></a>
@@ -1041,6 +1079,23 @@ appear in the <a href="../../catalyst/plans/QueryPlan.html#outputSet:org.apache.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#hasDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasDistinct:Boolean"></a>
+      <a id="hasDistinct:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasDistinct</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@hasDistinct:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1058,23 +1113,6 @@ appear in the <a href="../../catalyst/plans/QueryPlan.html#outputSet:org.apache.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#initialInputBufferOffset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initialInputBufferOffset:Int"></a>
-      <a id="initialInputBufferOffset:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">initialInputBufferOffset</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@initialInputBufferOffset:Int" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -1147,6 +1185,40 @@ For example, this can be used to show sub-queries.
     </span>
       <p class="shortcomment cmt">The set of all attributes that are input to this operator by its children.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are input to this operator by its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1165,18 +1237,18 @@ For example, this can be used to show sub-queries.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1510,6 +1582,23 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Return all metadata that describes more details of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metadata that describes more details of this SparkPlan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#metricAdd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="metricAdd:String=&gt;String"></a>
+      <a id="metricAdd:(String)⇒String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metricAdd</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.SnappyPartialHashAggregate@metricAdd:String=&gt;String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.CodegenSupport#metricTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metricTerm(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,name:String):String"></a>
       <a id="metricTerm(CodegenContext,String):String"></a>
@@ -1652,7 +1741,7 @@ assertions designed to prevent the construction of invalid plans.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
       <h4 class="signature">
@@ -1670,7 +1759,7 @@ assertions designed to prevent the construction of invalid plans.
     </span>
       <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
 Note that we remove the &quot;Exec&quot; suffix for physical operators here.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> → <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1793,7 +1882,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       </a>
     </span>
       <p class="shortcomment cmt">Specifies how data is ordered in each partition.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is ordered in each partition.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.UnaryExecNode#outputPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#outputPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputPartitioning:org.apache.spark.sql.catalyst.plans.physical.Partitioning"></a>
       <a id="outputPartitioning:Partitioning"></a>
       <h4 class="signature">
@@ -1809,7 +1898,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies how data is partitioned across different nodes in the cluster.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is partitioned across different nodes in the cluster.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+      <p class="shortcomment cmt">Specifies how data is partitioned across different nodes in the cluster.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is partitioned across different nodes in the cluster.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> → <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>
@@ -2156,7 +2245,7 @@ can do better should override this function.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
         <span class="name">simpleString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
@@ -2275,7 +2364,7 @@ populated by the query planning infrastructure.
     </span>
       <p class="shortcomment cmt">All the subqueries of current plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the subqueries of current plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec#supportCodegen" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#supportCodegen" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="supportCodegen:Boolean"></a>
       <a id="supportCodegen:Boolean"></a>
       <h4 class="signature">
@@ -2292,7 +2381,7 @@ populated by the query planning infrastructure.
       </a>
     </span>
       <p class="shortcomment cmt">Whether this SparkPlan support whole stage codegen or not.</p><div class="fullcomment"><div class="comment cmt"><p>Whether this SparkPlan support whole stage codegen or not.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

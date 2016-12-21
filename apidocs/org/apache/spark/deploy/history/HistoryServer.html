@@ -250,7 +250,7 @@ EventLoggingListener.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">attachSparkUI</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="ui">ui: <span class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</span></span>, <span name="completed">completed: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">attachSparkUI</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="ui">ui: <a href="../../ui/SparkUI.html" class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</a></span>, <span name="completed">completed: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@attachSparkUI(appId:String,attemptId:Option[String],ui:org.apache.spark.ui.SparkUI,completed:Boolean):Unit" title="Permalink" target="_top">
@@ -392,7 +392,7 @@ EventLoggingListener.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">detachSparkUI</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="ui">ui: <span class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">detachSparkUI</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="ui">ui: <a href="../../ui/SparkUI.html" class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@detachSparkUI(appId:String,attemptId:Option[String],ui:org.apache.spark.ui.SparkUI):Unit" title="Permalink" target="_top">
@@ -491,6 +491,23 @@ EventLoggingListener.
       </a>
     </span>
       <p class="shortcomment cmt">Get the application UI and whether or not it is completed</p><div class="fullcomment"><div class="comment cmt"><p>Get the application UI and whether or not it is completed</p></div><dl class="paramcmts block"><dt class="param">appId</dt><dd class="cmt"><p>application ID</p></dd><dt class="param">attemptId</dt><dd class="cmt"><p>attempt ID</p></dd><dt>returns</dt><dd class="cmt"><p>If found, the Spark UI and any history information to be used in the cache</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.deploy.history.HistoryServer">HistoryServer</a> → ApplicationCacheOperations</dd></dl></div>
+    </li><li name="org.apache.spark.deploy.history.HistoryServer#getApplicationInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getApplicationInfo(appId:String):Option[org.apache.spark.status.api.v1.ApplicationInfo]"></a>
+      <a id="getApplicationInfo(String):Option[ApplicationInfo]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getApplicationInfo</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../status/api/v1/ApplicationInfo.html" class="extype" name="org.apache.spark.status.api.v1.ApplicationInfo">ApplicationInfo</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@getApplicationInfo(appId:String):Option[org.apache.spark.status.api.v1.ApplicationInfo]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.deploy.history.HistoryServer">HistoryServer</a> → UIRoot</dd></dl></div>
     </li><li name="org.apache.spark.deploy.history.HistoryServer#getApplicationInfoList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getApplicationInfoList:Iterator[org.apache.spark.status.api.v1.ApplicationInfo]"></a>
       <a id="getApplicationInfoList:Iterator[ApplicationInfo]"></a>
@@ -621,7 +638,7 @@ EventLoggingListener.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getSparkUI</span><span class="params">(<span name="appKey">appKey: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</span>]</span>
+        <span class="name">getSparkUI</span><span class="params">(<span name="appKey">appKey: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../ui/SparkUI.html" class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@getSparkUI(appKey:String):Option[org.apache.spark.ui.SparkUI]" title="Permalink" target="_top">
@@ -716,6 +733,40 @@ this UI with the event logs in the provided base directory.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -734,18 +785,18 @@ this UI with the event logs in the provided base directory.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1165,7 +1216,7 @@ this UI with the event logs in the provided base directory.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">tabs</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="org.apache.spark.ui.WebUITab">WebUITab</span>]</span>
@@ -1288,7 +1339,7 @@ this UI with the event logs in the provided base directory.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">withSparkUI</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</span>) ⇒ <span class="extype" name="org.apache.spark.status.api.v1.UIRoot.withSparkUI.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.status.api.v1.UIRoot.withSparkUI.T">T</span></span>
+        <span class="name">withSparkUI</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attemptId">attemptId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../ui/SparkUI.html" class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</a>) ⇒ <span class="extype" name="org.apache.spark.status.api.v1.UIRoot.withSparkUI.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.status.api.v1.UIRoot.withSparkUI.T">T</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.deploy.history.HistoryServer@withSparkUI[T](appId:String,attemptId:Option[String])(f:org.apache.spark.ui.SparkUI=&gt;T):T" title="Permalink" target="_top">

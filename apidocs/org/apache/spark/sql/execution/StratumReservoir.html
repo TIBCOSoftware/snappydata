@@ -45,7 +45,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">StratumReservoir</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">StratumReservoir</span><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.DataSerializable">DataSerializable</span> with <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -54,8 +54,11 @@ meta-data including number of samples collected, total number of rows
 in the stratum seen so far, the QCS key, reservoir of samples etc.
 </p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span>, <span class="extype" name="com.gemstone.gemfire.DataSerializable">DataSerializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="StratumCache.html" class="extype" name="org.apache.spark.sql.execution.StratumCache">StratumCache</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -72,7 +75,7 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.StratumReservoir"><span>StratumReservoir</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.StratumReservoir"><span>StratumReservoir</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="com.gemstone.gemfire.internal.cache.lru.Sizeable"><span>Sizeable</span></li><li class="in" name="com.gemstone.gemfire.DataSerializable"><span>DataSerializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -92,6 +95,23 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.StratumReservoir#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():org.apache.spark.sql.execution.StratumReservoir"></a>
+      <a id="&lt;init&gt;:StratumReservoir"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">StratumReservoir</span><span class="params">()</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@&lt;init&gt;():org.apache.spark.sql.execution.StratumReservoir" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.StratumReservoir#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="&lt;init&gt;(reservoir:Array[org.apache.spark.sql.catalyst.expressions.UnsafeRow],reservoirSize:Int,batchTotalSize:Int):org.apache.spark.sql.execution.StratumReservoir"></a>
       <a id="&lt;init&gt;:StratumReservoir"></a>
       <h4 class="signature">
@@ -299,6 +319,23 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratumReservoir#fromData" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fromData(in:java.io.DataInput):Unit"></a>
+      <a id="fromData(DataInput):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromData</span><span class="params">(<span name="in">in: <span class="extype" name="java.io.DataInput">DataInput</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@fromData(in:java.io.DataInput):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a> → DataSerializable</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -316,6 +353,23 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratumReservoir#getSizeInBytes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSizeInBytes():Int"></a>
+      <a id="getSizeInBytes():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSizeInBytes</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@getSizeInBytes():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a> → Sizeable</dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -351,18 +405,18 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratumReservoir#iterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="iterator(prevReservoirSize:Int,newReservoirSize:Int,columns:Int,doReset:Boolean,fullReset:Boolean):Iterator[org.apache.spark.sql.catalyst.expressions.UnsafeRow]"></a>
-      <a id="iterator(Int,Int,Int,Boolean,Boolean):Iterator[UnsafeRow]"></a>
+      <a id="iterator(prevReservoirSize:Int,newReservoirSize:Int,columns:Int,doReset:Boolean,fullReset:Boolean,useWrapper:Boolean):Iterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="iterator(Int,Int,Int,Boolean,Boolean,Boolean):Iterator[InternalRow]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterator</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="newReservoirSize">newReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="columns">columns: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>]</span>
+        <span class="name">iterator</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="newReservoirSize">newReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="columns">columns: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useWrapper">useWrapper: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@iterator(prevReservoirSize:Int,newReservoirSize:Int,columns:Int,doReset:Boolean,fullReset:Boolean):Iterator[org.apache.spark.sql.catalyst.expressions.UnsafeRow]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@iterator(prevReservoirSize:Int,newReservoirSize:Int,columns:Int,doReset:Boolean,fullReset:Boolean,useWrapper:Boolean):Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -503,6 +557,23 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratumReservoir#toData" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toData(out:java.io.DataOutput):Unit"></a>
+      <a id="toData(DataOutput):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toData</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.DataOutput">DataOutput</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratumReservoir@toData(out:java.io.DataOutput):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a> → DataSerializable</dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -598,7 +669,15 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">
+              <h3>Inherited from <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span></h3>
+            </div><div class="parent" name="com.gemstone.gemfire.DataSerializable">
+              <h3>Inherited from <span class="extype" name="com.gemstone.gemfire.DataSerializable">DataSerializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

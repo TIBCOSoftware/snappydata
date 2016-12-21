@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.BlockAndExecutorId#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int):org.apache.spark.sql.BlockAndExecutorId"></a>
+      <a id="&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int):org.apache.spark.sql.BlockAndExecutorId"></a>
       <a id="&lt;init&gt;:BlockAndExecutorId"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BlockAndExecutorId</span><span class="params">(<span name="_blockId">_blockId: <a href="../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a></span>, <span name="_executorCores">_executorCores: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">BlockAndExecutorId</span><span class="params">(<span name="_blockId">_blockId: <a href="../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a></span>, <span name="_executorCores">_executorCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="_numProcessors">_numProcessors: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int):org.apache.spark.sql.BlockAndExecutorId" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int):org.apache.spark.sql.BlockAndExecutorId" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -398,6 +398,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.BlockAndExecutorId#numProcessors" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="numProcessors:Int"></a>
+      <a id="numProcessors:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">numProcessors</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@numProcessors:Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.BlockAndExecutorId#readExternal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readExternal(in:java.io.ObjectInput):Unit"></a>
       <a id="readExternal(ObjectInput):Unit"></a>

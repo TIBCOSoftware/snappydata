@@ -259,26 +259,6 @@ and the results are committed transactionally to the given <a href="Sink.html" c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#awaitOffset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="awaitOffset(source:org.apache.spark.sql.execution.streaming.Source,newOffset:org.apache.spark.sql.execution.streaming.Offset):Unit"></a>
-      <a id="awaitOffset(Source,Offset):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">awaitOffset</span><span class="params">(<span name="source">source: <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></span>, <span name="newOffset">newOffset: <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@awaitOffset(source:org.apache.spark.sql.execution.streaming.Source,newOffset:org.apache.spark.sql.execution.streaming.Offset):Unit" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Blocks the current thread until processing for data from the given <code>source</code> has reached at
-least the given <code>Offset</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Blocks the current thread until processing for data from the given <code>source</code> has reached at
-least the given <code>Offset</code>. This method is indented for use primarily when writing tests.
-</p></div></div>
     </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#awaitTermination" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="awaitTermination(timeoutMs:Long):Boolean"></a>
       <a id="awaitTermination(Long):Boolean"></a>
@@ -346,7 +326,7 @@ immediately (if the query has terminated with exception).
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#committedOffsets" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#committedOffsets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="committedOffsets:org.apache.spark.sql.execution.streaming.StreamProgress"></a>
       <a id="committedOffsets:StreamProgress"></a>
       <h4 class="signature">
@@ -363,7 +343,12 @@ immediately (if the query has terminated with exception).
       </a>
     </span>
       <p class="shortcomment cmt">Tracks how much data we have processed and committed to the sink or state store from each
-input source.</p>
+input source.</p><div class="fullcomment"><div class="comment cmt"><p>Tracks how much data we have processed and committed to the sink or state store from each
+input source.
+Only the scheduler thread should modify this field, and only in atomic steps.
+Other threads should make a shallow copy if they are going to access this field more than
+once, since the field's value may change at any time.
+</p></div></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -576,6 +561,40 @@ all queries that have been started in the current process.</p></div><dl class="a
       </a>
     </span>
       <p class="shortcomment cmt">Whether the query is currently active or not</p><div class="fullcomment"><div class="comment cmt"><p>Whether the query is currently active or not</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> → <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -594,18 +613,18 @@ all queries that have been started in the current process.</p></div><dl class="a
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -849,18 +868,18 @@ all queries that have been started in the current process.</p></div><dl class="a
     </span>
       
     </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#microBatchThread" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="microBatchThread:org.apache.spark.util.UninterruptibleThread"></a>
-      <a id="microBatchThread:UninterruptibleThread"></a>
+      <a id="microBatchThread:org.apache.spark.sql.execution.streaming.StreamExecutionThread"></a>
+      <a id="microBatchThread:StreamExecutionThread"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">microBatchThread</span><span class="result">: <span class="extype" name="org.apache.spark.util.UninterruptibleThread">UninterruptibleThread</span></span>
+        <span class="name">microBatchThread</span><span class="result">: <a href="StreamExecutionThread.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecutionThread">StreamExecutionThread</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@microBatchThread:org.apache.spark.util.UninterruptibleThread" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@microBatchThread:org.apache.spark.sql.execution.streaming.StreamExecutionThread" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1081,9 +1100,26 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Starts the execution.</p><div class="fullcomment"><div class="comment cmt"><p>Starts the execution. This returns only after the thread has started and <span class="extype" name="QueryStarted">QueryStarted</span> event
+      <p class="shortcomment cmt">Starts the execution.</p><div class="fullcomment"><div class="comment cmt"><p>Starts the execution. This returns only after the thread has started and <span class="extype" name="QueryStartedEvent">QueryStartedEvent</span>
 has been posted to all the listeners.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#status" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="status:org.apache.spark.sql.streaming.StreamingQueryStatus"></a>
+      <a id="status:StreamingQueryStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">status</span><span class="result">: <a href="../../streaming/StreamingQueryStatus.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryStatus">StreamingQueryStatus</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@status:org.apache.spark.sql.streaming.StreamingQueryStatus" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the current status of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current status of the query.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> → <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stop():Unit"></a>
       <a id="stop():Unit"></a>
@@ -1104,23 +1140,6 @@ has been posted to all the listeners.
 batch.</p><div class="fullcomment"><div class="comment cmt"><p>Signals to the thread executing micro-batches that it should stop running after the next
 batch. This method blocks until the thread stops running.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> → <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution#streamDeathCause" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="streamDeathCause:org.apache.spark.sql.streaming.StreamingQueryException"></a>
-      <a id="streamDeathCause:StreamingQueryException"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">streamDeathCause</span><span class="result">: <a href="../../streaming/StreamingQueryException.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryException">StreamingQueryException</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamExecution@streamDeathCause:org.apache.spark.sql.streaming.StreamingQueryException" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

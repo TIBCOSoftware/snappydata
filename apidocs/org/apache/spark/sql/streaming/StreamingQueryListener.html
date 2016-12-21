@@ -119,18 +119,18 @@ Interface for listening to events related to <a href="StreamingQuery.html" class
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="org.apache.spark.sql.streaming.StreamingQueryListener#onQueryProgress" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="onQueryProgress(queryProgress:org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgress):Unit"></a>
-      <a id="onQueryProgress(QueryProgress):Unit"></a>
+      <a id="onQueryProgress(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgressEvent):Unit"></a>
+      <a id="onQueryProgress(QueryProgressEvent):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onQueryProgress</span><span class="params">(<span name="queryProgress">queryProgress: <a href="StreamingQueryListener$$QueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgress">QueryProgress</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">onQueryProgress</span><span class="params">(<span name="event">event: <a href="StreamingQueryListener$$QueryProgressEvent.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgressEvent">QueryProgressEvent</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryProgress(queryProgress:org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgress):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryProgress(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryProgressEvent):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -139,41 +139,41 @@ Interface for listening to events related to <a href="StreamingQuery.html" class
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This method is asynchronous. The status in <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> will always be
       latest no matter when this method is called. Therefore, the status of <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
       may be changed before/when you process the event. E.g., you may find <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
-      is terminated when you are processing <span class="extype" name="QueryProgress">QueryProgress</span>.</p></span></dd></dl></div>
+      is terminated when you are processing <span class="extype" name="QueryProgressEvent">QueryProgressEvent</span>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener#onQueryStarted" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="onQueryStarted(queryStarted:org.apache.spark.sql.streaming.StreamingQueryListener.QueryStarted):Unit"></a>
-      <a id="onQueryStarted(QueryStarted):Unit"></a>
+      <a id="onQueryStarted(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryStartedEvent):Unit"></a>
+      <a id="onQueryStarted(QueryStartedEvent):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onQueryStarted</span><span class="params">(<span name="queryStarted">queryStarted: <a href="StreamingQueryListener$$QueryStarted.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryStarted">QueryStarted</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">onQueryStarted</span><span class="params">(<span name="event">event: <a href="StreamingQueryListener$$QueryStartedEvent.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryStartedEvent">QueryStartedEvent</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryStarted(queryStarted:org.apache.spark.sql.streaming.StreamingQueryListener.QueryStarted):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryStarted(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryStartedEvent):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Called when a query is started.</p><div class="fullcomment"><div class="comment cmt"><p>Called when a query is started.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is called synchronously with
-      <span class="extype" name="org.apache.spark.sql.DataStreamWriter"><code>DataStreamWriter.start()</code></span>,
+      <a href="DataStreamWriter.html" class="extype" name="org.apache.spark.sql.streaming.DataStreamWriter"><code>DataStreamWriter.start()</code></a>,
       that is, <code>onQueryStart</code> will be called on all listeners before
       <code>DataStreamWriter.start()</code> returns the corresponding <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>. Please
       don't block this method as it will block your query.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener#onQueryTerminated" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="onQueryTerminated(queryTerminated:org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminated):Unit"></a>
-      <a id="onQueryTerminated(QueryTerminated):Unit"></a>
+      <a id="onQueryTerminated(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent):Unit"></a>
+      <a id="onQueryTerminated(QueryTerminatedEvent):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onQueryTerminated</span><span class="params">(<span name="queryTerminated">queryTerminated: <a href="StreamingQueryListener$$QueryTerminated.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminated">QueryTerminated</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">onQueryTerminated</span><span class="params">(<span name="event">event: <a href="StreamingQueryListener$$QueryTerminatedEvent.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent">QueryTerminatedEvent</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryTerminated(queryTerminated:org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminated):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener@onQueryTerminated(event:org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

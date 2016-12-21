@@ -66,7 +66,26 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.datasources.CaseInsensitiveMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.datasources.AnalyzeCreateTableAsSelect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AnalyzeCreateTableAsSelectextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
+      <a id="AnalyzeCreateTableAsSelect:AnalyzeCreateTableAsSelect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AnalyzeCreateTableAsSelect.html"><span class="name">AnalyzeCreateTableAsSelect</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@AnalyzeCreateTableAsSelectextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Analyze the query in CREATE TABLE AS SELECT (CTAS).</p><div class="fullcomment"><div class="comment cmt"><p>Analyze the query in CREATE TABLE AS SELECT (CTAS). After analysis, <a href="PreWriteCheck.html" class="extype" name="org.apache.spark.sql.execution.datasources.PreWriteCheck">PreWriteCheck</a> also
+can detect the cases that are not allowed.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.CaseInsensitiveMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CaseInsensitiveMapextendsMap[String,String]withSerializable"></a>
       <a id="CaseInsensitiveMap:CaseInsensitiveMap"></a>
       <h4 class="signature">
@@ -85,7 +104,7 @@
       <p class="shortcomment cmt">Builds a map in which keys are case insensitive
 </p>
     </li><li name="org.apache.spark.sql.execution.datasources.CreateTableUsing" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="CreateTableUsingextendsLogicalPlanwithCommandwithProductwithSerializable"></a>
+      <a id="CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable"></a>
       <a id="CreateTableUsing:CreateTableUsing"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -93,18 +112,18 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateTableUsing.html"><span class="name">CreateTableUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateTableUsing.html"><span class="name">CreateTableUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingextendsLogicalPlanwithCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Used to represent the operation of create table using a data source.</p><div class="fullcomment"><div class="comment cmt"><p>Used to represent the operation of create table using a data source.
 </p></div><dl class="paramcmts block"><dt class="param">allowExisting</dt><dd class="cmt"><p>If it is true, we will do nothing when the table already exists.
                      If it is false, an exception will be thrown</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.CreateTableUsingAsSelect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="CreateTableUsingAsSelectextendsUnaryNodewithProductwithSerializable"></a>
+    </li><li name="org.apache.spark.sql.execution.datasources.CreateTableUsingAsSelect" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable"></a>
       <a id="CreateTableUsingAsSelect:CreateTableUsingAsSelect"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -112,20 +131,16 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateTableUsingAsSelect.html"><span class="name">CreateTableUsingAsSelect</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="child">child: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateTableUsingAsSelect.html"><span class="name">CreateTableUsingAsSelect</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingAsSelectextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A node used to support CTAS statements and saveAsTable for the data source API.</p><div class="fullcomment"><div class="comment cmt"><p>A node used to support CTAS statements and saveAsTable for the data source API.
-This node is a <span class="extype" name="logical.UnaryNode">logical.UnaryNode</span> instead of a <span class="extype" name="logical.Command">logical.Command</span> because we want the
-analyzer can analyze the logical plan that will be used to populate the table.
-So, <a href="PreWriteCheck.html" class="extype" name="org.apache.spark.sql.execution.datasources.PreWriteCheck">PreWriteCheck</a> can detect cases that are not allowed.
-</p></div></div>
+      <p class="shortcomment cmt">A node used to support CTAS statements and saveAsTable for the data source API.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.CreateTempViewUsing" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CreateTempViewUsingextendsLogicalPlanwithRunnableCommandwithProductwithSerializable"></a>
+      <a id="CreateTempViewUsingextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="CreateTempViewUsing:CreateTempViewUsing"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -133,10 +148,10 @@ So, <a href="PreWriteCheck.html" class="extype" name="org.apache.spark.sql.execu
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateTempViewUsing.html"><span class="name">CreateTempViewUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateTempViewUsing.html"><span class="name">CreateTempViewUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTempViewUsingextendsLogicalPlanwithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTempViewUsingextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -318,7 +333,7 @@ resolution and merging logic for schemas and partitions has been removed.
                 this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
                   present in the actual data files as well, they are preserved.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>Describes the bucketing (hash-partitioning of the files by some column values).</p></dd><dt class="param">fileFormat</dt><dd class="cmt"><p>A file format that can be used to read and write the data in files.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Configuration used when reading / writing data.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="InsertIntoDataSourceCommandextendsLogicalPlanwithRunnableCommandwithProductwithSerializable"></a>
+      <a id="InsertIntoDataSourceCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="InsertIntoDataSourceCommand:InsertIntoDataSourceCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -326,16 +341,16 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertIntoDataSourceCommand.html"><span class="name">InsertIntoDataSourceCommand</span></a><span class="params">(<span name="logicalRelation">logicalRelation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertIntoDataSourceCommand.html"><span class="name">InsertIntoDataSourceCommand</span></a><span class="params">(<span name="logicalRelation">logicalRelation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoDataSourceCommandextendsLogicalPlanwithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoDataSourceCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Inserts the results of <code>query</code> in to a relation that extends <span class="extype" name="InsertableRelation">InsertableRelation</span>.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="InsertIntoHadoopFsRelationCommandextendsLogicalPlanwithRunnableCommandwithProductwithSerializable"></a>
+      <a id="InsertIntoHadoopFsRelationCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="InsertIntoHadoopFsRelationCommand:InsertIntoHadoopFsRelationCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -343,10 +358,10 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertIntoHadoopFsRelationCommand.html"><span class="name">InsertIntoHadoopFsRelationCommand</span></a><span class="params">(<span name="outputPath">outputPath: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="refreshFunction">refreshFunction: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertIntoHadoopFsRelationCommand.html"><span class="name">InsertIntoHadoopFsRelationCommand</span></a><span class="params">(<span name="outputPath">outputPath: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="refreshFunction">refreshFunction: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoHadoopFsRelationCommandextendsLogicalPlanwithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoHadoopFsRelationCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -608,7 +623,7 @@ inserted have the correct data type and fields have the correct names.
 column batches by pretending they are rows.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.RefreshResource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RefreshResourceextendsLogicalPlanwithRunnableCommandwithProductwithSerializable"></a>
+      <a id="RefreshResourceextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="RefreshResource:RefreshResource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -616,16 +631,16 @@ column batches by pretending they are rows.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RefreshResource.html"><span class="name">RefreshResource</span></a><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RefreshResource.html"><span class="name">RefreshResource</span></a><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@RefreshResourceextendsLogicalPlanwithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@RefreshResourceextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.datasources.RefreshTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RefreshTableextendsLogicalPlanwithRunnableCommandwithProductwithSerializable"></a>
+      <a id="RefreshTableextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="RefreshTable:RefreshTable"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -633,10 +648,10 @@ column batches by pretending they are rows.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RefreshTable.html"><span class="name">RefreshTable</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RefreshTable.html"><span class="name">RefreshTable</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@RefreshTableextendsLogicalPlanwithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@RefreshTableextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.CachedBatchCreator#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(tableName:String,userTableName:String,schema:org.apache.spark.sql.types.StructType,externalStore:org.apache.spark.sql.execution.columnar.ExternalStore,columnBatchSize:Int,useCompression:Boolean):org.apache.spark.sql.execution.columnar.CachedBatchCreator"></a>
+      <a id="&lt;init&gt;(tableName:String,userTableName:String,schema:org.apache.spark.sql.types.StructType,externalStore:org.apache.spark.sql.execution.columnar.ExternalStore,dependents:Seq[org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry],columnBatchSize:Int,useCompression:Boolean):org.apache.spark.sql.execution.columnar.CachedBatchCreator"></a>
       <a id="&lt;init&gt;:CachedBatchCreator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CachedBatchCreator</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="userTableName">userTableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="columnBatchSize">columnBatchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="useCompression">useCompression: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">CachedBatchCreator</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="userTableName">userTableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="dependents">dependents: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="impl/StoreCallbacksImpl$$ExecutorCatalogEntry.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry">ExecutorCatalogEntry</a>]</span>, <span name="columnBatchSize">columnBatchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="useCompression">useCompression: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.CachedBatchCreator@&lt;init&gt;(tableName:String,userTableName:String,schema:org.apache.spark.sql.types.StructType,externalStore:org.apache.spark.sql.execution.columnar.ExternalStore,columnBatchSize:Int,useCompression:Boolean):org.apache.spark.sql.execution.columnar.CachedBatchCreator" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.CachedBatchCreator@&lt;init&gt;(tableName:String,userTableName:String,schema:org.apache.spark.sql.types.StructType,externalStore:org.apache.spark.sql.execution.columnar.ExternalStore,dependents:Seq[org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry],columnBatchSize:Int,useCompression:Boolean):org.apache.spark.sql.execution.columnar.CachedBatchCreator" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -307,6 +307,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../CompactExecRowToMutableRow.html" class="extype" name="org.apache.spark.sql.execution.CompactExecRowToMutableRow">CompactExecRowToMutableRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.CachedBatchCreator#dependents" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="dependents:Seq[org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry]"></a>
+      <a id="dependents:Seq[ExecutorCatalogEntry]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dependents</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="impl/StoreCallbacksImpl$$ExecutorCatalogEntry.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry">ExecutorCatalogEntry</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.CachedBatchCreator@dependents:Seq[org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

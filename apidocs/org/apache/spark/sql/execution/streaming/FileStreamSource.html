@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.streaming.FileStreamSource#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,path:String,fileFormatClassName:String,schema:org.apache.spark.sql.types.StructType,metadataPath:String,options:Map[String,String]):org.apache.spark.sql.execution.streaming.FileStreamSource"></a>
+      <a id="&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,path:String,fileFormatClassName:String,schema:org.apache.spark.sql.types.StructType,partitionColumns:Seq[String],metadataPath:String,options:Map[String,String]):org.apache.spark.sql.execution.streaming.FileStreamSource"></a>
       <a id="&lt;init&gt;:FileStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">FileStreamSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fileFormatClassName">fileFormatClassName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="metadataPath">metadataPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">FileStreamSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fileFormatClassName">fileFormatClassName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="metadataPath">metadataPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,path:String,fileFormatClassName:String,schema:org.apache.spark.sql.types.StructType,metadataPath:String,options:Map[String,String]):org.apache.spark.sql.execution.streaming.FileStreamSource" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,path:String,fileFormatClassName:String,schema:org.apache.spark.sql.types.StructType,partitionColumns:Seq[String],metadataPath:String,options:Map[String,String]):org.apache.spark.sql.execution.streaming.FileStreamSource" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -208,6 +208,26 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource#commit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit"></a>
+      <a id="commit(Offset):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">commit</span><span class="params">(<span name="end">end: <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Informs the source that Spark has completed processing all data for offsets less than or
+equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.</p><div class="fullcomment"><div class="comment cmt"><p>Informs the source that Spark has completed processing all data for offsets less than or
+equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource#currentOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="currentOffset:org.apache.spark.sql.execution.streaming.LongOffset"></a>
       <a id="currentOffset:LongOffset"></a>
@@ -333,7 +353,9 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the maximum available offset for this source.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the maximum available offset for this source.
+Returns <code>None</code> if this source has never received any data.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -368,6 +390,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -386,18 +442,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

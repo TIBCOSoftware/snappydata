@@ -192,6 +192,45 @@ serialization.</p>
 Spark. It is intended to be used to serialize/de-serialize data within a single
 Spark application.
 </p></div></div>
+    </li><li name="org.apache.spark.serializer.PooledKryoSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PooledKryoSerializerextendsKryoSerializerwithSerializable"></a>
+      <a id="PooledKryoSerializer:PooledKryoSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PooledKryoSerializer.html"><span class="name">PooledKryoSerializer</span></a><span class="result"> extends <a href="KryoSerializer.html" class="extype" name="org.apache.spark.serializer.KryoSerializer">KryoSerializer</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@PooledKryoSerializerextendsKryoSerializerwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A pooled, optimized version of Spark's KryoSerializer that also works for
+closure serialization.</p><div class="fullcomment"><div class="comment cmt"><p>A pooled, optimized version of Spark's KryoSerializer that also works for
+closure serialization.</p><p>Note that this serializer is not guaranteed to be wire-compatible across
+different versions of Spark. It is intended to be used to
+serialize/de-serialize data within a single Spark application.
+</p></div></div>
+    </li><li name="org.apache.spark.serializer.PooledObject" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PooledObjectextendsAnyRef"></a>
+      <a id="PooledObject:PooledObject"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PooledObject.html"><span class="name">PooledObject</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@PooledObjectextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.serializer.SerializationStream" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="SerializationStreamextendsAnyRef"></a>
       <a id="SerializationStream:SerializationStream"></a>
@@ -273,7 +312,78 @@ SerializerInstance as long as those streams are all used within the same thread.
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.serializer.ConnectionPropertiesSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConnectionPropertiesSerializer"></a>
+      <a id="ConnectionPropertiesSerializer:ConnectionPropertiesSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ConnectionPropertiesSerializer$.html"><span class="name">ConnectionPropertiesSerializer</span></a><span class="result"> extends <span class="extype" name="com.esotericsoftware.kryo.Serializer">com.esotericsoftware.kryo.Serializer</span>[<a href="../sql/sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@ConnectionPropertiesSerializer" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer.KryoSerializerPool" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KryoSerializerPool"></a>
+      <a id="KryoSerializerPool:KryoSerializerPool"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="KryoSerializerPool$.html"><span class="name">KryoSerializerPool</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@KryoSerializerPool" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer.PartitionResultSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionResultSerializer"></a>
+      <a id="PartitionResultSerializer:PartitionResultSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionResultSerializer$.html"><span class="name">PartitionResultSerializer</span></a><span class="result"> extends <span class="extype" name="com.esotericsoftware.kryo.Serializer">com.esotericsoftware.kryo.Serializer</span>[<a href="../sql/PartitionResult.html" class="extype" name="org.apache.spark.sql.PartitionResult">PartitionResult</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@PartitionResultSerializer" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer.StructTypeSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StructTypeSerializer"></a>
+      <a id="StructTypeSerializer:StructTypeSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructTypeSerializer$.html"><span class="name">StructTypeSerializer</span></a><span class="result"> extends <span class="extype" name="com.esotericsoftware.kryo.Serializer">com.esotericsoftware.kryo.Serializer</span>[<a href="../sql/types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.package@StructTypeSerializer" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         
 

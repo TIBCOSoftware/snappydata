@@ -165,7 +165,7 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.util.MutableURLClassLoader#addURL" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#addURL" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addURL(url:java.net.URL):Unit"></a>
       <a id="addURL(URL):Unit"></a>
       <h4 class="signature">
@@ -181,7 +181,7 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>MutableURLClassLoader → URLClassLoader</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyMutableURLClassLoader">SnappyMutableURLClassLoader</a> → MutableURLClassLoader → URLClassLoader</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -588,6 +588,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#getAddedURLs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getAddedURLs:Array[String]"></a>
+      <a id="getAddedURLs:Array[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAddedURLs</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@getAddedURLs:Array[String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -622,6 +639,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>ClassLoader</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#getJobName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getJobName:String"></a>
+      <a id="getJobName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getJobName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@getJobName:String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="java.lang.ClassLoader#getPackage" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPackage(x$1:String):Package"></a>
       <a id="getPackage(String):Package"></a>
@@ -801,6 +835,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#jobJars" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="jobJars:scala.collection.mutable.Map[String,java.net.URLClassLoader]"></a>
+      <a id="jobJars:Map[String,URLClassLoader]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">jobJars</span><span class="result">: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="java.net.URLClassLoader">URLClassLoader</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@jobJars:scala.collection.mutable.Map[String,java.net.URLClassLoader]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#loadClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="loadClass(name:String,resolve:Boolean):Class[_]"></a>
       <a id="loadClass(String,Boolean):Class[_]"></a>
@@ -841,6 +892,40 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#loadClassFromJobJar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="loadClassFromJobJar(className:String):Class[_]"></a>
+      <a id="loadClassFromJobJar(String):Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadClassFromJobJar</span><span class="params">(<span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@loadClassFromJobJar(className:String):Class[_]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#loadJar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="loadJar(f:()=&gt;Class[_],throwException:Boolean):Option[Class[_]]"></a>
+      <a id="loadJar(()⇒Class[_],Boolean):Option[Class[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadJar</span><span class="params">(<span name="f">f: () ⇒ <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="throwException">throwException: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@loadJar(f:()=&gt;Class[_],throwException:Boolean):Option[Class[_]]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -892,6 +977,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader#removeURL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="removeURL(jar:String):Unit"></a>
+      <a id="removeURL(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeURL</span><span class="params">(<span name="jar">jar: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyMutableURLClassLoader@removeURL(jar:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="java.lang.ClassLoader#resolveClass" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="resolveClass(x$1:Class[_]):Unit"></a>
       <a id="resolveClass(Class[_]):Unit"></a>

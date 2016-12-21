@@ -47,7 +47,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">BootstrapAddTrialsAsArray</span><span class="params">(<span name="actualColumn">actualColumn: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="buffer">buffer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="sumType">sumType: <span class="extype" name="scala.Int">Int</span></span>, <span name="isFirst">isFirst: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="storeCount">storeCount: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="reuseCount">reuseCount: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">BootstrapAddTrialsAsArray</span><span class="params">(<span name="actualColumn">actualColumn: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="buffer">buffer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="opType">opType: <span class="extype" name="scala.Int">Int</span></span>, <span name="isFirst">isFirst: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(actualColumn:org.apache.spark.sql.catalyst.expressions.Expression,buffer:org.apache.spark.sql.catalyst.expressions.Expression,numTrials:Int,sumType:Int,isFirst:Boolean,isAQPDebug:Boolean,dataType:org.apache.spark.sql.types.DataType,storeCount:Boolean,reuseCount:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray"></a>
+      <a id="&lt;init&gt;(actualColumn:org.apache.spark.sql.catalyst.expressions.Expression,buffer:org.apache.spark.sql.catalyst.expressions.Expression,numTrials:Int,opType:Int,isFirst:Boolean,isAQPDebug:Boolean,dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray"></a>
       <a id="&lt;init&gt;:BootstrapAddTrialsAsArray"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BootstrapAddTrialsAsArray</span><span class="params">(<span name="actualColumn">actualColumn: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="buffer">buffer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="sumType">sumType: <span class="extype" name="scala.Int">Int</span></span>, <span name="isFirst">isFirst: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="storeCount">storeCount: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="reuseCount">reuseCount: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">BootstrapAddTrialsAsArray</span><span class="params">(<span name="actualColumn">actualColumn: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="buffer">buffer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="opType">opType: <span class="extype" name="scala.Int">Int</span></span>, <span name="isFirst">isFirst: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@&lt;init&gt;(actualColumn:org.apache.spark.sql.catalyst.expressions.Expression,buffer:org.apache.spark.sql.catalyst.expressions.Expression,numTrials:Int,sumType:Int,isFirst:Boolean,isAQPDebug:Boolean,dataType:org.apache.spark.sql.types.DataType,storeCount:Boolean,reuseCount:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@&lt;init&gt;(actualColumn:org.apache.spark.sql.catalyst.expressions.Expression,buffer:org.apache.spark.sql.catalyst.expressions.Expression,numTrials:Int,opType:Int,isFirst:Boolean,isAQPDebug:Boolean,dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -420,6 +420,24 @@ tree on which the function is defined.
       <p class="shortcomment cmt">Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectLeaves" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectLeaves():Seq[BaseType]"></a>
+      <a id="collectLeaves():Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Seq containing the leaves in this tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the leaves in this tree.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#containsChild" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
@@ -1063,6 +1081,23 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
 The numbers can be used with <a href="../../catalyst/trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray#opType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opType:Int"></a>
+      <a id="opType:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opType</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@opType:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
       <a id="origin:Origin"></a>
@@ -1175,23 +1210,6 @@ placeholders or has data types mismatch.
 Implementations of expressions should override this if the resolution of this type of
 expression involves more than just the resolution of its children and type checking.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray#reuseCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="reuseCount:Boolean"></a>
-      <a id="reuseCount:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">reuseCount</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@reuseCount:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#semanticEquals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="semanticEquals(other:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
       <a id="semanticEquals(Expression):Boolean"></a>
@@ -1267,23 +1285,6 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
       <p class="shortcomment cmt">Returns SQL representation of this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns SQL representation of this expression.  For expressions extending <a href="../../catalyst/expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a>,
 this method may return an arbitrary user facing string.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray#storeCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="storeCount:Boolean"></a>
-      <a id="storeCount:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">storeCount</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@storeCount:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#stringArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stringArgs:Iterator[Any]"></a>
       <a id="stringArgs:Iterator[Any]"></a>
@@ -1302,23 +1303,6 @@ this method may return an arbitrary user facing string.
     </span>
       <p class="shortcomment cmt">The arguments that should be included in the arg string.</p><div class="fullcomment"><div class="comment cmt"><p>The arguments that should be included in the arg string.  Defaults to the <code>productIterator</code>.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray#sumType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sumType:Int"></a>
-      <a id="sumType:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sumType</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray@sumType:Int" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

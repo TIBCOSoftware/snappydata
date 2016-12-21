@@ -371,6 +371,40 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -389,18 +423,18 @@ created by the interpreter to the search path
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -442,18 +476,18 @@ tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt c
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#launchTask" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="launchTask(context:org.apache.spark.executor.ExecutorBackend,taskId:Long,attemptNumber:Int,taskName:String,serializedTask:java.nio.ByteBuffer):Unit"></a>
-      <a id="launchTask(ExecutorBackend,Long,Int,String,ByteBuffer):Unit"></a>
+      <a id="launchTask(context:org.apache.spark.executor.ExecutorBackend,taskId:Long,attemptNumber:Int,taskName:String,serializedTask:java.nio.ByteBuffer,taskDataBytes:Array[Byte]):Unit"></a>
+      <a id="launchTask(ExecutorBackend,Long,Int,String,ByteBuffer,Array[Byte]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">launchTask</span><span class="params">(<span name="context">context: <span class="extype" name="org.apache.spark.executor.ExecutorBackend">ExecutorBackend</span></span>, <span name="taskId">taskId: <span class="extype" name="scala.Long">Long</span></span>, <span name="attemptNumber">attemptNumber: <span class="extype" name="scala.Int">Int</span></span>, <span name="taskName">taskName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="serializedTask">serializedTask: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">launchTask</span><span class="params">(<span name="context">context: <span class="extype" name="org.apache.spark.executor.ExecutorBackend">ExecutorBackend</span></span>, <span name="taskId">taskId: <span class="extype" name="scala.Long">Long</span></span>, <span name="attemptNumber">attemptNumber: <span class="extype" name="scala.Int">Int</span></span>, <span name="taskName">taskName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="serializedTask">serializedTask: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="taskDataBytes">taskDataBytes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@launchTask(context:org.apache.spark.executor.ExecutorBackend,taskId:Long,attemptNumber:Int,taskName:String,serializedTask:java.nio.ByteBuffer):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@launchTask(context:org.apache.spark.executor.ExecutorBackend,taskId:Long,attemptNumber:Int,taskName:String,serializedTask:java.nio.ByteBuffer,taskDataBytes:Array[Byte]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -764,6 +798,43 @@ tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#updateDependencies" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="updateDependencies(newFiles:scala.collection.mutable.HashMap[String,Long],newJars:scala.collection.mutable.HashMap[String,Long]):Unit"></a>
+      <a id="updateDependencies(HashMap[String,Long],HashMap[String,Long]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">updateDependencies</span><span class="params">(<span name="newFiles">newFiles: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>, <span name="newJars">newJars: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@updateDependencies(newFiles:scala.collection.mutable.HashMap[String,Long],newJars:scala.collection.mutable.HashMap[String,Long]):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Download any missing dependencies if we receive a new set of files and JARs from the
+SparkContext.</p><div class="fullcomment"><div class="comment cmt"><p>Download any missing dependencies if we receive a new set of files and JARs from the
+SparkContext. Also adds any new JARs we fetched to the class loader.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
+    </li><li name="org.apache.spark.executor.Executor#urlClassLoader" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="urlClassLoader:org.apache.spark.util.MutableURLClassLoader"></a>
+      <a id="urlClassLoader:MutableURLClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">urlClassLoader</span><span class="result">: <span class="extype" name="org.apache.spark.util.MutableURLClassLoader">MutableURLClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@urlClassLoader:org.apache.spark.util.MutableURLClassLoader" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

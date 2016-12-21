@@ -121,7 +121,7 @@ key-value stores, etc). Use <a href="../Dataset.html#writeStream:org.apache.spar
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DirectKafkaStreamRelation.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DirectKafkaStreamRelation.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamRelationextendsStreamBaseRelationwithLoggingwithSerializable" title="Permalink" target="_top">
@@ -372,7 +372,7 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RabbitMQReceiver.html"><span class="name">RabbitMQReceiver</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQReceiver.T">T</span>] with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="RabbitMQReceiver.html"><span class="name">RabbitMQReceiver</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQReceiver.T">T</span>] with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQReceiver[T,D]extendsReceiver[T]withLogging" title="Permalink" target="_top">
@@ -470,7 +470,7 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
       <a id="SchemaDStream:SchemaDStream"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -506,8 +506,8 @@ https://github.com/Intel-bigdata/spark-streamingsql
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Status and metrics of a streaming <span class="extype" name="Sink">Sink</span>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Status and metrics of a streaming <span class="extype" name="Sink">Sink</span>.
+Status and metrics of a streaming sink.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Status and metrics of a streaming sink.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
@@ -597,8 +597,8 @@ Status and metrics of a streaming <span class="extype" name="Sink">Sink</span>.
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Status and metrics of a streaming <span class="extype" name="Source">Source</span>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Status and metrics of a streaming <span class="extype" name="Source">Source</span>.
+Status and metrics of a streaming Source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Status and metrics of a streaming Source.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
@@ -612,7 +612,7 @@ Status and metrics of a streaming <span class="extype" name="Source">Source</spa
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StreamBaseRelation.html"><span class="name">StreamBaseRelation</span></a><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <a href="../sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="StreamBaseRelation.html"><span class="name">StreamBaseRelation</span></a><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <a href="../sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamBaseRelationextendsBaseRelationwithParentRelationwithStreamPlanwithTableScanwithDestroyRelationwithSerializablewithLogging" title="Permalink" target="_top">
@@ -734,29 +734,6 @@ that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations<
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StreamingQueryInfoextendsAnyRef"></a>
-      <a id="StreamingQueryInfo:StreamingQueryInfo"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StreamingQueryInfo.html"><span class="name">StreamingQueryInfo</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryInfoextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">:: Experimental ::
-A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="StreamingQueryListenerextendsAnyRef"></a>
       <a id="StreamingQueryListener:StreamingQueryListener"></a>
@@ -798,6 +775,29 @@ Interface for listening to events related to <a href="StreamingQuery.html" class
       <p class="shortcomment cmt">:: Experimental ::
 A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
 A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryStatusextendsAnyRef"></a>
+      <a id="StreamingQueryStatus:StreamingQueryStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryStatus.html"><span class="name">StreamingQueryStatus</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryStatusextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               

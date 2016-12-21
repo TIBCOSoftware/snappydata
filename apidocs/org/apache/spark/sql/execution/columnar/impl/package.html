@@ -86,17 +86,17 @@
 It uses GemFireXD as actual datastore to physically locate the tables.
 Column tables can be used for storing data in columnar compressed format.
 A example usage is given below.</p><p>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-    snc.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
-    dataDF.write.insertInto(tableName)</p><p>    This provider scans underlying tables in parallel and is aware of the data partition.
-    It does not introduces a shuffle if simple table query is fired.
-    One can insert a single or multiple rows into this table as well
-    as do a bulk insert by a Spark DataFrame.
-    Bulk insert example is shown above.
+val rdd = sc.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
+val dataDF = snc.createDataFrame(rdd)
+snc.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
+dataDF.write.insertInto(tableName)</p><p>This provider scans underlying tables in parallel and is aware of the data partition.
+It does not introduces a shuffle if simple table query is fired.
+One can insert a single or multiple rows into this table as well
+as do a bulk insert by a Spark DataFrame.
+Bulk insert example is shown above.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelation"></a>
+      <a id="ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelation"></a>
       <a id="ColumnFormatRelation:ColumnFormatRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -104,16 +104,16 @@ A example usage is given below.</p><p>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9),
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnFormatRelation.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a></span>
+        <a href="ColumnFormatRelation.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelation" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelation" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnarStorePartitionedRDDextendsRDD[Any]"></a>
+      <a id="ColumnarStorePartitionedRDDextendsRDDKryo[Any]withKryoSerializable"></a>
       <a id="ColumnarStorePartitionedRDD:ColumnarStorePartitionedRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -121,10 +121,10 @@ A example usage is given below.</p><p>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9),
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnarStorePartitionedRDD.html"><span class="name">ColumnarStorePartitionedRDD</span></a><span class="result"> extends <a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <a href="ColumnarStorePartitionedRDD.html"><span class="name">ColumnarStorePartitionedRDD</span></a><span class="result"> extends <a href="../../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnarStorePartitionedRDDextendsRDD[Any]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnarStorePartitionedRDDextendsRDDKryo[Any]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -169,7 +169,7 @@ to allow adding of any index specific functionality in future.</p>
       <a id="JDBCSourceAsColumnarStore:JDBCSourceAsColumnarStore"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -182,35 +182,35 @@ to allow adding of any index specific functionality in future.</p>
     </span>
       <p class="shortcomment cmt">Column Store implementation for GemFireXD.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.SparkShellCachedBatchRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SparkShellCachedBatchRDD[T]extendsRDD[org.apache.spark.sql.execution.columnar.CachedBatch]"></a>
-      <a id="SparkShellCachedBatchRDD[T]:SparkShellCachedBatchRDD[T]"></a>
+      <a id="SparkShellCachedBatchRDDextendsRDDKryo[org.apache.spark.sql.execution.columnar.CachedBatch]withKryoSerializable"></a>
+      <a id="SparkShellCachedBatchRDD:SparkShellCachedBatchRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkShellCachedBatchRDD.html"><span class="name">SparkShellCachedBatchRDD</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <a href="SparkShellCachedBatchRDD.html"><span class="name">SparkShellCachedBatchRDD</span></a><span class="result"> extends <a href="../../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellCachedBatchRDD[T]extendsRDD[org.apache.spark.sql.execution.columnar.CachedBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellCachedBatchRDDextendsRDDKryo[org.apache.spark.sql.execution.columnar.CachedBatch]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SparkShellRowRDD[T]extendsRowFormatScanRDD"></a>
-      <a id="SparkShellRowRDD[T]:SparkShellRowRDD[T]"></a>
+      <a id="SparkShellRowRDDextendsRowFormatScanRDD"></a>
+      <a id="SparkShellRowRDD:SparkShellRowRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkShellRowRDD.html"><span class="name">SparkShellRowRDD</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></span>
+        <a href="SparkShellRowRDD.html"><span class="name">SparkShellRowRDD</span></a><span class="result"> extends <a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellRowRDD[T]extendsRowFormatScanRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellRowRDDextendsRowFormatScanRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -248,7 +248,7 @@ to allow adding of any index specific functionality in future.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="ColumnFormatRelation$.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <a href="StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></span>
+        <a href="ColumnFormatRelation$.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <a href="StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelation" title="Permalink" target="_top">
@@ -265,7 +265,7 @@ to allow adding of any index specific functionality in future.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="StoreCallbacksImpl$.html"><span class="name">StoreCallbacksImpl</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.snappy.StoreCallbacks">StoreCallbacks</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="StoreCallbacksImpl$.html"><span class="name">StoreCallbacksImpl</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.snappy.StoreCallbacks">StoreCallbacks</span> with <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@StoreCallbacksImpl" title="Permalink" target="_top">

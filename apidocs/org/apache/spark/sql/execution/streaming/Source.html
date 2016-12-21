@@ -114,11 +114,14 @@ will regularly query each <a href="" class="extype" name="org.apache.spark.sql.e
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the data that is between the offsets (<code>start</code>, <code>end</code>].</p><div class="fullcomment"><div class="comment cmt"><p>Returns the data that is between the offsets (<code>start</code>, <code>end</code>]. When <code>start</code> is <code>None</code> then
-the batch should begin with the first available record. This method must always return the
-same data for a particular <code>start</code> and <code>end</code> pair.
+      <p class="shortcomment cmt">Returns the data that is between the offsets (<code>start</code>, <code>end</code>].</p><div class="fullcomment"><div class="comment cmt"><p>Returns the data that is between the offsets (<code>start</code>, <code>end</code>]. When <code>start</code> is <code>None</code>,
+then the batch should begin with the first record. This method must always return the
+same data for a particular <code>start</code> and <code>end</code> pair; even after the Source has been restarted
+on a different node.</p><p>Higher layers will always call this method with a value of <code>start</code> greater than or equal
+to the last value passed to <code>commit</code> and a value of <code>end</code> less than or equal to the
+last value returned by <code>getOffset</code>
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.Source#getOffset" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.streaming.Source#getOffset" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="getOffset:Option[org.apache.spark.sql.execution.streaming.Offset]"></a>
       <a id="getOffset:Option[Offset]"></a>
       <h4 class="signature">
@@ -134,7 +137,9 @@ same data for a particular <code>start</code> and <code>end</code> pair.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p>
+      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the maximum available offset for this source.
+Returns <code>None</code> if this source has never received any data.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.streaming.Source#schema" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -265,6 +270,24 @@ same data for a particular <code>start</code> and <code>end</code> pair.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.Source#commit" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit"></a>
+      <a id="commit(Offset):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">commit</span><span class="params">(<span name="end">end: <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.Source@commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Informs the source that Spark has completed processing all data for offsets less than or
+equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.</p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

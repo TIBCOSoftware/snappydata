@@ -178,9 +178,12 @@
 Snappy store. Cache the airline table in Spark cache as well for
 comparison. Sample airline table and persist it in Snappy store.
 Run a aggregate query on all the three tables and return the results in
-a Map.This Map will be sent over REST.
-</p></div></div>
-    </li><li name="io.snappydata.examples.AirlineDataSparkApp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+a Map.This Map will be sent over REST.</p><p>Run this on your local machine:</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>Create tables</p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p></div></div>
+    </li><li name="io.snappydata.examples.AirlineDataSparkApp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="AirlineDataSparkApp"></a>
       <a id="AirlineDataSparkApp:AirlineDataSparkApp"></a>
       <h4 class="signature">
@@ -198,7 +201,13 @@ a Map.This Map will be sent over REST.
     </span>
       <p class="shortcomment cmt">This application depicts how a Spark cluster can
 connect to a Snappy cluster to fetch and query the tables
-using Scala APIs in a Spark App.</p>
+using Scala APIs in a Spark App.</p><div class="fullcomment"><div class="comment cmt"><p>This application depicts how a Spark cluster can
+connect to a Snappy cluster to fetch and query the tables
+using Scala APIs in a Spark App.</p><p>Run this on your local machine:</p><p>Start snappy cluster</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>Start spark cluster</p><p><code>$ sbin/start-all.sh</code></p><p>Create tables</p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p><p><code>$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
+--master spark://&lt;hostname&gt;:7077 --conf snappydata.store.locators=localhost:10334 \
+$SNAPPY_HOME/examples/jars/quickstart.jar</code></p></div></div>
     </li><li name="io.snappydata.examples.CreateAndLoadAirlineDataJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CreateAndLoadAirlineDataJob"></a>
       <a id="CreateAndLoadAirlineDataJob:CreateAndLoadAirlineDataJob"></a>
@@ -217,8 +226,9 @@ using Scala APIs in a Spark App.</p>
     </span>
       <p class="shortcomment cmt">Creates and loads Airline data from parquet files in row and column
 tables.</p><div class="fullcomment"><div class="comment cmt"><p>Creates and loads Airline data from parquet files in row and column
-tables. Also samples the data and stores it in a column table.
-</p></div></div>
+tables. Also samples the data and stores it in a column table.</p><p>Run this on your local machine:</p><p><code>$ sbin/snappy-start-all.sh</code></p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p></div></div>
     </li><li name="io.snappydata.examples.DataUpdateJob" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataUpdateJob"></a>
       <a id="DataUpdateJob:DataUpdateJob"></a>
@@ -286,12 +296,10 @@ tables. Also samples the data and stores it in a column table.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Run this on your local machine:</p><div class="fullcomment"><div class="comment cmt"><p>Run this on your local machine:</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>To run with live twitter streaming, export twitter credentials
-<code>$ export APP_PROPS=&quot;consumerKey=&lt;consumerKey&gt;,consumerSecret=&lt;consumerSecret&gt;, \
+      <p class="shortcomment cmt">Run this on your local machine:</p><div class="fullcomment"><div class="comment cmt"><p>Run this on your local machine:</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>To run with live twitter streaming, export twitter credentials</p><p><code>$ export APP_PROPS=&quot;consumerKey=&lt;consumerKey&gt;,consumerSecret=&lt;consumerSecret&gt;, \
 accessToken=&lt;accessToken&gt;,accessTokenSecret=&lt;accessTokenSecret&gt;&quot;</code></p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
---app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream</code></p><p>To run with stored twitter data, run simulateTwitterStream after the Job is submitted:
-<code>$ ./quickstart/scripts/simulateTwitterStream</code>
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar --stream</code></p><p>To run with stored twitter data, run simulateTwitterStream after the Job is submitted:</p><p><code>$ ./quickstart/scripts/simulateTwitterStream</code>
 </p></div></div>
     </li></ol>
             </div>

@@ -206,9 +206,7 @@ key-value stores, etc). Use <a href="../SparkSession.html#readStream:org.apache.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
+      <p class="shortcomment cmt">Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
 is enabled. To avoid going through the entire data once, disable <code>inferSchema</code> option or
 specify the schema explicitly using <span class="extype" name="schema">schema</span>.</p><p>You can set the following CSV-specific options to deal with CSV files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>sep</code> (default <code>,</code>): sets the single character as a separator for each
@@ -232,10 +230,7 @@ indicates a timestamp format. Custom date formats follow the formats at
 a record can have.</li><li><code>maxCharsPerColumn</code> (default <code>1000000</code>): defines the maximum number of characters allowed
 for any given value being read.</li><li><code>mode</code> (default <code>PERMISSIVE</code>): allows a mode for dealing with corrupt records
    during parsing.</li><li><code>PERMISSIVE</code> : sets other fields to <code>null</code> when it meets a corrupted record. When
-      a schema is set by user, it sets <code>null</code> for extra fields.</li><li><code>DROPMALFORMED</code> : ignores the whole corrupted records.</li><li><code>FAILFAST</code> : throws an exception when it meets corrupted records.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      a schema is set by user, it sets <code>null</code> for extra fields.</li><li><code>DROPMALFORMED</code> : ignores the whole corrupted records.</li><li><code>FAILFAST</code> : throws an exception when it meets corrupted records.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -309,13 +304,8 @@ for any given value being read.</li><li><code>mode</code> (default <code>PERMISS
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Specifies the input data source format.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Specifies the input data source format.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the input data source format.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the input data source format.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -367,6 +357,40 @@ Specifies the input data source format.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.DataStreamReader@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.DataStreamReader@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -385,18 +409,18 @@ Specifies the input data source format.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.DataStreamReader@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.DataStreamReader@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -417,9 +441,7 @@ Specifies the input data source format.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function goes through the input once to determine the input schema. If you know the
+      <p class="shortcomment cmt">Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function goes through the input once to determine the input schema. If you know the
 schema in advance, use the version that specifies the schema to avoid the extra scan.</p><p>You can set the following JSON-specific options to deal with non-standard JSON files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>primitivesAsString</code> (default <code>false</code>): infers all primitive values as a string type</li><li><code>prefersDecimal</code> (default <code>false</code>): infers all floating-point values as a decimal
 type. If the values do not fit in decimal, then it infers them as doubles.</li><li><code>allowComments</code> (default <code>false</code>): ignores Java/C++ style comment in JSON records</li><li><code>allowUnquotedFieldNames</code> (default <code>false</code>): allows unquoted JSON field names</li><li><code>allowSingleQuotes</code> (default <code>true</code>): allows single quotes in addition to double quotes</li><li><code>allowNumericLeadingZeros</code> (default <code>false</code>): allows leading zeros in numbers
@@ -433,10 +455,7 @@ created by <code>PERMISSIVE</code> mode. This overrides <code>spark.sql.columnNa
 Custom date formats follow the formats at <code>java.text.SimpleDateFormat</code>. This applies to
 date type.</li><li><code>timestampFormat</code> (default <code>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</code>): sets the string that
 indicates a timestamp format. Custom date formats follow the formats at
-<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#load" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="load(path:String):org.apache.spark.sql.DataFrame"></a>
       <a id="load(String):DataFrame"></a>
@@ -453,13 +472,8 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#load" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="load():org.apache.spark.sql.DataFrame"></a>
       <a id="load():DataFrame"></a>
@@ -476,15 +490,10 @@ Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Data
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
-(e.g.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
+      <p class="shortcomment cmt">Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
+(e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
 (e.g. external key-value stores).
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -756,13 +765,8 @@ Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.sp
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Adds an input option for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>Adds an input option for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#option" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="option(key:String,value:Long):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="option(String,Long):DataStreamReader"></a>
@@ -779,13 +783,8 @@ Adds an input option for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Adds an input option for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>Adds an input option for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#option" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="option(key:String,value:Boolean):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="option(String,Boolean):DataStreamReader"></a>
@@ -802,13 +801,8 @@ Adds an input option for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Adds an input option for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>Adds an input option for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#option" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="option(key:String,value:String):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="option(String,String):DataStreamReader"></a>
@@ -825,13 +819,8 @@ Adds an input option for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Adds an input option for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Adds an input option for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>Adds an input option for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#options" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="options(options:java.util.Map[String,String]):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="options(Map[String,String]):DataStreamReader"></a>
@@ -848,13 +837,8 @@ Adds an input option for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Adds input options for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Adds input options for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Adds input options for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>Adds input options for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#options" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="options(options:scala.collection.Map[String,String]):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="options(Map[String,String]):DataStreamReader"></a>
@@ -871,13 +855,8 @@ Adds input options for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-(Scala-specific) Adds input options for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-(Scala-specific) Adds input options for the underlying data source.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">(Scala-specific) Adds input options for the underlying data source.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Adds input options for the underlying data source.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#parquet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parquet(path:String):org.apache.spark.sql.DataFrame"></a>
       <a id="parquet(String):DataFrame"></a>
@@ -894,15 +873,10 @@ Adds input options for the underlying data source.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
+      <p class="shortcomment cmt">Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>mergeSchema</code> (default is the value specified in <code>spark.sql.parquet.mergeSchema</code>): sets
 whether we should merge schemas collected from all Parquet part-files. This will override
-<code>spark.sql.parquet.mergeSchema</code>.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+<code>spark.sql.parquet.mergeSchema</code>.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.streaming.DataStreamReader"></a>
       <a id="schema(StructType):DataStreamReader"></a>
@@ -919,15 +893,10 @@ whether we should merge schemas collected from all Parquet part-files. This will
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Specifies the input schema.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Specifies the input schema. Some data sources (e.g. JSON) can infer the input schema
+      <p class="shortcomment cmt">Specifies the input schema.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the input schema. Some data sources (e.g. JSON) can infer the input schema
 automatically from data. By specifying the schema here, the underlying data source can
 skip the schema inference step, and thus speed up data loading.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -961,19 +930,14 @@ skip the schema inference step, and thus speed up data loading.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
-&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
+      <p class="shortcomment cmt">Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
+&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
 &quot;value&quot;, and followed by partitioned columns if there are any.</p><p>Each line in the text files is a new row in the resulting DataFrame. For example:</p><pre><span class="cmt">// Scala:</span>
 spark.readStream.text(<span class="lit">"/path/to/directory/"</span>)
 
 <span class="cmt">// Java:</span>
 spark.readStream().text(<span class="lit">"/path/to/directory/"</span>)</pre><p>You can set the following text-specific options to deal with text files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
-considered in every trigger.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+considered in every trigger.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

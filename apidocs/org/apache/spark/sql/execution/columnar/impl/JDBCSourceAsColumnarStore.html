@@ -41,7 +41,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -50,7 +50,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Column Store implementation for GemFireXD.
-</p></div><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a>, <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -365,6 +365,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#getConnectedExternalStore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getConnectedExternalStore(tableName:String,onExecutor:Boolean):org.apache.spark.sql.execution.columnar.ConnectedExternalStore"></a>
+      <a id="getConnectedExternalStore(String,Boolean):ConnectedExternalStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getConnectedExternalStore</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../ConnectedExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ConnectedExternalStore">ConnectedExternalStore</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@getConnectedExternalStore(tableName:String,onExecutor:Boolean):org.apache.spark.sql.execution.columnar.ConnectedExternalStore" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → <a href="../JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> → <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore#getConnection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getConnection(id:String,onExecutor:Boolean):java.sql.Connection"></a>
       <a id="getConnection(String,Boolean):Connection"></a>
@@ -655,18 +672,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#tryExecute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T]):T"></a>
-      <a id="tryExecute[T](String,(Connection)⇒T,Boolean,Boolean)(ClassTag[T]):T"></a>
+      <a id="tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T],implicitc:Option[java.sql.Connection]):T"></a>
+      <a id="tryExecute[T](String,(Connection)⇒T,Boolean,Boolean)(ClassTag[T],Option[Connection]):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tryExecute</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="f">f: (<span class="extype" name="java.sql.Connection">Connection</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>, <span name="closeOnSuccess">closeOnSuccess: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>
+        <span class="name">tryExecute</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="f">f: (<span class="extype" name="java.sql.Connection">Connection</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>, <span name="closeOnSuccess">closeOnSuccess: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span>]</span>, <span name="c">c: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T]):T" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T],implicitc:Option[java.sql.Connection]):T" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -187,6 +187,25 @@ support for fault recovery and keeping all of the text read in memory forever.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource#batches" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="batches:scala.collection.mutable.ListBuffer[(String,java.sql.Timestamp)]"></a>
+      <a id="batches:ListBuffer[(String,Timestamp)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batches</span><span class="result">: <span class="extype" name="scala.collection.mutable.ListBuffer">ListBuffer</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="java.sql.Timestamp">Timestamp</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@batches:scala.collection.mutable.ListBuffer[(String,java.sql.Timestamp)]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">All batches from <code>lastCommittedOffset + 1</code> to <code>currentOffset</code>, inclusive.</p><div class="fullcomment"><div class="comment cmt"><p>All batches from <code>lastCommittedOffset + 1</code> to <code>currentOffset</code>, inclusive.
+Stored in a ListBuffer to facilitate removing committed batches.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -210,6 +229,43 @@ support for fault recovery and keeping all of the text read in memory forever.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource#commit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit"></a>
+      <a id="commit(Offset):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">commit</span><span class="params">(<span name="end">end: <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@commit(end:org.apache.spark.sql.execution.streaming.Offset):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Informs the source that Spark has completed processing all data for offsets less than or
+equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.</p><div class="fullcomment"><div class="comment cmt"><p>Informs the source that Spark has completed processing all data for offsets less than or
+equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.TextSocketSource">TextSocketSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource#currentOffset" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="currentOffset:org.apache.spark.sql.execution.streaming.LongOffset"></a>
+      <a id="currentOffset:LongOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">currentOffset</span><span class="result">: <a href="LongOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.LongOffset">LongOffset</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@currentOffset:org.apache.spark.sql.execution.streaming.LongOffset" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -317,7 +373,9 @@ support for fault recovery and keeping all of the text read in memory forever.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the maximum available offset for this source.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.TextSocketSource">TextSocketSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the maximum available offset for this source.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the maximum available offset for this source.
+Returns <code>None</code> if this source has never received any data.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.TextSocketSource">TextSocketSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -352,6 +410,40 @@ support for fault recovery and keeping all of the text read in memory forever.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -370,22 +462,39 @@ support for fault recovery and keeping all of the text read in memory forever.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource#lastOffsetCommitted" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lastOffsetCommitted:org.apache.spark.sql.execution.streaming.LongOffset"></a>
+      <a id="lastOffsetCommitted:LongOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lastOffsetCommitted</span><span class="result">: <a href="LongOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.LongOffset">LongOffset</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.TextSocketSource@lastOffsetCommitted:org.apache.spark.sql.execution.streaming.LongOffset" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>

@@ -189,8 +189,9 @@
     </span>
       <p class="shortcomment cmt">Returns true if <code>expr</code> can be evaluated using only the output of <code>plan</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if <code>expr</code> can be evaluated using only the output of <code>plan</code>.  This method
 can be used to determine when it is acceptable to move expression evaluation within a query
-plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d).</p><p><code>canEvaluate(EqualTo(a,b), R)</code> returns <code>true</code> where as <code>canEvaluate(EqualTo(a,c), R)</code> returns
-<code>false</code>.
+plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d).</p><p>- <code>canEvaluate(EqualTo(a,b), R)</code> returns <code>true</code>
+- <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
+- <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>

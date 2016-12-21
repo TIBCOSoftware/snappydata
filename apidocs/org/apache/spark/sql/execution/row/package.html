@@ -174,7 +174,7 @@ expected to explicitly invoke ResultSet.next()/get*.
 This is primarily intended to be used for cleanup.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.row.RowFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RowFormatRelationextendsJDBCMutableRelationwithPartitionedDataSourceScanwithRowPutRelation"></a>
+      <a id="RowFormatRelationextendsJDBCMutableRelationwithPartitionedDataSourceScanwithRowPutRelationwithParentRelationwithDependentRelation"></a>
       <a id="RowFormatRelation:RowFormatRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -182,17 +182,17 @@ This is primarily intended to be used for cleanup.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RowFormatRelation.html"><span class="name">RowFormatRelation</span></a><span class="result"> extends <a href="../../row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> with <a href="../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a> with <a href="../../sources/RowPutRelation.html" class="extype" name="org.apache.spark.sql.sources.RowPutRelation">RowPutRelation</a></span>
+        <a href="RowFormatRelation.html"><span class="name">RowFormatRelation</span></a><span class="result"> extends <a href="../../row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> with <a href="../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a> with <a href="../../sources/RowPutRelation.html" class="extype" name="org.apache.spark.sql.sources.RowPutRelation">RowPutRelation</a> with <a href="../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowFormatRelationextendsJDBCMutableRelationwithPartitionedDataSourceScanwithRowPutRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowFormatRelationextendsJDBCMutableRelationwithPartitionedDataSourceScanwithRowPutRelationwithParentRelationwithDependentRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">A LogicalPlan implementation for an Snappy row table whose contents
 are retrieved using a JDBC URL or DataSource.</p>
     </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="RowFormatScanRDDextendsRDD[Any]"></a>
+      <a id="RowFormatScanRDDextendsRDDKryo[Any]withKryoSerializable"></a>
       <a id="RowFormatScanRDD:RowFormatScanRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -200,17 +200,15 @@ are retrieved using a JDBC URL or DataSource.</p>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RowFormatScanRDD.html"><span class="name">RowFormatScanRDD</span></a><span class="result"> extends <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <a href="RowFormatScanRDD.html"><span class="name">RowFormatScanRDD</span></a><span class="result"> extends <a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowFormatScanRDDextendsRDD[Any]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowFormatScanRDDextendsRDDKryo[Any]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">A scanner RDD which is very specific to Snappy store row tables.</p><div class="fullcomment"><div class="comment cmt"><p>A scanner RDD which is very specific to Snappy store row tables.
 This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
-Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
-as JDBCRDD has a lot of methods as private.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowEncodingAdapter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UnsafeRowEncodingAdapterextendsColumnEncoding"></a>

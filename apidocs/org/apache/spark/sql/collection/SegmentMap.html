@@ -56,7 +56,7 @@
           <div class="superTypes hiddenContent"><span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="java.util.concurrent.locks.ReadWriteLock">ReadWriteLock</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="MultiColumnOpenHashMap.html" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</a></div>
+            <div class="subClasses hiddenContent"><a href="MultiColumnOpenHashMap.html" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</a>, <a href="../execution/ReservoirRegionSegmentMap.html" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a></div>
           </div></div>
         
 
@@ -115,18 +115,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.collection.SegmentMap#changeValue" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="changeValue(k:K,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[K,V]):Boolean"></a>
-      <a id="changeValue(K,Int,ChangeValue[K,V]):Boolean"></a>
+      <a id="changeValue(k:K,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[K,V],isLocal:Boolean):Boolean"></a>
+      <a id="changeValue(K,Int,ChangeValue[K,V],Boolean):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">changeValue</span><span class="params">(<span name="k">k: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.K">K</span></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>, <span name="change">change: <a href="ChangeValue.html" class="extype" name="org.apache.spark.sql.collection.ChangeValue">ChangeValue</a>[<span class="extype" name="org.apache.spark.sql.collection.SegmentMap.K">K</span>, <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="java.lang.Boolean">Boolean</span></span>
+        <span class="name">changeValue</span><span class="params">(<span name="k">k: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.K">K</span></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>, <span name="change">change: <a href="ChangeValue.html" class="extype" name="org.apache.spark.sql.collection.ChangeValue">ChangeValue</a>[<span class="extype" name="org.apache.spark.sql.collection.SegmentMap.K">K</span>, <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.V">V</span>]</span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="java.lang.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.SegmentMap@changeValue(k:K,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[K,V]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.SegmentMap@changeValue(k:K,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[K,V],isLocal:Boolean):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -166,18 +166,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.collection.SegmentMap#foldValues" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="foldValues[U](init:U,f:(V,U)=&gt;U):U"></a>
-      <a id="foldValues[U](U,(V,U)⇒U):U"></a>
+      <a id="foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U"></a>
+      <a id="foldValues[U](U,(Int,V,U)⇒U,Boolean):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldValues</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>, <span name="f">f: (<span class="extype" name="org.apache.spark.sql.collection.SegmentMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>
+        <span class="name">foldValues</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>, <span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>, <span name="reset">reset: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.SegmentMap.foldValues.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.SegmentMap@foldValues[U](init:U,f:(V,U)=&gt;U):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.SegmentMap@foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -340,6 +340,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.SegmentMap#clearBucket" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="clearBucket():Unit"></a>
+      <a id="clearBucket():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearBucket</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.SegmentMap@clearBucket():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>

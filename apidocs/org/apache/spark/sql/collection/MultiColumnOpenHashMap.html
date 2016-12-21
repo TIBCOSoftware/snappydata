@@ -840,18 +840,18 @@ defaultValue; otherwise, set its value to mergeValue(oldValue).
 </p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>true if new value was added, false if it was merged and null
         if the default/merge calls returned null and nothing was done</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.collection.MultiColumnOpenHashMap#changeValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="changeValue(r:org.apache.spark.sql.Row,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V]):Boolean"></a>
-      <a id="changeValue(Row,Int,ChangeValue[Row,V]):Boolean"></a>
+      <a id="changeValue(r:org.apache.spark.sql.Row,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V],isLocal:Boolean):Boolean"></a>
+      <a id="changeValue(Row,Int,ChangeValue[Row,V],Boolean):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">changeValue</span><span class="params">(<span name="r">r: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>, <span name="change">change: <a href="ChangeValue.html" class="extype" name="org.apache.spark.sql.collection.ChangeValue">ChangeValue</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="java.lang.Boolean">Boolean</span></span>
+        <span class="name">changeValue</span><span class="params">(<span name="r">r: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>, <span name="change">change: <a href="ChangeValue.html" class="extype" name="org.apache.spark.sql.collection.ChangeValue">ChangeValue</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.V">V</span>]</span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="java.lang.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.MultiColumnOpenHashMap@changeValue(r:org.apache.spark.sql.Row,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.MultiColumnOpenHashMap@changeValue(r:org.apache.spark.sql.Row,hash:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V],isLocal:Boolean):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -897,6 +897,23 @@ defaultValue; otherwise, set its value to mergeValue(oldValue).
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</a> → MapLike → Builder → Growable → Clearable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.SegmentMap#clearBucket" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clearBucket():Unit"></a>
+      <a id="clearBucket():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearBucket</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.MultiColumnOpenHashMap@clearBucket():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
     </li><li name="scala.collection.mutable.MapLike#clone" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():This"></a>
       <a id="clone():MultiColumnOpenHashMap[V]"></a>
@@ -1451,18 +1468,18 @@ defaultValue; otherwise, set its value to mergeValue(oldValue).
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>IterableLike → TraversableOnce → GenTraversableOnce</dd></dl></div>
     </li><li name="org.apache.spark.sql.collection.MultiColumnOpenHashMap#foldValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="foldValues[U](init:U,f:(V,U)=&gt;U):U"></a>
-      <a id="foldValues[U](U,(V,U)⇒U):U"></a>
+      <a id="foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U"></a>
+      <a id="foldValues[U](U,(Int,V,U)⇒U,Boolean):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldValues</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>, <span name="f">f: (<span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>
+        <span class="name">foldValues</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>, <span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>, <span name="reset">reset: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap.foldValues.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.MultiColumnOpenHashMap@foldValues[U](init:U,f:(V,U)=&gt;U):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.MultiColumnOpenHashMap@foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -271,40 +271,6 @@ This method is intended for testing. Note that in the case of continually arrivi
 method may block forever. Additionally, this method is only guaranteed to block until data that
 has been synchronously appended data to a <a href="../execution/streaming/Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">org.apache.spark.sql.execution.streaming.Source</a>
 prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the addition).</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sinkStatus" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="sinkStatus:org.apache.spark.sql.streaming.SinkStatus"></a>
-      <a id="sinkStatus:SinkStatus"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sinkStatus</span><span class="result">: <a href="SinkStatus.html" class="extype" name="org.apache.spark.sql.streaming.SinkStatus">SinkStatus</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sinkStatus:org.apache.spark.sql.streaming.SinkStatus" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns current status of the sink.</p>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sourceStatuses" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]"></a>
-      <a id="sourceStatuses:Array[SourceStatus]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sourceStatuses</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="SourceStatus.html" class="extype" name="org.apache.spark.sql.streaming.SourceStatus">SourceStatus</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns current status of all the sources.</p><div class="fullcomment"><div class="comment cmt"><p>Returns current status of all the sources.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sparkSession" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="sparkSession:org.apache.spark.sql.SparkSession"></a>
       <a id="sparkSession:SparkSession"></a>
@@ -322,6 +288,23 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
       </a>
     </span>
       <p class="shortcomment cmt">Returns the <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> associated with <code>this</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> associated with <code>this</code>.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#status" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="status:org.apache.spark.sql.streaming.StreamingQueryStatus"></a>
+      <a id="status:StreamingQueryStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">status</span><span class="result">: <a href="StreamingQueryStatus.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryStatus">StreamingQueryStatus</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@status:org.apache.spark.sql.streaming.StreamingQueryStatus" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the current status of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current status of the query.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.2</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#stop" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="stop():Unit"></a>
       <a id="stop():Unit"></a>
@@ -340,6 +323,46 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
     </span>
       <p class="shortcomment cmt">Stops the execution of this query if it is running.</p><div class="fullcomment"><div class="comment cmt"><p>Stops the execution of this query if it is running. This method blocks until the threads
 performing execution has stopped.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sinkStatus" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="sinkStatus:org.apache.spark.sql.streaming.SinkStatus"></a>
+      <a id="sinkStatus:SinkStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.0.2) use status.sinkStatus">sinkStatus</span><span class="result">: <a href="SinkStatus.html" class="extype" name="org.apache.spark.sql.streaming.SinkStatus">SinkStatus</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sinkStatus:org.apache.spark.sql.streaming.SinkStatus" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns current status of the sink.</p><div class="fullcomment"><div class="comment cmt"><p>Returns current status of the sink.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.2)</i> use status.sinkStatus</p></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sourceStatuses" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]"></a>
+      <a id="sourceStatuses:Array[SourceStatus]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.0.2) use status.sourceStatuses">sourceStatuses</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="SourceStatus.html" class="extype" name="org.apache.spark.sql.streaming.SourceStatus">SourceStatus</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns current status of all the sources.</p><div class="fullcomment"><div class="comment cmt"><p>Returns current status of all the sources.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.2)</i> use status.sourceStatuses</p></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li></ol>
             </div>
 

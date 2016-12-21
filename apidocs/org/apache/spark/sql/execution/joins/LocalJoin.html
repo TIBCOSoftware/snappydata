@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">LocalJoin</span><span class="params">(<span name="leftKeys">leftKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="rightKeys">rightKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="buildSide">buildSide: <a href="package$$BuildSide.html" class="extype" name="org.apache.spark.sql.execution.joins.BuildSide">BuildSide</a></span>, <span name="condition">condition: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="joinType">joinType: <a href="../../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="left">left: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="right">right: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../BinaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.BinaryExecNode">BinaryExecNode</a> with <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> with <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">LocalJoin</span><span class="params">(<span name="leftKeys">leftKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="rightKeys">rightKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="buildSide">buildSide: <a href="package$$BuildSide.html" class="extype" name="org.apache.spark.sql.execution.joins.BuildSide">BuildSide</a></span>, <span name="condition">condition: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="joinType">joinType: <a href="../../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="left">left: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="right">right: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="leftSizeInBytes">leftSizeInBytes: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="rightSizeInBytes">rightSizeInBytes: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="replicatedTableJoin">replicatedTableJoin: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../BinaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.BinaryExecNode">BinaryExecNode</a> with <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> with <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -60,7 +60,7 @@ streaming through the other relation.
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a>, <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a>, <a href="../BinaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.BinaryExecNode">BinaryExecNode</a>, <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a>, <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a>, <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a>, <a href="../BinaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.BinaryExecNode">BinaryExecNode</a>, <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -78,7 +78,7 @@ streaming through the other relation.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.joins.LocalJoin"><span>LocalJoin</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupport"><span>CodegenSupport</span></li><li class="in" name="org.apache.spark.sql.execution.joins.HashJoin"><span>HashJoin</span></li><li class="in" name="org.apache.spark.sql.execution.BinaryExecNode"><span>BinaryExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.joins.LocalJoin"><span>LocalJoin</span></li><li class="in" name="org.apache.spark.sql.execution.BatchConsumer"><span>BatchConsumer</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupport"><span>CodegenSupport</span></li><li class="in" name="org.apache.spark.sql.execution.joins.HashJoin"><span>HashJoin</span></li><li class="in" name="org.apache.spark.sql.execution.BinaryExecNode"><span>BinaryExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -98,7 +98,7 @@ streaming through the other relation.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.joins.LocalJoin#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(leftKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],rightKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],buildSide:org.apache.spark.sql.execution.joins.BuildSide,condition:Option[org.apache.spark.sql.catalyst.expressions.Expression],joinType:org.apache.spark.sql.catalyst.plans.JoinType,left:org.apache.spark.sql.execution.SparkPlan,right:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.joins.LocalJoin"></a>
+      <a id="&lt;init&gt;(leftKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],rightKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],buildSide:org.apache.spark.sql.execution.joins.BuildSide,condition:Option[org.apache.spark.sql.catalyst.expressions.Expression],joinType:org.apache.spark.sql.catalyst.plans.JoinType,left:org.apache.spark.sql.execution.SparkPlan,right:org.apache.spark.sql.execution.SparkPlan,leftSizeInBytes:BigInt,rightSizeInBytes:BigInt,replicatedTableJoin:Boolean):org.apache.spark.sql.execution.joins.LocalJoin"></a>
       <a id="&lt;init&gt;:LocalJoin"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -106,10 +106,10 @@ streaming through the other relation.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">LocalJoin</span><span class="params">(<span name="leftKeys">leftKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="rightKeys">rightKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="buildSide">buildSide: <a href="package$$BuildSide.html" class="extype" name="org.apache.spark.sql.execution.joins.BuildSide">BuildSide</a></span>, <span name="condition">condition: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="joinType">joinType: <a href="../../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="left">left: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="right">right: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span>
+        <span class="name">LocalJoin</span><span class="params">(<span name="leftKeys">leftKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="rightKeys">rightKeys: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="buildSide">buildSide: <a href="package$$BuildSide.html" class="extype" name="org.apache.spark.sql.execution.joins.BuildSide">BuildSide</a></span>, <span name="condition">condition: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="joinType">joinType: <a href="../../catalyst/plans/JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="left">left: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="right">right: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="leftSizeInBytes">leftSizeInBytes: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="rightSizeInBytes">rightSizeInBytes: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="replicatedTableJoin">replicatedTableJoin: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@&lt;init&gt;(leftKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],rightKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],buildSide:org.apache.spark.sql.execution.joins.BuildSide,condition:Option[org.apache.spark.sql.catalyst.expressions.Expression],joinType:org.apache.spark.sql.catalyst.plans.JoinType,left:org.apache.spark.sql.execution.SparkPlan,right:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.joins.LocalJoin" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@&lt;init&gt;(leftKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],rightKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression],buildSide:org.apache.spark.sql.execution.joins.BuildSide,condition:Option[org.apache.spark.sql.catalyst.expressions.Expression],joinType:org.apache.spark.sql.catalyst.plans.JoinType,left:org.apache.spark.sql.execution.SparkPlan,right:org.apache.spark.sql.execution.SparkPlan,leftSizeInBytes:BigInt,rightSizeInBytes:BigInt,replicatedTableJoin:Boolean):org.apache.spark.sql.execution.joins.LocalJoin" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -266,6 +266,29 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#batchConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,plan:org.apache.spark.sql.execution.SparkPlan,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String"></a>
+      <a id="batchConsume(CodegenContext,SparkPlan,Seq[ExprCode]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchConsume</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="plan">plan: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@batchConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,plan:org.apache.spark.sql.execution.SparkPlan,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generate Java source code to do any processing before a batch is consumed
+by a <a href="../DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> that does batch processing (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Generate Java source code to do any processing before a batch is consumed
+by a <a href="../DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> that does batch processing (e.g. per-batch
+optimizations, initializations etc).</p><p>Implementations should use this for additional optimizations that can be
+done at batch level when a batched scan is being done. They should not
+depend on this being invoked since many scans will not be batched.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.joins.HashJoin#buildKeys" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="buildKeys:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="buildKeys:Seq[Expression]"></a>
@@ -351,6 +374,26 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#canConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canConsume(plan:org.apache.spark.sql.execution.SparkPlan):Boolean"></a>
+      <a id="canConsume(SparkPlan):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canConsume</span><span class="params">(<span name="plan">plan: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@canConsume(plan:org.apache.spark.sql.execution.SparkPlan):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true if the given plan returning batches of data can be consumed
+by this plan.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the given plan returning batches of data can be consumed
+by this plan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#canonicalized" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:PlanType"></a>
       <a id="canonicalized:SparkPlan"></a>
@@ -467,6 +510,24 @@ tree on which the function is defined.
       <p class="shortcomment cmt">Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectLeaves" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectLeaves():Seq[BaseType]"></a>
+      <a id="collectLeaves():Seq[SparkPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Seq containing the leaves in this tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the leaves in this tree.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#condition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="condition:Option[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
@@ -1150,6 +1211,40 @@ For example, this can be used to show sub-queries.
     </span>
       <p class="shortcomment cmt">The set of all attributes that are input to this operator by its children.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are input to this operator by its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1168,18 +1263,18 @@ For example, this can be used to show sub-queries.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1269,6 +1364,23 @@ For example, this can be used to show sub-queries.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#leftSizeInBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="leftSizeInBytes:BigInt"></a>
+      <a id="leftSizeInBytes:BigInt"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">leftSizeInBytes</span><span class="result">: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@leftSizeInBytes:BigInt" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -1581,6 +1693,23 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Return all metadata that describes more details of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metadata that describes more details of this SparkPlan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#metricAdd" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="metricAdd:String=&gt;String"></a>
+      <a id="metricAdd:(String)⇒String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metricAdd</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@metricAdd:String=&gt;String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.CodegenSupport#metricTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metricTerm(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,name:String):String"></a>
       <a id="metricTerm(CodegenContext,String):String"></a>
@@ -1723,7 +1852,7 @@ assertions designed to prevent the construction of invalid plans.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
       <h4 class="signature">
@@ -1741,7 +1870,7 @@ assertions designed to prevent the construction of invalid plans.
     </span>
       <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
 Note that we remove the &quot;Exec&quot; suffix for physical operators here.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -2043,6 +2172,23 @@ The list of subqueries are added to <span class="extype" name="subqueryResults">
       <p class="shortcomment cmt">All Attributes that appear in expressions from this operator.</p><div class="fullcomment"><div class="comment cmt"><p>All Attributes that appear in expressions from this operator.  Note that this set does not
 include attributes that are implicitly referenced by being passed through to the output tuple.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#replicatedTableJoin" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="replicatedTableJoin:Boolean"></a>
+      <a id="replicatedTableJoin:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">replicatedTableJoin</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@replicatedTableJoin:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#requiredChildDistribution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="requiredChildDistribution:Seq[org.apache.spark.sql.catalyst.plans.physical.Distribution]"></a>
       <a id="requiredChildDistribution:Seq[Distribution]"></a>
@@ -2129,6 +2275,23 @@ include attributes that are implicitly referenced by being passed through to the
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#rightSizeInBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="rightSizeInBytes:BigInt"></a>
+      <a id="rightSizeInBytes:BigInt"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rightSizeInBytes</span><span class="result">: <a href="../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.joins.LocalJoin@rightSizeInBytes:BigInt" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#sameResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sameResult(plan:PlanType):Boolean"></a>
       <a id="sameResult(SparkPlan):Boolean"></a>
@@ -2640,7 +2803,7 @@ unchanged.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.CodegenSupport#usedInputs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.joins.LocalJoin#usedInputs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="usedInputs:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="usedInputs:AttributeSet"></a>
       <h4 class="signature">
@@ -2658,7 +2821,7 @@ unchanged.
     </span>
       <p class="shortcomment cmt">The subset of inputSet those should be evaluated before this plan.</p><div class="fullcomment"><div class="comment cmt"><p>The subset of inputSet those should be evaluated before this plan.</p><p>We will use this to insert some code to access those columns that are actually used by current
 plan before calling doConsume().
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#validConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="validConstraints:Set[Expression]"></a>
@@ -2813,7 +2976,9 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.execution.CodegenSupport">
+        <div class="parent" name="org.apache.spark.sql.execution.BatchConsumer">
+              <h3>Inherited from <a href="../BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.execution.CodegenSupport">
               <h3>Inherited from <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.joins.HashJoin">
               <h3>Inherited from <a href="HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a></h3>

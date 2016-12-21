@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Development Team">
+  
+  <title>How Tos - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "How Tos";
+    var mkdocs_page_input_path = "howto.md";
+    var mkdocs_page_url = "/howto/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../install/">Download and Install</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">How Tos</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-start-a-snappydata-cluster">How to Start a SnappyData Cluster</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-use-snappydata-sql-shell-snappy-shell">How to Use SnappyData SQL shell (snappy-shell)</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-create-column-tables-and-run-queries">How to Create Column Tables and Run Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-load-data-in-snappydata-tables">How to Load Data in SnappyData Tables</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-perform-a-collocated-join">How to Perform a Collocated Join</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-store-and-query-json-objects">How to Store and Query JSON Objects</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-store-and-query-objects">How to Store and Query Objects</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-use-stream-processing-with-snappydata">How to Use Stream Processing with SnappyData</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-use-synopsis-data-engine-to-run-approximate-queries">How to Use Synopsis Data Engine to Run Approximate Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-use-python-to-create-tables-and-run-queries">How to Use Python to Create Tables and Run Queries</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>How Tos</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="overview">Overview</h1>
+<p>This section introduces you to several common operations such as, starting a cluster, working with tables(load, query, update), working with streams and running approximate queries.</p>
+<p><strong>Running the Examples:</strong>
+Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.</p>
+<p>Source code for these examples is located in the <strong>quickstart/src/main/scala/org/apache/spark/examples/snappydata</strong> and in <strong>quickstart/python</strong> directories of the SnappyData product distribution.</p>
+<p>Refer to the <a href="../quickstart/">Getting Started</a> to either run SnappyData on premise, using AWS or Docker. </p>
+<p>You can run the examples in any of the following ways:</p>
+<ul>
+<li>
+<p><strong>In the Local Mode</strong>: By using <code>bin/run-example</code> script (to run Scala examples) or by using <code>bin/spark-submit</code> script (to run Python examples). The examples run collocated with Spark+SnappyData Store in the same JVM. </p>
+</li>
+<li>
+<p><strong>As a Job</strong>: Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to <a href="#howto-job">jobs</a> section for details on how to run a job.</p>
+</li>
+</ul>
+<p><Note> Note: SnappyData also supports Java API. Refer to the <a href="../programming_guide/#building-snappy-applications-using-spark-api">documentation</a> for more details on Java API.</note></p>
+<p>The following topics are covered in this section:</p>
+<ul>
+<li><a href="#howto-startCluster">How to Start a SnappyData Cluster</a></li>
+<li><a href="#howto-job">How to Run Spark Job inside the Cluster</a></li>
+<li><a href="#howto-splitmode">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a></li>
+<li><a href="#howto-row">How to Create Row Tables and Run Queries</a></li>
+<li><a href="#howto-column">How to Create Column Tables and Run Queries</a></li>
+<li><a href="#howto-load">How to Load Data in SnappyData Tables</a></li>
+<li><a href="#howto-collacatedJoin">How to perform a Collocated Join</a></li>
+<li><a href="#howto-jdbc">How to Connect using JDBC Driver</a></li>
+<li><a href="#howto-JSON">How to Store and Query JSON Objects</a></li>
+<li><a href="#howto-objects">How to Store and Query Objects</a></li>
+<li><a href="#howto-streams">How to Use Stream Processing with SnappyData</a></li>
+<li><a href="#howto-sde">How to Use Synopsis Data Engine to Run Approximate Queries</a></li>
+<li><a href="#howto-python">How to Use Python to Create Tables and Run Queries</a></li>
+</ul>
+<p><a id="howto-startCluster"></a></p>
+<h2 id="how-to-start-a-snappydata-cluster">How to Start a SnappyData Cluster</h2>
+<h3 id="start-snappydata-cluster-on-a-single-machine">Start SnappyData Cluster on a Single Machine</h3>
+<p>If you have <a href="../install/#install-on-premise">downloaded and extracted</a> the SnappyData product distribution, navigate to the SnappyData product root directory.</p>
+<p><strong>Start the Cluster</strong>: Run the <code>sbin/snappy-start-all.sh</code> script to start SnappyData cluster on your single machine using default settings. This starts one lead node, one locator, and one data server.</p>
+<pre><code>$ sbin/snappy-start-all.sh
+</code></pre>
+
+<p>It may take 30 seconds or more to bootstrap the entire cluster on your local machine.</p>
+<p><strong>Sample Output</strong>: The sample output for <code>snappy-start-all.sh</code> is displayed as:</p>
+<pre><code>Starting SnappyData Locator using peer discovery on: localhost[10334]
+Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 9368 status: running
+Starting SnappyData Server using locators for peer discovery: shirishd-laptop[10334]
+Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+Logs generated in /home/shirishd/snappyData/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 9519 status: running
+  Distributed system now has 2 members.
+  Other members: localhost(9368:locator)&lt;v0&gt;:16944
+Starting SnappyData Leader using locators for peer discovery: shirishd-laptop[10334]
+Logs generated in /home/shirishd/snappyData/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 9699 status: running
+  Distributed system now has 3 members.
+  Other members: localhost(9368:locator)&lt;v0&gt;:16944, 192.168.63.1(9519:datastore)&lt;v1&gt;:46966
+</code></pre>
+
+<p><strong>Check Status</strong>: You can check the status of a running cluster using the following command:</p>
+<pre><code>$ sbin/snappy-status-all.sh
+SnappyData Locator pid: 9368 status: running
+SnappyData Server pid: 9519 status: running
+  Distributed system now has 2 members.
+  Other members: localhost(9368:locator)&lt;v0&gt;:16944
+SnappyData Leader pid: 9699 status: running
+  Distributed system now has 3 members.
+  Other members: localhost(9368:locator)&lt;v0&gt;:16944, 192.168.63.1(9519:datastore)&lt;v1&gt;:46966
+</code></pre>
+
+<p>You can check SnappyData UI by opening <code>http://&lt;leadHostname&gt;:4040</code> in browser, where <strong>leadHostname</strong> is the host name of your lead node). Use <a href="#howto-snappyShell">snappy-shell</a> to connect to the cluster and perform various SQL operations.</p>
+<p><strong>Shutdown Cluster</strong>: You can shutdown the cluster using the <code>sbin/snappy-stop-all.sh</code> command:</p>
+<pre><code>$ sbin/snappy-stop-all.sh
+The SnappyData Leader has stopped.
+The SnappyData Server has stopped.
+The SnappyData Locator has stopped.
+</code></pre>
+
+<h3 id="start-snappydata-cluster-on-multiple-hosts">Start SnappyData Cluster on Multiple Hosts</h3>
+<p>To start the cluster on multiple hosts:</p>
+<ol>
+<li>
+<p>The easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.</p>
+</li>
+<li>
+<p>In the <strong>conf</strong> folder, create the configuration files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>. Edit the files to include the hostnames on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, <strong>conf/servers.template)</strong>.</p>
+</li>
+<li>
+<p>Start the cluster using <code>sbin/snappy-start-all.sh</code>. SnappyData starts the cluster using SSH.</p>
+</li>
+</ol>
+<p><Note> Note: It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on <a href="../install/#install-on-premise">installation</a> and <a href="../configuration">cluster configuration</a>.
+</Note></p>
+<p><a id="howto-job"></a></p>
+<h2 id="how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</h2>
+<p>A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
+<p><strong>Implementing a Job</strong>: 
+A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the <code>runSnappyJob</code> method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create table, load data, execute queries using the SnappySession. <br/>
+Any of the Spark APIs can be invoked by a SnappyJob.</p>
+<pre><code>class CreatePartitionedRowTable extends SnappySQLJob {
+  /** SnappyData uses this as an entry point to execute Snappy jobs. **/
+  def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
+
+  /**
+  SnappyData calls this function to validate the job input and reject invalid job requests.
+  You can implement custom validations here, for example, validating the configuration parameters
+  **/
+  def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
+}
+</code></pre>
+
+<p><strong>Dependencies</strong>:
+To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.</p>
+<p><strong>Example: Maven dependency</strong>:</p>
+<pre><code>&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
+    &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
+    &lt;version&gt;0.7&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p><strong>Example: SBT dependency</strong>:</p>
+<pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.7&quot;
+</code></pre>
+
+<p><strong>Running the Job</strong>: 
+Once you create a jar file for SnappyData job, use <code>bin/snappy-job.sh</code> to submit the job to SnappyData cluster and run the job. This is similar to Spark-submit for any Spark application. </p>
+<p>For example, to run the job implemented in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a> you can use the following command.
+Here <strong>quickstart.jar</strong> contains the program and is bundled in the product distribution.<br/>
+For example, the command submits the job and runs it as:</p>
+<pre><code> # first cd to your SnappyData product dir
+ $ cd $SNAPPY_HOME
+ $ bin/snappy-job.sh submit
+    --app-name CreatePartitionedRowTable
+    --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
+    --app-jar examples/jars/quickstart.jar
+    --lead [leadHost:port]
+</code></pre>
+
+<p><strong>Output</strong>: It returns output similar to:</p>
+<pre><code>{
+  &quot;status&quot;: &quot;STARTED&quot;,
+  &quot;result&quot;: {
+    &quot;jobId&quot;: &quot;321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;,
+    &quot;context&quot;: &quot;snappyContext1452598154529305363&quot;
+  }
+}
+</code></pre>
+
+<p><strong>Check Status</strong>: You can check the status of the job using the Job ID listed above:</p>
+<pre><code>bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+</code></pre>
+
+<p>Refer to the <a href="../programming_guide/#building-snappydata-applications-using-spark-api">Building SnappyData applications using Spark API</a> section of the documentation for more details.</p>
+<p><a id="howto-splitmode"></a></p>
+<h2 id="how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</h2>
+<p>SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.</p>
+<p>For more information on the various modes, refer to the <a href="../deployment#snappydata-smart-connector-mode">SnappyData Smart Connector</a> section of the documentation.</p>
+<p><strong>Code Example:</strong>
+The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
+<p><strong>Configure a SnappySession</strong>: 
+The code below shows how to initialize a SparkSession. Here the property <code>snappydata.store.locators</code> instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;SmartConnectorExample&quot;)
+        // It can be any master URL
+        .master(&quot;local[4]&quot;)
+        // snappydata.store.locators property enables the application to interact with SnappyData store
+        .config(&quot;snappydata.store.locators&quot;, &quot;localhost:10334&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+
+</code></pre>
+
+<p><strong>Create Table and Run Queries</strong>: 
+You can now create tables and run queries in SnappyData store using your Apache Spark program</p>
+<pre><code>    // reading an already created SnappyStore table SNAPPY_COL_TABLE
+    val colTable = snSession.table(&quot;SNAPPY_COL_TABLE&quot;)
+    colTable.show(10)
+
+    snSession.dropTable(&quot;TestColumnTable&quot;, ifExists = true)
+
+    // Creating a table from a DataFrame
+    val dataFrame = snSession.range(1000).selectExpr(&quot;id&quot;, &quot;floor(rand() * 10000) as k&quot;)
+
+    snSession.sql(&quot;create table TestColumnTable (id bigint not null, k bigint not null) using column&quot;)
+
+    // insert data in TestColumnTable
+    dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
+</code></pre>
+
+<p><a id="howto-snappyShell"></a></p>
+<h2 id="how-to-use-snappydata-sql-shell-snappy-shell">How to Use SnappyData SQL shell (snappy-shell)</h2>
+<p><code>snappy-shell</code> can be used to execute SQL on SnappyData cluster. In the background, <code>snappy-shell</code> uses JDBC connections to execute SQL.</p>
+<p><strong>Connect to a SnappyData Cluster</strong>: 
+Use the <code>snappy-shell</code> and <code>connect client</code> command on the Snappy Shell</p>
+<pre><code>$ bin/snappy-shell
+snappy&gt; connect client 'locatorHostName:1527';
+</code></pre>
+
+<p><strong>1527</strong> is the default port on which locatorHost listens for connections. </p>
+<p><strong>Execute SQL queries</strong>: Once connected you can execute SQL queries using <code>snappy-shell</code></p>
+<pre><code>snappy&gt; CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
+
+snappy&gt; INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
+
+snappy&gt; INSERT INTO APP.PARTSUPP VALUES(200, 2, 50, 10);
+
+snappy&gt; SELECT * FROM APP.PARTSUPP;
+PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST    
+-----------------------------------------------------
+100        |1          |5000       |100.00           
+200        |2          |50         |10.00            
+
+2 rows selected
+
+</code></pre>
+
+<p><strong>View the members of cluster</strong>: 
+Use the <code>show members</code> command</p>
+<pre><code>snappy&gt; show members;
+ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+192.168.63.1(21412)&lt;v1&gt;:61964 |192.168.63.1                  |datastore(normal)             |RUNNING             |localhost/127.0.0.1[1528]     |                              
+192.168.63.1(21594)&lt;v2&gt;:29474 |192.168.63.1                  |accessor(normal)              |RUNNING             |                              |IMPLICIT_LEADER_SERVERGROUP   
+localhost(21262)&lt;v0&gt;:22770    |localhost                     |locator(normal)               |RUNNING             |localhost/127.0.0.1[1527]     |                              
+
+3 rows selected
+
+</code></pre>
+
+<p><strong>View the list tables in a schema</strong>: 
+Use <code>show tables in &lt;schema&gt;</code> command</p>
+<pre><code>snappy&gt; show tables in app;
+TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
+-----------------------------------------------------------------------------------
+APP                 |PARTSUPP                      |TABLE     |                    
+
+1 row selected
+</code></pre>
+
+<p><a id="howto-row"></a></p>
+<h2 id="how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</h2>
+<p>Each record in a Row table is managed in contiguous memory, and therefore, optimized for selective queries (For example. key based point lookup ) or updates. 
+A row table can either be replicated to all nodes or partitioned across nodes. It can be created by using DataFrame API or using SQL.</p>
+<p>Refer to the <a href="../programming_guide#tables-in-snappydata">Row and column tables</a> documentation for complete list of attributes for row tables.</p>
+<p>Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala">CreateReplicatedRowTable.scala</a> and <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a></p>
+<h3 id="create-a-row-table-using-dataframe-api">Create a Row Table using DataFrame API:</h3>
+<p>The code snippet below shows how to create a replicated row table using API.</p>
+<p><strong>Get a SnappySession</strong></p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;CreateReplicatedRowTable&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Create the Table using API</strong>:
+First we define the table schema and then create the table using createTable API</p>
+<pre><code>    val schema = StructType(Array(StructField(&quot;S_SUPPKEY&quot;, IntegerType, false),
+      StructField(&quot;S_NAME&quot;, StringType, false),
+      StructField(&quot;S_ADDRESS&quot;, StringType, false),
+      StructField(&quot;S_NATIONKEY&quot;, IntegerType, false),
+      StructField(&quot;S_PHONE&quot;, StringType, false),
+      StructField(&quot;S_ACCTBAL&quot;, DecimalType(15, 2), false),
+      StructField(&quot;S_COMMENT&quot;, StringType, false)
+    ))
+
+    // props1 map specifies the properties for the table to be created
+    // &quot;PERSISTENT&quot; flag indicates that the table data should be persisted to
+    // disk asynchronously
+    val props1 = Map(&quot;PERSISTENT&quot; -&gt; &quot;asynchronous&quot;)
+    // create a row table using createTable API
+    snSession.createTable(&quot;SUPPLIER&quot;, &quot;row&quot;, schema, props1)
+</code></pre>
+
+<p><strong>Creating a Row table using SQL</strong>:
+The same table can be created using SQL as shown below:</p>
+<pre><code>    // First drop the table if it exists
+    snSession.sql(&quot;DROP TABLE IF EXISTS SUPPLIER&quot;)
+    // Create a row table using SQL
+    // &quot;PERSISTENT&quot; that the table data should be persisted to disk asynchronously
+    // For complete list of attributes refer the documentation
+    snSession.sql(
+      &quot;CREATE TABLE SUPPLIER ( &quot; +
+          &quot;S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, &quot; +
+          &quot;S_NAME STRING NOT NULL, &quot; +
+          &quot;S_ADDRESS STRING NOT NULL, &quot; +
+          &quot;S_NATIONKEY INTEGER NOT NULL, &quot; +
+          &quot;S_PHONE STRING NOT NULL, &quot; +
+          &quot;S_ACCTBAL DECIMAL(15, 2) NOT NULL, &quot; +
+          &quot;S_COMMENT STRING NOT NULL &quot; +
+          &quot;) USING ROW OPTIONS (PERSISTENT 'asynchronous')&quot;)
+</code></pre>
+
+<p>You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
+For example:</p>
+<p><strong> To insert data in the SUPPLIER table:</strong></p>
+<pre><code>    snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')&quot;)
+    snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')&quot;)
+    snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')&quot;)
+    snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')&quot;)
+</code></pre>
+
+<p><strong> To print the contents of the SUPPLIER table:</strong></p>
+<pre><code>    var tableData = snSession.sql(&quot;SELECT * FROM SUPPLIER&quot;).collect()
+    tableData.foreach(println)
+</code></pre>
+
+<p><strong> To update the table account balance for SUPPLIER4:</strong></p>
+<pre><code>    snSession.sql(&quot;UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'&quot;)
+</code></pre>
+
+<p><strong>To print contents of the SUPPLIER table after update</strong></p>
+<pre><code>    tableData = snSession.sql(&quot;SELECT * FROM SUPPLIER&quot;).collect()
+    tableData.foreach(println)
+</code></pre>
+
+<p><strong>To delete the records for SUPPLIER2 and SUPPLIER3
+</strong></p>
+<pre><code>    snSession.sql(&quot;DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'&quot;)
+</code></pre>
+
+<p><strong>To print the contents of the SUPPLIER table after delete</strong></p>
+<pre><code>    tableData = snSession.sql(&quot;SELECT * FROM SUPPLIER&quot;).collect()
+    tableData.foreach(println)
+</code></pre>
+
+<p><a id="howto-column"></a></p>
+<h2 id="how-to-create-column-tables-and-run-queries">How to Create Column Tables and Run Queries</h2>
+<p>Column tables organize and manage data in columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).</p>
+<p>Refer to the <a href="../programming_guide#tables-in-snappydata">Row and column tables</a> documentation for the complete list of attributes for column tables.</p>
+<p>Full source code, for example, to create and perform operations on column table can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala">CreateColumnTable.scala</a></p>
+<h3 id="create-a-column-table-using-dataframe-api">Create a Column Table using DataFrame API</h3>
+<p>The code snippet below shows how to create a column table using DataFrame API.</p>
+<p><strong>Get a SnappySession</strong>:</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;CreateColumnTable&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Define the table schema </strong></p>
+<pre><code>val tableSchema = StructType(Array(StructField(&quot;C_CUSTKEY&quot;, IntegerType, false),
+      StructField(&quot;C_NAME&quot;, StringType, false),
+      StructField(&quot;C_ADDRESS&quot;, StringType, false),
+      StructField(&quot;C_NATIONKEY&quot;, IntegerType, false),
+      StructField(&quot;C_PHONE&quot;, StringType, false),
+      StructField(&quot;C_ACCTBAL&quot;, DecimalType(15, 2), false),
+      StructField(&quot;C_MKTSEGMENT&quot;, StringType, false),
+      StructField(&quot;C_COMMENT&quot;, StringType, false)
+    ))
+</code></pre>
+
+<p><strong>Create the table and load data from CSV</strong></p>
+<pre><code>    // props1 map specifies the properties for the table to be created
+    // &quot;PARTITION_BY&quot; attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+    val props1 = Map(&quot;PARTITION_BY&quot; -&gt; &quot;C_CUSTKEY&quot;)
+    snSession.createTable(&quot;CUSTOMER&quot;, &quot;column&quot;, tableSchema, props1)
+
+     val tableSchema = snSession.table(&quot;CUSTOMER&quot;).schema
+    // insert some data in it
+    // loading data in CUSTOMER table from a text file with delimited columns
+    val customerDF = snSession.read.schema(schema = tableSchema).csv(&quot;quickstart/src/main/resources/customer.csv&quot;)
+    customerDF.write.insertInto(&quot;CUSTOMER&quot;)
+</code></pre>
+
+<h3 id="create-a-column-table-using-sql">Create a Column Table using SQL</h3>
+<p>The same table can be created using SQL as shown below:</p>
+<pre><code>    snSession.sql(&quot;CREATE TABLE CUSTOMER ( &quot; +
+        &quot;C_CUSTKEY     INTEGER NOT NULL,&quot; +
+        &quot;C_NAME        VARCHAR(25) NOT NULL,&quot; +
+        &quot;C_ADDRESS     VARCHAR(40) NOT NULL,&quot; +
+        &quot;C_NATIONKEY   INTEGER NOT NULL,&quot; +
+        &quot;C_PHONE       VARCHAR(15) NOT NULL,&quot; +
+        &quot;C_ACCTBAL     DECIMAL(15,2)   NOT NULL,&quot; +
+        &quot;C_MKTSEGMENT  VARCHAR(10) NOT NULL,&quot; +
+        &quot;C_COMMENT     VARCHAR(117) NOT NULL)&quot; +
+        &quot;USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')&quot;)
+</code></pre>
+
+<p>You can execute selected queries on a column table, join the column table with other tables, and append data to it.</p>
+<p><a id="howto-load"></a></p>
+<h2 id="how-to-load-data-in-snappydata-tables">How to Load Data in SnappyData Tables</h2>
+<p>You can use Spark's DataFrameReader API in order to load data into SnappyData tables using different formats (Parquet, CSV, JSON etc.).</p>
+<p><strong>Code Example</strong></p>
+<p><strong>Get a SnappySession</strong></p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;CreateColumnTable&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>A column table is created as follows</strong></p>
+<pre><code>    snSession.sql(&quot;CREATE TABLE CUSTOMER ( &quot; +
+        &quot;C_CUSTKEY     INTEGER NOT NULL,&quot; +
+        &quot;C_NAME        VARCHAR(25) NOT NULL,&quot; +
+        &quot;C_ADDRESS     VARCHAR(40) NOT NULL,&quot; +
+        &quot;C_NATIONKEY   INTEGER NOT NULL,&quot; +
+        &quot;C_PHONE       VARCHAR(15) NOT NULL,&quot; +
+        &quot;C_ACCTBAL     DECIMAL(15,2)   NOT NULL,&quot; +
+        &quot;C_MKTSEGMENT  VARCHAR(10) NOT NULL,&quot; +
+        &quot;C_COMMENT     VARCHAR(117) NOT NULL)&quot; +
+        &quot;USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')&quot;)
+</code></pre>
+
+<p><strong>Load data in the CUSTOMER table from a CSV file by using DataFrameReader API</strong></p>
+<pre><code>    val tableSchema = snSession.table(&quot;CUSTOMER&quot;).schema
+    val customerDF = snSession.read.schema(schema = tableSchema).csv(s&quot;$dataFolder/customer.csv&quot;)
+    customerDF.write.insertInto(&quot;CUSTOMER&quot;)
+</code></pre>
+
+<p><strong>For Parquet file, use code as given below</strong></p>
+<pre><code>val customerDF = snSession.read.parquet(s&quot;$dataDir/customer_parquet&quot;)
+customerDF.write.insertInto(&quot;CUSTOMER&quot;)
+</code></pre>
+
+<p><strong>Inferring schema from data file</strong></p>
+<p>A schema for the table can be inferred from the data file. In this case, you do not need to create a table before loading the data. In the code snippet below, we create a DataFrame for a Parquet file and then use saveAsTable API to create a table with data loaded from it.</p>
+<pre><code>    val customerDF = snSession.read.parquet(s&quot;quickstart/src/main/resources/customerparquet&quot;)
+    // props1 map specifies the properties for the table to be created
+    // &quot;PARTITION_BY&quot; attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+    val props1 = Map(&quot;PARTITION_BY&quot; -&gt; &quot;C_CUSTKEY&quot;)
+    customerDF.write.format(&quot;column&quot;).mode(&quot;append&quot;).options(props1).saveAsTable(&quot;CUSTOMER&quot;)
+</code></pre>
+
+<p>In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.</p>
+<pre><code>    val customer_csv_DF = snSession.read.option(&quot;header&quot;, &quot;true&quot;)
+        .option(&quot;inferSchema&quot;, &quot;true&quot;).csv(&quot;quickstart/src/main/resources/customer_with_headers.csv&quot;)
+
+    // props1 map specifies the properties for the table to be created
+    // &quot;PARTITION_BY&quot; attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+    // For complete list of attributes refer the documentation
+    val props1 = Map(&quot;PARTITION_BY&quot; -&gt; &quot;C_CUSTKEY&quot;)
+    customer_csv_DF.write.format(&quot;column&quot;).mode(&quot;append&quot;).options(props1).saveAsTable(&quot;CUSTOMER&quot;)
+</code></pre>
+
+<p>The source code to load the data from a CSV/Parquet files is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala">CreateColumnTable.scala</a>. Source for the code to load data from a JSON file can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala">WorkingWithJson.scala</a></p>
+<p><a id="howto-collacatedJoin"></a></p>
+<h2 id="how-to-perform-a-collocated-join">How to Perform a Collocated Join</h2>
+<p>When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Collocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
+When collocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.</p>
+<p><strong>Code Example: ORDERS table is collocated with CUSTOMER table</strong></p>
+<p>A partitioned table can be collocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
+For example, in the code snippet below, the ORDERS table is collocated with the CUSTOMER table. The complete source for this example can be found in the file <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala">CollocatedJoinExample.scala</a></p>
+<p><strong>Get a SnappySession</strong>:</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;CollocatedJoinExample&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Create Table Customer:</strong></p>
+<pre><code>    snSession.sql(&quot;CREATE TABLE CUSTOMER ( &quot; +
+        &quot;C_CUSTKEY     INTEGER NOT NULL,&quot; +
+        &quot;C_NAME        VARCHAR(25) NOT NULL,&quot; +
+        &quot;C_ADDRESS     VARCHAR(40) NOT NULL,&quot; +
+        &quot;C_NATIONKEY   INTEGER NOT NULL,&quot; +
+        &quot;C_PHONE       VARCHAR(15) NOT NULL,&quot; +
+        &quot;C_ACCTBAL     DECIMAL(15,2)   NOT NULL,&quot; +
+        &quot;C_MKTSEGMENT  VARCHAR(10) NOT NULL,&quot; +
+        &quot;C_COMMENT     VARCHAR(117) NOT NULL)&quot; +
+        &quot;USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')&quot;)
+</code></pre>
+
+<p><strong>Create Table Orders:</strong></p>
+<pre><code>    snSession.sql(&quot;CREATE TABLE ORDERS  ( &quot; +
+        &quot;O_ORDERKEY       INTEGER NOT NULL,&quot; +
+        &quot;O_CUSTKEY        INTEGER NOT NULL,&quot; +
+        &quot;O_ORDERSTATUS    CHAR(1) NOT NULL,&quot; +
+        &quot;O_TOTALPRICE     DECIMAL(15,2) NOT NULL,&quot; +
+        &quot;O_ORDERDATE      DATE NOT NULL,&quot; +
+        &quot;O_ORDERPRIORITY  CHAR(15) NOT NULL,&quot; +
+        &quot;O_CLERK          CHAR(15) NOT NULL,&quot; +
+        &quot;O_SHIPPRIORITY   INTEGER NOT NULL,&quot; +
+        &quot;O_COMMENT        VARCHAR(79) NOT NULL) &quot; +
+        &quot;USING COLUMN OPTIONS (PARTITION_BY 'O_CUSTKEY', &quot; +
+        &quot;COLOCATE_WITH 'CUSTOMER' )&quot;)
+</code></pre>
+
+<p><strong>Perform a Collocate join: </strong></p>
+<pre><code>    // Selecting orders for all customers
+    val result = snSession.sql(&quot;SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, &quot; +
+        &quot;O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY&quot;).collect()
+</code></pre>
+
+<p><a id="howto-jdbc"></a></p>
+<h2 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h2>
+<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.</p>
+<p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://locatorHostName:locatorClientPort/</code></p>
+<p><strong>Code Example: </strong>
+<strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
+<p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>
+<pre><code>val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;
+val conn1 = DriverManager.getConnection(url)
+
+val stmt1 = conn1.createStatement()
+// Creating a table (PARTSUPP) using JDBC connection
+stmt1.execute(&quot;DROP TABLE IF EXISTS APP.PARTSUPP&quot;)
+stmt1.execute(&quot;CREATE TABLE APP.PARTSUPP ( &quot; +
+     &quot;PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY,&quot; +
+     &quot;PS_SUPPKEY     INTEGER NOT NULL,&quot; +
+     &quot;PS_AVAILQTY    INTEGER NOT NULL,&quot; +
+     &quot;PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)&quot; +
+    &quot;USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY')&quot;)
+
+// Inserting records in PARTSUPP table via batch inserts
+val preparedStmt1 = conn1.prepareStatement(&quot;INSERT INTO APP.PARTSUPP VALUES(?, ?, ?, ?)&quot;)
+
+var x = 0
+for (x &lt;- 1 to 10) {
+  preparedStmt1.setInt(1, x*100)
+  preparedStmt1.setInt(2, x)
+  preparedStmt1.setInt(3, x*1000)
+  preparedStmt1.setBigDecimal(4, java.math.BigDecimal.valueOf(100.2))
+  preparedStmt1.addBatch()
+}
+preparedStmt1.executeBatch()
+preparedStmt1.close()
+</code></pre>
+
+<p><a id="howto-JSON"></a></p>
+<h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
+<p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>
+<p><strong>Code Example: Loads JSON data from a JSON file into a column table and executes query</strong></p>
+<p>The code snippet given below loads JSON data from a JSON file into a column table and executes the query against it.
+The source code for JSON example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala">WorkingWithJson.scala</a>. After creating SnappySession, we read the JSON file using Spark API and load into a SnappyData table</p>
+<p><strong>Get a SnappySession</strong>:</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;WorkingWithJson&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Create a DataFrame from the JSON file</strong>:</p>
+<pre><code>    val some_people_path = s&quot;quickstart/src/main/resources/some_people.json&quot;
+    // Read a JSON file using Spark API
+    val people = snSession.jsonFile(some_people_path)
+    people.printSchema()
+</code></pre>
+
+<p><strong>Create a SnappyData table and insert the JSON data in it using the DataFrame</strong>:</p>
+<pre><code>    //Drop the table if it exists
+    snSession.dropTable(&quot;people&quot;, ifExists = true)
+
+   //Create a columnar table with the Json DataFrame schema
+    snSession.createTable(tableName = &quot;people&quot;,
+      provider = &quot;column&quot;,
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table
+    people.write.insertInto(&quot;people&quot;)
+</code></pre>
+
+<p><strong>Append more data from a second JSON file</strong>:</p>
+<pre><code>    // Append more people to the column table
+    val more_people_path = s&quot;quickstart/src/main/resources/more_people.json&quot;
+
+    //Explicitly passing schema to handle record level field mismatch
+    // e.g. some records have &quot;district&quot; field while some do not.
+    val morePeople = snSession.read.schema(people.schema).json(more_people_path)
+    morePeople.write.insertInto(&quot;people&quot;)
+
+    //print schema of the table
+    println(&quot;Print Schema of the table\n################&quot;)
+    println(snSession.table(&quot;people&quot;).schema)
+</code></pre>
+
+<p><strong>Execute queries and return the results</strong></p>
+<pre><code>    // Query it like any other table
+    val nameAndAddress = snSession.sql(&quot;SELECT &quot; +
+        &quot;name, &quot; +
+        &quot;address.city, &quot; +
+        &quot;address.state, &quot; +
+        &quot;address.district, &quot; +
+        &quot;address.lane &quot; +
+        &quot;FROM people&quot;)
+
+    val builder = new StringBuilder
+    nameAndAddress.collect.map(row =&gt; {
+      builder.append(s&quot;${row(0)} ,&quot;)
+      builder.append(s&quot;${row(1)} ,&quot;)
+      builder.append(s&quot;${row(2)} ,&quot;)
+      builder.append(s&quot;${row(3)} ,&quot;)
+      builder.append(s&quot;${row(4)} \n&quot;)
+    })
+    builder.toString
+
+</code></pre>
+
+<p><a id="howto-objects"></a></p>
+<h2 id="how-to-store-and-query-objects">How to Store and Query Objects</h2>
+<p>You can use domain object to load data into SnappyData tables and select the data by executing queries against the table.</p>
+<p><strong>Code Example: Insert Person object into the column table</strong></p>
+<p>The code snippet below inserts Person objects into a column table. The source code for this example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala">WorkingWithObjects.scala</a>. After creating SnappySession, the Person objects is inserted using Spark API and loads into a SnappyData table.</p>
+<p><strong>Get a SnappySession</strong>:</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;CreateReplicatedRowTable&quot;)
+        .master(&quot;local[4]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Create DataFrame objects</strong>:</p>
+<pre><code>    //Import the implicits for automatic conversion between Objects to DataSets.
+    import snSession.implicits._
+
+    val snSession = snc.snappySession
+    // Create a Dataset using Spark APIs
+    val people = Seq(Person(&quot;Tom&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)), Person(&quot;Ned&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;))).toDS()
+</code></pre>
+
+<p><strong>Create a SnappyData table and insert data into it</strong>:</p>
+<pre><code>    //Drop the table if it exists.
+    snSession.dropTable(&quot;people&quot;, ifExists = true)
+
+    //Create a columnar table with a Struct to store Address
+    snSession.sql(&quot;CREATE table Persons(name String, address Struct&lt;city: String, state:String&gt;) using column options()&quot;)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto(&quot;people&quot;)
+
+    //print schema of the table
+    println(&quot;Print Schema of the table\n################&quot;)
+    println(snSession.table(&quot;people&quot;).schema)
+
+
+    // Append more people to the column table
+    val morePeople = Seq(Person(&quot;Jon Snow&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)),
+      Person(&quot;Rob Stark&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;)),
+      Person(&quot;Michael&quot;, Address(&quot;Null&quot;, &quot;California&quot;))).toDS()
+
+    morePeople.write.insertInto(&quot;people&quot;)
+</code></pre>
+
+<p><strong>Execute query on the table and return results</strong>:</p>
+<pre><code>    // Query it like any other table
+    val nameAndAddress = snSession.sql(&quot;SELECT name, address FROM Persons&quot;)
+
+    //Reconstruct the objects from obtained Row
+    val allPersons = nameAndAddress.collect.map(row =&gt; {
+      Person(row(0).asInstanceOf[String],
+        Address(
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
+          row(1).asInstanceOf[Row](1).asInstanceOf[String]
+        )
+      )
+    })
+</code></pre>
+
+<p><a id="howto-streams"></a></p>
+<h2 id="how-to-use-stream-processing-with-snappydata">How to Use Stream Processing with SnappyData</h2>
+<p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the <a href="../programming_guide/#stream-processing-using-sql">documentation</a>.</p>
+<p><strong>Code Example</strong>: 
+Code example for streaming is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala">StreamingExample.scala</a>. The code snippets below shows how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.</p>
+<p><strong>First get a SnappySession and a SnappyStreamingContext</strong>: 
+Here SnappyStreamingContext is initialized in a batch duration of one second.</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(getClass.getSimpleName)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
+</code></pre>
+
+<p>The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.</p>
+<p>The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.</p>
+<pre><code>    snsc.sql(
+      &quot;create stream table adImpressionStream (&quot; +
+          &quot; time_stamp timestamp,&quot; +
+          &quot; publisher string,&quot; +
+          &quot; advertiser string,&quot; +
+          &quot; website string,&quot; +
+          &quot; geo string,&quot; +
+          &quot; bid double,&quot; +
+          &quot; cookie string) &quot; + &quot; using directkafka_stream options(&quot; +
+          &quot; rowConverter 'org.apache.spark.examples.snappydata.RowsConverter',&quot; +
+          s&quot; kafkaParams 'metadata.broker.list-&gt;$address;auto.offset.reset-&gt;smallest',&quot; +
+          s&quot; topics 'kafka_topic')&quot;
+    )
+</code></pre>
+
+<p>RowsConverter decodes a stream message consisting of comma separated fields and forms a Row object from it.</p>
+<pre><code>class RowsConverter extends StreamToRowsConverter with Serializable {
+  override def toRows(message: Any): Seq[Row] = {
+    val log = message.asInstanceOf[String]
+    val fields = log.split(&quot;,&quot;)
+    val rows = Seq(Row.fromSeq(Seq(new java.sql.Timestamp(fields(0).toLong),
+      fields(1),
+      fields(2),
+      fields(3),
+      fields(4),
+      fields(5).toDouble,
+      fields(6)
+    )))
+    rows
+  }
+}
+</code></pre>
+
+<p><strong>To create a row table that is updated based on the streaming data</strong>:</p>
+<pre><code>snsc.sql(&quot;create table publisher_bid_counts(publisher string, bidCount int) using row&quot;)
+</code></pre>
+
+<p><strong>To declare a continuous query that is executed on the streaming data</strong>: This query returns a number of bids per publisher in one batch.</p>
+<pre><code>    val resultStream: SchemaDStream = snsc.registerCQ(&quot;select publisher, count(bid) as bidCount from &quot; +
+        &quot;adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher&quot;)
+</code></pre>
+
+<p><strong>To process that the result of above continuous query to update the row table publisher_bid_counts</strong>:</p>
+<pre><code>    // this conf is used to get a JDBC connection
+    val conf = new ConnectionConfBuilder(snsc.snappySession).build()
+
+    resultStream.foreachDataFrame(df =&gt; {
+        println(&quot;Data received in streaming window&quot;)
+        df.show()
+
+        println(&quot;Updating table publisher_bid_counts&quot;)
+        val conn = ConnectionUtil.getConnection(conf)
+        val result = df.collect()
+        val stmt = conn.prepareStatement(&quot;update publisher_bid_counts set &quot; +
+            s&quot;bidCount = bidCount + ? where publisher = ?&quot;)
+
+        result.foreach(row =&gt; {
+          val publisher = row.getString(0)
+          val bidCount = row.getLong(1)
+          stmt.setLong(1, bidCount)
+          stmt.setString(2, publisher)
+          stmt.addBatch()
+        }
+        )
+        stmt.executeBatch()
+        conn.close()
+      }
+    })
+
+</code></pre>
+
+<p><strong>To display the total bids by each publisher by querying publisher_bid_counts table</strong>:</p>
+<pre><code>snsc.snappySession.sql(&quot;select publisher, bidCount from publisher_bid_counts&quot;).show()
+
+</code></pre>
+
+<p><a id="howto-sde"></a></p>
+<h2 id="how-to-use-synopsis-data-engine-to-run-approximate-queries">How to Use Synopsis Data Engine to Run Approximate Queries</h2>
+<p>Synopsis Data Engine (SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire Dataset. The approach trades off query accuracy for fast response time.
+For more information on  SDE, refer to <a href="../programming_guide/#tables-in-snappydataaqp">SDE documentation</a>.</p>
+<p><strong>Code Example</strong>:
+The complete code example for SDE is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala">SynopsisDataExample.scala</a>. The code below creates a sample table and executes queries that run on the sample table.</p>
+<p><strong>Get a SnappySession</strong>:</p>
+<pre><code>    val spark: SparkSession = SparkSession
+        .builder
+        .appName(&quot;SynopsisDataExample&quot;)
+        .master(&quot;local[*]&quot;)
+        .getOrCreate
+
+    val snSession = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>The base column table(AIRLINE) is created from temporary parquet table as follows</strong>:</p>
+<pre><code>    // Create temporary staging table to load parquet data
+    snSession.sql(&quot;CREATE EXTERNAL TABLE STAGING_AIRLINE &quot; +
+        &quot;USING parquet OPTIONS(path &quot; + s&quot;'${dataFolder}/airlineParquetData')&quot;)
+
+    // Create a column table AIRLINE
+    snSession.sql(&quot;CREATE TABLE AIRLINE USING column AS (SELECT Year AS Year_, &quot; +
+        &quot;Month AS Month_ , DayOfMonth, DayOfWeek, DepTime, CRSDepTime, ArrTime, &quot; +
+        &quot;CRSArrTime, UniqueCarrier, FlightNum, TailNum, ActualElapsedTime, &quot; +
+        &quot;CRSElapsedTime, AirTime, ArrDelay, DepDelay, Origin, Dest, Distance, &quot; +
+        &quot;TaxiIn, TaxiOut, Cancelled, CancellationCode, Diverted, CarrierDelay, &quot; +
+        &quot;WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay, &quot; +
+        &quot;ArrDelaySlot FROM STAGING_AIRLINE)&quot;)
+</code></pre>
+
+<p><strong>Create a sample table for the above base table</strong>:
+Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the <a href="../aqp/#working-with-stratified-samples">SDE documentation</a>.</p>
+<pre><code>
+    snSession.sql(&quot;CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS&quot; +
+        &quot;(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  &quot; +
+        &quot;AS (SELECT Year_, Month_ , DayOfMonth, &quot; +
+        &quot;DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime, UniqueCarrier, &quot; +
+        &quot;FlightNum, TailNum, ActualElapsedTime, CRSElapsedTime, AirTime, &quot; +
+        &quot;ArrDelay, DepDelay, Origin, Dest, Distance, TaxiIn, TaxiOut, &quot; +
+        &quot;Cancelled, CancellationCode, Diverted, CarrierDelay, WeatherDelay, &quot; +
+        &quot;NASDelay, SecurityDelay, LateAircraftDelay, ArrDelaySlot FROM AIRLINE)&quot;)
+</code></pre>
+
+<p><strong>Execute queries that return approximate results using sample tables</strong>:
+The query below returns airlines by number of flights in descending order. The 'with error 0.20' clause in the query below signals query engine to execute the query on the sample table instead of the base table and maximum 20% error is allowed.</p>
+<pre><code>    var result = snSession.sql(&quot;select  count(*) flightRecCount, description AirlineName, &quot; +
+        &quot;UniqueCarrier carrierCode ,Year_ from airline , airlineref where &quot; +
+        &quot;airline.UniqueCarrier = airlineref.code group by &quot; +
+        &quot;UniqueCarrier,description, Year_ order by flightRecCount desc limit &quot; +
+        &quot;10 with error 0.20&quot;).collect()
+    result.foreach(r =&gt; println(r(0) + &quot;, &quot; + r(1) + &quot;, &quot; + r(2) + &quot;, &quot; + r(3)))
+</code></pre>
+
+<p><strong>Join the sample table with a reference table</strong>:
+You can join the sample table with a reference table to execute queries. For example a reference table (AIRLINEREF) is created as follows from a parquet data file.</p>
+<pre><code>    // create temporary staging table to load parquet data
+    snSession.sql(&quot;CREATE EXTERNAL TABLE STAGING_AIRLINEREF USING &quot; +
+        &quot;parquet OPTIONS(path &quot; + s&quot;'${dataFolder}/airportcodeParquetData')&quot;)
+    snSession.sql(&quot;CREATE TABLE AIRLINEREF USING row AS (SELECT CODE, &quot; +
+        &quot;DESCRIPTION FROM STAGING_AIRLINEREF)&quot;)
+</code></pre>
+
+<p><strong>Join the sample table and reference table to find out which airlines arrive on schedule</strong>:</p>
+<pre><code>    result = snSession.sql(&quot;select AVG(ArrDelay) arrivalDelay, &quot; +
+        &quot;relative_error(arrivalDelay) rel_err, description AirlineName, &quot; +
+        &quot;UniqueCarrier carrier from airline, airlineref &quot; +
+        &quot;where airline.UniqueCarrier = airlineref.Code &quot; +
+        &quot;group by UniqueCarrier, description order by arrivalDelay &quot; +
+        &quot;with error&quot;).collect()
+
+   result.foreach(r =&gt; println(r(0) + &quot;, &quot; + r(1) + &quot;, &quot; + r(2) + &quot;, &quot; + r(3)))
+</code></pre>
+
+<p><a id="howto-python"></a></p>
+<h2 id="how-to-use-python-to-create-tables-and-run-queries">How to Use Python to Create Tables and Run Queries</h2>
+<p>Developers can write programs in Python to use SnappyData features.</p>
+<p><strong>First create a SnappySession</strong>:</p>
+<pre><code> from pyspark.sql.snappy import SnappySession
+ from pyspark import SparkContext, SparkConf
+
+ conf = SparkConf().setAppName(appName).setMaster(master)
+ sc = SparkContext(conf=conf)
+ snappy = SnappySession(sc)
+</code></pre>
+
+<p><strong>Create table using SnappySession</strong>:</p>
+<pre><code>    # Creating partitioned table PARTSUPP using SQL
+    snappy.sql(&quot;DROP TABLE IF EXISTS PARTSUPP&quot;)
+    # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+    # For complete list of table attributes refer the documentation
+    # http://snappydatainc.github.io/snappydata/programming_guide
+    snappy.sql(&quot;CREATE TABLE PARTSUPP ( &quot; +
+                  &quot;PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY,&quot; +
+                  &quot;PS_SUPPKEY     INTEGER NOT NULL,&quot; +
+                  &quot;PS_AVAILQTY    INTEGER NOT NULL,&quot; +
+                  &quot;PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)&quot; +
+                  &quot;USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )&quot;)
+</code></pre>
+
+<p><strong>Inserting data in table using INSERT query</strong>:</p>
+<pre><code>    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)&quot;)
+    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)&quot;)
+    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)&quot;)
+    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)&quot;)
+    # Printing the contents of the PARTSUPP table
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+</code></pre>
+
+<p><strong>Update the data using SQL</strong>:</p>
+<pre><code>    # Update the available quantity for PARTKEY 100
+    snappy.sql(&quot;UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100&quot;)
+    # Printing the contents of the PARTSUPP table after update
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+</code></pre>
+
+<p><strong>Delete records from the table</strong>:</p>
+<pre><code>    # Delete the records for PARTKEY 400
+    snappy.sql(&quot;DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400&quot;)
+    # Printing the contents of the PARTSUPP table after delete
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+</code></pre>
+
+<p><strong>Create table using API</strong>:
+This same table can be created by using createTable API. First we create a schema and then create the table, and then mutate the table data using API:</p>
+<pre><code>    # drop the table if it exists
+    snappy.dropTable('PARTSUPP', True)
+
+    schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
+                     StructField('PS_SUPPKEY', IntegerType(), False),
+                     StructField('PS_AVAILQTY', IntegerType(),False),
+                     StructField('PS_SUPPLYCOST', DecimalType(15, 2), False)
+                     ])
+
+    # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
+    # For complete list of table attributes refer the documentation at
+    # http://snappydatainc.github.io/snappydata/programming_guide
+    snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
+
+    # Inserting data in PARTSUPP table using DataFrame
+    tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
+              (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
+    rdd = sc.parallelize(tuples)
+    tuplesDF = snappy.createDataFrame(rdd, schema)
+    tuplesDF.write.insertInto(&quot;PARTSUPP&quot;)
+    #Printing the contents of the PARTSUPP table
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+
+    # Update the available quantity for PARTKEY 100
+    snappy.update(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =100&quot;, [50000], [&quot;PS_AVAILQTY&quot;])
+    # Printing the contents of the PARTSUPP table after update
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+
+    # Delete the records for PARTKEY 400
+    snappy.delete(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =400&quot;)
+    # Printing the contents of the PARTSUPP table after delete
+    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+</code></pre>
+
+<p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../install/" class="btn btn-neutral" title="Download and Install"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../install/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

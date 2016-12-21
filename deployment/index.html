@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Development Team">
   
-  <title>Deployment topologies - SnappyData Documentation</title>
+  <title>Affinity Modes - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -25,7 +25,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Deployment topologies";
+    var mkdocs_page_name = "Affinity Modes";
     var mkdocs_page_input_path = "deployment.md";
     var mkdocs_page_url = "/deployment/";
   </script>
@@ -58,28 +58,28 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Getting Started</a>
+        <a class="" href="..">Overview</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../build-instructions/">Building from source, project layout</a>
+        <a class="" href="../quickstart/">Getting Started</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../snappyIntroduction/">Overview</a>
+        <a class="" href="../install/">Download and Install</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../features/">Key features</a>
+        <a class="" href="../howto/">How Tos</a>
         
     </li>
 <li>
@@ -93,28 +93,34 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../configuration/">Configuring the cluster</a>
+        <a class="" href="../configuration/">Configuring the Cluster</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        <a class="" href="../programming_guide/">Programming Guide</a>
         
     </li>
 <li>
           
             <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../jobs/">Developing Apps using the Spark API</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Affinity Modes</a>
         
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+            <ul>
+            
+                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                
+                    <li><a class="toctree-l4" href="#local-mode">Local Mode</a></li>
+                
+                    <li><a class="toctree-l4" href="#embedded-snappydata-store-mode">Embedded SnappyData Store Mode</a></li>
+                
+                    <li><a class="toctree-l4" href="#snappydata-smart-connector-mode">SnappyData Smart Connector Mode</a></li>
+                
+            
+            </ul>
         
     </li>
 <li>
@@ -128,27 +134,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Deployment topologies</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#deployment-topologies">Deployment topologies</a></li>
-                
-                    <li><a class="toctree-l4" href="#unified-cluster-mode-aka-embedded-store-mode">Unified cluster mode (aka 'Embedded store' mode)</a></li>
-                
-                    <li><a class="toctree-l4" href="#split-cluster-mode">Split cluster mode</a></li>
-                
-                    <li><a class="toctree-l4" href="#local-mode">Local mode</a></li>
-                
-            
-            </ul>
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
         
     </li>
 <li>
@@ -161,15 +147,15 @@
 <li>
           
             <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
-        
-    </li>
-<li>
-          
-            <li>
     <ul class="subnav">
     <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
 
         
             
@@ -204,7 +190,7 @@
     
       
     
-    <li>Deployment topologies</li>
+    <li>Affinity Modes</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -218,90 +204,174 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="deployment-topologies">Deployment topologies</h1>
-<p>This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
-There are three deployment modes available in snappydata. </p>
-<table>
-<thead>
-<tr>
-<th>Deployment Mode</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Unified Cluster</td>
-<td>Real time production application. Here the Spark Executor(compute) and Snappy DataStore are collocated</td>
-</tr>
-<tr>
-<td>Split Cluster</td>
-<td>Spark executors and SnappyStore form independent clusters. Use for computationally heavy computing and Batch processing</td>
-</tr>
-<tr>
-<td>Local</td>
-<td>This is for development where client application, the executors and data store are all running in the same JVM</td>
-</tr>
-</tbody>
-</table>
-<h2 id="unified-cluster-mode-aka-embedded-store-mode">Unified cluster mode (aka 'Embedded store' mode)</h2>
-<p>This is the default cluster model where Spark computations and in-memory data store run collocated in the same JVM. This is our ootb configuration and suitable for most SnappyData real time production environments. You launch Snappy Data servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. </p>
-<p>You either start SnappyData members using the <em>snappy_start_all</em> script or you start them individually. </p>
-<pre><code class="bash"># start members using the ssh scripts 
-$ sbin/snappy-start-all.sh
+                <h1 id="overview">Overview</h1>
+<p>In this section, we discuss the various modes available for collocation of related data and computation.</p>
+<p>You can run the SnappyData store in the following modes:</p>
+<ul>
+<li>
+<p><a href="#localmode">Local Mode</a>: Used mainly for development, where the client application, the executors, and data store are all running in the same JVM</p>
+</li>
+<li>
+<p><a href="#embeddedmode">Embedded SnappyData Store Mode</a>: The Spark computations and in-memory data store run collocated in the same JVM</p>
+</li>
+<li>
+<p><a href="#connectormode">SnappyData Smart Connector Mode</a>: Allows you to work with the SnappyData store cluster from any compatible Spark distribution</p>
+</li>
+</ul>
+<p><a id="localmode"></a></p>
+<h2 id="local-mode">Local Mode</h2>
+<p>In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.</p>
+<p><strong>Key Points</strong></p>
+<ul>
+<li>
+<p>No cluster required</p>
+</li>
+<li>
+<p>Launch Single JVM (Single-node Cluster)</p>
+</li>
+<li>
+<p>Launches executor threads locally for processing</p>
+</li>
+<li>
+<p>Embeds the SnappyData in-memory store in-process</p>
+</li>
+<li>
+<p>For development purposes only</p>
+</li>
+</ul>
+<p><img alt="Local Mode" src="../Images/SnappyLocalMode.png" /></p>
+<p><strong>Example</strong>: <strong>Using the Local mode for developing SnappyData programs</strong></p>
+<p>You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:</p>
+<p><strong>Example: Maven dependency</strong></p>
+<pre><code>&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
+    &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
+    &lt;version&gt;0.7&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
 
-# start members individually
-$ bin/snappy-shell locator start  -dir=/node-a/locator1 
+<p><strong>Example: SBT dependency</strong></p>
+<pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.7&quot;
+
+</code></pre>
+
+<p><strong>Create SnappySession</strong>: To start SnappyData store you need to create a SnappySession in your program</p>
+<pre><code class="scala"> val spark: SparkSession = SparkSession
+         .builder
+         .appName(&quot;SparkApp&quot;)
+         .master(&quot;local[*]&quot;)
+         .getOrCreate
+ val snappy = new SnappySession(spark.sparkContext)
+</code></pre>
+
+<p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:
+If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
+<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
+</code></pre>
+
+<p><a id="embeddedmode"></a></p>
+<h2 id="embedded-snappydata-store-mode">Embedded SnappyData Store Mode</h2>
+<p>In this mode, the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
+Spark executors are dynamically launched when the first Spark Job arrives.</p>
+<p>Some of the advantages of this mode are:</p>
+<ul>
+<li>
+<p><strong>High performance</strong>: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).</p>
+</li>
+<li>
+<p><strong>Driver High Availability</strong>: When Spark jobs are submitted, they can now run in an HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.</p>
+</li>
+<li>
+<p><strong>Less complex</strong>: There is only a single cluster to start, monitor, debug and tune.</p>
+</li>
+</ul>
+<p><img alt="Embedded Mode" src="../Images/SnappyEmbeddedMode.png" /></p>
+<p>In this mode, one can write Spark programs using jobs. For more details, refer to the <a href="../programming_guide#snappydata-jobs">SnappyData Jobs</a> section.</p>
+<p><strong>Example: Submit a Spark Job to the SnappyData Cluster</strong></p>
+<pre><code>bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
+</code></pre>
+
+<p>Also, you can use <a href="../howto/#how-to-use-snappy-sql-shell-snappy-shell">SnappyShell</a> to create and query tables.</p>
+<p>You can either <a href="../install/">start SnappyData members</a> using the <code>snappy-start-all.sh</code> script or you can start them individually.</p>
+<p>Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:</p>
+<ul>
+<li>
+<p>If the join expression matches the partitioning scheme of tables, we do a partition to partition join instead of a shuffle based join.
+  Moreover, if two tables are collocated (while defining the tables) we can avoid costly data movement.</p>
+</li>
+<li>
+<p>For replicated tables, which we know are present in all the data nodes,  a simple local join( local look up)  is done instead of a broadcast join.</p>
+</li>
+<li>
+<p>Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in higher ingestion rate.</p>
+</li>
+</ul>
+<p><a id="connectormode"></a></p>
+<h2 id="snappydata-smart-connector-mode">SnappyData Smart Connector Mode</h2>
+<p>In certain cases, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).</p>
+<p>Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.</p>
+<p><img alt="Smart Connector Mode" src="../Images/SnappyConnectorMode.png" /></p>
+<p><strong>Key Points:</strong></p>
+<ul>
+<li>
+<p>Can work with SnappyData store from any compatible Spark distribution</p>
+</li>
+<li>
+<p>Spark Cluster executes in its own independent JVM processes</p>
+</li>
+<li>
+<p>The Spark cluster connects to SnappyData as a Spark Data source</p>
+</li>
+<li>
+<p>Supports any of the Spark supported resource managers (for example, Spark Standalone Manager, YARN or Mesos)</p>
+</li>
+</ul>
+<p>Some of the advantages of this mode are:</p>
+<p><strong>Performance</strong>: When Spark partitions store data in <strong>column tables</strong>, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters.</p>
+<p>When storing to <strong>Row tables</strong> or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to SnappyData tables, the data is always batched for the highest possible throughput.</p>
+<p>When queries are executed, while the entire query planning and execution is coordinated by the Spark engine (Catalyst), the smart connector still carries out a number of optimizations, which are listed below:</p>
+<ul>
+<li>
+<p>Route jobs to same machines as SnappyData data nodes if the executor nodes are co-hosted on the same machines as the data nodes. Job for each partition tries to fetch only from same machine data store where possible.</p>
+</li>
+<li>
+<p>Collocated joins: If the underlying tables are collocated partition-wise, and executor nodes are co-hosting SnappyData data nodes, then the column batches are fetched from local machines and the join itself is partition-wise and does not require any exchange.</p>
+</li>
+<li>
+<p>Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.</p>
+</li>
+</ul>
+<p><strong>Example: Launch a Spark local mode cluster and uses Smart Connector to access SnappyData cluster</strong></p>
+<p><strong>Step 1: Start the SnappyData cluster</strong>:
+You can either start SnappyData members using the <code>_snappy_start_all_</code> script or you can start them individually.</p>
+<pre><code class="bash"># start members using the ssh scripts
+$ sbin/snappy-start-all.sh
+</code></pre>
+
+<pre><code># start members individually
+$ bin/snappy-shell locator start  -dir=/node-a/locator1
 $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 </code></pre>
 
-<p>Spark applications are coordinated by a SparkContext instance that runs in the Application's main program called the 'Driver'. The driver coordinates the execution by running parallel tasks on executors and is responsible for delivering results to the application when 'Jobs'(i.e. actions like print() ) are executed. 
-When executing in this unified cluster mode there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit <a href="../jobs/">Jobs</a> and don't have to be concerned about HA for the context or the driver program. 
-The rationale for our design is further explored <a href="../architecture/">here</a>. </p>
-<h3 id="fully-managed-spark-driver-and-context">Fully managed Spark driver and context</h3>
-<p>Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or manage the Spark context. Applications implement the <em>SnappySQLJob</em> or the <em>SnappyStreamingJob</em> trait as described in the <a href="../jobs/">Building Snappy applications using Spark API</a> section.</p>
-<h3 id="application-managed-spark-driver-and-context">Application managed Spark driver and context</h3>
-<p>While Snappy recommends the use of scala traits mentioned above to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. </p>
-<pre><code class="scala">val conf = new SparkConf().
-              // here the locator url is passed as part of the master url
-              setMasterURL(&quot;snappydata://localhost:10334&quot;).
-              set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
-val sc = new SparkContext(conf) 
+<p><strong>Step 2: Launch the Apache Spark program </strong></p>
+<p><strong><em><em>In the Local mode</em></em></strong></p>
+<pre><code class="bash">
+./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
 </code></pre>
 
-<blockquote>
-<h3 id="note">Note</h3>
-<p>We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
-For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode described next. </p>
-</blockquote>
-<h2 id="split-cluster-mode">Split cluster mode</h2>
-<p>In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. </p>
-<p>Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.</p>
-<p>The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the <em>locator</em> host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog metadata is used to locate the store servers managing data partitions and would be accessed in parallel. 
-Read the <a href="http://spark.apache.org/docs/latest/cluster-overview.html">Spark cluster overview</a> for more details on the native Spark architecture. </p>
-<pre><code class="scala">val conf = new SparkConf().
-              // Here the spark context connects with Spark's master running on 7077. 
-              setMasterURL(&quot;spark://localhost:7077&quot;).
-              set(&quot;snappydata.store.locators&quot;, &quot;localhost:10334&quot;) 
-val sc = new SparkContext(conf) 
-// use sc to use Spark and Snappy features. 
-// The following code connects with the snappy locator to fetch hive metastore. 
-val snappyContext = SnappyContext(sc) 
-
+<p><Note>Note: The <code>spark.snappydata.store.locators</code> property points to the locator of a running SnappyData cluster.</Note></p>
+<p>This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.</p>
+<pre><code class="scala">// Create a SnappySession to work with SnappyData store
+$scala &gt; val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
-<p>The catalog is initialized lazily when SnappyData functionality is accessed. 
-The big benefit even while the clusters for compute and data is split is that the catalog is immediately visible to the Spark executors nodes and applications don’t have to explicitly manage connections and schema related information. This design is quite similar to the Spark’s native support for Hive. </p>
-<p>When accessing partitioned data, the partitions are fetched as compressed blobs that is fully compatible with the columnar compression built into Spark. All access is automatically parallelized. </p>
-<h2 id="local-mode">Local mode</h2>
-<p>As the name implies, use this mode to execute everything locally in the application JVM. The local vs cluster modes are described in the <a href="http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes">Spark Programming guide</a>.</p>
-<pre><code class="scala">val conf = new SparkConf().
-               setMaster(&quot;local[*]&quot;).
-               // Starting jobserver helps when you would want to test your jobs in a local mode. 
-               set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
-val sc = new SparkContext(conf) 
-// use sc to use Spark and Snappy features. 
-// JobServer is started too. 
+<p><strong><em><em>Using external cluster manager</em></em></strong></p>
+<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
 </code></pre>
+
+<p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
               
             </div>
           </div>
@@ -309,10 +379,10 @@ val sc = new SparkContext(conf)
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../apidocsintro/" class="btn btn-neutral float-right" title="API">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../aqp/" class="btn btn-neutral float-right" title="Synopsis Data Engine (SDE)">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../streamingWithSQL/" class="btn btn-neutral" title="Stream processing using SQL"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../programming_guide/" class="btn btn-neutral" title="Programming Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -342,10 +412,10 @@ val sc = new SparkContext(conf)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../streamingWithSQL/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../programming_guide/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../apidocsintro/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../aqp/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

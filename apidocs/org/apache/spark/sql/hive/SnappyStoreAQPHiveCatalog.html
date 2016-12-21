@@ -167,6 +167,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#addDependentRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addDependentRelation(inTable:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
+      <a id="addDependentRelation(QualifiedTableName,QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addDependentRelation</span><span class="params">(<span name="inTable">inTable: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="dependentRelation">dependentRelation: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@addDependentRelation(inTable:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#addSampleDataFrame" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="addSampleDataFrame(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,sample:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
       <a id="addSampleDataFrame(LogicalPlan,LogicalPlan):Unit"></a>
@@ -242,40 +259,6 @@ this becomes a no-op.
 current database.</p><p>Note: If the underlying implementation does not support altering a certain field,
 this becomes a no-op.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#alterTableToAddIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="alterTableToAddIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
-      <a id="alterTableToAddIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">alterTableToAddIndexProp</span><span class="params">(<span name="inTable">inTable: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="index">index: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterTableToAddIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#alterTableToRemoveIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="alterTableToRemoveIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
-      <a id="alterTableToRemoveIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">alterTableToRemoveIndexProp</span><span class="params">(<span name="inTable">inTable: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="index">index: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@alterTableToRemoveIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -872,6 +855,23 @@ the same name, then, if that does not exist, drop the table from the current dat
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCachedHiveTableProperties" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCachedHiveTableProperties(table:org.apache.spark.sql.hive.QualifiedTableName):Map[String,String]"></a>
+      <a id="getCachedHiveTableProperties(QualifiedTableName):Map[String,String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCachedHiveTableProperties</span><span class="params">(<span name="table">table: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@getCachedHiveTableProperties(table:org.apache.spark.sql.hive.QualifiedTableName):Map[String,String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCachedSampledRelations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getCachedSampledRelations(table:org.apache.spark.sql.hive.QualifiedTableName):Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]"></a>
       <a id="getCachedSampledRelations(QualifiedTableName):Seq[(LogicalPlan,String)]"></a>
@@ -1248,6 +1248,40 @@ current database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1303,18 +1337,18 @@ current database.
 explicitly specified.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1791,6 +1825,23 @@ the same name, then, if that does not exist, return the table from the current d
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupRelationOption" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lookupRelationOption(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="lookupRelationOption(QualifiedTableName):Option[LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookupRelationOption</span><span class="params">(<span name="tableIdent">tableIdent: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@lookupRelationOption(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#lookupTopK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="lookupTopK(topKName:org.apache.spark.sql.hive.QualifiedTableName):Option[(org.apache.spark.sql.execution.TopKWrapper,org.apache.spark.rdd.RDD[(Int,org.apache.spark.sql.execution.TopK)])]"></a>
       <a id="lookupTopK(QualifiedTableName):Option[(TopKWrapper,RDD[(Int,TopK)])]"></a>
@@ -2034,19 +2085,36 @@ in Hive's meta-store.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#removeIndexProp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="removeIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
-      <a id="removeIndexProp(QualifiedTableName,QualifiedTableName):Unit"></a>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#removeDependentRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeDependentRelation(table:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
+      <a id="removeDependentRelation(QualifiedTableName,QualifiedTableName):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">removeIndexProp</span><span class="params">(<span name="inTable">inTable: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="index">index: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">removeDependentRelation</span><span class="params">(<span name="table">table: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="dependentRelation">dependentRelation: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@removeIndexProp(inTable:org.apache.spark.sql.hive.QualifiedTableName,index:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@removeDependentRelation(table:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#removeDependentRelationFromHive" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeDependentRelationFromHive(table:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
+      <a id="removeDependentRelationFromHive(QualifiedTableName,QualifiedTableName):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeDependentRelationFromHive</span><span class="params">(<span name="table">table: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="dependentRelation">dependentRelation: <a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@removeDependentRelationFromHive(table:org.apache.spark.sql.hive.QualifiedTableName,dependentRelation:org.apache.spark.sql.hive.QualifiedTableName):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

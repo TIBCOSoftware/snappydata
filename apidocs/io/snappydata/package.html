@@ -178,6 +178,27 @@
 http://docs.scala-lang.org/style/naming-conventions.html</p><div class="fullcomment"><div class="comment cmt"><p>Constant names suggested per naming convention
 http://docs.scala-lang.org/style/naming-conventions.html</p><p>we decided to use upper case with underscore word separator.
 </p></div></div>
+    </li><li name="io.snappydata.JOS" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JOS"></a>
+      <a id="JOS:JOS"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JOS$.html"><span class="name">JOS</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.package@JOS" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">List of possible values for Join Order QueryHint.</p><div class="fullcomment"><div class="comment cmt"><p>List of possible values for Join Order QueryHint.</p><p><code>Note:</code> Ordering is applicable only when index choice is left to the optimizer. By default,
+if user specifies explicit index hint like &quot;select * from t1 --+ index()&quot;, optimizer will just
+honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
+hint for any table disables choice of index and its associated following rules.
+</p></div></div>
     </li><li name="io.snappydata.LocalizedMessages" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LocalizedMessages"></a>
       <a id="LocalizedMessages:LocalizedMessages"></a>
@@ -235,7 +256,7 @@ i.e. upper camel case.
     </span>
       <p class="shortcomment cmt">SQL query hints as interpreted by the SnappyData SQL parser.</p><div class="fullcomment"><div class="comment cmt"><p>SQL query hints as interpreted by the SnappyData SQL parser. The format
 mirrors closely the format used by Hive,Oracle query hints with a comment
-followed immediately by a '+' and then &quot;key(value)&quot; for the hint. Example:</p><p>SELECT * /*+ hint(value) */ FROM t1
+followed immediately by a '+' and then &quot;key(value)&quot; for the hint. Example:</p><p>SELECT * /<code>*</code>+ hint(value) *<code>/</code> FROM t1
 </p></div></div>
     </li><li name="io.snappydata.ServerManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ServerManager"></a>
@@ -273,6 +294,40 @@ all modes of operation (embedded, local, split cluster etc)
       </a>
     </span>
       
+    </li><li name="io.snappydata.SnappySparkProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySparkProperty"></a>
+      <a id="SnappySparkProperty:SnappySparkProperty"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySparkProperty$.html"><span class="name">SnappySparkProperty</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.package@SnappySparkProperty" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.SnappySparkSQLProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySparkSQLProperty"></a>
+      <a id="SnappySparkSQLProperty:SnappySparkSQLProperty"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySparkSQLProperty$.html"><span class="name">SnappySparkSQLProperty</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.package@SnappySparkSQLProperty" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="io.snappydata.SnappyTableStatsProviderService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyTableStatsProviderService"></a>
       <a id="SnappyTableStatsProviderService:SnappyTableStatsProviderService"></a>
@@ -286,6 +341,40 @@ all modes of operation (embedded, local, split cluster etc)
       </span>
       </h4><span class="permalink">
       <a href="../../index.html#io.snappydata.package@SnappyTableStatsProviderService" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.SparkProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkProperty"></a>
+      <a id="SparkProperty:SparkProperty"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkProperty$.html"><span class="name">SparkProperty</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.package@SparkProperty" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.SparkSQLProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkSQLProperty"></a>
+      <a id="SparkSQLProperty:SparkSQLProperty"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkSQLProperty$.html"><span class="name">SparkSQLProperty</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.package@SparkSQLProperty" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -278,6 +278,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="io.snappydata.gemxd.SparkSQLExecuteImpl#getRowIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getRowIterator(dvds:Array[com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor],types:Array[Int],precisions:Array[Int],scales:Array[Int],dataTypes:Array[AnyRef],input:com.gemstone.gemfire.internal.ByteArrayDataInput):java.util.Iterator[com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow]"></a>
+      <a id="getRowIterator(Array[DataValueDescriptor],Array[Int],Array[Int],Array[Int],Array[AnyRef],ByteArrayDataInput):Iterator[ValueRow]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRowIterator</span><span class="params">(<span name="dvds">dvds: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor">DataValueDescriptor</span>]</span>, <span name="types">types: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="precisions">precisions: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="scales">scales: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="dataTypes">dataTypes: <span class="extype" name="scala.Array">Array</span>[<a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="input">input: <span class="extype" name="com.gemstone.gemfire.internal.ByteArrayDataInput">ByteArrayDataInput</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow">ValueRow</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl$@getRowIterator(dvds:Array[com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor],types:Array[Int],precisions:Array[Int],scales:Array[Int],dataTypes:Array[AnyRef],input:com.gemstone.gemfire.internal.ByteArrayDataInput):java.util.Iterator[com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -363,23 +380,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="io.snappydata.gemxd.SparkSQLExecuteImpl#readDVDArray" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="readDVDArray(dvds:Array[com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor],types:Array[Int],in:com.gemstone.gemfire.internal.ByteArrayDataInput,numEightColGroups:Int,numPartialCols:Int):Unit"></a>
-      <a id="readDVDArray(Array[DataValueDescriptor],Array[Int],ByteArrayDataInput,Int,Int):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readDVDArray</span><span class="params">(<span name="dvds">dvds: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor">DataValueDescriptor</span>]</span>, <span name="types">types: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="in">in: <span class="extype" name="com.gemstone.gemfire.internal.ByteArrayDataInput">ByteArrayDataInput</span></span>, <span name="numEightColGroups">numEightColGroups: <span class="extype" name="scala.Int">Int</span></span>, <span name="numPartialCols">numPartialCols: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl$@readDVDArray(dvds:Array[com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor],types:Array[Int],in:com.gemstone.gemfire.internal.ByteArrayDataInput,numEightColGroups:Int,numPartialCols:Int):Unit" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -483,23 +483,6 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="io.snappydata.gemxd.SparkSQLExecuteImpl#writeRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="writeRow(row:org.apache.spark.sql.catalyst.InternalRow,numCols:Int,numEightColGroups:Int,numPartCols:Int,schema:org.apache.spark.sql.types.StructType,hdos:com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream,bufferHolders:com.gemstone.gnu.trove.TIntObjectHashMap,rowStoreColTypes:Array[(Int,Int,Int)]):Unit"></a>
-      <a id="writeRow(InternalRow,Int,Int,Int,StructType,GfxdHeapDataOutputStream,TIntObjectHashMap,Array[(Int,Int,Int)]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">writeRow</span><span class="params">(<span name="row">row: <a href="../../../org/apache/spark/sql/catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="numCols">numCols: <span class="extype" name="scala.Int">Int</span></span>, <span name="numEightColGroups">numEightColGroups: <span class="extype" name="scala.Int">Int</span></span>, <span name="numPartCols">numPartCols: <span class="extype" name="scala.Int">Int</span></span>, <span name="schema">schema: <a href="../../../org/apache/spark/sql/types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="hdos">hdos: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream">GfxdHeapDataOutputStream</span></span>, <span name="bufferHolders">bufferHolders: <span class="extype" name="com.gemstone.gnu.trove.TIntObjectHashMap">TIntObjectHashMap</span></span>, <span name="rowStoreColTypes">rowStoreColTypes: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>)] = <span class="symbol">null</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl$@writeRow(row:org.apache.spark.sql.catalyst.InternalRow,numCols:Int,numEightColGroups:Int,numPartCols:Int,schema:org.apache.spark.sql.types.StructType,hdos:com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream,bufferHolders:com.gemstone.gnu.trove.TIntObjectHashMap,rowStoreColTypes:Array[(Int,Int,Int)]):Unit" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li></ol>
             </div>
 

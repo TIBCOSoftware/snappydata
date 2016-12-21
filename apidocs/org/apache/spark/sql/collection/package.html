@@ -191,18 +191,18 @@ iterator on top of an arbitrary source where source size or structure is
 not pre-determined (e.g. source may not have flatMap/fold or such methods).</p><p>Use the GenerateFlatIterator.TERMINATE token to indicate end of iteration.
 </p></div></div>
     </li><li name="org.apache.spark.sql.collection.MultiBucketExecutorPartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="MultiBucketExecutorPartitionextendsPartition"></a>
+      <a id="MultiBucketExecutorPartitionextendsPartitionwithKryoSerializable"></a>
       <a id="MultiBucketExecutorPartition:MultiBucketExecutorPartition"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="MultiBucketExecutorPartition.html"><span class="name">MultiBucketExecutorPartition</span></a><span class="result"> extends <a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>
+        <a href="MultiBucketExecutorPartition.html"><span class="name">MultiBucketExecutorPartition</span></a><span class="result"> extends <a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.package@MultiBucketExecutorPartitionextendsPartition" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.package@MultiBucketExecutorPartitionextendsPartitionwithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -386,6 +386,23 @@ which is guaranteed to explore all spaces for each key
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.collection.OrderlessHashPartitioningExtract" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OrderlessHashPartitioningExtract"></a>
+      <a id="OrderlessHashPartitioningExtract:OrderlessHashPartitioningExtract"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OrderlessHashPartitioningExtract$.html"><span class="name">OrderlessHashPartitioningExtract</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.package@OrderlessHashPartitioningExtract" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection.QCSSQLColumnHandler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="QCSSQLColumnHandler"></a>
       <a id="QCSSQLColumnHandler:QCSSQLColumnHandler"></a>
@@ -446,7 +463,7 @@ which is guaranteed to explore all spaces for each key
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="ToolsCallbackInit$.html"><span class="name">ToolsCallbackInit</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="ToolsCallbackInit$.html"><span class="name">ToolsCallbackInit</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.collection.package@ToolsCallbackInit" title="Permalink" target="_top">

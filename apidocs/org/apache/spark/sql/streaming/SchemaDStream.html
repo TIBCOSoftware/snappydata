@@ -41,7 +41,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -462,7 +462,7 @@ information are passed to the RDDs created in this body properly.</p></div><dl c
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">List of parent DStreams on which this DStream depends on</p><div class="fullcomment"><div class="comment cmt"><p>List of parent DStreams on which this DStream depends on</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+      <p class="shortcomment cmt">List of parent DStreams on which this SchemaDStream depends on</p><div class="fullcomment"><div class="comment cmt"><p>List of parent DStreams on which this SchemaDStream depends on</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -537,8 +537,8 @@ information are passed to the RDDs created in this body properly.</p></div><dl c
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="flatMap[U](flatMapFunc:T=&gt;TraversableOnce[U])(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="flatMap[U](flatMapFunc:org.apache.spark.sql.Row=&gt;TraversableOnce[U])(implicitevidence$2:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
       <a id="flatMap[U]((Row)⇒TraversableOnce[U])(ClassTag[U]):DStream[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -546,18 +546,18 @@ information are passed to the RDDs created in this body properly.</p></div><dl c
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="flatMapFunc">flatMapFunc: (<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <a href="../../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.flatMap.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.flatMap.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.flatMap.U">U</span>]</span>
+        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="flatMapFunc">flatMapFunc: (<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <a href="../../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.flatMap.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.flatMap.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.flatMap.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@flatMap[U](flatMapFunc:T=&gt;TraversableOnce[U])(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@flatMap[U](flatMapFunc:org.apache.spark.sql.Row=&gt;TraversableOnce[U])(implicitevidence$2:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return a new DStream by applying a function to all elements of this DStream,
+      <p class="shortcomment cmt">Return a new DStream by applying a function to all elements of this SchemaDStream,
 and then flattening the results
-</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream by applying a function to all elements of this DStream,
+</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream by applying a function to all elements of this SchemaDStream,
 and then flattening the results
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.SchemaDStream#foreachDataFrame" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreachDataFrame(foreachFunc:(org.apache.spark.sql.DataFrame,org.apache.spark.streaming.Time)=&gt;Unit,needsConversion:Boolean):Unit"></a>
       <a id="foreachDataFrame((DataFrame,Time)⇒Unit,Boolean):Unit"></a>
@@ -746,8 +746,8 @@ and then flattening the results
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#glom" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="glom():org.apache.spark.streaming.dstream.DStream[Array[T]]"></a>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#glom" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="glom():org.apache.spark.streaming.dstream.DStream[Array[org.apache.spark.sql.Row]]"></a>
       <a id="glom():DStream[Array[Row]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -758,15 +758,15 @@ and then flattening the results
         <span class="name">glom</span><span class="params">()</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="scala.Array">Array</span>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@glom():org.apache.spark.streaming.dstream.DStream[Array[T]]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@glom():org.apache.spark.streaming.dstream.DStream[Array[org.apache.spark.sql.Row]]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying glom() to each RDD of
-this DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying glom() to each RDD of
-this DStream. Applying glom() to an RDD coalesces all elements within each partition into
-an array.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+this SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying glom() to each RDD of
+this SchemaDStream. Applying glom() to an RDD coalesces all elements within each
+partition into an array.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -818,6 +818,40 @@ an array.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -836,18 +870,18 @@ an array.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1073,8 +1107,8 @@ an array.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.streaming.dstream.DStream#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="map[U](mapFunc:T=&gt;U)(implicitevidence$2:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="map[U](mapFunc:org.apache.spark.sql.Row=&gt;U)(implicitevidence$1:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
       <a id="map[U]((Row)⇒U)(ClassTag[U]):DStream[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1082,16 +1116,16 @@ an array.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="mapFunc">mapFunc: (<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <span class="extype" name="org.apache.spark.streaming.dstream.DStream.map.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.map.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.map.U">U</span>]</span>
+        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="mapFunc">mapFunc: (<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.map.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.map.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.map.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@map[U](mapFunc:T=&gt;U)(implicitevidence$2:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@map[U](mapFunc:org.apache.spark.sql.Row=&gt;U)(implicitevidence$1:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return a new DStream by applying a function to all elements of this DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream by applying a function to all elements of this DStream.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#mapPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mapPartitions[U](mapPartFunc:Iterator[T]=&gt;Iterator[U],preservePartitioning:Boolean)(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
+      <p class="shortcomment cmt">Return a new DStream by applying a function to all elements of this SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream by applying a function to all elements of this SchemaDStream.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#mapPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapPartitions[U](mapPartFunc:Iterator[org.apache.spark.sql.Row]=&gt;Iterator[U],preservePartitioning:Boolean)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
       <a id="mapPartitions[U]((Iterator[Row])⇒Iterator[U],Boolean)(ClassTag[U]):DStream[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1099,18 +1133,18 @@ an array.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapPartitions</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="mapPartFunc">mapPartFunc: (<a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.mapPartitions.U">U</span>]</span>, <span name="preservePartitioning">preservePartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.mapPartitions.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.mapPartitions.U">U</span>]</span>
+        <span class="name">mapPartitions</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="mapPartFunc">mapPartFunc: (<a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.mapPartitions.U">U</span>]</span>, <span name="preservePartitioning">preservePartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.mapPartitions.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.mapPartitions.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@mapPartitions[U](mapPartFunc:Iterator[T]=&gt;Iterator[U],preservePartitioning:Boolean)(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@mapPartitions[U](mapPartFunc:Iterator[org.apache.spark.sql.Row]=&gt;Iterator[U],preservePartitioning:Boolean)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying mapPartitions() to each RDDs
-of this DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying mapPartitions() to each RDDs
-of this DStream. Applying mapPartitions() to an RDD applies a function to each partition
+of this SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying mapPartitions() to each RDDs
+of this SchemaDStream. Applying mapPartitions() to an RDD applies a function to each partition
 of the RDD.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1486,7 +1520,7 @@ a <span class="extype" name="StructType">StructType</span>).</p>
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Time interval after which the DStream generates a RDD</p><div class="fullcomment"><div class="comment cmt"><p>Time interval after which the DStream generates a RDD</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+      <p class="shortcomment cmt">Time interval after which the SchemaDStream generates a RDD</p><div class="fullcomment"><div class="comment cmt"><p>Time interval after which the SchemaDStream generates a RDD</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.SchemaDStream#snsc" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="snsc:org.apache.spark.streaming.SnappyStreamingContext"></a>
       <a id="snsc:SnappyStreamingContext"></a>
@@ -1538,8 +1572,8 @@ a <span class="extype" name="StructType">StructType</span>).</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transform[U](transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$6:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transform[U](transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
       <a id="transform[U]((RDD[Row],Time)⇒RDD[U])(ClassTag[U]):DStream[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1547,19 +1581,19 @@ a <span class="extype" name="StructType">StructType</span>).</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transform</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../streaming/Time.html" class="extype" name="org.apache.spark.streaming.Time">Time</a>) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>
+        <span class="name">transform</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../streaming/Time.html" class="extype" name="org.apache.spark.streaming.Time">Time</a>) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transform[U](transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$6:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transform[U](transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transform[U](transformFunc:org.apache.spark.rdd.RDD[T]=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
+on each RDD of 'this' SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
+on each RDD of 'this' SchemaDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transform[U](transformFunc:org.apache.spark.rdd.RDD[org.apache.spark.sql.Row]=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]"></a>
       <a id="transform[U]((RDD[Row])⇒RDD[U])(ClassTag[U]):DStream[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1567,19 +1601,19 @@ on each RDD of 'this' DStream.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transform</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transform.U">U</span>]</span>
+        <span class="name">transform</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transform.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transform[U](transformFunc:org.apache.spark.rdd.RDD[T]=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transform[U](transformFunc:org.apache.spark.rdd.RDD[org.apache.spark.sql.Row]=&gt;org.apache.spark.rdd.RDD[U])(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.streaming.dstream.DStream[U]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#transformWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.rdd.RDD[U],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$9:scala.reflect.ClassTag[U],implicitevidence$10:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]"></a>
+on each RDD of 'this' SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
+on each RDD of 'this' SchemaDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#transformWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.rdd.RDD[U],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$8:scala.reflect.ClassTag[U],implicitevidence$9:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]"></a>
       <a id="transformWith[U,V](DStream[U],(RDD[Row],RDD[U],Time)⇒RDD[V])(ClassTag[U],ClassTag[V]):DStream[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1587,19 +1621,19 @@ on each RDD of 'this' DStream.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformWith</span><span class="tparams">[<span name="U">U</span>, <span name="V">V</span>]</span><span class="params">(<span name="other">other: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>]</span>, <span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>], <a href="../../streaming/Time.html" class="extype" name="org.apache.spark.streaming.Time">Time</a>) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>
+        <span class="name">transformWith</span><span class="tparams">[<span name="U">U</span>, <span name="V">V</span>]</span><span class="params">(<span name="other">other: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>]</span>, <span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>], <a href="../../streaming/Time.html" class="extype" name="org.apache.spark.streaming.Time">Time</a>) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.rdd.RDD[U],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$9:scala.reflect.ClassTag[U],implicitevidence$10:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.rdd.RDD[U],org.apache.spark.streaming.Time)=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$8:scala.reflect.ClassTag[U],implicitevidence$9:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying a function
 on each RDD of 'this' DStream and 'other' DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
 on each RDD of 'this' DStream and 'other' DStream.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
-    </li><li name="org.apache.spark.streaming.dstream.DStream#transformWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.rdd.RDD[U])=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$7:scala.reflect.ClassTag[U],implicitevidence$8:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]"></a>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream#transformWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.rdd.RDD[U])=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$6:scala.reflect.ClassTag[U],implicitevidence$7:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]"></a>
       <a id="transformWith[U,V](DStream[U],(RDD[Row],RDD[U])⇒RDD[V])(ClassTag[U],ClassTag[V]):DStream[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1607,17 +1641,17 @@ on each RDD of 'this' DStream and 'other' DStream.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformWith</span><span class="tparams">[<span name="U">U</span>, <span name="V">V</span>]</span><span class="params">(<span name="other">other: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>]</span>, <span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>]) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.U">U</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.streaming.dstream.DStream.transformWith.V">V</span>]</span>
+        <span class="name">transformWith</span><span class="tparams">[<span name="U">U</span>, <span name="V">V</span>]</span><span class="params">(<span name="other">other: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>]</span>, <span name="transformFunc">transformFunc: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>], <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>]) ⇒ <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.U">U</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>)</span><span class="result">: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.SchemaDStream.transformWith.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[T],org.apache.spark.rdd.RDD[U])=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$7:scala.reflect.ClassTag[U],implicitevidence$8:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SchemaDStream@transformWith[U,V](other:org.apache.spark.streaming.dstream.DStream[U],transformFunc:(org.apache.spark.rdd.RDD[org.apache.spark.sql.Row],org.apache.spark.rdd.RDD[U])=&gt;org.apache.spark.rdd.RDD[V])(implicitevidence$6:scala.reflect.ClassTag[U],implicitevidence$7:scala.reflect.ClassTag[V]):org.apache.spark.streaming.dstream.DStream[V]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream and 'other' DStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
-on each RDD of 'this' DStream and 'other' DStream.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
+on each RDD of 'this' SchemaDStream and 'other' SchemaDStream.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new DStream in which each RDD is generated by applying a function
+on each RDD of 'this' SchemaDStream and 'other' SchemaDStream.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SchemaDStream">SchemaDStream</a> → <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a></dd></dl></div>
     </li><li name="org.apache.spark.streaming.dstream.DStream#union" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="union(that:org.apache.spark.streaming.dstream.DStream[T]):org.apache.spark.streaming.dstream.DStream[T]"></a>
       <a id="union(DStream[Row]):DStream[Row]"></a>

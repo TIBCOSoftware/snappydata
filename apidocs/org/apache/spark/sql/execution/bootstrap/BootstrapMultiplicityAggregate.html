@@ -47,7 +47,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">BootstrapMultiplicityAggregate</span><span class="params">(<span name="weight">weight: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="bootstrapMultiplicities">bootstrapMultiplicities: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numBootstrapTrials">numBootstrapTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/aggregate/DeclarativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate">DeclarativeAggregate</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">BootstrapMultiplicityAggregate</span><span class="params">(<span name="weight">weight: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="bootstrapMultiplicities">bootstrapMultiplicities: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numBootstrapTrials">numBootstrapTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="onlyOneAgg">onlyOneAgg: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/aggregate/DeclarativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate">DeclarativeAggregate</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(weight:org.apache.spark.sql.catalyst.expressions.Expression,bootstrapMultiplicities:org.apache.spark.sql.catalyst.expressions.Expression,numBootstrapTrials:Int,isAQPDebug:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate"></a>
+      <a id="&lt;init&gt;(weight:org.apache.spark.sql.catalyst.expressions.Expression,bootstrapMultiplicities:org.apache.spark.sql.catalyst.expressions.Expression,numBootstrapTrials:Int,onlyOneAgg:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate"></a>
       <a id="&lt;init&gt;:BootstrapMultiplicityAggregate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BootstrapMultiplicityAggregate</span><span class="params">(<span name="weight">weight: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="bootstrapMultiplicities">bootstrapMultiplicities: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numBootstrapTrials">numBootstrapTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="isAQPDebug">isAQPDebug: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">BootstrapMultiplicityAggregate</span><span class="params">(<span name="weight">weight: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="bootstrapMultiplicities">bootstrapMultiplicities: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="numBootstrapTrials">numBootstrapTrials: <span class="extype" name="scala.Int">Int</span></span>, <span name="onlyOneAgg">onlyOneAgg: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate@&lt;init&gt;(weight:org.apache.spark.sql.catalyst.expressions.Expression,bootstrapMultiplicities:org.apache.spark.sql.catalyst.expressions.Expression,numBootstrapTrials:Int,isAQPDebug:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate@&lt;init&gt;(weight:org.apache.spark.sql.catalyst.expressions.Expression,bootstrapMultiplicities:org.apache.spark.sql.catalyst.expressions.Expression,numBootstrapTrials:Int,onlyOneAgg:Boolean):org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -463,6 +463,24 @@ tree on which the function is defined.
       <p class="shortcomment cmt">Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.</p><div class="fullcomment"><div class="comment cmt"><p>Finds and returns the first <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> of the tree for which the given partial function
 is defined (pre-order), and applies the partial function to it.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#collectLeaves" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectLeaves():Seq[BaseType]"></a>
+      <a id="collectLeaves():Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Seq containing the leaves in this tree.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq containing the leaves in this tree.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#containsChild" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
@@ -953,23 +971,6 @@ the type requirement for the i-th child.</p><p>The possible values at each posit
 1. a specific data type, e.g. LongType, StringType.
 2. a non-leaf abstract data type, e.g. NumericType, IntegralType, FractionalType.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate">BootstrapMultiplicityAggregate</a> → <a href="../../catalyst/expressions/ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate#isAQPDebug" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="isAQPDebug:Boolean"></a>
-      <a id="isAQPDebug:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isAQPDebug</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate@isAQPDebug:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1239,6 +1240,23 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
 The numbers can be used with <a href="../../catalyst/trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate#onlyOneAgg" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="onlyOneAgg:Boolean"></a>
+      <a id="onlyOneAgg:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onlyOneAgg</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.BootstrapMultiplicityAggregate@onlyOneAgg:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
       <a id="origin:Origin"></a>

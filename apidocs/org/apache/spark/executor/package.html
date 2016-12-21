@@ -91,7 +91,7 @@ See <span class="extype" name="org.apache.spark.executor.Executor">org.apache.sp
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="org.apache.spark.executor.InputMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="InputMetricsextendsSerializable"></a>
+      <a id="InputMetricsextendsSerializablewithKryoSerializable"></a>
       <a id="InputMetrics:InputMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@ See <span class="extype" name="org.apache.spark.executor.Executor">org.apache.sp
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="InputMetrics.html"><span class="name">InputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InputMetrics.html"><span class="name">InputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@InputMetricsextendsSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.package@InputMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -114,7 +114,7 @@ A collection of accumulators that represents metrics about reading data from ext
               
         </dd></dl></div>
     </li><li name="org.apache.spark.executor.OutputMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="OutputMetricsextendsSerializable"></a>
+      <a id="OutputMetricsextendsSerializablewithKryoSerializable"></a>
       <a id="OutputMetrics:OutputMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -122,10 +122,10 @@ A collection of accumulators that represents metrics about reading data from ext
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="OutputMetrics.html"><span class="name">OutputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="OutputMetrics.html"><span class="name">OutputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@OutputMetricsextendsSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.package@OutputMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -137,7 +137,7 @@ A collection of accumulators that represents metrics about writing data to exter
               
         </dd></dl></div>
     </li><li name="org.apache.spark.executor.ShuffleReadMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ShuffleReadMetricsextendsSerializable"></a>
+      <a id="ShuffleReadMetricsextendsSerializablewithKryoSerializable"></a>
       <a id="ShuffleReadMetrics:ShuffleReadMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -145,10 +145,10 @@ A collection of accumulators that represents metrics about writing data to exter
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ShuffleReadMetrics.html"><span class="name">ShuffleReadMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ShuffleReadMetrics.html"><span class="name">ShuffleReadMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleReadMetricsextendsSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleReadMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -161,7 +161,7 @@ Operations are not thread-safe.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.executor.ShuffleWriteMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ShuffleWriteMetricsextendsSerializable"></a>
+      <a id="ShuffleWriteMetricsextendsSerializablewithKryoSerializable"></a>
       <a id="ShuffleWriteMetrics:ShuffleWriteMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -169,10 +169,10 @@ Operations are not thread-safe.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ShuffleWriteMetrics.html"><span class="name">ShuffleWriteMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ShuffleWriteMetrics.html"><span class="name">ShuffleWriteMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleWriteMetricsextendsSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleWriteMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -184,23 +184,6 @@ Operations are not thread-safe.
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.executor.SnappyChildFirstURLClassLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyChildFirstURLClassLoaderextendsChildFirstURLClassLoader"></a>
-      <a id="SnappyChildFirstURLClassLoader:SnappyChildFirstURLClassLoader"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyChildFirstURLClassLoader.html"><span class="name">SnappyChildFirstURLClassLoader</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.util.ChildFirstURLClassLoader">ChildFirstURLClassLoader</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@SnappyChildFirstURLClassLoaderextendsChildFirstURLClassLoader" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyCoarseGrainedExecutorBackendextendsCoarseGrainedExecutorBackend"></a>
       <a id="SnappyCoarseGrainedExecutorBackend:SnappyCoarseGrainedExecutorBackend"></a>
@@ -253,7 +236,7 @@ Operations are not thread-safe.
     </span>
       
     </li><li name="org.apache.spark.executor.TaskMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="TaskMetricsextendsSerializable"></a>
+      <a id="TaskMetricsextendsSerializablewithKryoSerializable"></a>
       <a id="TaskMetrics:TaskMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -261,10 +244,10 @@ Operations are not thread-safe.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TaskMetrics.html"><span class="name">TaskMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="TaskMetrics.html"><span class="name">TaskMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.package@TaskMetricsextendsSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.package@TaskMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

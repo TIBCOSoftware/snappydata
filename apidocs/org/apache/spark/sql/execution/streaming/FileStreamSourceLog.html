@@ -304,18 +304,18 @@ allows us to disable interrupts here. Also see SPARK-14131.
       <p class="shortcomment cmt">Filter out the obsolete logs.</p><div class="fullcomment"><div class="comment cmt"><p>Filter out the obsolete logs.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#deserialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="deserialize(bytes:Array[Byte]):Array[T]"></a>
-      <a id="deserialize(Array[Byte]):Array[FileEntry]"></a>
+      <a id="deserialize(in:java.io.InputStream):Array[T]"></a>
+      <a id="deserialize(InputStream):Array[FileEntry]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">deserialize</span><span class="params">(<span name="bytes">bytes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="FileStreamSource$$FileEntry.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry">FileEntry</a>]</span>
+        <span class="name">deserialize</span><span class="params">(<span name="in">in: <span class="extype" name="java.io.InputStream">InputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="FileStreamSource$$FileEntry.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry">FileEntry</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@deserialize(bytes:Array[Byte]):Array[T]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@deserialize(in:java.io.InputStream):Array[T]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -559,6 +559,23 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a> → <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog#isDeletingExpiredLog" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isDeletingExpiredLog:Boolean"></a>
       <a id="isDeletingExpiredLog:Boolean"></a>
@@ -576,6 +593,23 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -594,18 +628,18 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -918,18 +952,18 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
       <p class="shortcomment cmt">Removes all the log entry earlier than thresholdBatchId (exclusive).</p><div class="fullcomment"><div class="comment cmt"><p>Removes all the log entry earlier than thresholdBatchId (exclusive).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#serialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="serialize(logData:Array[T]):Array[Byte]"></a>
-      <a id="serialize(Array[FileEntry]):Array[Byte]"></a>
+      <a id="serialize(logData:Array[T],out:java.io.OutputStream):Unit"></a>
+      <a id="serialize(Array[FileEntry],OutputStream):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serialize</span><span class="params">(<span name="logData">logData: <span class="extype" name="scala.Array">Array</span>[<a href="FileStreamSource$$FileEntry.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry">FileEntry</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+        <span class="name">serialize</span><span class="params">(<span name="logData">logData: <span class="extype" name="scala.Array">Array</span>[<a href="FileStreamSource$$FileEntry.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry">FileEntry</a>]</span>, <span name="out">out: <span class="extype" name="java.io.OutputStream">OutputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@serialize(logData:Array[T]):Array[Byte]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSourceLog@serialize(logData:Array[T],out:java.io.OutputStream):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

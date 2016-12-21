@@ -313,6 +313,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn#hasNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasNulls:Boolean"></a>
+      <a id="hasNulls:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasNulls</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable@hasNulls:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="NullableColumn.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn">NullableColumn</a> → <a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -331,18 +348,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.UncompressedBase#initializeDecoding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeDecoding(columnBytes:AnyRef,field:org.apache.spark.sql.catalyst.expressions.Attribute):Long"></a>
-      <a id="initializeDecoding(AnyRef,Attribute):Long"></a>
+      <a id="initializeDecoding(columnBytes:AnyRef,field:org.apache.spark.sql.types.StructField):Long"></a>
+      <a id="initializeDecoding(AnyRef,StructField):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeDecoding</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="field">field: <a href="../../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">initializeDecoding</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable@initializeDecoding(columnBytes:AnyRef,field:org.apache.spark.sql.catalyst.expressions.Attribute):Long" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable@initializeDecoding(columnBytes:AnyRef,field:org.apache.spark.sql.types.StructField):Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -365,18 +382,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableColumn#initializeNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeNulls(columnBytes:AnyRef,field:org.apache.spark.sql.catalyst.expressions.Attribute):Long"></a>
-      <a id="initializeNulls(AnyRef,Attribute):Long"></a>
+      <a id="initializeNulls(columnBytes:AnyRef,field:org.apache.spark.sql.types.StructField):Long"></a>
+      <a id="initializeNulls(AnyRef,StructField):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeNulls</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="field">field: <a href="../../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">initializeNulls</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable@initializeNulls(columnBytes:AnyRef,field:org.apache.spark.sql.catalyst.expressions.Attribute):Long" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UncompressedNullable@initializeNulls(columnBytes:AnyRef,field:org.apache.spark.sql.types.StructField):Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

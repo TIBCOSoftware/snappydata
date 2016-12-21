@@ -110,8 +110,25 @@ type <code>OUT</code>.</p><div class="fullcomment"><div class="comment cmt"><p>T
 type <code>OUT</code>.</p><p><code>OUT</code> should be a type that can be read atomically (e.g., Int, Long), or thread-safely
 (e.g., synchronized collections) because it will be read from other threads.
 </p></div></div>
+    </li><li name="org.apache.spark.util.AccumulatorV2Kryo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AccumulatorV2Kryo[IN,OUT]extendsAccumulatorV2[IN,OUT]withKryoSerializable"></a>
+      <a id="AccumulatorV2Kryo[IN,OUT]:AccumulatorV2Kryo[IN,OUT]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AccumulatorV2Kryo.html"><span class="name">AccumulatorV2Kryo</span></a><span class="tparams">[<span name="IN">IN</span>, <span name="OUT">OUT</span>]</span><span class="result"> extends <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="org.apache.spark.util.AccumulatorV2Kryo.IN">IN</span>, <span class="extype" name="org.apache.spark.util.AccumulatorV2Kryo.OUT">OUT</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.util.package@AccumulatorV2Kryo[IN,OUT]extendsAccumulatorV2[IN,OUT]withKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.util.CollectionAccumulator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="CollectionAccumulator[T]extendsAccumulatorV2[T,java.util.List[T]]"></a>
+      <a id="CollectionAccumulator[T]extendsAccumulatorV2Kryo[T,java.util.List[T]]withKryoSerializable"></a>
       <a id="CollectionAccumulator[T]:CollectionAccumulator[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -119,17 +136,17 @@ type <code>OUT</code>.</p><p><code>OUT</code> should be a type that can be read 
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="CollectionAccumulator.html"><span class="name">CollectionAccumulator</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="org.apache.spark.util.CollectionAccumulator.T">T</span>, <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.spark.util.CollectionAccumulator.T">T</span>]]</span>
+        <a href="CollectionAccumulator.html"><span class="name">CollectionAccumulator</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="AccumulatorV2Kryo.html" class="extype" name="org.apache.spark.util.AccumulatorV2Kryo">AccumulatorV2Kryo</a>[<span class="extype" name="org.apache.spark.util.CollectionAccumulator.T">T</span>, <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.spark.util.CollectionAccumulator.T">T</span>]] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.util.package@CollectionAccumulator[T]extendsAccumulatorV2[T,java.util.List[T]]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.util.package@CollectionAccumulator[T]extendsAccumulatorV2Kryo[T,java.util.List[T]]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">An <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">accumulator</a> for collecting a list of elements.</p><div class="fullcomment"><div class="comment cmt"><p>An <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">accumulator</a> for collecting a list of elements.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.util.DoubleAccumulator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="DoubleAccumulatorextendsAccumulatorV2[Double,Double]"></a>
+      <a id="DoubleAccumulatorextendsAccumulatorV2Kryo[Double,Double]withKryoSerializable"></a>
       <a id="DoubleAccumulator:DoubleAccumulator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -137,10 +154,10 @@ type <code>OUT</code>.</p><p><code>OUT</code> should be a type that can be read 
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DoubleAccumulator.html"><span class="name">DoubleAccumulator</span></a><span class="result"> extends <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="java.lang.Double">Double</span>, <span class="extype" name="java.lang.Double">Double</span>]</span>
+        <a href="DoubleAccumulator.html"><span class="name">DoubleAccumulator</span></a><span class="result"> extends <a href="AccumulatorV2Kryo.html" class="extype" name="org.apache.spark.util.AccumulatorV2Kryo">AccumulatorV2Kryo</a>[<span class="extype" name="java.lang.Double">Double</span>, <span class="extype" name="java.lang.Double">Double</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.util.package@DoubleAccumulatorextendsAccumulatorV2[Double,Double]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.util.package@DoubleAccumulatorextendsAccumulatorV2Kryo[Double,Double]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -183,7 +200,7 @@ floating numbers.
     </span>
       
     </li><li name="org.apache.spark.util.LongAccumulator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="LongAccumulatorextendsAccumulatorV2[Long,Long]"></a>
+      <a id="LongAccumulatorextendsAccumulatorV2Kryo[Long,Long]withKryoSerializable"></a>
       <a id="LongAccumulator:LongAccumulator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -191,10 +208,10 @@ floating numbers.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="LongAccumulator.html"><span class="name">LongAccumulator</span></a><span class="result"> extends <a href="AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="java.lang.Long">Long</span>]</span>
+        <a href="LongAccumulator.html"><span class="name">LongAccumulator</span></a><span class="result"> extends <a href="AccumulatorV2Kryo.html" class="extype" name="org.apache.spark.util.AccumulatorV2Kryo">AccumulatorV2Kryo</a>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="java.lang.Long">Long</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.util.package@LongAccumulatorextendsAccumulatorV2[Long,Long]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.util.package@LongAccumulatorextendsAccumulatorV2Kryo[Long,Long]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -224,6 +241,40 @@ minimize object allocation.
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.util.SnappyContextLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyContextLoaderextendsSecureClassLoader"></a>
+      <a id="SnappyContextLoader:SnappyContextLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyContextLoader.html"><span class="name">SnappyContextLoader</span></a><span class="result"> extends <span class="extype" name="java.security.SecureClassLoader">SecureClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.util.package@SnappyContextLoaderextendsSecureClassLoader" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.util.SnappyContextURLLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyContextURLLoaderextendsContextURLClassLoader"></a>
+      <a id="SnappyContextURLLoader:SnappyContextURLLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyContextURLLoader.html"><span class="name">SnappyContextURLLoader</span></a><span class="result"> extends <span class="extype" name="spark.jobserver.util.ContextURLClassLoader">ContextURLClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.util.package@SnappyContextURLLoaderextendsContextURLClassLoader" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.util.StatCounter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StatCounterextendsSerializable"></a>
       <a id="StatCounter:StatCounter"></a>

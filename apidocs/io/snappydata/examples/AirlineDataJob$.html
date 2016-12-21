@@ -53,8 +53,11 @@
 Snappy store. Cache the airline table in Spark cache as well for
 comparison. Sample airline table and persist it in Snappy store.
 Run a aggregate query on all the three tables and return the results in
-a Map.This Map will be sent over REST.
-</p></div><div class="toggleContainer block">
+a Map.This Map will be sent over REST.</p><p>Run this on your local machine:</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>Create tables</p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name AirlineDataJob --class io.snappydata.examples.AirlineDataJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../org/apache/spark/sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a>, <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -170,23 +173,6 @@ a Map.This Map will be sent over REST.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappySQLJob#addOrReplaceJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addOrReplaceJar(sc:SnappySQLJob.this.C,jarName:String,jarPath:String):Unit"></a>
-      <a id="addOrReplaceJar(C,String,String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">addOrReplaceJar</span><span class="params">(<span name="sc">sc: <a href="#C=Any" class="extmbr" name="io.snappydata.examples.AirlineDataJob.C">C</a></span>, <span name="jarName">jarName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="jarPath">jarPath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.examples.AirlineDataJob$@addOrReplaceJar(sc:SnappySQLJob.this.C,jarName:String,jarPath:String):Unit" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a> → SparkJobBase</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -336,18 +322,18 @@ a Map.This Map will be sent over REST.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="io.snappydata.examples.AirlineDataJob#isValidJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isValidJob(sc:org.apache.spark.sql.SnappyContext,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation"></a>
-      <a id="isValidJob(SnappyContext,Config):SnappyJobValidation"></a>
+      <a id="isValidJob(sc:org.apache.spark.sql.SnappySession,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation"></a>
+      <a id="isValidJob(SnappySession,Config):SnappyJobValidation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <a href="../../../org/apache/spark/sql/SnappyContext.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="../../../org/apache/spark/sql/SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
+        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <a href="../../../org/apache/spark/sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="../../../org/apache/spark/sql/SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.examples.AirlineDataJob$@isValidJob(sc:org.apache.spark.sql.SnappyContext,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.examples.AirlineDataJob$@isValidJob(sc:org.apache.spark.sql.SnappySession,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -421,18 +407,18 @@ a Map.This Map will be sent over REST.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a> → SparkJobBase</dd></dl></div>
     </li><li name="io.snappydata.examples.AirlineDataJob#runSnappyJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="runSnappyJob(snc:org.apache.spark.sql.SnappyContext,jobConfig:com.typesafe.config.Config):Any"></a>
-      <a id="runSnappyJob(SnappyContext,Config):Any"></a>
+      <a id="runSnappyJob(snc:org.apache.spark.sql.SnappySession,jobConfig:com.typesafe.config.Config):Any"></a>
+      <a id="runSnappyJob(SnappySession,Config):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">runSnappyJob</span><span class="params">(<span name="snc">snc: <a href="../../../org/apache/spark/sql/SnappyContext.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">runSnappyJob</span><span class="params">(<span name="snc">snc: <a href="../../../org/apache/spark/sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.examples.AirlineDataJob$@runSnappyJob(snc:org.apache.spark.sql.SnappyContext,jobConfig:com.typesafe.config.Config):Any" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.examples.AirlineDataJob$@runSnappyJob(snc:org.apache.spark.sql.SnappySession,jobConfig:com.typesafe.config.Config):Any" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

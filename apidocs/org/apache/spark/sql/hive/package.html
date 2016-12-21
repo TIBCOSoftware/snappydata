@@ -124,9 +124,11 @@ existing Hive installation).  Supported Hive features include:</p><ul><li>Using 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A utility class to get hive connection to underlying metastore.</p><div class="fullcomment"><div class="comment cmt"><p>A utility class to get hive connection to underlying metastore. A lot of code is similar to
-org.apache.spark.sql.hive.HiveUtils. Difference being we take a connection to underlying GemXD store.
-///TDOD We need to investigate if we can phase out this class and use HiveUtils directly.</p></div></div>
+      <p class="shortcomment cmt">A utility class to get hive connection to underlying metastore.</p><div class="fullcomment"><div class="comment cmt"><p>A utility class to get hive connection to underlying metastore.
+A lot of code is similar to org.apache.spark.sql.hive.HiveUtils.
+Difference being we take a connection to underlying GemXD store.
+TODO We need to investigate if we can phase out this class and use HiveUtils directly.
+</p></div></div>
     </li><li name="org.apache.spark.sql.hive.QualifiedTableName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="QualifiedTableNameextendsTableIdentifier"></a>
       <a id="QualifiedTableName:QualifiedTableName"></a>
@@ -196,7 +198,7 @@ org.apache.spark.sql.hive.HiveUtils. Difference being we take a connection to un
     </span>
       
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyStoreHiveCatalogextendsSessionCatalogwithLogging"></a>
+      <a id="SnappyStoreHiveCatalogextendsSessionCatalog"></a>
       <a id="SnappyStoreHiveCatalog:SnappyStoreHiveCatalog"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -204,10 +206,10 @@ org.apache.spark.sql.hive.HiveUtils. Difference being we take a connection to un
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyStoreHiveCatalog.html"><span class="name">SnappyStoreHiveCatalog</span></a><span class="result"> extends <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="SnappyStoreHiveCatalog.html"><span class="name">SnappyStoreHiveCatalog</span></a><span class="result"> extends <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyStoreHiveCatalogextendsSessionCatalogwithLogging" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyStoreHiveCatalogextendsSessionCatalog" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

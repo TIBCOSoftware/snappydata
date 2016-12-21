@@ -45,17 +45,15 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">RowFormatScanRDD</span><span class="result"> extends <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">RowFormatScanRDD</span><span class="result"> extends <a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A scanner RDD which is very specific to Snappy store row tables.
 This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
-Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
-as JDBCRDD has a lot of methods as private.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="../columnar/impl/SparkShellRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD">SparkShellRowRDD</a></div>
@@ -76,7 +74,7 @@ as JDBCRDD has a lot of methods as private.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.row.RowFormatScanRDD"><span>RowFormatScanRDD</span></li><li class="in" name="org.apache.spark.rdd.RDD"><span>RDD</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.row.RowFormatScanRDD"><span>RowFormatScanRDD</span></li><li class="in" name="org.apache.spark.sql.execution.RDDKryo"><span>RDDKryo</span></li><li class="in" name="com.esotericsoftware.kryo.KryoSerializable"><span>KryoSerializable</span></li><li class="in" name="org.apache.spark.rdd.RDD"><span>RDD</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -96,7 +94,7 @@ as JDBCRDD has a lot of methods as private.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,getConnection:()=&gt;java.sql.Connection,schema:org.apache.spark.sql.types.StructType,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitions:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
       <a id="&lt;init&gt;:RowFormatScanRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -104,10 +102,10 @@ as JDBCRDD has a lot of methods as private.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RowFormatScanRDD</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="getConnection">getConnection: () ⇒ <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="columns">columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="pushProjections">pushProjections: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useResultSet">useResultSet: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Partition]</a></span></span></span>)</span>
+        <span class="name">RowFormatScanRDD</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="columns">columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="pushProjections">pushProjections: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useResultSet">useResultSet: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Partition]</a></span></span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,getConnection:()=&gt;java.sql.Connection,schema:org.apache.spark.sql.types.StructType,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitions:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -191,6 +189,23 @@ times (use <code>.distinct()</code> to eliminate them).
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.rdd.RDD#_id" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_id:Int"></a>
+      <a id="_id:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_id</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@_id:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A unique ID for this RDD (within its SparkContext).</p><div class="fullcomment"><div class="comment cmt"><p>A unique ID for this RDD (within its SparkContext).</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#aggregate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U"></a>
       <a id="aggregate[U](U)((U,Any)⇒U,(U,U)⇒U)(ClassTag[U]):U"></a>
@@ -410,7 +425,7 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">columnList</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
@@ -457,6 +472,23 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#connProperties" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="connProperties:org.apache.spark.sql.sources.ConnectionProperties"></a>
+      <a id="connProperties:ConnectionProperties"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">connProperties</span><span class="result">: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@connProperties:org.apache.spark.sql.sources.ConnectionProperties" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#context" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="context:org.apache.spark.SparkContext"></a>
       <a id="context:SparkContext"></a>
@@ -731,7 +763,7 @@ RDD is checkpointed or not.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">filterWhereClause</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
@@ -1129,7 +1161,7 @@ or <a href="../../../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
         <span class="name">id</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
@@ -1139,7 +1171,7 @@ or <a href="../../../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A unique ID for this RDD (within its SparkContext).</p><div class="fullcomment"><div class="comment cmt"><p>A unique ID for this RDD (within its SparkContext).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -1232,6 +1264,23 @@ elements, even if the input RDDs did.</p><p>Note that this method performs a shu
     </span>
       <p class="shortcomment cmt">Return whether this RDD is checkpointed and materialized, either reliably or locally.</p><div class="fullcomment"><div class="comment cmt"><p>Return whether this RDD is checkpointed and materialized, either reliably or locally.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#isEmpty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isEmpty():Boolean"></a>
       <a id="isEmpty():Boolean"></a>
@@ -1253,6 +1302,23 @@ elements, even if the input RDDs did.</p><p>Note that this method performs a shu
 exception if called on an RDD of <code>Nothing</code> or <code>Null</code>. This may be come up in practice
 because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[Nothing]</code>.
 (<code>parallelize(Seq())</code> should be avoided anyway in favor of <code>parallelize(Seq[T]())</code>.)</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1270,19 +1336,36 @@ because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[N
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#isPartitioned" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isPartitioned:Boolean"></a>
+      <a id="isPartitioned:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isPartitioned</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@isPartitioned:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1768,6 +1851,23 @@ should be <code>false</code> unless this is a pair RDD and the input function do
 RDD is checkpointed or not.</p><div class="fullcomment"><div class="comment cmt"><p>Get the array of partitions of this RDD, taking into account whether the
 RDD is checkpointed or not.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#parts" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parts:Array[org.apache.spark.Partition]"></a>
+      <a id="parts:Array[Partition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parts</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@parts:Array[org.apache.spark.Partition]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#persist" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="persist():RDD.this.type"></a>
       <a id="persist():RowFormatScanRDD.this.type"></a>
@@ -1900,7 +2000,7 @@ RDD is checkpointed.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">pushProjections</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
@@ -1929,6 +2029,23 @@ RDD is checkpointed.
     </span>
       <p class="shortcomment cmt">Randomly splits this RDD with the provided weights.</p><div class="fullcomment"><div class="comment cmt"><p>Randomly splits this RDD with the provided weights.
 </p></div><dl class="paramcmts block"><dt class="param">weights</dt><dd class="cmt"><p>weights for splits, will be normalized if they don't sum to 1</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>split RDDs in an array</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#read" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(kryo:com.esotericsoftware.kryo.Kryo,input:com.esotericsoftware.kryo.io.Input):Unit"></a>
+      <a id="read(Kryo,Input):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="input">input: <span class="extype" name="com.esotericsoftware.kryo.io.Input">Input</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@read(kryo:com.esotericsoftware.kryo.Kryo,input:com.esotericsoftware.kryo.io.Input):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> → <a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a> → KryoSerializable</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#reduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="reduce(f:(T,T)=&gt;T):T"></a>
       <a id="reduce((Any,Any)⇒Any):Any"></a>
@@ -1969,6 +2086,23 @@ associative binary operator.
 a shuffle to redistribute data.</p><p>If you are decreasing the number of partitions in this RDD, consider using <code>coalesce</code>,
 which can avoid performing a shuffle.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#resultSetField" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resultSetField:java.lang.reflect.Field"></a>
+      <a id="resultSetField:Field"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resultSetField</span><span class="result">: <span class="extype" name="java.lang.reflect.Field">Field</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@resultSetField:java.lang.reflect.Field" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#sample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sample(withReplacement:Boolean,fraction:Double,seed:Long):org.apache.spark.rdd.RDD[T]"></a>
       <a id="sample(Boolean,Double,Long):RDD[Any]"></a>
@@ -2112,6 +2246,23 @@ which can avoid performing a shuffle.
       </a>
     </span>
       <p class="shortcomment cmt">The SparkContext that created this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>The SparkContext that created this RDD.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.rdd.RDD#storageLevel" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="storageLevel:org.apache.spark.storage.StorageLevel"></a>
+      <a id="storageLevel:StorageLevel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storageLevel</span><span class="result">: <a href="../../../storage/StorageLevel.html" class="extype" name="org.apache.spark.storage.StorageLevel">StorageLevel</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@storageLevel:org.apache.spark.storage.StorageLevel" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#subtract" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subtract(other:org.apache.spark.rdd.RDD[T],p:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
       <a id="subtract(RDD[Any],Partitioner)(Ordering[Any]):RDD[Any]"></a>
@@ -2184,6 +2335,23 @@ RDD will be &lt;= us.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#tableName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableName:String"></a>
+      <a id="tableName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@tableName:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#take" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="take(num:Int):Array[T]"></a>
       <a id="take(Int):Array[Any]"></a>
@@ -2426,7 +2594,7 @@ times (use <code>.distinct()</code> to eliminate them).
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">useResultSet</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
@@ -2506,6 +2674,23 @@ times (use <code>.distinct()</code> to eliminate them).
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#write" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="write(kryo:com.esotericsoftware.kryo.Kryo,output:com.esotericsoftware.kryo.io.Output):Unit"></a>
+      <a id="write(Kryo,Output):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="output">output: <span class="extype" name="com.esotericsoftware.kryo.io.Output">Output</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@write(kryo:com.esotericsoftware.kryo.Kryo,output:com.esotericsoftware.kryo.io.Output):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> → <a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a> → KryoSerializable</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zip" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
       <a id="zip[U](RDD[U])(ClassTag[U]):RDD[(Any,U)]"></a>
@@ -2691,7 +2876,11 @@ the same index assignments, you should sort the RDD with sortByKey() or save it 
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.rdd.RDD">
+        <div class="parent" name="org.apache.spark.sql.execution.RDDKryo">
+              <h3>Inherited from <a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>]</h3>
+            </div><div class="parent" name="com.esotericsoftware.kryo.KryoSerializable">
+              <h3>Inherited from <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.rdd.RDD">
               <h3>Inherited from <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</h3>
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>

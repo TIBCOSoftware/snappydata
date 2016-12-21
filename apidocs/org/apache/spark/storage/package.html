@@ -198,7 +198,7 @@ Stores information about a block status in a block manager.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.storage.RDDBlockId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="RDDBlockIdextendsBlockIdwithProductwithSerializable"></a>
+      <a id="RDDBlockIdextendsBlockIdwithKryoSerializablewithProductwithSerializable"></a>
       <a id="RDDBlockId:RDDBlockId"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -206,10 +206,10 @@ Stores information about a block status in a block manager.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RDDBlockId.html"><span class="name">RDDBlockId</span></a><span class="params">(<span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="splitIndex">splitIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="BlockId.html" class="extype" name="org.apache.spark.storage.BlockId">BlockId</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RDDBlockId.html"><span class="name">RDDBlockId</span></a><span class="params">(<span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="splitIndex">splitIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="BlockId.html" class="extype" name="org.apache.spark.storage.BlockId">BlockId</a> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.storage.package@RDDBlockIdextendsBlockIdwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.storage.package@RDDBlockIdextendsBlockIdwithKryoSerializablewithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

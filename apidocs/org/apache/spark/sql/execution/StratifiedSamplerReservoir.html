@@ -53,7 +53,7 @@
 reservoir size for every stratum present in the incoming rows.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a>, <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a>, <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -71,7 +71,7 @@ reservoir size for every stratum present in the incoming rows.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir"><span>StratifiedSamplerReservoir</span></li><li class="in" name="org.apache.spark.sql.execution.StratifiedSampler"><span>StratifiedSampler</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.Cloneable"><span>Cloneable</span></li><li class="in" name="java.lang.Cloneable"><span>Cloneable</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir"><span>StratifiedSamplerReservoir</span></li><li class="in" name="org.apache.spark.sql.execution.StratifiedSampler"><span>StratifiedSampler</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.Cloneable"><span>Cloneable</span></li><li class="in" name="java.lang.Cloneable"><span>Cloneable</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -113,7 +113,7 @@ reservoir size for every stratum present in the incoming rows.
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="org.apache.spark.sql.execution.StratifiedSampler.ReservoirSegment" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]"></a>
+      <a id="ReservoirSegment=org.apache.spark.sql.collection.SegmentMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir]"></a>
       <a id="ReservoirSegment:ReservoirSegment"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -121,10 +121,10 @@ reservoir size for every stratum present in the incoming rows.
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">ReservoirSegment</span><span class="result"> = <a href="../collection/MultiColumnOpenHashMap.html" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashMap">MultiColumnOpenHashMap</a>[<a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>]</span>
+        <span class="name">ReservoirSegment</span><span class="result"> = <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@ReservoirSegment=org.apache.spark.sql.collection.SegmentMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -205,18 +205,18 @@ reservoir size for every stratum present in the incoming rows.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSamplerReservoir#append" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row]):U"></a>
-      <a id="append[U](Iterator[Row],U,(U,InternalRow)⇒U,(U)⇒U,ExpressionEncoder[Row]):U"></a>
+      <a id="append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):U"></a>
+      <a id="append[U](Iterator[Row],U,(U,InternalRow)⇒U,(U,Int)⇒U,(U)⇒U,ExpressionEncoder[Row],Int):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>
+        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="startBatch">startBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="partIndex">partIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.append.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row]):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):U" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -330,18 +330,18 @@ reservoir size for every stratum present in the incoming rows.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSamplerReservoir#flushReservior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="flushReservior[U](init:U,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U):U"></a>
-      <a id="flushReservior[U](U,(U,InternalRow)⇒U,(U)⇒U):U"></a>
+      <a id="flushReservior[U](init:U,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U):U"></a>
+      <a id="flushReservior[U](U,(U,InternalRow)⇒U,(U,Int)⇒U,(U)⇒U):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flushReservior</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>
+        <span class="name">flushReservior</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>, <span name="startBatch">startBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.flushReservior.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@flushReservior[U](init:U,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,endBatch:U=&gt;U):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@flushReservior[U](init:U,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U):U" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -355,7 +355,7 @@ reservoir size for every stratum present in the incoming rows.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldDrainSegment</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>)</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>, <span name="seg">seg: <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.ReservoirSegment">ReservoirSegment</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>
+        <span class="name">foldDrainSegment</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>)</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>, <span name="seg">seg: <a href="#ReservoirSegment=org.apache.spark.sql.collection.SegmentMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.ReservoirSegment">ReservoirSegment</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldDrainSegment.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@foldDrainSegment[U](prevReservoirSize:Int,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(init:U,seg:StratifiedSampler.this.ReservoirSegment):U" title="Permalink" target="_top">
@@ -364,18 +364,35 @@ reservoir size for every stratum present in the incoming rows.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler#foldReservoir" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="foldReservoir[U](prevReservoirSize:Int,doReset:Boolean,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(sr:org.apache.spark.sql.execution.StratumReservoir,init:U):U"></a>
-      <a id="foldReservoir[U](Int,Boolean,Boolean,(U,InternalRow)⇒U)(StratumReservoir,U):U"></a>
+      <a id="foldReservoir[U](prevReservoirSize:Int,doReset:Boolean,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(bid:Int,sr:org.apache.spark.sql.execution.StratumReservoir,init:U):U"></a>
+      <a id="foldReservoir[U](Int,Boolean,Boolean,(U,InternalRow)⇒U)(Int,StratumReservoir,U):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foldReservoir</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="params">(<span name="sr">sr: <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>
+        <span class="name">foldReservoir</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="prevReservoirSize">prevReservoirSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="doReset">doReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fullReset">fullReset: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="process">process: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="params">(<span name="bid">bid: <span class="extype" name="scala.Int">Int</span></span>, <span name="sr">sr: <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.foldReservoir.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@foldReservoir[U](prevReservoirSize:Int,doReset:Boolean,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(sr:org.apache.spark.sql.execution.StratumReservoir,init:U):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@foldReservoir[U](prevReservoirSize:Int,doReset:Boolean,fullReset:Boolean,process:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U)(bid:Int,sr:org.apache.spark.sql.execution.StratumReservoir,init:U):U" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSampler#getBucketId" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getBucketId(partIndex:Int,primaryBucketIds:com.gemstone.gnu.trove.TIntArrayList)(hashValue:Int):Int"></a>
+      <a id="getBucketId(Int,TIntArrayList)(Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBucketId</span><span class="params">(<span name="partIndex">partIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="primaryBucketIds">primaryBucketIds: <span class="extype" name="com.gemstone.gnu.trove.TIntArrayList">TIntArrayList</span> = <span class="symbol">null</span></span>)</span><span class="params">(<span name="hashValue">hashValue: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@getBucketId(partIndex:Int,primaryBucketIds:com.gemstone.gnu.trove.TIntArrayList)(hashValue:Int):Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -397,6 +414,23 @@ reservoir size for every stratum present in the incoming rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSampler#getReservoirSegment" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getReservoirSegment(newQcs:Array[Int],types:Array[org.apache.spark.sql.types.DataType],numColumns:Int,initialCapacity:Int,loadFactor:Double,qcsColHandler:Option[org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler],segi:Int,nsegs:Int):StratifiedSampler.this.ReservoirSegment"></a>
+      <a id="getReservoirSegment(Array[Int],Array[DataType],Int,Int,Double,Option[ColumnHandler],Int,Int):ReservoirSegment"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getReservoirSegment</span><span class="params">(<span name="newQcs">newQcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="types">types: <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>, <span name="numColumns">numColumns: <span class="extype" name="scala.Int">Int</span></span>, <span name="initialCapacity">initialCapacity: <span class="extype" name="scala.Int">Int</span></span>, <span name="loadFactor">loadFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="qcsColHandler">qcsColHandler: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler">ColumnHandler</span>]</span>, <span name="segi">segi: <span class="extype" name="scala.Int">Int</span></span>, <span name="nsegs">nsegs: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="#ReservoirSegment=org.apache.spark.sql.collection.SegmentMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.ReservoirSegment">ReservoirSegment</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@getReservoirSegment(newQcs:Array[Int],types:Array[org.apache.spark.sql.types.DataType],numColumns:Int,initialCapacity:Int,loadFactor:Double,qcsColHandler:Option[org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler],segi:Int,nsegs:Int):StratifiedSampler.this.ReservoirSegment" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -414,7 +448,7 @@ reservoir size for every stratum present in the incoming rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
       <h4 class="signature">
@@ -430,7 +464,58 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSampler#isBucketLocal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isBucketLocal(partIndex:Int):Boolean"></a>
+      <a id="isBucketLocal(Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isBucketLocal</span><span class="params">(<span name="partIndex">partIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@isBucketLocal(partIndex:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -448,23 +533,23 @@ reservoir size for every stratum present in the incoming rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled():Boolean"></a>
-      <a id="isTraceEnabled():Boolean"></a>
+    </li><li name="org.apache.spark.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler#iterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="iterator(segmentStart:Int,segmentEnd:Int):Iterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="iterator(Int,Int):Iterator[InternalRow]"></a>
@@ -482,7 +567,24 @@ reservoir size for every stratum present in the incoming rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.StratifiedSampler#iteratorOnRegion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="iteratorOnRegion(buckets:java.util.Set[Integer]):Iterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="iteratorOnRegion(Set[Integer]):Iterator[InternalRow]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">iteratorOnRegion</span><span class="params">(<span name="buckets">buckets: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@iteratorOnRegion(buckets:java.util.Set[Integer]):Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
       <h4 class="signature">
@@ -498,8 +600,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logDebug(⇒String,Throwable):Unit"></a>
       <h4 class="signature">
@@ -515,8 +617,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logDebug(msg:=&gt;String):Unit"></a>
       <a id="logDebug(⇒String):Unit"></a>
       <h4 class="signature">
@@ -532,8 +634,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logError(⇒String,Throwable):Unit"></a>
       <h4 class="signature">
@@ -549,8 +651,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logError(msg:=&gt;String):Unit"></a>
       <a id="logError(⇒String):Unit"></a>
       <h4 class="signature">
@@ -566,8 +668,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logInfo(⇒String,Throwable):Unit"></a>
       <h4 class="signature">
@@ -583,8 +685,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logInfo(msg:=&gt;String):Unit"></a>
       <a id="logInfo(⇒String):Unit"></a>
       <h4 class="signature">
@@ -600,8 +702,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logName:String"></a>
       <a id="logName:String"></a>
       <h4 class="signature">
@@ -617,8 +719,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logTrace(⇒String,Throwable):Unit"></a>
       <h4 class="signature">
@@ -634,8 +736,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logTrace(msg:=&gt;String):Unit"></a>
       <a id="logTrace(⇒String):Unit"></a>
       <h4 class="signature">
@@ -651,8 +753,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logWarning(⇒String,Throwable):Unit"></a>
       <h4 class="signature">
@@ -668,8 +770,8 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logWarning(msg:=&gt;String):Unit"></a>
       <a id="logWarning(⇒String):Unit"></a>
       <h4 class="signature">
@@ -685,7 +787,7 @@ reservoir size for every stratum present in the incoming rows.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler#module" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="module:String"></a>
       <a id="module:String"></a>
@@ -861,6 +963,23 @@ buffer replaced if required. This should happen only inside flushCache.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSampler#reservoirInRegion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reservoirInRegion:Boolean"></a>
+      <a id="reservoirInRegion:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reservoirInRegion</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@reservoirInRegion:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSamplerReservoir#reservoirSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="reservoirSize:Int"></a>
       <a id="reservoirSize:Int"></a>
@@ -955,7 +1074,7 @@ buffer replaced if required. This should happen only inside flushCache.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">strata</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.ConcurrentSegmentedHashMap">ConcurrentSegmentedHashMap</span>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>, <a href="#ReservoirSegment=org.apache.spark.sql.collection.MultiColumnOpenHashMap[org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.ReservoirSegment">ReservoirSegment</a>]</span>
+        <span class="name">strata</span><span class="result">: <span class="extype" name="org.apache.spark.sql.collection.ConcurrentSegmentedHashMap">ConcurrentSegmentedHashMap</span>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a>, <a href="#ReservoirSegment=org.apache.spark.sql.collection.SegmentMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir]" class="extmbr" name="org.apache.spark.sql.execution.StratifiedSamplerReservoir.ReservoirSegment">ReservoirSegment</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerReservoir@strata:org.apache.spark.sql.collection.ConcurrentSegmentedHashMap[org.apache.spark.sql.Row,org.apache.spark.sql.execution.StratumReservoir,StratifiedSampler.this.ReservoirSegment]" title="Permalink" target="_top">
@@ -1115,8 +1234,6 @@ in qcs) to related metadata and reservoir
               <h3>Inherited from <a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></h3>
             </div><div class="parent" name="org.apache.spark.Logging">
               <h3>Inherited from <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
-            </div><div class="parent" name="org.apache.spark.internal.Logging">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="scala.Cloneable">
               <h3>Inherited from <span class="extype" name="scala.Cloneable">Cloneable</span></h3>
             </div><div class="parent" name="java.lang.Cloneable">

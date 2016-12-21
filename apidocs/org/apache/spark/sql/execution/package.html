@@ -517,11 +517,11 @@ multiple output rows for an input row.</p></div><dl class="paramcmts block"><dt 
       <a id="ExprCodeEx:ExprCodeEx"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ExprCodeEx.html"><span class="name">ExprCodeEx</span></a><span class="params">(<span name="hash">hash: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ExprCodeEx.html"><span class="name">ExprCodeEx</span></a><span class="params">(<span name="hash">hash: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="assignCode">assignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExprCodeExextendsProductwithSerializable" title="Permalink" target="_top">
@@ -915,7 +915,7 @@ The output of its child must be a single-field row containing the input object.
       <a id="ObjectHashMapAccessor:ObjectHashMapAccessor"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
@@ -1130,6 +1130,23 @@ changing them, because a lot of developers use the feature for debugging.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.RDDKryo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RDDKryo[T]extendsRDD[T]withKryoSerializable"></a>
+      <a id="RDDKryo[T]:RDDKryo[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RDDKryo.html"><span class="name">RDDKryo</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.RDDKryo.T">T</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@RDDKryo[T]extendsRDD[T]withKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">base RDD KryoSerializable class that will serialize minimal RDD fields</p>
     </li><li name="org.apache.spark.sql.execution.RDDScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RDDScanExecextendsSparkPlanwithLeafExecNodewithProductwithSerializable"></a>
       <a id="RDDScanExec:RDDScanExec"></a>
@@ -1164,6 +1181,23 @@ changing them, because a lot of developers use the feature for debugging.
       </a>
     </span>
       <p class="shortcomment cmt">Physical plan for range (generating a range of 64 bit numbers).</p>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReservoirRegionSegmentMap[V]extendsReentrantReadWriteLockwithSegmentMap[org.apache.spark.sql.Row,V]withSerializable"></a>
+      <a id="ReservoirRegionSegmentMap[V]:ReservoirRegionSegmentMap[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ReservoirRegionSegmentMap.html"><span class="name">ReservoirRegionSegmentMap</span></a><span class="tparams">[<span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span> with <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ReservoirRegionSegmentMap[V]extendsReentrantReadWriteLockwithSegmentMap[org.apache.spark.sql.Row,V]withSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Created by vivekb on 21/10/16.</p>
     </li><li name="org.apache.spark.sql.execution.ResultNullHolder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ResultNullHolderextendsResultWasNull"></a>
       <a id="ResultNullHolder:ResultNullHolder"></a>
@@ -1624,7 +1658,7 @@ total samples since it is also designed to be used with streaming data.
       <a id="StratifiedSamplerCached:StratifiedSamplerCached"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -1645,6 +1679,24 @@ The fraction is attempted to be satisfied while ensuring that the selected
 rows are equally divided among the current stratum (for those that received
 any rows, that is).
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerCachedInRegion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StratifiedSamplerCachedInRegionextendsStratifiedSamplerCached"></a>
+      <a id="StratifiedSamplerCachedInRegion:StratifiedSamplerCachedInRegion"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StratifiedSamplerCachedInRegion.html"><span class="name">StratifiedSamplerCachedInRegion</span></a><span class="result"> extends <a href="StratifiedSamplerCached.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCached">StratifiedSamplerCached</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerCachedInRegionextendsStratifiedSamplerCached" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Created by vivekb on 14/10/16.</p><div class="fullcomment"><div class="comment cmt"><p>Created by vivekb on 14/10/16.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StratifiedSamplerErrorLimitextendsStratifiedSamplerwithCastLongTime"></a>
       <a id="StratifiedSamplerErrorLimit:StratifiedSamplerErrorLimit"></a>
@@ -1691,8 +1743,43 @@ expanding the cache size for bigger reservoir if required in next rounds).
     </span>
       <p class="shortcomment cmt">A simple reservoir based stratified sampler that will use the provided
 reservoir size for every stratum present in the incoming rows.</p>
+    </li><li name="org.apache.spark.sql.execution.StratumCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StratumCacheextendsStratumReservoir"></a>
+      <a id="StratumCache:StratumCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StratumCache.html"><span class="name">StratumCache</span></a><span class="result"> extends <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumCacheextendsStratumReservoir" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An extension to StratumReservoir to also track total samples seen since
+last time slot and short fall from previous rounds.</p>
+    </li><li name="org.apache.spark.sql.execution.StratumInternalRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StratumInternalRowextendsInternalRow"></a>
+      <a id="StratumInternalRow:StratumInternalRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StratumInternalRow.html"><span class="name">StratumInternalRow</span></a><span class="result"> extends <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumInternalRowextendsInternalRow" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.StratumReservoir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratumReservoirextendsAnyRef"></a>
+      <a id="StratumReservoirextendsDataSerializablewithSizeablewithSerializable"></a>
       <a id="StratumReservoir:StratumReservoir"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1700,10 +1787,10 @@ reservoir size for every stratum present in the incoming rows.</p>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StratumReservoir.html"><span class="name">StratumReservoir</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="StratumReservoir.html"><span class="name">StratumReservoir</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.DataSerializable">DataSerializable</span> with <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumReservoirextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumReservoirextendsDataSerializablewithSizeablewithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1977,6 +2064,23 @@ function.</p><p>Here is the call graph of to generate Java source (plan A suppor
  doConsume()  &lt;--------  consume()</p><p>SparkPlan A should override doProduce() and doConsume().</p><p>doCodeGen() will create a CodeGenContext, which will hold a list of variables for input,
 used to generated code for BoundReference.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.WholeStageCodegenRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializable"></a>
+      <a id="WholeStageCodegenRDD:WholeStageCodegenRDD"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WholeStageCodegenRDD.html"><span class="name">WholeStageCodegenRDD</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.rdd.ZippedPartitionsBaseRDD">ZippedPartitionsBaseRDD</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.WindowExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="WindowExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="WindowExec:WindowExec"></a>
@@ -2148,6 +2252,56 @@ pool and connection properties.</p><p>Supports Tomcat-JDBC pool and HikariCP.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.DictionaryOptimizedMapAccessor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DictionaryOptimizedMapAccessor"></a>
+      <a id="DictionaryOptimizedMapAccessor:DictionaryOptimizedMapAccessor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryOptimizedMapAccessor$.html"><span class="name">DictionaryOptimizedMapAccessor</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DictionaryOptimizedMapAccessor" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Makes use of dictionary indexes for strings if any.</p><div class="fullcomment"><div class="comment cmt"><p>Makes use of dictionary indexes for strings if any.
+Depends only on the presence of dictionary per batch of rows (where the batch
+must be substantially greater than its dictionary for optimization to help).</p><p>For single column hash maps (groups or joins), it can be turned into a flat
+indexed array instead of a map. Create an array of class objects as stored
+in <a href="ObjectHashSet.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashSet">ObjectHashSet</a> having the length same as dictionary so that dictionary
+index can be used to directly lookup the array. Then for the first lookup
+into the array for a dictionary index, lookup the actual <a href="ObjectHashSet.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashSet">ObjectHashSet</a>
+for the key to find the map entry object and insert into the array.
+An alternative would be to pre-populate the array by making one pass through
+the dictionary, but it may not be efficient if many of the entries in the
+dictionary get filtered out by query predicates and never need to consult
+the created array.</p><p>For multiple column hash maps having one or more dictionary indexed columns,
+there is slightly more work. Instead of an array as in single column case,
+create a new hash map where the key columns values are substituted by
+dictionary index value. However, the map entry will remain identical to the
+original map so to save space add the additional index column to the full
+map itself. As new values are inserted into this hash map, lookup the full
+hash map to locate its map entry, then point to the same map entry in this
+new hash map too. Thus for subsequent look-ups the new hash map can be used
+completely based on integer dictionary indexes instead of strings.</p><p>An alternative approach can be to just store the hash code arrays separately
+for each of the dictionary columns indexed identical to dictionary. Use
+this to lookup the main map which will also have additional columns for
+dictionary indexes (that will be cleared at the start of a new batch).
+On first lookup for key columns where dictionary indexes are missing in
+the map, insert the dictionary index in those additional columns.
+Then use those indexes for equality comparisons instead of string.</p><p>The multiple column dictionary optimization will be useful for only string
+dictionary types where cost of looking up a string in hash map is
+substantially higher than integer lookup. The single column optimization
+can improve performance for other dictionary types though its efficacy
+for integer/long types will be reduced to avoiding hash code calculation.
+Given this, the additional overhead of array maintenance may not be worth
+the effort (and could possibly even reduce overall performance in some
+cases), hence this optimization is currently only for string type.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.GroupedIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GroupedIterator"></a>
       <a id="GroupedIterator:GroupedIterator"></a>

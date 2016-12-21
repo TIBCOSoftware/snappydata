@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Development Team">
+  
+  <title>Download and Install - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Download and Install";
+    var mkdocs_page_input_path = "install.md";
+    var mkdocs_page_url = "/install/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Download and Install</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                
+                    <li><a class="toctree-l4" href="#install-on-premise">Install On-Premise</a></li>
+                
+                    <li><a class="toctree-l4" href="#setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</a></li>
+                
+                    <li><a class="toctree-l4" href="#building-from-source">Building from Source</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../howto/">How Tos</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Download and Install</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="overview">Overview</h1>
+<p>The following installation options are available:</p>
+<ul>
+<li><a href="#install-on-premise">Install On Premise</a></li>
+<li><a href="#setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</a></li>
+<li><a href="#building-from-source">Building from Source</a></li>
+</ul>
+<h2 id="install-on-premise">Install On-Premise</h2>
+<p>SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the <em>JAVA_HOME</em> environment variable is set on each computer.</p>
+<h3 id="download-snappydata">Download SnappyData</h3>
+<p>Download the latest version of SnappyData from the <a href="https://github.com/SnappyDataInc/snappydata/releases/">SnappyData Release</a> page, which lists the latest and previous releases of SnappyData.</p>
+<p>The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.</p>
+<ul>
+<li>
+<p><strong> SnappyData 0.7 download link </strong>
+<a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip">(zip)</a></p>
+</li>
+<li>
+<p><strong>SnappyData 0.7 (hadoop provided) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip">(zip)</a>
+<a id="singlehost"></a></p>
+</li>
+</ul>
+<h3 id="single-host-installation">Single Host Installation</h3>
+<p>This is the simplest form of deployment and can be used for testing and POCs.</p>
+<p>Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory. </p>
+<pre><code class="bash">$ tar -xzf snappydata-0.7-bin.tar.gz   
+$ cd snappydata-0.7-bin/
+</code></pre>
+
+<p>Start a basic cluster with one data node, one lead, and one locator</p>
+<pre><code>./sbin/snappy-start-all.sh
+</code></pre>
+
+<p>For custom configuration and to start more nodes,  see the section <a href="../configuration/">How to Configure the SnappyData cluster</a></p>
+<h3 id="multi-host-installation">Multi-Host Installation</h3>
+<p>For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.</p>
+<h3 id="machines-with-a-shared-path">Machines with a Shared Path</h3>
+<p>If all your machines can share a path over an NFS or similar protocol, then follow the steps below:</p>
+<h4 id="prerequisites_1">Prerequisites</h4>
+<ul>
+<li>
+<p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP address of each SnappyData member machine.</p>
+</li>
+<li>
+<p>Ensure that SSH is supported and you have configured all machines to be accessed by <a href="../configuration#configuring-ssh-login-without-password">passwordless SSH</a>.</p>
+</li>
+</ul>
+<h4 id="steps-to-set-up-the-cluster">Steps to Set up the Cluster</h4>
+<ol>
+<li>
+<p>Copy the downloaded binaries to the shared folder.</p>
+</li>
+<li>
+<p>Extract the downloaded archive file and go to SnappyData home directory.</p>
+<pre><code>$ tar -xzf snappydata-0.7-bin.tar.gz 
+$ cd snappydata-0.7-bin/
+</code></pre>
+</li>
+<li>
+<p>Configure the cluster as described in <a href="../configuration/">How to Configure SnappyData cluster</a>.</p>
+</li>
+<li>
+<p>After configuring each of the components, run the <code>snappy-start-all.sh</code> script:</p>
+<pre><code>./sbin/snappy-start-all.sh
+</code></pre>
+</li>
+</ol>
+<p>This creates a default folder named <strong>work</strong> and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.</p>
+<p>If SSH is not supported then follow the instructions in the Machines without a Shared Path section.</p>
+<h3 id="machines-without-a-shared-path">Machines without a Shared Path</h3>
+<h4 id="prerequisites_2">Prerequisites</h4>
+<ul>
+<li>
+<p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP Address of each SnappyData member machine.</p>
+</li>
+<li>
+<p>On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for the log, persistence, and status files for each member, and is also used as the default location for locating the member's configuration files.
+<br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.</p>
+</li>
+</ul>
+<h4 id="to-configure-the-cluster">To Configure the Cluster</h4>
+<ol>
+<li>
+<p>Copy and extract the downloaded binaries on each machine</p>
+</li>
+<li>
+<p>Individually configure and start each member</p>
+</li>
+</ol>
+<p><Note> Note: We are providing all configuration parameter as command line arguments rather than reading from a conf file.</Note></p>
+<p>The example below starts a locator and server.</p>
+<pre><code class="bash">$ bin/snappy-shell locator start  -dir=/node-a/locator1 
+$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+
+$ bin/snappy-shell locator stop
+$ bin/snappy-shell server stop
+</code></pre>
+
+<h2 id="setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</h2>
+<h3 id="using-aws-management-console">Using AWS Management Console</h3>
+<p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html">AWS documentation</a>.</p>
+<h4 id="prerequisites_3">Prerequisites</h4>
+<p>Ensure that you have an existing AWS account with required permissions to launch EC2 resources</p>
+<h4 id="launching-the-instance">Launching the Instance</h4>
+<p>To launch the instance and start SnappyData cluster:</p>
+<ol>
+<li>
+<p>Open the <a href="https://console.aws.amazon.com/ec2/">Amazon EC2 console</a> and sign in using your AWS login credentials.</p>
+</li>
+<li>
+<p>The current region is displayed at the top of the screen. Select the region where you want to launch the instance.</p>
+</li>
+<li>
+<p>Click <strong>Launch Instance</strong> from the Amazon EC2 console dashboard.</p>
+</li>
+<li>
+<p>On the <strong>Choose an Amazon Machine Image (AMI)</strong> page, select <strong>Community AMIs</strong> from the left pane.</p>
+</li>
+<li>
+<p>Enter <strong>SnappyData</strong> in the search box, and press <strong>Enter</strong> on your keyboard. </p>
+</li>
+<li>
+<p>The search result is displayed. From the search results, click <strong>Select</strong> to choose the AMI with the latest release version.</p>
+</li>
+<li>
+<p>On the <strong>Choose an Instance Type</strong> page, select the instance type as per the requirement of your use case and then click <strong>Review and Launch</strong> to launch the instance with default configurations. <br/><Note> Note: You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note></p>
+</li>
+<li>
+<p>You are directed to the last step <strong>Review Instance Launch</strong>. Check the details of your instance, and click <strong>Launch</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Select an existing key pair or create a new key pair</strong> dialog box, select a key pair.</p>
+</li>
+<li>
+<p>Click <strong>Launch</strong> to launch the instances.</p>
+</li>
+<li>
+<p>The dashboard which lists the instances is displayed. Click <strong>Refresh</strong> to view the updated list and the status of the instance creation.</p>
+</li>
+<li>
+<p>Once the status of the instance changes to <strong>running</strong>, you have successfully created and launched the instance with the SnappyData AMI.</p>
+</li>
+<li>
+<p>Use SSH to connect to the instance. You require:</p>
+<ul>
+<li>
+<p>The private key file of the key pair with which the instance was launched, and </p>
+</li>
+<li>
+<p>Details of the public hostname or IP address of the instance. </p>
+</li>
+</ul>
+<p><note> Note: </note></p>
+<ul>
+<li>
+<p><note>The public hostname/IP address information is available on the EC2 dashboard &gt; <strong>Description</strong> tab. </note></p>
+</li>
+<li>
+<p><note> The SnappyData binaries are automatically downloaded and extracted to the location <strong>/snappydata/downloads/</strong> and Java 8 is installed. </note></p>
+</li>
+</ul>
+</li>
+<li>
+<p>Follow the <a href="#install-on-premise">steps described here</a> to continue. </br></p>
+</li>
+</ol>
+<p><a id="EC2"></a></p>
+<h3 id="using-snappydata-ec2-scripts">Using SnappyData EC2 Scripts</h3>
+<p>The <code>snappy-ec2</code> script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific conf files which the script reads before launching the cluster.</p>
+<p>The <code>snappy-ec2</code> script has been derived from the <code>spark-ec2</code> script available in <a href="https://github.com/apache/spark/tree/branch-1.6/ec2">Apache Spark 1.6</a>.</p>
+<p>The scripts are available on GitHub in the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2">snappy-cloud-tools repository</a> and also as a <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/releases"><strong>.tar.gz</strong></a> file.</p>
+<p><Note> Note: The EC2 script is under development. Feel free to try it out and provide your feedback.</Note></p>
+<h4 id="prerequisites_4">Prerequisites</h4>
+<ul>
+<li>
+<p>Ensure that you have an existing AWS account with required permissions to launch EC2 resources</p>
+</li>
+<li>
+<p>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
+<br/>Refer to the Amazon Web Services EC2 documentation for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html">generating your own EC2 Key Pair</a>.</p>
+</li>
+<li>
+<p>Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, <code>AWS_SECRET_ACCESS_KEY</code> and <code>AWS_ACCESS_KEY_ID</code>. You can find this information in the AWS IAM console page.<br/> 
+If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.</p>
+<p>For example:
+<code>export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112</code>
+<code>export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10</code></p>
+</li>
+<li>
+<p>Ensure Python v 2.7 or later is installed on your local computer.</p>
+</li>
+</ul>
+<h4 id="cluster-management">Cluster Management</h4>
+<h5 id="launching-snappydata-cluster">Launching SnappyData Cluster</h5>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappydata-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
+<p>Enter the command in the following format.</p>
+<p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
+<p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file and <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>
+<p>By default, the script starts one instance of a locator, lead and server each.
+The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups. </p>
+<p>The  names and details of the members are automatically derived from the provided cluster name. </p>
+<p>For example, if you launch a cluster named <strong>my-cluster</strong>, the locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
+<p>When running the script you can also specify properties like the number of stores and region.</p>
+<p>For example, using the following command, you can start a SnappyData cluster named <strong>snappydata-cluster</strong> with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.</p>
+<p>The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
+</code></pre>
+
+<p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>. </p>
+<h5 id="specifying-properties">Specifying Properties</h5>
+<p>If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to <a href="../configuration/#configuration-files">this SnappyData documentation page</a> for example on how to write these conf files.</p>
+<p>This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the <code>sbin/snappy-start-all.sh</code> script.</p>
+<p>The important difference here is that, instead of the host names of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual host name of the members when they are launched.</p>
+<p>The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are given below:</p>
+<p><em>locators</em></p>
+<pre><code>{{LOCATOR_0}} -peer-discovery-port=9999 -heap-size=1024m
+{{LOCATOR_1}} -peer-discovery-port=9888 -heap-size=1024m
+</code></pre>
+
+<p><em>leads</em></p>
+<pre><code>{{LEAD_0}} -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
+</code></pre>
+
+<p><em>servers</em></p>
+<pre><code>{{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
+{{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
+</code></pre>
+
+<p>When you run <strong>snappy-ec2</strong>, it looks for these files under <strong>aws/ec2/deploy/home/ec2-user/snappydata/</strong> and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options <code>--locators</code>, <code>--leads</code> or <code>--stores</code> must match to the number of entries in their respective conf files.</p>
+<p>The script also reads <strong>snappy-env.sh</strong>, if present in this location.</p>
+<h5 id="stopping-a-cluster">Stopping a Cluster</h5>
+<p>When you stop a cluster, it shuts down the EC2 instances and any data saved on its local instance stores is lost. However, the data saved on EBS volumes, if any, is retained unless the spot-instances were used.</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
+</code></pre>
+
+<h5 id="starting-a-cluster">Starting a Cluster</h5>
+<p>When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
+</code></pre>
+
+<p><Note>Note: The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
+</Note></p>
+<h5 id="adding-servers-to-a-cluster">Adding Servers to  a Cluster</h5>
+<p>This is not yet fully supported via the script. You may have to manually launch an instance with <code>(cluster-name)-stores</code> group and then use launch command with --resume option.</p>
+<h5 id="listing-members-of-a-cluster">Listing Members of a Cluster</h5>
+<p><strong>To get the first locator's hostname:</strong></p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem get-locator cluster-name
+</code></pre>
+
+<p><strong>To get the first lead's hostname, use the get-lead command:</strong></p>
+<h5 id="connecting-to-a-cluster">Connecting to a Cluster</h5>
+<p>You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. From there, you can SSH to any other member of the cluster without a password.
+The SnappyData product directory is located under /home/ec2-user/snappydata/ on all the members.</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
+</code></pre>
+
+<h5 id="destroying-a-cluster">Destroying a Cluster</h5>
+<p>Destroying a cluster destroys all the data on the local instance stores as well as on the attached EBS volumes permanently.</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem destroy cluster-name
+</code></pre>
+
+<p>This retains the security groups created for this cluster. To delete them as well, use it with --delete-group option.</p>
+<h5 id="starting-cluster-with-apache-zeppelin">Starting Cluster with Apache Zeppelin</h5>
+<p>Optionally, you can start an instance of Apache Zeppelin server with the cluster. <a href="https://zeppelin.apache.org/">Apache Zeppelin</a> is a web-based notebook that enables interactive notebook. You can start it either on a lead node's instance (<code>--with-zeppelin=embedded</code>)  or on a separate instance (<code>--with-zeppelin=non-embedded</code>).</p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin=embedded launch cluster-name
+</code></pre>
+
+<h4 id="more-options">More options</h4>
+<p>For a complete list of options this script has, run <code>./snappy-ec2</code>. The options are also provided below for quick reference.</p>
+<pre><code>Usage: `snappy-ec2 [options] &lt;action&gt; &lt;cluster_name&gt;`
+
+&lt;action&gt; can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -s STORES, --stores=STORES
+                        Number of stores to launch (default: 1)
+  --locators=LOCATORS   Number of locator nodes to launch (default: 1)
+  --leads=LEADS         Number of lead nodes to launch (default: 1)
+  -w WAIT, --wait=WAIT  DEPRECATED (no longer necessary) - Seconds to wait for
+                        nodes to start
+  -k KEY_PAIR, --key-pair=KEY_PAIR
+                        Key pair to use on instances
+  -i IDENTITY_FILE, --identity-file=IDENTITY_FILE
+                        SSH private key file to use for logging into instances
+  -p PROFILE, --profile=PROFILE
+                        If you have multiple profiles (AWS or boto config),
+                        you can configure additional, named profiles by using
+                        this option (default: none)
+  -t INSTANCE_TYPE, --instance-type=INSTANCE_TYPE
+                        Type of instance to launch (default: m3.large).
+                        WARNING: must be 64-bit; small instances won't work
+  --locator-instance-type=LOCATOR_INSTANCE_TYPE
+                        Locator instance type (leave empty for same as
+                        instance-type)
+  -r REGION, --region=REGION
+                        EC2 region used to launch instances in, or to find
+                        them in (default: us-east-1)
+  -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
+                        spread stores across multiple (an additional $0.01/Gb
+                        for bandwidthbetween zones applies) (default: a single
+                        zone chosen at random)
+  -a AMI, --ami=AMI     Amazon Machine Image ID to use
+  -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
+                        Version of SnappyData to use: 'X.Y.Z' (default:
+                        LATEST)
+  --with-zeppelin=WITH_ZEPPELIN
+                        Launch Apache Zeppelin server with the cluster. Use
+                        'embedded' to launch it on lead node and 'non-
+                        embedded' to launch it on a separate instance.
+  --deploy-root-dir=DEPLOY_ROOT_DIR
+                        A directory to copy into/on the first master. Must
+                        be absolute. Note that a trailing slash is handled as
+                        per rsync: If you omit it, the last directory of the
+                        --deploy-root-dir path will be created in / before
+                        copying its contents. If you append the trailing
+                        slash, the directory is not created and its contents
+                        are copied directly into /. (default: none).
+  -D [ADDRESS:]PORT     Use SSH dynamic port forwarding to create a SOCKS
+                        proxy at the given local address (for use with login)
+  --resume              Resume installation on a previously launched cluster
+                        (for debugging)
+  --ebs-vol-size=SIZE   Size (in GB) of each EBS volume.
+  --ebs-vol-type=EBS_VOL_TYPE
+                        EBS volume type (e.g. 'gp2', 'standard').
+  --ebs-vol-num=EBS_VOL_NUM
+                        Number of EBS volumes to attach to each node as
+                        /vol[x]. The volumes will be deleted when the
+                        instances terminate. Only possible on EBS-backed AMIs.
+                        EBS volumes are only attached if --ebs-vol-size &gt; 0.
+                        Only support up to 8 EBS volumes.
+  --placement-group=PLACEMENT_GROUP
+                        Which placement group to try and launch instances
+                        into. Assumes placement group is already created.
+  --spot-price=PRICE    If specified, launch stores as spot instances with the
+                        given maximum price (in dollars)
+  -u USER, --user=USER  The SSH user you want to connect as (default:
+                        ec2-user)
+  --delete-groups       When destroying a cluster, delete the security groups
+                        that were created
+  --use-existing-locator
+                        Launch fresh stores, but use an existing stopped
+                        locator if possible
+  --user-data=USER_DATA
+                        Path to a user-data file (most AMIs interpret this as
+                        an initialization script)
+  --authorized-address=AUTHORIZED_ADDRESS
+                        Address to authorize on created security groups
+                        (default: 0.0.0.0/0)
+  --additional-security-group=ADDITIONAL_SECURITY_GROUP
+                        Additional security group to place the machines in
+  --additional-tags=ADDITIONAL_TAGS
+                        Additional tags to set on the machines; tags are
+                        comma-separated, while name and value are colon
+                        separated; ex: &quot;Task:MySnappyProject,Env:production&quot;
+  --subnet-id=SUBNET_ID
+                        VPC subnet to launch instances in
+  --vpc-id=VPC_ID       VPC to launch instances in
+  --private-ips         Use private IPs for instances rather than public if
+                        VPC/subnet requires that.
+  --instance-initiated-shutdown-behavior=INSTANCE_INITIATED_SHUTDOWN_BEHAVIOR
+                        Whether instances should terminate when shut down or
+                        just stop
+  --instance-profile-name=INSTANCE_PROFILE_NAME
+                        IAM profile name to launch instances under
+</code></pre>
+
+<h3 id="limitations">Limitations</h3>
+<p>Some of the known limitations of the script are:</p>
+<ul>
+<li>
+<p>Launching the cluster on custom AMI (specified via --ami option) will not work if it does not have the user 'ec2-user' with sudo permissions</p>
+</li>
+<li>
+<p>Support for option --user is incomplete</p>
+</li>
+</ul>
+<h2 id="building-from-source">Building from Source</h2>
+<p>Building SnappyData requires JDK 7+ installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>). </p>
+<p>Quickstart to build all components of SnappyData:</p>
+<p><strong>Latest release branch</strong></p>
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7 --recursive
+&gt; cd snappydata
+&gt; ./gradlew product
+</code></pre>
+
+<p><strong>Master</strong></p>
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+&gt; cd snappydata
+&gt; ./gradlew product
+</code></pre>
+
+<p>The product is in <strong>build-artifacts/scala-2.11/snappy</strong></p>
+<p>If you want to build only the top-level SnappyData project but pull in jars for other projects (<em>spark</em>, <em>store</em>, <em>spark-jobserver</em>):</p>
+<p><strong>Latest release branch</strong></p>
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7
+&gt; cd snappydata
+&gt; ./gradlew product
+</code></pre>
+
+<p><strong>Master</strong></p>
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
+&gt; cd snappydata
+&gt; ./gradlew product
+</code></pre>
+
+<h3 id="repository-layout">Repository Layout</h3>
+<ul>
+<li>
+<p><strong>core</strong> - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between <em>spark</em> and <em>store</em> (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.</p>
+</li>
+<li>
+<p><strong>cluster</strong> - Provides the SnappyData implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.</p>
+</li>
+</ul>
+<p>This component depends on <em>core</em> and <em>store</em>.  The code in the <em>cluster</em> depends on <em>core</em> but not the other way round.</p>
+<ul>
+<li>
+<p><strong>spark</strong> - <em>Apache Spark</em> code with SnappyData enhancements.</p>
+</li>
+<li>
+<p><strong>store</strong> - Fork of gemfirexd-oss with SnappyData additions on the snappy/master branch.</p>
+</li>
+<li>
+<p><strong>spark-jobserver</strong> - Fork of <em>spark-jobserver</em> project with some additions to integrate with SnappyData.</p>
+</li>
+</ul>
+<p>The <em>spark</em>, <em>store</em>, and <em>spark-jobserver</em> directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git sub-modules. When working with sub-modules, updating the repositories follows the normal <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">git submodules</a>. One can add some aliases in gitconfig to aid pull/push like:</p>
+<pre><code>[alias]
+  spull = !git pull &amp;&amp; git submodule sync --recursive &amp;&amp; git submodule update --init --recursive
+  spush = push --recurse-submodules=on-demand
+</code></pre>
+
+<p>The above aliases can serve as useful shortcuts to pull and push all projects from top-level <em>snappydata</em> repository.</p>
+<h3 id="building">Building</h3>
+<p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 7+ installation. Currently, most of the testing has been with JDK 7. The Gradle wrapper script downloads all the other build dependencies as required.</p>
+<p>If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the SnappyData repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.</p>
+<p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
+<p>Useful build and test targets:</p>
+<pre><code>./gradlew assemble      -  build all the sources
+./gradlew testClasses   -  build all the tests
+./gradlew product       -  build and place the product distribution
+                           (in build-artifacts/scala_2.11/snappy)
+./gradlew distTar       -  create a tar.gz archive of product distribution
+                           (in build-artifacts/scala_2.11/distributions)
+./gradlew distZip       -  create a zip archive of product distribution
+                           (in build-artifacts/scala_2.11/distributions)
+./gradlew buildAll      -  build all sources, tests, product, packages (all targets above)
+./gradlew checkAll      -  run testsuites of snappydata components
+./gradlew cleanAll      -  clean all build and test output
+./gradlew runQuickstart -  run the quickstart suite (the &quot;Getting Started&quot; section of docs)
+./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
+                           and run full snappydata testsuite including quickstart
+./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
+                           run full snappydata testsuite including quickstart
+                           and also full SnappyData store testsuite
+</code></pre>
+
+<p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em>build-artifacts/&lt;os&gt;</em> where <em>&lt;os&gt;</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
+<p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <em>--tests</em> option:</p>
+<pre><code class="sh">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+&gt; ./gradlew core:scalaTest \
+&gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
+</code></pre>
+
+<p>Running individual tests within some suite works using the <em>--tests</em> argument.</p>
+<h3 id="setting-up-intellij-with-gradle">Setting up IntelliJ with Gradle</h3>
+<p>IntelliJ is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well (for example, Gradle support is not integrated with Scala plugin etc).  </p>
+<p>To import into IntelliJ:</p>
+<ul>
+<li>
+<p>Update IntelliJ to the latest 14.x (or 15.x) version, including the latest Scala plug-in. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.</p>
+</li>
+<li>
+<p>Select <strong>Import Project</strong>, and then point to the SnappyData directory. Use external Gradle import. When using JDK 7, add <strong>-XX:MaxPermSize=350m</strong> to VM options in global Gradle settings. Select the default values, and click <strong>Next</strong> in the following screens.<br/> 
+<note> Note:</note> </p>
+<ul>
+<li><note>Ignore the <strong>"Gradle location is unknown warning"</strong>.</note> </li>
+<li><note>Ensure that a JDK 7/8 installation has been selected.</note> </li>
+<li><note>Ignore and dismiss the <strong>"Unindexed remote maven repositories found"</strong> warning message if seen.</note></li>
+</ul>
+</li>
+<li>
+<p>When import is completed, go to <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Scala</strong>. Set the scheme as <strong>Project</strong>. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy <strong>codeStyleSettings.xml</strong> located in the SnappyData top-level directory, to the <strong>.idea</strong> directory created by IntelliJ. Check that the settings are now applied in <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Java</strong> which should display Indent as 2 and continuation indent as 4 (same as Scala).</p>
+</li>
+<li>
+<p>If the Gradle tab is not visible immediately, then select it from window list pop-up at the left-bottom corner of IDE. If you click on that window list icon, then the tabs are displayed permanently.</p>
+</li>
+<li>
+<p>Generate Apache Avro and GemFireXD required sources by expanding: <strong>snappydata_2.11&gt; Tasks&gt; other</strong>. Right-click on <strong>generateSources</strong> and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if <strong>./gradlew clean</strong> has been run, or if you have made changes to <strong>javacc/avro/messages.xml</strong> source files. </p>
+</li>
+<li>
+<p>If you get unexpected <strong>"Database not found"</strong> or <strong>NullPointerException</strong> errors in GemFireXD layer, then first thing to try is to run the <strong>generateSources</strong> target again.*</p>
+</li>
+<li>
+<p>Increase the compiler heap sizes or else the build can take quite long especially with integrated <strong>spark</strong> and <strong>store</strong>. In <strong>File&gt; Settings&gt; Build, Execution, Deployment&gt; Compiler increase</strong>, <strong>Build process heap size</strong> to say 1536 or 2048. Similarly, increase JVM maximum heap size in <strong>Languages &amp; Frameworks&gt; Scala Compiler Server</strong> to 1536 or 2048.</p>
+</li>
+<li>
+<p>Test the full build.</p>
+</li>
+<li>
+<p>For JDK 7: <strong>Open Run&gt; Edit Configurations</strong>. Expand <strong>Defaults</strong>, and select <strong>Application</strong>. Add <strong>-XX:MaxPermSize=350m</strong> in the VM options. Similarly, add it to VM parameters for ScalaTest and JUnit. Most of the unit tests have trouble without this option.</p>
+</li>
+<li>
+<p>For JUnit configuration also append <strong>/build-artifacts</strong> to the working directory. That is, the directory should be <strong>\$MODULE_DIR\$/build-artifacts</strong>. Likewise change working directory for ScalaTest to be inside <strong>build-artifacts</strong> otherwise, all intermediate log and other files (specially created by GemFireXD) pollute the source tree and may need to be cleaned manually.</p>
+</li>
+</ul>
+<h3 id="running-a-scalatestjunit">Running a ScalaTest/JUnit</h3>
+<p>Running Scala/JUnit tests from IntelliJ is straightforward. Ensure that <strong>MaxPermSize</strong> has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.</p>
+<ul>
+<li>
+<p>When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise an external Gradle process is launched that can start building the project again and won't be cleanly integrated with IntelliJ. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).</p>
+</li>
+<li>
+<p>For JUnit tests, ensure that working directory is <strong>\$MODULE_DIR\$/build-artifacts</strong> as mentioned before. Otherwise, many GemFireXD tests will fail to find the resource files required in tests. They also pollute the files etc, so when launched this will allow those to go into build-artifacts that is easier to clean. For that reason, it may be preferable to do the same for ScalaTests.</p>
+</li>
+<li>
+<p>Some of the tests use data files from the <strong>tests-common</strong> directory. For such tests, run the Gradle task <strong>snappydata_2.11&gt; Tasks&gt; other&gt; copyResourcesAll</strong> to copy the resources in build area where IntelliJ runs can find it.</p>
+</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../howto/" class="btn btn-neutral float-right" title="How Tos">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../quickstart/" class="btn btn-neutral" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../quickstart/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../howto/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>
