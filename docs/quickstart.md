@@ -33,13 +33,13 @@ This opens a Spark Shell and downloads the relevant SnappyData files to your loc
 All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**.
 
 <a id="Start_quickStart"></a>
-In this document we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like, working with Columnar and Row oriented tables, querying and updating these tables.
+In this document, we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables.
 
 Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](programming_guide.md#ddl). 
 
 While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.
 
-##Getting Started Using Spark Scala APIs:
+##Getting Started Using Spark Scala APIs
 
 **Create a SnappySession**: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 
@@ -166,7 +166,7 @@ $ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-
 ### To get the Performance Numbers
 Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.
 
-**Define a function "benchmark"**, which tells us the average time to run queries after doing the initial warm ups.
+**Define a function "benchmark"**, which tells us the average time to run queries after doing the initial warm-ups.
 ```scala
 scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) {
           for (i <- 1 to warmups) {
@@ -183,7 +183,7 @@ scala>  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Uni
 ```
 
 **Create a DataFrame and temp table using Spark's range method**:
-Cache it in Spark to get optimal performance. This creates a DataFrame of 100 million records.You can change number of rows based on  your memory availability.
+Cache it in Spark to get optimal performance. This creates a DataFrame of 100 million records.You can change the number of rows based on  your memory availability.
 ```scala
 scala>  var testDF = spark.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 scala>  testDF.cache
@@ -236,7 +236,7 @@ scala> :q // Quit the Spark Shell
 
 ##Getting Started using SQL
 
-We illustrate SQL using Spark SQL invoked using the Session API. You can also use any SQL client tool (e.g. Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
+We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.
@@ -315,7 +315,7 @@ Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources from CloudFormation
 
-* Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+* Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 
 *  Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
@@ -334,9 +334,9 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 
 	* Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.
 
-    * Select KeyPairName: Select a keypair from the list of keypairs available to you. This is a mandatory field.
+    * Select KeyPairName: Select a key pair from the list of key pairs available to you. This is a mandatory field.
 
-    * Search VPCID: Select the VPC ID from the dropdown list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
+    * Search VPCID: Select the VPC ID from the drop-down list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
 ![Refresh](Images/cluster_specifydetails.png)
 
 4. Click **Next**. <br>
@@ -344,7 +344,7 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 5. On the **Options** page, click **Next** to continue using the provided default values.<br>
 
 6. On the **Review** page, verify the details and click **Create** to create a stack. <br>
-![Create](Images/cluster_createstack.png)"></p>
+![Create](Images/cluster_createstack.png)</p>
 <a id="Stack"></a>
 
 
@@ -352,17 +352,17 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. This process may take 4-5 minutes to complete.<br>
 ![Refresh](Images/cluster_refresh.png)
 <a id="Stack"></a>
-<Note>Note: If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes behind the failure are:
+<Note>Note: If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes of the failure are:
 
 	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
-	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
+	> * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
 	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
 </Note>
 
 9. Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
 	![Public IP](Images/cluster_links.png)
 
-For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
+For more information, refer to the [Apache Zeppelin](aqp_aws#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 
 <Note>Note: </Note>
@@ -389,11 +389,11 @@ $ docker run hello-world
 $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once your are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
+Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
 
 
 ####More Information
 
-For more examples of the common operations you can refer to the [How tos](howto.md) section. 
+For more examples of the common operations, you can refer to the [How-tos](howto.md) section. 
 
 If you have questions or queries you can contact us through our [community channels](techsupport.md#community).
