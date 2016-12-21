@@ -160,7 +160,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
 
 * `isValidJob` allows for an initial validation of the context and any provided configuration.
-    If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to  missing or wrong configuration, and saves both time and resources.
+    If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.
 
 See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and Spark streaming jobs. 
 
@@ -284,7 +284,7 @@ Syntax:
 ```bash
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 ```
-* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+* JAR_FILE_PATH  is the full path for the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using a locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
 * DEPLOY: This argument is currently ignored.
 
@@ -698,7 +698,7 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 ) USING column options(BUCKETS '5')" )
 ```
 
-To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/SNAP-1090/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
+To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
 <note>Note : Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</note>
 
@@ -878,11 +878,11 @@ SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
 
 In SnappyData, the column table consists of two components, delta row buffer and column store. We try to support individual insert of single row, we store them in a delta row buffer which is write optimized and highly available.
-Once the size of buffer reaches the COLUMN_BATCH_SIZE set by user, the delta row buffer is compressed column wise and stored in the column store.
-Any query on column table, also takes into account the row cached buffer. By doing this, we ensure that the query does not miss any data.
+Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
+Any query on column table also takes into account the row cached buffer. By doing this, we ensure that the query does not miss any data.
 
 #### Catalog in SnappyStore
-We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver fail over, we chose GemFireXd itself to store meta information. This gives us the ability to query underlying GemFireXD to reconstruct the metastore in case of a driver fail over.
+We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
 
 <!--<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
@@ -913,7 +913,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
 ### SnappyData Streaming Extensions over Spark
-We offer the following enhancements over Spark Streaming : 
+We offer the following enhancements over Spark Streaming: 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
 
@@ -1016,7 +1016,7 @@ snappy> streaming stop;
 ```
 
 ### SchemaDStream
-SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API. SchemaDStream can be registered as a table.
+SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provides foreachDataFrame API. SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from [Intel's Streaming SQL project](https://github.com/Intel-bigdata/spark-streamingsql).
 
 ### Registering Continuous Queries
