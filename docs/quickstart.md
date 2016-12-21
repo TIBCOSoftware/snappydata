@@ -134,11 +134,12 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
 <a id="Start Benchmark"></a>
-##20X Faster than Spark 2.0 Caching
+##20X Faster than Spark 2.0
 Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0 performance. 
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
- <Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test.</Note>
+ <Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note>
+ 
 
 **Start the Spark Shell using any of the options mentioned below:**
 
@@ -233,6 +234,10 @@ scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTab
 ```
 scala> :q // Quit the Spark Shell
 ```
+
+<Note>  We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS
+t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0 .
+</Note>
 
 ##Getting Started using SQL
 
