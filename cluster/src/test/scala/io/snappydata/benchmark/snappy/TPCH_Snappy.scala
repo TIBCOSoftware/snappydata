@@ -159,187 +159,157 @@ object TPCH_Snappy {
         sqlContext.sql(getSampledQuery10).collect()
       case "q1" =>
         val df = sqlContext.sql(getQuery1)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q1")
         }
-        res
+        df.collect()
       case "q2" =>
-        val result = sqlContext.sql(getTempQuery2())
+        /*val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
-        val df = sqlContext.sql(getQuery2())
-        //val df = sqlContext.sql(getQuery2_Original())
-        val res = df.collect()
+        val df = sqlContext.sql(getQuery2())*/
+        val df = sqlContext.sql(getQuery2_Original)
         if (genPlan) {
           printPlan(df, "Q2")
         }
-        res
+        df.collect()
       case "q3" =>
         val df = sqlContext.sql(getQuery3)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q3")
         }
-        res
+        df.collect()
       case "q4" =>
         val df = sqlContext.sql(getQuery4)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q4")
         }
-        res
+        df.collect()
       case "q5" =>
         val df = sqlContext.sql(getQuery5)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q5")
         }
-        res
+        df.collect()
       case "q6" =>
         val df = sqlContext.sql(getQuery6)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q6")
         }
-        res
+        df.collect()
       case "q7" =>
         val df = sqlContext.sql(getQuery7)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q7")
         }
-        res
+        df.collect()
       case "q8" =>
         val df = sqlContext.sql(getQuery8(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q8")
         }
-        res
+        df.collect()
       case "q9" =>
         val df = sqlContext.sql(getQuery9(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q9")
         }
-        res
+        df.collect()
       case "q10" =>
-
         val df = sqlContext.sql(getQuery10)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q10")
         }
-        res
+        df.collect()
       case "q11" =>
-        val result = sqlContext.sql(getTempQuery11)
+       /*val result = sqlContext.sql(getTempQuery11)
         val res: Array[Row] = result.collect()
         var df: DataFrame = null
         var res1: Array[Row] = null
-        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))
-//        val df = sqlContext.sql(getQuery11_Original())
-        res1 = df.collect()
+        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))*/
+        val df = sqlContext.sql(getQuery11_Original)
         if (genPlan) {
           printPlan(df, "Q11")
         }
-        res1
+        df.collect()
       case "q12" =>
         val df = sqlContext.sql(getQuery12)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q12")
         }
-        res
+        df.collect()
       case "q13" =>
+        /*
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
         val df = sqlContext.sql(getQuery13())
-        //val df = sqlContext.sql(getQuery13_Original())
-        val res = df.collect()
+        */
+        val df = sqlContext.sql(getQuery13_Original)
         if (genPlan) {
           printPlan(df, "Q13")
         }
-        res
+        df.collect()
       case "q14" =>
         val df = sqlContext.sql(getQuery14(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q14")
         }
-        res
+        df.collect()
       case "q15" =>
-        var result = sqlContext.sql(getTempQuery15_1)
+        val result = sqlContext.sql(getTempQuery15_1)
         result.createOrReplaceTempView("revenue")
 
-        result = sqlContext.sql(getTempQuery15_2)
-        result.createOrReplaceTempView("ViewQ15")
-
         val df = sqlContext.sql(getQuery15)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q15")
         }
-        res
+        df.collect()
       case "q16" =>
         val df = sqlContext.sql(getQuery16)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q16")
         }
-        res
+        df.collect()
       case "q17" =>
-        val result = sqlContext.sql(getTempQuery17(useIndex))
+/*        val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
-        val df = sqlContext.sql(getQuery17(useIndex))
-        //val df = sqlContext.sql(getQuery17_Original())
-        val res = df.collect()
+        val df = sqlContext.sql(getQuery17(useIndex))*/
+        val df = sqlContext.sql(getQuery17_Original)
         if (genPlan) {
           printPlan(df, "Q17")
         }
-        res
+        df.collect()
       case "q18" =>
         val df = sqlContext.sql(getQuery18)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q18")
         }
-        res
+        df.collect()
       case "q19" =>
         val df = sqlContext.sql(getQuery19(useIndex))
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q19")
         }
-        res
+        df.collect()
       case "q20" =>
 //        val result = sqlContext.sql(getTempQuery20(useIndex))
 //        result.createOrReplaceTempView("ViewQ20")
-        val df = sqlContext.sql(getQuery20_Original())
-        val res = df.collect()
+        val df = sqlContext.sql(getQuery20_Original)
         if (genPlan) {
           printPlan(df, "Q20")
         }
-        res
+        df.collect()
       case "q21" =>
         val df = sqlContext.sql(getQuery21)
-        val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q21")
         }
-        res
+        df.collect()
       case "q22" =>
-        val result = sqlContext.sql(getTempQuery22(useIndex))
-        val res = result.collect()
-        assert(res.length == 1)
-        var df: DataFrame = null
-        var res1 = res
-        df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
-        //val df = sqlContext.sql(getQuery22_Original())
-        res1 = df.collect()
+        val df = sqlContext.sql(getQuery22_Original)
         if (genPlan) {
           printPlan(df, "Q22")
         }
-        res1
+        df.collect()
     }
     cnts
   }
@@ -642,7 +612,7 @@ object TPCH_Snappy {
           " limit 100"
   }
 
-  def getQuery2_Original(): String = {
+  def getQuery2_Original: String = {
     " select" +
       "     S_ACCTBAL," +
       "     S_NAME," +
@@ -653,31 +623,31 @@ object TPCH_Snappy {
       "     S_PHONE," +
       "     S_COMMENT" +
       " from" +
-      "     PART," +
       "     SUPPLIER," +
-      "     PARTSUPP," +
       "     NATION," +
-      "     REGION" +
+      "     REGION," +
+      "     PART," +
+      "     PARTSUPP" +
       " where" +
-      "     P_PARTKEY = PS_PARTKEY" +
-      "     and S_SUPPKEY = PS_SUPPKEY" +
-      "     and P_SIZE = 24" +
-      "     and P_TYPE like '%STEEL'" +
-      "     and S_NATIONKEY = N_NATIONKEY" +
+      "     S_NATIONKEY = N_NATIONKEY" +
       "     and N_REGIONKEY = R_REGIONKEY" +
       "     and R_NAME = 'ASIA'" +
+      "     and S_SUPPKEY = PS_SUPPKEY" +
+      "     and P_PARTKEY = PS_PARTKEY" +
+      "     and P_SIZE = 24" +
+      "     and P_TYPE like '%STEEL'" +
       "     and PS_SUPPLYCOST = (" +
       "         select" +
       "             min(PS_SUPPLYCOST)" +
       "         from" +
-      "             PARTSUPP, SUPPLIER," +
-      "             NATION, REGION" +
+      "             SUPPLIER, NATION," +
+      "             REGION, PARTSUPP" +
       "         where" +
-      "             P_PARTKEY = PS_PARTKEY" +
-      "             and S_SUPPKEY = PS_SUPPKEY" +
-      "             and S_NATIONKEY = N_NATIONKEY" +
+      "             S_NATIONKEY = N_NATIONKEY" +
       "             and N_REGIONKEY = R_REGIONKEY" +
       "             and R_NAME = 'ASIA'" +
+      "             and S_SUPPKEY = PS_SUPPKEY" +
+      "             and P_PARTKEY = PS_PARTKEY" +
       "            )" +
       " order by" +
       "     S_ACCTBAL desc," +
@@ -749,27 +719,27 @@ object TPCH_Snappy {
     "o_orderpriority|order_count"
   }
 
-  def getQuery5(): String = {
+  def getQuery5: String = {
     //1. REGION = ASIA;
     //2. DATE = 1994-01-01.
       " select" +
           "        n_name," +
           "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
           " from" +
-          "        ORDERS," +
-          "        LINEITEM," +
           "        SUPPLIER," +
           "        NATION," +
           "        REGION," +
+          "        ORDERS," +
+          "        LINEITEM," +
           "        CUSTOMER" +
           " where" +
-          "        C_CUSTKEY = o_custkey" +
+          "        s_nationkey = n_nationkey" +
+          "        and n_regionkey = r_regionkey" +
+          "        and r_name = 'ASIA'" +
+          "        and C_CUSTKEY = o_custkey" +
           "        and l_orderkey = o_orderkey" +
           "        and l_suppkey = s_suppkey" +
           "        and C_NATIONKEY = s_nationkey" +
-          "        and s_nationkey = n_nationkey" +
-          "        and n_regionkey = r_regionkey" +
-          "        and r_name = 'ASIA'" +
           "        and o_orderdate >= '1994-01-01'" +
           "        and o_orderdate < add_months('1994-01-01', 12)" +
           " group by" +
@@ -871,21 +841,21 @@ object TPCH_Snappy {
             "                         PART," +
             "                         ORDERS," +
             "                         CUSTOMER," +
-            "                         SUPPLIER," +
             "                         NATION n1," +
             "                         REGION," +
-            "                         NATION n2" +
+            "                         NATION n2," +
+            "                         SUPPLIER" +
             "                 where" +
             "                         p_partkey = l_partkey" +
-            "                         and s_suppkey = l_suppkey" +
             "                         and l_orderkey = o_orderkey" +
             "                         and o_custkey = C_CUSTKEY" +
             "                         and C_NATIONKEY = n1.n_nationkey" +
             "                         and n1.n_regionkey = r_regionkey" +
             "                         and r_name = 'AMERICA'" +
-            "                         and s_nationkey = n2.n_nationkey" +
             "                         and o_orderdate between '1995-01-01' and '1996-12-31'" +
             "                         and p_type = 'ECONOMY ANODIZED STEEL'" +
+            "                         and s_suppkey = l_suppkey" +
+            "                         and s_nationkey = n2.n_nationkey" +
             "         ) as all_nations" +
             " group by" +
             "         o_year" +
@@ -1012,7 +982,7 @@ object TPCH_Snappy {
     "NATION|YEAR|SUM_PROFIT"
   }
 
-  def getQuery10(): String = {
+  def getQuery10: String = {
     //1.    DATE = 1993-10-01.
       "select" +
           "         C_CUSTKEY," +
@@ -1045,7 +1015,7 @@ object TPCH_Snappy {
           "         C_COMMENT" +
           " order by" +
           "         revenue desc" +
-        " limit 100"
+        " limit 20"
   }
 
   def getResultString10: String = {
@@ -1088,16 +1058,16 @@ object TPCH_Snappy {
         "         value desc"
   }
 
-  def getQuery11_Original(): String = {
+  def getQuery11_Original: String = {
     //    1. NATION = GERMANY;
     //    2. FRACTION = 0.0001.
     "select" +
       "         PS_PARTKEY," +
       "         sum(PS_SUPPLYCOST * PS_AVAILQTY) as value" +
       " from" +
-      "         PARTSUPP," +
       "         SUPPLIER," +
-      "         NATION" +
+      "         NATION," +
+      "         PARTSUPP" +
       " where" +
       "         PS_SUPPKEY = S_SUPPKEY" +
       "         and S_NATIONKEY = N_NATIONKEY" +
@@ -1108,9 +1078,9 @@ object TPCH_Snappy {
       "                 select" +
       "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
       "                 from" +
-      "                         PARTSUPP," +
       "                         SUPPLIER," +
-      "                         NATION" +
+      "                         NATION," +
+      "                         PARTSUPP" +
       "                 where" +
       "                         PS_SUPPKEY = S_SUPPKEY" +
       "                         and S_NATIONKEY = N_NATIONKEY" +
@@ -1204,7 +1174,7 @@ object TPCH_Snappy {
         "         c_count desc"
   }
 
-  def getQuery13_Original(): String = {
+  def getQuery13_Original: String = {
       //    1. WORD1 = special.
       //    2. WORD2 = requests.
       "select" +
@@ -1213,14 +1183,14 @@ object TPCH_Snappy {
           " from (" +
           "         select" +
           "                 C_CUSTKEY," +
-          "                 count(o_orderkey)" +
+          "                 count(o_orderkey) as c_count" +
           "         from" +
           "                 CUSTOMER left outer join ORDERS on" +
           "                 C_CUSTKEY = o_custkey" +
           "                 and o_comment not like '%special%requests%'" +
           "         group by" +
           "                 C_CUSTKEY" +
-          "         )as c_orders (C_CUSTKEY, c_count)" +
+          "         ) as c_orders" +
           " group by" +
           "         c_count" +
           " order by" +
@@ -1284,13 +1254,6 @@ object TPCH_Snappy {
         "         l_suppkey"
   }
 
-  def getTempQuery15_2: String = {
-    "select" +
-        "          max(total_revenue) as max_revenue" +
-        " from" +
-        "          revenue"
-  }
-
   def getQuery15: String = {
     "select       " +
         "         s_suppkey," +
@@ -1299,14 +1262,14 @@ object TPCH_Snappy {
         "         s_phone," +
         "         total_revenue" +
         " from" +
-        "         SUPPLIER, revenue, ViewQ15 " +
+        "         SUPPLIER, revenue" +
         " where" +
         "         s_suppkey = supplier_no" +
         "         and total_revenue = (" +
         "                       select" +
-        "                             max_revenue" +
+        "                             max(total_revenue)" +
         "                       from" +
-        "                             ViewQ15" +
+        "                             revenue" +
         "   ) " +
         " order by" +
         "        s_suppkey"
@@ -1317,6 +1280,50 @@ object TPCH_Snappy {
   }
 
   def getQuery16: String = {
+    //    1. BRAND = Brand#45.
+    //    2. TYPE = MEDIUM POLISHED .
+    //    3. SIZE1 = 49
+    //    4. SIZE2 = 14
+    //    5. SIZE3 = 23
+    //    6. SIZE4 = 45
+    //    7. SIZE5 = 19
+    //    8. SIZE6 = 3
+    //    9. SIZE7 = 36
+    //    10. SIZE8 = 9.
+    "select" +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size," +
+      "         count(distinct ps_suppkey) as supplier_cnt" +
+      " from" +
+      "         PARTSUPP," +
+      "         PART" +
+      " where" +
+      "         p_partkey = ps_partkey" +
+      "         and p_brand <> 'Brand#45'" +
+      "         and p_type not like 'MEDIUM POLISHED%'" +
+      "         and p_size in (49, 14, 23, 45, 19, 3, 36, 9)" +
+      "         and not exists (" +
+      "                 select" +
+      "                         s_suppkey" +
+      "                 from" +
+      "                         SUPPLIER" +
+      "                 where" +
+      "                         s_suppkey = ps_suppkey and" +
+      "                         s_comment like '%Customer%Complaints%'" +
+      "         )" +
+      " group by" +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size" +
+      " order by" +
+      "         supplier_cnt desc," +
+      "         p_brand," +
+      "         p_type," +
+      "         p_size"
+  }
+
+  def getQuery16Original: String = {
     //    1. BRAND = Brand#45.
     //    2. TYPE = MEDIUM POLISHED .
     //    3. SIZE1 = 49
@@ -1340,13 +1347,14 @@ object TPCH_Snappy {
         "         and p_brand <> 'Brand#45'" +
         "         and p_type not like 'MEDIUM POLISHED%'" +
         "         and p_size in (49, 14, 23, 45, 19, 3, 36, 9)" +
-        "         and ps_suppkey not in (" +
+        "         and not exists (" +
         "                 select" +
         "                         s_suppkey" +
         "                 from" +
         "                         SUPPLIER" +
         "                 where" +
-        "                         s_comment like '%Customer%Complaints%'" +
+        "                         s_suppkey = ps_suppkey" +
+        "                         and s_comment like '%Customer%Complaints%'" +
         "         )" +
         " group by" +
         "         p_brand," +
@@ -1417,7 +1425,7 @@ object TPCH_Snappy {
       }
   }
 
-  def getQuery17_Original(): String = {
+  def getQuery17_Original: String = {
     //    1. BRAND = Brand#23;
     //    2. CONTAINER = MED BOX.
     "select" +
@@ -1437,8 +1445,6 @@ object TPCH_Snappy {
       "                 where" +
       "                         l_partkey = P_PARTKEY" +
       "         )"
-    //" )"
-
   }
 
   def getResultString17: String = {
@@ -1457,7 +1463,6 @@ object TPCH_Snappy {
         "    sum(l_quantity)" +
         "    from" +
         "    LINEITEM," +
-        "    ORDERS," +
         "    (" +
         "        select" +
         "            l_orderkey as o" +
@@ -1466,11 +1471,12 @@ object TPCH_Snappy {
         "            group by" +
         "            l_orderkey having sum(l_quantity) > 300" +
         "        ) as temp," +
+        "    ORDERS," +
         "    CUSTOMER" +
         "    where" +
         "    l_orderkey = temp.o" +
-        "    and C_CUSTKEY = o_custkey" +
         "    and o_orderkey = l_orderkey" +
+        "    and C_CUSTKEY = o_custkey" +
         "    group by" +
         "        C_NAME," +
         "    C_CUSTKEY," +
@@ -1637,7 +1643,7 @@ object TPCH_Snappy {
   }
   */
 
-  def getQuery20_Original(): String = {
+  def getQuery20_Original: String = {
     //    1. COLOR = forest.
     //    2. DATE = 1994-01-01.
     //    3. NATION = CANADA.
@@ -1698,15 +1704,6 @@ object TPCH_Snappy {
         "         and o_orderkey = l1.l_orderkey" +
         "         and o_orderstatus = 'F'" +
         "         and l1.l_receiptdate > l1.l_commitdate" +
-        "         and exists (" +
-        "                 select" +
-        "                         l2.l_orderkey" +
-        "                 from" +
-        "                         LINEITEM l2" +
-        "                 where" +
-        "                         l2.l_orderkey = l1.l_orderkey" +
-        "                         and l2.l_suppkey <> l1.l_suppkey" +
-        "         )" +
         "         and not exists (" +
         "                 select" +
         "                         l3.l_orderkey" +
@@ -1716,6 +1713,15 @@ object TPCH_Snappy {
         "                         l3.l_orderkey = l1.l_orderkey" +
         "                         and l3.l_suppkey <> l1.l_suppkey" +
         "                         and l3.l_receiptdate > l3.l_commitdate" +
+        "         )" +
+        "         and exists (" +
+        "                 select" +
+        "                         l2.l_orderkey" +
+        "                 from" +
+        "                         LINEITEM l2" +
+        "                 where" +
+        "                         l2.l_orderkey = l1.l_orderkey" +
+        "                         and l2.l_suppkey <> l1.l_suppkey" +
         "         )" +
         "         and s_nationkey = n_nationkey" +
         "         and n_name = 'VIETNAM'" +
@@ -1790,7 +1796,7 @@ object TPCH_Snappy {
     }
   }
 
-  def getQuery22_Original(): String = {
+  def getQuery22_Original: String = {
     //    1. I1 = 13.
     //    2. I2 = 31.
     //    3. I3 = 23.
@@ -1823,7 +1829,7 @@ object TPCH_Snappy {
       "                 )" +
       "                 and not exists (" +
       "                         select" +
-      "                                 o_custtkey" +
+      "                                 o_custkey" +
       "                         from" +
       "                                 ORDERS" +
       "                         where" +

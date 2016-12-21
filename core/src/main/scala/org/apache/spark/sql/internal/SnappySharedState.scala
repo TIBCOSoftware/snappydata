@@ -45,29 +45,29 @@ private[sql] class SnappyCacheManager(sessionId: Int) extends CacheManager {
   override def cacheQuery(query: Dataset[_], tableName: Option[String],
       storageLevel: StorageLevel): Unit = {
     super.cacheQuery(query, tableName, storageLevel)
-    SnappySession.removeSession(sessionId)
+    SnappySession.clearSessionCache(sessionId)
   }
 
   override def uncacheQuery(query: Dataset[_], blocking: Boolean): Boolean = {
     if (super.uncacheQuery(query, blocking)) {
-      SnappySession.removeSession(sessionId)
+      SnappySession.clearSessionCache(sessionId)
       true
     } else false
   }
 
   override def clearCache(): Unit = {
     super.clearCache()
-    SnappySession.removeSession(sessionId)
+    SnappySession.clearSessionCache(sessionId)
   }
 
   override def invalidateCache(plan: LogicalPlan): Unit = {
     super.invalidateCache(plan)
-    SnappySession.removeSession(sessionId)
+    SnappySession.clearSessionCache(sessionId)
   }
 
   override def invalidateCachedPath(sparkSession: SparkSession,
       resourcePath: String): Unit = {
     super.invalidateCachedPath(sparkSession, resourcePath)
-    SnappySession.removeSession(sessionId)
+    SnappySession.clearSessionCache(sessionId)
   }
 }

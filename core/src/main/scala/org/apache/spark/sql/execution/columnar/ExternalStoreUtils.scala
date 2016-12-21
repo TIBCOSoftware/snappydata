@@ -277,7 +277,7 @@ object ExternalStoreUtils {
         case BinaryType => java.sql.Types.BLOB
         case TimestampType => java.sql.Types.TIMESTAMP
         case DateType => java.sql.Types.DATE
-        case d: DecimalType => java.sql.Types.DECIMAL
+        case _: DecimalType => java.sql.Types.DECIMAL
         case NullType => java.sql.Types.NULL
         case _ => throw new IllegalArgumentException(
           s"Can't translate to JDBC value for type $dataType")
@@ -286,11 +286,11 @@ object ExternalStoreUtils {
 
   // This should match JDBCRDD.compileFilter for best performance
   def unhandledFilter(f: Filter): Boolean = f match {
-    case EqualTo(col, value) => false
-    case LessThan(col, value) => false
-    case GreaterThan(col, value) => false
-    case LessThanOrEqual(col, value) => false
-    case GreaterThanOrEqual(col, value) => false
+    case EqualTo(_, _) => false
+    case LessThan(_, _) => false
+    case GreaterThan(_, _) => false
+    case LessThanOrEqual(_, _) => false
+    case GreaterThanOrEqual(_, _) => false
     case _ => true
   }
 
@@ -309,13 +309,13 @@ object ExternalStoreUtils {
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
-    case EqualTo(col, value) => checkIndexedColumn(col, indexedCols)
-    case LessThan(col, value) => checkIndexedColumn(col, indexedCols)
-    case GreaterThan(col, value) => checkIndexedColumn(col, indexedCols)
-    case LessThanOrEqual(col, value) => checkIndexedColumn(col, indexedCols)
-    case GreaterThanOrEqual(col, value) => checkIndexedColumn(col, indexedCols)
-    case StringStartsWith(col, value) => checkIndexedColumn(col, indexedCols)
-    case In(col, values) => checkIndexedColumn(col, indexedCols)
+    case EqualTo(col, _) => checkIndexedColumn(col, indexedCols)
+    case LessThan(col, _) => checkIndexedColumn(col, indexedCols)
+    case GreaterThan(col, _) => checkIndexedColumn(col, indexedCols)
+    case LessThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
+    case GreaterThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
+    case StringStartsWith(col, _) => checkIndexedColumn(col, indexedCols)
+    case In(col, _) => checkIndexedColumn(col, indexedCols)
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
     case And(left, right) =>
@@ -515,7 +515,7 @@ private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
     bufferSize: Int,
     reservoirInRegion: Boolean, columnBatchSize: Int) {
 
-  var holder = getCachedBatchHolder(-1)
+  private var holder = getCachedBatchHolder(-1)
 
   def getCachedBatchHolder(bucketId: Int): CachedBatchHolder =
     new CachedBatchHolder(columnBuilders, 0,

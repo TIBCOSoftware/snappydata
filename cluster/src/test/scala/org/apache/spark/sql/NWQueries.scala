@@ -433,41 +433,45 @@ object NWQueries extends SnappyFunSuite {
     "Q56" -> Q56
   )
 
-  val regions = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/regions.csv").getPath))
+  def regions(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/regions.csv").getPath))
+
   val regions_table = "create table regions (" +
       "RegionID int, " +
       "RegionDescription string)"
 
-  val categories = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/categories.csv").getPath))
+  def categories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/categories.csv").getPath))
+
   val categories_table = "create table categories (" +
       "CategoryID int, " +
       "CategoryName string, " +
       "Description string, " +
       "Picture blob)"
 
-  val shippers = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/shippers.csv").getPath))
+  def shippers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/shippers.csv").getPath))
+
   val shippers_table = "create table shippers (" +
       "ShipperID int not null, " +
       "CompanyName string not null, " +
       "Phone string)"
 
-  val employees = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/employees.csv").getPath))
+  def employees(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/employees.csv").getPath))
+
   val employees_table = "create table employees(" +
       "EmployeeID int, " +
       "LastName string,  " +
@@ -488,11 +492,12 @@ object NWQueries extends SnappyFunSuite {
       "ReportsTo int, " +
       "PhotoPath string)"
 
-  val customers = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/customers.csv").getPath))
+  def customers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/customers.csv").getPath))
+
   val customers_table = "create table customers(" +
       "CustomerID string, " +
       "CompanyName string, " +
@@ -506,11 +511,12 @@ object NWQueries extends SnappyFunSuite {
       "Phone string, " +
       "Fax string)"
 
-  val orders = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/orders.csv").getPath))
+  def orders(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/orders.csv").getPath))
+
   val orders_table = "create table orders (" +
       "OrderID int, " +
       "CustomerID string, " +
@@ -527,11 +533,12 @@ object NWQueries extends SnappyFunSuite {
       "ShipPostalCode string, " +
       "ShipCountry string)"
 
-  val order_details = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/order-details.csv").getPath))
+  def order_details(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/order-details.csv").getPath))
+
   val order_details_table = "create table order_details (" +
       "OrderID int, " +
       "ProductID int, " +
@@ -539,11 +546,12 @@ object NWQueries extends SnappyFunSuite {
       "Quantity smallint, " +
       "Discount double)"
 
-  val products = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/products.csv").getPath))
+  def products(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/products.csv").getPath))
+
   val products_table = "create table products(" +
       // "ProductID int not null, " +
       "ProductID int, " +
@@ -557,11 +565,12 @@ object NWQueries extends SnappyFunSuite {
       "ReorderLevel smallint, " +
       "Discontinued smallint) "
 
-  val suppliers = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/suppliers.csv").getPath))
+  def suppliers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/suppliers.csv").getPath))
+
   val suppliers_table = "create table suppliers(" +
       "SupplierID int, " +
       "CompanyName string, " +
@@ -576,21 +585,23 @@ object NWQueries extends SnappyFunSuite {
       "Fax string, " +
       "HomePage string) "
 
-  val territories = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/territories.csv").getPath))
+  def territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/territories.csv").getPath))
+
   val territories_table = "create table territories(" +
       "TerritoryID string, " +
       "TerritoryDescription string, " +
       "RegionID string)"
 
-  val employee_territories = snc.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("nullValue", "NULL")
-      .csv((getClass.getResource("/northwind/employee-territories.csv").getPath))
+  def employee_territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("nullValue", "NULL")
+    .csv((getClass.getResource("/northwind/employee-territories.csv").getPath))
+
   val employee_territories_table = "create table employee_territories(" +
       "EmployeeID int, " +
       "TerritoryID string)"

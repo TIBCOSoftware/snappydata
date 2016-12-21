@@ -96,7 +96,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.0.2'
-    snappySparkVersion = '2.0.3-1'
+    snappySparkVersion = '2.0.3-2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -302,9 +302,24 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def single = System.getProperty('dunit.single')
+    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+    FileTree includeTestFiles = dunitTests
+    def single = rootProject.hasProperty('dunit.single') ?
+        rootProject.property('dunit.single') : null
+    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+          getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+    int dunitTo = rootProject.hasProperty('dunit.to') ?
+          getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
     if (single == null || single.length() == 0) {
-      include '**/*DUnitTest.class'
+      int begin = dunitFrom != -1 ? dunitFrom : 0
+      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+      if (begin != 0 || end != includeTestFiles.size()) {
+        println("Picking tests :")
+        filteredSet.each { a -> println(a) }
+      }
+      include filteredSet
     } else {
       include single
     }
@@ -596,8 +611,14 @@ task product(type: Zip) {
     String exampleArchiveName = "quickstart.jar"
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
+    def targets = targetProject.configurations.runtime
+    if (new File(rootDir, 'store/build.gradle').exists()) {
+      // exclude client jar and dependencies since client shadow jar is copied
+      targets = targetProject.configurations.runtime -
+          project(':snappy-store:gemfirexd-client').configurations.runtime
+    }
     copy {
-      from(targetProject.configurations.runtime) {
+      from(targets) {
         // exclude antlr4 explicitly (runtime is still included)
         // that gets pulled by antlr gradle plugin
         exclude '**antlr4-4*.jar'
@@ -649,7 +670,7 @@ task product(type: Zip) {
       into "${snappyProductDir}/docs"
     }
 
-    // copy the snappy-core shadow jar
+    // copy the snappy-core shadow jar into distributions
     copy {
       from("${coreProject.buildDir}/libs")
       into "${rootProject.buildDir}/distributions"
@@ -673,13 +694,21 @@ task product(type: Zip) {
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
       }
-      // also copy the JDBC client jar separately
+      // also copy the JDBC client jar separately into distributions
       def clientProject = project(':snappy-store:gemfirexd-client')
       copy {
         from clientProject.shadowJar.destinationDir
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
+      // Copy the JDBC client jar to jars directory
+      // (its constituent jars are specifically excluded)
+      copy {
+        from clientProject.shadowJar.destinationDir
+        into "${snappyProductDir}/jars"
+        include clientProject.shadowJar.archiveName
+      }
+      delete "${snappyProductDir}/jars/${clientProject.jar.archiveName}"
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
@@ -721,27 +750,7 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    copy {
-      from("${clusterProject.projectDir}/ec2")
-      into "${snappyProductDir}/ec2"
-      exclude "deploy/home/ec2-user/snappydata/servers"
-      exclude "deploy/home/ec2-user/snappydata/leads"
-      exclude "deploy/home/ec2-user/snappydata/locators"
-      exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-      exclude "lib"
-    }
   }
-}
-
-task ec2Tar(type: Tar) {
-     dependsOn ':product'
-     from("cluster/ec2")
-     baseName = 'snappydata-ec2'
-     exclude "deploy/home/ec2-user/snappydata/servers"
-     exclude "deploy/home/ec2-user/snappydata/leads"
-     exclude "deploy/home/ec2-user/snappydata/locators"
-     exclude "deploy/home/ec2-user/snappydata/snappy-env.sh"
-     exclude "lib"
 }
 
 if (rootProject.hasProperty('copyToDir')) {
@@ -784,7 +793,7 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip, ec2Tar
+  dependsOn product, distTar, distZip
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -797,7 +806,7 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
-def runScript(def execName, def workDir, def param) {
+def runScript(def execName, def workDir, def param, env = null) {
   def stdout = new ByteArrayOutputStream()
   exec {
     executable "${execName}"
@@ -939,6 +948,26 @@ task runQuickstart {
       if (conffile.exists())
         conffile.delete()
     }
+    //Setting _JAVA_OPTIONS to avoid using gradle settings which is 256m which was causing rdd to
+    // overflow on disk
+    Map<String,Object> env = new HashMap<String,Object>()
+    env.put("_JAVA_OPTIONS","-Xms256m -Xmx4g")
+    String extraArgs = '-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g '
+    if(project.hasProperty('snappy.perf')){
+      extraArgs = extraArgs.concat("-Dsnappy_benchmark_perf=true")
+    }
+    String quickStartResult = runScript("${snappyProductDir}/bin/spark-shell", workingDir,
+        ['--driver-memory=4g',"--driver-java-options=$extraArgs", '-i',
+         "${snappyProductDir}/quickstart/scripts/Quickstart.scala"], env)
+
+    if (quickStartResult.toLowerCase().
+        contains('cannot meet the required performance')) {
+      println(quickStartResult)
+      throw new GradleException('Failed to assert required performance in Quickstart')
+    } else {
+      println(quickStartResult)
+    }
+
   }
 }
 
@@ -994,6 +1023,12 @@ def writeProperties(def parent, def name, def comment, def propsMap) {
     writer.flush()
   } finally {
     writer.close()
+  }
+}
+
+int getLast(includeTestFiles, pattern) {
+  includeTestFiles.findLastIndexOf {
+    File f -> f.name.indexOf(pattern) >= 0
   }
 }
 

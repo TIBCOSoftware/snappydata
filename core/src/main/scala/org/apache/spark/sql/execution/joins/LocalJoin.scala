@@ -20,7 +20,6 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -29,18 +28,17 @@ import com.google.common.cache.CacheBuilder
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.TypeUtilities
-import org.apache.spark.{Partition, ShuffleDependency, TaskContext}
+import org.apache.spark.sql.{DelegateRDD, SnappySession}
+import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
 
 /**
  * :: DeveloperApi ::
@@ -58,6 +56,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan,
+    leftSizeInBytes: BigInt,
+    rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
@@ -79,15 +79,87 @@ case class LocalJoin(leftKeys: Seq[Expression],
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
     "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
 
-  override def outputPartitioning: Partitioning = streamedPlan.outputPartitioning
+  override def outputPartitioning: Partitioning = {
+    if (replicatedTableJoin) {
+      streamedPlan.outputPartitioning
+    } else joinType match {
+      case Inner => PartitioningCollection(
+        Seq(left.outputPartitioning, right.outputPartitioning))
+      // For left and right outer joins, the output is partitioned
+      // by the streamed input's join keys.
+      case LeftOuter | RightOuter => streamedPlan.outputPartitioning
+      case FullOuter => UnknownPartitioning(left.outputPartitioning.numPartitions)
+      case LeftExistence(_) => left.outputPartitioning
+      case x =>
+        throw new IllegalArgumentException(
+          s"${getClass.getSimpleName} should not take $x as the JoinType")
+    }
+  }
 
   override def requiredChildDistribution: Seq[Distribution] =
     if (replicatedTableJoin) {
       UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+    } else {
+      // if left or right side is already distributed on a subset of keys
+      // then use the same partitioning (for the larger side to reduce exchange)
+      val leftClustered = ClusteredDistribution(leftKeys)
+      val rightClustered = ClusteredDistribution(rightKeys)
+      val leftPartitioning = left.outputPartitioning
+      val rightPartitioning = right.outputPartitioning
+      if (leftPartitioning.satisfies(leftClustered) ||
+          rightPartitioning.satisfies(rightClustered) ||
+          // if either side is broadcast then return defaults
+          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
+          rightPartitioning.isInstanceOf[BroadcastDistribution] ||
+          // if both sides are unknown then return defaults too
+          (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
+              rightPartitioning.isInstanceOf[UnknownPartitioning])) {
+        leftClustered :: rightClustered :: Nil
+      } else {
+        // try subsets of the keys on each side
+        val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys)
+        val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys)
+        leftSubset match {
+          case Some((l, li)) => rightSubset match {
+            case Some((r, ri)) =>
+            // check if key indices of both sides match
+            if (li == ri) {
+              ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
+            } else {
+              // choose the bigger plan
+              if (leftSizeInBytes > rightSizeInBytes) {
+                ClusteredDistribution(l) ::
+                    ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
+              } else {
+                ClusteredDistribution(ri.map(leftKeys.apply)) ::
+                    ClusteredDistribution(r) :: Nil
+              }
+            }
+            case None => ClusteredDistribution(l) ::
+                ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
+          }
+          case None => rightSubset match {
+            case Some((r, ri)) => ClusteredDistribution(ri.map(leftKeys.apply)) ::
+                ClusteredDistribution(r) :: Nil
+            case None => leftClustered :: rightClustered :: Nil
+          }
+        }
+      }
     }
-    else {
-      ClusteredDistribution(leftKeys) :: ClusteredDistribution(rightKeys) :: Nil
-    }
+
+  /**
+   * Optionally return result if partitioning is a subset of given join keys,
+   * and if so then return the subset as well as the indices of subset keys
+   * in the join keys (in order).
+   */
+  private def getSubsetAndIndices(partitioning: Partitioning,
+      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = {
+    val numColumns = Utils.getNumColumns(partitioning)
+    if (keys.length > numColumns) {
+      keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
+          .find(p => partitioning.satisfies(ClusteredDistribution(p._1)))
+    } else None
+  }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
     require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
@@ -98,10 +170,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
   }
 
-  private lazy val streamRDD = streamedPlan.execute()
-  private lazy val buildRDD = buildPlan.execute()
-
-
   /**
    * Overridden by concrete implementations of SparkPlan.
    * Produces the result of the query as an RDD[InternalRow]
@@ -110,46 +178,56 @@ case class LocalJoin(leftKeys: Seq[Expression],
     WholeStageCodegenExec(this).execute()
   }
 
-  private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {
-    val buildDataSize = longMetric("buildDataSize")
-    val buildTime = longMetric("buildTime")
-    val start = System.nanoTime()
-    val context = TaskContext.get()
-    val relation = HashedRelation(iter, buildKeys, taskMemoryManager = context.taskMemoryManager())
-    buildTime += (System.nanoTime() - start) / 1000000
-    buildDataSize += relation.estimatedSize
-    // This relation is usually used until the end of task.
-    context.addTaskCompletionListener(_ => relation.close())
-    relation
-  }
-
-  private[spark] def materializeDependencies[T](rdd: RDD[T],
-      visited: mutable.HashSet[RDD[_]]): Unit = {
-    rdd.dependencies.foreach(dep =>
-      if (visited.add(dep.rdd)) materializeDependencies(dep.rdd, visited))
-  }
-
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  lazy val buildCodegenRDDs: Seq[RDD[InternalRow]] =
-    buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
+  private lazy val (streamSideRDDs, buildSideRDDs) = {
+    val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+    val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    // If the build side has shuffle dependencies.
-    if (buildCodegenRDDs.length == 1 && buildCodegenRDDs(0).dependencies.size >= 1 &&
-        buildCodegenRDDs(0).dependencies.exists(x => {
-          x.isInstanceOf[ShuffleDependency[_, _, _]]
-        })) {
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs().map(rdd => {
+    if (replicatedTableJoin) (streamRDDs, buildRDDs)
+    else {
+      // wrap in DelegateRDD for shuffle dependencies and preferred locations
+
+      // Get the build side shuffle dependencies.
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(_.dependencies
+          .filter(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
+          .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      // treat as a zip of all stream side RDDs and build side RDDs and
+      // use intersection of preferred locations, if possible, else union
+      val numParts = streamRDDs.head.getNumPartitions
+      val allRDDs = streamRDDs ++ buildRDDs
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
+          rdd.partitions(i)))
+        val exactMatches = prefLocations.reduce(_.intersect(_))
+        // prefer non-exchange side locations if no exact matches
+        if (exactMatches.nonEmpty) exactMatches
+        else if (buildShuffleDeps.nonEmpty) {
+          prefLocations.take(streamRDDs.length).flatten.distinct
+        } else if (hasStreamSideShuffle) {
+          prefLocations.takeRight(buildRDDs.length).flatten.distinct
+        } else prefLocations.flatten.distinct
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        val rdd = streamRDDs.head
         new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
-          (rdd.dependencies ++ buildCodegenRDDs(0).dependencies.filter(
-            _.isInstanceOf[ShuffleDependency[_, _, _]])))
-      })
-    } else {
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+          preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
+            streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+              rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs.map(rdd => new DelegateRDD[InternalRow](
+          rdd.sparkContext, rdd, preferredLocations))
+      }
+
+      (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
+        rdd.sparkContext, rdd, preferredLocations)))
     }
   }
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
 
   override def doProduce(ctx: CodegenContext): String = {
     val initMap = ctx.freshName("initMap")
@@ -166,7 +244,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
-    val rdds = buildCodegenRDDs
+    val rdds = buildSideRDDs
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
       new CacheKey(exprIds, rdds.head.id))
@@ -348,7 +426,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
       numRowsTerm, nullMaskVars, initCode, checkCondition,
       streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, dictionaryArrayTerm, joinType)
+      resultVars, dictionaryArrayTerm, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {

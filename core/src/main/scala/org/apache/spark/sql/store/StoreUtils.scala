@@ -102,7 +102,7 @@ object StoreUtils extends Logging {
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
-  private[sql] val PROPERTY_BUCKET_PARTITION_LINKED = "linkBucketsToPartitions"
+  private[sql] val PROPERTY_PARTITION_BUCKET_LINKED = "linkPartitionsToBuckets"
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {

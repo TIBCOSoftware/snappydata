@@ -61,7 +61,7 @@ class SnappySessionState(snappySession: SnappySession)
   protected lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
 
-  protected lazy val metadataHive = sharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = sharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -121,11 +121,10 @@ class SnappySessionState(snappySession: SnappySession)
           }
         case c@(LogicalRelation(_, _, _) |
                 LogicalDStreamPlan(_, _)) =>
-          transformed match {
-            case true => transformed = false
-              WindowLogicalPlan(duration, slide, c, transformed = true)
-            case _ => c
-          }
+          if (transformed) {
+            transformed = false
+            WindowLogicalPlan(duration, slide, c, transformed = true)
+          } else c
       }
     }
   }
@@ -133,17 +132,16 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * This rule sets the flag at query level to link the partitions to
    * be created for tables to be the same as number of buckets. This will avoid
-   * exchange on one side of a non-collocated join in most cases.
+   * exchange on one side of a non-collocated join in many cases.
    */
   object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
-        case j: Join if !planner.asInstanceOf[SnappyStrategies]
-            .LocalJoinStrategies.isLocalJoin(j) =>
+        case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
-          snappySession.linkBucketsToPartitions(flag = true)
+          snappySession.linkPartitionsToBuckets(flag = true)
         case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
-          snappySession.linkBucketsToPartitions(flag = true)
+          snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
       plan
@@ -158,9 +156,6 @@ class SnappySessionState(snappySession: SnappySession)
    */
   private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
       Array[Partition]]()
-
-  /** Used internally to enforce shuffle partitions for an execution. */
-  @volatile private[sql] var forceShufflePartitions: Int = 0
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -211,18 +206,21 @@ class SnappySessionState(snappySession: SnappySession)
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
-
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
-    clearExecutionData()
-    contextFunctions.executePlan(snappySession, plan)
-  }
-
   protected[sql] def queryPreparations: Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     PlanSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
+    CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
     ReuseExchange(snappySession.sessionState.conf))
+
+  override def executePlan(plan: LogicalPlan): QueryExecution = {
+    clearExecutionData()
+    new QueryExecution(snappySession, plan) {
+      override protected def preparations: Seq[Rule[SparkPlan]] =
+        queryPreparations
+    }
+  }
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     clearExecutionData()
@@ -237,9 +235,17 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
-    leaderPartitions.getOrElseUpdate(leaderRegion,
+    leaderPartitions.getOrElseUpdate(leaderRegion, {
+      val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
+      if (linkPartitionsToBuckets) {
+        // also set the default shuffle partitions for this execution
+        // to minimize exchange
+        snappySession.sessionState.conf.setExecutionShufflePartitions(
+          region.getTotalNumberOfBuckets)
+      }
       StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
-        snappySession.hasLinkBucketsToPartitions))
+        linkPartitionsToBuckets)
+    })
   }
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
@@ -249,18 +255,24 @@ class SnappySessionState(snappySession: SnappySession)
 class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable with CatalystConf {
 
+  /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
+  @volatile private[this] var executionShufflePartitions: Int = _
+
   /**
    * Records the number of shuffle partitions to be used determined on runtime
    * from available cores on the system. A value <= 0 indicates that it was set
    * explicitly by user and should not use a dynamic value.
    */
-  @volatile private[this] var dynamicShufflePartitions: Int = SQLConf
-      .SHUFFLE_PARTITIONS.defaultValue match {
-    case _ if session == null => -1
-    case Some(d) => if (super.numShufflePartitions == d) {
-      SnappyContext.totalCoreCount.get()
-    } else -1
-    case None => SnappyContext.totalCoreCount.get()
+  @volatile private[this] var dynamicShufflePartitions: Int = _
+
+  SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
+    case Some(d) if session != null && super.numShufflePartitions == d =>
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case None if session != null =>
+      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case _ =>
+      executionShufflePartitions = -1
+      dynamicShufflePartitions = -1
   }
 
   private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
@@ -269,20 +281,34 @@ class SnappyConf(@transient val session: SnappySession)
          Property.HashJoinSize.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
-      if (doSet) dynamicShufflePartitions = -1
-      else dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      if (doSet) {
+        executionShufflePartitions = -1
+        dynamicShufflePartitions = -1
+      } else {
+        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
     case _ => // ignore others
   }
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
-    if (dynamicShufflePartitions != -1 && session != null) {
-      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    if (session ne null) {
+      if (executionShufflePartitions != -1) {
+        executionShufflePartitions = 0
+      }
+      if (dynamicShufflePartitions != -1) {
+        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
     }
-    session.sessionState.forceShufflePartitions = 0
+  }
+
+  private[sql] def setExecutionShufflePartitions(n: Int): Unit = synchronized {
+    if (executionShufflePartitions != -1 && session != null) {
+      executionShufflePartitions = math.max(n, executionShufflePartitions)
+    }
   }
 
   override def numShufflePartitions: Int = {
-    val partitions = session.sessionState.forceShufflePartitions
+    val partitions = this.executionShufflePartitions
     if (partitions > 0) partitions
     else {
       val partitions = this.dynamicShufflePartitions
@@ -531,7 +557,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       }
 
     // other cases handled like in PreprocessTableInsertion
-    case i@InsertIntoTable(table, partition, child, _, _)
+    case i@InsertIntoTable(table, _, child, _, _)
       if table.resolved && child.resolved => table match {
       case relation: CatalogRelation =>
         val metadata = relation.catalogTable
@@ -543,9 +569,8 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       case LogicalRelation(_: InsertableRelation, _, identifier) =>
         val tblName = identifier.map(_.quotedString).getOrElse("unknown")
         preprocess(i, tblName, Nil)
-      case other => i
+      case _ => i
     }
-
   }
 
   private def preprocess(
@@ -612,7 +637,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     if (newChildOutput == child.output) {
       plan match {
         case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
-        case i: InsertIntoTable => plan
+        case _: InsertIntoTable => plan
       }
     } else plan match {
       case p: PutIntoTable => p.copy(table = newRelation,
@@ -639,7 +664,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
           // OK
         }
 
-      case PutIntoTable(table, query) =>
+      case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
 
       case _ => // OK

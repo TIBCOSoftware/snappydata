@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.{Partition, Partitioner, TaskContext}
+import org.apache.spark.{Dependency, Partition, Partitioner, SparkContext, TaskContext}
 
 
 private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
@@ -38,7 +38,7 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
     f(context, split, firstParent[T].iterator(split, context))
 }
 
-private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
+private[sql] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
     prev: RDD[T],
     f: (TaskContext, Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false, p: (Int) => Seq[String])
@@ -68,4 +68,32 @@ private[sql] final class PartitionedPreferredLocationsRDD[T: ClassTag](
     super.clearDependencies()
     child = null
   }
+}
+
+/**
+ * RDD that delegates calls to the base RDD. However the dependencies
+ * and preferred locations of this RDD can be altered.
+ */
+class DelegateRDD[T: ClassTag](
+    sc: SparkContext,
+    baseRdd: RDD[T],
+    preferredLocations: Array[Seq[String]] = null,
+    allDependencies: Seq[Dependency[_]] = null)
+    extends RDD[T](sc,
+      if (allDependencies == null) baseRdd.dependencies
+      else allDependencies)
+        with Serializable {
+
+  @transient override val partitioner: Option[Partitioner] = baseRdd.partitioner
+
+  override def getPreferredLocations(
+      split: Partition): Seq[String] = {
+    if (preferredLocations eq null) baseRdd.preferredLocations(split)
+    else preferredLocations(split.index)
+  }
+
+  override protected def getPartitions: Array[Partition] = baseRdd.partitions
+
+  override def compute(split: Partition, context: TaskContext): Iterator[T] =
+    baseRdd.compute(split, context)
 }

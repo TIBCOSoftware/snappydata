@@ -61,7 +61,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   // Only one insert plan possible in the plan tree, so no clashes.
   if (partitioned) {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.sessionState.forceShufflePartitions = relation.numBuckets
+    session.sessionState.conf.setExecutionShufflePartitions(relation.numBuckets)
   }
 
   /** Specifies how data is partitioned for the table. */

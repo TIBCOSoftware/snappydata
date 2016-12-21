@@ -17,12 +17,18 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException, Connection, DriverManager}
 
+import scala.util.Random
+
+import com.gemstone.org.jgroups.oswego.concurrent.Callable
 import com.pivotal.gemfirexd.internal.engine.distributed.metadata.QueryInfo
 import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQueryObserverAdapter, GemFireXDQueryObserverHolder}
+import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineArbiter
 import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineRule.ExecutionEngine
-import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.dunit.{DistributedTestBase, AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.util.TestException
+import junit.framework.Assert
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{SaveMode, SnappyContext}
@@ -39,7 +45,6 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     // setDMLMaxChunkSize(default_chunk_size)
     super.tearDown2()
   }
-
 
   def testExecutionEngineForDistinctQueries(): Unit = {
     distinctExecutionEngineRule(SnappyContext())
@@ -67,6 +72,18 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
 
   def testExecutionEngineQueryHint(): Unit = {
     queryHint(SnappyContext())
+  }
+
+  def testExecutionEngineQueryHintWithException(): Unit = {
+    queryHintWithException(SnappyContext())
+  }
+
+  def testExecutionEngineTableWithGetAllConvertible(): Unit = {
+    queryGetAllConvertibleEngineRule(SnappyContext())
+  }
+
+  def testExecutionEngineTableWithIndex(): Unit = {
+    queryIndexEngineRule(SnappyContext())
   }
 
   override def startNetServer: String = {
@@ -109,6 +126,21 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     vm2.invoke(hook)
     vm3.invoke(hook)
   }
+
+//  override def setTestHook(): Unit = {
+//    val hook = new SerializableRunnable {
+//      override def run() {
+//        ExecutionEngineArbiter.setTestHookCostThreshold(100)
+//      }
+//    }
+//    hook.run()
+//    vm0.invoke(hook)
+//    vm1.invoke(hook)
+//    vm2.invoke(hook)
+//    vm3.invoke(hook)
+//  }
+
+
 }
 
 trait ExecutionEngineArbiterTestBase {
@@ -117,6 +149,8 @@ trait ExecutionEngineArbiterTestBase {
   def startNetServer: String
 
   def stopNetServer: Unit
+
+  //def setTestHook: Unit
 
   def createRowTableAndInsertData(snc: SnappyContext, tableName: String,
       props: Map[String, String] = Map.empty): Unit = {
@@ -165,9 +199,17 @@ trait ExecutionEngineArbiterTestBase {
     setObserver(isSparkExecution, query)
     val s = conn.createStatement()
     if (isUpdate) s.executeUpdate(query)
-    else s.execute(query)
+    else {
+      s.execute(query)
+    }
     s.close()
   }
+
+//  def runAndValidateQueryForCostBasedRouting(conn: Connection, isSparkExecution: Boolean, query:
+//  String, isUpdate: Boolean = false): Unit = {
+//    setTestHook
+//    runAndValidateQuery(conn, isSparkExecution, query, isUpdate)
+//  }
 
   def distinctExecutionEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
@@ -194,6 +236,124 @@ trait ExecutionEngineArbiterTestBase {
 
     stopNetServer
   }
+
+  def queryHintWithException(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    createRowTableAndInsertData(snc, testTable, Map("PARTITION_BY" -> "COL1"))
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    runAndValidateQuery(conn, false,
+      s"select * from $testTable limit 1")
+
+    // Execute  a query on Store side with wrong syntax that works on spark engine
+    try {
+      runAndValidateQuery(conn, false,
+        s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Store\n limit 1")
+      DistributedTestBase.fail("Expected syntax error as query was supposed to be executed on store with limit clause",
+        new TestException("Expected Exception"))
+    }
+    catch {
+      case sqe: SQLException =>
+        if ("42X01" != sqe.getSQLState) {
+          throw sqe
+        }
+    }
+  }
+
+  def queryGetAllConvertibleEngineRule(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    val sc = snc.sparkContext
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt(10))
+    }
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(testTable, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
+    snc.sql(s"create index col2index on $testTable(col2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    val query: String = s"select col1, col3 from $testTable where col2 IN (2,8,6)"
+    runAndValidateQuery(conn, false, query)
+  }
+
+  def queryIndexEngineRule(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    val sc = snc.sparkContext
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(testTable, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
+    snc.sql(s"create index col2index on $testTable(col2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    var query: String = s"select col1, col3 from $testTable where col2 = 2"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col1, col3 from $testTable where col2 > 1"
+    runAndValidateQuery(conn, true, query)
+  }
+
+/*  def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+
+    val sc = snc.sparkContext
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt(10))
+    }
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(testTable, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
+    snc.sql(s"create index col1index on $testTable(col1)")
+    snc.sql(s"create index col2index on $testTable(col2)")
+
+    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable(testTable)
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    runAndValidateQueryForCostBasedRouting(conn, false,
+      s"select col1, count(*) from $testTable WHERE col2 = 2 group by col1")
+
+    runAndValidateQueryForCostBasedRouting(conn, false,
+      s"select col1, col3 from $testTable WHERE col2 > 3")
+
+    1 to 10000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt(10))
+    }
+    val rdd2 = sc.parallelize(data, data.length).map(s =>
+      IndexData(s.head, s(1), Decimal(s(1).toString + '.' + s(2))))
+    val dataDF2 = snc.createDataFrame(rdd2)
+
+    dataDF2.write.format("row").mode(SaveMode.Overwrite)
+        .saveAsTable(testTable)
+
+    runAndValidateQueryForCostBasedRouting(conn, true,
+      s"select col1, count(*) from $testTable WHERE col2 = 2 group by col1")
+
+    runAndValidateQueryForCostBasedRouting(conn, true,
+      s"select col1, col3 from $testTable WHERE col2 > 3")
+
+  }*/
 
   def queryHint(snc: SnappyContext): Unit = {
     val testTable = "testTable1"

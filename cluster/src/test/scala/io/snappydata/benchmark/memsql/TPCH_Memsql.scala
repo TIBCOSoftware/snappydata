@@ -338,7 +338,7 @@ object TPCH_Memsql {
          "     and o_orderdate < '1993-07-01' + interval '3' month" +
          "     and exists (" +
          "         select" +
-         "             *" +
+         "             l_orderkey" +
          "         from" +
          "             LINEITEM" +
          "         where" +
@@ -1015,7 +1015,7 @@ object TPCH_Memsql {
          "         and l1.l_receiptdate > l1.l_commitdate" +
          "         and exists (" +
          "                 select" +
-         "                         *" +
+         "                         l2.l_orderkey" +
          "                 from" +
          "                         LINEITEM l2" +
          "                 where" +
@@ -1024,7 +1024,7 @@ object TPCH_Memsql {
          "         )" +
          "         and not exists (" +
          "                 select" +
-         "                         *" +
+         "                         l3.l_orderkey" +
          "                 from" +
          "                         LINEITEM l3" +
          "                 where" +

@@ -446,7 +446,7 @@ object TAQTest extends Logging {
       }
 
       def cleanup(): Unit = {
-        SnappySession.clearPlanCache()
+        SnappySession.clearAllCache()
         defaults.foreach { case (k, v) =>
           session.conf.set(k, v); spark.conf.set(k, v)
         }
