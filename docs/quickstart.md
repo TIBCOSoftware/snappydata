@@ -344,7 +344,7 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 5. On the **Options** page, click **Next** to continue using the provided default values.<br>
 
 6. On the **Review** page, verify the details and click **Create** to create a stack. <br>
-![Create](Images/cluster_createstack.png)"></p>
+![Create](Images/cluster_createstack.png)</p>
 <a id="Stack"></a>
 
 
