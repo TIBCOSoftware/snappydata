@@ -48,7 +48,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
-    partitionColumnAliases: Seq[Option[Attribute]],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
@@ -92,7 +92,7 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkBucketsToPartitions) 0 else numBuckets)
+          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -116,7 +116,7 @@ private[sql] object PartitionedPhysicalScan {
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Option[Attribute]],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       rdd: RDD[Any],
       otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,

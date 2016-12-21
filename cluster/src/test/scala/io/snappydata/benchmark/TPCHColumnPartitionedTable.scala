@@ -87,7 +87,7 @@ object TPCHColumnPartitionedTable {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL," +
-        "KEY (O_CUSTKEY) USING CLUSTERED COLUMNSTORE," +
+        "KEY (O_ORDERKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY(O_ORDERKEY))"
     )
     println("Created Table ORDERS")
@@ -110,7 +110,7 @@ object TPCHColumnPartitionedTable {
         "L_SHIPINSTRUCT CHAR(25) NOT NULL," +
         "L_SHIPMODE     CHAR(10) NOT NULL," +
         "L_COMMENT      VARCHAR(44) NOT NULL," +
-        "KEY (L_PARTKEY) USING CLUSTERED COLUMNSTORE," +
+        "KEY (L_ORDERKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY (L_ORDERKEY)) "
     )
 

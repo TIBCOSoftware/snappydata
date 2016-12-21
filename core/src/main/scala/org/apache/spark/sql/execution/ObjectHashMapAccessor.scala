@@ -868,6 +868,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"""
         if ($entryIndexVar < $numEntriesVar) {
           $localValueVar = $valuesVar[$entryIndexVar++];
+          $nullsUpdate
           $dupRow
         } else if ($numEntriesVar == -1) {
           // multi-values array hit first time

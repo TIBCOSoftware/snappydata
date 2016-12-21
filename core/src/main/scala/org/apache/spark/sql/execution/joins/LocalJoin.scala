@@ -17,31 +17,28 @@
 package org.apache.spark.sql.execution.joins
 
 import java.io.IOException
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import java.util.concurrent.{Callable, ExecutionException, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Callable, ExecutionException}
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
-import io.snappydata.Constant
+import com.google.common.cache.CacheBuilder
 
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.physical.{BroadcastDistribution, ClusteredDistribution, Distribution, Partitioning, UnknownPartitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical.{BroadcastDistribution, ClusteredDistribution, Distribution, Partitioning, PartitioningCollection, UnknownPartitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.types.{LongType, StructType, TypeUtilities}
-import org.apache.spark.{Partition, ShuffleDependency, SparkEnv, TaskContext}
+import org.apache.spark.sql.types.TypeUtilities
+import org.apache.spark.sql.{DelegateRDD, SnappySession}
+import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
 
 /**
  * :: DeveloperApi ::
@@ -82,7 +79,22 @@ case class LocalJoin(leftKeys: Seq[Expression],
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
     "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
 
-  override def outputPartitioning: Partitioning = streamedPlan.outputPartitioning
+  override def outputPartitioning: Partitioning = {
+    if (replicatedTableJoin) {
+      streamedPlan.outputPartitioning
+    } else joinType match {
+      case Inner => PartitioningCollection(
+        Seq(left.outputPartitioning, right.outputPartitioning))
+      // For left and right outer joins, the output is partitioned
+      // by the streamed input's join keys.
+      case LeftOuter | RightOuter => streamedPlan.outputPartitioning
+      case FullOuter => UnknownPartitioning(left.outputPartitioning.numPartitions)
+      case LeftExistence(_) => left.outputPartitioning
+      case x =>
+        throw new IllegalArgumentException(
+          s"${getClass.getSimpleName} should not take $x as the JoinType")
+    }
+  }
 
   override def requiredChildDistribution: Seq[Distribution] =
     if (replicatedTableJoin) {
@@ -140,15 +152,13 @@ case class LocalJoin(leftKeys: Seq[Expression],
    * and if so then return the subset as well as the indices of subset keys
    * in the join keys (in order).
    */
-  private def getSubsetAndIndices(part: Partitioning,
-      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = part match {
-    case e: Expression =>
-      val numColumns = e.children.length
-      if (keys.length > numColumns) {
-        keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
-            .find(p => part.satisfies(ClusteredDistribution(p._1)))
-      } else None
-    case _ => None
+  private def getSubsetAndIndices(partitioning: Partitioning,
+      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = {
+    val numColumns = Utils.getNumColumns(partitioning)
+    if (keys.length > numColumns) {
+      keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
+          .find(p => partitioning.satisfies(ClusteredDistribution(p._1)))
+    } else None
   }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
@@ -160,10 +170,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
   }
 
-  private lazy val streamRDD = streamedPlan.execute()
-  private lazy val buildRDD = buildPlan.execute()
-
-
   /**
    * Overridden by concrete implementations of SparkPlan.
    * Produces the result of the query as an RDD[InternalRow]
@@ -172,54 +178,58 @@ case class LocalJoin(leftKeys: Seq[Expression],
     WholeStageCodegenExec(this).execute()
   }
 
-  private def buildHashedRelation(iter: Iterator[InternalRow]): HashedRelation = {
-    val buildDataSize = longMetric("buildDataSize")
-    val buildTime = longMetric("buildTime")
-    val start = System.nanoTime()
-    val context = TaskContext.get()
-    val relation = HashedRelation(iter, buildKeys, taskMemoryManager = context.taskMemoryManager())
-    buildTime += (System.nanoTime() - start) / 1000000
-    buildDataSize += relation.estimatedSize
-    // This relation is usually used until the end of task.
-    context.addTaskCompletionListener(_ => relation.close())
-    relation
-  }
-
-  private[spark] def materializeDependencies[T](rdd: RDD[T],
-      visited: mutable.HashSet[RDD[_]]): Unit = {
-    rdd.dependencies.foreach(dep =>
-      if (visited.add(dep.rdd)) materializeDependencies(dep.rdd, visited))
-  }
-
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  lazy val buildCodegenRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
+  private lazy val (streamSideRDDs, buildSideRDDs) = {
+    val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+    val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    // If the build side has shuffle dependencies.
-    if (buildCodegenRDDs.length == 1 && buildCodegenRDDs(0).dependencies.size >= 1 &&
-        buildCodegenRDDs(0).dependencies.exists(x =>
-        {x.isInstanceOf[ShuffleDependency[_, _, _]]})){
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs().map(rdd => {
+    if (replicatedTableJoin) (streamRDDs, buildRDDs)
+    else {
+      // wrap in DelegateRDD for shuffle dependencies and preferred locations
+
+      // Get the build side shuffle dependencies.
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(_.dependencies
+          .filter(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
+          .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      // treat as a zip of all stream side RDDs and build side RDDs and
+      // use intersection of preferred locations, if possible, else union
+      val numParts = streamRDDs.head.getNumPartitions
+      val allRDDs = streamRDDs ++ buildRDDs
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
+          rdd.partitions(i)))
+        val exactMatches = prefLocations.reduce(_.intersect(_))
+        // prefer non-exchange side locations if no exact matches
+        if (exactMatches.nonEmpty) exactMatches
+        else if (buildShuffleDeps.nonEmpty) {
+          prefLocations.take(streamRDDs.length).flatten.distinct
+        } else if (hasStreamSideShuffle) {
+          prefLocations.takeRight(buildRDDs.length).flatten.distinct
+        } else prefLocations.flatten.distinct
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        val rdd = streamRDDs.head
         new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
-          (rdd.dependencies ++ buildCodegenRDDs(0).dependencies.filter(
-            _.isInstanceOf[ShuffleDependency[_, _, _]])))
-      })
-    } else {
-      streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+          preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
+            streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+              rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs.map(rdd => new DelegateRDD[InternalRow](
+          rdd.sparkContext, rdd, preferredLocations))
+      }
+
+      (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
+        rdd.sparkContext, rdd, preferredLocations)))
     }
   }
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
 
   override def doProduce(ctx: CodegenContext): String = {
-    if (true) {
-      doProduceOptimized(ctx)
-    } else {
-      streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
-    }
-  }
-
-  private def doProduceOptimized(ctx: CodegenContext): String = {
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
@@ -234,7 +244,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
-    val rdds = buildCodegenRDDs
+    val rdds = buildSideRDDs
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
       new CacheKey(exprIds, rdds.head.id))
@@ -389,37 +399,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    if (true) {
-      return doConsumeOptimized(ctx, input)
-    }
-    // create a name for HashedRelation
-    val relationTerm = ctx.freshName("relation")
-    val relationIsUnique = ctx.freshName("keyIsUnique")
-    val buildRDDRef = ctx.addReferenceObj("buildRDD", buildRDD)
-    if (buildRDD.partitions.length == 1) {
-      val buildPartRef = ctx.addReferenceObj("buildPartition", buildRDD.partitions(0))
-      ctx.addMutableState(classOf[HashedRelation].getName, relationTerm,
-        prepareHashedRelation(ctx, relationTerm, buildRDDRef, buildPartRef))
-    }
-    ctx.addMutableState(classOf[Boolean].getName, relationIsUnique,
-      s"$relationIsUnique = $relationTerm.keyIsUnique();")
-
-    joinType match {
-      case Inner => codeGenInner(ctx, input, relationTerm, relationIsUnique)
-      case LeftOuter | RightOuter => codeGenOuter(ctx, input,
-        relationTerm, relationIsUnique)
-      case LeftSemi => codeGenSemi(ctx, input, relationTerm, relationIsUnique)
-      case LeftAnti => codeGenAnti(ctx, input, relationTerm, relationIsUnique)
-      case _: ExistenceJoin => codeGenExistence(ctx, input,
-        relationTerm, relationIsUnique)
-      case x =>
-        throw new IllegalArgumentException(
-          s"BroadcastHashJoin should not take $x as the JoinType")
-    }
-  }
-
-  private def doConsumeOptimized(ctx: CodegenContext,
-      input: Seq[ExprCode]): String = {
     // variable that holds if relation is unique to optimize iteration
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
@@ -472,83 +451,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
   }
 
   /**
-   * Returns code for creating a HashedRelation.
-   */
-  private def prepareHashedRelation(ctx: CodegenContext,
-      relationTerm: String, buildRDDTerm: String,
-      buildPartTerm: String): String = {
-    val startName = ctx.freshName("start")
-    val sizeName = ctx.freshName("estimatedSize")
-    val contextName = ctx.freshName("context")
-    val buildKeysVar = ctx.addReferenceObj("buildKeys", buildKeys)
-    val buildSchemaVar = ctx.addReferenceObj("buildSchema", buildPlan.schema)
-    val buildDataSize = metricTerm(ctx, "buildDataSize")
-    val buildTime = metricTerm(ctx, "buildTime")
-    s"""
-       |final long $startName = System.nanoTime();
-       |final org.apache.spark.TaskContext $contextName =
-       |  org.apache.spark.TaskContext.get();
-       |$relationTerm = org.apache.spark.sql.execution.joins.HashedRelationCache
-       |  .get($buildSchemaVar, $buildKeysVar, $buildRDDTerm, $buildPartTerm,
-       |  $contextName, 1);
-       |$buildTime.${metricAdd(s"(System.nanoTime() - $startName) / 1000000L")};
-       |final long $sizeName = $relationTerm.estimatedSize();
-       |$buildDataSize.${metricAdd(sizeName)};
-       |$contextName.taskMetrics().incPeakExecutionMemory($sizeName);
-    """.stripMargin
-  }
-
-  /**
-   * Returns the code for generating join key for stream side,
-   * and expression of whether the key has any null in it or not.
-   */
-  private def genStreamSideJoinKey(
-      ctx: CodegenContext,
-      input: Seq[ExprCode]): (ExprCode, String) = {
-    ctx.currentVars = input
-    if (streamedKeys.length == 1 && streamedKeys.head.dataType == LongType) {
-      // generate the join key as Long
-      val ev = streamedKeys.head.genCode(ctx)
-      (ev, ev.isNull)
-    } else {
-      // generate the join key as UnsafeRow
-      val ev = GenerateUnsafeProjection.createCode(ctx, streamedKeys)
-      (ev, s"${ev.value}.anyNull()")
-    }
-  }
-
-  /**
-   * Generates the code for variable of build side.
-   */
-  private def genBuildSideVars(ctx: CodegenContext,
-      matched: String): Seq[ExprCode] = {
-    ctx.currentVars = null
-    ctx.INPUT_ROW = matched
-    buildPlan.output.zipWithIndex.map { case (a, i) =>
-      val ev = BoundReference(i, a.dataType, a.nullable).genCode(ctx)
-      if (joinType == Inner) {
-        ev
-      } else {
-        // the variables are needed even there is no matched rows
-        val isNull = ctx.freshName("isNull")
-        val value = ctx.freshName("value")
-        val code =
-          s"""
-             |boolean $isNull = true;
-             |${ctx.javaType(a.dataType)} $value =
-             |  ${ctx.defaultValue(a.dataType)};
-             |if ($matched != null) {
-             |  ${ev.code}
-             |  $isNull = ${ev.isNull};
-             |  $value = ${ev.value};
-             |}
-         """.stripMargin
-        ExprCode(code, isNull, value)
-      }
-    }
-  }
-
-  /**
    * Generate the (non-equi) condition used to filter joined rows.
    * This is used in Inner joins.
    */
@@ -565,433 +467,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
       (Some(ev), eval)
     case None => (None, "")
-  }
-
-  /**
-   * Generate the (non-equi) condition used to filter joined rows.
-   * This is used in Inner, Left Semi and Left Anti joins.
-   */
-  private def getJoinCondition(
-      ctx: CodegenContext,
-      input: Seq[ExprCode],
-      anti: Boolean = false): (String, String, String, Seq[ExprCode]) = {
-    val matched = ctx.freshName("matched")
-    val buildVars = genBuildSideVars(ctx, matched)
-    val (checkCondition, antiCondition) = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
-        expr.references)
-      // filter the output via condition
-      ctx.currentVars = input ++ buildVars
-      val ev = BindReferences.bindReference(expr,
-        streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      val cond =
-        s"""
-           |$eval
-           |${ev.code}
-           |if (${ev.isNull} || !${ev.value}) continue;
-        """.stripMargin
-      val antiCond = if (anti) {
-        s"""
-           |$eval
-           |${ev.code}
-           |if (!${ev.isNull} && ${ev.value}) continue;
-        """.stripMargin
-      } else ""
-      (cond, antiCond)
-    } else {
-      ("", "continue;")
-    }
-    (matched, checkCondition, antiCondition, buildVars)
-  }
-
-  /**
-   * Generates the code for Inner join.
-   */
-  private def codeGenInner(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String,
-      relationIsUnique: String): String = {
-    val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
-    val (matched, checkCondition, _, buildVars) = getJoinCondition(ctx, input)
-    val numOutput = metricTerm(ctx, "numOutputRows")
-
-    val resultVars = buildSide match {
-      case BuildLeft => buildVars ++ input
-      case BuildRight => input ++ buildVars
-    }
-    ctx.copyResult = true
-    val matches = ctx.freshName("matches")
-    val iteratorCls = classOf[Iterator[UnsafeRow]].getName
-    val consumeResult = consume(ctx, resultVars)
-
-    s"""
-       |if ($relationIsUnique) {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashedRelation
-       |  UnsafeRow $matched = $anyNull ? null : (UnsafeRow)$relationTerm
-       |    .getValue(${keyEv.value});
-       |  if ($matched == null) continue;
-       |  $checkCondition
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |} else {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashRelation
-       |  $iteratorCls $matches = $anyNull ? null : ($iteratorCls)$relationTerm
-       |    .get(${keyEv.value});
-       |  if ($matches == null) continue;
-       |  while ($matches.hasNext()) {
-       |    UnsafeRow $matched = (UnsafeRow)$matches.next();
-       |    $checkCondition
-       |    $numOutput.${metricAdd("1")};
-       |    $consumeResult
-       |  }
-       |}
-     """.stripMargin
-  }
-
-  /**
-   * Generates the code for left or right outer join.
-   */
-  private def codeGenOuter(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String,
-      relationIsUnique: String): String = {
-    val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
-    val matched = ctx.freshName("matched")
-    val buildVars = genBuildSideVars(ctx, matched)
-    val numOutput = metricTerm(ctx, "numOutputRows")
-
-    // filter the output via condition
-    val conditionPassed = ctx.freshName("conditionPassed")
-    val checkCondition = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
-        expr.references)
-      ctx.currentVars = input ++ buildVars
-      val ev = BindReferences.bindReference(expr,
-        streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      s"""
-         |boolean $conditionPassed = true;
-         |${eval.trim}
-         |${ev.code}
-         |if ($matched != null) {
-         |  $conditionPassed = !${ev.isNull} && ${ev.value};
-         |}
-       """.stripMargin.trim
-    } else {
-      s"final boolean $conditionPassed = true;"
-    }
-
-    val resultVars = buildSide match {
-      case BuildLeft => buildVars ++ input
-      case BuildRight => input ++ buildVars
-    }
-    ctx.copyResult = true
-    val matches = ctx.freshName("matches")
-    val iteratorCls = classOf[Iterator[UnsafeRow]].getName
-    val found = ctx.freshName("found")
-    val consumeResult = consume(ctx, resultVars)
-
-    s"""
-       |if ($relationIsUnique) {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashedRelation
-       |  UnsafeRow $matched = $anyNull ? null: (UnsafeRow)$relationTerm
-       |    .getValue(${keyEv.value});
-       |  $checkCondition
-       |  if (!$conditionPassed) {
-       |    $matched = null;
-       |    // reset the variables those are already evaluated.
-       |    ${buildVars.filter(_.code == "").map(v => s"${v.isNull} = true;")
-              .mkString("\n")}
-       |  }
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |} else {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashRelation
-       |  $iteratorCls $matches = $anyNull ? null : ($iteratorCls)$relationTerm
-       |    .get(${keyEv.value});
-       |  boolean $found = false;
-       |  // the last iteration of this loop is to emit an empty row
-       |  // if there is no matched rows.
-       |  while ($matches != null && $matches.hasNext() || !$found) {
-       |    UnsafeRow $matched = $matches != null && $matches.hasNext() ?
-       |      (UnsafeRow) $matches.next() : null;
-       |    $checkCondition
-       |    if (!$conditionPassed) continue;
-       |    $found = true;
-       |    $numOutput.${metricAdd("1")};
-       |    $consumeResult
-       |  }
-       |}
-    """.stripMargin
-  }
-
-  /**
-   * Generates the code for left semi join.
-   */
-  private def codeGenSemi(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String,
-      relationIsUnique: String): String = {
-    val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
-    val (matched, checkCondition, _, _) = getJoinCondition(ctx, input)
-    val numOutput = metricTerm(ctx, "numOutputRows")
-    val matches = ctx.freshName("matches")
-    val iteratorCls = classOf[Iterator[UnsafeRow]].getName
-    val found = ctx.freshName("found")
-    val consumeResult = consume(ctx, input)
-
-    s"""
-       |if ($relationIsUnique) {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashedRelation
-       |  UnsafeRow $matched = $anyNull ? null: (UnsafeRow)$relationTerm
-       |    .getValue(${keyEv.value});
-       |  if ($matched == null) continue;
-       |  $checkCondition
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |} else {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashRelation
-       |  $iteratorCls $matches = $anyNull ? null : ($iteratorCls)$relationTerm
-       |    .get(${keyEv.value});
-       |  if ($matches == null) continue;
-       |  boolean $found = false;
-       |  while (!$found && $matches.hasNext()) {
-       |    UnsafeRow $matched = (UnsafeRow) $matches.next();
-       |    $checkCondition
-       |    $found = true;
-       |  }
-       |  if (!$found) continue;
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |}
-    """.stripMargin
-  }
-
-  /**
-   * Generates the code for anti join.
-   */
-  private def codeGenAnti(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String,
-      relationIsUnique: String): String = {
-    val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
-    val (matched, checkCondition, antiCondition, _) =
-      getJoinCondition(ctx, input, anti = true)
-    val numOutput = metricTerm(ctx, "numOutputRows")
-    val matches = ctx.freshName("matches")
-    val iteratorCls = classOf[Iterator[UnsafeRow]].getName
-    val found = ctx.freshName("found")
-    val consumeResult = consume(ctx, input)
-
-    s"""
-       |if ($relationIsUnique) {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // Check if the key has nulls.
-       |  if (!($anyNull)) {
-       |    // find matches from HashedRelation
-       |    UnsafeRow $matched = (UnsafeRow)$relationTerm
-       |      .getValue(${keyEv.value});
-       |    if ($matched != null) {
-       |      // Evaluate the condition.
-       |      $antiCondition
-       |    }
-       |  }
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |} else {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // Check if the key has nulls.
-       |  if (!($anyNull)) {
-       |    // find matches from HashedRelation
-       |    $iteratorCls $matches = ($iteratorCls)$relationTerm
-       |      .get(${keyEv.value});
-       |    if ($matches != null) {
-       |      // Evaluate the condition.
-       |      boolean $found = false;
-       |      while (!$found && $matches.hasNext()) {
-       |        UnsafeRow $matched = (UnsafeRow) $matches.next();
-       |        $checkCondition
-       |        $found = true;
-       |      }
-       |      if ($found) continue;
-       |    }
-       |  }
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |}
-    """.stripMargin
-  }
-
-  /**
-   * Generates the code for existence join.
-   */
-  private def codeGenExistence(ctx: CodegenContext,
-      input: Seq[ExprCode], relationTerm: String,
-      relationIsUnique: String): String = {
-    val (keyEv, anyNull) = genStreamSideJoinKey(ctx, input)
-    val numOutput = metricTerm(ctx, "numOutputRows")
-    val existsVar = ctx.freshName("exists")
-
-    val matched = ctx.freshName("matched")
-    val buildVars = genBuildSideVars(ctx, matched)
-    val checkCondition = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
-        expr.references)
-      // filter the output via condition
-      ctx.currentVars = input ++ buildVars
-      val ev = BindReferences.bindReference(expr,
-        streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      s"""
-         |$eval
-         |${ev.code}
-         |$existsVar = !${ev.isNull} && ${ev.value};
-       """.stripMargin
-    } else {
-      s"$existsVar = true;"
-    }
-
-    val resultVar = input ++ Seq(ExprCode("", "false", existsVar))
-    val matches = ctx.freshName("matches")
-    val iteratorCls = classOf[Iterator[UnsafeRow]].getName
-    val consumeResult = consume(ctx, resultVar)
-
-    s"""
-       |if ($relationIsUnique) {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashedRelation
-       |  UnsafeRow $matched = $anyNull ? null: (UnsafeRow)$relationTerm
-       |    .getValue(${keyEv.value});
-       |  boolean $existsVar = false;
-       |  if ($matched != null) {
-       |    $checkCondition
-       |  }
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |} else {
-       |  // generate join key for stream side
-       |  ${keyEv.code}
-       |  // find matches from HashRelation
-       |  $iteratorCls $matches = $anyNull ? null : ($iteratorCls)$relationTerm
-       |    .get(${keyEv.value});
-       |  boolean $existsVar = false;
-       |  if ($matches != null) {
-       |    while (!$existsVar && $matches.hasNext()) {
-       |      UnsafeRow $matched = (UnsafeRow) $matches.next();
-       |      $checkCondition
-       |    }
-       |  }
-       |  $numOutput.${metricAdd("1")};
-       |  $consumeResult
-       |}
-     """.stripMargin
-  }
-}
-
-object HashedRelationCache {
-
-  type KeyType = (StructType, Seq[Expression])
-
-  @volatile private[this] var _relationCache: Option[(Cache[
-      KeyType, HashedRelation], TaskMemoryManager)] = None
-  private[this] val relationCacheSize = new AtomicLong(0L)
-
-  private[this] def initCache(): (Cache[KeyType, HashedRelation],
-      TaskMemoryManager) = {
-    val env = SparkEnv.get
-    val cacheTimeoutSecs = Constant.DEFAULT_CACHE_TIMEOUT_SECS
-    val cache = CacheBuilder.newBuilder()
-        .maximumSize(50)
-        .expireAfterAccess(cacheTimeoutSecs, TimeUnit.SECONDS)
-        .removalListener(new RemovalListener[KeyType, HashedRelation] {
-          override def onRemoval(notification: RemovalNotification[KeyType,
-              HashedRelation]): Unit = {
-            relationCacheSize.decrementAndGet()
-            notification.getValue.close()
-          }
-        }).build[KeyType, HashedRelation]()
-    (cache, new TaskMemoryManager(env.memoryManager, -1L))
-  }
-
-  private def getCache: (Cache[KeyType, HashedRelation], TaskMemoryManager) = {
-    val c = _relationCache
-    c match {
-      case Some(relationCache) => relationCache
-      case None => synchronized {
-        _relationCache match {
-          case Some(cache) => cache
-          case None =>
-            val relationCache = initCache()
-            _relationCache = Some(relationCache)
-            relationCache
-        }
-      }
-    }
-  }
-
-  def get(schema: StructType, buildKeys: Seq[Expression], rdd: RDD[InternalRow],
-      split: Partition, context: TaskContext,
-      tries: Int = 1): HashedRelation = {
-    try {
-      val (cache, memoryManager) = getCache
-      cache.get(schema -> buildKeys, new Callable[HashedRelation] {
-        override def call(): HashedRelation = {
-          val relation = HashedRelation(rdd.iterator(split, context),
-            buildKeys, taskMemoryManager = memoryManager)
-          relationCacheSize.incrementAndGet()
-          relation
-        }
-      }).asReadOnlyCopy()
-    } catch {
-      case e: ExecutionException =>
-        // in case of OOME from MemoryManager, try after clearing the cache
-        val cause = e.getCause
-        cause match {
-          case _: OutOfMemoryError =>
-            if (tries <= 10 && relationCacheSize.get() > 0) {
-              getCache._1.invalidateAll()
-              get(schema, buildKeys, rdd, split, context, tries + 1)
-            } else {
-              throw new RuntimeException(cause.getMessage, cause)
-            }
-          case _ => throw new RuntimeException(cause.getMessage, cause)
-        }
-      case e: Exception => throw new RuntimeException(e.getMessage, e)
-    }
-  }
-
-  def remove(schema: StructType, buildKeys: Seq[Expression]): Unit = {
-    getCache._1.invalidate(schema -> buildKeys)
-  }
-
-  def clear(): Unit = {
-    if (relationCacheSize.get() > 0) {
-      getCache._1.invalidateAll()
-    }
-  }
-
-  def close(): Unit = synchronized {
-    _relationCache match {
-      case Some(cache) =>
-        cache._1.invalidateAll()
-        _relationCache = None
-      case None => // nothing to be done
-    }
   }
 }
 

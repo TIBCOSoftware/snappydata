@@ -23,7 +23,7 @@
  *
  * To execute this script on spark you can use same command as above without specifying packages
  * as follows:
- * ./spark-shell --driver-memory 4g -driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
+ * ./bin/spark-shell --driver-memory 4g -driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
  */
 
 import org.apache.spark.sql.SparkSession
@@ -44,12 +44,7 @@ def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) : Dou
   timeTaken
 }
 
-//Create spark session
-val spark = SparkSession.builder.master("local[*]").appName("spark, " +
-    "Snappy Perf test").getOrCreate()
-
 //Create Dataframe can register temp table
-spark.conf.set(SQLConf.COMPRESS_CACHED.key,false)
 var testDF = spark.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 testDF.cache
 testDF.createOrReplaceTempView("sparkCacheTable")
@@ -65,7 +60,6 @@ System.runFinalization()
 
 //Create SnappySession to execute queries from spark
 val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
-snappy.conf.set(SQLConf.COMPRESS_CACHED.key,false)
 testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 
 snappy.sql("drop table if exists snappyTable")
@@ -73,15 +67,4 @@ snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not nu
 benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
 
 val timeTakenSnappy = benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
-
-
-val diff = (timeTakenSpark / timeTakenSnappy)
-println(s"\n\nSnappy is $diff times faster than spark \n\n")
-
-if(java.lang.Boolean.getBoolean("snappy_benchmark_perf")){
-  if (!(diff >= 3)) {
-    println("Cannot meet the required performance")
-  }
-}
-
 System.exit(0)
