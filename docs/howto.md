@@ -1098,4 +1098,4 @@ This same table can be created by using createTable API. First we create a schem
     snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
-The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/examples/src/main/python/CreateTable.py)
+The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py)

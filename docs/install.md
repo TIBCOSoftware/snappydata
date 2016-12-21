@@ -177,7 +177,7 @@ If you already have set up the AWS Command Line Interface on your local machine,
 
 ##### Launching SnappyData Cluster
 
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
+In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 Enter the command in the following format.
 

@@ -14,8 +14,8 @@ Data in tables is primarily managed in-memory with one or more consistent copies
 ## SnappySession and SnappyStreamingContext
 
 [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
-Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's 
-[Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
+Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
+[Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
 Also SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [SnappyData Spark Affinity modes](deployment.md).
 

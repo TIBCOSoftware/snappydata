@@ -10,9 +10,8 @@ The net effect is, an order of magnitude performance improvement when compared t
 
 Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries. Or, it is an in-memory scale out Hybrid Database that can execute Spark code, SQL or even Objects.
 
-<!--
-** IF YOU ARE ALREADY USING SPARK, EXPERIENCE 10X(??) SPEED UP FOR YOUR QUERY PERFORMANCE. TRY OUT THIS [TEST](LINK TO AMAZING SPEED TEST)
-// ADD FINAL 10X OR 20X SPEED UP NUMBER ONCE THE FINAL BUILD IS DONE.-->
+
+If you are already using Spark, experience 20x speed up for your query performance. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala)
 
 ##### Snappy Architecture
 ![SnappyData Architecture](docs/Images/SnappyArchitecture.png)
