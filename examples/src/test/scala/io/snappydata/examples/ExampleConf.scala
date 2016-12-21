@@ -16,7 +16,6 @@
  */
 package io.snappydata.examples
 
-import io.snappydata.examples.SparkSubmit
 
 
 sealed trait Example {
@@ -61,11 +60,11 @@ object ExampleConf {
 
     SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp",
       confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
-      appJar = "examples/jars/quickstart.jar"),
+      appJar = s"$snappyHome/examples/jars/quickstart.jar"),
 
     SparkSubmit("PythonAirlineDataApp", appClass = "",
       confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
-      appJar = "quickstart/python/AirlineDataPythonApp.py")
+      appJar = s"$snappyHome/quickstart/python/AirlineDataPythonApp.py")
 
   )
 

@@ -33,21 +33,21 @@ object ExampleTester {
   def snappyShell = s"$snappyHome/bin/snappy-shell"
 
   implicit class X(in: Seq[String]) {
-    // Don't do the BAOS construction in real code.  Just for illustration.
     def pipe(cmd: String) =
-      cmd #< new ByteArrayInputStream(in.mkString("\n").getBytes) lineStream
+        cmd #< new ByteArrayInputStream(in.mkString("\n").getBytes) lineStream
   }
 
   var snappyHome = ""
   var localHostName = ""
+  var currWorkingDir = ""
 
 
   def main(args: Array[String]) {
     snappyHome = args(0)
-    localHostName = java.net.InetAddress.getLocalHost().getHostName();
-
-    startupCluster()
+    localHostName = java.net.InetAddress.getLocalHost().getHostName()
+    currWorkingDir = System.getProperty("user.dir")
     try {
+      startupCluster()
       val oldQuickStart = ExampleConf.oldQuickStart(snappyHome)
       oldQuickStart map (c => runExample(c))
     } catch {
@@ -66,7 +66,13 @@ object ExampleTester {
     println(s"Executing ${example.name}")
     example match {
       case ex: Job => runJob(ex.jobClass)
-      case snShell: SnappyShell => snShell.sqlCommand pipe snappyShell foreach println
+      case snShell: SnappyShell => snShell.sqlCommand pipe snappyShell foreach (s => {
+         println(s)
+        if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
+          throw new Exception(s"Failed to run Query")
+        }
+      })
+
       case submit: SparkSubmit => sparkSubmit(submit.appClass, submit.confs, submit.appJar)
       case _ =>
     }
@@ -76,25 +82,22 @@ object ExampleTester {
     val stdoutStream = new ByteArrayOutputStream
     val stderrStream = new ByteArrayOutputStream
 
-    val teeOut = new TeeOutputStream(stdout, stdoutStream)
-    val teeErr = new TeeOutputStream(stderr, stderrStream)
+    val teeOut = new TeeOutputStream(stdout, new BufferedOutputStream(stdoutStream))
+    val teeErr = new TeeOutputStream(stderr, new BufferedOutputStream(stderrStream))
 
-    val stdoutWriter = new PrintStream(teeOut)
-    val stderrWriter = new PrintStream(teeErr)
-    try {
-      Process(command, new File(s"$snappyHome"), "SNAPPY_HOME" -> snappyHome) !
-        (ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    val stdoutWriter = new PrintStream(teeOut, true)
+    val stderrWriter = new PrintStream(teeErr, true)
 
-    } finally {
-      stdoutWriter.close
-      stderrWriter.close
-    }
+
+    Process(command, new File(s"$currWorkingDir"), "SNAPPY_HOME" -> snappyHome) !
+      ProcessLogger(stdoutWriter.println, stderrWriter.println)
+
     (stdoutStream.toString, stderrStream.toString)
   }
 
   def startupCluster(): Unit = {
     new PrintWriter(s"$snappyHome/conf/servers") {
-      write(s"$localHostName\n$localHostName");
+      write(s"$localHostName\n$localHostName")
       close
     }
     val (out, err) = executeProcess(s"$snappyHome/sbin/snappy-start-all.sh")
@@ -124,15 +127,19 @@ object ExampleTester {
 
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
-    val sparkSubmit = s"./bin/spark-submit $classStr --master spark://$localHostName:7077 $confStr $appJar"
-    executeProcess(sparkSubmit)
+    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master spark://$localHostName:7077 $confStr $appJar"
+    val (out, err) = executeProcess(sparkSubmit)
+
+    if (out.toLowerCase().contains("exception")) {
+      throw new Exception(s"Failed to submit $appClass")
+    }
   }
 
   private def runJob(jobClass: String): Unit = {
 
-    val jobSubmit = "./bin/snappy-job.sh submit --lead localhost:8090 --app-jar examples/jars/quickstart.jar"
+    val jobSubmit = s"$snappyHome/bin/snappy-job.sh submit --lead localhost:8090 --app-jar $snappyHome/examples/jars/quickstart.jar"
 
-    val jobStatus = "./bin/snappy-job.sh status --lead localhost:8090 --job-id "
+    val jobStatus = s"$snappyHome/bin/snappy-job.sh status --lead localhost:8090 --job-id "
 
     val jobCommand = s"$jobSubmit --app-name ${jobClass}_${System.currentTimeMillis()} --class $jobClass"
 
@@ -148,9 +155,10 @@ object ExampleTester {
     val jobID = json match {
       case Some(map: Map[String, Any]) =>
         map.get("result").get.asInstanceOf[Map[String, Any]].get("jobId").get
-      case other => "bad Result"
+      case other => throw new Exception(s"bad result : $jsonStr")
     }
     println("jobID " + jobID)
+
 
     var status = "RUNNING"
     while (status == "RUNNING") {
