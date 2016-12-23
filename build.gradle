@@ -62,7 +62,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.6'
+  version = '0.7'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,7 +108,7 @@ allprojects {
     kryoVersion = '4.0.0'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.1'
+    snappyStoreVersion = '1.5.3'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
