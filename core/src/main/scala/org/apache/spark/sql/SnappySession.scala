@@ -1602,6 +1602,8 @@ object SnappySession extends Logging {
         }
         cachedDF = evaluation._1
         queryHints = evaluation._2
+      } else {
+        cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
