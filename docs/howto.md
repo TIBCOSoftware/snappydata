@@ -740,7 +740,7 @@ The code snippet below inserts Person objects into a column table. The source co
 
 **Get a SnappySession**:
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
@@ -751,53 +751,55 @@ The code snippet below inserts Person objects into a column table. The source co
 ```
 
 **Create DataFrame objects**:
-```
+```scala
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
 
-    val snSession = snc.snappySession
     // Create a Dataset using Spark APIs
-    val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
+    val people = Seq(Person("Tom", Address("Columbus", "Ohio"), Map("frnd1"-> "8998797979", "frnd2" -> "09878786886"))
+      , Person("Ned", Address("San Diego", "California"), Map.empty[String,String])).toDS()
 ```
 
 **Create a SnappyData table and insert data into it**:
 
-```
+```scala
     //Drop the table if it exists.
-    snSession.dropTable("people", ifExists = true)
+    snSession.dropTable("Persons", ifExists = true)
 
     //Create a columnar table with a Struct to store Address
-    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>) using column options()")
+    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>, " +
+         "emergencyContacts Map<String,String>) using column options()")
 
     // Write the created DataFrame to the columnar table.
-    people.write.insertInto("people")
+    people.write.insertInto("Persons")
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snSession.table("people").schema)
+    println(snSession.table("Persons").schema)
     
 
     // Append more people to the column table
-    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio")),
-      Person("Rob Stark", Address("San Diego", "California")),
-      Person("Michael", Address("Null", "California"))).toDS()
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio"), Map.empty[String,String]),
+      Person("Rob Stark", Address("San Diego", "California"), Map.empty[String,String]),
+      Person("Michael", Address("Null", "California"), Map.empty[String,String])).toDS()
 
-    morePeople.write.insertInto("people")
+    morePeople.write.insertInto("Persons")
 ```
 
 **Execute query on the table and return results**:
 
-```
+```scala
     // Query it like any other table
-    val nameAndAddress = snSession.sql("SELECT name, address FROM Persons")
+    val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
 
     //Reconstruct the objects from obtained Row
     val allPersons = nameAndAddress.collect.map(row => {
       Person(row(0).asInstanceOf[String],
         Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],
           row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        )
+        ),
+        row(2).asInstanceOf[Map[String, String]]
       )
     })
 ```

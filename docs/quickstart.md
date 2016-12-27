@@ -6,7 +6,7 @@ Depending on your preference you can try any of the following options:
 
 * [Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
 * [Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
-* [20X Faster than Spark 2.0 Caching](#20x-faster-than-spark-20-caching)
+* [20X Faster than Spark 2.0 Caching](#Start Benchmark)
 * [Getting Started using SQL](#getting-started-using-sql)
 * [Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
 * [Getting Started on AWS](#getting-started-on-aws)
@@ -396,7 +396,7 @@ $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
 Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
 
-
+For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker)
 ####More Information
 
 For more examples of the common operations, you can refer to the [How-tos](howto.md) section. 
