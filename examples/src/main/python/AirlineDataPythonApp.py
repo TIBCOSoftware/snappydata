@@ -1,7 +1,7 @@
 from pyspark.conf import SparkConf
 from pyspark.context import SparkContext
 from pyspark.sql import SQLContext, Row
-from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.snappy import SnappySession
 from pyspark.rdd import RDD
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import col
@@ -19,11 +19,11 @@ COLUMN_TABLE_NAME = "airline"
 ROW_TABLE_NAME = "airlineref"
 
 
-def main(sqlContext):
-    sqlContext.sql("set spark.sql.shuffle.partitions=6")
+def main(snappy):
+    snappy.sql("set spark.sql.shuffle.partitions=6")
     # Get the tables that were created using sql scripts via snappy-shell
-    airlineDF = sqlContext.table(COLUMN_TABLE_NAME)
-    airlineCodeDF = sqlContext.table(ROW_TABLE_NAME)
+    airlineDF = snappy.table(COLUMN_TABLE_NAME)
+    airlineCodeDF = snappy.table(ROW_TABLE_NAME)
 
     # Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     colResult = airlineDF.alias('airlineDF') \
@@ -42,7 +42,7 @@ def main(sqlContext):
     # re-brands itself as 'Delta America'.Update the row table.
     query = " CODE ='DL'"
     newColumnValues = ["Delta America Renewed"]
-    sqlContext.update(ROW_TABLE_NAME, query, newColumnValues, ["DESCRIPTION"])
+    snappy.update(ROW_TABLE_NAME, query, newColumnValues, ["DESCRIPTION"])
 
     # Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     colResultAftUpd = airlineDF.alias('airlineDF') \
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     # Configure Spark
     conf = SparkConf().setAppName(APP_NAME)
     sc = SparkContext(conf=conf)
-    snc = SnappyContext(sc)
+    snc = SnappySession(sc)
     main(snc)

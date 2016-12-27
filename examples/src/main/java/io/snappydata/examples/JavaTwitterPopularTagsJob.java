@@ -32,7 +32,7 @@ import static org.apache.spark.sql.types.DataTypes.createStructField;
  * <p/>
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name JavaTwitterPopularTagsJob --class io.snappydata.examples.JavaTwitterPopularTagsJob \
- * --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream`
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar --stream`
  * <p/>
  * To run with stored twitter data, run simulateTwitterStream after the Job is submitted:
  * `$ ./quickstart/scripts/simulateTwitterStream`

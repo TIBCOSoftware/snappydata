@@ -31,12 +31,17 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "ArrDelay INT," +
         "UniqueCarrier CHAR(6) NOT NULL"
 
-    snc.sql(s"create table if not exists airline ($ddlStr) " +
-        s" using column options (Buckets '2')").collect()
+    // reduce the batch size to ensure that multiple are created
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
 
-    for (i <- 1 to 100) {
-      snc.sql(s"insert into airline values(2015, 2, 15, 1002, $i, 'AA')")
-    }
+    snc.sql(s"create table if not exists airline ($ddlStr) " +
+        s" using column options (Buckets '2')")
+
+    import snc.implicits._
+
+    val ds = snc.createDataset(sc.range(1, 101).map(i =>
+      AirlineData(2015, 2, 15, 1002, i.toInt, "AA" + i)))
+    ds.write.insertInto("airline")
 
     // ***Check for the case when all the cached batches are scanned ****
     var previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
@@ -96,8 +101,76 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val (scanned3, skipped3) =
       findCachedBatchStats(df_allCachedBatchesScan, snc.snappySession, executionId)
 
-    assert(skipped3 > 0, "Some Cached batches should have been scanned")
-    assert(scanned3 != skipped3, "Some Cached batches should have been scanned - comparison")
+    assert(skipped3 > 0, "Some Cached batches should have been skipped")
+    assert(scanned3 != skipped3, "Some Cached batches should have been skipped - comparison")
+
+    // check for StartsWith predicate with MAX/MIN handling
+
+    // first all batches chosen
+    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+
+    val df_allCachedBatchesLikeScan = snc.sql(
+      "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
+          "from AIRLINE where UniqueCarrier like 'AA%' " +
+          "group by UniqueCarrier order by arrivalDelay")
+
+    var count = df_allCachedBatchesLikeScan.count()
+    assert(count == 100, s"Unexpected count = $count, expected 100")
+
+    executionIds =
+        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+
+    executionId = executionIds.head
+
+    val (scanned4, skipped4) =
+      findCachedBatchStats(df_allCachedBatchesLikeScan, snc.snappySession, executionId)
+
+    assert(skipped4 == 0, "No Cached batches should have been skipped")
+    assert(scanned4 > 0, "All Cached batches should have been scanned")
+
+    // next some batches skipped
+    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+
+    val df_someCachedBatchesLikeScan = snc.sql(
+      "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
+          "from AIRLINE where UniqueCarrier like 'AA1%' " +
+          "group by UniqueCarrier order by arrivalDelay")
+
+    count = df_someCachedBatchesLikeScan.count()
+    assert(count == 12, s"Unexpected count = $count, expected 12")
+
+    executionIds =
+        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+
+    executionId = executionIds.head
+
+    val (scanned5, skipped5) =
+      findCachedBatchStats(df_someCachedBatchesLikeScan, snc.snappySession, executionId)
+
+    assert(skipped5 > 0, "Some Cached batches should have been skipped")
+    assert(scanned5 != skipped5, "Some Cached batches should have been skipped - comparison")
+
+    // last all batches skipped
+    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+
+    val df_noCachedBatchesLikeScan = snc.sql(
+      "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
+          "from AIRLINE where UniqueCarrier like 'AA0%' " +
+          "group by UniqueCarrier order by arrivalDelay")
+
+    count = df_noCachedBatchesLikeScan.count()
+    assert(count == 0, s"Unexpected count = $count, expected 0")
+
+    executionIds =
+        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+
+    executionId = executionIds.head
+
+    val (scanned6, skipped6) =
+      findCachedBatchStats(df_noCachedBatchesLikeScan, snc.snappySession, executionId)
+
+    assert(scanned6 == skipped6, "No Cached batches should have been returned")
+    assert(skipped6 > 0, "No Cached batches should have been returned")
   }
 
   private def findCachedBatchStats(df: DataFrame,
@@ -119,3 +192,6 @@ class CachedBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         metricValues.filter(_._1 == skippedid).head._2.toInt)
   }
 }
+
+case class AirlineData(year: Int, month: Int, dayOfMonth: Int,
+    depTime: Int, arrDelay: Int, carrier: String)

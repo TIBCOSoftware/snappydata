@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -24,11 +25,16 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.cache.EntryExistsException
+import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
+import com.gemstone.gemfire.distributed.internal.ProfileListener
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.shared.FinalizeObject
+import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
 
-import org.apache.spark.SparkContext
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
@@ -38,39 +44,47 @@ import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Express
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.{ExprCodeEx, HashingUtil, LogicalRDD}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
 
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
-    extends SparkSession(sc) with Logging {
+    extends SparkSession(sc) {
 
   self =>
 
-  private[sql] def this(sc: SparkContext) {
+  def this(sc: SparkContext) {
     this(sc, None)
   }
+
 
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  SnappyContext.initGlobalSnappyContext(sparkContext)
 
   /* ----------------------- *
    |  Session-related state  |
    * ----------------------- */
+
+  private[spark] val id = SnappySession.newId()
+
+  new FinalizeSession(this)
 
   /**
    * State shared across sessions, including the [[SparkContext]], cached data, listener,
@@ -89,7 +103,6 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-
     try {
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.internal.SnappyAQPSessionState")
@@ -99,7 +112,6 @@ class SnappySession(@transient private val sc: SparkContext,
       case NonFatal(e) =>
         new SnappySessionState(this)
     }
-
   }
 
   @transient
@@ -108,6 +120,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
+  SnappyContext.initGlobalSnappyContext(sparkContext, this)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
@@ -142,33 +155,129 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySession(sparkContext, Some(sharedState))
   }
 
-  override def sql(sqlText: String): DataFrame = snappyContextFunctions.sql(
-      super.sql(sqlText))
+  override def sql(sqlText: String): CachedDataFrame =
+    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText))
+
+  def sqlUncached(sqlText: String): DataFrame =
+    snappyContextFunctions.sql(super.sql(sqlText))
+
+  private[sql] final def executeSQL(sqlText: String): DataFrame =
+    super.sql(sqlText)
 
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
-  private val addedClasses = new mutable.HashMap[(CodegenContext,
-      Seq[(DataType, Boolean)], Seq[(DataType, Boolean)]), (String, String)]
-  private val exCodes = new mutable.HashMap[(CodegenContext,
-      Seq[Expr]), ExprCodeEx]()
+  private val contextObjects = new mutable.HashMap[Any, Any]
+
+  /**
+   * Get a previously registered context object using [[addContextObject]].
+   */
+  private[sql] def getContextObject[T](key: Any): Option[T] = {
+    contextObjects.get(key).asInstanceOf[Option[T]]
+  }
+
+  /**
+   * Get a previously registered CodegenSupport context object
+   * by [[addContextObject]].
+   */
+  private[sql] def getContextObject[T](ctx: CodegenContext, objectType: String,
+      key: Any): Option[T] = {
+    getContextObject[T](ctx -> (objectType -> key))
+  }
+
+  /**
+   * Register a new context object for this query.
+   */
+  private[sql] def addContextObject[T](key: Any, value: T): Unit = {
+    contextObjects.put(key, value)
+  }
+
+  /**
+   * Register a new context object for <code>CodegenSupport</code>.
+   */
+  private[sql] def addContextObject[T](ctx: CodegenContext, objectType: String,
+      key: Any, value: T): Unit = {
+    addContextObject(ctx -> (objectType -> key), value)
+  }
+
+  /**
+   * Remove a context object registered using [[addContextObject]].
+   */
+  private[sql] def removeContextObject(key: Any): Unit = {
+    contextObjects.remove(key)
+  }
+
+  /**
+   * Remove a CodegenSupport context object registered by [[addContextObject]].
+   */
+  private[sql] def removeContextObject(ctx: CodegenContext, objectType: String,
+      key: Any): Unit = {
+    removeContextObject(ctx -> (objectType -> key))
+  }
+
+  private[sql] def linkPartitionsToBuckets(flag: Boolean): Unit = {
+    addContextObject(StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED, flag)
+  }
+
+  private[sql] def hasLinkPartitionsToBuckets: Boolean = {
+    getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
+        .getOrElse(false)
+  }
+
+  private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
+    val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
+    addContextObject(ctx, "D", "depth", depth)
+    addContextObject(ctx, "F", "finally" -> depth, code)
+    depth
+  }
+
+  private[sql] def evaluateFinallyCode(ctx: CodegenContext,
+      body: String = "", depth: Int = -1): String = {
+    // if no depth given then use the most recent one
+    val d = if (depth == -1) {
+      getContextObject[Int](ctx, "D", "depth").getOrElse(0)
+    } else depth
+    if (d <= 1) removeContextObject(ctx, "D", "depth")
+    else addContextObject(ctx, "D", "depth", d - 1)
+
+    val key = "finally" -> d
+    getContextObject[String](ctx, "F", key) match {
+      case Some(finallyCode) => removeContextObject(ctx, "F", key)
+        if (body.isEmpty) finallyCode
+        else {
+          s"""
+             |try {
+             |  $body
+             |} finally {
+             |   $finallyCode
+             |}
+          """.stripMargin
+        }
+      case None => body
+    }
+  }
 
   /**
    * Get name of a previously registered class using [[addClass]].
    */
   def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
-      types: Seq[(DataType, Boolean)]): Option[(String, String)] =
-    addedClasses.get((ctx, baseTypes, types))
+      keyTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)]): Option[(String, String)] = {
+    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types))
+  }
 
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
   private[sql] def addClass(ctx: CodegenContext,
-      baseTypes: Seq[(DataType, Boolean)], types: Seq[(DataType, Boolean)],
-      baseClassName: String, className: String): Unit =
-  addedClasses.put((ctx, baseTypes, types), baseClassName -> className)
+      baseTypes: Seq[(DataType, Boolean)], keyTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)], baseClassName: String,
+      className: String): Unit = {
+    addContextObject(ctx, "C", (baseTypes, keyTypes, types),
+      baseClassName -> className)
+  }
 
   private def wrapExpressions(vars: Seq[String],
       expr: Seq[Expression]): Seq[Expr] =
@@ -179,36 +288,48 @@ class SnappySession(@transient private val sc: SparkContext,
    * using [[addExCode]].
    */
   def getExCode(ctx: CodegenContext, vars: Seq[String],
-      expr: Seq[Expression]): Option[ExprCodeEx] =
-    exCodes.get(ctx -> wrapExpressions(vars, expr))
+      expr: Seq[Expression]): Option[ExprCodeEx] = {
+    getContextObject[ExprCodeEx](ctx, "E", wrapExpressions(vars, expr))
+  }
 
   /**
    * Register additional [[ExprCodeEx]] for a variable in ExprCode.
    */
   private[sql] def addExCode(ctx: CodegenContext, vars: Seq[String],
-      expr: Seq[Expression], exCode: ExprCodeEx): Unit =
-    exCodes.put(ctx -> wrapExpressions(vars, expr), exCode)
+      expr: Seq[Expression], exCode: ExprCodeEx): Unit = {
+    addContextObject(ctx, "E", wrapExpressions(vars, expr), exCode)
+  }
 
   /**
    * Register additional hash variable in [[ExprCodeEx]].
    */
   private[sql] def addExCodeHash(ctx: CodegenContext, vars: Seq[String],
       hashExpressions: Seq[Expression], hashVar: String): Unit = {
-    val key = ctx -> wrapExpressions(vars, hashExpressions)
-    exCodes.get(key) match {
+    val key = wrapExpressions(vars, hashExpressions)
+    getContextObject[ExprCodeEx](ctx, "E", key) match {
       case Some(ev) => ev.hash = Some(hashVar)
-      case None =>
-        exCodes.put(key, ExprCodeEx(Some(hashVar), "", "", ""))
+      case None => addContextObject(ctx, "E", key,
+        ExprCodeEx(Some(hashVar), "", "", "", "", ""))
     }
   }
 
-  private[sql] def clearQueryData(): Unit = {
-    queryHints.clear()
-    addedClasses.clear()
-    exCodes.clear()
+  private[sql] def clearContext(): Unit = synchronized {
+    contextObjects.clear()
   }
 
-  def clear(): Unit = {
+  private[sql] def clearQueryData(): Unit = synchronized {
+    queryHints.clear()
+    clearContext()
+  }
+
+  def clearPlanCache(): Unit = synchronized {
+    SnappySession.clearSessionCache(id)
+  }
+
+  def clear(): Unit = synchronized {
+    clearContext()
+    clearQueryData()
+    clearPlanCache()
     snappyContextFunctions.clear()
   }
 
@@ -972,17 +1093,19 @@ class SnappySession(@transient private val sc: SparkContext,
             }
           case _ => // ignore
         }
+        val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
-        if (sessionCatalog.isTemporaryTable(tableIdent)) {
+        if (isTempTable) {
           // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
-        } else {
-          sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
         }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
-          case _ => // Do nothing
+            sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+          case _ => if (!isTempTable) {
+            sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
+          }
         }
       case _ => // This is a temp table with no relation as source
         cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
@@ -1347,7 +1470,176 @@ class SnappySession(@transient private val sc: SparkContext,
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 }
 
-object SnappySession {
+private class FinalizeSession(session: SnappySession)
+    extends FinalizeObject(session, true) {
+
+  private var sessionId = session.id
+
+  override protected def getHolder = FinalizeObject.getServerHolder
+
+  override protected def doFinalize(): Boolean = {
+    if (sessionId != SnappySession.INVALID_ID) {
+      SnappySession.clearSessionCache(sessionId)
+      sessionId = SnappySession.INVALID_ID
+    }
+    true
+  }
+
+  override protected def clearThis(): Unit = {
+    sessionId = SnappySession.INVALID_ID
+  }
+}
+
+object SnappySession extends Logging {
+
+  private[spark] val INVALID_ID = -1
+  private[this] val ID = new AtomicInteger(0)
+
+  private[this] val bucketProfileListener = new ProfileListener {
+
+    override def profileCreated(profile: Profile): Unit = {
+      // clear all plans pessimistically for now
+      clearAllCache()
+    }
+
+    override def profileUpdated(profile: Profile): Unit = {}
+
+    override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
+      // clear all plans pessimistically for now
+      clearAllCache()
+    }
+  }
+
+  private def findShuffleDependencies(rdd: RDD[_]): Seq[Int] = {
+    rdd.dependencies.flatMap {
+      case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
+        s.shuffleId +: findShuffleDependencies(s.rdd)
+      } else s.shuffleId :: Nil
+
+      case d => if (d.rdd ne rdd) findShuffleDependencies(d.rdd) else Nil
+    }
+  }
+
+  private def evaluatePlan(df: DataFrame,
+      session: SnappySession): (CachedDataFrame, Map[String, String]) = {
+    val executedPlan = df.queryExecution.executedPlan match {
+      case WholeStageCodegenExec(plan) => plan
+      case plan => plan
+    }
+    val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
+      case _: ExecutedCommandExec =>
+        throw new EntryExistsException("uncached plan", df) // don't cache
+      case plan: CollectAggregateExec =>
+        (null, findShuffleDependencies(plan.childRDD).toArray,
+            plan.childRDD.id, true)
+      case _: LocalTableScanExec =>
+        (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
+      case _ =>
+        val rdd = executedPlan match {
+          case plan: CollectLimitExec => plan.child.execute()
+          case _ => df.queryExecution.executedPlan.execute()
+        }
+        // add profile listener for all regions that are using cached
+        // partitions of their "leader" region
+        if (rdd.getNumPartitions > 0) {
+          session.sessionState.leaderPartitions.keysIterator.foreach(
+            addBucketProfileListener)
+        }
+        (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
+    }
+    val queryHints = session.synchronized {
+      val hints = session.queryHints.toMap
+      session.clearQueryData()
+      hints
+    }
+    (new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
+      localCollect), queryHints)
+  }
+
+  private[this] val planCache = {
+    val loader = new CacheLoader[(SnappySession, String),
+        (CachedDataFrame, Map[String, String])] {
+      override def load(key: (SnappySession, String)): (CachedDataFrame,
+          Map[String, String]) = {
+        val session = key._1
+        val df = session.executeSQL(key._2)
+        val plan = df.queryExecution.executedPlan
+        // if this has in-memory caching then don't cache the first time
+        // since plan can change once caching is done (due to size stats)
+        if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
+          (null, null)
+        } else {
+          evaluatePlan(df, session)
+        }
+      }
+    }
+    CacheBuilder.newBuilder().maximumSize(300).build(loader)
+  }
+
+  private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
+    val advisers = pr.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
+        .values().iterator()
+    while (advisers.hasNext) {
+      advisers.next().addProfileChangeListener(bucketProfileListener)
+    }
+  }
+
+  def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
+    try {
+      val key = session -> sqlText
+      val evaluation = planCache.getUnchecked(key)
+      var cachedDF = evaluation._1
+      var queryHints = evaluation._2
+      // if null has been returned, then evaluate
+      if (cachedDF eq null) {
+        val df = session.executeSQL(sqlText)
+        val evaluation = evaluatePlan(df, session)
+        if (queryHints eq null) {
+          // put token to cache from next call
+          planCache.put(key, (null, Map.empty))
+        } else {
+          planCache.put(key, evaluation)
+        }
+        cachedDF = evaluation._1
+        queryHints = evaluation._2
+      } else {
+        cachedDF.clearCachedShuffleDeps(session.sparkContext)
+      }
+      // set the query hints as would be set at the end of un-cached sql()
+      session.synchronized {
+        session.queryHints.clear()
+        session.queryHints ++= queryHints
+      }
+      cachedDF
+    } catch {
+      case e: UncheckedExecutionException => e.getCause match {
+        case ee: EntryExistsException => new CachedDataFrame(
+          ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+        case t => throw t
+      }
+    }
+  }
+
+  private def newId(): Int = {
+    val id = ID.incrementAndGet()
+    if (id != INVALID_ID) id
+    else ID.incrementAndGet()
+  }
+
+  private[spark] def clearSessionCache(sessionId: Long): Unit = {
+    val iter = planCache.asMap().keySet().iterator()
+    while (iter.hasNext) {
+      val item = iter.next()
+      if (item._1.id == sessionId) {
+        iter.remove()
+      }
+    }
+  }
+
+  def clearAllCache(): Unit = {
+    planCache.invalidateAll()
+  }
+
   // TODO: hemant : Its clumsy design to use where SnappySession.Builder
   // is using the SparkSession object's functions. This needs to be revisited
   // once we decide on how our Builder API should be.

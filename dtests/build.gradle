@@ -28,6 +28,8 @@ compileScala.options.encoding = 'UTF-8'
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
 //sourceSets.test.resources.srcDirs 'src/resources'
+sourceSets.test.scala.srcDir "src/test/java"
+sourceSets.test.java.srcDirs = []
 
 
 repositories {
@@ -44,11 +46,6 @@ dependencies {
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
     compile 'org.scala-lang:scala-compiler:' + scalaVersion
 
-    compile(group: 'com.databricks', name: 'spark-csv_' + scalaBinaryVersion, version: sparkCSVVersion) {
-        exclude(group: 'org.scala-lang', module: 'scala-library')
-        exclude(group: 'org.scala-lang', module: 'scala-reflect')
-        exclude(group: 'org.scala-lang', module: 'scala-compiler')
-    }
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
        exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -125,13 +122,13 @@ testClasses.doLast {
   copyTestsCommonResources(buildDir)
   if (new File(rootDir, 'store/build.gradle').exists()) {
     copy {
-      from (sourceSets.test.java.srcDirs) {
+      from ("src/test/java") {
           include '**/*.bt'
           include '**/*.conf'
           include '**/*.inc'
           include '**/*.sql'
       }
-      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
     }
   }
 }

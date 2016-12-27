@@ -24,11 +24,20 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 /**
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
+ * <p/>
+ * Run this on your local machine:
+ *
+ * `$ sbin/snappy-start-all.sh`
+ * <p/>
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
+ *
  */
 object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
@@ -39,7 +48,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   val sampleTable = "AIRLINE_SAMPLE"
   val stagingAirline = "STAGING_AIRLINE"
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
     Try {
@@ -54,7 +63,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
       // Create a DF from the parquet data file and make it a table
-      val airlineDF = snc.createExternalTable(stagingAirline, "parquet",
+      val airlineDF = snc.catalog.createExternalTable(stagingAirline, "parquet",
         Map("path" -> airlinefilePath))
       val updatedSchema = replaceReservedWords(airlineDF.schema)
 
@@ -106,7 +115,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
    * Validate if the data files are available, else throw SparkJobInvalid
    *
    */
-  override def isValidJob(snc: SnappyContext, config: Config): SnappyJobValidation = {
+  override def isValidJob(snc: SnappySession, config: Config): SnappyJobValidation = {
 
     airlinefilePath = if (config.hasPath("airline_file")) {
       config.getString("airline_file")

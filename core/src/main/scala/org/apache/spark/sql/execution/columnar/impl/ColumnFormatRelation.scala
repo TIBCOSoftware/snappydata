@@ -24,7 +24,6 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
-import org.apache.spark.{Logging, Partition}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -41,25 +40,26 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.{Logging, Partition}
 
 /**
-  * This class acts as a DataSource provider for column format tables provided Snappy.
-  * It uses GemFireXD as actual datastore to physically locate the tables.
-  * Column tables can be used for storing data in columnar compressed format.
-  * A example usage is given below.
-  *
-  * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-  * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-  * val dataDF = snc.createDataFrame(rdd)
-  *snc.createTable(tableName, "column", dataDF.schema, props)
-  *dataDF.write.insertInto(tableName)
-  * *
-  * This provider scans underlying tables in parallel and is aware of the data partition.
-  * It does not introduces a shuffle if simple table query is fired.
-  * One can insert a single or multiple rows into this table as well
-  * as do a bulk insert by a Spark DataFrame.
-  * Bulk insert example is shown above.
-  */
+ * This class acts as a DataSource provider for column format tables provided Snappy.
+ * It uses GemFireXD as actual datastore to physically locate the tables.
+ * Column tables can be used for storing data in columnar compressed format.
+ * A example usage is given below.
+ *
+ * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+ * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+ * val dataDF = snc.createDataFrame(rdd)
+ * snc.createTable(tableName, "column", dataDF.schema, props)
+ * dataDF.write.insertInto(tableName)
+ *
+ * This provider scans underlying tables in parallel and is aware of the data partition.
+ * It does not introduces a shuffle if simple table query is fired.
+ * One can insert a single or multiple rows into this table as well
+ * as do a bulk insert by a Spark DataFrame.
+ * Bulk insert example is shown above.
+ */
 class BaseColumnFormatRelation(
     _table: String,
     _provider: String,
@@ -71,28 +71,23 @@ class BaseColumnFormatRelation(
     _externalStore: ExternalStore,
     partitioningColumns: Seq[String],
     _context: SQLContext)
-    extends JDBCAppendableRelation(
-      _table,
-      _provider,
-      _mode,
-      _userSchema,
-      _origOptions,
-      _externalStore,
-      _context)
-        with PartitionedDataSourceScan
-        with RowInsertableRelation {
+    extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
+      _origOptions, _externalStore, _context)
+    with PartitionedDataSourceScan
+    with RowInsertableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
-  val columnBatchSize = sqlContext.conf.columnBatchSize
+  val columnBatchSize: Int = sqlContext.conf.columnBatchSize
 
-  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(dialect)
 
-  lazy val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
-    resolvedName, schema)
+  lazy val rowInsertStr: String = ExternalStoreUtils
+      .getInsertStringWithColumnName(resolvedName, schema)
 
-  @transient protected lazy val region = Misc.getRegionForTable(resolvedName,
-    true).asInstanceOf[PartitionedRegion]
+  @transient protected lazy val region: PartitionedRegion =
+    Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
 
   def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
     new PartitionStatistics(schema)
@@ -112,18 +107,24 @@ class BaseColumnFormatRelation(
       requiredColumns, filters)
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
-  filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (rdd, _) = scanTable(table, requiredColumns, filters)
-
-    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters, true).
-        zipPartitions(rdd) { (leftItr, rightItr) =>
-          Iterator[Any](leftItr, rightItr)
-        }
-
+    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
+      Iterator[Any](leftItr, rightItr)
+    }
     (zipped, Nil)
+  }
+
+
+  def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
+      filters: Array[Filter]): (RDD[Any], RDD[Any],
+      Seq[RDD[InternalRow]]) = {
+    val (rdd, _) = scanTable(table, requiredColumns, filters)
+    val rowRDD = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+      useResultSet = true)
+    (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
 
   def buildRowBufferRDD(partitions: Array[Partition],
@@ -143,8 +144,6 @@ class BaseColumnFormatRelation(
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -158,8 +157,6 @@ class BaseColumnFormatRelation(
       case _ =>
         new SparkShellRowRDD(
           session,
-          executorConnector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           resolvedName,
           isPartitioned,
           requiredColumns,
@@ -177,7 +174,8 @@ class BaseColumnFormatRelation(
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
-    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush) {
+    if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
+        batch.numRows <= math.max(1, columnBatchSize)) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
@@ -206,11 +204,11 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Insert a sequence of rows into the table represented by this relation.
-    *
-    * @param rows the rows to be inserted
-    * @return number of rows inserted
-    */
+   * Insert a sequence of rows into the table represented by this relation.
+   *
+   * @param rows the rows to be inserted
+   * @return number of rows inserted
+   */
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {
@@ -233,11 +231,11 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Insert a sequence of rows into the table represented by this relation.
-    *
-    * @param rows the rows to be inserted
-    * @return number of rows inserted
-    */
+   * Insert a sequence of rows into the table represented by this relation.
+   *
+   * @param rows the rows to be inserted
+   * @return number of rows inserted
+   */
   def insert(rows: Iterator[InternalRow]): Int = {
     if (rows.hasNext) {
       val connProps = connProperties.connProps
@@ -272,9 +270,9 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Destroy and cleanup this relation. It may include, but not limited to,
-    * dropping the external table that this relation represents.
-    */
+   * Destroy and cleanup this relation. It may include, but not limited to,
+   * dropping the external table that this relation represents.
+   */
   override def destroy(ifExists: Boolean): Unit = {
     // use a non-pool connection for operations
     val conn = connFactory()
@@ -301,22 +299,30 @@ class BaseColumnFormatRelation(
     try {
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case GemFireXDDialect =>
-            GemFireXDDialect.initializeTable(table,
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-            GemFireXDDialect.initializeTable(ColumnFormatRelation.
-                cachedBatchTableName(table),
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do nothing
-        }
-        return
-      }
 
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
-        // sys.error(s"Table $table already exists.")
-        return
+      if (tableExists) {
+        mode match {
+          case SaveMode.Ignore =>
+            // TODO: Suranjan for split mode when driver acts as client
+            // we will need to change this code and add a flag to
+            // CREATE_ALL_BUCKETS to create only when no buckets created
+            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
+              dialect match {
+                case GemFireXDDialect =>
+                  GemFireXDDialect.initializeTable(table,
+                    sqlContext.conf.caseSensitiveAnalysis, conn)
+                  GemFireXDDialect.initializeTable(ColumnFormatRelation.
+                      cachedBatchTableName(table),
+                    sqlContext.conf.caseSensitiveAnalysis, conn)
+                case _ => // Do nothing
+              }
+            }
+            return
+          case SaveMode.ErrorIfExists =>
+            // sys.error(s"Table $table already exists.") TODO: Why so?
+            return
+          case _ => // Ignore
+        }
       }
     } finally {
       conn.close()
@@ -398,8 +404,8 @@ class BaseColumnFormatRelation(
   }
 
   /**
-    * Execute a DML SQL and return the number of rows affected.
-    */
+   * Execute a DML SQL and return the number of rows affected.
+   */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
@@ -439,20 +445,19 @@ class ColumnFormatRelation(
     _externalStore: ExternalStore,
     partitioningColumns: Seq[String],
     _context: SQLContext)
-    extends BaseColumnFormatRelation(
-      _table,
-      _provider,
-      _mode,
-      _userSchema,
-      schemaExtensions,
-      ddlExtensionForShadowTable,
-      _origOptions,
-      _externalStore,
-      partitioningColumns,
-      _context)
-        with ParentRelation {
-
-  recoverDependentsRelation()
+  extends BaseColumnFormatRelation(
+    _table,
+    _provider,
+    _mode,
+    _userSchema,
+    schemaExtensions,
+    ddlExtensionForShadowTable,
+    _origOptions,
+    _externalStore,
+    partitioningColumns,
+    _context)
+  with ParentRelation with DependentRelation {
+  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
@@ -466,7 +471,7 @@ class ColumnFormatRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    snappySession.sessionState.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
+    snappySession.sessionState.catalog.removeDependentRelation(tableIdent, indexIdent)
     // Remove the actual index
     snappySession.dropTable(indexIdent, ifExists)
   }
@@ -475,31 +480,29 @@ class ColumnFormatRelation(
       catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(table)
 
-  override def recoverDependentsRelation(): Unit = {
-    var indexes: Array[String] = Array()
-    try {
-      val options = new CaseInsensitiveMutableHashMap(this.origOptions)
-      indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
-    } catch {
-      case e: NoSuchElementException =>
+  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
+    var dependentRelations: Array[String] = Array()
+    if (properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
+      dependentRelations = properties(ExternalStoreUtils.DEPENDENT_RELATIONS).split(",")
     }
 
-    indexes.foreach(index => {
-      val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val sncCatalog = snappySession.sessionState.catalog
-      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sncCatalog = snappySession.sessionState.catalog
+    dependentRelations.foreach(rel => {
+      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
         case LogicalRelation(r: DependentRelation, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
+
   }
 
   /**
-    * Index table is same as the column table apart from how it is
-    * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
-    * clause in its options. Also add GEM_INDEXED_TABLE parameter to
-    * indicate that this is an index table.
-    */
+   * Index table is same as the column table apart from how it is
+   * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
+   * clause in its options. Also add GEM_INDEXED_TABLE parameter to
+   * indicate that this is an index table.
+   */
   private def createIndexTable(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,
       tableRelation: JDBCAppendableRelation,
@@ -525,16 +528,16 @@ class ColumnFormatRelation(
         val catalog = snappySession.sessionCatalog
         val colocateWith = {
           val colocationTable = catalog.newQualifiedTableName(value)
-          catalog.tableExists(colocationTable) match {
-            case true => value
-            case false =>
-              val idx = snappySession.getIndexTable(colocationTable)
-              catalog.tableExists(idx) match {
-                case true => idx.toString
-                case false =>
-                  throw new AnalysisException(
-                    s"Could not find colocation table $colocationTable in catalog")
-              }
+          if (catalog.tableExists(colocationTable)) {
+            value
+          } else {
+            val idx = snappySession.getIndexTable(colocationTable)
+            if (catalog.tableExists(idx)) {
+              idx.toString
+            } else {
+              throw new AnalysisException(
+                s"Could not find colocation table $colocationTable in catalog")
+            }
           }
         }
         tempOptions + (StoreUtils.COLOCATE_WITH -> colocateWith)
@@ -564,7 +567,7 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snappySession.sessionState.catalog.alterTableToAddIndexProp(
+      snappySession.sessionState.catalog.addDependentRelation(
         tableIdent, snappySession.getIndexTable(indexIdent))
 
       val df = Dataset.ofRows(snappySession,
@@ -578,12 +581,18 @@ class ColumnFormatRelation(
         throw e
     }
   }
+
+  /** Base table of this relation. */
+  override def baseTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
+
+  /** Name of this relation in the catalog. */
+  override def name: String = table
 }
 
 /**
-  * Currently this is same as ColumnFormatRelation but has kept it as a separate class
-  * to allow adding of any index specific functionality in future.
-  */
+ * Currently this is same as ColumnFormatRelation but has kept it as a separate class
+ * to allow adding of any index specific functionality in future.
+ */
 class IndexColumnFormatRelation(
     _table: String,
     _provider: String,
@@ -669,7 +678,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
-      forManagedTable = true, forColumnTable = true)
+      forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
@@ -680,6 +689,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(
       parametersForShadowTable, isRowTable = false, isShadowTable = true)
 
+    // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
@@ -703,7 +713,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     // create an index relation if it is an index table
     val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
-      case Some(baseTable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
+      case Some(btable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
           processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
         mode,
@@ -714,7 +724,7 @@ final class DefaultSource extends ColumnarRelationProvider {
         externalStore,
         partitioningColumn,
         sqlContext,
-        baseTable)
+        btable)
       case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
           processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,

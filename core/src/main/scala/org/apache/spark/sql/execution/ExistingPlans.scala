@@ -19,33 +19,36 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
-/** Physical plan node for scanning data from an DataSource scan RDD.
-  * If user knows that the data is partitioned or replicated across
-  * all nodes this SparkPla can be used to avoid expensive shuffle
-  * and Broadcast joins. This plan overrides outputPartitioning and
-  * make it inline with the partitioning of the underlying DataSource */
+/**
+ * Physical plan node for scanning data from an DataSource scan RDD.
+ * If user knows that the data is partitioned or replicated across
+ * all nodes this SparkPla can be used to avoid expensive shuffle
+ * and Broadcast joins. This plan overrides outputPartitioning and
+ * make it inline with the partitioning of the underlying DataSource
+ */
 private[sql] abstract class PartitionedPhysicalScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
@@ -61,6 +64,9 @@ private[sql] abstract class PartitionedPhysicalScan(
   protected lazy val numPartitions: Int = dataRDD.getNumPartitions
 
   override lazy val schema: StructType = StructType.fromAttributes(output)
+
+  @transient val (metricAdd, metricValue): (String => String, String => String) =
+    Utils.metricMethods(sparkContext)
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
   // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
@@ -81,15 +87,19 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else if (partitionColumns.nonEmpty) {
       val callbacks = ToolsCallbackInit.toolsCallback
       if (callbacks != null) {
+        // when buckets are linked to partitions then numBuckets have
+        // to be sent as zero to skip considering buckets in partitioning
+        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
-          numPartitions, numBuckets)
+          partitionColumnAliases, numPartitions,
+          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
     } else super.outputPartitioning
   }
 
-  override def simpleString: String = "Partitioned Scan " + extraInformation +
+  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
       " , Requested Columns = " + output.mkString("[", ",", "]") +
       " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
       " numBuckets= " + numBuckets +
@@ -105,41 +115,59 @@ private[sql] object PartitionedPhysicalScan {
       output: Seq[Attribute],
       numBuckets: Int,
       partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]],
       rdd: RDD[Any],
       otherRDDs: Seq[RDD[InternalRow]],
       relation: PartitionedDataSourceScan,
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter]) ): SparkPlan =
+      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter])): SparkPlan =
     relation match {
       case i: IndexColumnFormatRelation =>
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, relation, allFilters, schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, allFilters,
+          schemaAttributes)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
-          a.map(_.name).toArray, f.toArray, false)
+          a.map(_.name).toArray, f.toArray, useResultSet = false)
+
+        def resolveCol(left: Attribute, right: AttributeReference) =
+          columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
+
         val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
-          Seq.empty, table)
-        val bufferExchange = ShuffleExchange(columnScan.outputPartitioning,
-          rowBufferScan)
-        ZipPartitionScan(columnScan, bufferExchange)
-      case r: BaseColumnFormatRelation =>
+          Seq.empty, Seq.empty, table)
+        val otherPartKeys = partitionColumns.map(_.transform {
+          case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
+            throw new AnalysisException(s"RowBuffer output column $a not found in " +
+                s"${rowBufferScan.output.mkString(",")}")
+          }
+        })
+        assert(columnScan.outputPartitioning.satisfies(
+          ClusteredDistribution(columnScan.partitionColumns)))
+        ZipPartitionScan(columnScan, columnScan.partitionColumns,
+          rowBufferScan, otherPartKeys)
+      case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, relation, allFilters, schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, allFilters,
+          schemaAttributes)
       case r: SamplingRelation =>
-        if (r.isPartitioned) {
-          val columnScan = ColumnTableScan(output, rdd, Nil, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
-          ZipPartitionScan(columnScan, null, otherRDDs.head, relation)
+        if (r.isReservoirAsRegion) {
+          ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
+            partitionColumnAliases, relation, allFilters, schemaAttributes,
+            isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-            partitionColumns, relation, allFilters, schemaAttributes)
+            partitionColumns, partitionColumnAliases, relation, allFilters,
+            schemaAttributes)
         }
       case _: RowFormatRelation =>
         RowTableScan(output, rdd, numBuckets,
-          partitionColumns, relation)
+          partitionColumns, partitionColumnAliases, relation)
     }
+
+  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
+    SparkPlanInfo.fromSparkPlan(plan)
 }
 
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
@@ -155,16 +183,31 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def connectionType: ConnectionType.Value
 }
 
-private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenSupport,
-    otherPlan: SparkPlan, otherRDD: RDD[InternalRow] = null,
-    relation: PartitionedDataSourceScan = null) extends LeafExecNode with CodegenSupport {
+/** Combines two SparkPlan or one SparkPlan and another RDD and acts as a LeafExecNode for the
+ * higher operators.  Typical usage is like combining additional plan or rdd with
+ * ColumnTableScan without breaking WholeStageCodegen.
+ *
+ * @param basePlan      left plan that must be code generated.
+ * @param basePartKeys  left partitioner expression
+ * @param otherPlan     optional. otherRDD can be used instead of this.
+ * @param otherPartKeys right partitioner expression
+ */
+private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
+    basePartKeys: Seq[Expression],
+    otherPlan: SparkPlan,
+    otherPartKeys: Seq[Expression]) extends LeafExecNode with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
+  override def children: Seq[SparkPlan] = basePlan :: otherPlan :: Nil
+
+  override def requiredChildDistribution: Seq[Distribution] =
+    ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
+
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Seq(Option(otherPlan).fold(otherRDD)(_.execute()))
+    inputCode.inputRDDs ++ Some(otherPlan.execute())
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
@@ -172,9 +215,8 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
     ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
 
     val row = ctx.freshName("row")
-    val columnsInputEval = Option(otherPlan).getOrElse(basePlan).output.zipWithIndex.map { case
-      (ref, ordinal) =>
-      val baseIndex = Option(otherPlan).fold(relation.schema.fieldIndex(ref.name))(_ => ordinal)
+    val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
+      val baseIndex = ordinal
       val ev = consumedVars(ordinal)
       val dataType = ref.dataType
       val javaType = ctx.javaType(dataType)
@@ -216,25 +258,92 @@ private[sql] final case class ZipPartitionScan(basePlan: SparkPlan with CodegenS
   override def output: Seq[Attribute] = basePlan.output
 }
 
+class StratumInternalRow(val weight: Long) extends InternalRow {
+
+  var actualRow: InternalRow = _
+
+  def numFields: Int = throw new UnsupportedOperationException("not implemented")
+
+  def getUTF8String(ordinal: Int): UTF8String = throw new UnsupportedOperationException("not " +
+      "implemented")
+
+  def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
+
+  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getBoolean(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
+
+  def getByte(ordinal: Int): Byte = throw new UnsupportedOperationException("not implemented")
+
+  def getShort(ordinal: Int): Short = throw new UnsupportedOperationException("not implemented")
+
+  def getInt(ordinal: Int): Int = throw new UnsupportedOperationException("not implemented")
+
+  def getLong(ordinal: Int): Long = throw new UnsupportedOperationException("not implemented")
+
+  def getFloat(ordinal: Int): Float = throw new UnsupportedOperationException("not implemented")
+
+  def getDouble(ordinal: Int): Double = throw new UnsupportedOperationException("not implemented")
+
+  def getDecimal(ordinal: Int, precision: Int, scale: Int): Decimal =
+    throw new UnsupportedOperationException("not implemented")
+
+
+  def getBinary(ordinal: Int): Array[Byte] =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getInterval(ordinal: Int): CalendarInterval =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getStruct(ordinal: Int, numFields: Int): InternalRow =
+    throw new UnsupportedOperationException("not implemented")
+
+  def getArray(ordinal: Int): ArrayData = throw new UnsupportedOperationException("not implemented")
+
+  def getMap(ordinal: Int): MapData = throw new UnsupportedOperationException("not implemented")
+
+  def get(ordinal: Int, dataType: DataType): Object =
+    throw new UnsupportedOperationException("not implemented")
+}
+
 trait BatchConsumer extends CodegenSupport {
 
   /**
-    * Generate Java source code to do any processing before a batch is consumed
-    * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
-    * optimizations, initializations etc).
-    * <p>
-    * Implementations should use this for additional optimizations that can be
-    * done at batch level when a batched scan is being done. They should not
-    * depend on this being invoked since many scans will not be batched.
-    */
-  def batchConsume(ctx: CodegenContext, input: Seq[ExprCode]): String = ""
+   * Returns true if the given plan returning batches of data can be consumed
+   * by this plan.
+   */
+  def canConsume(plan: SparkPlan): Boolean
+
+  /**
+   * Generate Java source code to do any processing before a batch is consumed
+   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * optimizations, initializations etc).
+   * <p>
+   * Implementations should use this for additional optimizations that can be
+   * done at batch level when a batched scan is being done. They should not
+   * depend on this being invoked since many scans will not be batched.
+   */
+  def batchConsume(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String
 }
 
 /**
-  * Extended information for ExprCode to also hold the hashCode variable,
-  * variable having dictionary reference and its index when dictionary
-  * encoding is being used.
-  */
-final case class ExprCodeEx(var hash: Option[String], dictionaryCode: String,
-    dictionary: String, dictionaryIndex: String)
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
+ */
+case class ExprCodeEx(var hash: Option[String],
+    private var dictionaryCode: String, assignCode: String,
+    dictionary: String, dictionaryIndex: String, dictionaryLen: String) {
 
+  def evaluateDictionaryCode(ev: ExprCode): String = {
+    if (ev.code.isEmpty) ""
+    else {
+      val code = dictionaryCode
+      dictionaryCode = ""
+      code
+    }
+  }
+}

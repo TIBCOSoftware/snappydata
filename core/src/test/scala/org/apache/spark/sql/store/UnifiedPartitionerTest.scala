@@ -30,9 +30,11 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data1, Data4, TestData2}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.sql.ColumnName
+import org.apache.spark.Logging
+import org.apache.spark.sql.{ColumnName, SnappyContext}
 import org.apache.spark.sql.catalyst.expressions.{Expression, Literal, Murmur3Hash}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{DataType, _}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -75,6 +77,7 @@ class UnifiedPartitionerTest extends SnappyFunSuite
   }
 
   private def createDate(year: Int, month: Int, date: Int): java.sql.Date = {
+    // noinspection ScalaDeprecation
     new java.sql.Date(year, month, date)
   }
 
@@ -114,7 +117,7 @@ class UnifiedPartitionerTest extends SnappyFunSuite
     assert(rpr != null)
     assert(rpr2 != null)
 
-    val numPartitions = 11
+    val numPartitions = ExternalStoreUtils.DEFAULT_TABLE_BUCKETS_LOCAL_MODE.toInt
 
     // Check All Datatypes
     var row = createRow(200, IntegerType)
@@ -325,6 +328,9 @@ class UnifiedPartitionerTest extends SnappyFunSuite
   }
 
   test("Test PR for Int type column") {
+    val snc = SnappyContext(sc)
+    snc.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=3")
+    snc.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +
         "options " +

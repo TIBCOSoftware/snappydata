@@ -24,7 +24,9 @@ import io.snappydata.cluster.ClusterManagerTestBase
 
 import org.apache.spark.SparkContext
 
-class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
+class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+
+  bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "10000")
 
   val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
     "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
@@ -32,23 +34,31 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
-    createAndLoadTables(snc, isSnappy = true)
-    queryExecution(snc, isSnappy = true)
-    validateResult(snc, isSnappy = true)
+    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    TPCHUtils.queryExecution(snc, isSnappy = true)
+    TPCHUtils.validateResult(snc, isSnappy = true)
   }
 
   def _testSpark(): Unit = {
     val snc = SnappyContext(sc)
-    createAndLoadTables(snc, isSnappy = false)
-    queryExecution(snc, isSnappy = false)
-    validateResult(snc, isSnappy = false)
+    TPCHUtils.createAndLoadTables(snc, isSnappy = false)
+    TPCHUtils.queryExecution(snc, isSnappy = false)
+    TPCHUtils.validateResult(snc, isSnappy = false)
   }
 
+}
 
-  private def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
+object TPCHUtils {
+
+  val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
+    "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
+    "q20", "q21", "q22")
+
+  def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
     val tpchDataPath = getClass.getResource("/TPCH").getPath
 
-    val usingOptionString = s"""
+    val usingOptionString =
+      s"""
            USING row
            OPTIONS ()"""
 
@@ -73,15 +83,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
 
-  private def queryExecution(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    snc.sql(s"set spark.sql.shuffle.partitions= 4")
-    snc.sql(s"set spark.sql.crossJoin.enabled = true")
-
-    queries.foreach(query => TPCH_Snappy.execute(query, snc,
-      isResultCollection = true, isSnappy = isSnappy))
-  }
-
-  private def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
+  def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
     val sc: SparkContext = snc.sparkContext
 
     val fineName = if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
@@ -105,8 +107,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
       if (!actualLineSet.equals(expectedLineSet)) {
         if (!(expectedLineSet.size == actualLineSet.size)) {
           resultOutputStream.println(s"For $query " +
-            s"result count mismatched observed with " +
-            s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
+              s"result count mismatched observed with " +
+              s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
         } else {
           for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
             if (!expectedLine.equals(actualLine)) {
@@ -125,11 +127,19 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s){
 
     val resultOutputFile = sc.textFile(fineName)
     assert(resultOutputFile.count() == 0,
-       s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
+      s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
     if (resultOutputFile.count() != 0) {
       ClusterManagerTestBase.logger.warn(
         s"QUERY MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
     }
   }
 
+  def queryExecution(snc: SnappyContext, isSnappy: Boolean, warmup: Int = 0,
+      runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
+    snc.sql(s"set spark.sql.crossJoin.enabled = true")
+
+    queries.foreach(query => TPCH_Snappy.execute(query, snc,
+      isResultCollection, isSnappy, warmup = warmup,
+      runsForAverage = runsForAverage, avgPrintStream = System.out))
+  }
 }

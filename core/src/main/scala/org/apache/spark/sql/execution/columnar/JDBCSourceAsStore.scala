@@ -271,7 +271,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
@@ -298,7 +298,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 }
 
 final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
       bucketIds) {
 
