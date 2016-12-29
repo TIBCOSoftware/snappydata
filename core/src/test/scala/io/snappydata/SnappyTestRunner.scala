@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata
 
 import java.io._
@@ -5,6 +21,7 @@ import java.io._
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.spark.Logging
 import org.scalatest.{Retries, BeforeAndAfterAll, FunSuite}
 
@@ -12,6 +29,12 @@ import scala.sys.process._
 import scala.language.postfixOps
 import scala.util.parsing.json.JSON
 
+/**
+ * Extensible Abstract test suite to test different shell based commands like submit jobs, snappy shell, spark shell etc.
+ * The output of each of the processes are captured and validated.
+ *
+ * Class extending can mix match different methods like SnappyShell, Job to create a test case.
+ */
 abstract class SnappyTestRunner extends FunSuite
 with BeforeAndAfterAll
 with Serializable
@@ -21,7 +44,12 @@ with Logging with Retries {
   var localHostName = ""
   var currWorkingDir = ""
 
+  //One can ovveride this method to pass other parameters like heap size.
+  def servers = s"$localHostName\n$localHostName"
+
   def snappyShell = s"$snappyHome/bin/snappy-shell"
+
+  def sparkShell = s"$snappyHome/bin/spark-shell"
 
   implicit class X(in: Seq[String]) {
     def pipe(cmd: String) =
@@ -54,7 +82,7 @@ with Logging with Retries {
 
   def startupCluster(): Unit = {
     new PrintWriter(s"$snappyHome/conf/servers") {
-      write(s"$localHostName\n$localHostName")
+      write(servers)
       close
     }
     val (out, err) = executeProcess(s"$snappyHome/sbin/snappy-start-all.sh")
@@ -75,11 +103,14 @@ with Logging with Retries {
     val stdoutWriter = new PrintStream(teeOut, true)
     val stderrWriter = new PrintStream(teeErr, true)
 
-    Process(command, new File(s"$currWorkingDir"), "SNAPPY_HOME" -> snappyHome) !
+    Process(command, new File(s"$currWorkingDir"), "SNAPPY_HOME" -> snappyHome, "SPARK_PRINT_LAUNCH_COMMAND" -> "true") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     (stdoutStream.toString, stderrStream.toString)
   }
 
+  def defaultShellValidator(output: String): Unit ={
+
+  }
 
   def SnappyShell(name: String, sqlCommand: Seq[String]): Unit = {
     sqlCommand pipe snappyShell foreach (s => {
@@ -142,14 +173,17 @@ with Logging with Retries {
     }
   }
 
-  def SparkSubmit(name: String, appClass: String, confs: Seq[String], appJar: String): Unit = {
+  def SparkSubmit(name: String, appClass: String,
+                  master: String = "spark://$localHostName:7077",
+                  confs: Seq[String] = Seq.empty[String],
+                  appJar: String): Unit = {
 
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
-    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master spark://$localHostName:7077 $confStr $appJar"
+    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $master $confStr $appJar"
     val (out, err) = executeProcess(sparkSubmit)
 
-    if (out.toLowerCase().contains("exception")) {
+    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
       throw new Exception(s"Failed to submit $appClass")
     }
   }
@@ -158,8 +192,34 @@ with Logging with Retries {
     val runExample = s"$snappyHome/bin/run-example $exampleClas"
     val (out, err) = executeProcess(runExample)
 
-    if (out.toLowerCase().contains("exception")) {
+    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
       throw new Exception(s"Failed to run $exampleClas")
     }
   }
+
+  def SparkShell(confs: Seq[String], options: String, scriptFile : String): Unit = {
+    val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
+    val shell = s"$sparkShell $confStr $options -i $scriptFile"
+    val (out, err) = executeProcess(shell)
+    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
+      throw new Exception(s"Failed to run $shell")
+    }
+  }
+
+  def SparkShell(confs: Seq[String], options: String, scalaStatements: Seq[String]): Unit ={
+    val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
+    scalaStatements pipe s"$snappyShell $confStr $options" foreach (s => {
+      println(s)
+      if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
+        throw new Exception(s"Failed to run Scala statement")
+      }
+    })
+  }
+
+/*  def withExceptionHandling[T](function: => T): T = {
+    try {
+      function
+    } catch {
+      case e: Exception => throw e
+  }*/
 }

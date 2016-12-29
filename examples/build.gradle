@@ -21,8 +21,6 @@ compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
-sourceSets.test.scala.srcDir 'src/test/scala'
 
 dependencies {
 
