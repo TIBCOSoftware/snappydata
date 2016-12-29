@@ -60,17 +60,3 @@ task productExamples(dependsOn: 'jar') << {
     rename { filename -> exampleArchiveName }
   }
 }
-
-task cleanQuickstart << {
-  String workingDir = "${testResultsBase}/quickstart"
-  delete workingDir
-  file(workingDir).mkdirs()
-}
-
-task runExamples(type: JavaExec, dependsOn: 'classes') {
-  dependsOn cleanQuickstart
-  main = 'io.snappydata.examples.ExampleTester'
-  classpath = sourceSets.test.runtimeClasspath
-  args snappyProductDir
-  workingDir = "${testResultsBase}/quickstart"
-}
