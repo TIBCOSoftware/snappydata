@@ -156,7 +156,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val options = table.storage.serdeProperties
         val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
-            snappySession, schema, provider, SaveMode.Ignore, options)
+            snappySession, schema, userSpecifiedSchema.get, provider, SaveMode.Ignore, options)
 
           case None =>
             // add allowExisting in properties used by some implementations

@@ -73,7 +73,7 @@ case class JDBCMutableRelation(
   // create table in external store once upfront
   var tableSchema: String = _
 
-  override final lazy val schema: StructType = JDBCRDD.resolveTable(
+  override lazy val schema: StructType = JDBCRDD.resolveTable(
     connProperties.url, table, connProperties.connProps)
 
   var tableExists: Boolean = _

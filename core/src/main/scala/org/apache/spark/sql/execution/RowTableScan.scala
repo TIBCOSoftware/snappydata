@@ -197,7 +197,7 @@ private[sql] final case class RowTableScan(
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeArrayData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+           ((UnsafeArrayData)$col).pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
           }
@@ -210,7 +210,7 @@ private[sql] final case class RowTableScan(
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeMapData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            ((UnsafeMapData)$col).pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
           }
@@ -223,7 +223,7 @@ private[sql] final case class RowTableScan(
           final $javaType $col;
           if ($bytes != null) {
             $col = new UnsafeRow(${s.length});
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            ((UnsafeRow)$col).pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
           }

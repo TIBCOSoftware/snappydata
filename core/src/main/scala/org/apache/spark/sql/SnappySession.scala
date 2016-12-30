@@ -918,7 +918,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     val relation = schemaDDL match {
       case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params)
+        cols, schema.get, source, mode, params)
 
       case None =>
         // add allowExisting in properties used by some implementations
@@ -932,6 +932,9 @@ class SnappySession(@transient private val sc: SparkContext,
         r
     }
 
+    if(!relationSchema.isDefined) {
+      relationSchema = schema
+    }
     val plan = LogicalRelation(relation)
     sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
       Array.empty[String], source, params, relation)
@@ -994,7 +997,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     val (relation, schema) = schemaDDL match {
       case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params, Some(query)), None)
+        cols, userSpecifiedSchema.get, source, mode, params, Some(query)), None)
 
       case None =>
         val data = Dataset.ofRows(this, query)

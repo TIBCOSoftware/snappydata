@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -278,6 +279,7 @@ trait ExternalSchemaRelationProvider {
       mode: SaveMode,
       parameters: Map[String, String],
       schema: String,
+      processedSchema: StructType,
       data: Option[LogicalPlan]): BaseRelation
 }
 

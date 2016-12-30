@@ -36,7 +36,7 @@ abstract class MutableRelationProvider
         with CreatableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String,
+      options: Map[String, String], schema: String, processedSchema: StructType,
       data: Option[LogicalPlan]): JDBCMutableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
@@ -96,7 +96,7 @@ abstract class MutableRelationProvider
     val allowExisting = options.get(JdbcExtendedUtils
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    createRelation(sqlContext, mode, options, schemaString, None)
+    createRelation(sqlContext, mode, options, schemaString, schema, None)
   }
 
   override def createRelation(sqlContext: SQLContext,
@@ -106,7 +106,7 @@ abstract class MutableRelationProvider
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     // will work only if table is already existing
-    createRelation(sqlContext, mode, options, "", None)
+    createRelation(sqlContext, mode, options, "", null, None)
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
@@ -115,7 +115,7 @@ abstract class MutableRelationProvider
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
-    val relation = createRelation(sqlContext, mode, options, schemaString, None)
+    val relation = createRelation(sqlContext, mode, options, schemaString, data.schema, None)
     var success = false
     try {
       relation.insert(data)

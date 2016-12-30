@@ -217,6 +217,7 @@ object JdbcExtendedUtils extends Logging {
   def externalResolvedDataSource(
       snappySession: SnappySession,
       schemaString: String,
+      processedSchema: StructType,
       provider: String,
       mode: SaveMode,
       options: Map[String, String],
@@ -229,7 +230,7 @@ object JdbcExtendedUtils extends Logging {
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
           new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString)),
-          schemaString, data)
+          schemaString, processedSchema, data)
 
       case _ => throw new AnalysisException(
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")

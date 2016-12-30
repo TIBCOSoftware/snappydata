@@ -33,12 +33,13 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRDD, JDBCPartition}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.types.StructType
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -51,6 +52,7 @@ class RowFormatRelation(
     preservePartitions: Boolean,
     _mode: SaveMode,
     _userSpecifiedString: String,
+    _processedSchema: StructType,
     _parts: Array[Partition],
     _origOptions: Map[String, String],
     _context: SQLContext)
@@ -64,6 +66,9 @@ class RowFormatRelation(
       _context)
     with PartitionedDataSourceScan
     with RowPutRelation with ParentRelation with DependentRelation {
+
+  override final lazy val schema: StructType = _processedSchema
+
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def toString: String = s"RowFormatRelation[$table]"
@@ -259,22 +264,32 @@ class RowFormatRelation(
 final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String,
+      options: Map[String, String], schema: String, processedSchema: StructType,
       data: Option[LogicalPlan]): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
+    val sc = sqlContext.sparkContext
+    val connProperties =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    val schemaString = if (null != processedSchema) {
+      JdbcExtendedUtils.schemaString(processedSchema,
+        connProperties.dialect)
+    } else {
+      schema
+    }
+
+
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getTotalPartitions(
       sqlContext.sparkContext, parameters,
       forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
-    val schemaExtension = s"$schema $ddlExtension"
+
+    val schemaExtension = s"$schemaString $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
-    val sc = sqlContext.sparkContext
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     StoreUtils.validateConnProps(parameters)
 
@@ -285,6 +300,7 @@ final class DefaultSource extends MutableRelationProvider {
       preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
+      processedSchema,
       Array[Partition](JDBCPartition(null, 0)),
       options,
       sqlContext)

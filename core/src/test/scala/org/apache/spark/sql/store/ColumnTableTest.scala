@@ -977,4 +977,5 @@ class ColumnTableTest
       case t: Throwable => throw new AssertionError(t.getMessage, t);
     }
   }
+
 }
