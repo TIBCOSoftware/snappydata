@@ -30,8 +30,8 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.catalog.{CatalogRelation, SessionCatalog}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper, RowOrdering}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -39,7 +39,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -73,12 +73,13 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          AnalyzeDMLExternalTables(snappySession) ::
+          AnalyzeChildQuery(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
     override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+      datasources.PreWriteCheck(conf, catalog),
+      PrePutCheck)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -179,7 +180,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))

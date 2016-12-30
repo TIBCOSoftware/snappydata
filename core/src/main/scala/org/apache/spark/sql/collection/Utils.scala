@@ -722,7 +722,9 @@ object Utils {
 
   def generateJson(dataType: DataType, gen: JsonGenerator,
       row: InternalRow): Unit = {
-    JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
+    // JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
+    // compatibility with both Spark 2.0.0 and 2.0.2
+    TypeUtilities.jacksonApply(StructType(Seq(StructField("", dataType))), gen, row)
   }
 
   def getNumColumns(partitioning: Partitioning): Int = partitioning match {

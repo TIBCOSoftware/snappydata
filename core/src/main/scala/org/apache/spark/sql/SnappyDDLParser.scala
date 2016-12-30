@@ -17,28 +17,72 @@
 
 package org.apache.spark.sql
 
+import java.util.Date
+
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
+import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogTable, CatalogTablePartition, CatalogTableType, SessionCatalog}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.plans.{QueryPlan, logical}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
+import org.apache.spark.sql.execution.datasources.{BucketSpec, CreateTableUsing, DataSource, RefreshTable}
 import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 
+/**
+ * A logical command that is executed for its side-effects.  `SnappyRunnableCommand`s are
+ * wrapped in `SnappyExecutedCommandExec` during execution.
+ */
+trait SnappyRunnableCommand extends LeafNode with logical.Command  {
+  override def output: Seq[Attribute] = Seq.empty
+  def run(sparkSession: SparkSession): Seq[Row]
+}
+
+private[sql] case class SnappyExecutedCommandExec(cmd: SnappyRunnableCommand) extends SparkPlan {
+  /**
+   * A concrete command should override this lazy field to wrap up any side effects caused by the
+   * command or any other computation that should be evaluated exactly once. The value of this field
+   * can be used as the contents of the corresponding RDD generated from the physical plan of this
+   * command.
+   *
+   * The `execute()` method of all the physical command classes should reference `sideEffectResult`
+   * so that the command can be executed eagerly right after the command query is created.
+   */
+  protected[sql] lazy val sideEffectResult: Seq[InternalRow] = {
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+    cmd.run(sqlContext.sparkSession).map(converter(_).asInstanceOf[InternalRow])
+  }
+
+  override protected def innerChildren: Seq[QueryPlan[_]] = cmd :: Nil
+
+  override def output: Seq[Attribute] = cmd.output
+
+  override def children: Seq[SparkPlan] = Nil
+
+  override def executeCollect(): Array[InternalRow] = sideEffectResult.toArray
+
+  override def executeTake(limit: Int): Array[InternalRow] = sideEffectResult.take(limit).toArray
+
+  protected override def doExecute(): RDD[InternalRow] = {
+    sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+  }
+}
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
@@ -349,7 +393,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def describeTable: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
-          DescribeTableCommand(tableIdent, Map.empty[String, String], extended
+          org.apache.spark.sql.DescribeTableCommand(tableIdent, Map.empty[String, String], extended
               .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
   }
 
@@ -520,7 +564,7 @@ private[sql] case class CreateMetastoreTableUsing(
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String],
-    isBuiltIn: Boolean) extends RunnableCommand {
+    isBuiltIn: Boolean) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -543,7 +587,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     mode: SaveMode,
     options: Map[String, String],
     query: LogicalPlan,
-    isBuiltIn: Boolean) extends RunnableCommand {
+    isBuiltIn: Boolean) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -566,7 +610,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
 
 private[sql] case class DropTable(
     tableIdent: TableIdentifier,
-    ifExists: Boolean) extends RunnableCommand {
+    ifExists: Boolean) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -577,7 +621,7 @@ private[sql] case class DropTable(
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: TableIdentifier) extends RunnableCommand {
+    tableIdent: TableIdentifier) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -590,7 +634,7 @@ private[sql] case class TruncateTable(
 private[sql] case class CreateIndex(indexName: TableIdentifier,
     baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
-    options: Map[String, String]) extends RunnableCommand {
+    options: Map[String, String]) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -604,7 +648,7 @@ private[sql] case class CreateIndex(indexName: TableIdentifier,
 
 private[sql] case class DropIndex(
     indexName: TableIdentifier,
-    ifExists: Boolean) extends RunnableCommand {
+    ifExists: Boolean) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -619,14 +663,16 @@ case class DMLExternalTable(
     tableName: TableIdentifier,
     query: LogicalPlan,
     command: String)
-    extends Command {
+    extends LeafNode with Command {
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
   override lazy val resolved: Boolean = query.resolved
+  override def output: Seq[Attribute] = Seq.empty
+  override def children: Seq[LogicalPlan] = query :: Nil
 
 }
 
-private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {
+private[sql] case class SetSchema(schemaName: String) extends SnappyRunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
     Seq.empty[Row]
@@ -634,7 +680,7 @@ private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {
 }
 
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Duration]) extends RunnableCommand {
+    batchInterval: Option[Duration]) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
 
@@ -668,5 +714,214 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
         }
     }
     Seq.empty[Row]
+  }
+}
+
+/**
+ * Command that looks like
+ * {{{
+ *   DESCRIBE [EXTENDED|FORMATTED] table_name partitionSpec?;
+ * }}}
+ */
+case class DescribeTableCommand(
+    table: TableIdentifier,
+    partitionSpec: Map[String, String],
+    isExtended: Boolean,
+    isFormatted: Boolean)
+    extends SnappyRunnableCommand {
+
+  override val output: Seq[Attribute] = Seq(
+    // Column names are based on Hive.
+    AttributeReference("col_name", StringType, nullable = false,
+      new MetadataBuilder().putString("comment", "name of the column").build())(),
+    AttributeReference("data_type", StringType, nullable = false,
+      new MetadataBuilder().putString("comment", "data type of the column").build())(),
+    AttributeReference("comment", StringType, nullable = true,
+      new MetadataBuilder().putString("comment", "comment of the column").build())()
+  )
+
+  def run(sparkSession: SparkSession): Seq[Row] = {
+    val result = new ArrayBuffer[Row]
+    val catalog = sparkSession.sessionState.catalog
+
+    if (catalog.isTemporaryTable(table)) {
+      if (partitionSpec.nonEmpty) {
+        throw new AnalysisException(
+          s"DESC PARTITION is not allowed on a temporary view: ${table.identifier}")
+      }
+      describeSchema(catalog.lookupRelation(table).schema, result)
+    } else {
+      val metadata = catalog.getTableMetadata(table)
+
+      if (DDLUtils.isDatasourceTable(metadata)) {
+        DDLUtils.getSchemaFromTableProperties(metadata) match {
+          case Some(userSpecifiedSchema) => describeSchema(userSpecifiedSchema, result)
+          case None => describeSchema(catalog.lookupRelation(table).schema, result)
+        }
+      } else {
+        describeSchema(metadata.schema, result)
+      }
+
+      describePartitionInfo(metadata, result)
+
+      if (partitionSpec.isEmpty) {
+        if (isExtended) {
+          describeExtendedTableInfo(metadata, result)
+        } else if (isFormatted) {
+          describeFormattedTableInfo(metadata, result)
+        }
+      } else {
+        describeDetailedPartitionInfo(catalog, metadata, result)
+      }
+    }
+
+    result
+  }
+
+  private def describePartitionInfo(table: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    if (DDLUtils.isDatasourceTable(table)) {
+      val userSpecifiedSchema = DDLUtils.getSchemaFromTableProperties(table)
+      val partColNames = DDLUtils.getPartitionColumnsFromTableProperties(table)
+      for (schema <- userSpecifiedSchema if partColNames.nonEmpty) {
+        append(buffer, "# Partition Information", "", "")
+        append(buffer, s"# ${output.head.name}", output(1).name, output(2).name)
+        describeSchema(StructType(partColNames.map(schema(_))), buffer)
+      }
+    } else {
+      if (table.partitionColumns.nonEmpty) {
+        append(buffer, "# Partition Information", "", "")
+        append(buffer, s"# ${output.head.name}", output(1).name, output(2).name)
+        describeSchema(table.partitionColumns, buffer)
+      }
+    }
+  }
+
+  private def describeExtendedTableInfo(table: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "# Detailed Table Information", table.toString, "")
+  }
+
+  private def describeFormattedTableInfo(table: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "# Detailed Table Information", "", "")
+    append(buffer, "Database:", table.database, "")
+    append(buffer, "Owner:", table.owner, "")
+    append(buffer, "Create Time:", new Date(table.createTime).toString, "")
+    append(buffer, "Last Access Time:", new Date(table.lastAccessTime).toString, "")
+    append(buffer, "Location:", table.storage.locationUri.getOrElse(""), "")
+    append(buffer, "Table Type:", table.tableType.name, "")
+
+    append(buffer, "Table Parameters:", "", "")
+    table.properties.filterNot {
+      // Hides schema properties that hold user-defined schema, partition columns, and bucketing
+      // information since they are already extracted and shown in other parts.
+      case (key, _) => key.startsWith(CreateDataSourceTableUtils.DATASOURCE_SCHEMA)
+    }.foreach { case (key, value) =>
+      append(buffer, s"  $key", value, "")
+    }
+
+    describeStorageInfo(table, buffer)
+  }
+
+  private def describeStorageInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "# Storage Information", "", "")
+    metadata.storage.serde.foreach(serdeLib => append(buffer, "SerDe Library:", serdeLib, ""))
+    metadata.storage.inputFormat.foreach(format => append(buffer, "InputFormat:", format, ""))
+    metadata.storage.outputFormat.foreach(format => append(buffer, "OutputFormat:", format, ""))
+    append(buffer, "Compressed:", if (metadata.storage.compressed) "Yes" else "No", "")
+    describeBucketingInfo(metadata, buffer)
+
+    append(buffer, "Storage Desc Parameters:", "", "")
+    metadata.storage.serdeProperties.foreach { case (key, value) =>
+      append(buffer, s"  $key", value, "")
+    }
+  }
+
+  private def describeBucketingInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    def appendBucketInfo(numBuckets: Int, bucketColumns: Seq[String], sortColumns: Seq[String]) = {
+      append(buffer, "Num Buckets:", numBuckets.toString, "")
+      append(buffer, "Bucket Columns:", bucketColumns.mkString("[", ", ", "]"), "")
+      append(buffer, "Sort Columns:", sortColumns.mkString("[", ", ", "]"), "")
+    }
+
+    DDLUtils.getBucketSpecFromTableProperties(metadata) match {
+      case Some(bucketSpec) =>
+        appendBucketInfo(
+          bucketSpec.numBuckets,
+          bucketSpec.bucketColumnNames,
+          bucketSpec.sortColumnNames)
+      case None =>
+        appendBucketInfo(
+          metadata.numBuckets,
+          metadata.bucketColumnNames,
+          metadata.sortColumnNames)
+    }
+  }
+
+  private def describeDetailedPartitionInfo(
+      catalog: SessionCatalog,
+      metadata: CatalogTable,
+      result: ArrayBuffer[Row]): Unit = {
+    if (metadata.tableType == CatalogTableType.VIEW) {
+      throw new AnalysisException(
+        s"DESC PARTITION is not allowed on a view: ${table.identifier}")
+    }
+    if (DDLUtils.isDatasourceTable(metadata)) {
+      throw new AnalysisException(
+        s"DESC PARTITION is not allowed on a datasource table: ${table.identifier}")
+    }
+    val partition = catalog.getPartition(table, partitionSpec)
+    if (isExtended) {
+      describeExtendedDetailedPartitionInfo(table, metadata, partition, result)
+    } else if (isFormatted) {
+      describeFormattedDetailedPartitionInfo(table, metadata, partition, result)
+      describeStorageInfo(metadata, result)
+    }
+  }
+
+  private def describeExtendedDetailedPartitionInfo(
+      tableIdentifier: TableIdentifier,
+      table: CatalogTable,
+      partition: CatalogTablePartition,
+      buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "Detailed Partition Information " + partition.toString, "", "")
+  }
+
+  private def describeFormattedDetailedPartitionInfo(
+      tableIdentifier: TableIdentifier,
+      table: CatalogTable,
+      partition: CatalogTablePartition,
+      buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "# Detailed Partition Information", "", "")
+    append(buffer, "Partition Value:", s"[${partition.spec.values.mkString(", ")}]", "")
+    append(buffer, "Database:", table.database, "")
+    append(buffer, "Table:", tableIdentifier.table, "")
+    append(buffer, "Location:", partition.storage.locationUri.getOrElse(""), "")
+    //    append(buffer, "Partition Parameters:", "", "")
+    //    partition.parameters.foreach { case (key, value) =>
+    //      append(buffer, s"  $key", value, "")
+    //    }
+  }
+
+  private def describeSchema(schema: Seq[CatalogColumn], buffer: ArrayBuffer[Row]): Unit = {
+    schema.foreach { column =>
+      append(buffer, column.name, column.dataType.toLowerCase, column.comment.orNull)
+    }
+  }
+
+  private def describeSchema(schema: StructType, buffer: ArrayBuffer[Row]): Unit = {
+    schema.foreach { column =>
+      val comment =
+        if (column.metadata.contains("comment")) column.metadata.getString("comment") else null
+      append(buffer, column.name, column.dataType.simpleString, comment)
+    }
+  }
+
+  private def append(
+      buffer: ArrayBuffer[Row], column: String, dataType: String, comment: String): Unit = {
+    buffer += Row(column, dataType, comment)
   }
 }

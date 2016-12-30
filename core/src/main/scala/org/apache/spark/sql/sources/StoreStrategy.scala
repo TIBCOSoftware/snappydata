@@ -32,31 +32,41 @@ object StoreStrategy extends Strategy {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
         false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
-      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
+      SnappyExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
+    case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
+      bucketSpec, mode, opts, _) =>
+      import scala.reflect.runtime.{universe => ru}
+      import ru._
+      val rm = runtimeMirror(this.getClass.getClassLoader)
+      val pr = rm.reflect(a)
+      val x = typeOf[CreateTableUsingAsSelect].members.find(a =>
+        a.fullName.contains("query") || a.fullName.contains("child"))
+      val value = pr.reflectField(x.get.asTerm).get
 
-    case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-        bucketSpec, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
-      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
+      SnappyExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
         None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
-        temporary = false, partitionCols, mode, opts, query,
+        temporary = false, partitionCols, mode, opts, value.asInstanceOf[LogicalPlan],
         isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
-      ExecutedCommandExec(create) :: Nil
+      SnappyExecutedCommandExec(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommandExec(createSelect) :: Nil
+      SnappyExecutedCommandExec(createSelect) :: Nil
     case drop: DropTable =>
-      ExecutedCommandExec(drop) :: Nil
+      SnappyExecutedCommandExec(drop) :: Nil
 
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+      SnappyExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
-      ExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
+      SnappyExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
+    case r: org.apache.spark.sql.DescribeTableCommand => SnappyExecutedCommandExec(r) :: Nil
+
+    case r: SnappyRunnableCommand => SnappyExecutedCommandExec(r) :: Nil
 
     case _ => Nil
   }
@@ -64,7 +74,7 @@ object StoreStrategy extends Strategy {
 
 private[sql] case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends RunnableCommand {
+    command: String) extends SnappyRunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
@@ -104,7 +114,7 @@ private[sql] case class PutIntoDataSource(
     logicalRelation: LogicalRelation,
     relation: RowPutRelation,
     query: LogicalPlan)
-    extends RunnableCommand {
+    extends SnappyRunnableCommand {
 
   override def run(session : SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
