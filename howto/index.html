@@ -364,9 +364,10 @@ For example, the command submits the job and runs it as:</p>
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead [leadHost:port]
+    --lead hostNameOfLead:8090
 </code></pre>
 
+<p>In the above comand, <strong>--lead</strong> option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).</p>
 <p><strong>Output</strong>: It returns output similar to:</p>
 <pre><code>{
   &quot;status&quot;: &quot;STARTED&quot;,
