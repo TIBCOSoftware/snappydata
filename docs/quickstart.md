@@ -6,7 +6,7 @@ Depending on your preference you can try any of the following options:
 
 * [Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
 * [Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
-* [20X Faster than Spark 2.0 Caching](#Start Benchmark)
+* [20X Faster than Spark 2.0.2 Caching](#Start Benchmark)
 * [Getting Started using SQL](#getting-started-using-sql)
 * [Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
 * [Getting Started on AWS](#getting-started-on-aws)
@@ -16,7 +16,8 @@ Depending on your preference you can try any of the following options:
 
 ##Getting Started with your Spark Distribution
 
-If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
+If you are a Spark developer and already using Spark 2.0.2,(Core SnappyData is compatible with Spark 2.0.2 version) 
+ the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
 This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
 
@@ -134,8 +135,8 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 
 <a id="Start Benchmark"></a>
-##20X Faster than Spark 2.0
-Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0 performance. 
+##20X Faster than Spark 2.0.2
+Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
  <Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note>
@@ -143,7 +144,7 @@ We load millions of rows into a cached Spark DataFrame, run some analytic querie
 
 **Start the Spark Shell using any of the options mentioned below:**
 
-**If you are using your own Spark 2.0 installation:**
+**If you are using your own Spark 2.0.2 installation:**
 
 ```bash
 # Create a directory for SnappyData artifacts
@@ -236,7 +237,7 @@ scala> :q // Quit the Spark Shell
 ```
 
 <Note>  We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS
-t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0 .
+t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0.2 .
 </Note>
 
 ##Getting Started using SQL
