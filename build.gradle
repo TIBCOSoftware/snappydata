@@ -838,6 +838,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
@@ -989,7 +990,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports
+  dependsOn  buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
 }
 
