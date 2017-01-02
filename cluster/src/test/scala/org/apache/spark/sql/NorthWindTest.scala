@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql
 
-import java.io.{File, FileOutputStream, PrintWriter}
-
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -38,13 +36,8 @@ class NorthWindTest
   }
 
   test("Test replicated row tables queries") {
-    val sqlContext = SQLContext.getOrCreate(sc)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ReplicatedTable.out"), true));
     createAndLoadReplicatedTables(snc)
     validateReplicatedTableQueries(snc)
-    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
-    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ReplicatedTable", pw, sqlContext)
-    pw.close()
 
     // test SNAP-1152
     val df = snc.sql("SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
@@ -55,33 +48,18 @@ class NorthWindTest
   }
 
   test("Test partitioned row tables queries") {
-    val sqlContext = SQLContext.getOrCreate(sc)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_PartitionedRowTable.out"), true));
     createAndLoadPartitionedTables(snc)
     validatePartitionedRowTableQueries(snc)
-    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
-    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "PartitionedRowTable", pw, sqlContext)
-    pw.close()
   }
 
   test("Test column tables queries") {
-    val sqlContext = SQLContext.getOrCreate(sc)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ColumnTable.out"), true));
     createAndLoadColumnTables(snc)
     validatePartitionedColumnTableQueries(snc)
-    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
-    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColumnTable", pw, sqlContext)
-    pw.close()
   }
 
   test("Test colocated tables queries") {
-    val sqlContext = SQLContext.getOrCreate(sc)
-    val pw = new PrintWriter(new FileOutputStream(new File("ValidateNWQueries_ColocatedTable.out"), true));
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
-    NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
-    NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColocatedTable", pw, sqlContext)
-    pw.close()
   }
 
   private lazy val totalProcessors = Utils.mapExecutors(snc, () =>

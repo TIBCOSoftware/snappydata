@@ -8,12 +8,12 @@ With iSight-Cloud, you can speed up the process of understanding what your data 
 
 In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.
 
-Refer to the the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
+Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
 ###Key Components###
 This section provides a brief description of the key terms used in this document. 
 
-* **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that are important for SnappyData are, Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
+* **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
 
 * **SnappyData Cluster**:  A database cluster which has three main components - Locator, Server and Lead
 
@@ -36,7 +36,7 @@ To understand the product follow these easy steps that can get you started quick
 
 <a id="SettingUp"></a>
 ##Setting Up SnappyData Cloud Cluster##
-This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using script.
+This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using a script.
 
 <a id="DeployingClusterCloudFormation"></a>
 ###Deploying SnappyData Cloud Cluster with iSight CloudBuilder
@@ -48,7 +48,7 @@ Watch the following  video to learn how easy it is to use iSight CloudBuilder, w
 Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
-* Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+* Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
 
@@ -62,7 +62,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
 
-1. Enter the name for your cluster. Each cluster is identified by it’s unique name. 
+1. Enter the name for your cluster. Each cluster is identified by its unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
 ![STEP](Images/AWS_clustername.png)
 
@@ -113,7 +113,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 	<Note> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
 
 	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
-	> * **Invalid Keypair**: Verify that the EC2 keypair exists in the region you selected in the iSight CloudBuilder creation steps.
+	> * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
 	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*</Note>
 
 <Note> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</Note>
@@ -150,7 +150,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 ####Launching SnappyData Cluster
 
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
+In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 Enter the command in the following format:
 
@@ -160,14 +160,14 @@ Enter the command in the following format:
 
 Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
  
-By default, the script starts one instance of locator, lead and server each. 
-The script identifies each cluster by the unique cluster name (you provided), and internally ties members (locators, leads and stores/servers) of the cluster with EC2 security groups.
+By default, the script starts one instance of a locator, lead,  and server each. 
+The script identifies each cluster by the unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.
  
 The names and details of the members are automatically derived from the provided cluster name. 
 
 For example, if you launch a cluster named **my-cluster**, the locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
 
-When running the script you can also specify properties like number of stores and region.
+When running the script you can also specify properties like the number of stores and region.
 For example, using the following command, you can start a SnappyData cluster named **snappydata-cluster** with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.
 
 The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
@@ -177,7 +177,7 @@ The examples below assume that you have the key file (my-ec2-key.pem) in your ho
 ```
 To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
 
-For comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
+For a comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
 
 <a id="dataAWSS3"></a>
 ##Loading Data from AWS S3##
@@ -215,7 +215,7 @@ The values are:
 ##Using Apache Zeppelin
 
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
-Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
+Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example, http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
 SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see [Using Predefined Notebooks](#predefinednotebook).
 
 Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for more information.
@@ -228,13 +228,13 @@ To use an interpreter, add the associated interpreter directive with the format,
 
 * <Note>  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</Note>
  
-* <Note>  It is recommend that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
+* <Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
 </Note>
 
 ###SQL Interpreter###
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
 ####Multi-Line Statements####
-Multi-line statements as well as multiple statements on the same line are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.
+Multi-line statements ,as well as multiple statements on the same line, are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.
 
 SnappyData provides a list of connection-specific SQL properties that can be applied to the paragraph that is executed. 
 
@@ -281,7 +281,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 ###Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.
 
-* In this example, you can create tables using external dataset from AWS S3.
+* In this example, you can create tables using an external Dataset from AWS S3.
 
 ![Example](Images/sde_exampleusingexternaldatabase.png)
 
@@ -304,11 +304,11 @@ In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 ##Monitoring the SnappyData Cloud Cluster ##
  You can monitor the SnappyData cluster using SnappyData Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.
 
-The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members and tables. 
+The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
 It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
 It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
 
-The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.
+The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.
 
 ###Accessing the Console
 To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
@@ -316,7 +316,7 @@ To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin 
 1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 
 ![Launch Spark](Images/aws_pulsespark.png)
 
-2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the user name and password.
+2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.
 
 3. Once you have logged in, you can start monitoring SnappyData cluster. 
 

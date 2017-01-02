@@ -85,7 +85,7 @@ dependencies {
   if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.3-1'
+    compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.3-2'
   }
 
   testCompile project(':dunit')

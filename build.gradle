@@ -62,7 +62,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.6'
+  version = '0.7'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -96,7 +96,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.0.2'
-    snappySparkVersion = '2.0.3-1'
+    snappySparkVersion = '2.0.3-2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -108,7 +108,7 @@ allprojects {
     kryoVersion = '4.0.0'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.1'
+    snappyStoreVersion = '1.5.3'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -611,14 +611,19 @@ task product(type: Zip) {
     String exampleArchiveName = "quickstart.jar"
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
+    def targets = targetProject.configurations.runtime
+    if (new File(rootDir, 'store/build.gradle').exists()) {
+      // exclude client jar and dependencies since client shadow jar is copied
+      targets = targetProject.configurations.runtime -
+          project(':snappy-store:gemfirexd-client').configurations.runtime
+    }
     copy {
-      from(targetProject.configurations.runtime) {
+      from(targets) {
         // exclude antlr4 explicitly (runtime is still included)
         // that gets pulled by antlr gradle plugin
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
-        exclude 'slf4j*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
@@ -665,7 +670,7 @@ task product(type: Zip) {
       into "${snappyProductDir}/docs"
     }
 
-    // copy the snappy-core shadow jar
+    // copy the snappy-core shadow jar into distributions
     copy {
       from("${coreProject.buildDir}/libs")
       into "${rootProject.buildDir}/distributions"
@@ -689,20 +694,21 @@ task product(type: Zip) {
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
       }
-      // also copy the JDBC client jar separately
+      // also copy the JDBC client jar separately into distributions
       def clientProject = project(':snappy-store:gemfirexd-client')
       copy {
         from clientProject.shadowJar.destinationDir
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
-      // Copy the JDBC client jar to jars directory, even if its constituent jars
-      // are already present in this directory.
+      // Copy the JDBC client jar to jars directory
+      // (its constituent jars are specifically excluded)
       copy {
         from clientProject.shadowJar.destinationDir
         into "${snappyProductDir}/jars"
         include clientProject.shadowJar.archiveName
       }
+      delete "${snappyProductDir}/jars/${clientProject.jar.archiveName}"
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
