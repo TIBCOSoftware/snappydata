@@ -16,17 +16,22 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Final, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
+import org.apache.spark.sql.JoinStrategy._
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.physical.ClusteredDistribution
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
+import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.internal.DefaultPlanner
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange}
+import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
+import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
-
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of
@@ -44,7 +49,7 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
-    object StreamQueryStrategy extends Strategy {
+  object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
@@ -52,7 +57,7 @@ private[sql] trait SnappyStrategies {
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(output, rowStream)) :: Nil
       case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _), _) =>
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(l.output, t.rowStream)) :: Nil
-      case WindowLogicalPlan(d, s, child, _) => throw new AnalysisException(
+      case WindowLogicalPlan(_, _, child, _) => throw new AnalysisException(
         s"Unexpected child $child for WindowLogicalPlan")
       case _ => Nil
     }
@@ -60,44 +65,158 @@ private[sql] trait SnappyStrategies {
 
   object LocalJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
-      left, right) =>
-        if (canBuildRight(joinType) && canLocalJoin(right)) {
+      left, right) if canBuildRight(joinType) && canLocalJoin(right) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildRight, replicatedTableJoin = true)
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+      left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildLeft, replicatedTableJoin = true)
+
+      // check for collocated joins before going for broadcast
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if isCollocatedJoin(joinType, left, leftKeys, right, rightKeys) =>
+        val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
+        if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildRight)
-        } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
+        } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft)
+            joinType, joins.BuildRight, replicatedTableJoin = false)
+        } else if (buildLeft) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
+        } else if (RowOrdering.isOrderable(leftKeys)) {
+          joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+            planLater(left), planLater(right)) :: Nil
         } else Nil
+
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildRight(joinType) && canBroadcast(right, conf) =>
+        if (skipBroadcastRight(joinType, left, right, conf)) {
+          Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+            BuildLeft, condition, planLater(left), planLater(right)))
+        } else {
+          Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+            BuildRight, condition, planLater(left), planLater(right)))
+        }
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildLeft(joinType) && canBroadcast(left, conf) =>
+        Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+          BuildLeft, condition, planLater(left), planLater(right)))
+
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
+            !RowOrdering.isOrderable(leftKeys) =>
+        if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
+            left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildLeft, replicatedTableJoin = false)
+        } else {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+            joinType, joins.BuildRight, replicatedTableJoin = false)
+        }
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+        if canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
+            !RowOrdering.isOrderable(leftKeys) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+          joinType, joins.BuildLeft, replicatedTableJoin = false)
+
       case _ => Nil
     }
 
-    private def canBuildRight(joinType: JoinType): Boolean = joinType match {
-      case Inner | LeftOuter | LeftSemi | LeftAnti => true
-      case j: ExistenceJoin => true
-      case _ => false
-    }
+    private def getCollocatedPartitioning(joinType: JoinType,
+        leftPlan: LogicalPlan, leftKeys: Seq[Expression],
+        rightPlan: LogicalPlan, rightKeys: Seq[Expression],
+        checkBroadcastJoin: Boolean): (Seq[Expression], Seq[Int], Int) = {
 
-    private def canBuildLeft(joinType: JoinType): Boolean = joinType match {
-      case Inner | RightOuter => true
-      case _ => false
-    }
-
-    private def canLocalJoin(plan: LogicalPlan): Boolean = {
-      plan match {
-        case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
-          t.numBuckets == 1
-        case PhysicalOperation(projects, filters,
-        Join(left, right, _, _)) =>
-          // If join is a result of join of replicated tables, this
-          // join result should also be a local join with any other table
-          canLocalJoin(left) && canLocalJoin(right)
-        case PhysicalOperation(_, _, node) if node.children.size == 1 =>
-          canLocalJoin(node.children.head)
-
-        case _ => false
+      def getKeyOrder(joinKeys: Seq[Expression],
+          partitioning: Seq[Expression]): Seq[Int] = {
+        val keyOrder = joinKeys.map { k =>
+          val i = partitioning.indexWhere(_.semanticEquals(k))
+          if (i < 0) return Nil
+          i
+        }
+        keyOrder
       }
+
+      def getCompatiblePartitioning(plan: LogicalPlan,
+          joinKeys: Seq[Expression]): (Seq[Expression], Seq[Int], Int) = plan match {
+        case PhysicalOperation(_, _, r@LogicalRelation(
+        scan: PartitionedDataSourceScan, _, _)) =>
+          // send back numPartitions=1 for replicated table since collocated
+          if (scan.numBuckets == 1) return (Nil, Nil, 1)
+
+          val partCols = scan.partitionColumns.map(colName =>
+            r.resolveQuoted(colName, self.snappySession.sessionState.analyzer.resolver)
+                .getOrElse(throw new AnalysisException(
+                  s"""Cannot resolve column "$colName" among (${r.output})""")))
+          // check if join keys match (or are subset of) partitioning columns
+          val keyOrder = getKeyOrder(joinKeys, partCols)
+          if (keyOrder.nonEmpty) (partCols, keyOrder, scan.numBuckets)
+          // return partitioning in any case when checking for broadcast
+          else if (checkBroadcastJoin) (partCols, Nil, scan.numBuckets)
+          else (Nil, Nil, -1)
+
+        case PhysicalOperation(_, _, ExtractEquiJoinKeys(jType, lKeys, rKeys,
+        _, left, right)) =>
+          // If join is a result of collocated join, then the result can
+          // also be a collocated join with other tables if compatible
+          // Also the result of a broadcast join will be partitioned
+          // on the other table, so allow collocation for the result.
+          // Below will return partitioning columns of the result but the key
+          // order of those in its join are not useful, rather need to determine
+          // the key order as passed to the method.
+          val (cols, _, numPartitions) = getCollocatedPartitioning(
+            jType, left, lKeys, right, rKeys, checkBroadcastJoin = true)
+          // check if the partitioning of the result is compatible with current
+          val keyOrder = getKeyOrder(joinKeys, cols)
+          if (keyOrder.nonEmpty) (cols, keyOrder, numPartitions)
+          else (Nil, Nil, -1)
+
+        case _ => (Nil, Nil, -1)
+      }
+
+      val (leftCols, leftKeyOrder, leftNumPartitions) = getCompatiblePartitioning(
+        leftPlan, leftKeys)
+      val (rightCols, rightKeyOrder, rightNumPartitions) = getCompatiblePartitioning(
+        rightPlan, rightKeys)
+      if (leftKeyOrder.nonEmpty && leftNumPartitions == rightNumPartitions &&
+          leftKeyOrder == rightKeyOrder) {
+        (leftCols, leftKeyOrder, leftNumPartitions)
+      } else if (leftNumPartitions == 1) {
+        // replicate table is always collocated (used by recursive call for Join)
+        (rightCols, rightKeyOrder, rightNumPartitions)
+      } else if (rightNumPartitions == 1) {
+        // replicate table is always collocated (used by recursive call for Join)
+        (leftCols, leftKeyOrder, leftNumPartitions)
+      } else {
+        if (checkBroadcastJoin) {
+          // check if one of the sides will be broadcast, then in that case
+          // indicate that collocation is still possible for joins further down
+          if (canBuildRight(joinType) && canBroadcast(rightPlan, conf)) {
+            if (skipBroadcastRight(joinType, leftPlan, rightPlan, conf)) {
+              // resulting partitioning will be of the side not broadcast
+              (rightCols, rightKeyOrder, rightNumPartitions)
+            } else {
+              // resulting partitioning will be of the side not broadcast
+              (leftCols, leftKeyOrder, leftNumPartitions)
+            }
+          } else if (canBuildLeft(joinType) && canBroadcast(leftPlan, conf)) {
+            // resulting partitioning will be of the side not broadcast
+            (rightCols, rightKeyOrder, rightNumPartitions)
+          } else (Nil, Nil, -1)
+        } else (Nil, Nil, -1)
+      }
+    }
+
+    private def isCollocatedJoin(joinType: JoinType, leftPlan: LogicalPlan,
+        leftKeys: Seq[Expression], rightPlan: LogicalPlan,
+        rightKeys: Seq[Expression]): Boolean = {
+      getCollocatedPartitioning(joinType, leftPlan, leftKeys,
+        rightPlan, rightKeys, checkBroadcastJoin = false)._2.nonEmpty
     }
 
     private[this] def makeLocalHashJoin(
@@ -107,12 +226,73 @@ private[sql] trait SnappyStrategies {
         right: LogicalPlan,
         condition: Option[Expression],
         joinType: JoinType,
-        side: joins.BuildSide): Seq[SparkPlan] = {
+        side: joins.BuildSide,
+        replicatedTableJoin: Boolean): Seq[SparkPlan] = {
       joins.LocalJoin(leftKeys, rightKeys, side, condition,
-        joinType, planLater(left), planLater(right)) :: Nil
+        joinType, planLater(left), planLater(right),
+        left.statistics.sizeInBytes, right.statistics.sizeInBytes,
+        replicatedTableJoin) :: Nil
+    }
+  }
+}
+
+private[sql] object JoinStrategy {
+
+  def skipBroadcastRight(joinType: JoinType, left: LogicalPlan,
+      right: LogicalPlan, conf: SQLConf): Boolean = {
+    canBuildLeft(joinType) && canBroadcast(left, conf) &&
+        left.statistics.sizeInBytes < right.statistics.sizeInBytes
+  }
+
+  /**
+   * Matches a plan whose output should be small enough to be used in broadcast join.
+   */
+  def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
+    plan.statistics.isBroadcastable ||
+        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+  }
+
+  /**
+   * Matches a plan whose size is small enough to build a hash table.
+   */
+  def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
+    plan.statistics.sizeInBytes <=
+        io.snappydata.Property.HashJoinSize.get(conf)
+  }
+
+  def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
+    case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+      (canBuildRight(joinType) && canLocalJoin(right)) ||
+          (canBuildLeft(joinType) && canLocalJoin(left))
+    case _ => false
+  }
+
+  def canLocalJoin(plan: LogicalPlan): Boolean = {
+    plan match {
+      case PhysicalOperation(_, _, LogicalRelation(
+      t: PartitionedDataSourceScan, _, _)) =>
+        t.numBuckets == 1
+      case PhysicalOperation(_, _, Join(left, right, _, _)) =>
+        // If join is a result of join of replicated tables, this
+        // join result should also be a local join with any other table
+        canLocalJoin(left) && canLocalJoin(right)
+      case PhysicalOperation(_, _, node) if node.children.size == 1 =>
+        canLocalJoin(node.children.head)
+
+      case _ => false
     }
   }
 
+  def canBuildRight(joinType: JoinType): Boolean = joinType match {
+    case Inner | LeftOuter | LeftSemi | LeftAnti => true
+    case _: ExistenceJoin => true
+    case _ => false
+  }
+
+  def canBuildLeft(joinType: JoinType): Boolean = joinType match {
+    case Inner | RightOuter => true
+    case _ => false
+  }
 }
 
 /**
@@ -126,6 +306,12 @@ object SnappyAggregation extends Strategy {
   var enableOptimizedAggregation = true
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
+    case _ => applyAggregation(plan, isRootPlan = false)
+  }
+
+  def applyAggregation(plan: LogicalPlan,
+      isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
     resultExpressions, child) if enableOptimizedAggregation =>
 
@@ -159,10 +345,12 @@ object SnappyAggregation extends Strategy {
             groupingExpressions,
             aggregateExpressions,
             resultExpressions,
-            planLater(child))
+            planLater(child),
+            isRootPlan)
         } else {
           planAggregateWithOneDistinct(
             groupingExpressions,
+            aggregateExpressions,
             functionsWithDistinct,
             functionsWithoutDistinct,
             resultExpressions,
@@ -174,12 +362,24 @@ object SnappyAggregation extends Strategy {
     case _ => Nil
   }
 
+  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
+    // ImperativeAggregate is not supported right now in code generation.
+    !aggregateExpressions.exists(_.aggregateFunction
+        .isInstanceOf[ImperativeAggregate])
+  }
+
   def planAggregateWithoutDistinct(
       groupingExpressions: Seq[NamedExpression],
       aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
-      child: SparkPlan): Seq[SparkPlan] = {
-    // Check if we can use HashAggregate.
+      child: SparkPlan,
+      isRootPlan: Boolean): Seq[SparkPlan] = {
+
+    // Check if we can use SnappyHashAggregateExec.
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
+        aggregateExpressions, resultExpressions, child)
+    }
 
     // 1. Create an Aggregate Operator for partial aggregations.
 
@@ -197,9 +397,9 @@ object SnappyAggregation extends Strategy {
       groupingExpressions = groupingExpressions,
       aggregateExpressions = partialAggregateExpressions,
       aggregateAttributes = partialAggregateAttributes,
-      initialInputBufferOffset = 0,
       __resultExpressions = partialResultExpressions,
-      child = child)
+      child = child,
+      hasDistinct = false)
 
     // 2. Create an Aggregate Operator for final aggregations.
     val finalAggregateExpressions = aggregateExpressions.map(_.copy(
@@ -209,24 +409,38 @@ object SnappyAggregation extends Strategy {
     val finalAggregateAttributes = finalAggregateExpressions.map(
       _.resultAttribute)
 
-    val finalAggregate = SnappyHashAggregateExec(
+    val finalHashAggregate = SnappyHashAggregateExec(
       requiredChildDistributionExpressions = Some(groupingAttributes),
       groupingExpressions = groupingAttributes,
       aggregateExpressions = finalAggregateExpressions,
       aggregateAttributes = finalAggregateAttributes,
-      initialInputBufferOffset = groupingExpressions.length,
       __resultExpressions = resultExpressions,
-      child = partialAggregate)
+      child = partialAggregate,
+      hasDistinct = false)
 
+    val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
+      // Special CollectAggregateExec plan for top-level simple aggregations
+      // which can be performed on the driver itself rather than an exchange.
+      CollectAggregateExec(basePlan = finalHashAggregate,
+        child = partialAggregate)
+    } else finalHashAggregate
     finalAggregate :: Nil
   }
 
   def planAggregateWithOneDistinct(
       groupingExpressions: Seq[NamedExpression],
+      aggregateExpressions: Seq[AggregateExpression],
       functionsWithDistinct: Seq[AggregateExpression],
       functionsWithoutDistinct: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression],
       child: SparkPlan): Seq[SparkPlan] = {
+
+    // Check if we can use SnappyHashAggregateExec.
+    if (!supportCodegen(aggregateExpressions)) {
+      return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
+        functionsWithDistinct, functionsWithoutDistinct,
+        resultExpressions, child)
+    }
 
     // functionsWithDistinct is guaranteed to be non-empty. Even though it
     // may contain more than one DISTINCT aggregate function, all of those
@@ -258,11 +472,11 @@ object SnappyAggregation extends Strategy {
         groupingExpressions = groupingExpressions ++ namedDistinctExpressions,
         aggregateExpressions = aggregateExpressions,
         aggregateAttributes = aggregateAttributes,
-        initialInputBufferOffset = 0,
         __resultExpressions = groupingAttributes ++ distinctAttributes ++
             aggregateExpressions.flatMap(_.aggregateFunction
                 .inputAggBufferAttributes),
-        child = child)
+        child = child,
+        hasDistinct = true)
     }
 
     // 2. Create an Aggregate Operator for partial merge aggregations.
@@ -276,12 +490,11 @@ object SnappyAggregation extends Strategy {
         groupingExpressions = groupingAttributes ++ distinctAttributes,
         aggregateExpressions = aggregateExpressions,
         aggregateAttributes = aggregateAttributes,
-        initialInputBufferOffset = (groupingAttributes ++
-            distinctAttributes).length,
         __resultExpressions = groupingAttributes ++ distinctAttributes ++
             aggregateExpressions.flatMap(_.aggregateFunction
                 .inputAggBufferAttributes),
-        child = partialAggregate)
+        child = partialAggregate,
+        hasDistinct = true)
     }
 
     // 3. Create an Aggregate operator for partial aggregation (for distinct)
@@ -291,7 +504,7 @@ object SnappyAggregation extends Strategy {
       // Children of an AggregateFunction with DISTINCT keyword has already
       // been evaluated. At here, we need to replace original children
       // to AttributeReferences.
-      case agg@AggregateExpression(aggregateFunction, mode, true, _) =>
+      case AggregateExpression(aggregateFunction, _, true, _) =>
         aggregateFunction.transformDown(distinctColumnAttributeLookup)
             .asInstanceOf[AggregateFunction]
     }
@@ -328,10 +541,9 @@ object SnappyAggregation extends Strategy {
             distinctAggregateExpressions,
         aggregateAttributes = mergeAggregateAttributes ++
             distinctAggregateAttributes,
-        initialInputBufferOffset = (groupingAttributes ++
-            distinctAttributes).length,
         __resultExpressions = partialAggregateResult,
-        child = partialMergeAggregate)
+        child = partialMergeAggregate,
+        hasDistinct = true)
     }
 
     // 4. Create an Aggregate Operator for the final aggregation.
@@ -363,11 +575,63 @@ object SnappyAggregation extends Strategy {
             distinctAggregateExpressions,
         aggregateAttributes = finalAggregateAttributes ++
             distinctAggregateAttributes,
-        initialInputBufferOffset = groupingAttributes.length,
         __resultExpressions = resultExpressions,
-        child = partialDistinctAggregate)
+        child = partialDistinctAggregate,
+        hasDistinct = true)
     }
 
     finalAndCompleteAggregate :: Nil
+  }
+}
+
+/**
+ * Rule to collapse the partial and final aggregates if the grouping keys
+ * match or are superset of the child distribution.
+ */
+case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
+    // collapse aggregates including removal of exchange completely if possible
+    case agg@SnappyHashAggregateExec(Some(groupingAttributes), _,
+    finalAggregateExpressions, _, resultExpressions, child, false)
+      if groupingAttributes.nonEmpty &&
+          // not for child classes (like AQP extensions)
+          agg.getClass == classOf[SnappyHashAggregateExec] &&
+          // also skip for bootstrap which depends on partial+final
+          !agg.output.exists(_.name.contains("bootstrap")) =>
+      val partialAggregate = child match {
+        case s: SnappyHashAggregateExec => s
+        case e: Exchange => e.child.asInstanceOf[SnappyHashAggregateExec]
+        case o => throw new IllegalStateException(
+          s"unexpected child ${o.simpleString} of ${agg.simpleString}")
+      }
+      val partitioning = partialAggregate.child.outputPartitioning
+      val numColumns = Utils.getNumColumns(partitioning)
+      val satisfied = if (groupingAttributes.length == numColumns) {
+        if (partitioning.satisfies(ClusteredDistribution(groupingAttributes))) {
+          Some(groupingAttributes)
+        } else None
+      } else if (numColumns > 0) {
+        groupingAttributes.combinations(numColumns).find(p =>
+          partitioning.satisfies(ClusteredDistribution(p)))
+      } else None
+      satisfied match {
+        case distributionKeys: Some[_] =>
+          val completeAggregateExpressions = finalAggregateExpressions
+              .map(_.copy(mode = Complete))
+          val completeAggregateAttributes = completeAggregateExpressions
+              .map(_.resultAttribute)
+          // apply EnsureRequirements just to be doubly sure since this rule is
+          // applied after EnsureRequirements when outputPartitioning is final
+          EnsureRequirements(session.sessionState.conf)(SnappyHashAggregateExec(
+            requiredChildDistributionExpressions = distributionKeys,
+            groupingExpressions = partialAggregate.groupingExpressions,
+            aggregateExpressions = completeAggregateExpressions,
+            aggregateAttributes = completeAggregateAttributes,
+            __resultExpressions = resultExpressions,
+            child = partialAggregate.child,
+            hasDistinct = false))
+
+        case _ => agg
+      }
   }
 }

@@ -214,7 +214,7 @@ esac
 
 if [[ $cmd == "jobs" && -z $newContext && -z $contextName ]]; then
   contextName="snappyContext"$(date +%s%N)
-  contextFactory="org.apache.spark.sql.SnappyContextFactory"
+  contextFactory="org.apache.spark.sql.SnappySessionFactory"
   newContext="yes"
 fi
 

@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
@@ -26,7 +27,7 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyTableStatsProviderService, Constant, Property}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -38,11 +39,9 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
-import org.apache.spark.sql.execution.joins.HashedRelationCache
-import org.apache.spark.sql.execution.ui.SnappyStatsTab
+import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
-import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
@@ -610,6 +609,12 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   }
 
   /**
+   * Run SQL string without any plan caching.
+   */
+  def sqlUncached(sqlText: String): DataFrame =
+    snappySession.sqlUncached(sqlText)
+
+  /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
    * A user can insert a DataFrame using foreachPartition...
    * {{{
@@ -777,6 +782,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _clusterMode: ClusterMode = _
 
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
   val COLUMN_SOURCE = "column"
@@ -810,6 +816,7 @@ object SnappyContext extends Logging {
 
   private[this] val storeToBlockMap: TrieMap[String, BlockAndExecutorId] =
     TrieMap.empty[String, BlockAndExecutorId]
+  private[spark] val totalCoreCount = new AtomicInteger(0)
 
   def containsBlockId(executorId: String): Boolean = {
     storeToBlockMap.get(executorId) match {
@@ -830,17 +837,36 @@ object SnappyContext extends Logging {
     storeToBlockMap.get(executorId)
 
   private[spark] def addBlockId(executorId: String,
-      blockId: BlockAndExecutorId): Option[BlockAndExecutorId] =
-    storeToBlockMap.put(executorId, blockId)
+      id: BlockAndExecutorId): Unit = {
+    storeToBlockMap.put(executorId, id)
+    if (id.blockId == null || !id.blockId.isDriver) {
+      totalCoreCount.addAndGet(id.numProcessors)
+    }
+    SnappySession.clearAllCache()
+  }
 
-  private[spark] def removeBlockId(executorId: String): Option[BlockAndExecutorId] =
-    storeToBlockMap.remove(executorId)
+  private[spark] def removeBlockId(
+      executorId: String): Option[BlockAndExecutorId] = {
+    storeToBlockMap.remove(executorId) match {
+      case s@Some(id) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(-id.numProcessors)
+        }
+        SnappySession.clearAllCache()
+        s
+      case None => None
+    }
+  }
 
   def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
     storeToBlockMap.filter(_._2.blockId != null)
   }
 
-  private[spark] def clearBlockIds(): Unit = storeToBlockMap.clear()
+  private[spark] def clearBlockIds(): Unit = {
+    storeToBlockMap.clear()
+    totalCoreCount.set(0)
+    SnappySession.clearAllCache()
+  }
 
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
@@ -861,9 +887,13 @@ object SnappyContext extends Logging {
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
-      storeToBlockMap(cache.getMyId.toString) =
-          new BlockAndExecutorId(SparkEnv.get.blockManager.blockManagerId,
-            sc.schedulerBackend.defaultParallelism())
+      val numCores = sc.schedulerBackend.defaultParallelism()
+      val blockId = new BlockAndExecutorId(
+        SparkEnv.get.blockManager.blockManagerId,
+        numCores, numCores)
+      storeToBlockMap(cache.getMyId.toString) = blockId
+      totalCoreCount.addAndGet(blockId.numProcessors)
+      SnappySession.clearAllCache()
     }
   }
 
@@ -975,14 +1005,15 @@ object SnappyContext extends Logging {
     }
   }
 
-  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
+  private[sql] def initGlobalSnappyContext(sc: SparkContext,
+      session: SnappySession): Unit = {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
-          sc.ui.foreach(new SnappyStatsTab(_))
           initMemberBlockMap(sc)
+          _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
         }
       }
@@ -991,9 +1022,10 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      stopSnappyContext
+      stopSnappyContext()
     }
   }
+
 
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
@@ -1004,6 +1036,7 @@ object SnappyContext extends Logging {
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
+        ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
@@ -1015,6 +1048,9 @@ object SnappyContext extends Logging {
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
+        if(ToolsCallbackInit.toolsCallback != null){
+          ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
+        }
       case _ => // ignore
     }
   }
@@ -1024,6 +1060,13 @@ object SnappyContext extends Logging {
     if (_globalSNContextInitialized) {
       // then on the driver
       clearStaticArtifacts()
+
+      if (_globalClear ne null) {
+        _globalClear()
+        _globalClear = null
+      }
+      SnappyTableStatsProviderService.stop()
+
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
@@ -1039,7 +1082,7 @@ object SnappyContext extends Logging {
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
     CodeGeneration.clearCache()
-    HashedRelationCache.close()
+    HashedObjectCache.close()
     _clusterMode match {
       case m: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
@@ -1082,11 +1125,14 @@ abstract class ClusterMode {
 }
 
 final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
-    private[spark] var _executorCores: Int) extends Externalizable {
+    private[spark] var _executorCores: Int,
+    private[spark] var _numProcessors: Int) extends Externalizable {
 
   def blockId: BlockManagerId = _blockId
 
   def executorCores: Int = _executorCores
+
+  def numProcessors: Int = math.max(2, _numProcessors)
 
   override def hashCode: Int = if (blockId != null) blockId.hashCode() else 0
 
@@ -1099,16 +1145,19 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
   override def writeExternal(out: ObjectOutput): Unit = {
     _blockId.writeExternal(out)
     out.writeInt(_executorCores)
+    out.writeInt(_numProcessors)
   }
 
   override def readExternal(in: ObjectInput): Unit = {
     _blockId.readExternal(in)
     _executorCores = in.readInt()
+    _numProcessors = in.readInt()
   }
 
   override def toString: String = if (blockId != null) {
-    s"BlockAndExecutorId(${blockId.executorId}," +
-        s" ${blockId.host}, ${blockId.port}, cores=$executorCores)"
+    s"BlockAndExecutorId(${blockId.executorId}, " +
+        s"${blockId.host}, ${blockId.port}, executorCores=$executorCores, " +
+        s"processors=$numProcessors)"
   } else "BlockAndExecutor()"
 }
 

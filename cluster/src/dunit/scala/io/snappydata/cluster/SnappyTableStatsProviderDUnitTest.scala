@@ -21,9 +21,9 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CachedDeserializableFactory, DiskEntry, DistributedRegion, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.management.ManagementService
 import com.gemstone.gemfire.management.internal.SystemManagementService
-import com.gemstone.gemfire.management.{ManagementService, RegionMXBean}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
@@ -38,28 +38,21 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   val table = "TEST.TEST_TABLE"
 
-  override def beforeClass(): Unit = {
-    bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "500")
-    ClusterManagerTestBase.stopSpark()
-    super.beforeClass()
-  }
-
-  override def afterClass(): Unit = {
-    super.afterClass()
-    // force restart with default properties in subsequent tests
-    ClusterManagerTestBase.stopSpark()
-
-  }
-
-  def nodeShutDown: Unit = {
+  def nodeShutDown(): Unit = {
     ClusterManagerTestBase.stopSpark()
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
   }
 
-  def testVerifyTableStats(): Unit = {
+  def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    snc.setConf("spark.sql.inMemoryColumnarStorage.batchSize", "500")
+    snc
+  }
+
+  def testVerifyTableStats(): Unit = {
+    val snc = newContext()
 
     createTable(snc, table, "row")
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "R")
@@ -102,7 +95,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
-    val snc = SnappyContext(sc).newSession()
+    val snc = newContext()
 
     createTable(snc, table, "column", Map("BUCKETS" -> "6"
       , "PERSISTENT" -> "sync"))
@@ -128,7 +121,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
-    val snc = SnappyContext(sc).newSession()
+    val snc = newContext()
     val expectedRowCount = 1888622
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
@@ -171,7 +164,6 @@ object SnappyTableStatsProviderDUnitTest {
 
   def getPartitionedRegionStats(tableName: String, isColumnTable: Boolean):
   SnappyRegionStats = {
-    val region = Misc.getRegionForTable(tableName, true).asInstanceOf[PartitionedRegion]
     var result = new SnappyRegionStats(tableName)
     if (isColumnTable) {
       result.setColumnTable(true)
@@ -186,15 +178,33 @@ object SnappyTableStatsProviderDUnitTest {
     val region = Misc.getRegionForTable(table, true).asInstanceOf[PartitionedRegion]
     val managementService = ManagementService.getManagementService(Misc.getGemFireCache).
         asInstanceOf[SystemManagementService]
-    val regionBean: RegionMXBean = managementService.getLocalRegionMBean(region.getFullPath)
-    val totalSize = region.getDataStore.getAllLocalBucketRegions.asScala.
-        foldLeft(0L)(_ + _.getTotalBytes)
-    stats.setTotalSize(stats.getTotalSize + totalSize)
-    stats.setSizeInMemory(stats.getSizeInMemory + regionBean.getEntrySize)
+    val regionBean = managementService.getLocalRegionMBean(region.getFullPath)
+    val sizer = GemFireXDInstrumentation.getInstance()
+    var entryOverhead = 0L
+    var entryCount = 0L
+    val (memSize, totalSize) = region.getDataStore.getAllLocalBucketRegions.asScala
+        .foldLeft(0L -> 0L) { case ((msize, tsize), br) =>
+          val overhead = br.estimateMemoryOverhead(sizer)
+          if (entryOverhead == 0) {
+            val iter = br.entries.regionEntries().iterator()
+            if (iter.hasNext) {
+              val re = iter.next()
+              entryOverhead = sizer.sizeof(re) + (re match {
+                case de: DiskEntry => sizer.sizeof(de.getDiskId)
+                case _ => 0
+              })
+            }
+          }
+          entryCount += br.entryCount()
+          (msize + br.getSizeInMemory + overhead, tsize + br.getTotalBytes + overhead)
+        }
     stats.setReplicatedTable(false)
     val size = if (isCachedBatchTable) regionBean.getRowsInCachedBatches
     else regionBean.getEntryCount
     stats.setRowCount(stats.getRowCount + size)
+    entryOverhead *= entryCount
+    stats.setSizeInMemory(stats.getSizeInMemory + memSize + entryOverhead)
+    stats.setTotalSize(stats.getTotalSize + totalSize + entryOverhead)
     stats
   }
 
@@ -204,13 +214,28 @@ object SnappyTableStatsProviderDUnitTest {
     val managementService =
       ManagementService.getManagementService(Misc.getGemFireCache)
           .asInstanceOf[SystemManagementService]
-    val totalSize = region.getBestLocalIterator(true).asScala.
-        foldLeft(0L)(_ + GemFireXDInstrumentation.getInstance.sizeof(_))
+    val sizer = GemFireXDInstrumentation.getInstance()
+
+    def getReplicatedEntrySize(re: RegionEntry): Long = {
+      var size = 0L
+      val key = re.getRawKey
+      if (key ne null) {
+        size = CachedDeserializableFactory.calcMemSize(key)
+      }
+      size + CachedDeserializableFactory.calcMemSize(re._getValue())
+    }
+
+    var totalSize = region.estimateMemoryOverhead(sizer) +
+        region.getBestLocalIterator(true).asScala
+            .foldLeft(0L)(_ + getReplicatedEntrySize(_))
     val regionBean = managementService.getLocalRegionMBean(region.getFullPath)
-    result.setSizeInMemory(totalSize)
     result.setReplicatedTable(true)
     result.setColumnTable(false)
     result.setRowCount(regionBean.getEntryCount)
+    totalSize += sizer.sizeof(region.getBestLocalIterator(true).next()) *
+        result.getRowCount
+    result.setSizeInMemory(totalSize)
+    result.setTotalSize(totalSize)
     result
   }
 
@@ -229,7 +254,7 @@ object SnappyTableStatsProviderDUnitTest {
       Iterator[RegionStat](convertToSerializableForm(result))
     }).collect()
 
-    expected.map(getRegionStat).reduce(aggregateResults(_, _))
+    expected.map(getRegionStat).reduce(aggregateResults)
 
   }
 
@@ -251,8 +276,7 @@ object SnappyTableStatsProviderDUnitTest {
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
     def actual = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand(snc.sparkContext).get(table).get
-
+        getAggregatedTableStatsOnDemand(table)
 
     assert(actual.getRegionName == expected.getRegionName)
     assert(actual.isColumnTable == expected.isColumnTable)

@@ -16,10 +16,10 @@
  */
 package org.apache.spark.sql.execution.row
 
+import java.lang.reflect.Field
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
@@ -43,8 +44,6 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
  * This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
- * Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs
- * as JDBCRDD has a lot of methods as private.
  */
 class RowFormatScanRDD(@transient val session: SnappySession,
     protected var tableName: String,
@@ -75,6 +74,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.toString()
       } else ""
     } else ""
+  }
+
+  protected lazy val resultSetField: Field = {
+    val field = classOf[ProxyResultSet].getDeclaredField("delegate")
+    field.setAccessible(true)
+    field
   }
 
   // below should exactly match ExternalStoreUtils.handledFilter
@@ -121,7 +126,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append(col).append(" IN (")
-      (1 until values.length).foreach(v => sb.append("?,"))
+      (1 until values.length).foreach(_ => sb.append("?,"))
       sb.append("?)")
       args ++= values
     case And(left, right) =>
@@ -171,7 +176,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
-          case p: MultiBucketExecutorPartition => p.buckets.mkString(",")
+          case p: MultiBucketExecutorPartition => p.bucketsString
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
@@ -220,13 +225,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
-          case _ => Set(thePart.index)
+          case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
         new CompactExecRowIteratorOnScan(container, bucketIds)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
-        new CompactExecRowIteratorOnRS(conn, stmt,
-          rs.asInstanceOf[EmbedResultSet], context)
+        val ers = rs match {
+          case e: EmbedResultSet => e
+          case p: ProxyResultSet =>
+            resultSetField.get(p).asInstanceOf[EmbedResultSet]
+        }
+        new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
       }
     }
   }
@@ -340,13 +349,13 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](val container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int]) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
   protected final var hasNextValue = true
   protected final var doMove = true
 
   protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asJava.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
 
   protected def currentVal: T
@@ -371,7 +380,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: scala.collection.Set[Int])
+    bucketIds: java.util.Set[Integer])
     extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
 
   override protected val currentVal: AbstractCompactExecRow = container

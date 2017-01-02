@@ -16,48 +16,50 @@
  */
 package io.snappydata.benchmark
 
-import java.io.PrintStream
+import java.io.{File, PrintStream}
 import java.sql.Statement
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext}
 
 
-object TPCHColumnPartitionedTable  {
+// scalastyle:off println
+object TPCHColumnPartitionedTable {
 
-  def createPartTable_Memsql(stmt:Statement): Unit = {
+  def createPartTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE TABLE PART  ( " +
-        "P_PARTKEY     INTEGER NOT NULL,"+
-        "P_NAME        VARCHAR(55) NOT NULL,"+
-        "P_MFGR        VARCHAR(25) NOT NULL,"+
-        "P_BRAND       VARCHAR(10) NOT NULL,"+
-        "P_TYPE        VARCHAR(25) NOT NULL,"+
-        "P_SIZE        INTEGER NOT NULL,"+
-        "P_CONTAINER   VARCHAR(10) NOT NULL,"+
-        "P_RETAILPRICE DECIMAL(15,2) NOT NULL,"+
+        "P_PARTKEY     INTEGER NOT NULL," +
+        "P_NAME        VARCHAR(55) NOT NULL," +
+        "P_MFGR        VARCHAR(25) NOT NULL," +
+        "P_BRAND       VARCHAR(10) NOT NULL," +
+        "P_TYPE        VARCHAR(25) NOT NULL," +
+        "P_SIZE        INTEGER NOT NULL," +
+        "P_CONTAINER   VARCHAR(10) NOT NULL," +
+        "P_RETAILPRICE DECIMAL(15,2) NOT NULL," +
         "P_COMMENT     VARCHAR(23) NOT NULL," +
-        "KEY (P_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
+        "KEY (P_PARTKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY (P_PARTKEY))"
     )
     println("Created Table PART")
   }
 
 
-  def createPartSuppTable_Memsql(stmt:Statement): Unit = {
+  def createPartSuppTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL," +
         "PS_SUPPKEY     INTEGER NOT NULL," +
         "PS_AVAILQTY    INTEGER NOT NULL," +
         "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL," +
         "PS_COMMENT     VARCHAR(199) NOT NULL," +
-        "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
-	      "SHARD KEY (PS_PARTKEY))"
+        "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE," +
+        "SHARD KEY (PS_PARTKEY))"
     )
     println("Created Table PARTSUPP")
   }
 
-  def createCustomerTable_Memsql(stmt:Statement): Unit = {
+  def createCustomerTable_Memsql(stmt: Statement): Unit = {
     stmt.execute("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -67,7 +69,7 @@ object TPCHColumnPartitionedTable  {
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL," +
-        "KEY (C_CUSTKEY) USING CLUSTERED COLUMNSTORE,"+
+        "KEY (C_CUSTKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY (C_CUSTKEY))"
     )
     println("Created Table CUSTOMER")
@@ -85,46 +87,61 @@ object TPCHColumnPartitionedTable  {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL," +
-        "KEY (O_CUSTKEY) USING CLUSTERED COLUMNSTORE,"+
+        "KEY (O_ORDERKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY(O_ORDERKEY))"
     )
     println("Created Table ORDERS")
   }
 
   def createLineItemTable_Memsql(stmt: Statement): Unit = {
-    stmt.execute("CREATE TABLE LINEITEM ( L_ORDERKEY    INTEGER NOT NULL,"+
-        "L_PARTKEY     INTEGER NOT NULL,"+
-        "L_SUPPKEY     INTEGER NOT NULL,"+
-        "L_LINENUMBER  INTEGER NOT NULL,"+
-        "L_QUANTITY    DECIMAL(15,2) NOT NULL,"+
-        "L_EXTENDEDPRICE  DECIMAL(15,2) NOT NULL,"+
-        "L_DISCOUNT    DECIMAL(15,2) NOT NULL,"+
-        "L_TAX         DECIMAL(15,2) NOT NULL,"+
-        "L_RETURNFLAG  CHAR(1) NOT NULL,"+
-        "L_LINESTATUS  CHAR(1) NOT NULL,"+
-        "L_SHIPDATE    DATE NOT NULL,"+
-        "L_COMMITDATE  DATE NOT NULL,"+
-        "L_RECEIPTDATE DATE NOT NULL,"+
-        "L_SHIPINSTRUCT CHAR(25) NOT NULL,"+
-        "L_SHIPMODE     CHAR(10) NOT NULL,"+
-        "L_COMMENT      VARCHAR(44) NOT NULL,"+
-        "KEY (L_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
+    stmt.execute("CREATE TABLE LINEITEM ( L_ORDERKEY    INTEGER NOT NULL," +
+        "L_PARTKEY     INTEGER NOT NULL," +
+        "L_SUPPKEY     INTEGER NOT NULL," +
+        "L_LINENUMBER  INTEGER NOT NULL," +
+        "L_QUANTITY    DECIMAL(15,2) NOT NULL," +
+        "L_EXTENDEDPRICE  DECIMAL(15,2) NOT NULL," +
+        "L_DISCOUNT    DECIMAL(15,2) NOT NULL," +
+        "L_TAX         DECIMAL(15,2) NOT NULL," +
+        "L_RETURNFLAG  CHAR(1) NOT NULL," +
+        "L_LINESTATUS  CHAR(1) NOT NULL," +
+        "L_SHIPDATE    DATE NOT NULL," +
+        "L_COMMITDATE  DATE NOT NULL," +
+        "L_RECEIPTDATE DATE NOT NULL," +
+        "L_SHIPINSTRUCT CHAR(25) NOT NULL," +
+        "L_SHIPMODE     CHAR(10) NOT NULL," +
+        "L_COMMENT      VARCHAR(44) NOT NULL," +
+        "KEY (L_ORDERKEY) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY (L_ORDERKEY)) "
     )
 
     println("Created Table LINEITEM")
   }
 
+  var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
+
   def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val orderData = sc.textFile(s"$path/orders.tbl")
-    val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
-    val orderDF = sqlContext.createDataFrame(orderReadings)
+    var orderDF: DataFrame = null
+    // use parquet data if available
+    if (new File(s"$path/orders").exists()) {
+      orderDF = sqlContext.read.format("parquet").load(s"$path/orders")
+    } else {
+      val orderData = sc.textFile(s"$path/orders.tbl")
+      val orderReadings = orderData.map(s => s.split('|')).map(
+        s => TPCHTableSchema.parseOrderRow(s))
+      val orderDF1 = sqlContext.createDataFrame(orderReadings)
+      val newSchema = TPCHTableSchema.newOrderSchema(orderDF1.schema)
+
+      orderDF = ColumnCacheBenchmark.applySchema(orderDF1, newSchema)
+      if (CREATE_PARQUET) {
+        orderDF.write.format("parquet").save(s"$path/orders")
+      }
+    }
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      val p1 = Map(("PARTITION_BY" -> "o_orderkey"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
@@ -140,7 +157,7 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createAndPopulateOrder_CustTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/orders.tbl")
@@ -148,29 +165,45 @@ object TPCHColumnPartitionedTable  {
     val orderDF = sqlContext.createDataFrame(orderReadings)
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_custkey"),("BUCKETS"-> buckets), ("COLOCATE_WITH"->"CUSTOMER"))
+      val p1 = Map(("PARTITION_BY" -> "o_custkey"), ("BUCKETS" -> buckets), ("COLOCATE_WITH" ->
+          "CUSTOMER"))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS_CUST", ifExists = true)
       snappyContext.createTable("ORDERS_CUST", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS_CUST")
       val endTime = System.currentTimeMillis()
       if (loadPerfPrintStream != null) {
-        loadPerfPrintStream.println(s"Time taken to create ORDERS_CUST Table : ${endTime - startTime}")
+        loadPerfPrintStream.println("Time taken to create ORDERS_CUST Table : " +
+            (endTime - startTime))
       }
     }
   }
 
 
   def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val lineItemData = sc.textFile(s"$path/lineitem.tbl")
-    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
-    val lineItemDF = sqlContext.createDataFrame(lineItemReadings)
+    var lineItemDF: DataFrame = null
+    // use parquet data if available
+    if (new File(s"$path/lineitem").exists()) {
+      lineItemDF = sqlContext.read.format("parquet").load(s"$path/lineitem")
+    } else {
+      val lineItemData = sc.textFile(s"$path/lineitem.tbl")
+      val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema
+          .parseLineItemRow(s))
+      val lineItemDF1 = sqlContext.createDataFrame(lineItemReadings)
+      val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF1.schema)
+
+      lineItemDF = ColumnCacheBenchmark.applySchema(lineItemDF1, newSchema)
+      if (CREATE_PARQUET) {
+        lineItemDF.write.format("parquet").save(s"$path/lineitem")
+      }
+    }
     val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY" -> "l_orderkey"), ("COLOCATE_WITH" -> "ORDERS"), ("BUCKETS" ->
+          buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
@@ -187,15 +220,17 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createAndPopulateLineItem_partTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
-    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
+    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseLineItemRow(s))
     val lineItemPartDF = sqlContext.createDataFrame(lineItemReadings)
     val newSchema = TPCHTableSchema.newLineItemSchema(lineItemPartDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_partkey"),("COLOCATE_WITH"->"PART"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY" -> "l_partkey"), ("COLOCATE_WITH" -> "PART"), ("BUCKETS" ->
+          buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("LINEITEM_PART", ifExists = true)
@@ -203,21 +238,35 @@ object TPCHColumnPartitionedTable  {
       lineItemPartDF.write.insertInto("LINEITEM_PART")
       val endTime = System.currentTimeMillis()
       if (loadPerfPrintStream != null) {
-        loadPerfPrintStream.println(s"Time taken to create LINEITEM_PART Table : ${endTime - startTime}")
+        loadPerfPrintStream.println("Time taken to create LINEITEM_PART Table : " +
+            (endTime - startTime))
       }
     }
   }
+
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val customerData = sc.textFile(s"$path/customer.tbl")
-    val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema.parseCustomerRow(s))
-    val customerDF = sqlContext.createDataFrame(customerReadings)
-    val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
+    var customerDF: DataFrame = null
+    // use parquet data if available
+    if (new File(s"$path/customer").exists()) {
+      customerDF = sqlContext.read.format("parquet").load(s"$path/customer")
+    } else {
+      val customerData = sc.textFile(s"$path/customer.tbl")
+      val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema
+          .parseCustomerRow(s))
+      val customerDF1 = sqlContext.createDataFrame(customerReadings)
+      val newSchema = TPCHTableSchema.newCustomerSchema(customerDF1.schema)
 
+      customerDF = ColumnCacheBenchmark.applySchema(customerDF1, newSchema)
+      if (CREATE_PARQUET) {
+        customerDF.write.format("parquet").save(s"$path/customer")
+      }
+    }
+    val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "c_custkey"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY" -> "c_custkey"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("CUSTOMER", "column", newSchema, p1)
       customerDF.write.insertInto("CUSTOMER")
@@ -234,15 +283,27 @@ object TPCHColumnPartitionedTable  {
 
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val partData = sc.textFile(s"$path/part.tbl")
-    val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
-    val partDF = sqlContext.createDataFrame(partReadings)
+    var partDF: DataFrame = null
+    // use parquet data if available
+    if (new File(s"$path/part").exists()) {
+      partDF = sqlContext.read.format("parquet").load(s"$path/part")
+    } else {
+      val partData = sc.textFile(s"$path/part.tbl")
+      val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
+      val partDF1 = sqlContext.createDataFrame(partReadings)
+      val newSchema = TPCHTableSchema.newPartSchema(partDF1.schema)
+
+      partDF = ColumnCacheBenchmark.applySchema(partDF1, newSchema)
+      if (CREATE_PARQUET) {
+        partDF.write.format("parquet").save(s"$path/part")
+      }
+    }
     val newSchema = TPCHTableSchema.newPartSchema(partDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "p_partkey"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY" -> "p_partkey"), ("BUCKETS" -> buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("PART", "column", newSchema, p1)
@@ -259,16 +320,29 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val partSuppData = sc.textFile(s"$path/partsupp.tbl")
-    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartSuppRow(s))
-    val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
-    val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)
+    var partSuppDF: DataFrame = null
+    // use parquet data if available
+    if (new File(s"$path/partsupp").exists()) {
+      partSuppDF = sqlContext.read.format("parquet").load(s"$path/partsupp")
+    } else {
+      val partSuppData = sc.textFile(s"$path/partsupp.tbl")
+      val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema
+          .parsePartSuppRow(s))
+      val partSuppDF1 = sqlContext.createDataFrame(partSuppReadings)
+      val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF1.schema)
 
+      partSuppDF = ColumnCacheBenchmark.applySchema(partSuppDF1, newSchema)
+      if (CREATE_PARQUET) {
+        partSuppDF.write.format("parquet").save(s"$path/partsupp")
+      }
+    }
+    val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets),("COLOCATE_WITH"->"PART"))
+      val p1 = Map(("PARTITION_BY" -> "ps_partkey"), ("BUCKETS" -> buckets), ("COLOCATE_WITH" ->
+          "PART"))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("PARTSUPP", "column", newSchema, p1)
       partSuppDF.write.insertInto("PARTSUPP")
@@ -312,15 +386,16 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createAndPopulateNationTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
-    val nationreadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema.parseNationRow(s))
+    val nationreadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseNationRow(s))
     val nationdf = sqlContext.createDataFrame(nationreadings)
     val newSchema = TPCHTableSchema.newNationSchema(nationdf.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "N_NATIONKEY"),("BUCKETS"-> buckets))
+      val p1 = Map(("PARTITION_BY" -> "N_NATIONKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("NATION", "column", newSchema, p1)
       nationdf.write.insertInto("NATION")
@@ -336,15 +411,16 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createAndPopulateRegionTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
-    val regionreadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema.parseRegionRow(s))
+    val regionreadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseRegionRow(s))
     val regiondf = sqlContext.createDataFrame(regionreadings)
     val newSchema = TPCHTableSchema.newRegionSchema(regiondf.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "R_REGIONKEY"),("BUCKETS"-> buckets))
+      val p1 = Map(("PARTITION_BY" -> "R_REGIONKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("REGION", "column", newSchema, p1)
       regiondf.write.insertInto("REGION")
@@ -360,15 +436,16 @@ object TPCHColumnPartitionedTable  {
   }
 
   def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/supplier.tbl")
-    val suppreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseSupplierRow(s))
+    val suppreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseSupplierRow
+    (s))
     val suppdf = sqlContext.createDataFrame(suppreadings)
     val newSchema = TPCHTableSchema.newSupplierSchema(suppdf.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "S_SUPPKEY"),("BUCKETS"-> buckets))
+      val p1 = Map(("PARTITION_BY" -> "S_SUPPKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
       suppdf.write.insertInto("SUPPLIER")
@@ -384,25 +461,25 @@ object TPCHColumnPartitionedTable  {
   }
 
   def testLoadOrderTablePerformance(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
 
     val sc = sqlContext.sparkContext
-    val startTime=System.currentTimeMillis()
+    val startTime = System.currentTimeMillis()
     val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseOrderRow(s))
     val orderDF = sqlContext.createDataFrame(orderReadings)
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      val p1 = Map(("PARTITION_BY" -> "o_orderkey"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
     } else {
-      var newOrderDF : DataFrame = null
+      var newOrderDF: DataFrame = null
       val numPartitions = buckets.toInt
-      if(numPartitions > 0){
-        newOrderDF = orderDF.repartition(buckets.toInt,orderDF.col("o_orderkey"))
-      }else{
+      if (numPartitions > 0) {
+        newOrderDF = orderDF.repartition(buckets.toInt, orderDF.col("o_orderkey"))
+      } else {
         newOrderDF = orderDF.repartition(orderDF.col("o_orderkey"))
       }
       newOrderDF.createOrReplaceTempView("ORDERS")
@@ -416,26 +493,28 @@ object TPCHColumnPartitionedTable  {
   }
 
   def testLoadLineItemTablePerformance(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream=null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
-    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema.parseLineItemRow(s))
+    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema
+        .parseLineItemRow(s))
     val lineItemDF = sqlContext.createDataFrame(lineItemReadings)
     val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY" -> "l_orderkey"), ("COLOCATE_WITH" -> "ORDERS"), ("BUCKETS" ->
+          buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("LINEITEM", ifExists = true)
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
       lineItemDF.write.insertInto("LINEITEM")
     } else {
-      var newLineItemDF : DataFrame = null
+      var newLineItemDF: DataFrame = null
       val numPartitions = buckets.toInt
-      if(numPartitions > 0){
-        newLineItemDF = lineItemDF.repartition(buckets.toInt,lineItemDF.col("l_orderkey"))
-      }else{
+      if (numPartitions > 0) {
+        newLineItemDF = lineItemDF.repartition(buckets.toInt, lineItemDF.col("l_orderkey"))
+      } else {
         newLineItemDF = lineItemDF.repartition(lineItemDF.col("l_orderkey"))
       }
       newLineItemDF.createOrReplaceTempView("LINEITEM")

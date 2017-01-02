@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -31,11 +32,11 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 
 
 /**
@@ -63,25 +64,27 @@ case class JDBCAppendableRelation(
 
   var tableExists: Boolean = _
 
-  protected final val connProperties = externalStore.connProperties
+  protected final val connProperties: ConnectionProperties =
+    externalStore.connProperties
 
-  protected final val connFactory = JdbcUtils.createConnectionFactory(
-    connProperties.url, connProperties.connProps)
+  protected final val connFactory: () => Connection = JdbcUtils
+      .createConnectionFactory(connProperties.url, connProperties.connProps)
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
   })
 
   override def sizeInBytes: Long = {
-    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
-    if (stats.isDefined) stats.get.getTotalSize
-    else super.sizeInBytes
+    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+      case Some(s) => s.getTotalSize
+      case None => super.sizeInBytes
+    }
   }
 
 
-  protected final def dialect = connProperties.dialect
+  protected final def dialect: JdbcDialect = connProperties.dialect
 
-  val schemaFields = Utils.getSchemaFields(schema)
+  val schemaFields: Map[String, StructField] = Utils.getSchemaFields(schema)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -382,7 +385,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
-      case d: GemFireXDBaseDialect =>
+      case _: GemFireXDBaseDialect =>
         DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
             .getCanonicalName).providingClass
 

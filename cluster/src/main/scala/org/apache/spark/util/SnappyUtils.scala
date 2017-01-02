@@ -29,36 +29,51 @@ import org.apache.spark.SparkContext
 
 object SnappyUtils {
 
-  def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader =
-    new SecureClassLoader(parent) {
-      override def loadClass(name: String): Class[_] = {
-        try {
-          parent.loadClass(name)
-        } catch {
-          case cnfe: ClassNotFoundException =>
-            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
-        }
-      }
-    }
+  def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader = parent match {
+    case _: SnappyContextLoader => parent // no double wrap
+    case _ => new SnappyContextLoader(parent)
+  }
 
   def removeJobJar(sc: SparkContext): Unit = {
-    def getName(path: String) = new File(path).getName
+    def getName(path: String): String = new File(path).getName
     val jobJarToRemove = sc.getLocalProperty(Constant.JOB_SERVER_JAR_NAME)
-    val keyToRemove = sc.listJars().filter(getName(_).equals(getName(jobJarToRemove)))
-    if (!keyToRemove.isEmpty) {
+    val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
+    if (keyToRemove.nonEmpty) {
       sc.addedJars.remove(keyToRemove.head)
     }
   }
 
-  def getSnappyContextURLClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader =
-    new ContextURLClassLoader(Array[URL](), parent) {
-      override def loadClass(name: String): Class[_] = {
-        try {
-          super.loadClass(name)
-        } catch {
-          case cnfe: ClassNotFoundException =>
-            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
-        }
-      }
+  def getSnappyContextURLClassLoader(
+      parent: ContextURLClassLoader): ContextURLClassLoader = parent match {
+    case _: SnappyContextURLLoader => parent // no double wrap
+    case _ => new SnappyContextURLLoader(parent)
+  }
+}
+
+class SnappyContextLoader(parent: ClassLoader)
+    extends SecureClassLoader(parent) {
+
+  @throws(classOf[ClassNotFoundException])
+  override def loadClass(name: String): Class[_] = {
+    try {
+      parent.loadClass(name)
+    } catch {
+      case cnfe: ClassNotFoundException =>
+        Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
     }
+  }
+}
+
+class SnappyContextURLLoader(parent: ClassLoader)
+    extends ContextURLClassLoader(Array[URL](), parent) {
+
+  @throws(classOf[ClassNotFoundException])
+  override def loadClass(name: String): Class[_] = {
+    try {
+      super.loadClass(name)
+    } catch {
+      case cnfe: ClassNotFoundException =>
+        Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+    }
+  }
 }
