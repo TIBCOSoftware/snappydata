@@ -17,7 +17,7 @@
 package io.snappydata.cluster
 
 import java.io.File
-import java.sql.{DriverManager, Connection}
+import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -31,6 +31,7 @@ import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -173,7 +174,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false): Connection = {
     val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
-    Class.forName(driver).newInstance
+    Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
       url = "jdbc:gemfirexd://localhost:" + netPort + "/"
@@ -192,7 +193,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 object ClusterManagerTestBase {
   val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
-  final val locPort: Int = locatorPort
+  final lazy val locPort: Int = locatorPort
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */
@@ -222,6 +223,7 @@ object ClusterManagerTestBase {
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
     // conf.set("spark.executor.memory", "2g")
     // conf.set("spark.shuffle.manager", "SORT")
+    Utils.setDefaultSerializerAndCodec(conf)
 
     props.asScala.foreach({ case (k, v) =>
       if (k.indexOf(".") < 0) {
@@ -273,6 +275,8 @@ object ClusterManagerTestBase {
     cleanupTestData(null, null)
     val sparkContext = SnappyContext.globalSparkContext
     if (sparkContext != null) sparkContext.stop()
+    // clear system properties set explicitly
+    Utils.clearDefaultSerializerAndCodec()
   }
 
   def stopNetworkServers(): Unit = {

@@ -26,28 +26,39 @@ import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
+import scala.util.control.NonFatal
 
-import io.snappydata.ToolsCallback
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.fasterxml.jackson.core.JsonGenerator
+import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
+import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.{Constant, ToolsCallback}
+import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.xerial.snappy.Snappy
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.datasources.json.JacksonGenerator
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.util.AccumulatorV2
+import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
@@ -281,6 +292,18 @@ object Utils {
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
   }
 
+  def getPartitionData(blockId: BlockId, bm: BlockManager): ByteBuffer = {
+    bm.getLocalBytes(blockId) match {
+      case Some(block) => try {
+        block.toByteBuffer
+      } finally {
+        bm.releaseLock(blockId)
+      }
+      case None => throw new GemFireXDRuntimeException(
+        s"SparkSQLExecuteImpl: getPartitionData() block $blockId not found")
+    }
+  }
+
   def getInternalType(dataType: DataType): Class[_] = {
     dataType match {
       case ByteType => classOf[Byte]
@@ -333,11 +356,11 @@ object Utils {
     k
   }
 
-  def parseColumnsAsClob(s: String): (Boolean, Array[String]) = {
+  def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
-      (true, Array.empty[String])
+      (true, Set.empty[String])
     } else {
-      (false, s.toUpperCase.split(','))
+      (false, s.toUpperCase.split(',').toSet)
     }
   }
 
@@ -363,6 +386,99 @@ object Utils {
       index += 1
     }
     k
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(): Metadata = {
+    varcharMetadata(Constant.MAX_VARCHAR_SIZE, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @param size the size parameter of the VARCHAR() column type
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(size: Int): Metadata = {
+    varcharMetadata(size, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as VARCHAR by SnappyStore.
+   *
+   * @param size the size parameter of the VARCHAR() column type
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def varcharMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_VARCHAR_SIZE) {
+      throw new IllegalArgumentException(s"VARCHAR size should be between 1 " +
+          s"and ${Constant.MAX_VARCHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(): Metadata = {
+    charMetadata(Constant.MAX_CHAR_SIZE, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @param size the size parameter of the CHAR() column type
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(size: Int): Metadata = {
+    charMetadata(size, Metadata.empty)
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is stored (and rendered) as CHAR by SnappyStore.
+   *
+   * @param size the size parameter of the CHAR() column type
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def charMetadata(size: Int, md: Metadata): Metadata = {
+    if (size < 1 || size > Constant.MAX_CHAR_SIZE) {
+      throw new IllegalArgumentException(s"CHAR size should be between 1 " +
+          s"and ${Constant.MAX_CHAR_SIZE}")
+    }
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+  }
+
+  /**
+   * Utility function to return a metadata for a StructField of StringType, to ensure that the
+   * field is rendered as CLOB by SnappyStore.
+   *
+   * @param md optional Metadata object to be merged into the result
+   * @return the result Metadata object to use for StructField
+   */
+  def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
+    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
+    // render this field as CLOB.
+    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // on its own and this field would be rendered as VARCHAR.
+    new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+        .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
   def schemaFields(schema: StructType): Map[String, StructField] = {
@@ -444,91 +560,6 @@ object Utils {
     }
   }
 
-  def dataTypeStringBuilder(dataType: DataType,
-      result: StringBuilder): Any => Unit = value => {
-    dataType match {
-      case TimestampType => value match {
-        case l: Long => result.append(DateTimeUtils.toJavaTimestamp(l))
-        case _ => result.append(value)
-      }
-      case DateType => value match {
-        case i: Int => result.append(DateTimeUtils.toJavaDate(i))
-        case _ => result.append(value)
-      }
-      case ArrayType(elementType, _) => value match {
-        case data: ArrayData =>
-          result.append('[')
-          val len = data.numElements()
-          if (len > 0) {
-            val elementBuilder = dataTypeStringBuilder(elementType, result)
-            elementBuilder(data.get(0, elementType))
-            var index = 1
-            while (index < len) {
-              result.append(", ")
-              elementBuilder(data.get(index, elementType))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
-      case MapType(keyType, valueType, _) => value match {
-        case data: MapData =>
-          result.append('[')
-          val len = data.numElements()
-          if (len > 0) {
-            val keyBuilder = dataTypeStringBuilder(keyType, result)
-            val valueBuilder = dataTypeStringBuilder(valueType, result)
-            val keys = data.keyArray()
-            val values = data.valueArray()
-            keyBuilder(keys.get(0, keyType))
-            result.append('=')
-            valueBuilder(values.get(0, valueType))
-            var index = 1
-            while (index < len) {
-              result.append(", ")
-              keyBuilder(keys.get(index, keyType))
-              result.append('=')
-              valueBuilder(values.get(index, valueType))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
-      case StructType(fields) => value match {
-        case data: InternalRow =>
-          result.append('[')
-          val len = fields.length
-          if (len > 0) {
-            val e0type = fields(0).dataType
-            dataTypeStringBuilder(e0type, result)(data.get(0, e0type))
-            var index = 1
-            while (index < len) {
-              result.append(", ")
-              val elementType = fields(index).dataType
-              dataTypeStringBuilder(elementType, result)(
-                data.get(index, elementType))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
-      case udt: UserDefinedType[_] =>
-        // check if serialized
-        if (value != null && !udt.userClass.isInstance(value)) {
-          result.append(udt.deserialize(value))
-        } else {
-          result.append(value)
-        }
-      case _ => result.append(value)
-    }
-  }
-
   def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
     case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
     case driver => driver.getClass.getCanonicalName
@@ -561,16 +592,6 @@ object Utils {
    */
   def withNewExecutionId[T](df: DataFrame, body: => T): T = {
     df.withNewExecutionId(body)
-  }
-
-  /**
-   * Return true if the plan overrides executeCollect to provide a more
-   * efficient version which should be preferred over execute().
-   */
-  def useExecuteCollect(plan: SparkPlan): Boolean = plan match {
-    case _: CollectLimitExec | _: ExecutedCommandExec |
-         _: LocalTableScanExec | _: TakeOrderedAndProjectExec => true
-    case _ => false
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -624,6 +645,92 @@ object Utils {
 
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
+
+  def codecCompress(codec: CompressionCodec, input: Array[Byte],
+      inputLen: Int): Array[Byte] = codec match {
+    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
+    case _: LZ4CompressionCodec =>
+      LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
+    case _: SnappyCompressionCodec =>
+      Snappy.rawCompress(input, inputLen)
+  }
+
+  def codecDecompress(codec: CompressionCodec, input: Array[Byte],
+      inputOffset: Int, inputLen: Int,
+      outputLen: Int): Array[Byte] = codec match {
+    case _: LZFCompressionCodec =>
+      val output = new Array[Byte](outputLen)
+      LZFDecoder.decode(input, inputOffset, inputLen, output)
+      output
+    case _: LZ4CompressionCodec =>
+      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
+        inputOffset, outputLen)
+    case _: SnappyCompressionCodec =>
+      val output = new Array[Byte](outputLen)
+      Snappy.uncompress(input, inputOffset, inputLen, output, 0)
+      output
+  }
+
+  def setDefaultConfProperty(conf: SparkConf, name: String,
+      default: String): Unit = {
+    conf.getOption(name) match {
+      case None =>
+        // set both in configuration and as System property for all
+        // confs created on the fly
+        conf.set(name, default)
+        System.setProperty(name, default)
+      case _ =>
+    }
+  }
+
+  def setDefaultSerializerAndCodec(conf: SparkConf): Unit = {
+    // enable optimized pooled Kryo serializer by default
+    setDefaultConfProperty(conf, "spark.serializer",
+      Constant.DEFAULT_SERIALIZER)
+    setDefaultConfProperty(conf, "spark.closure.serializer",
+      Constant.DEFAULT_SERIALIZER)
+    if (Constant.DEFAULT_CODEC != CompressionCodec.DEFAULT_COMPRESSION_CODEC) {
+      setDefaultConfProperty(conf, "spark.io.compression.codec",
+        Constant.DEFAULT_CODEC)
+    }
+  }
+
+  def clearDefaultSerializerAndCodec(): Unit = {
+    System.clearProperty("spark.serializer")
+    System.clearProperty("spark.closure.serializer")
+    System.clearProperty("spark.io.compression.codec")
+  }
+
+  lazy val usingEnhancedSpark: Boolean = {
+    try {
+      classOf[SQLMetric].getMethod("longValue")
+      true
+    } catch {
+      case NonFatal(_) => false
+    }
+  }
+
+  def metricMethods(sc: SparkContext): (String => String, String => String) = {
+    if (usingEnhancedSpark) {
+      (v => s"addLong($v)", v => s"$v.longValue()")
+    } else {
+      (v => s"add($v)",
+          // explicit cast for value to Object is for janino bug
+          v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
+    }
+  }
+
+  def generateJson(dataType: DataType, gen: JsonGenerator,
+      row: InternalRow): Unit = {
+    JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
+  }
+
+  def getNumColumns(partitioning: Partitioning): Int = partitioning match {
+    case c: PartitioningCollection =>
+      math.max(1, c.partitionings.map(getNumColumns).min)
+    case e: Expression => e.children.length
+    case _ => 1
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
@@ -693,19 +800,95 @@ class ExecutorLocalPartition(override val index: Int,
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
-class MultiBucketExecutorPartition(override val index: Int,
-    val buckets: Set[Int], val hostExecutorIds: Seq[String]) extends Partition {
+final class MultiBucketExecutorPartition(private[this] var _index: Int,
+    _buckets: mutable.ArrayBuffer[Int], numBuckets: Int,
+    private[this] var _hostExecutorIds: Seq[String])
+    extends Partition with KryoSerializable {
 
-  override def toString: String =
-    s"MultiBucketExecutorPartition($index, $buckets, $hostExecutorIds)"
+  private[this] var bucketSet = {
+    if (_buckets ne null) {
+      val set = new BitSet(numBuckets)
+      for (b <- _buckets) {
+        set.set(b)
+      }
+      set
+    } else {
+      // replicated region case
+      new BitSet(0)
+    }
+  }
+
+  override def index: Int = _index
+
+  def buckets: java.util.Set[Integer] = new java.util.AbstractSet[Integer] {
+
+    override def contains(o: Any): Boolean = o match {
+      case b: Int => b >= 0 && bucketSet.get(b)
+      case _ => false
+    }
+
+    override def iterator() = new java.util.Iterator[Integer] {
+      private[this] var bucket = bucketSet.nextSetBit(0)
+
+      override def hasNext: Boolean = bucket >= 0
+      override def next(): Integer = {
+        val b = Int.box(bucket)
+        bucket = bucketSet.nextSetBit(bucket + 1)
+        b
+      }
+      override def remove(): Unit = throw new UnsupportedOperationException
+    }
+
+    override def size(): Int = bucketSet.cardinality()
+  }
+
+  def bucketsString: String = {
+    val sb = new StringBuilder
+    val bucketSet = this.bucketSet
+    var bucket = bucketSet.nextSetBit(0)
+    while (bucket >= 0) {
+      sb.append(bucket).append(',')
+      bucket = bucketSet.nextSetBit(bucket + 1)
+    }
+    // trim trailing comma
+    sb.setLength(sb.length - 1)
+    sb.toString()
+  }
+
+  def hostExecutorIds: Seq[String] = _hostExecutorIds
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeVarInt(_index, true)
+    kryo.writeClassAndObject(output, bucketSet)
+    output.writeVarInt(_hostExecutorIds.length, true)
+    for (executor <- _hostExecutorIds) {
+      output.writeString(executor)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _index = input.readVarInt(true)
+    bucketSet = kryo.readClassAndObject(input).asInstanceOf[BitSet]
+    var numExecutors = input.readVarInt(true)
+    val executorBuilder = Seq.newBuilder[String]
+    while (numExecutors > 0) {
+      executorBuilder += input.readString()
+      numExecutors -= 1
+    }
+    _hostExecutorIds = executorBuilder.result()
+  }
+
+  override def toString: String = s"MultiBucketExecutorPartition(" +
+      s"$index, buckets=[$bucketsString], ${_hostExecutorIds.mkString(",")})"
 }
 
 
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
     @transient splitIndex: Int,
-    var split: Partition) extends Serializable {
+    private var split: Partition) extends Serializable with KryoSerializable {
 
+  // noinspection ScalaUnusedSymbol
   @throws[java.io.IOException]
   private def writeObject(oos: ObjectOutputStream): Unit =
     org.apache.spark.util.Utils.tryOrIOException {
@@ -713,6 +896,17 @@ private[spark] case class NarrowExecutorLocalSplitDep(
       split = rdd.partitions(splitIndex)
       oos.defaultWriteObject()
     }
+
+  override def write(kryo: Kryo, output: Output): Unit =
+    org.apache.spark.util.Utils.tryOrIOException {
+      // Update the reference to parent split at the time of task serialization
+      split = rdd.partitions(splitIndex)
+      kryo.writeClassAndObject(output, split)
+    }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    split = kryo.readClassAndObject(input).asInstanceOf[Partition]
+  }
 }
 
 /**
@@ -761,5 +955,15 @@ object ToolsCallbackInit extends Logging {
             "DriverURL won't get published to others.")
         null
     }
+  }
+}
+
+object OrderlessHashPartitioningExtract {
+  def unapply(partitioning: Partitioning): Option[(Seq[Expression],
+      Seq[Seq[Attribute]], Int, Int)] = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks ne null) {
+      callbacks.checkOrderlessHashPartitioning(partitioning)
+    } else None
   }
 }

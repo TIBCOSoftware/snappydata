@@ -5,7 +5,6 @@ from pyspark.sql import DataFrame
 from pyspark.sql.snappy import SnappyContext
 from pyspark.sql.types import StructType , StructField
 from py4j.java_gateway import java_import, JavaObject
-from pyspark.streaming.context import Py4jCallbackConnectionCleaner
 from pyspark.streaming.util import TransformFunction, TransformFunctionSerializer
 from pyspark.serializers import NoOpSerializer, UTF8Deserializer, CloudPickleSerializer
 from pyspark.streaming.dstream import DStream
@@ -25,6 +24,7 @@ class SnappyStreamingContext(StreamingContext):
     respectively. `context.awaitTermination()` allows the current thread
     to wait for the termination of the context by `stop()` or by an exception.
     """
+    _transformerSerializer = None
 
     def __init__(self, sparkContext, batchDuration=None, jssc=None):
         """
@@ -39,6 +39,7 @@ class SnappyStreamingContext(StreamingContext):
         self._jvm = self._sc._jvm
         self._jssc = jssc or self._initialize_context(self._sc, batchDuration)
         self._snappycontext = SnappyContext(sparkContext)
+
     @classmethod
     def _ensure_initialized(cls):
         SparkContext._ensure_initialized()
@@ -64,34 +65,13 @@ class SnappyStreamingContext(StreamingContext):
             # get the GatewayServer object in JVM by ID
             jgws = JavaObject("GATEWAY_SERVER", gw._gateway_client)
             # update the port of CallbackClient with real port
-            gw.jvm.PythonDStream.updatePythonGatewayPort(jgws, gw._python_proxy_port)
-            _py4j_cleaner = Py4jCallbackConnectionCleaner(gw)
-            _py4j_cleaner.start()
+            jgws.resetCallbackClient(jgws.getCallbackClient().getAddress(), gw._python_proxy_port)
 
         # register serializer for TransformFunction
         # it happens before creating SparkContext when loading from checkpointing
-        if cls._transformerSerializer is None:
-            transformer_serializer = TransformFunctionSerializer()
-            transformer_serializer.init(
-                    SparkContext._active_spark_context, CloudPickleSerializer(), gw)
-            # SPARK-12511 streaming driver with checkpointing unable to finalize leading to OOM
-            # There is an issue that Py4J's PythonProxyHandler.finalize blocks forever.
-            # (https://github.com/bartdag/py4j/pull/184)
-            #
-            # Py4j will create a PythonProxyHandler in Java for "transformer_serializer" when
-            # calling "registerSerializer". If we call "registerSerializer" twice, the second
-            # PythonProxyHandler will override the first one, then the first one will be GCed and
-            # trigger "PythonProxyHandler.finalize". To avoid that, we should not call
-            # "registerSerializer" more than once, so that "PythonProxyHandler" in Java side won't
-            # be GCed.
-            #
-            # TODO Once Py4J fixes this issue, we should upgrade Py4j to the latest version.
-            transformer_serializer.gateway.jvm.PythonDStream.registerSerializer(
-                    transformer_serializer)
-            cls._transformerSerializer = transformer_serializer
-        else:
-            cls._transformerSerializer.init(
-                    SparkContext._active_spark_context, CloudPickleSerializer(), gw)
+        cls._transformerSerializer = TransformFunctionSerializer(
+            SparkContext._active_spark_context, CloudPickleSerializer(), gw)
+
 
     def _initialize_context(self, sc, duration):
         self._ensure_initialized()

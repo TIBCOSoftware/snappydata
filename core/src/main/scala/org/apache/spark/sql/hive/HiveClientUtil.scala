@@ -34,10 +34,10 @@ import org.apache.spark.sql.hive.client.{IsolatedClientLoader, HiveClient}
 import org.apache.spark.sql.internal.SQLConf
 
 /**
- * A utility class to get hive connection to underlying metastore. A lot of code is similar to
- * org.apache.spark.sql.hive.HiveUtils. Difference being we take a connection to underlying GemXD store.
- * ///TDOD We need to investigate if we can phase out this class and use HiveUtils directly.
- * @param sparkContext
+ * A utility class to get hive connection to underlying metastore.
+ * A lot of code is similar to org.apache.spark.sql.hive.HiveUtils.
+ * Difference being we take a connection to underlying GemXD store.
+ * TODO We need to investigate if we can phase out this class and use HiveUtils directly.
  */
 class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
@@ -135,7 +135,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
   private def newClient(): HiveClient = synchronized {
 
-    closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
@@ -212,6 +211,16 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
       DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
 
+      // set as system properties for default HiveConf's
+      val props = metadataConf.getAllProperties
+      val propNames = props.stringPropertyNames().iterator()
+      while (propNames.hasNext) {
+        val name = propNames.next()
+        System.setProperty(name, props.getProperty(name))
+      }
+
+      closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
+
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
       // new ClientWrapper(metaVersion, allConfig, classLoader)
@@ -267,9 +276,9 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
   private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
     val sc = sparkContext
-    Property.MetastoreDBURL.getOption(sparkConf) match {
+    Property.MetaStoreDBURL.getOption(sparkConf) match {
       case Some(url) =>
-        val driver = Property.MetastoreDriver.getOption(sparkConf).orNull
+        val driver = Property.MetaStoreDriver.getOption(sparkConf).orNull
         (false, url, driver)
       case None => SnappyContext.getClusterMode(sc) match {
         case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |

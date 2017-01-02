@@ -20,12 +20,12 @@ package org.apache.spark.sql.sources
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.Constant
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression,
 PredicateHelper}
-import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
@@ -182,7 +182,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
    * like colocation chain can occur, we can potentially use multiple indexes. That we can
    * determine by reducing these combinations of 2 and merge into longer chain.
    *
-   * The choice of colocated group to [[replace]] will be made firstly based on more
+   * The choice of colocated group to `replace` will be made firstly based on more
    * feasibility check on LogicalPlan.outputSet, and then cost based computed by considering
    * filter and size. Later selectivity can be introduced.
    *
@@ -410,7 +410,11 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
-
+    val enabled: Boolean = io.snappydata.Property.EnableExperimentalFeatures.
+        get(snappySession.snappyContext.conf)
+    if (!enabled) {
+      return plan
+    }
     if (snappySession.queryHints.exists {
       case (hint, _) => hint.startsWith(Index) &&
           !joinOrderHints.contains(ContinueOptimizations)
@@ -421,7 +425,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val newAttributesMap = new ArrayBuffer[(AttributeReference, AttributeReference)]()
     val visited = new mutable.HashSet[LogicalPlan]
 
-    def notVisited(input: Seq[LogicalPlan]) = ! input.exists(p => {
+    def notVisited(input: Seq[LogicalPlan]) = !input.exists(p => {
       val rel = Entity.unwrapBaseColumnRelation(p)
       // already resolved to some index. lets not try anything here.
       // this is just for speed, where this rule gets executed so many times.

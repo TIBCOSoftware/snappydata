@@ -73,20 +73,26 @@ public class DynamicJarLoadingTest extends SnappyTest {
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
 
+    protected static String createJarFileWithIdenticalJobClass(String dir) {
+        List files = new ArrayList();
+        files.add(createJobClassWithDifferentLogStatements("DynamicJarLoadingJob", dir));
+        return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
+    }
+
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_installJar() {
         String appJar = createJarFile(3, "1");
-        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobInstallJarResult_thread_");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobInstallJarResult_thread_", null);
     }
 
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_modifyJar() {
         String appJar = createJarFile(2, "2");
-        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobModifyJarResult_thread_");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobModifyJarResult_thread_", null);
     }
 
-    protected static void executeSnappyJobWithDynamicJarLoading(String appJar, String logFileName) {
+    protected static void executeSnappyJobWithDynamicJarLoading(String appJar, String logFileName, String appName) {
         int currentThread = snappyTest.getMyTid();
         String logFile = logFileName + currentThread + "_" + System.currentTimeMillis() + ".log";
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, appJar, getTempDir());
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, appJar, getTempDir(), appName);
     }
 
     public static File createSupportiveClasses(String className, String version, String destDir) {
@@ -101,10 +107,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static File createJobClass(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
-                "import org.apache.spark.sql.SnappyContext;\n" +
-                "import org.apache.spark.sql.SnappyJobValid;\n" +
-                "import org.apache.spark.sql.SnappyJobValidation;\n" +
-                "import org.apache.spark.sql.JavaSnappySQLJob;\n" +
+                "import org.apache.spark.sql.*;\n" +
                 "\n" +
                 "import java.io.File;\n" +
                 "import java.io.FileOutputStream;\n" +
@@ -113,9 +116,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
-                "    public Object runSnappyJob(SnappyContext snc, Config jobConfig) {\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
                 "        PrintWriter pw = null;\n" +
                 "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
@@ -135,7 +139,95 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "    }" +
                 "\n" +
                 "    @Override\n" +
-                "    public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
+                "        return new SnappyJobValid();\n" +
+                "    }\n" +
+                "}";
+        return SnappyTestUtils.createCompiledClass(className,
+                new File(destDir),
+                SnappyTestUtils.getJavaSourceFromString(className, generalClassText),
+                new scala.collection.mutable.ArrayBuffer<URL>());
+    }
+
+    public static File createJobClassWithDifferentLogStatements(String className, String destDir) {
+        String generalClassText = "import com.typesafe.config.Config;\n" +
+                "import org.apache.spark.sql.*;\n" +
+                "\n" +
+                "import java.io.File;\n" +
+                "import java.io.FileOutputStream;\n" +
+                "import java.io.PrintWriter;\n" +
+                "import java.io.StringWriter;\n" +
+                "\n" +
+                "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
+                "    @Override\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
+                "        PrintWriter pw = null;\n" +
+                "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
+                "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
+                "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
+                "            pw.println(\"****** Started DynamicJarLoadingJob With having Identical name but different functionality ******\");\n" +
+                "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
+                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            pw.println(\"****** Finished DynamicJarLoadingJob With having Identical name but different functionality ******\");" +
+                "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
+                "        } catch (Exception e) {\n" +
+                "            pw.println(\"ERROR: failed with \" + e.getMessage());\n" +
+                "            e.printStackTrace(pw);\n" +
+                "        } finally {\n" +
+                "            pw.flush();\n" +
+                "            pw.close();\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }" +
+                "\n" +
+                "    @Override\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
+                "        return new SnappyJobValid();\n" +
+                "    }\n" +
+                "}";
+        return SnappyTestUtils.createCompiledClass(className,
+                new File(destDir),
+                SnappyTestUtils.getJavaSourceFromString(className, generalClassText),
+                new scala.collection.mutable.ArrayBuffer<URL>());
+    }
+
+    public static File createJobAccessingClassFromPreviousJobExecution(String className, String destDir) {
+        String generalClassText = "import com.typesafe.config.Config;\n" +
+                "import org.apache.spark.sql.*;\n" +
+                "\n" +
+                "import java.io.File;\n" +
+                "import java.io.FileOutputStream;\n" +
+                "import java.io.PrintWriter;\n" +
+                "import java.io.StringWriter;\n" +
+                "\n" +
+                "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
+                "    @Override\n" +
+                "    public Object runSnappyJob(SnappySession spark, Config jobConfig) {\n" +
+                "        PrintWriter pw = null;\n" +
+                "        try {\n" +
+                "            SnappyContext snc = spark.sqlContext();\n" +
+                "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
+                "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
+                "            pw.println(\"****** Started DynamicJarLoadingJob accessing class loaded through previous job execution ******\");\n" +
+                "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
+                "            io.snappydata.hydra.installJar.TestUtils.verifyClassFromPreviousJobExecution(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            pw.println(\"****** Finished DynamicJarLoadingJob accessing class loaded through previous job execution ******\");" +
+                "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
+                "        } catch (Exception e) {\n" +
+                "            pw.println(\"ERROR: failed with \" + e.getMessage());\n" +
+                "            e.printStackTrace(pw);\n" +
+                "        } finally {\n" +
+                "            pw.flush();\n" +
+                "            pw.close();\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }" +
+                "\n" +
+                "    @Override\n" +
+                "    public SnappyJobValidation isValidJob(SnappySession spark, Config jobConfig) {\n" +
                 "        return new SnappyJobValid();\n" +
                 "    }\n" +
                 "}";
@@ -183,7 +275,40 @@ public class DynamicJarLoadingTest extends SnappyTest {
      */
     public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading() {
         String jarName = createJarFileWithOnlyJobClass(getTempDir());
-        executeSnappyJobWithDynamicJarLoading(jarName, "snappyJobResult_thread_");
+        String appName = "myApp_" + System.currentTimeMillis();
+        executeSnappyJobWithDynamicJarLoading(jarName, "snappyJobResult_thread_", appName);
+    }
+
+    /**
+     * Executes dynamically created snappy job which uses the classes from the same jar file used while executing the job.
+     */
+    public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading_WithClasses() {
+        String appJar = createJarFile(3, "1");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobResultWithClasses_thread_", null);
+    }
+
+    /**
+     * Executes dynamically created snappy job which accesses the class loaded through previous job execution and the classes from the same jar file used while executing the job.
+     */
+    public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading_verifyCleanUp() {
+        String appJar = createJarFileWithJobAccessingClassFromPreviousJobExecution(getTempDir(), 2, "2");
+        executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobResultAccessingClassFromPreviousJobExecution_thread_", null);
+    }
+
+    protected static String createJarFileWithJobAccessingClassFromPreviousJobExecution(String dir, int numClasses, String version) {
+        List files = createClasses(numClasses, version, dir);
+        files.add(createJobAccessingClassFromPreviousJobExecution("DynamicJarLoadingJob", dir));
+        return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
+    }
+
+    /**
+     * Executes dynamically created snappy job which uses the classes loaded through gfxd install-jar/replace-jar command.
+     * The Job class name is identical with the job class generated using HydraTask_executeSnappyJob_DynamicJarLoading method, but the job functionality is different.
+     */
+    public static synchronized void HydraTask_executeSnappyJobWithIdenticalName() {
+        String jarName = createJarFileWithIdenticalJobClass(getTempDir());
+        String appName = "myApp_" + System.currentTimeMillis();
+        executeSnappyJobWithDynamicJarLoading(jarName, "snappyJobResult_WithIdenticalName_thread_", appName);
     }
 
     protected static synchronized void executeCommand(String jarName, String jarIdentifier, String command) {

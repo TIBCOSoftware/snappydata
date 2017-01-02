@@ -28,15 +28,16 @@ import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 import scala.util.Random
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import org.junit.Assert
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -549,14 +550,14 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // also check access to complex types as string
     rs = stmt.executeQuery(
-      s"SELECT * FROM $tableName --+ complexTypeAsClob(1)")
-    checkComplexTypesAsClob(rs, expectedLength)
+      s"SELECT * FROM $tableName --+ complexTypeAsJson(1)")
+    checkComplexTypesAsJson(rs, expectedLength)
     rs = stmt.executeQuery(
-      s"SELECT * /*+ complexTypeAsClob( true ) */ FROM $tableName")
-    checkComplexTypesAsClob(rs, expectedLength)
+      s"SELECT * /*+ complexTypeAsJson( true ) */ FROM $tableName")
+    checkComplexTypesAsJson(rs, expectedLength)
   }
 
-  private def checkComplexTypesAsClob(rs: ResultSet,
+  private def checkComplexTypesAsJson(rs: ResultSet,
       expectedLength: Int): Unit = {
     var numResults = 0
     while (rs.next()) {
@@ -565,13 +566,19 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       val res12 = rs.getString("col4")
       val res13 = rs.getString(6)
 
-      val res21: String = rs.getObject("col2").asInstanceOf[Clob]
-      val res22: String = rs.getObject("col4").asInstanceOf[Clob]
-      val res23: String = rs.getObject(6).asInstanceOf[Clob]
+      checkValidJson(res11, res12, res13)
 
-      val res31: String = rs.getClob("col2")
-      val res32: String = rs.getClob(4)
-      val res33: String = rs.getClob("col6")
+      val res21: Clob = rs.getObject("col2").asInstanceOf[Clob]
+      val res22: Clob = rs.getObject("col4").asInstanceOf[Clob]
+      val res23: Clob = rs.getObject(6).asInstanceOf[Clob]
+
+      checkValidJson(res21, res22, res23)
+
+      val res31: Clob = rs.getClob("col2")
+      val res32: Clob = rs.getClob(4)
+      val res33: Clob = rs.getClob("col6")
+
+      checkValidJson(res31, res32, res33)
 
       numResults match {
         case 0 =>
@@ -587,6 +594,32 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     }
     assert(numResults == expectedLength,
       s"Expected $expectedLength but got $numResults")
+  }
+
+  private def checkValidJson(cs: Clob*): Unit = {
+    for (c <- cs) {
+      val s = c.getSubString(1, c.length().asInstanceOf[Int])
+      checkValidJsonString(s)
+    }
+  }
+
+  private def checkValidJson(s: String, ss: String*): Unit = {
+    checkValidJsonString(s)
+    for (str <- ss) checkValidJsonString(str)
+  }
+
+  private def checkValidJsonString(s: String): Unit = {
+    try {
+      val parser = new ObjectMapper().getJsonFactory
+          .createJsonParser(s)
+      while (parser.nextToken() != null) {
+      }
+      return
+    } catch {
+      case e: Exception => throw new AssertionError(
+        s"Exception in parsing as JSON: $s", e)
+    }
+    throw new AssertionError(s"Failed in parsing as JSON: $s")
   }
 }
 

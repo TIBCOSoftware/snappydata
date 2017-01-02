@@ -4,11 +4,12 @@ source PerfRun.conf
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries$UseIndex
 mkdir $directory
 
-cp $SnappyData/work/$leads-lead-1/*.out $directory/
+cp $leadDir/* $directory/
 
 latestProp=$directory/latestProp.props
 
 cd $SnappyData
+cd ../../..
 echo snappyData = $(git rev-parse HEAD)_$(git log -1 --format=%cd) > $latestProp
 cd spark
 echo snappy-spark = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
@@ -35,15 +36,16 @@ echo LOCATOR = $locator >> $latestProp
 echo LEAD = $leads >> $latestProp
 for element in "${servers[@]}";
   do
-       echo SERVERS = $element >> $latestProp 
+       echo SERVERS = $element >> $latestProp
   done
 
 
 for i in $directory/*.out
-do 
+do
    cat $latestProp >> $i
 done
 
- 
+
 
 echo "******************Performance Result Generated*****************"
+

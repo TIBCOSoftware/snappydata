@@ -300,7 +300,7 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
     return Arrays.asList(Arrays.asList("0"));
   }
 
-  private static class Message {
+  public static class Message {
     public String getMessage() {
       return message;
     }

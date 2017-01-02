@@ -20,20 +20,19 @@ import java.sql.Connection
 
 import io.snappydata.SnappyTableStatsProviderService
 
-import org.apache.spark.Partition
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
+import org.apache.spark.{Logging, Partition}
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
@@ -61,9 +60,10 @@ case class JDBCMutableRelation(
   override val needConversion: Boolean = false
 
   override def sizeInBytes: Long = {
-    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
-    if (stats.isDefined) stats.get.getTotalSize
-    else super.sizeInBytes
+    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+      case Some(s) => s.getTotalSize
+      case None => super.sizeInBytes
+    }
   }
 
   val driver = Utils.registerDriverUrl(connProperties.url)

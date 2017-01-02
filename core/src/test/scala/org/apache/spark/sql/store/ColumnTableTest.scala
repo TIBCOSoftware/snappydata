@@ -30,7 +30,7 @@ import io.snappydata.core.{Data, TestData, TestData2}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
@@ -956,7 +956,7 @@ class ColumnTableTest
       case e: AnalysisException => {
         assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
             "dependent objects: APP.EXEC_DETAILS_COL;")
-        //Execute second time to see we are getting same exception instead of table not found
+        // Execute second time to see we are getting same exception instead of table not found
         try {
           snc.sql("DROP TABLE ORDER_DETAILS_COL");
         } catch {
@@ -964,17 +964,17 @@ class ColumnTableTest
             assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
                 "dependent objects: APP.EXEC_DETAILS_COL;")
           }
-          case _ => throw new AssertionError;
+          case t: Throwable => throw new AssertionError(t.getMessage, t);
         }
       } // Expected Exception hence ignore
-      case _ => throw new AssertionError;
+      case _: Throwable => throw new AssertionError;
     }
 
     try {
-      snc.sql("DROP TABLE EXEC_DETAILS_COL");
+      snc.sql("DROP TABLE EXEC_DETAILS_COL")
       snc.sql("DROP TABLE ORDER_DETAILS_COL");
     } catch {
-      case _ => assert(false)
+      case t: Throwable => throw new AssertionError(t.getMessage, t);
     }
   }
 }
