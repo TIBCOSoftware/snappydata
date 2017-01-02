@@ -400,7 +400,7 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 // While, clients typically just point to a locator, you could also directly point the 
 //   connection at a server endpoint
 ```
-
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **com.pivotal.gemfirexd.jdbc.ClientDriver** class.</Note>
 
 ## Building SnappyData Applications using Spark API
 
@@ -646,6 +646,7 @@ snsc.sql("select count(*) from streamingExample").show()
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
 <a id="markdown_link_row_and_column_tables"></a>
+
 ## Tables in SnappyData
 ### Row and Column Tables
 Column tables organize and manage data in memory in compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
@@ -660,7 +661,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
    (
   COLUMN_DEFININTION
    )
-USING 'row | column'
+USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
 PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
@@ -669,7 +670,7 @@ REDUNDANCY        '1' ,
 RECOVER_DELAY     '-1',
 MAX_PART_SIZE      '50',
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string will map to default diskstore
+PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
 OFFHEAP ‘true | false’ ,
 EXPIRE ‘TIMETOLIVE in seconds',
 )
@@ -677,6 +678,8 @@ EXPIRE ‘TIMETOLIVE in seconds',
 
 DROP TABLE [IF EXISTS] table_name
 ```
+Refer to the [How-Tos](howto) section for more information on partitioning and collocating data.
+
 For row format tables column definition can take underlying GemFire XD syntax to create a table. For example, note the PRIMARY KEY clause below.
 
 ```scala
@@ -727,26 +730,26 @@ Create a SnappyStore table using Spark APIs
 #### DDL extensions to SnappyStore Tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
-   1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+   1. COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.
+   2. PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
 
-   3. BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
-   4. REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
+   3. BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+   4. REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   5. RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
+   5. RECOVER_DELAY: Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members wait for before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
 
-   6. MAX_PART_SIZE : The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.
+   6. MAX_PART_SIZE: The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.
 
-   7. EVICTION_BY : Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   7. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
 
-   8. PERSISTENT :  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   8. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   9. OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
+   9. OFFHEAP: SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
 
-  10. EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
+  10. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 
-#### Restrictions on column tables
+#### Restrictions on Column Tables
 * Column tables cannot specify any primary key, unique key constraints
 
 * Index on column table is not supported
@@ -900,7 +903,7 @@ Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/lates
 
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like **map**, **reduce**, **join** and **window**.
 
-Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.  
+Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.
 
 ![Spark Streaming architecture](http://spark.apache.org/docs/latest/img/streaming-arch.png)
 
@@ -1029,5 +1032,5 @@ val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (d
 dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
-### Dynamic(ad-hoc) Continuous Queries
+### Dynamic (ad-hoc) Continuous Queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.

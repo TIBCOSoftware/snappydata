@@ -641,6 +641,7 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **com.pivotal.gemfirexd.jdbc.ClientDriver** class.</Note>
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects
