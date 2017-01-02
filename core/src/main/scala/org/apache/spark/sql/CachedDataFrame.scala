@@ -38,7 +38,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
 
 class CachedDataFrame(df: Dataset[Row],
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -58,6 +58,21 @@ class CachedDataFrame(df: Dataset[Row],
   private lazy val queryExecutionString = queryExecution.toString
   private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     queryExecution.executedPlan)
+
+  private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
+    val numShuffleDeps = shuffleDependencies.length
+    if (numShuffleDeps > 0) {
+      sc.cleaner match {
+        case Some(cleaner) =>
+          var i = 0
+          while (i < numShuffleDeps) {
+            cleaner.doCleanupShuffle(shuffleDependencies(i), blocking = false)
+            i += 1
+          }
+        case None =>
+      }
+    }
+  }
 
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
@@ -105,19 +120,6 @@ class CachedDataFrame(df: Dataset[Row],
       skipUnpartitionedDataProcessing: Boolean = false,
       skipLocalCollectProcessing: Boolean = false): Iterator[R] = {
     val sc = sparkSession.sparkContext
-    val numShuffleDeps = shuffleDependencies.length
-    if (numShuffleDeps > 0) {
-      sc.cleaner match {
-        case Some(cleaner) =>
-          var i = 0
-          while (i < numShuffleDeps) {
-            cleaner.doCleanupShuffle(shuffleDependencies(i), blocking = false)
-            i += 1
-          }
-        case None =>
-      }
-    }
-
     val hasLocalCallSite = sc.getLocalProperties.containsKey(CallSite.LONG_FORM)
     val callSite = sc.getCallSite()
     if (!hasLocalCallSite) {
