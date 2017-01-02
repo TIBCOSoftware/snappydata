@@ -996,7 +996,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn  buildAll, checkAll, allReports
+  dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
 }
 
