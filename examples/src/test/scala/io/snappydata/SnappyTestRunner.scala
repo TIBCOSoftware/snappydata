@@ -18,15 +18,14 @@ package io.snappydata
 
 import java.io._
 
-
+import com.gemstone.gemfire.internal.AvailablePort
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.spark.Logging
-import org.scalatest.{Retries, BeforeAndAfterAll, FunSuite}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
 
-import scala.sys.process._
 import scala.language.postfixOps
+import scala.sys.process._
 import scala.util.parsing.json.JSON
 
 /**
@@ -51,6 +50,9 @@ with Logging with Retries {
 
   def sparkShell = s"$snappyHome/bin/spark-shell"
 
+  private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
+  private  var locatorDirPath = ""
+
   implicit class X(in: Seq[String]) {
     def pipe(cmd: String) =
       cmd #< new ByteArrayInputStream(in.mkString("\n").getBytes) lineStream
@@ -58,7 +60,7 @@ with Logging with Retries {
 
   override def beforeAll(): Unit = {
     snappyHome = System.getenv("SNAPPY_HOME")
-    if (snappyHome isEmpty) {
+    if (snappyHome == null) {
       throw new Exception("SNAPPY_HOME should be set as an environment variable")
     }
     localHostName = java.net.InetAddress.getLocalHost().getHostName()
@@ -75,9 +77,9 @@ with Logging with Retries {
   }
 
   def stopCluster(): Unit = {
-    executeProcess(s"$snappyHome/sbin/snappy-stop-all.sh")
+    executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-stop-all.sh")
     new File(s"$snappyHome/conf/servers").deleteOnExit()
-    executeProcess(s"$snappyHome/sbin/stop-all.sh")
+    executeProcess("sparkCluster", s"$snappyHome/sbin/stop-all.sh")
   }
 
   def startupCluster(): Unit = {
@@ -85,15 +87,15 @@ with Logging with Retries {
       write(servers)
       close
     }
-    val (out, err) = executeProcess(s"$snappyHome/sbin/snappy-start-all.sh")
+    val (out, err) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
 
     if (!out.contains("Distributed system now has 4 members")) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
-    val (out1, err1) = executeProcess(s"$snappyHome/sbin/start-all.sh")
+    val (out1, err1) = executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
   }
 
-  def executeProcess(command: String): (String, String) = {
+  def executeProcess(name: String , command: String): (String, String) = {
     val stdoutStream = new ByteArrayOutputStream
     val stderrStream = new ByteArrayOutputStream
 
@@ -103,7 +105,12 @@ with Logging with Retries {
     val stdoutWriter = new PrintStream(teeOut, true)
     val stderrWriter = new PrintStream(teeErr, true)
 
-    Process(command, new File(s"$currWorkingDir"), "SNAPPY_HOME" -> snappyHome, "SPARK_PRINT_LAUNCH_COMMAND" -> "true") !
+    val workDir = new File(s"$currWorkingDir/$name")
+    if (!workDir.exists) {
+      workDir.mkdir()
+    }
+
+    Process(command, workDir, "SNAPPY_HOME" -> snappyHome) !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     (stdoutStream.toString, stderrStream.toString)
   }
@@ -131,7 +138,7 @@ with Logging with Retries {
 
     val jobCommand = s"$jobSubmit --app-name ${jobClass}_${System.currentTimeMillis()} --class $jobClass $confStr"
 
-    val (out, err) = executeProcess(jobCommand)
+    val (out, err) = executeProcess("snappyCluster", jobCommand)
 
     val jobSubmitStr = out
 
@@ -152,7 +159,7 @@ with Logging with Retries {
     while (status == "RUNNING") {
       Thread.sleep(3000)
       val statusCommand = s"$jobStatus $jobID"
-      val (out, err) = executeProcess(statusCommand)
+      val (out, err) = executeProcess("snappyCluster", statusCommand)
 
       val jobSubmitStatus = out
 
@@ -174,25 +181,26 @@ with Logging with Retries {
   }
 
   def SparkSubmit(name: String, appClass: String,
-                  master: String = "spark://$localHostName:7077",
+                  master: Option[String],
                   confs: Seq[String] = Seq.empty[String],
                   appJar: String): Unit = {
 
+    val masterStr = master.getOrElse(s"spark://$localHostName:7077")
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
-    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $master $confStr $appJar"
-    val (out, err) = executeProcess(sparkSubmit)
+    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"
+    val (out, err) = executeProcess(name, sparkSubmit)
 
-    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
+    if (out.toLowerCase().contains("exception")) {
       throw new Exception(s"Failed to submit $appClass")
     }
   }
 
   def RunExample(name: String, exampleClas: String): Unit = {
     val runExample = s"$snappyHome/bin/run-example $exampleClas"
-    val (out, err) = executeProcess(runExample)
+    val (out, err) = executeProcess(name, runExample)
 
-    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
+    if (out.toLowerCase().contains("exception")) {
       throw new Exception(s"Failed to run $exampleClas")
     }
   }
@@ -200,8 +208,8 @@ with Logging with Retries {
   def SparkShell(confs: Seq[String], options: String, scriptFile : String): Unit = {
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val shell = s"$sparkShell $confStr $options -i $scriptFile"
-    val (out, err) = executeProcess(shell)
-    if (out.toLowerCase().contains("exception") || err.toLowerCase().contains("exception")) {
+    val (out, err) = executeProcess("snappyCluster", shell)
+    if (out.toLowerCase().contains("exception")) {
       throw new Exception(s"Failed to run $shell")
     }
   }

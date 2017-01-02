@@ -1,4 +1,4 @@
-package io.snappydata.cluster
+package io.snappydata.quickstart
 
 import io.snappydata.SnappyTestRunner
 
@@ -31,11 +31,11 @@ class ExampleTestSuite extends SnappyTestRunner {
 
     Job("io.snappydata.examples.CreateAndLoadAirlineDataJob", localLead, quickStartJar)
 
-    SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp",
+    SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp", None,
       confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
       appJar = quickStartJar)
 
-    SparkSubmit("PythonAirlineDataApp", appClass = "",
+    SparkSubmit("PythonAirlineDataApp", appClass = "", None,
       confs = Seq("snappydata.store.locators=localhost:10334", "spark.ui.port=4041"),
       appJar = s"$snappyHome/quickstart/python/AirlineDataPythonApp.py")
 
