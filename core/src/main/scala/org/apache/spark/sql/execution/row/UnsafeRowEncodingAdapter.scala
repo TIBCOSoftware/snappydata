@@ -16,9 +16,9 @@
  */
 package org.apache.spark.sql.execution.row
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
-import org.apache.spark.sql.types.{DataType, Decimal}
+import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
@@ -28,11 +28,14 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def supports(dataType: DataType): Boolean = true
 
+  // nulls can be present so always return true
+  override protected def hasNulls: Boolean = true
+
   override protected def initializeNulls(columnBytes: AnyRef,
-      field: Attribute): Long = 0L
+      field: StructField): Long = 0L
 
   override def initializeDecoding(columnBytes: AnyRef,
-      field: Attribute): Long = 0L
+      field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
 

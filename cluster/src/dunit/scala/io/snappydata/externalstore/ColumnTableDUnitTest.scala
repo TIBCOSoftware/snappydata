@@ -85,6 +85,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     startSparkJob7()
   }
 
+
   // changing the test to such that batches are created
   // and looking for column table stats
   def testSNAP205_InsertLocalBuckets(): Unit = {
@@ -367,6 +368,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob4(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
 
     snc.sql(s"CREATE TABLE $tableNameWithPartition" +
         s"(Key1 INT ,Value STRING, other1 STRING, other2 STRING )" +
@@ -391,7 +393,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     var result = snc.sql("SELECT Value FROM " + tableNameWithPartition)
     var r = result.collect()
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected size = ${r.length}, expected = 1005")
 
     result = snc.sql("SELECT other1 FROM " + tableNameWithPartition)
     r = result.collect()
@@ -399,7 +401,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val resultValues = r map { row =>
       row.getString(0).toInt
     }
-    assert(resultValues.length == 1005)
+    assert(resultValues.length == 1005,
+      s"Unexpected size = ${resultValues.length}, expected = 1005")
     colValues.foreach(v => assert(resultValues.contains(v)))
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
@@ -419,7 +422,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob5(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
       Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
     1 to 1000 foreach { _ =>
@@ -438,7 +441,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     var result = snc.sql("SELECT Value FROM " + tableNameWithPartition)
     var r = result.collect()
 
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected size = ${r.length}, expected = 1005")
 
     result = snc.sql("SELECT other1 FROM " + tableNameWithPartition)
     r = result.collect()
@@ -447,7 +450,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val resultValues = r map { row =>
       row.getInt(0)
     }
-    assert(resultValues.length == 1005)
+    assert(resultValues.length == 1005,
+      s"Unexpected size = ${resultValues.length}, expected = 1005")
     colValues.foreach(v => assert(resultValues.contains(v)))
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
@@ -458,9 +462,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
+    println("spark.sql.inMemoryColumnarStorage.batchSize " +
+        sc.getConf.get("spark.sql.inMemoryColumnarStorage.batchSize"))
 
-    assert(1005 == (region.size() +
-        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()))
+    val regionSize = region.size() +
+        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()
+    assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
@@ -582,6 +589,49 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.dropTable("COLUMNTABLE4", ifExists = true)
     getLogWriter.info("Successful")
+  }
+
+  def testColumnTableRedundancyTestSNAP1188(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"create table if not exists airline (YearI INT," + // NOT NULL
+        "MonthI INT," + // NOT NULL
+        "DayOfMonth INT," + // NOT NULL
+        "DayOfWeek INT," + // NOT NULL
+        "DepTime INT," +
+        "CRSDepTime INT," +
+        "ArrTime INT," +
+        "CRSArrTime INT," +
+        "UniqueCarrier VARCHAR(20)," + // NOT NULL
+        "FlightNum INT," +
+        "TailNum VARCHAR(20)," +
+        "ActualElapsedTime INT," +
+        "CRSElapsedTime INT," +
+        "AirTime INT," +
+        "ArrDelay INT," +
+        "DepDelay INT," +
+        "Origin VARCHAR(20)," +
+        "Dest VARCHAR(20)," +
+        "Distance INT," +
+        "TaxiIn INT," +
+        "TaxiOut INT," +
+        "Cancelled INT," +
+        "CancellationCode VARCHAR(20)," +
+        "Diverted INT," +
+        "CarrierDelay INT," +
+        "WeatherDelay INT," +
+        "NASDelay INT," +
+        "SecurityDelay INT," +
+        "LateAircraftDelay INT," +
+        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '7', " +
+        "Redundancy '2')")
+
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val airlineDataFrame = snc.read.load(hfile)
+    val start0 = System.currentTimeMillis
+    airlineDataFrame.write.insertInto(s"airline")
+    assert(snc.sql("select count(*) from airline").count()>0)
+    snc.sql("drop table airline")
   }
 }
 

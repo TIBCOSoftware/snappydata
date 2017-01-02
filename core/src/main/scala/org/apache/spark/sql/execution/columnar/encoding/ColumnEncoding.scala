@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.lang.reflect.Field
 import java.nio.ByteOrder
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -32,10 +32,12 @@ abstract class ColumnEncoding {
 
   def supports(dataType: DataType): Boolean
 
-  protected def initializeNulls(columnBytes: AnyRef,
-      field: Attribute): Long
+  protected def hasNulls: Boolean
 
-  def initializeDecoding(columnBytes: AnyRef, field: Attribute): Long = {
+  protected def initializeNulls(columnBytes: AnyRef,
+      field: StructField): Long
+
+  def initializeDecoding(columnBytes: AnyRef, field: StructField): Long = {
     val cursor = initializeNulls(columnBytes, field)
     val dataType = Utils.getSQLDataType(field.dataType)
     // no typeId for complex types
@@ -232,9 +234,14 @@ object ColumnEncoding {
   )
 
   def getColumnDecoder(columnBytes: Array[Byte],
-      field: Attribute): ColumnEncoding = {
+      field: StructField): ColumnEncoding = {
+    getColumnDecoder(columnBytes, Platform.BYTE_ARRAY_OFFSET, field)
+  }
+
+  def getColumnDecoder(columnBytes: AnyRef, offset: Long,
+      field: StructField): ColumnEncoding = {
     // read and skip null values array at the start, then read the typeId
-    var cursor = Platform.BYTE_ARRAY_OFFSET
+    var cursor = offset
     val nullValuesSize = readInt(columnBytes, cursor) << 2
     cursor += (4 + nullValuesSize)
 
@@ -246,8 +253,13 @@ object ColumnEncoding {
       case _ => readInt(columnBytes, cursor)
     }
     if (typeId >= allEncodings.length) {
+      val bytesStr = columnBytes match {
+        case null => ""
+        case bytes: Array[Byte] => s" bytes: ${bytes.toSeq}"
+        case _ => ""
+      }
       throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
-          s"for $dataType($field) bytes: ${columnBytes.toSeq}")
+          s"for $dataType($field)$bytesStr")
     }
     val encoding = allEncodings(typeId)(columnBytes, dataType,
       // use NotNull version if field is marked so or no nulls in the batch
@@ -340,8 +352,10 @@ object ColumnEncoding {
 
 trait NotNullColumn extends ColumnEncoding {
 
+  override protected final def hasNulls: Boolean = false
+
   override protected final def initializeNulls(
-      columnBytes: AnyRef, field: Attribute): Long = {
+      columnBytes: AnyRef, field: StructField): Long = {
     val cursor = Platform.BYTE_ARRAY_OFFSET
     val numNullValues = ColumnEncoding.readInt(columnBytes, cursor)
     if (numNullValues != 0) {
@@ -391,8 +405,10 @@ trait NullableColumn extends ColumnEncoding {
     */
   }
 
+  override protected final def hasNulls: Boolean = true
+
   override protected final def initializeNulls(
-      columnBytes: AnyRef, field: Attribute): Long = {
+      columnBytes: AnyRef, field: StructField): Long = {
     val cursor = Platform.BYTE_ARRAY_OFFSET
     val nullValuesSize = ColumnEncoding.readInt(columnBytes, cursor) << 2
     if (nullValuesSize > 0) {

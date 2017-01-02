@@ -16,27 +16,27 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 
 
 /**
@@ -50,14 +50,13 @@ case class JDBCAppendableRelation(
     override val schema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
-    @transient override val sqlContext: SQLContext)
-  extends BaseRelation
-  with PrunedUnsafeFilteredScan
-  with InsertableRelation
-  with DestroyRelation
-  with IndexableRelation
-  with Logging
-  with Serializable {
+    @transient override val sqlContext: SQLContext) extends BaseRelation
+    with PrunedUnsafeFilteredScan
+    with InsertableRelation
+    with DestroyRelation
+    with IndexableRelation
+    with Logging
+    with Serializable {
 
   self =>
 
@@ -65,28 +64,27 @@ case class JDBCAppendableRelation(
 
   var tableExists: Boolean = _
 
-  protected final val connProperties = externalStore.connProperties
+  protected final val connProperties: ConnectionProperties =
+    externalStore.connProperties
 
-  protected final val connFactory = JdbcUtils.createConnectionFactory(
-    connProperties.url, connProperties.connProps)
+  protected final val connFactory: () => Connection = JdbcUtils
+      .createConnectionFactory(connProperties.url, connProperties.connProps)
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
   })
 
   override def sizeInBytes: Long = {
-    val stats = SnappyTableStatsProviderService.getTableStatsFromService(table)
-    if (stats.isDefined) stats.get.getTotalSize
-    else super.sizeInBytes
+    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+      case Some(s) => s.getTotalSize
+      case None => super.sizeInBytes
+    }
   }
 
 
-  protected final def dialect = connProperties.dialect
+  protected final def dialect: JdbcDialect = connProperties.dialect
 
-  val schemaFields = Utils.getSchemaFields(schema)
-
-  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
-    connProperties, forExecutor = true)
+  val schemaFields: Map[String, StructField] = Utils.getSchemaFields(schema)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -108,8 +106,6 @@ case class JDBCAppendableRelation(
     }
   }
 
-  // TODO: Suranjan currently doesn't apply any filters.
-  // will see that later.
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val (cachedColumnBuffers, requestedColumns) = scanTable(table,
@@ -233,7 +229,7 @@ case class JDBCAppendableRelation(
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
         "stats blob, " + schema.fields.map(structField =>
-        externalStore.columnPrefix + structField.name + " blob")
+      externalStore.columnPrefix + structField.name + " blob")
         .mkString(", ") + s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
   }
@@ -310,14 +306,13 @@ object JDBCAppendableRelation extends Logging {
     } else {
       Constant.DEFAULT_SCHEMA + "__" + table
     }
-    Constant.INTERNAL_SCHEMA_NAME + "." +  tableName + Constant.SHADOW_TABLE_SUFFIX
+    Constant.INTERNAL_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 }
 
 final class DefaultSource extends ColumnarRelationProvider
 
-class ColumnarRelationProvider
-    extends SchemaRelationProvider
+class ColumnarRelationProvider extends SchemaRelationProvider
     with CreatableRelationProvider {
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
@@ -390,7 +385,7 @@ class ColumnarRelationProvider
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
-      case d: GemFireXDBaseDialect =>
+      case _: GemFireXDBaseDialect =>
         DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
             .getCanonicalName).providingClass
 

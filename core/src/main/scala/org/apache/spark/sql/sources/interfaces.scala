@@ -128,7 +128,7 @@ trait ParentRelation extends BaseRelation {
    * is to recreate Dependent relations when the ParentRelation is
    * being created.
    */
-  def recoverDependentsRelation(): Unit
+  def recoverDependentRelations(properties: Map[String, String]): Unit
 }
 
 @DeveloperApi
@@ -154,6 +154,11 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
     * @return
     */
   def isPartitioned: Boolean
+
+  /**
+   * True if underlying sample table is using a row table as reservoir store.
+   */
+  def isReservoirAsRegion: Boolean
 }
 
 @DeveloperApi

@@ -8,6 +8,118 @@
 ####################################################################################################
 
 
+Release 0.7
+
+  [SNAP-1260] Miscellaneous plan optimizations.
+
+  [SNAP-1251][SNAP-1252] Avoid exchange when join columns are superset of partitioning.
+
+  [SNAP-1112] Query hints for executionEngine doesn't work correctly.
+
+  [SNAP-1240] SnappyData monitoring dashboard.
+
+  [SNAP-1234] Always skip broadcast join for cases of collocated PR joins.
+
+  [SNAP-1229] Fixed Snappy Python APIs broken after Spark 2.0 merge.
+
+  [SNAP-1219] Unable to drop persistent column table when a server node is killed abruptly.
+
+  [SNAP-1225] Performance improvements for hash joins (and other fixes).
+
+  [SNAP-1218] Enable RDD-bucket de-linking for single table and replicated table joins.
+
+  [SNAP-1217] Introduce Enable Experimental Feature property.
+
+  [SNAP-1213] Using esoteric ExternalizableSerializable as default serializer for Externalizable
+    rather than FieldSerialzable.
+
+  [AQP-259] Fixing the issue where the size of the Map was not being assigned early enough,
+    resulting in flush increasing the reservoir size in an unbounded manner.
+
+  [SNAP-1209] Updated LocalJoin to cover colocated join cases as well.
+
+  [SNAP-1205] Avoid exchange when the table is partitioned with the join key.
+
+  [SNAP-1193] Optimized Collect aggregate plan to avoid last step exchange.
+
+  [SNAP-1191] Basic plan caching (without constant tokenization). Add plan caching and reuse of
+    SparkPlan, RDD and PlanInfo.
+
+  [SNAP-1194] Optimization for single dictionary column GROUP BY and JOIN
+
+  [SNAP-1136] Pooled version of Kryo serializer which works for closures.
+    New PooledKryoSerializer that does pooling of Kryo objects (else performance is bad if new
+    instance is created for every call which needs to register and walk tons of classes)
+
+  [SNAP-1067] Optimized GROUP BY (HashAggregateExec) and HASH JOIN. Optimized hash table
+    for GROUP BY (HashAggregateExec) and for LocalJoin.
+
+  [SNAP-1087] Maintain stats (which include lower bound, upper bound, null count, etc.) for every
+    column. And then uses the upper bound and lower bound values of columns to filter out the cached
+    batches. This will be a perf enhancement for the queries which filters extensively.
+
+  [SNAP-1084] Cache and return CatalogTable instead of going to hive
+
+  [SNAP-1182] Added map/flatMap/filter/glom/mapPartition/transform APIs to SchemaDStream
+
+  [SNAP-1180] Use ConfigEntry mechanism for SnappyData properties. Added SQLConfigEntry and
+    convenience methods.
+
+  [SNAP-999] Changes to remove the install jar and instead use SparkJobServer only.
+
+  Apache Spark 2.0.2 merge.
+
+  [SNAP-730] Add a rule to replace column tables with indexes when the join column is indexed.
+
+  Removing the kafka-0.10 dependencies and shipping only kafka-0.8
+
+  [SNAP-1075] Added a service to publish store table size that is used for query plan generation.
+    These stats are also published on SnappyData Dashboard.
+
+  [SNAP-1060] [SNAP-1141] [SNAP-1115] Fixes for Streaming related issues after Apache Spark 2.0
+    merge.
+
+  [SNAP-1152] Fixing NPE in aggregation. Handling null entry in ObjectHashMapAccessor during code
+    generation.
+
+  Avoid pooling of stream Input and Output objects in PooledKryoSerializer to try and fix occasional
+    failures in TPCHDUnitTest.
+
+  [SNAP-1172] Changes to render StringType as VARCHAR for tables created via API.
+
+  [SNAP-1185] Changing all internal.Logging references to public one.
+
+  [SNAP-1188] Set batch uuid to previous record if the current batchuuid is null.
+
+  [SNAP-69] Fix SparkJobServer rootDir to point to current working directory instead of /tmp. Redirecting 
+    rootdir from /tmp to "-dir" startup parameter via gemfirexd.system.home variable set in the
+    launcher.
+
+  Fixing failure for optimized=T case in TPCETrade
+
+  [SNAP-1147] Properly handle dropping of collocated table.
+
+  [SNAP-1087] Removing StatsPredicateCompiler and closure; instead generate embedded predicate code
+    in a new function in the same context as for ColumnTableScan code.
+
+  [SNAP-977] Allow user to specify configuration on command-line while submitting a job.
+
+  [SNAP-1021] Added an external catalog to SnappyCatalog to ensure the Catalog API of Spark will
+    also work fine. This makes Snappy catalog cleaner and removes redundant code.
+
+  [SNAP-1096] Add Lead attribute in Member MBean.
+
+  [SNAP-1066] Modified existing tests to inferschema instead of using string and proper use of
+    nullValue.
+
+  Fixed readLongDecimal for ColumnEncoding adapters.
+
+  [SNAP-1199] Making external table visible with SnappyData Connector.
+
+  [SNAP-1083] Fixing multiple issues in RDD de-linking.
+
+  [SNAP-1190] Reduce per-partition task overhead.
+
 
 Release 0.6
 

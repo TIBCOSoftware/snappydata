@@ -22,7 +22,7 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.{SaveMode, SnappyContext, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
 
 /**
  * Some basic tests to detect catalog inconsistency and repair it
@@ -51,7 +51,6 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable("column_table1", "column", dataDF.schema, props)
-//    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
@@ -186,4 +185,76 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     verifyTables(snc)
   }
 
+
+  def testConsistencyWithCollocatedTables(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    var snc = SnappyContext(sc)
+
+    val baseRowTable = "ORDER_DETAILS_ROW"
+    val colloactedRowTable = "EXEC_DETAILS_ROW"
+
+    val baseColumnTable = "ORDER_DETAILS_COL"
+    val colloactedColumnTable = "EXEC_DETAILS_COL"
+
+
+    snc.sql(s"create table $baseRowTable(SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) , " +
+        "SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)) USING row OPTIONS(BUCKETS '13', " +
+        "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY  " +
+        "'SINGLE_ORDER_DID')");
+
+
+    snc.sql(s"create table $colloactedRowTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID " +
+        "VARCHAR (64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING row OPTIONS" +
+        s"(COLOCATE_WITH '$baseRowTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY  " +
+        "'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY 'EXEC_DID')");
+
+
+
+    snc.sql(s"create table $baseColumnTable(SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ," +
+        s"SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)) USING column OPTIONS(BUCKETS " +
+        s"'13', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS'," +
+        s"PARTITION_BY  'SINGLE_ORDER_DID')");
+
+    snc.sql(s"create table $colloactedColumnTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER," +
+        s"SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING column " +
+        s"OPTIONS (COLOCATE_WITH '$baseColumnTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY " +
+        s"'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY 'EXEC_DID')");
+
+    try {
+      // This should throw an exception
+      snc.sql(s"drop table $baseRowTable")
+      assert(assertion = false, "expected the drop to fail")
+    } catch {
+      case ae: AnalysisException =>
+        // Expected Exception and assert message
+        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
+            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+    }
+
+    // stop spark
+    val sparkContext = SnappyContext.globalSparkContext
+    if (sparkContext != null) sparkContext.stop()
+
+    ClusterManagerTestBase.stopAny()
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    snc = SnappyContext(sc)
+    try {
+      // This should throw an exception
+      snc.sql(s"drop table $baseRowTable")
+      assert(assertion = false, "expected the drop to fail")
+    } catch {
+      case ae: AnalysisException =>
+        // Expected Exception and assert message
+        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
+            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+    }
+
+    snc.sql(s"drop table $colloactedColumnTable")
+    snc.sql(s"drop table $baseColumnTable")
+
+    snc.sql(s"drop table $colloactedRowTable")
+    snc.sql(s"drop table $baseRowTable")
+  }
 }
