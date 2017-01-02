@@ -19,8 +19,7 @@ package org.apache.spark.sql
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Dependency, Partition, Partitioner, SparkContext, TaskContext}
 
 
 private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
@@ -36,19 +35,39 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
     f(context, split, firstParent[T].iterator(split, context))
 }
 
-class DummyRDD(sqlContext: SQLContext)
-    extends RDD[InternalRow](sqlContext.sparkContext, Nil) {
+private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
+    prev: RDD[T],
+    f: (TaskContext, Int, Iterator[T]) => Iterator[U],
+    preservesPartitioning: Boolean = false, p: (Int) => Seq[String])
+    extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 
-  /**
-   * Implemented by subclasses to compute a given partition.
-   */
-  override def compute(split: Partition,
-      context: TaskContext): Iterator[InternalRow] = Iterator.empty
+  override def getPreferredLocations(split: Partition): Seq[String] = p(split.index)
+}
 
-  /**
-   * Implemented by subclasses to return the set of partitions in this RDD.
-   * This method will only be called once, so it is safe to implement
-   * a time-consuming computation in it.
-   */
-  override protected def getPartitions: Array[Partition] = Array.empty
+/**
+ * RDD that delegates calls to the base RDD. However the dependencies
+ * and preferred locations of this RDD can be altered.
+ */
+class DelegateRDD[T: ClassTag](
+    sc: SparkContext,
+    baseRdd: RDD[T],
+    preferredLocations: Array[Seq[String]] = null,
+    allDependencies: Seq[Dependency[_]] = null)
+    extends RDD[T](sc,
+      if (allDependencies == null) baseRdd.dependencies
+      else allDependencies)
+        with Serializable {
+
+  @transient override val partitioner: Option[Partitioner] = baseRdd.partitioner
+
+  override def getPreferredLocations(
+      split: Partition): Seq[String] = {
+    if (preferredLocations eq null) baseRdd.preferredLocations(split)
+    else preferredLocations(split.index)
+  }
+
+  override protected def getPartitions: Array[Partition] = baseRdd.partitions
+
+  override def compute(split: Partition, context: TaskContext): Iterator[T] =
+    baseRdd.compute(split, context)
 }

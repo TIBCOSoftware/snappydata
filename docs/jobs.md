@@ -9,9 +9,9 @@ In Spark SQL, all tables are temporary and cannot be shared across different app
 A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
 
 
-##### Using SnappyContext to create table and query data 
+#### Using SnappyContext to create table and query data 
 Below are examples to create a SnappyContext from SparkContext.
-###### Scala
+##### Scala
 ```scala
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
@@ -21,7 +21,7 @@ Below are examples to create a SnappyContext from SparkContext.
   // get the SnappyContext
   val snc = org.apache.spark.sql.SnappyContext(sc)
 ```
-###### Java
+##### Java
 ```java
   SparkConf conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
@@ -31,7 +31,7 @@ Below are examples to create a SnappyContext from SparkContext.
   // get the SnappyContext
   SnappyContext snc = SnappyContext.getOrCreate(sc);
 ```
-###### Python
+##### Python
 ```python
 from pyspark.sql.snappy import SnappyContext
 from pyspark import SparkContext, SparkConf
@@ -43,7 +43,7 @@ snc = SnappyContext(sc)
 ```
 Create columnar tables using API. Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs. 
 
-###### Scala
+##### Scala
 ```scala
   val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -67,7 +67,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
 
 ```
 
-###### Java
+##### Java
 
 ```java
 
@@ -106,7 +106,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
     }
 
 ```
-###### Python
+##### Python
 
 ```python
 from pyspark.sql.types import *
@@ -175,7 +175,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 
 Below example shows how to use the SnappyStreamingContext to apply a schema to existing DStream and then query the SchemaDStream with simple SQL. It also shows the SnappyStreamingContext ability to deal with sql queries.
 
-###### Scala
+##### Scala
 ```scala
 import org.apache.spark.sql._
 import org.apache.spark.streaming._
@@ -209,7 +209,7 @@ import scala.collection.immutable.Map
   snsc.sql("select count(*) from streamingExample").show
 ```
 
-###### Python
+##### Python
 ```python
 from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
@@ -241,11 +241,12 @@ snsc.sql("select count(*) from streamingExample").show()
 
 ### Running Spark programs inside the database
 
-> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.
+<!--
+> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
-To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
+To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job looks like:
 
-###### Scala
+##### Scala
 
 ```scala
 class SnappySampleJob implements SnappySQLJob {
@@ -257,7 +258,7 @@ class SnappySampleJob implements SnappySQLJob {
 }
 ```
 
-###### Java
+##### Java
 ```java
 class SnappySampleJob extends SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -269,7 +270,7 @@ class SnappySampleJob extends SnappySQLJob {
 
 ```
 
-###### Scala
+##### Scala
 ```scala
 class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -280,7 +281,7 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
 }
 ```
 
-###### Java
+##### Java
 ```java
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -308,15 +309,15 @@ SnappySQLJob trait extends the SparkJobBase trait. It provides users the singlet
 
 
 
-#### Submitting jobs
-Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.6.jar) and submitted to jobs server as shown below.
+### Submitting Jobs
+Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart.jar) and submitted to jobs server as shown below.
 
 ```
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.
 
@@ -358,7 +359,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
-    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
@@ -372,7 +373,7 @@ $ bin/spark-submit \
 ```
 
 
-#### Streaming jobs
+### Streaming Jobs
 
 An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying ```--stream``` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as ```--context <context-name>``` with the submit command.
 
@@ -383,7 +384,7 @@ $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
-    --app-jar $SNAPPY_HOME/examples/jars/quickstart-0.6.jar \
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
     --stream
 
 {

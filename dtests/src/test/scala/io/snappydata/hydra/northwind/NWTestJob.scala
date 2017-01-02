@@ -28,12 +28,14 @@ object NWTestJob extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
     Try {
+      val snc = snappySession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=6")
-      NWQueries.snc = snc
       val dataLocation = jobConfig.getString("dataFilesLocation")
+      snc.setConf("dataFilesLocation", dataLocation)
+      NWQueries.snc = snc
       println(s"SS - dataLocation is : ${dataLocation}")
       NWQueries.dataFilesLocation = dataLocation
       regions = snc.read.format("com.databricks.spark.csv")
@@ -96,5 +98,5 @@ object NWTestJob extends SnappySQLJob {
     }
   }
 
-  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = SnappyJobValid()
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

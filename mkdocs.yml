@@ -9,23 +9,22 @@ repo_url: https://github.com/SnappyDataInc/snappydata
 pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
-- Getting Started: index.md
-- Building from source, project layout: build-instructions.md
-- Overview: snappyIntroduction.md
-- Key features: features.md
+- Overview: index.md
+# - Introduction: snappyIntroduction.md
+- Getting Started: quickstart.md
+- Download and Install: install.md
+- How Tos: howto.md
 - Architecture: architecture.md
-- Configuring the cluster: configuration.md
-- Connecting using JDBC, Spark: connectingToCluster.md
-- Developing Apps using the Spark API: jobs.md
-- Row and Column tables: rowAndColumnTables.md
+- Configuring the Cluster: configuration.md
+- Programming Guide: programming_guide.md
+- Affinity Modes: deployment.md
 - Synopsis Data Engine (SDE): aqp.md
-- Stream processing using SQL: streamingWithSQL.md
-- Deployment topologies: deployment.md
-- API: apidocsintro.md
 - Using iSight-Cloud: aqp_aws.md
+- API: apidocsintro.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
+    - Contact and Support: techsupport.md
     - License: LICENSE.md
 
 theme: readthedocs

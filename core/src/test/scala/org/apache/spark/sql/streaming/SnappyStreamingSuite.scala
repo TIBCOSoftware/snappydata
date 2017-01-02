@@ -19,8 +19,8 @@ package org.apache.spark.sql.streaming
 import java.io.File
 import java.net.InetSocketAddress
 import java.util
+import java.util.Properties
 import java.util.concurrent.TimeoutException
-import java.util.{Map => JMap, Properties}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -43,24 +43,23 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
 
-import org.apache.spark.SparkConf
-import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.{KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
+import org.apache.spark.{Logging, SparkConf}
 
 
 class SnappyStreamingSuite
     extends SnappyFunSuite with Eventually
     with BeforeAndAfter with BeforeAndAfterAll{
 
-  private var kc: KafkaCluster = null
+  private var kc: KafkaCluster = _
 
   protected var kafkaUtils: EmbeddedKafkaUtils = _
 
@@ -145,7 +144,7 @@ class SnappyStreamingSuite
 
   test("SnappyData Kafka Streaming") {
     val topic = "kafka_topic"
-    val sent = Map("a" -> 1, "b" -> 1, "c" -> 1)
+    var sent = Map("1" -> 1, "2" -> 1, "3" -> 1)
     kafkaUtils.createTopic(topic)
     kafkaUtils.sendMessages(topic, sent)
 
@@ -162,15 +161,32 @@ class SnappyStreamingSuite
 
     val stream = ssnc.getSchemaDStream("kafkaStream")
 
+    val repartitioned = stream.repartition(2)
+    val filtered = repartitioned.filter(row => row.getString(0).startsWith("2"))
+
     val result = new mutable.HashMap[String, Long]()
-    stream.foreachDataFrame(df => {
+
+    filtered.foreachDataFrame(df => {
       df.collect().foreach(row => {
         result.synchronized {
           result.put(row.getString(0), 1)
         }
       })
     })
+
+    // scalastyle:off println
+    filtered.glom().foreachRDD(rdd => rdd.foreach(_.foreach(println)))
+    val mapped = filtered.map(row => row.getString(0).toInt)
+    mapped.foreachRDD(rdd => rdd.foreach(println))
+    mapped.reduce(_ + _).foreachRDD(rdd => println(rdd.first()))
+    mapped.count().foreachRDD(rdd => println(rdd.first()))
+    // mapped.mapPartitions { _ => Seq.empty.toIterator }
+    mapped.mapPartitions { x => Iterator(x.sum)}
+    mapped.transform(rdd => rdd.map(_.toString))
+    // scalastyle:on println
+
     ssnc.start()
+    sent = Map("2" -> 1)
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       assert(result.synchronized {
         sent === result
@@ -396,7 +412,7 @@ class SnappyStreamingSuite
       df.count()
     })
 
-    //Create Table to collect the data for schemaStream1
+    // Create Table to collect the data for schemaStream1
     ssnc.snappyContext.dropTable("dataTable", ifExists = true)
     ssnc.snappyContext.createTable("dataTable", "column", schemaStream1.schema,
       Map.empty[String, String])
@@ -425,7 +441,8 @@ class SnappyStreamingSuite
 
 
     val resultStream: SchemaDStream = ssnc.registerCQ("SELECT t1.id, t1.text FROM " +
-        "tweetStream1 window (duration 2 seconds, slide 1 seconds) t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
+        "tweetStream1 window (duration 2 seconds, slide 1 seconds) t1 " +
+        "JOIN tweetStream2 t2 ON t1.id = t2.id ")
 
 
     ssnc.snappyContext.dropTable("joinDataColumnTable", ifExists = true)
@@ -461,9 +478,9 @@ class SnappyStreamingSuite
       row => row.getInt(0)
     }
 
-    val colValues = (1 to 30).toSeq
+    val colValues = 1 to 30
     assert(listOfRows.length == 30)
-    //Assert values
+    // Assert values
     colValues.foreach(v => assert(listOfRows.contains(v)))
     ssnc.sql("drop table dataTable")
 
@@ -474,7 +491,7 @@ class SnappyStreamingSuite
 
 
     val result = ssnc.sql("select id from joinDataColumnTable")
-    val expectedValues = Seq(9,10,19,20,29,30)
+    val expectedValues = Seq(9, 10, 19, 20, 29, 30)
 
     val r = result.collect()  map {
       row => row.getInt(0)
@@ -721,7 +738,7 @@ protected class EmbeddedKafkaUtils extends Logging {
 
         ZkUtils.getLeaderForPartition(zkClient, topic, partition).isDefined &&
             Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
-            leaderAndInSyncReplicas.isr.size >= 1
+            leaderAndInSyncReplicas.isr.nonEmpty
 
       case _ =>
         false

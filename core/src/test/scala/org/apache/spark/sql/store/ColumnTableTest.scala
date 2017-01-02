@@ -30,7 +30,7 @@ import io.snappydata.core.{Data, TestData, TestData2}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
@@ -930,5 +930,51 @@ class ColumnTableTest
 
     assert(entries == 200)
     logInfo("Successful")
+  }
+
+  test("Test Dropping Colocated column table") {
+
+
+    snc.sql("create table ORDER_DETAILS_COL(SINGLE_ORDER_DID BIGINT ," +
+        "SYS_ORDER_ID VARCHAR(64)" +
+        " ,SYS_ORDER_VER INTEGER ," +
+        "DATA_SNDG_SYS_NM VARCHAR(128)) " +
+        "USING column OPTIONS(BUCKETS '13', " +
+        "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT'," +
+        " PERSISTENT 'ASYNCHRONOUS')");
+
+    snc.sql("create table EXEC_DETAILS_COL(EXEC_DID BIGINT," +
+        "SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64)," +
+        "TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) " +
+        "USING column OPTIONS(COLOCATE_WITH 'ORDER_DETAILS_COL', " +
+        "BUCKETS '13', REDUNDANCY '1', " +
+        "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')");
+
+    try {
+      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+    } catch {
+      case e: AnalysisException => {
+        assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
+            "dependent objects: APP.EXEC_DETAILS_COL;")
+        // Execute second time to see we are getting same exception instead of table not found
+        try {
+          snc.sql("DROP TABLE ORDER_DETAILS_COL");
+        } catch {
+          case e: AnalysisException => {
+            assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
+                "dependent objects: APP.EXEC_DETAILS_COL;")
+          }
+          case t: Throwable => throw new AssertionError(t.getMessage, t);
+        }
+      } // Expected Exception hence ignore
+      case _: Throwable => throw new AssertionError;
+    }
+
+    try {
+      snc.sql("DROP TABLE EXEC_DETAILS_COL")
+      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+    } catch {
+      case t: Throwable => throw new AssertionError(t.getMessage, t);
+    }
   }
 }

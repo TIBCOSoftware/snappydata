@@ -15,7 +15,18 @@ import org.apache.spark.sql.types.StructType;
 /**
  * Creates and loads Airline data from parquet files in row and column
  * tables. Also samples the data and stores it in a column table.
+ *
+ *
+ * Run this on your local machine:
+ * <p/>
+ * `$ sbin/snappy-start-all.sh`
+ * <p/>
+ * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+ * --app-name JavaCreateAndLoadAirlineDataJob --class io.snappydata.examples.JavaCreateAndLoadAirlineDataJob \
+ * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
  */
+
+
 public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
 
   private String airlinefilePath = null;
@@ -26,7 +37,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
   private static final String stagingAirline = "STAGING_AIRLINE";
 
   @Override
-  public Object runSnappyJob(SnappyContext snc, Config jobConfig) {
+  public Object runSnappyJob(SnappySession snc, Config jobConfig) {
     try (PrintWriter pw = new PrintWriter("JavaCreateAndLoadAirlineDataJob.out")) {
       String currentDirectory = new File(".").getCanonicalPath();
       // Drop tables if already exists
@@ -40,7 +51,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
       // Create a DF from the parquet data file and make it a table
       Map<String, String> props = new HashMap<>();
       props.put("path", airlinefilePath);
-      Dataset<Row> airlineDF = snc.createExternalTable(stagingAirline, "parquet", props);
+      Dataset<Row> airlineDF = snc.catalog().createExternalTable(stagingAirline, "parquet", props);
       StructType updatedSchema = replaceReservedWords(airlineDF.schema());
 
       // Create a table in snappy store
@@ -93,7 +104,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
   }
 
   @Override
-  public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {
+  public SnappyJobValidation isValidJob(SnappySession snc, Config config) {
 
     if (config.hasPath("airline_file")) {
       airlinefilePath = config.getString("airline_file");

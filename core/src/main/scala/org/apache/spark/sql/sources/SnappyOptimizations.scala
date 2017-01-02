@@ -20,11 +20,12 @@ package org.apache.spark.sql.sources
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.Constant
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression, PredicateHelper}
-import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression,
+PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
@@ -34,8 +35,8 @@ import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
 
 
 /**
-  * Replace table with index hint
-  */
+ * Replace table with index hint
+ */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
   lazy val catalog = snappySession.sessionState.catalog
 
@@ -97,8 +98,8 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
 }
 
 /**
-  * Replace table with index if colocation criteria is satisfied.
-  */
+ * Replace table with index if colocation criteria is satisfied.
+ */
 case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[LogicalPlan]
     with PredicateHelper {
 
@@ -112,32 +113,22 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
 
-    if (input.exists(p => {
-      val rel = Entity.unwrapBaseColumnRelation(p)
-      // already resolved to some index. lets not try anything here.
-      // this is just for speed, where this rule gets executed so many times.
-      rel.isDefined && visited(p)
-    })) {
-      return CompletePlan(ReorderJoin.createOrderedJoin(input, conditions),
-        Seq.empty)
-    }
-
     type TableList = ArrayBuffer[LogicalPlan]
     // split the input tables into partitioned, replicate and unhandled list.
     val (partitioned, replicates, others) =
-    ((new TableList, new TableList, new TableList) /: input) {
-      case (splitted@(part, rep, _),
-      l@LogicalRelation(b: PartitionedDataSourceScan, _, _)) =>
-        if (b.partitionColumns.nonEmpty) {
-          part += l
-        } else {
-          rep += l
-        }
-        splitted
-      case (splitted@(_, _, other), l) =>
-        other += l
-        splitted
-    }
+      ((new TableList, new TableList, new TableList) /: input) {
+        case (splitted@(part, rep, _),
+        l@LogicalRelation(b: PartitionedDataSourceScan, _, _)) =>
+          if (b.partitionColumns.nonEmpty) {
+            part += l
+          } else {
+            rep += l
+          }
+          splitted
+        case (splitted@(_, _, other), l) =>
+          other += l
+          splitted
+      }
 
     val (generated, userDefined) = getPossibleColocatedJoins(partitioned, replicates, others,
       conditions).toList.partition { case (_, _, _, isGenerated) => isGenerated }
@@ -188,34 +179,34 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
   }
 
   /** Generating combinations of PRs 2 at a time and then evaluate colocation. if p1 -> p2 -> p3
-    * like colocation chain can occur, we can potentially use multiple indexes. That we can
-    * determine by reducing these combinations of 2 and merge into longer chain.
-    *
-    * The choice of colocated group to [[replace]] will be made firstly based on more
-    * feasibility check on LogicalPlan.outputSet, and then cost based computed by considering
-    * filter and size. Later selectivity can be introduced.
-    *
-    * This approach have a limitation
-    * {{{
-    * 1. select .. from t1 join t2 on t1.pc1 = t2.pc2 and t1.pc3 = t2.pc4 join t3 on t1.pc1 =
-    * t3.pc5 and t2.pc4 = t3.pc6.
-    *
-    *   This kind of mixed back referencing will right now fail to fetch joinKeys because we
-    *   are trying 2 at a time. Creating all possible combinations and eliminating one by one
-    *   is too computation intensive & increases code complexity. This kind of scenario can be
-    *   handled by providing user guideline. "Use either t1 or t2 partitioning cols
-    *   uniformly in a join condition".
-    * }}}
-    *
-    * if lets say colocated condition is mentioned like A -> B -> REP -> C
-    * where we know some index b/w A, B and C are colocated regions, then this should form a
-    * single chain.
-    *
-    * whereas A -> B cross-join C -> D  should NOT form colocation chain because of cartesian
-    * product.
-    *
-    * here we are just generating possible joining PRs
-    */
+   * like colocation chain can occur, we can potentially use multiple indexes. That we can
+   * determine by reducing these combinations of 2 and merge into longer chain.
+   *
+   * The choice of colocated group to `replace` will be made firstly based on more
+   * feasibility check on LogicalPlan.outputSet, and then cost based computed by considering
+   * filter and size. Later selectivity can be introduced.
+   *
+   * This approach have a limitation
+   * {{{
+   * 1. select .. from t1 join t2 on t1.pc1 = t2.pc2 and t1.pc3 = t2.pc4 join t3 on t1.pc1 =
+   * t3.pc5 and t2.pc4 = t3.pc6.
+   *
+   *   This kind of mixed back referencing will right now fail to fetch joinKeys because we
+   *   are trying 2 at a time. Creating all possible combinations and eliminating one by one
+   *   is too computation intensive & increases code complexity. This kind of scenario can be
+   *   handled by providing user guideline. "Use either t1 or t2 partitioning cols
+   *   uniformly in a join condition".
+   * }}}
+   *
+   * if lets say colocated condition is mentioned like A -> B -> REP -> C
+   * where we know some index b/w A, B and C are colocated regions, then this should form a
+   * single chain.
+   *
+   * whereas A -> B cross-join C -> D  should NOT form colocation chain because of cartesian
+   * product.
+   *
+   * here we are just generating possible joining PRs
+   */
   private def getPossibleColocatedJoins(partitioned: ArrayBuffer[TABLE],
       replicates: ArrayBuffer[TABLE],
       others: ArrayBuffer[TABLE],
@@ -328,71 +319,71 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
   }
 
   /**
-    * Generating join keys poses a pairing problem 'coz user haven't explicitly given join
-    * relation and partitioning cols hash computation is ordered. Therefore, we cannot
-    * pair join keys orderless. for example:
-    *
-    * {{{
-    * given following tables:
-    *   create t1 partition by column (c1, c2);
-    *   create t2 partition by column(c2, c1);
-    *   create rep1 (rc1, rc2, rc3, rc4);
-    * }}}
-    *
-    * {{{
-    * some query can colocate and some cannot.
-    * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc3 = t2.c1 & rc4 = t2.c2
-    * // shouldn't colocate 'coz partition col is not orderless. here sequence becomes important !.
-    *
-    * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc3 = t2.c2 & rc4 = t2.c1
-    * // will colocate 'coz per sequence of join cols mentioned, t1.c1 will match with t2.c2.
-    *
-    * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc2 = t2.c1 & rc1 = t2.c2
-    * // will colocate 'coz connecting attributes of replicated tables clarifies the p.cols mapping
-    * b/w tables.
-    * }}}
-    *
-    * situation becomes complicated when 2 or more replicated tables are in between. we may land
-    * up into mix of above last 2 conditions.
-    *
-    * {{{
-    *   and then we have query like below assuming t1(partition_by(c1)) and t2(partition_by(c7))
-    *
-    *   select * from t1 join rep r1 on t1.c1 = r1.c1 join rep r2 on t1.c1 = r2.xx and
-    *   t1.c2 = r2.c3 and r1.c4 = r2.c5 join t2 on r2.c6 = t2.c7
-    * }}}
-    *
-    * so, right now for every predicate on left, we will simply pair 1 to 1 with right PR
-    * predicate and check for colocation. Simple user guideline will be to mention join
-    * conditions in uniform order i.e.if first table p.cols are mentioned as t1.c2 = rc2 and t1
-    * .c1 = rc1 then, user must mention t2 table's join condition in reverse order too like
-    * t2.c1 = rc4 and t2.c2 = rc3
-    *
-    * note: we don't care how many cols are involved in between replicated tables, till the time
-    * replicates in between are joined and finally t1 and t2 have enough join conditions with the
-    * replicates, colocation should be safe.
-    *
-    * {{{
-    *
-    *  more examples:
-    *
-    * following query will attempt colocation check b/w t1 & t2 only with generatedJoinKeys as
-    * ((t1.c1, t2.c2), (t1.c2, t2.c1))
-    *
-    *   select * from t1 join r1 on t1.c1 = r1.rc1 and t1.c2 = r1.rc2 join r2 on r1.rc3 = r2.rc4
-    *   join t2 on t2.c2 = r2.rc5 and t2.c1 = r2.rc6
-    *
-    * notice it won't attempt generatedJoinKeys with ((t1.c1, t2.c1), (t1.c2, t2.c2)) because
-    * partitioning columns are no more orderless.
-    *
-    * OTOH, following query won't even attempt to generateJoinKeys due to no connecting
-    * relation between the replicates.
-    *
-    *   select * from t1 join r1 on t1.c1 = r1.rc1 and t1.c2 = r1.rc2 join r2 on t1.c3 = r2.rc4
-    *   join t2 on t2.c2 = r2.rc5 and t2.c1 = r2.rc6
-    * }}}
-    *
-    */
+   * Generating join keys poses a pairing problem 'coz user haven't explicitly given join
+   * relation and partitioning cols hash computation is ordered. Therefore, we cannot
+   * pair join keys orderless. for example:
+   *
+   * {{{
+   * given following tables:
+   *   create t1 partition by column (c1, c2);
+   *   create t2 partition by column(c2, c1);
+   *   create rep1 (rc1, rc2, rc3, rc4);
+   * }}}
+   *
+   * {{{
+   * some query can colocate and some cannot.
+   * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc3 = t2.c1 & rc4 = t2.c2
+   * // shouldn't colocate 'coz partition col is not orderless. here sequence becomes important !.
+   *
+   * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc3 = t2.c2 & rc4 = t2.c1
+   * // will colocate 'coz per sequence of join cols mentioned, t1.c1 will match with t2.c2.
+   *
+   * select * from t1 join rep on t1.c1 = rc1 and t1.c2 = rc2 join t2 on rc2 = t2.c1 & rc1 = t2.c2
+   * // will colocate 'coz connecting attributes of replicated tables clarifies the p.cols mapping
+   * b/w tables.
+   * }}}
+   *
+   * situation becomes complicated when 2 or more replicated tables are in between. we may land
+   * up into mix of above last 2 conditions.
+   *
+   * {{{
+   *   and then we have query like below assuming t1(partition_by(c1)) and t2(partition_by(c7))
+   *
+   *   select * from t1 join rep r1 on t1.c1 = r1.c1 join rep r2 on t1.c1 = r2.xx and
+   *   t1.c2 = r2.c3 and r1.c4 = r2.c5 join t2 on r2.c6 = t2.c7
+   * }}}
+   *
+   * so, right now for every predicate on left, we will simply pair 1 to 1 with right PR
+   * predicate and check for colocation. Simple user guideline will be to mention join
+   * conditions in uniform order i.e.if first table p.cols are mentioned as t1.c2 = rc2 and t1
+   * .c1 = rc1 then, user must mention t2 table's join condition in reverse order too like
+   * t2.c1 = rc4 and t2.c2 = rc3
+   *
+   * note: we don't care how many cols are involved in between replicated tables, till the time
+   * replicates in between are joined and finally t1 and t2 have enough join conditions with the
+   * replicates, colocation should be safe.
+   *
+   * {{{
+   *
+   *  more examples:
+   *
+   * following query will attempt colocation check b/w t1 & t2 only with generatedJoinKeys as
+   * ((t1.c1, t2.c2), (t1.c2, t2.c1))
+   *
+   *   select * from t1 join r1 on t1.c1 = r1.rc1 and t1.c2 = r1.rc2 join r2 on r1.rc3 = r2.rc4
+   *   join t2 on t2.c2 = r2.rc5 and t2.c1 = r2.rc6
+   *
+   * notice it won't attempt generatedJoinKeys with ((t1.c1, t2.c1), (t1.c2, t2.c2)) because
+   * partitioning columns are no more orderless.
+   *
+   * OTOH, following query won't even attempt to generateJoinKeys due to no connecting
+   * relation between the replicates.
+   *
+   *   select * from t1 join r1 on t1.c1 = r1.rc1 and t1.c2 = r1.rc2 join r2 on t1.c3 = r2.rc4
+   *   join t2 on t2.c2 = r2.rc5 and t2.c1 = r2.rc6
+   * }}}
+   *
+   */
   private def generateJoinKeys(
       leftPartitionedTable: LogicalPlan,
       leftRepMixedConditions: Seq[(LogicalPlan, Seq[(Expression, Expression)])],
@@ -419,7 +410,11 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
-
+    val enabled: Boolean = io.snappydata.Property.EnableExperimentalFeatures.
+        get(snappySession.snappyContext.conf)
+    if (!enabled) {
+      return plan
+    }
     if (snappySession.queryHints.exists {
       case (hint, _) => hint.startsWith(Index) &&
           !joinOrderHints.contains(ContinueOptimizations)
@@ -429,9 +424,17 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
     val newAttributesMap = new ArrayBuffer[(AttributeReference, AttributeReference)]()
     val visited = new mutable.HashSet[LogicalPlan]
+
+    def notVisited(input: Seq[LogicalPlan]) = !input.exists(p => {
+      val rel = Entity.unwrapBaseColumnRelation(p)
+      // already resolved to some index. lets not try anything here.
+      // this is just for speed, where this rule gets executed so many times.
+      rel.isDefined && visited(p)
+    })
+
     val newPlan = plan.transformDown {
       case ExtractFiltersAndInnerJoins(input, conditions)
-        if conditions.nonEmpty =>
+        if conditions.nonEmpty && notVisited(input) =>
         val completePlan = createColocatedJoins(input, conditions, visited)
         completePlan.replaced.foreach {
           case r if r.table != r.index =>

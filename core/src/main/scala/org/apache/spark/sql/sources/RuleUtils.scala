@@ -23,6 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
@@ -38,16 +39,19 @@ import org.apache.spark.sql.sources.Entity.{INDEX, INDEX_RELATION, TABLE}
 
 object RuleUtils extends PredicateHelper {
 
+  private def getIndex(catalog: SnappyStoreHiveCatalog, name: String) = {
+    val relation = catalog.lookupRelation(catalog.newQualifiedTableName(name))
+    relation match {
+      case LogicalRelation(i: IndexColumnFormatRelation, _, _) => Some(relation)
+      case _ => None
+    }
+  }
+
   def fetchIndexes(snappySession: SnappySession,
       table: LogicalPlan): Seq[(LogicalPlan, Seq[LogicalPlan])] = table.collect {
     case l@LogicalRelation(p: ParentRelation, _, _) =>
       val catalog = snappySession.sessionCatalog
-      (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
-        catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
-    case s@SubqueryAlias(alias, child@LogicalRelation(p: ParentRelation, _, _)) =>
-      val catalog = snappySession.sessionCatalog
-      (s.asInstanceOf[LogicalPlan], p.getDependents(catalog).map(idx =>
-        catalog.lookupRelation(catalog.newQualifiedTableName(idx))))
+      (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).flatMap(getIndex(catalog, _)))
   }
 
   def getJoinKeys(left: LogicalPlan,
