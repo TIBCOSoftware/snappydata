@@ -41,12 +41,15 @@ object StoreStrategy extends Strategy {
       import ru._
       val rm = runtimeMirror(this.getClass.getClassLoader)
       val pr = rm.reflect(a)
-      val x = typeOf[CreateTableUsingAsSelect].members.find(a =>
+      // 2.0.0 parameter name: child
+      // 2.0.2 parameter name: query
+      // Use reflection to find the value of parameter
+      val childterm = typeOf[CreateTableUsingAsSelect].members.find(a =>
         a.fullName.contains("query") || a.fullName.contains("child"))
-      val value = pr.reflectField(x.get.asTerm).get
+      val value = pr.reflectField(childterm.get.asTerm).get
 
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
-      // so that should support both builtin and external tables
+      // so that should support both +builtin and external tables
       SnappyExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
         None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
         temporary = false, partitionCols, mode, opts, value.asInstanceOf[LogicalPlan],
@@ -64,7 +67,7 @@ object StoreStrategy extends Strategy {
 
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
       SnappyExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
-    case r: org.apache.spark.sql.DescribeTableCommand => SnappyExecutedCommandExec(r) :: Nil
+    case r: org.apache.spark.sql.SnappyDescribeTableCommand => SnappyExecutedCommandExec(r) :: Nil
 
     case r: SnappyRunnableCommand => SnappyExecutedCommandExec(r) :: Nil
 

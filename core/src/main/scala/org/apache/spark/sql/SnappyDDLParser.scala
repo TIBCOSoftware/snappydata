@@ -46,6 +46,9 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 
 /**
+ * **Copy of RunnableCommand to ensure a compatibility between
+ * Spark 2.0.0 and Snappy Spark 2.0.2**
+ *
  * A logical command that is executed for its side-effects.  `SnappyRunnableCommand`s are
  * wrapped in `SnappyExecutedCommandExec` during execution.
  */
@@ -56,6 +59,9 @@ trait SnappyRunnableCommand extends LeafNode with logical.Command  {
 
 private[sql] case class SnappyExecutedCommandExec(cmd: SnappyRunnableCommand) extends SparkPlan {
   /**
+   * **Copy of ExecutedCommandExec to ensure a compatibility between
+   * Spark 2.0.0 and Snappy Spark 2.0.2**
+   *
    * A concrete command should override this lazy field to wrap up any side effects caused by the
    * command or any other computation that should be evaluated exactly once. The value of this field
    * can be used as the contents of the corresponding RDD generated from the physical plan of this
@@ -393,7 +399,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def describeTable: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
-          org.apache.spark.sql.DescribeTableCommand(tableIdent, Map.empty[String, String], extended
+          org.apache.spark.sql.SnappyDescribeTableCommand(tableIdent, Map.empty[String, String], extended
               .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
   }
 
@@ -718,12 +724,15 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
 }
 
 /**
+ * **Copy of DescribeTableCommand to ensure a compatibility between
+ * Spark 2.0.0 and Snappy Spark 2.0.2
+ *
  * Command that looks like
  * {{{
  *   DESCRIBE [EXTENDED|FORMATTED] table_name partitionSpec?;
  * }}}
  */
-case class DescribeTableCommand(
+case class SnappyDescribeTableCommand(
     table: TableIdentifier,
     partitionSpec: Map[String, String],
     isExtended: Boolean,
@@ -900,6 +909,9 @@ case class DescribeTableCommand(
     append(buffer, "Database:", table.database, "")
     append(buffer, "Table:", tableIdentifier.table, "")
     append(buffer, "Location:", partition.storage.locationUri.getOrElse(""), "")
+    // **Removed the partition parameters info from the output to ensure a compatibility
+    // between Spark 2.0.0 and Snappy Spark 2.0.2**
+
     //    append(buffer, "Partition Parameters:", "", "")
     //    partition.parameters.foreach { case (key, value) =>
     //      append(buffer, s"  $key", value, "")
