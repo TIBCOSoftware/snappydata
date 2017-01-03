@@ -131,7 +131,7 @@ public class TestThrift {
         params.setInt(2, rowNum);
 
         sr = conn.executePrepared(pstmt.statementId, params,
-            Collections.emptyMap(), token);
+            Collections.<Integer, OutputParameter>emptyMap(), token);
         // rs = conn.executePreparedQuery(pstmt.statementId, params, token);
         rs = sr.getResultSet();
 
