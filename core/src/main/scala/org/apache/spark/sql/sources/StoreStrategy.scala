@@ -17,10 +17,10 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.backwardcomp.{SnappyDescribeTableCommand, SnappyExecutedCommandExec, SnappyRunnableCommand}
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.types.DataType
 
@@ -67,7 +67,7 @@ object StoreStrategy extends Strategy {
 
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
       SnappyExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
-    case r: org.apache.spark.sql.SnappyDescribeTableCommand => SnappyExecutedCommandExec(r) :: Nil
+    case r: SnappyDescribeTableCommand => SnappyExecutedCommandExec(r) :: Nil
 
     case r: SnappyRunnableCommand => SnappyExecutedCommandExec(r) :: Nil
 
