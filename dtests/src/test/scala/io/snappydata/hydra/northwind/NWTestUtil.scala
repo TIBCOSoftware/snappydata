@@ -16,11 +16,11 @@
  */
 package io.snappydata.hydra.northwind
 
-import java.io.{File, IOException, PrintWriter}
+import java.io._
 
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.{Row, SQLContext, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SnappyContext}
 
 import scala.io.Source
 
@@ -50,7 +50,99 @@ object NWTestUtil {
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     sqlContext.sql("set spark.sql.crossJoin.enabled = true")
-    val snappyDF = snc.sql(sqlString)
+    assertQueryFullResultSet(snc, sqlString, numRows, queryNum, tableType, pw, sqlContext)
+  }
+
+  def dataTypeConverter(row: Row): Row = {
+    val md = row.toSeq.map {
+      case d: Double => "%18.1f".format(d).trim().toDouble
+      case de: BigDecimal => {
+        de.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+      }
+      case i: Integer => {
+        i
+      }
+      case v => v
+    }
+    Row.fromSeq(md)
+  }
+
+  /*def writeToFile(df: DataFrame, dest: String, snc: SnappyContext): Unit = {
+    import snc.implicits._
+    df.map(dataTypeConverter)(RowEncoder(df.schema))
+      .map(row => {
+        val sb = new StringBuilder
+        row.toSeq.foreach(e => {
+          if (e != null)
+            sb.append(e.toString).append(",")
+          else
+            sb.append("NULL").append(",")
+        })
+        sb.toString()
+      }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
+      "header", false).save(dest)
+  }*/
+
+  def writeToFile(df: DataFrame, dest: File, snc: SnappyContext): Unit = {
+    val parent = dest.getParentFile
+    if (!parent.exists()) {
+      parent.mkdirs()
+    }
+    implicit val encoder = RowEncoder(df.schema)
+    df.mapPartitions { iter =>
+      val sb = new StringBuilder
+      val pw = new PrintWriter(dest)
+      try {
+        iter.foreach { row =>
+          row.toSeq.foreach {
+            case d: Double =>
+              // round to one decimal digit
+              sb.append(math.floor(d * 10.0 + 0.5) / 10.0).append(',')
+            case bd: java.math.BigDecimal =>
+              sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
+            case v => sb.append(v).append(',')
+          }
+          val len = sb.length
+          if (len > 0) sb.setLength(len - 1)
+          sb.append('\n')
+          if (sb.length >= 1048576) {
+            pw.append(sb)
+            pw.flush()
+            sb.clear()
+          }
+        }
+        if (sb.nonEmpty) {
+          pw.append(sb)
+          pw.flush()
+        }
+      } finally {
+        pw.close()
+      }
+      Iterator.empty
+    }.collect()
+  }
+
+  protected def getTempDir(dirName: String): String = {
+    val log: File = new File(".")
+    var dest: String = null
+    val dirString = log.getCanonicalPath;
+    if (dirName.equals("sparkQueryFiles")) {
+      val logDir = log.listFiles.filter(_.getName.equals("snappyleader.log"))
+      if (!logDir.isEmpty) {
+        val leaderLogFile: File = logDir.iterator.next()
+        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator +
+          ".." + File.separator + dirName
+      }
+      else dest = dirString + File.separator + ".." + File.separator + dirName
+    }
+    else dest = log.getCanonicalPath + File.separator + dirName
+    val tempDir: File = new File(dest)
+    if (!tempDir.exists) tempDir.mkdir()
+    return tempDir.getAbsolutePath
+  }
+
+  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    var snappyDF = snc.sql(sqlString)
     val sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
@@ -61,14 +153,30 @@ object NWTestUtil {
     val col1 = sparkDF.schema.fieldNames(0)
     val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
     if (snappyFile.listFiles() == null) {
-      snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      //commented due to NPE SNAP-1210
+      //snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      //snappyDF.coalesce(1).orderBy(col1, col: _*).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
+      snappyDF = snappyDF.coalesce(1).orderBy(col1, col: _*)
+      writeToFile(snappyDF, snappyFile, snc)
       pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
     }
-    if (sparkFile.listFiles() == null) {
-      sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+    /*if (sparkFile.listFiles() == null) {
+      //commented due to NPE SNAP-1210
+      //sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+      //sparkDF.coalesce(1).orderBy(col1, col: _*).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
+      sparkDF = sparkDF.coalesce(1).orderBy(col1, col: _*)
+      writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+      pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+    }*/
+    if (!sparkFile.exists()) {
+      val sparkDF = sqlContext.sql(sqlString).repartition(1)
+        .sortWithinPartitions(col1, col: _*)
+      writeToFile(sparkDF, sparkFile, snc)
+      pw.println(s"$queryNum Result Collected in file $sparkDest")
     }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+
+    /*val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
     //expectedFile.diff(actualFile)
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
@@ -87,78 +195,32 @@ object NWTestUtil {
       pw.println(s"\nFor ${queryNum} result count mismatch observed")
     }
     pw.flush()
-  }
-
-  def dataTypeConverter(row: Row): Row = {
-    val md = row.toSeq.map {
-      case d: Double => "%18.1f".format(d).trim().toDouble
-      case de: BigDecimal => {
-        de.setScale(2, BigDecimal.RoundingMode.HALF_UP)
-      }
-      case i: Integer => {
-        i
-      }
-      case v => v
-    }
-    Row.fromSeq(md)
-  }
-
-  protected def getTempDir(dirName: String): String = {
-    val log: File = new File(".")
-    var dest: String = null
-    val dirString = log.getCanonicalPath;
-    if (dirName.equals("sparkQueryFiles")) {
-      val logDir = log.listFiles.filter(_.getName.equals("snappyleader.log"))
-      if (!logDir.isEmpty) {
-        val leaderLogFile: File = logDir.iterator.next()
-        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator + ".." + File.separator + dirName
-      }
-      else dest = dirString + File.separator + ".." + File.separator + dirName
-    }
-    else dest = log.getCanonicalPath + File.separator + dirName
-    println("SS - dest : " + dest)
-    val tempDir: File = new File(dest)
-    if (!tempDir.exists) tempDir.mkdir()
-    return tempDir.getAbsolutePath
-  }
-
-  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
-    val snappyDF = snc.sql(sqlString)
-    val sparkDF = sqlContext.sql(sqlString);
-    val snappyQueryFileName = s"Snappy_${queryNum}.out"
-    val sparkQueryFileName = s"Spark_${queryNum}.out"
-    val snappyDest: String = getTempDir("snappyQueryFiles") + File.separator + snappyQueryFileName
-    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
-    val sparkFile: File = new java.io.File(sparkDest)
-    val snappyFile = new java.io.File(snappyDest)
-    val col1 = sparkDF.schema.fieldNames(0)
-    val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-    if (snappyFile.listFiles() == null) {
-      snappyDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(snappyDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(snappyDest)
-      pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
-    }
-    if (sparkFile.listFiles() == null) {
-      sparkDF.coalesce(1).orderBy(col1, col: _*).map(dataTypeConverter)(RowEncoder(sparkDF.schema)).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option("header", false).save(sparkDest)
-      pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
-    }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    //expectedFile.diff(actualFile)
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+  }*/
+    val expectedLineSet = Source.fromFile(sparkFile).getLines()
+    val actualLineSet = Source.fromFile(snappyFile).getLines
+    var numLines = 0
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
-        pw.println(s"\n** For ${queryNum} result mismatch observed**")
+        pw.println(s"\n** For $queryNum result mismatch observed**")
         pw.println(s"\nExpected Result \n: $expectedLine")
         pw.println(s"\nActual Result   \n: $actualLine")
         pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
+        assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
+          s"Expected Result \n: $expectedLine \n" +
+          s"Actual Result   \n: $actualLine \n" +
+          s"Query =" + sqlString + " Table Type : " + tableType)
       }
+      numLines += 1
     }
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
-      pw.println(s"\nFor ${queryNum} result count mismatch observed")
+      pw.println(s"\nFor $queryNum result count mismatch observed")
+      assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
     }
+    assert(numLines == numRows, s"\nFor $queryNum result count mismatch " +
+      s"observed: Expected=$numRows, Got=$numLines")
+    // scalastyle:on println
     pw.flush()
   }
 

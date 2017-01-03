@@ -98,7 +98,7 @@ public class SnappyTest implements Serializable {
     public static final Random random = new Random(SQLPrms.getRandSeed());
     protected static DMLStmtsFactory dmlFactory = new DMLStmtsFactory();
 
-    protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, true);
+    protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, false);
     public static final String LASTCYCLEDTIME = "lastCycledTime"; //used in SnappyBB
     public static final String LASTCYCLEDTIMEFORLEAD = "lastCycledTimeForLead"; //used in SnappyBB
     public static long lastCycledTime = 0;
@@ -329,7 +329,8 @@ public class SnappyTest implements Serializable {
                     throw new HydraRuntimeException(s, e);
                 }
                 SnappyBB.getBB().getSharedMap().put("leadHost_" + RemoteTestModule.getMyClientName() + "_" + RemoteTestModule.getMyVmid(), leadHost);
-                SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule.getMyClientName() + "_" + RemoteTestModule.getMyVmid(), leadPort);
+                SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule
+                        .getMyClientName() + "_" + RemoteTestModule.getMyVmid(), Integer.toString(leadPort));
                 /*try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -1579,7 +1580,7 @@ public class SnappyTest implements Serializable {
         } else {
             leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
             if (leadHost == null) {
-                retrievePrimaryLeadHost();
+                retrievePrimaryLeadHost(cycleVms);
                 leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
                 Log.getLogWriter().info("SS - primaryLeadHost is: " + leadHost);
             }
@@ -1642,7 +1643,7 @@ public class SnappyTest implements Serializable {
                 jobSubmissionCount++;
                 Thread.sleep(6000);
                 Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting the job to new primary lead node.....");
-                retrievePrimaryLeadHost();
+                retrievePrimaryLeadHost(cycleVms);
                 HydraTask_executeSnappyJob();
             }
         } catch (IOException e) {
@@ -1829,10 +1830,10 @@ public class SnappyTest implements Serializable {
         return found;
     }
 
-    public synchronized void retrievePrimaryLeadHost() {
+    public synchronized void retrievePrimaryLeadHost(boolean cycleVms) {
         Object[] tmpArr = null;
         String leadPort = null;
-        tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
+        tmpArr = getPrimaryLeadVM(cycleLeadVMTarget, cycleVms);
         List<ClientVmInfo> vmList;
         vmList = (List<ClientVmInfo>) (tmpArr[0]);
             Log.getLogWriter().info("SS tempArray: " + tmpArr[0].toString());
@@ -2283,7 +2284,7 @@ public class SnappyTest implements Serializable {
     @SuppressWarnings("unchecked")
     protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) {
         Object[] tmpArr = null;
-        if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target);
+        if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target, cycleVms);
         else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
         // get the VMs to stop; vmList and stopModeList are parallel lists
 
@@ -2397,15 +2398,16 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    public static Object[] getPrimaryLeadVM(String clientMatchStr) {
+    public static Object[] getPrimaryLeadVM(String clientMatchStr, boolean isHA) {
         ArrayList vmList = new ArrayList();
         ArrayList stopModeList = new ArrayList();
         int myVmID = RemoteTestModule.getMyVmid();
 
         // get VMs that contain the clientMatchStr
         List vmInfoList = StopStartVMs.getAllVMs();
+        Log.getLogWriter().info("SS - vmInfoList : " + vmInfoList.toString());
         vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
-
+        Log.getLogWriter().info("SS - getMatchVMs : " + vmInfoList.toString());
         // now all vms in vmInfoList match the clientMatchStr
         do {
             if (vmInfoList.size() == 0) {
@@ -2416,8 +2418,11 @@ public class SnappyTest implements Serializable {
             // add a VmId to the list of vms to stop
             int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
             ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
-            if (info.getVmid().intValue() != myVmID) { // info is not the current VM
-                Set<String> myDirList = new LinkedHashSet<String>();
+            //getLeadVM(info, vmList, stopModeList);
+            if(isHA) {
+                if (info.getVmid().intValue() != myVmID) { // info is not the current VM
+                    Log.getLogWriter().info("SS - inside isHA loop.....");
+                /*Set<String> myDirList = new LinkedHashSet<String>();
                 myDirList = getFileContents("logDir_", myDirList);
                 String vmDir = null;
                 String clientName = info.getClientName();
@@ -2433,7 +2438,7 @@ public class SnappyTest implements Serializable {
                 for (String nodeConfig : fileContent) {
                     if (nodeConfig.contains(vmDir)) {
                         //check for active lead member dir
-                        String searchString1 = "find . -name ";
+                        String searchString1 = "Primary lead lock acquired";
                         String searchString2 = "Resuming startup sequence from STANDBY";
                         File dirFile = new File(vmDir);
                         for (File srcFile : dirFile.listFiles()) {
@@ -2445,10 +2450,12 @@ public class SnappyTest implements Serializable {
                                     while ((str = br.readLine()) != null && !found) {
                                         if (str.toLowerCase().contains(searchString1.toLowerCase()) || str.toLowerCase().contains(searchString2.toLowerCase())) {
                                             found = true;
-                                            /*String tempStr = vmDir.substring(0, vmDir.lastIndexOf("_"));
+                                            Log.getLogWriter().info("primaryLead found " +
+                                                    ":" + srcFile.getAbsolutePath());
+                                            *//*String tempStr = vmDir.substring(0, vmDir.lastIndexOf("_"));
                                             String primaryLeadHost = vmDir.substring(tempStr.lastIndexOf("_") + 1, tempStr.length() - 1);
                                             SnappyBB.getBB().getSharedMap().put("primaryLeadHost", primaryLeadHost);
-                                            Log.getLogWriter().info("primaryLeadHost host is : " + SnappyBB.getBB().getSharedMap().get("primaryLeadHost"));*/
+                                            Log.getLogWriter().info("primaryLeadHost host is : " + SnappyBB.getBB().getSharedMap().get("primaryLeadHost"));*//*
                                         }
                                     }
                                     br.close();
@@ -2468,11 +2475,81 @@ public class SnappyTest implements Serializable {
                     // choose a stopMode
                     String choice = TestConfig.tab().stringAt(StopStartPrms.stopModes);
                     stopModeList.add(choice);
+                }*/
+                    getLeadVM(info, vmList, stopModeList);
                 }
-            }
+            } else getLeadVM(info, vmList, stopModeList);
             vmInfoList.remove(randInt);
+            Log.getLogWriter().info("SS - info : " + info);
+            Log.getLogWriter().info("SS - vmList : " + vmList.get(0));
+            Log.getLogWriter().info("SS - stopModeList : " + stopModeList.get(0));
         } while (vmList.size() < vmInfoList.size());
         return new Object[]{vmList, stopModeList, vmInfoList};
+    }
+
+    protected static void getLeadVM(ClientVmInfo info, ArrayList vmList, ArrayList stopModeList)
+    {
+        Set<String> myDirList = new LinkedHashSet<String>();
+        myDirList = getFileContents("logDir_", myDirList);
+        Log.getLogWriter().info("SS - myDirList : " + myDirList.toString());
+        String vmDir = null;
+        String clientName = info.getClientName();
+        Log.getLogWriter().info("SS - clientName : " + clientName);
+        for (String dir : myDirList) {
+            if (dir.contains(clientName)) {
+                vmDir = dir;
+                Log.getLogWriter().info("SS - vmDir : " + vmDir);
+                break;
+            }
+        }
+        Set<String> fileContent = new LinkedHashSet<String>();
+        fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
+        boolean found = false;
+        for (String nodeConfig : fileContent) {
+            Log.getLogWriter().info("SS - nodeConfig : " + nodeConfig);
+            if (nodeConfig.contains(vmDir)) {
+                Log.getLogWriter().info("SS - nodeConfig and vmDir : " + nodeConfig + " : " + vmDir);
+                //check for active lead member dir
+                String searchString1 = "Primary lead lock acquired";
+                String searchString2 = "Resuming startup sequence from STANDBY";
+                File dirFile = new File(vmDir);
+                for (File srcFile : dirFile.listFiles()) {
+                    if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
+                        try {
+                            FileInputStream fis = new FileInputStream(srcFile);
+                            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+                            String str = null;
+                            while ((str = br.readLine()) != null && !found) {
+                                if (str.toLowerCase().contains(searchString1.toLowerCase()) || str.toLowerCase().contains(searchString2.toLowerCase())) {
+                                    found = true;
+                                    Log.getLogWriter().info("SS - primaryLead found " +
+                                            ":" + srcFile.getAbsolutePath());
+                                            /*String tempStr = vmDir.substring(0, vmDir.lastIndexOf("_"));
+                                            String primaryLeadHost = vmDir.substring(tempStr.lastIndexOf("_") + 1, tempStr.length() - 1);
+                                            SnappyBB.getBB().getSharedMap().put("primaryLeadHost", primaryLeadHost);
+                                            Log.getLogWriter().info("primaryLeadHost host is : " + SnappyBB.getBB().getSharedMap().get("primaryLeadHost"));*/
+                                }
+                            }
+                            br.close();
+                        } catch (FileNotFoundException e) {
+                            String s = "Unable to find file: " + srcFile.getAbsolutePath();
+                            throw new TestException(s);
+                        } catch (IOException e) {
+                            String s = "Problem while reading the file : " + srcFile.getAbsolutePath();
+                            throw new TestException(s, e);
+                        }
+                    }
+                }
+            }
+        }
+        if (found) {
+            vmList.add(info);
+            Log.getLogWriter().info("SS - in found loop ... and info is : " + info);
+            // choose a stopMode
+            String choice = TestConfig.tab().stringAt(StopStartPrms.stopModes, "NICE_KILL");
+            Log.getLogWriter().info("SS - choice : " + choice);
+            stopModeList.add(choice);
+        }
     }
 
     protected static String getSparkMasterHost() {
