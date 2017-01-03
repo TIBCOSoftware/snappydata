@@ -1833,7 +1833,7 @@ public class SnappyTest implements Serializable {
     public synchronized void retrievePrimaryLeadHost(boolean cycleVms) {
         Object[] tmpArr = null;
         String leadPort = null;
-        tmpArr = getPrimaryLeadVM(cycleLeadVMTarget, cycleVms);
+        tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
         List<ClientVmInfo> vmList;
         vmList = (List<ClientVmInfo>) (tmpArr[0]);
             Log.getLogWriter().info("SS tempArray: " + tmpArr[0].toString());
@@ -2284,7 +2284,7 @@ public class SnappyTest implements Serializable {
     @SuppressWarnings("unchecked")
     protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) {
         Object[] tmpArr = null;
-        if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target, cycleVms);
+        if (isLead) tmpArr = snappyTest.getPrimaryLeadVMWithHA(target);
         else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
         // get the VMs to stop; vmList and stopModeList are parallel lists
 
@@ -2398,7 +2398,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    public static Object[] getPrimaryLeadVM(String clientMatchStr, boolean isHA) {
+    public static Object[] getPrimaryLeadVMWithHA(String clientMatchStr) {
         ArrayList vmList = new ArrayList();
         ArrayList stopModeList = new ArrayList();
         int myVmID = RemoteTestModule.getMyVmid();
@@ -2419,9 +2419,7 @@ public class SnappyTest implements Serializable {
             int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
             ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
             //getLeadVM(info, vmList, stopModeList);
-            if(isHA) {
-                if (info.getVmid().intValue() != myVmID) { // info is not the current VM
-                    Log.getLogWriter().info("SS - inside isHA loop.....");
+              if (info.getVmid().intValue() != myVmID) { // info is not the current VM
                 /*Set<String> myDirList = new LinkedHashSet<String>();
                 myDirList = getFileContents("logDir_", myDirList);
                 String vmDir = null;
@@ -2478,7 +2476,33 @@ public class SnappyTest implements Serializable {
                 }*/
                     getLeadVM(info, vmList, stopModeList);
                 }
-            } else getLeadVM(info, vmList, stopModeList);
+            vmInfoList.remove(randInt);
+            Log.getLogWriter().info("SS - info : " + info);
+            Log.getLogWriter().info("SS - vmList : " + vmList.get(0));
+            Log.getLogWriter().info("SS - stopModeList : " + stopModeList.get(0));
+        } while (vmList.size() < vmInfoList.size());
+        return new Object[]{vmList, stopModeList, vmInfoList};
+    }
+
+    public static Object[] getPrimaryLeadVM(String clientMatchStr) {
+        ArrayList vmList = new ArrayList();
+        ArrayList stopModeList = new ArrayList();
+         // get VMs that contain the clientMatchStr
+        List vmInfoList = StopStartVMs.getAllVMs();
+        Log.getLogWriter().info("SS - vmInfoList : " + vmInfoList.toString());
+        vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
+        Log.getLogWriter().info("SS - getMatchVMs : " + vmInfoList.toString());
+        // now all vms in vmInfoList match the clientMatchStr
+        do {
+            if (vmInfoList.size() == 0) {
+                throw new TestException("Unable to find lead node " +
+                        " vms to stop with client match string " + clientMatchStr +
+                        "; either a test problem or add StopStartVMs.StopStart_initTask to the test");
+            }
+            // add a VmId to the list of vms to stop
+            int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
+            ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
+            getLeadVM(info, vmList, stopModeList);
             vmInfoList.remove(randInt);
             Log.getLogWriter().info("SS - info : " + info);
             Log.getLogWriter().info("SS - vmList : " + vmList.get(0));
