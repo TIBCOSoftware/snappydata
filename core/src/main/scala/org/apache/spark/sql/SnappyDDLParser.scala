@@ -630,8 +630,6 @@ case class DMLExternalTable(
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
   override lazy val resolved: Boolean = query.resolved
   override def output: Seq[Attribute] = Seq.empty
-  override def children: Seq[LogicalPlan] = query :: Nil
-
 }
 
 private[sql] case class SetSchema(schemaName: String) extends SnappyRunnableCommand {
