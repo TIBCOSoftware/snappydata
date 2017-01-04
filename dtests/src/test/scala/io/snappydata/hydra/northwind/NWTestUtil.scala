@@ -107,8 +107,7 @@ object NWTestUtil {
     var sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
-    val snappyDest: String = getTempDir("snappyQueryFiles_" + tableType) + File.separator +
-      snappyQueryFileName
+    val snappyDest: String = getTempDir("snappyQueryFiles") + File.separator + snappyQueryFileName
     val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
     val sparkFile: File = new java.io.File(sparkDest)
     val snappyFile = new java.io.File(snappyDest)
