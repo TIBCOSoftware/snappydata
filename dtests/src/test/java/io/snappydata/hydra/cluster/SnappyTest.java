@@ -73,7 +73,6 @@ public class SnappyTest implements Serializable {
     private static String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
     private static String quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
     private static String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
-    //private static String jobServerConfLocation = dtests + ".." + sep + "cluster" + sep + "build-artifacts" + sep + "scala-2.11" + sep + "resources" + sep + "main" + sep;
     private static String logFile = null;
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
@@ -1818,7 +1817,6 @@ public class SnappyTest implements Serializable {
         tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
         List<ClientVmInfo> vmList;
         vmList = (List<ClientVmInfo>) (tmpArr[0]);
-        Log.getLogWriter().info("SS tempArray: " + tmpArr[0].toString());
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         for (int i = 0; i < vmList.size(); i++) {
