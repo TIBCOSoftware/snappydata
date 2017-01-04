@@ -1572,7 +1572,7 @@ public class SnappyTest implements Serializable {
         } else {
             leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
             if (leadHost == null) {
-                retrievePrimaryLeadHost(cycleVms);
+                retrievePrimaryLeadHost();
                 leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
                 Log.getLogWriter().info("primaryLead Host is: " + leadHost);
             }
@@ -1624,7 +1624,7 @@ public class SnappyTest implements Serializable {
                 jobSubmissionCount++;
                 Thread.sleep(6000);
                 Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting the job to new primary lead node.....");
-                retrievePrimaryLeadHost(cycleVms);
+                retrievePrimaryLeadHost();
                 HydraTask_executeSnappyJob();
             }
         } catch (IOException e) {
@@ -1812,7 +1812,7 @@ public class SnappyTest implements Serializable {
         return found;
     }
 
-    public synchronized void retrievePrimaryLeadHost(boolean cycleVms) {
+    public synchronized void retrievePrimaryLeadHost() {
         Object[] tmpArr = null;
         String leadPort = null;
         tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
@@ -2359,20 +2359,14 @@ public class SnappyTest implements Serializable {
         ArrayList vmList = new ArrayList();
         ArrayList stopModeList = new ArrayList();
         int myVmID = RemoteTestModule.getMyVmid();
-
         // get VMs that contain the clientMatchStr
         List vmInfoList = StopStartVMs.getAllVMs();
         vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
         // now all vms in vmInfoList match the clientMatchStr
         do {
-            if (vmInfoList.size() == 0) {
-                throw new TestException("Unable to find lead node " +
-                        " vms to stop with client match string " + clientMatchStr +
-                        "; either a test problem or add StopStartVMs.StopStart_initTask to the test");
-            }
-            // add a VmId to the list of vms to stop
-            int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
-            ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
+            Object[] tmpArr = getClientVmInfo(vmInfoList, clientMatchStr);
+            ClientVmInfo info = (ClientVmInfo) tmpArr[0];
+            int randInt = (int) tmpArr[1];
             if (info.getVmid().intValue() != myVmID) { // info is not the current VM
                 getLeadVM(info, vmList, stopModeList);
             }
@@ -2389,18 +2383,25 @@ public class SnappyTest implements Serializable {
         vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
         // now all vms in vmInfoList match the clientMatchStr
         do {
-            if (vmInfoList.size() == 0) {
-                throw new TestException("Unable to find lead node " +
-                        " vms to stop with client match string " + clientMatchStr +
-                        "; either a test problem or add StopStartVMs.StopStart_initTask to the test");
-            }
-            // add a VmId to the list of vms to stop
-            int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
-            ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
+            Object[] tmpArr = getClientVmInfo(vmInfoList, clientMatchStr);
+            ClientVmInfo info = (ClientVmInfo) tmpArr[0];
+            int randInt = (int) tmpArr[1];
             getLeadVM(info, vmList, stopModeList);
             vmInfoList.remove(randInt);
         } while (vmList.size() < vmInfoList.size());
         return new Object[]{vmList, stopModeList, vmInfoList};
+    }
+
+    protected static Object[] getClientVmInfo(List vmInfoList, String clientMatchStr) {
+        if (vmInfoList.size() == 0) {
+            throw new TestException("Unable to find lead node " +
+                    " vms to stop with client match string " + clientMatchStr +
+                    "; either a test problem or add StopStartVMs.StopStart_initTask to the test");
+        }
+        // add a VmId to the list of vms to stop
+        int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
+        ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
+        return new Object[]{info, randInt};
     }
 
     protected static void getLeadVM(ClientVmInfo info, ArrayList vmList, ArrayList stopModeList) {
