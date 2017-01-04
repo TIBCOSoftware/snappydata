@@ -28,7 +28,7 @@ import shapeless.{::, HNil}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
-import org.apache.spark.sql.backwardcomp.{SnappyDescribeTableCommand, SnappyRunnableCommand}
+import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -355,7 +355,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def describeTable: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
-          SnappyDescribeTableCommand(tableIdent, Map.empty[String, String], extended
+          DescribeTable(tableIdent, Map.empty[String, String], extended
               .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
   }
 
@@ -526,7 +526,7 @@ private[sql] case class CreateMetastoreTableUsing(
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String],
-    isBuiltIn: Boolean) extends SnappyRunnableCommand {
+    isBuiltIn: Boolean) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -549,7 +549,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     mode: SaveMode,
     options: Map[String, String],
     query: LogicalPlan,
-    isBuiltIn: Boolean) extends SnappyRunnableCommand {
+    isBuiltIn: Boolean) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -572,7 +572,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
 
 private[sql] case class DropTable(
     tableIdent: TableIdentifier,
-    ifExists: Boolean) extends SnappyRunnableCommand {
+    ifExists: Boolean) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -583,7 +583,7 @@ private[sql] case class DropTable(
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: TableIdentifier) extends SnappyRunnableCommand {
+    tableIdent: TableIdentifier) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -596,7 +596,7 @@ private[sql] case class TruncateTable(
 private[sql] case class CreateIndex(indexName: TableIdentifier,
     baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
-    options: Map[String, String]) extends SnappyRunnableCommand {
+    options: Map[String, String]) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -610,7 +610,7 @@ private[sql] case class CreateIndex(indexName: TableIdentifier,
 
 private[sql] case class DropIndex(
     indexName: TableIdentifier,
-    ifExists: Boolean) extends SnappyRunnableCommand {
+    ifExists: Boolean) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
@@ -632,7 +632,7 @@ case class DMLExternalTable(
   override def output: Seq[Attribute] = Seq.empty
 }
 
-private[sql] case class SetSchema(schemaName: String) extends SnappyRunnableCommand {
+private[sql] case class SetSchema(schemaName: String) extends ExecuteCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
     Seq.empty[Row]
@@ -640,7 +640,7 @@ private[sql] case class SetSchema(schemaName: String) extends SnappyRunnableComm
 }
 
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Duration]) extends SnappyRunnableCommand {
+    batchInterval: Option[Duration]) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
 

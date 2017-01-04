@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.execution.SparkPlan
 
-private[sql] case class SnappyExecutedCommandExec(cmd: SnappyRunnableCommand) extends SparkPlan {
+private[sql] case class ExecutedCommand(cmd: ExecuteCommand) extends SparkPlan {
   /**
    * **Copy of ExecutedCommandExec to ensure a compatibility between
    * Spark 2.0.0 and Snappy Spark 2.0.2**

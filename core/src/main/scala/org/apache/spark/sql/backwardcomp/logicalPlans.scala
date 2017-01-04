@@ -36,7 +36,7 @@ import org.apache.spark.sql.types.{MetadataBuilder, StringType, StructType}
  * A logical command that is executed for its side-effects.  `SnappyRunnableCommand`s are
  * wrapped in `SnappyExecutedCommandExec` during execution.
  */
-trait SnappyRunnableCommand extends LeafNode with logical.Command  {
+trait ExecuteCommand extends LeafNode with logical.Command  {
   override def output: Seq[Attribute] = Seq.empty
   def run(sparkSession: SparkSession): Seq[Row]
 }
@@ -50,12 +50,12 @@ trait SnappyRunnableCommand extends LeafNode with logical.Command  {
  *   DESCRIBE [EXTENDED|FORMATTED] table_name partitionSpec?;
  * }}}
  */
-case class SnappyDescribeTableCommand(
+case class DescribeTable(
     table: TableIdentifier,
     partitionSpec: Map[String, String],
     isExtended: Boolean,
     isFormatted: Boolean)
-    extends SnappyRunnableCommand {
+    extends ExecuteCommand {
 
   override val output: Seq[Attribute] = Seq(
     // Column names are based on Hive.
