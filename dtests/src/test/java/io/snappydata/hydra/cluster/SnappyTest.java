@@ -299,6 +299,7 @@ public class SnappyTest implements Serializable {
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
+                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -318,7 +319,8 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() +
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -spark.driver.extraClassPath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
                         getSnappyTestsJar() + ":" + getStoreTestsJar();
                 try {
@@ -1343,7 +1345,7 @@ public class SnappyTest implements Serializable {
         try {
             String command;
             if (pName.equals("Master"))
-                command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+                command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
             else command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
@@ -2148,7 +2150,8 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
+    protected void
+    cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
         if (!cycleVms) {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
