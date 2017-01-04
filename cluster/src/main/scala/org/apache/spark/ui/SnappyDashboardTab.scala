@@ -22,6 +22,7 @@ package org.apache.spark.ui
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.gemxd.SnappyDataVersion
+import scala.util.control.Breaks._
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.JettyUtils._
@@ -50,6 +51,22 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
   // Set SnappyData Product Version in SparkUI
   SparkUI.setProductVersion(SnappyDataVersion.getSnappyDataProductVersion)
 
-  //var handlers = parent.getHandlers
-  parent.attachHandler(createRedirectHandler("/", "/dashboard/", basePath = basePath))
+  updateRedirectionHandler
+
+  // Replace default spark jobs page redirection handler by Snappy Dashboard page redirection handler
+  def updateRedirectionHandler: Unit = {
+    val handlers = parent.getHandlers
+    breakable {
+      handlers.foreach(h => {
+        if (h.getContextPath.equals("/")) {
+          // Detach DEFAULT JOBS page redirection handler
+          parent.detachHandler(h)
+          // Attach DASHBOARD page redirection handler
+          parent.attachHandler(createRedirectHandler("/", "/dashboard/", basePath = basePath))
+          break
+        }
+      })
+    }
+  }
+
 }

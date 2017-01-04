@@ -26,7 +26,7 @@ import org.apache.spark.sql.collection.Utils
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     val url = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url)
