@@ -1322,7 +1322,8 @@ public class SnappyTest implements Serializable {
         Process pr = null;
         try {
             String command;
-            if (pName.equals("Master")) command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
+            if (pName.equals("Master"))
+                command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
             else command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
@@ -1642,7 +1643,8 @@ public class SnappyTest implements Serializable {
             List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
             Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
             for (File file1 : files) {
-                if (!file1.getAbsolutePath().contains("/work/")) absoluteJarPath = file1.getAbsolutePath();
+                if (!file1.getAbsolutePath().contains("/work/"))
+                    absoluteJarPath = file1.getAbsolutePath();
             }
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
@@ -2087,7 +2089,7 @@ public class SnappyTest implements Serializable {
      * Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the
      * restart to complete before returning.
      */
-    public static void HydraTask_cycleStoreVms() throws InterruptedException {
+    public static void HydraTask_cycleStoreVms() {
 
         if (cycleVms) {
             int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
@@ -2101,7 +2103,7 @@ public class SnappyTest implements Serializable {
      * Stops snappy primary lead member, then restarts it.  Waits for the
      * restart to complete before returning.
      */
-    public static synchronized void HydraTask_cycleLeadVM() throws InterruptedException {
+    public static synchronized void HydraTask_cycleLeadVM() {
         if (cycleVms) {
             int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
             int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
@@ -2111,7 +2113,7 @@ public class SnappyTest implements Serializable {
     }
 
     protected void
-    cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) throws InterruptedException {
+    cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
         if (!cycleVms) {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
@@ -2144,7 +2146,8 @@ public class SnappyTest implements Serializable {
                 if (lastCycledTime != 0) {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastCycledTime < waitTimeBeforeNextCycleVM * THOUSAND) {
-                        if (isLead) SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                        if (isLead)
+                            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
                         else SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
                         return;
                     } else {
@@ -2182,7 +2185,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) throws InterruptedException {
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) {
         if (isLead) {
             log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
             return stopStartVMs(numToKill, cycleLeadVMTarget, true);
@@ -2192,13 +2195,13 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected List<ClientVmInfo> stopStartLeadVM(int numToKill) throws InterruptedException {
+    protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
         log().info("cycle lead vm starts at: " + System.currentTimeMillis());
         return stopStartVMs(numToKill, cycleLeadVMTarget, true);
     }
 
     @SuppressWarnings("unchecked")
-    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) throws InterruptedException {
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) {
         Object[] tmpArr = null;
         if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target);
         else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
@@ -2233,7 +2236,7 @@ public class SnappyTest implements Serializable {
         return vmList;
     }
 
-    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, boolean isLead) throws InterruptedException {
+    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, boolean isLead) {
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         if (vmList.size() != stopModeList.size()) {
@@ -2255,7 +2258,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void recycleVM(String vmDir, String stopMode, String clientName, boolean isLead) throws InterruptedException {
+    protected void recycleVM(String vmDir, String stopMode, String clientName, boolean isLead) {
         if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
             if (isLead) killVM(vmDir, clientName, true);
             else killVM(vmDir, clientName, false);
@@ -2287,8 +2290,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info(clientName + " stopped successfully...");
     }
 
-    protected void startVM(String vmDir, String clientName, boolean isLead) throws InterruptedException {
-        Thread.sleep(100000);
+    protected void startVM(String vmDir, String clientName, boolean isLead) {
         if (isLead) {
             regenerateConfigData(vmDir, "leads", clientName, true);
             startSnappyLead();
