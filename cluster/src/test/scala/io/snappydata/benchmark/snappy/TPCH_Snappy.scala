@@ -135,8 +135,12 @@ object TPCH_Snappy {
 
   def printPlan(df: DataFrame, query: String): Unit = {
     // scalastyle:off println
-    planPrintStream.println(query)
-    planPrintStream.println(df.queryExecution.executedPlan)
+    if (planPrintStream != null) {
+      planPrintStream.println(query)
+      planPrintStream.println(df.queryExecution.executedPlan)
+    } else {
+      df.explain(true)
+    }
     // scalastyle:on println
   }
 

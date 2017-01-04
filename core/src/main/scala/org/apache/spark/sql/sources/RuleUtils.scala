@@ -130,7 +130,7 @@ object RuleUtils extends PredicateHelper {
       val (tableJoinConditions, otherJoinConditions) = RuleUtils.partitionBy(joinRefs,
         finalPlan.conditions)
       val pTabOrIndex = RuleUtils.chooseIndexForFilter(table, tableFilters)
-      if (tableJoinConditions.nonEmpty || finalPlan.curPlan == null) {
+      if ((tableJoinConditions.toSet -- tableFilters.toSet).nonEmpty || finalPlan.curPlan == null) {
         val newPlan = finalPlan.copy(
           curPlan = RuleUtils.createJoin(finalPlan.curPlan, pTabOrIndex.map(_.index)
               .getOrElse(table),
@@ -156,6 +156,9 @@ object RuleUtils extends PredicateHelper {
       val joinRefs = finalPlan.outputSet ++ replacement.table.outputSet
       val (pTabJoinConditions, otherJoinConditions) = RuleUtils.partitionBy(joinRefs,
         finalPlan.conditions)
+      assert((pTabJoinConditions.toSet -- tableFilters.toSet).nonEmpty || finalPlan.curPlan == null,
+        s"joinConditions ${pTabJoinConditions.mkString(" && ")} " +
+            s"filterConditions ${tableFilters.mkString(" && ")}")
       val newPlan = finalPlan.copy(
         curPlan = RuleUtils.createJoin(finalPlan.curPlan, replacement.index, pTabJoinConditions),
         replaced = finalPlan.replaced ++ Some(replacement),

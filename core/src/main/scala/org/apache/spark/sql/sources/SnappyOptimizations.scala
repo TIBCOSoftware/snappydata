@@ -467,45 +467,6 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
   }
 
-  private def replaceWithIndex(plan: LogicalPlan)(
-      findReplacementCandidates: PartialFunction[LogicalPlan, CompletePlan]): LogicalPlan = {
-
-    val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
-
-    if (snappySession.queryHints.exists {
-      case (hint, _) => hint.startsWith(Index) &&
-          !joinOrderHints.contains(ContinueOptimizations)
-    } || Entity.hasUnresolvedReferences(plan)) {
-      return plan
-    }
-
-    val newAttributesMap = new mutable.HashMap[AttributeReference, AttributeReference]()
-    val newPlan = plan.transformUp { case subPlan: LogicalPlan =>
-      val completePlan = findReplacementCandidates.apply(subPlan)
-      completePlan.replaced.foreach { r =>
-        val newAttributes = r.index.schema.toAttributes
-        r.table.output.foreach {
-          case f: AttributeReference =>
-            newAttributesMap(f) = newAttributes.find(_.name.equalsIgnoreCase(f.name)).
-                getOrElse(throw new IllegalStateException(
-                  s"Field $f not found in ${newAttributes}"))
-        }
-      }
-      completePlan.plan
-    }
-
-    if (newAttributesMap.nonEmpty) {
-      newPlan transformUp {
-        case q: LogicalPlan =>
-          q transformExpressionsUp {
-            case a: AttributeReference => newAttributesMap.getOrElse(a, a)
-          }
-      }
-    } else {
-      newPlan
-    }
-  }
-
 }
 
 // end of ResolveIndex
