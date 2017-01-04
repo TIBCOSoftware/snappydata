@@ -903,11 +903,11 @@ public class SnappyTest implements Serializable {
         if (!runGemXDQuery) {
             String url = "jdbc:snappydata://" + endpoints.get(0);
             Log.getLogWriter().info("url is " + url);
-            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+            conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
         } else {
             String url = "jdbc:gemfirexd://" + endpoints.get(0);
             Log.getLogWriter().info("url is " + url);
-            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+            conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
         }
         return conn;
     }

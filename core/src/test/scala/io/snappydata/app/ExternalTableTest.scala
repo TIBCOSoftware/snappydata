@@ -74,7 +74,7 @@ object ExternalTableTest extends App {
     snContext.sql("drop table if exists airline")
     snContext.sql(s"create table airline ($ddlStr) " +
         s" using jdbc options (URL '$externalUrl'," +
-        "  Driver 'com.pivotal.gemfirexd.jdbc.ClientDriver')").collect()
+        "  Driver 'io.snappydata.jdbc.ClientDriver')").collect()
   } else {
     snContext.sql(s"create table if not exists airline ($ddlStr) " +
         s" using jdbc options (URL '$externalUrl'," +
