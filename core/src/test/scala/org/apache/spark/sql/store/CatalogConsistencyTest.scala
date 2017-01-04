@@ -66,7 +66,7 @@ class CatalogConsistencyTest
   }
 
   def getConnection(routeQuery: Boolean = true): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+    val driver = "io.snappydata.jdbc.EmbeddedDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
     val url = {
       if (!routeQuery) {
