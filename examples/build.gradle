@@ -21,6 +21,8 @@ compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.scala.srcDir 'src/test/scala'
 
 dependencies {
 
@@ -31,6 +33,9 @@ dependencies {
   } else {
     testRuntime "io.snappydata:snappydata-aqp_${scalaBinaryVersion}:${version}"
   }
+
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -58,3 +63,18 @@ task productExamples(dependsOn: 'jar') << {
     rename { filename -> exampleArchiveName }
   }
 }
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  testOutput '/dev/tty'
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+
+check.dependsOn scalaTest
