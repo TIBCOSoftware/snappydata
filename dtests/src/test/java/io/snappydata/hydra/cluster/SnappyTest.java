@@ -298,6 +298,7 @@ public class SnappyTest implements Serializable {
                         " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
+                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -312,10 +313,10 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() +
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -spark.driver.extraClassPath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
                         getSnappyTestsJar() + ":" + getStoreTestsJar();
-                ;
                 try {
                     if (leadHost == null) {
                         leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -902,11 +903,11 @@ public class SnappyTest implements Serializable {
         if (!runGemXDQuery) {
             String url = "jdbc:snappydata://" + endpoints.get(0);
             Log.getLogWriter().info("url is " + url);
-            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+            conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
         } else {
             String url = "jdbc:gemfirexd://" + endpoints.get(0);
             Log.getLogWriter().info("url is " + url);
-            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+            conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
         }
         return conn;
     }
@@ -1321,7 +1322,8 @@ public class SnappyTest implements Serializable {
         Process pr = null;
         try {
             String command;
-            if (pName.equals("Master")) command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            if (pName.equals("Master"))
+                command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
             else command = "jps | grep " + pName + " | awk '{print $1}'";
             hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
@@ -1562,7 +1564,7 @@ public class SnappyTest implements Serializable {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
-        if(appName == null) appName = SnappyPrms.getUserAppName();
+        if (appName == null) appName = SnappyPrms.getUserAppName();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         try {
@@ -1643,7 +1645,8 @@ public class SnappyTest implements Serializable {
             List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
             Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
             for (File file1 : files) {
-                if (!file1.getAbsolutePath().contains("/work/")) absoluteJarPath = file1.getAbsolutePath();
+                if (!file1.getAbsolutePath().contains("/work/"))
+                    absoluteJarPath = file1.getAbsolutePath();
             }
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
@@ -2111,7 +2114,8 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
+    protected void
+    cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
         if (!cycleVms) {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
@@ -2144,7 +2148,8 @@ public class SnappyTest implements Serializable {
                 if (lastCycledTime != 0) {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastCycledTime < waitTimeBeforeNextCycleVM * THOUSAND) {
-                        if (isLead) SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                        if (isLead)
+                            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
                         else SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
                         return;
                     } else {

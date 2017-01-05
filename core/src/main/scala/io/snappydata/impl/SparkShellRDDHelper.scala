@@ -155,7 +155,7 @@ object SparkShellRDDHelper {
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     val membersToNetServers = GemFireXDUtils.getGfxdAdvisor.
-        getAllDRDAServersAndCorrespondingMemberMapping
+        getAllNetServersWithMembers
     val availableNetUrls = ArrayBuffer.empty[(String, String)]
     val orphanBuckets = ArrayBuffer.empty[Int]
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
