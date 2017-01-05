@@ -41,7 +41,7 @@ object TPCH_Snappy {
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
     val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
 
-    if (planFileStream == null) {
+    if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))
       planPrintStream = new PrintStream(planFileStream)
     }
@@ -1327,7 +1327,7 @@ object TPCH_Snappy {
       "         p_size"
   }
 
-  def getQuery16Original: String = {
+  def getQuery16_Original: String = {
     //    1. BRAND = Brand#45.
     //    2. TYPE = MEDIUM POLISHED .
     //    3. SIZE1 = 49
