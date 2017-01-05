@@ -94,9 +94,10 @@ The SnappyData Locator has stopped.
 
 To start the cluster on multiple hosts:
 
-1. The easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
 
-2. In the **conf** folder, create the configuration files **servers.template**, **locators.template**, **leads.template**. Edit the files to include the hostnames on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, **conf/servers.template)**.
+2. Create the configuration files using the templates provided in the **conf** folder. Copy the exiting template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
+</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuration/#configuration-files) section for more information on properties.
 
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
@@ -157,8 +158,9 @@ For example, the command submits the job and runs it as:
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead [leadHost:port]
+    --lead hostNameOfLead:8090
 ```
+In the above comand, **--lead** option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).
 
 **Output**: It returns output similar to:
 
@@ -641,6 +643,7 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects

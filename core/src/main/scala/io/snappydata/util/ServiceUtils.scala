@@ -22,6 +22,7 @@ import java.util.regex.Pattern
 import scala.collection.JavaConverters._
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
+import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{Constant, Property, ServerManager}
 
@@ -34,7 +35,7 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
  */
 object ServiceUtils {
 
-  val LOCATOR_URL_PATTERN = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
+  val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
       confProps: Array[(String, String)]): Properties = {
@@ -83,9 +84,11 @@ object ServiceUtils {
   def getAllLocators(sc: SparkContext): scala.collection.Map[DistributedMember, String] = {
     val advisor = GemFireXDUtils.getGfxdAdvisor
     val locators = advisor.adviseLocators(null)
-    val locatorServers = scala.collection.mutable.HashMap[DistributedMember , String]()
+    val locatorServers = scala.collection.mutable.HashMap[DistributedMember, String]()
     locators.asScala.foreach(locator =>
-      locatorServers.put(locator, advisor.getDRDAServers(locator)))
+      locatorServers.put(locator,
+        if (ClientSharedUtils.USE_THRIFT_AS_DEFAULT) advisor.getThriftServers(locator)
+        else advisor.getDRDAServers(locator)))
     locatorServers
   }
 
@@ -97,8 +100,8 @@ object ServiceUtils {
 
     "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
-          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1 ) + "/"
-    } else locatorUrl +"/")
+          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1) + "/"
+    } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {

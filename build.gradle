@@ -95,7 +95,7 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.0.2'
+    sparkVersion = '2.0.0'
     snappySparkVersion = '2.0.3-2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
