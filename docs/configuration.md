@@ -1,5 +1,5 @@
 #Overview
-SnappyData, a database server cluster, has three main components - Locator, Server and Lead. 
+SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.
 
 The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.
 
@@ -9,7 +9,11 @@ we discuss how the components can be individually configured. We also discuss va
 
 ## Configuration Files
 
-Configuration files for locator, lead, and server should be created in SNAPPY_HOME with names as **conf/locators**, **conf/leads** and **conf/servers** respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members.
+Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
+
+To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
+
+These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 #### Configuring Locators
 
@@ -17,25 +21,24 @@ Locators provide discovery service for the cluster. It informs a new member join
 
 In this file, you can specify:
 
-* The host name on which a SnappyData locator is started
+* The host name on which a SnappyData locator is started.
 
-* The startup directory where the logs and configuration files for that locator instance are located
+* The startup directory where the logs and configuration files for that locator instance are located.
 
-* SnappyData specific properties that can be passed
+* SnappyData specific properties that can be passed.
 
-Create the configuration files (conf/locators) for locators in `SNAPPY_HOME`.
+Create the configuration file (**locators**) for locators in the *SnappyData_home/conf* directory.
 
 #### Configuring Leads
 
 Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 
-Create the configuration files (conf/leads) for leads in `SNAPPY_HOME`.
+Create the configuration file (**leads**) for leads in the *SnappyData_home/conf* directory.
 
 #### Configuring Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL.
 
-Create the configuration files (conf/servers) for data servers in `SNAPPY_HOME`.
-
+Create the configuration file (**servers**) for data servers in the *SnappyData_home/conf* directory.
 
 #### SnappyData Specific Properties
 
@@ -47,7 +50,7 @@ The following are the few important SnappyData properties that you can configure
 
 * **-locators**: List of other locators as comma-separated host:port values. For locators, the list must include all other locators in use. For Servers and Leads, the list must include all the locators of the distributed system.
 
-* **-dir**: SnappyData members need to have the working directory. The member working directory provides a default location for the log file, persistence, and status files for each member.<br> If not specified, SnappyData creates the member directory in _SNAPPY_HOME\work_. 
+* **-dir**: SnappyData members need to have the working directory. The member working directory provides a default location for the log file, persistence, and status files for each member.<br> If not specified, SnappyData creates the member directory in *SnappyData_HomeDirectory/work*. 
 
 * **-classpath**: This can be used to provide any application specific code to the lead and servers. We envisage having setJar like functionality going forward but for now, the application jars have to be provided during startup. 
 
@@ -126,7 +129,7 @@ LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 
 ## snappy-shell Command Line Utility
 
-Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using command line. 
+Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. 
 
 ```bash 
 $ bin/snappy-shell locator start  -dir=/node-a/locator1 
@@ -159,7 +162,7 @@ To install and configure SSH, do the following:
 2. **Generate an RSA key pair**<br>
     To generate an RSA key pair run the following command on the client computer,
     `ssh-keygen -t rsa`
-    Press **Enter** when prompted to enter file in which to save the key, and for the pass phrase.
+    Press **Enter** when prompted to enter the file in which to save the key, and for the pass phrase.
 
 3.  **Copy the Public Key**<br>
     Once the key pair is generated, copy the contents of the public key file, to the authorized key on the remote site, by typing `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
