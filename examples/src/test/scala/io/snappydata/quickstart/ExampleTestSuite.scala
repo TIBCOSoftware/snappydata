@@ -41,6 +41,12 @@ class ExampleTestSuite extends SnappyTestRunner {
 
   }
 
+  test("Create Table in Python"){
+    SparkSubmit("CreateTable", appClass = "", None,
+      confs = Seq.empty[String],
+      appJar = s"$snappyHome/quickstart/python/CreateTable.py")
+  }
+
   test("QuickStart.scala script"){
     SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\" \"-XX:MaxNewSize=1g\" ",
       scriptFile = s"$snappyHome/quickstart/scripts/Quickstart.scala")
@@ -83,6 +89,10 @@ class ExampleTestSuite extends SnappyTestRunner {
     Job(s"$snappyExamples.WorkingWithJson",
       localLead, quickStartJar,
       Seq(s"json_resource_folder=$snappyHome/quickstart/src/main/resources"))
+  }
+
+  test("WorkingWithJson With main") {
+    RunExample("WorkingWithJson_main", "snappydata.WorkingWithJson", Seq(s"$snappyHome/quickstart/src/main/resources"))
   }
 
   test("SmartConnectorExample") {

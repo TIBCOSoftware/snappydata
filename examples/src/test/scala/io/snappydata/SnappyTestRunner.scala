@@ -110,14 +110,12 @@ with Logging with Retries {
       workDir.mkdir()
     }
 
-    Process(command, workDir, "SNAPPY_HOME" -> snappyHome) !
+    Process(command, workDir, "SNAPPY_HOME" -> snappyHome,
+      "PYTHONPATH" -> s"${snappyHome}/python/lib/py4j-0.10.3-src.zip:${snappyHome}/python") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     (stdoutStream.toString, stderrStream.toString)
   }
 
-  def defaultShellValidator(output: String): Unit ={
-
-  }
 
   def SnappyShell(name: String, sqlCommand: Seq[String]): Unit = {
     sqlCommand pipe snappyShell foreach (s => {
@@ -196,8 +194,10 @@ with Logging with Retries {
     }
   }
 
-  def RunExample(name: String, exampleClas: String): Unit = {
-    val runExample = s"$snappyHome/bin/run-example $exampleClas"
+  def RunExample(name: String, exampleClas: String,
+                 args: Seq[String] = Seq.empty[String]): Unit = {
+    val argsStr = args.mkString(" ")
+    val runExample = s"$snappyHome/bin/run-example $exampleClas $argsStr"
     val (out, err) = executeProcess(name, runExample)
 
     if (out.toLowerCase().contains("exception")) {
