@@ -463,8 +463,10 @@ private[sql] final case class ColumnTableScan(
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
+      val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
       s"""
         final $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
+        $columnBatchesSeen.${metricAdd("1")};
         $buffers = $batch.buffers();
         $numBatchRows = $batch.numRows();
       """

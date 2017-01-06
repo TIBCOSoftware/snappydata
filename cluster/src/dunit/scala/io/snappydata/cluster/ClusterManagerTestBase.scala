@@ -173,7 +173,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {

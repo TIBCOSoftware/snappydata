@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
@@ -158,7 +159,7 @@ class CachedDataFrame(df: Dataset[Row],
               plan.executeCollect().iterator.map(converter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec) =>
+        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutedCommand) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             plan.executeCollect().iterator.asInstanceOf[Iterator[R]]

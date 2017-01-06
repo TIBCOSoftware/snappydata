@@ -208,8 +208,8 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
               "Please set spark.sql.hive.metastore.jars.")
       }
 
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
+      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver")
+      DriverRegistry.register("io.snappydata.jdbc.ClientDriver")
 
       // set as system properties for default HiveConf's
       val props = metadataConf.getAllProperties

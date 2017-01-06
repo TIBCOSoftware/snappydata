@@ -31,7 +31,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private def getClientConnection(netPort: Int,
       routeQuery: Boolean = true): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
     var url: String = null
     if (!routeQuery) {
