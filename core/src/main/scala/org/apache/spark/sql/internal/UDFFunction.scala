@@ -6,7 +6,7 @@ import io.snappydata.udf._
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry._
-import org.apache.spark.sql.catalyst.expressions.{Expression, ScalaUDF}
+import org.apache.spark.sql.catalyst.expressions.{UDFExpression, Expression, ScalaUDF}
 import org.apache.spark.sql.execution.aggregate.ScalaUDAF
 import org.apache.spark.sql.expressions.UserDefinedAggregateFunction
 
@@ -32,7 +32,7 @@ object UDFFunction {
 
                             s"""case $x =>
                                  val func = clazz.newInstance().asInstanceOf[UDF$x[$anys]]
-                                 ScalaUDF(func.call($params), func.getDataType, children)
+                                 UDFExpression(func.call($params), func.getDataType, children)
                             """
                            }.foreach(println)
 
@@ -41,91 +41,91 @@ object UDFFunction {
             // Script code starts
             case 1 =>
               val func = clazz.newInstance().asInstanceOf[UDF1[Any, Any]]
-              ScalaUDF(func.call(_: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any), func.getDataType, children)
 
             case 2 =>
               val func = clazz.newInstance().asInstanceOf[UDF2[Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any), func.getDataType, children)
 
             case 3 =>
               val func = clazz.newInstance().asInstanceOf[UDF3[Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any), func.getDataType, children)
 
             case 4 =>
               val func = clazz.newInstance().asInstanceOf[UDF4[Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 5 =>
               val func = clazz.newInstance().asInstanceOf[UDF5[Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 6 =>
               val func = clazz.newInstance().asInstanceOf[UDF6[Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 7 =>
               val func = clazz.newInstance().asInstanceOf[UDF7[Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 8 =>
               val func = clazz.newInstance().asInstanceOf[UDF8[Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 9 =>
               val func = clazz.newInstance().asInstanceOf[UDF9[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 10 =>
               val func = clazz.newInstance().asInstanceOf[UDF10[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 11 =>
               val func = clazz.newInstance().asInstanceOf[UDF11[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 12 =>
               val func = clazz.newInstance().asInstanceOf[UDF12[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 13 =>
               val func = clazz.newInstance().asInstanceOf[UDF13[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 14 =>
               val func = clazz.newInstance().asInstanceOf[UDF14[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 15 =>
               val func = clazz.newInstance().asInstanceOf[UDF15[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 16 =>
               val func = clazz.newInstance().asInstanceOf[UDF16[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 17 =>
               val func = clazz.newInstance().asInstanceOf[UDF17[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 18 =>
               val func = clazz.newInstance().asInstanceOf[UDF18[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 19 =>
               val func = clazz.newInstance().asInstanceOf[UDF19[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 20 =>
               val func = clazz.newInstance().asInstanceOf[UDF20[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 21 =>
               val func = clazz.newInstance().asInstanceOf[UDF21[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             case 22 =>
               val func = clazz.newInstance().asInstanceOf[UDF22[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]
-              ScalaUDF(func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
+              UDFExpression(clazz, func.call(_: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any, _: Any), func.getDataType, children)
 
             //Script code end
             // scalastyle:on line.size.limit

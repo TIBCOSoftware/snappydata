@@ -333,6 +333,18 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+  protected final def resourceType: Rule1[FunctionResource] = rule {
+    identifier ~ stringLiteral ~> { (rType: String, path: String) =>
+      val resourceType = rType.toLowerCase
+      resourceType match {
+        case "jar" | "file" | "archive" =>
+          FunctionResource(FunctionResourceType.fromString(resourceType), path)
+        case other =>
+          throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
+      }
+    }
+  }
+
 
   /**
    * Create a [[CreateFunctionCommand]] command.
@@ -340,24 +352,25 @@ abstract class SnappyDDLParser(session: SnappySession)
    * For example:
    * {{{
    *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name
-   *    [USING JAR|FILE|ARCHIVE 'file_uri' [, JAR|FILE|ARCHIVE 'file_uri']];
+   *    USING JAR|FILE|ARCHIVE 'file_uri';
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~>
-        { (te: Any, functionIdent: FunctionIdentifier, className: String) =>
+    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~ USING ~ resourceType ~>
+        { (te: Any, functionIdent: FunctionIdentifier, className: String, funcResource : FunctionResource) =>
 
-      val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
-      val funcResources = Seq.empty[FunctionResource]
+          val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
+          val funcResources = Seq(funcResource)
 
-      CreateFunctionCommand(
-        functionIdent.database,
-        functionIdent.funcName,
-        className,
-        funcResources,
-        isTemp)
-    }
+          CreateFunctionCommand(
+            functionIdent.database,
+            functionIdent.funcName,
+            className,
+            funcResources,
+            isTemp)
+        }
   }
+
 
   /**
    * Create a [[DropFunctionCommand]] command.

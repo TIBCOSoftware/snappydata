@@ -58,7 +58,7 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
     verifyClass(classloader, "FakeClass1", "1")
   }
 
-  test("remove Jar from the MutableClassLoader") {
+/*  test("remove Jar from the MutableClassLoader") {
     val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
     val file = new java.io.File(testJar1.toURI)
     val fileName = file.getName
@@ -68,5 +68,5 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
     intercept[ClassNotFoundException] {
       verifyClass(classloader, "FakeClass1", "1")
     }
-  }
+  }*/
 }
