@@ -400,7 +400,7 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 // While, clients typically just point to a locator, you could also directly point the 
 //   connection at a server endpoint
 ```
-<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **com.pivotal.gemfirexd.jdbc.ClientDriver** class.</Note>
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
 
 ## Building SnappyData Applications using Spark API
 

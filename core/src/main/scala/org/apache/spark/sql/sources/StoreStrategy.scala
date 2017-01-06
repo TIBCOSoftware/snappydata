@@ -17,10 +17,10 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecutedCommand, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.types.DataType
 
@@ -32,31 +32,34 @@ object StoreStrategy extends Strategy {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
         false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
-      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, None,
+      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
+    case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
+      bucketSpec, mode, opts, _) =>
+      val query = a.productElement(6).asInstanceOf[LogicalPlan]
 
-    case CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-        bucketSpec, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
-      // so that should support both builtin and external tables
-      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, None,
+      // so that should support both +builtin and external tables
+      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
         None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
         temporary = false, partitionCols, mode, opts, query,
         isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
-      ExecutedCommandExec(create) :: Nil
+      ExecutedCommand(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommandExec(createSelect) :: Nil
+      ExecutedCommand(createSelect) :: Nil
     case drop: DropTable =>
-      ExecutedCommandExec(drop) :: Nil
+      ExecutedCommand(drop) :: Nil
 
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+      ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
-      ExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
+      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
+
+    case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
     case _ => Nil
   }
@@ -64,7 +67,7 @@ object StoreStrategy extends Strategy {
 
 private[sql] case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends RunnableCommand {
+    command: String) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
@@ -104,7 +107,7 @@ private[sql] case class PutIntoDataSource(
     logicalRelation: LogicalRelation,
     relation: RowPutRelation,
     query: LogicalPlan)
-    extends RunnableCommand {
+    extends ExecuteCommand {
 
   override def run(session : SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]

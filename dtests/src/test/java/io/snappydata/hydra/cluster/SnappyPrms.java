@@ -194,6 +194,11 @@ public class SnappyPrms extends BasePrms {
     public static Long zeppelinInterpreter;
 
     /**
+     * (boolean) - whether to enable Java Flight Recorder (JFR) for collecting diagnostic and profiling data while launching server and lead members in cluster. Defaults to false if not provided.
+     */
+    public static Long enableFlightRecorder;
+
+    /**
      * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
      */
     public static Long logLevel;
@@ -423,6 +428,15 @@ public class SnappyPrms extends BasePrms {
         boolean enableZeppelinInterpreter = tasktab().booleanAt(zeppelinInterpreter, tab().booleanAt(zeppelinInterpreter, false));
         String zeppelinInterpreter = " -zeppelin.interpreter.enable=" + enableZeppelinInterpreter;
         return zeppelinInterpreter;
+    }
+
+    public static String getFlightRecorderOptions(String dirPath) {
+        boolean flightRecorder = tasktab().booleanAt(enableFlightRecorder, tab().booleanAt(enableFlightRecorder, false));
+        if (flightRecorder) {
+            String flightRecorderOptions = " -J-XX:+UnlockCommercialFeatures -J-XX:+FlightRecorder -J-XX:FlightRecorderOptions=defaultrecording=true,disk=true,repository=" +
+                    dirPath + ",maxage=6h,dumponexit=true,dumponexitpath=flightRecorder.jfr";
+            return flightRecorderOptions;
+        } else return "";
     }
 
     public static int getNumBootStrapTrials() {

@@ -23,7 +23,7 @@
  *
  * To execute this script on spark you can use same command as above without specifying packages
  * as follows:
- * ./bin/spark-shell --driver-memory 4g -driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
+ * ./bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
  */
 
 import org.apache.spark.sql.SparkSession
