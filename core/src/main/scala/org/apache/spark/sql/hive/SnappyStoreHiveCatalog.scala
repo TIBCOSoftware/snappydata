@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.hive
 
+import java.io.File
+import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -27,15 +29,18 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{NoSuchPermanentFunctionException, FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchFunctionException, FunctionAlreadyExistsException, NoSuchPermanentFunctionException, FunctionRegistry, NoSuchDatabaseException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{ExpressionInfo, Expression}
@@ -51,6 +56,7 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
+import org.apache.spark.util.{ChildFirstURLClassLoader, MutableURLClassLoader}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -725,8 +731,88 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  private val funcJars = scala.collection.mutable.Map[String, URLClassLoader]()
+
+  private def addToFuncJars(funcDefinition: CatalogFunction, qualifiedName : FunctionIdentifier): Unit = {
+    funcJars.get(qualifiedName.unquotedString) match {
+      case Some(x) => // do nothing
+      case None => {
+        val urls = funcDefinition.resources.map { resource =>
+          val path = resource.uri
+          val uri = new Path(path).toUri
+          val jarURL = if (uri.getScheme == null) {
+            // `path` is a local file path without a URL scheme
+            new File(path).toURI.toURL
+          } else {
+            // `path` is a URL with a scheme
+            uri.toURL
+          }
+          snappySession.sparkContext.addJar(path)
+          snappySession.sparkContext.setLocalProperty(
+            "SNAPPY_JOB_SERVER_JAR_NAME", path)
+          jarURL
+        }
+
+        val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+        funcJars.put(qualifiedName.unquotedString, new ChildFirstURLClassLoader(urls.toArray, parentLoader))
+      }
+    }
+  }
+
+  private def removeFromFuncJars(funcDefinition: CatalogFunction, qualifiedName : FunctionIdentifier): Unit = {
+    funcJars.get(qualifiedName.unquotedString) match {
+      case Some(x) =>  {
+        funcDefinition.resources.map { resource =>
+          val path = resource.uri
+          val uri = new Path(path).toUri
+          val jarURL = if (uri.getScheme == null) {
+            // `path` is a local file path without a URL scheme
+            new File(path).toURI.toURL
+          } else {
+            // `path` is a URL with a scheme
+            uri.toURL
+          }
+          removeJar(path)
+        }
+        funcJars.remove(qualifiedName.unquotedString)
+        snappySession.clearPlanCache()
+      }
+      case _ =>
+    }
+  }
+
+  def removeJar(jobJarToRemove: String): Unit = {
+    def getName(path: String): String = new File(path).getName
+    val sc = snappySession.sparkContext
+    val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
+    if (keyToRemove.nonEmpty) {
+      sc.addedJars.remove(keyToRemove.head)
+    }
+  }
+
+  override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {
+    super.createFunction(funcDefinition, ignoreIfExists)
+  }
+
+  override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
+     funcJars.get(name.unquotedString) match {
+      case Some(x) => {
+        val catalogFunction = try {
+          externalCatalog.getFunction(currentSchema, name.funcName)
+        } catch {
+          case e: AnalysisException => failFunctionLookup(name.funcName)
+          case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+        }
+        removeFromFuncJars(catalogFunction, name)
+      }
+      case _ =>
+    }
+    super.dropFunction(name, ignoreIfNotExists)
+  }
+
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    UDFFunction.makeFunctionBuilder(funcName, Utils.classForName(className))
+    val uRLClassLoader = funcJars.get(funcName).get // There will be some classloader for sure
+    UDFFunction.makeFunctionBuilder(funcName, uRLClassLoader.loadClass(className))
   }
 
   /**
@@ -794,13 +880,17 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case e: AnalysisException => failFunctionLookup(name.funcName)
       case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
     }
-    loadFunctionResources(catalogFunction.resources)
+    //loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
+
     // Please note that qualifiedName is provided by the user. However,
     // catalogFunction.identifier.unquotedString is returned by the underlying
     // catalog. So, it is possible that qualifiedName is not exactly the same as
     // catalogFunction.identifier.unquotedString (difference is on case-sensitivity).
     // At here, we preserve the input from the user.
     val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
+
+    funcJars.get(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
+
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
     createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
     // Now, we need to create the Expression.
@@ -978,4 +1068,13 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
+}
+
+private[spark] class SnappyMutableClassLoader(urls: Array[URL], parent: ClassLoader)
+    extends MutableURLClassLoader(urls, parent) {
+
+  override def loadClass(name: String, resolve: Boolean): Class[_] = {
+    println(s"Loading class $name from SnappyLoader")
+    super.loadClass(name, resolve)
+  }
 }
