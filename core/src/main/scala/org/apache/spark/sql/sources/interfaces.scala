@@ -21,7 +21,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
@@ -239,6 +238,37 @@ trait IndexableRelation {
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit
 
+  /**
+   * Return an [[IndexScan]] if there is an index that can be used
+   * for repeated lookups on given key columns.
+   */
+  def getIndexScan(indexColumns: Seq[String]): Option[IndexScan] = None
+}
+
+/** A trait to perform efficient index lookups for a set of indexed keys. */
+@DeveloperApi
+trait IndexScan extends Serializable {
+
+  /** Returns true if every key has a unique mapping. */
+  def keyIsUnique: Boolean
+
+  /** Initialize the scan for given base table columns (0 based). */
+  def initialize(projectionColumns: Seq[String]): Unit
+
+  /**
+   * Returns the set of projected rows mapped to given key columns
+   * and null for no match.
+   */
+  def get(key: InternalRow): Iterator[InternalRow]
+
+  /**
+   * Returns the matched single row when [[keyIsUnique]] is true
+   * or null if no match.
+   */
+  def getValue(key: InternalRow): InternalRow
+
+  /** Close the scan. */
+  def close(): Unit
 }
 
 /**

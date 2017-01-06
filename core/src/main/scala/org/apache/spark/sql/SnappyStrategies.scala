@@ -31,6 +31,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
+import org.apache.spark.sql.sources.IndexableRelation
 import org.apache.spark.sql.streaming._
 
 /**
@@ -228,10 +229,49 @@ private[sql] trait SnappyStrategies {
         joinType: JoinType,
         side: joins.BuildSide,
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
-      joins.LocalJoin(leftKeys, rightKeys, side, condition,
-        joinType, planLater(left), planLater(right),
-        left.statistics.sizeInBytes, right.statistics.sizeInBytes,
-        replicatedTableJoin) :: Nil
+      // if there is an index on the current stream side then use
+      // IndexJoin which will use index instead of iterator
+      // TODO: also allow for index on smaller buildSide
+      val indexScan = side match {
+        case joins.BuildRight if canBuildLeft(joinType) => left match {
+          case PhysicalOperation(_, _,
+          LogicalRelation(index: IndexableRelation, _, _)) =>
+            val indexColumns = rightKeys.collect {
+              case ne: NamedExpression => ne.name
+            }
+            if (indexColumns.isEmpty) None
+            else index.getIndexScan(indexColumns) match {
+              case None => None
+              case s@Some(_) => s
+            }
+        }
+        case joins.BuildLeft if canBuildRight(joinType) => right match {
+          case PhysicalOperation(_, _,
+          LogicalRelation(index: IndexableRelation, _, _)) =>
+            val indexColumns = leftKeys.collect {
+              case ne: NamedExpression => ne.name
+            }
+            if (indexColumns.isEmpty) None
+            else index.getIndexScan(indexColumns) match {
+              case None => None
+              case s@Some(_) => s
+            }
+          case _ => None
+        }
+        case _ => None
+      }
+      indexScan match {
+        case None =>
+          joins.LocalJoin(leftKeys, rightKeys, side, condition,
+            joinType, planLater(left), planLater(right),
+            left.statistics.sizeInBytes, right.statistics.sizeInBytes,
+            replicatedTableJoin) :: Nil
+        case Some(scan) =>
+          new joins.IndexJoin(leftKeys, rightKeys, side, condition,
+            joinType, planLater(left), planLater(right),
+            left.statistics.sizeInBytes, right.statistics.sizeInBytes,
+            replicatedTableJoin, scan) :: Nil
+      }
     }
   }
 }

@@ -17,11 +17,14 @@
 package org.apache.spark.sql.execution.row
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.ReferencedKeyConstraintDescriptor
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
@@ -64,13 +67,15 @@ class RowFormatRelation(
       _context)
     with PartitionedDataSourceScan
     with RowPutRelation with ParentRelation with DependentRelation {
-  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+
+  private val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def toString: String = s"RowFormatRelation[$table]"
 
-  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(dialect)
 
-  final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
+  private final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
   private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
@@ -78,7 +83,7 @@ class RowFormatRelation(
   @transient private[this] lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
-  private[this] lazy val indexedColumns: mutable.HashSet[String] = {
+  private def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
     if (im != null && im.getIndexConglomerateDescriptors != null) {
@@ -93,13 +98,50 @@ class RowFormatRelation(
     cols
   }
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
-    filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
+  private def getPrimaryKey: ReferencedKeyConstraintDescriptor = {
+    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
+    val td = container.getTableDescriptor
+    if (td ne null) td.getPrimaryKey
+    else null
+  }
+
+  private def primaryKeyColumns(columns: Seq[String],
+      primaryKey: ReferencedKeyConstraintDescriptor): Array[String] = {
+    // all columns of primary key have to be present in filter to be usable
+    val cols = primaryKey.getKeyColumns
+    val baseColumns = primaryKey.getTableDescriptor.getColumnNamesArray
+    val pkCols = cols.map(c => baseColumns(c - 1))
+    if (pkCols.forall(columns.contains)) pkCols
+    else Array.empty[String]
+  }
+
+  private def pushdownPKColumns(filters: Array[Filter]): Array[String] = {
+    def getEqualToColumns(filters: Array[Filter]): ArrayBuffer[String] = {
+      val list = new ArrayBuffer[String](4)
+      filters.foreach {
+        case EqualTo(col, _) => list += col
+        case In(col, _) => list += col
+        case And(left, right) => list ++= getEqualToColumns(Array(left, right))
+        case _ =>
+      }
+      list
+    }
+    val primaryKey = getPrimaryKey
+    if ((primaryKey ne null) && primaryKey.getReferencedColumns.nonEmpty) {
+      primaryKeyColumns(getEqualToColumns(filters), primaryKey)
+    } else Array.empty[String]
+  }
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
+    filters.filter(ExternalStoreUtils.unhandledFilter(_,
+      indexedColumns ++ pushdownPKColumns(filters)))
+  }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
-        .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+        .handledFilter(_, indexedColumns ++ pushdownPKColumns(filters))
+        eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = region.getPartitionAttributes != null
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
@@ -252,6 +294,34 @@ class RowFormatRelation(
       }
       addDependent(dr, sncCatalog)
     })
+  }
+
+  override def getIndexScan(indexColumns: Seq[String]): Option[IndexScan] = {
+    // only in embedded mode for now
+    if (connectionType != ConnectionType.Embedded) return None
+
+    // check for index on given key columns starting with primary key index
+    val primaryKey = getPrimaryKey
+    if ((primaryKey ne null) && primaryKey.getReferencedColumns.nonEmpty) {
+      val pkCols = primaryKeyColumns(indexColumns, primaryKey)
+      if (pkCols.nonEmpty) {
+      }
+    }
+  }
+}
+
+final class RowTableIndexScan(indexName: String, isPrimaryKey: Boolean)
+    extends IndexScan {
+
+  override def initialize(projectionColumns: Seq[String]): Unit = {
+
+  }
+
+  override def lookup(key: InternalRow): Iterator[InternalRow] = {
+
+  }
+
+  override def close(): Unit = {
 
   }
 }
