@@ -249,6 +249,21 @@ class SnappySessionState(snappySession: SnappySession)
     })
   }
 
+  def getTablePartitions(region: PartitionedRegion, prunnedBuckets: Set[Int]): Array[Partition] = {
+    val leaderRegion = ColocationHelper.getLeaderRegion(region)
+    leaderPartitions.getOrElseUpdate(leaderRegion, {
+      val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
+      if (linkPartitionsToBuckets) {
+        // also set the default shuffle partitions for this execution
+        // to minimize exchange
+        snappySession.sessionState.conf.setExecutionShufflePartitions(
+          region.getTotalNumberOfBuckets)
+      }
+      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
+        linkPartitionsToBuckets, prunnedBuckets)
+    })
+  }
+
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }

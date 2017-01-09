@@ -53,7 +53,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient protected val parts: Array[Partition] = Array.empty[Partition])
+    @transient protected val parts: Array[Partition] = Array.empty[Partition],
+    val prunnedBuckets: Set[Int] = Set.empty )
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -258,7 +259,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       Misc.getRegionForTable(resolvedName, true)
           .asInstanceOf[CacheDistributionAdvisee] match {
         case pr: PartitionedRegion =>
-          session.sessionState.getTablePartitions(pr)
+          if (prunnedBuckets.isEmpty) {
+            session.sessionState.getTablePartitions(pr)
+          } else {
+            session.sessionState.getTablePartitions(pr, prunnedBuckets)
+          }
         case dr => session.sessionState.getTablePartitions(dr)
       }
     } finally {

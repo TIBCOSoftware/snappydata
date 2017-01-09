@@ -17,12 +17,12 @@
 package org.apache.spark.sql.execution.row
 
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
-
+import com.pivotal.gemfirexd.internal.iapi.types.SQLInteger
+import com.pivotal.gemfirexd.internal.shared.common.ResolverUtils
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -93,6 +93,7 @@ class RowFormatRelation(
     cols
   }
 
+
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
 
@@ -100,6 +101,34 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+    val equalFilters = filters.filter(_ match {
+      case  EqualTo(_, _) => true
+      case  _ => false
+    })
+    val prunnedNodes = if (!equalFilters.isEmpty) {
+      val partCols = partitionColumns
+      if (!partCols.isEmpty) {
+         val prunning = for (partCol <- partCols) yield {
+           equalFilters.find(x => x.asInstanceOf[EqualTo].attribute == partCol)
+         }
+         if (prunning.forall(_.isDefined)) {
+           val values = prunning.map(_.get.asInstanceOf[EqualTo].value)
+
+           val resolver = region.asInstanceOf[PartitionedRegion].getPartitionResolver
+             .asInstanceOf[GfxdPartitionByExpressionResolver]
+           val routingKey = resolver.getRoutingKeyForColumn(new SQLInteger(values(0)
+             .asInstanceOf[Int]))
+           Set(Math.abs(routingKey.hashCode() % numBuckets))
+         } else {
+           Set.empty[Int]
+         }
+      } else {
+        Set.empty[Int]
+      }
+
+    } else {
+      Set.empty[Int]
+    }
     val isPartitioned = region.getPartitionAttributes != null
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
@@ -112,7 +141,8 @@ class RowFormatRelation(
           pushProjections = false,
           useResultSet = false,
           connProperties,
-          handledFilters
+          handledFilters,
+          prunnedBuckets = prunnedNodes
         )
 
       case _ =>

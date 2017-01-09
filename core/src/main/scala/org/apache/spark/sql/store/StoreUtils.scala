@@ -139,6 +139,36 @@ object StoreUtils extends Logging {
     }
   }
 
+  private[sql] def getPartitionsPartitionedTable(session: SnappySession,
+                                                 region: PartitionedRegion,
+                                                 linkBucketsToPartitions: Boolean,
+                                                 prunnedBuckets: Set[Int]): Array[Partition] = {
+
+    /*
+    val callbacks = ToolsCallbackInit.toolsCallback
+     *
+    if (!linkBucketsToPartitions && callbacks != null) {
+      allocateBucketsToPartitions(session, region)
+    } else {
+    */
+      val numPartitions = prunnedBuckets.size
+       val iter = prunnedBuckets.iterator
+      (0 until numPartitions).map { i =>
+        val bucketId = iter.next()
+        val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+        val prefNodes = distMembers.collect {
+          case m if SnappyContext.containsBlockId(m.toString) =>
+            Utils.getHostExecutorId(SnappyContext.getBlockId(
+              m.toString).get.blockId)
+        }
+        val buckets = new mutable.ArrayBuffer[Int](1)
+        buckets += bucketId
+        new MultiBucketExecutorPartition(i, buckets, numPartitions,
+          prefNodes.toSeq)
+      }.toArray[Partition]
+   // }
+  }
+
   private[sql] def getPartitionsReplicatedTable(session: SnappySession,
       region: CacheDistributionAdvisee): Array[Partition] = {
 
