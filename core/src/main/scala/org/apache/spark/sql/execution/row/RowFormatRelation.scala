@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.row
 
 import scala.collection.mutable
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion, PartitionedRegionHelper}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
@@ -39,6 +39,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -112,13 +113,14 @@ class RowFormatRelation(
            equalFilters.find(x => x.asInstanceOf[EqualTo].attribute == partCol)
          }
          if (prunning.forall(_.isDefined)) {
-           val values = prunning.map(_.get.asInstanceOf[EqualTo].value)
+           val values = prunning.map(_.get.asInstanceOf[EqualTo].value.asInstanceOf[AnyRef]).toArray
 
            val resolver = region.asInstanceOf[PartitionedRegion].getPartitionResolver
              .asInstanceOf[GfxdPartitionByExpressionResolver]
-           val routingKey = resolver.getRoutingKeyForColumn(new SQLInteger(values(0)
-             .asInstanceOf[Int]))
-           Set(Math.abs(routingKey.hashCode() % numBuckets))
+           val dvds = resolver.convertPartitioningValuesToDVD(values)
+           val routingKey = resolver.getRoutingObjectFromDvdArray(dvds)
+
+           Set(PartitionedRegionHelper.getHashKey(routingKey, this.numBuckets ))
          } else {
            Set.empty[Int]
          }

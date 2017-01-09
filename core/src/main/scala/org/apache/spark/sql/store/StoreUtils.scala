@@ -142,7 +142,8 @@ object StoreUtils extends Logging {
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
                                                  region: PartitionedRegion,
                                                  linkBucketsToPartitions: Boolean,
-                                                 prunnedBuckets: Set[Int]): Array[Partition] = {
+                                                 prunnedBuckets: Set[Int],
+                                                totalNumBuckets: Int): Array[Partition] = {
 
     /*
     val callbacks = ToolsCallbackInit.toolsCallback
@@ -163,7 +164,7 @@ object StoreUtils extends Logging {
         }
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += bucketId
-        new MultiBucketExecutorPartition(i, buckets, numPartitions,
+        new MultiBucketExecutorPartition(i, buckets, totalNumBuckets,
           prefNodes.toSeq)
       }.toArray[Partition]
    // }
