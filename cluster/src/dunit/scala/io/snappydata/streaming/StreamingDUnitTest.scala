@@ -28,7 +28,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   private def getANetConnection(netPort: Int): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
     val url = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url)

@@ -95,7 +95,7 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.0.2'
+    sparkVersion = '2.0.0'
     snappySparkVersion = '2.0.3-2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
@@ -818,159 +818,6 @@ def runScript(def execName, def workDir, def param, env = null) {
   return "${stdout}"
 }
 
-def runSQLScript(def fileName, def workDir) {
-  println("Executing ${fileName}")
-  String queryoutput = runScript("${snappyProductDir}/bin/snappy-shell", workDir,
-          ['run', "-file=${snappyProductDir}/quickstart/scripts/${fileName}"])
-  println queryoutput
-  if (queryoutput.contains('ERROR') || queryoutput.contains('Failed')) {
-    throw new GradleException("Failed to run ${fileName}")
-  }
-}
-def writeToFile(def fileName) {
-  new File("$fileName").withWriter { out ->
-    out.println 'localhost'
-    out.println 'localhost'
-  }
-}
-
-def runSubmitQuery(def jobName, def appName, def workDir) {
-  println "Running job ${jobName}"
-  String exampleArchiveName = "quickstart.jar"
-  String submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh", workDir,
-      ['submit', '--lead', 'localhost:8090', '--app-name', appName + System.currentTimeMillis(),
-       '--class', jobName, '--app-jar',
-       "${snappyProductDir}/examples/jars/${exampleArchiveName}"])
-
-  println submitjobairline
-
-  String jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
-      submitjobairline.substring(4)
-  def json = new JsonSlurper().parseText(jsonStr)
-  String jobid = ''
-  json.each {
-    k, v ->
-      if (k == 'result') {
-        if (v instanceof groovy.json.internal.LazyMap) {
-          jobid = v.get('jobId')
-        }
-      }
-  }
-
-  String status = 'RUNNING'
-  while (status == 'RUNNING') {
-    Thread.sleep(3000)
-    String statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
-        workDir, ['status', '--lead', 'localhost:8090', '--job-id', jobid])
-    println statusjobairline
-
-    def statusjson = new JsonSlurper().parseText(statusjobairline)
-    statusjson.each {
-      k, v ->
-        if (k == 'status') {
-          println('Current status of job: ' + v)
-          status = v
-        }
-    }
-  }
-  if (status == 'ERROR') {
-    throw new GradleException('Failed to submit queries')
-  }
-}
-
-task runQuickstart {
-  dependsOn cleanQuickstart
-  dependsOn product
-  mustRunAfter 'buildAll'
-  def exampleArchiveName = "quickstart.jar"
-  String workingDir = "${testResultsBase}/quickstart"
-  doLast {
-    try {
-      writeToFile("${snappyProductDir}/conf/servers")
-      String startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh",
-          workingDir, [])
-      println startoutput
-      if (!startoutput.contains('Distributed system now has 4 members')) {
-        throw new GradleException('Failed to start Snappy cluster')
-      }
-      runSQLScript('create_and_load_column_table.sql', workingDir)
-
-      runSQLScript('create_and_load_row_table.sql', workingDir)
-
-      runSQLScript('create_and_load_sample_table.sql', workingDir)
-
-      runSQLScript('status_queries.sql', workingDir)
-
-      runSQLScript('olap_queries.sql', workingDir)
-
-      runSQLScript('oltp_queries.sql', workingDir)
-
-      runSQLScript('olap_queries.sql', workingDir)
-
-      runSQLScript('olap_approx_queries.sql', workingDir)
-
-      runSubmitQuery('io.snappydata.examples.CreateAndLoadAirlineDataJob',
-          'createJob', workingDir)
-
-      runSubmitQuery('io.snappydata.examples.AirlineDataJob',
-          'processjob', workingDir)
-
-      String startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh",
-          workingDir, [])
-      println startSparkResult
-
-      String hostname = 'hostname'.execute().text.trim()
-      String airlineappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
-              ['--class', 'io.snappydata.examples.AirlineDataSparkApp', '--master', "spark://${hostname}:7077",
-               '--conf', 'snappydata.store.locators=localhost:10334', '--conf', 'spark.ui.port=4041',
-               "${snappyProductDir}/examples/jars/${exampleArchiveName}"])
-
-      println airlineappresult
-      if (airlineappresult.toLowerCase().contains('exception')) {
-        throw new GradleException('Failed to submit AirlineDataSparkApp')
-      }
-
-      def examplesdir = project(":snappy-examples_${scalaBinaryVersion}")
-
-      String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
-          ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
-
-      println airlinepythonappresult
-      if (airlinepythonappresult.toLowerCase().contains('exception')) {
-        throw new GradleException('Failed to submit airlinepythonappresult')
-      }
-
-    } finally {
-      println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", workingDir, [])
-      println runScript("${snappyProductDir}/sbin/stop-all.sh", workingDir, [])
-      def conffile = new File("${snappyProductDir}/conf/servers")
-      if (conffile.exists())
-        conffile.delete()
-    }
-    //Setting _JAVA_OPTIONS to avoid using gradle settings which is 256m which was causing rdd to
-    // overflow on disk
-    Map<String,Object> env = new HashMap<String,Object>()
-    env.put("_JAVA_OPTIONS","-Xms256m -Xmx4g")
-    String extraArgs = '-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g '
-    if(project.hasProperty('snappy.perf')){
-      extraArgs = extraArgs.concat("-Dsnappy_benchmark_perf=true")
-    }
-    String quickStartResult = runScript("${snappyProductDir}/bin/spark-shell", workingDir,
-        ['--driver-memory=4g',"--driver-java-options=$extraArgs", '-i',
-         "${snappyProductDir}/quickstart/scripts/Quickstart.scala"], env)
-
-    if (quickStartResult.toLowerCase().
-        contains('cannot meet the required performance')) {
-      println(quickStartResult)
-      throw new GradleException('Failed to assert required performance in Quickstart')
-    } else {
-      println(quickStartResult)
-    }
-
-  }
-}
-
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
@@ -978,7 +825,6 @@ task copyResourcesAll << {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 }
-
 
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
@@ -998,6 +844,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
@@ -1149,7 +996,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
 }
 

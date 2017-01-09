@@ -112,6 +112,7 @@ public class TestThrift {
     final int numRuns = 50000;
     int rowNum;
     RowSet rs;
+    StatementResult sr;
 
     // first round is warmup for the selects
     for (int runNo = 1; runNo <= 2; runNo++) {
@@ -129,7 +130,10 @@ public class TestThrift {
         params.setInt(1, w_id);
         params.setInt(2, rowNum);
 
-        rs = conn.executePreparedQuery(pstmt.statementId, params, token);
+        sr = conn.executePrepared(pstmt.statementId, params,
+            Collections.<Integer, OutputParameter>emptyMap(), token);
+        // rs = conn.executePreparedQuery(pstmt.statementId, params, token);
+        rs = sr.getResultSet();
 
         int numResults = 0;
         for (Row row : rs.getRows()) {

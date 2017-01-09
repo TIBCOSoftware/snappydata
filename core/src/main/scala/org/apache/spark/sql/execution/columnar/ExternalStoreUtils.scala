@@ -94,8 +94,8 @@ object ExternalStoreUtils {
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case GemFireXDDialect => "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
-      case GemFireXDClientDialect => "com.pivotal.gemfirexd.jdbc.ClientDriver"
+      case GemFireXDDialect => "io.snappydata.jdbc.EmbeddedDriver"
+      case GemFireXDClientDialect => "io.snappydata.jdbc.ClientDriver"
       case _ => Utils.getDriverClassName(url)
     }
   }

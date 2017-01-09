@@ -73,12 +73,13 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          AnalyzeDMLExternalTables(snappySession) ::
+          AnalyzeChildQuery(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
     override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+      datasources.PreWriteCheck(conf, catalog),
+      PrePutCheck)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -179,7 +180,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
