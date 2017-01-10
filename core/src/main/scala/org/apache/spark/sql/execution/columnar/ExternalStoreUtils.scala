@@ -21,7 +21,7 @@ import java.util.Properties
 
 import scala.collection.mutable
 
-import io.snappydata.Constant
+import io.snappydata.{Property, Constant}
 import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.SparkContext
@@ -159,6 +159,8 @@ object ExternalStoreUtils {
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case SplitClusterMode(_, _) =>
         ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
+      case ThinClientConnectorMode(_, _) =>
+        Property.ClusterURL.getOption(sc.conf).get + ";route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>

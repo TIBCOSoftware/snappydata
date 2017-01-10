@@ -998,6 +998,9 @@ object SnappyContext extends Logging {
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
+      }).orElse(Property.ClusterURL.getOption(conf).collectFirst {
+        case s if !s.isEmpty =>
+          ThinClientConnectorMode(sc, "")
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
@@ -1040,6 +1043,9 @@ object SnappyContext extends Logging {
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
+      case ThinClientConnectorMode(_, _) =>
+        // currently do nothing
+//        SnappyTableStatsProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
@@ -1175,6 +1181,19 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * the snappy cluster on demand that just remains like an external datastore.
  */
 case class SplitClusterMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+/**
+ * Similar to SplitClusterMode but this will use thin client driver for making
+ * connections to Snappy cluster.
+ *
+ * This is for the two cluster mode: one is
+ * the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
+ * cluster fetching data from the snappy cluster on demand that just
+ * remains like an external datastore.
+ *
+ */
+case class ThinClientConnectorMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 /**

@@ -306,7 +306,7 @@ class BaseColumnFormatRelation(
             // TODO: Suranjan for split mode when driver acts as client
             // we will need to change this code and add a flag to
             // CREATE_ALL_BUCKETS to create only when no buckets created
-            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
+//            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
               dialect match {
                 case GemFireXDDialect =>
                   GemFireXDDialect.initializeTable(table,
@@ -316,7 +316,7 @@ class BaseColumnFormatRelation(
                     sqlContext.conf.caseSensitiveAnalysis, conn)
                 case _ => // Do nothing
               }
-            }
+//            }
             return
           case SaveMode.ErrorIfExists =>
             // sys.error(s"Table $table already exists.") TODO: Why so?

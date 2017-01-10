@@ -167,6 +167,11 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
+  val ClusterURL = Val[String](s"${Constant.PROPERTY_PREFIX}ClusterURL",
+    "Connection URL for SnappyData cluster when connector mode is " +
+     "used. This URL is of the form \"jdbc:snappydata://localhost:clientPort/\"",
+     None, Constant.SPARK_PREFIX)
+
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
