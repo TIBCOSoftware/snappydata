@@ -42,6 +42,20 @@ object SnappyTestUtils {
     pw.println("Class is available on all executors : numExecutors (" + countInstances + ") having the class " + className + " loaded, is same as numServers (" + count + ") in test" + " and the class version is: " + version);
   }
 
+  def verifyClassLoadedUsingForNameOnExecutors(snc: SnappyContext, className: String,
+                             version: String, count: Int, pw: PrintWriter): Unit = {
+    val countInstances = Utility.mapExecutors(snc,
+      () => {
+        if (SnappyTestUtils.loadClassUsingForName(className, version)) {
+          Seq(1).iterator
+        } else Iterator.empty
+      }).count
+
+    assert(countInstances == count)
+    pw.println("Class loaded using Class.forName is available on all executors : numExecutors (" +
+      countInstances + ") having the class " + className + " loaded, is same as numServers (" + count + ") in test" + " and the class version is: " + version);
+  }
+
   def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
     new JavaSourceFromString(name, code)
   }
@@ -80,4 +94,20 @@ object SnappyTestUtils {
     }
   }
 
+  def loadClassUsingForName(className: String,
+                version: String = ""): Boolean = {
+    val catchExpectedException: Boolean = version.isEmpty
+    val loader = Thread.currentThread().getContextClassLoader
+    assert(loader != null)
+    try {
+      val fakeClass = Class.forName(className, false, loader).newInstance()
+      assert(fakeClass != null)
+      assert(fakeClass.toString.equals(version))
+      true
+    } catch {
+      case cnfe: ClassNotFoundException =>
+        if (!catchExpectedException) throw cnfe
+        else false
+    }
+  }
 }

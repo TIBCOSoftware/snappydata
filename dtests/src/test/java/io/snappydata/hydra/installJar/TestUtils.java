@@ -31,10 +31,17 @@ public class TestUtils {
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass1", "1", numServers, pw);
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass2", "1", numServers, pw);
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass3", "1", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass0", "1", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass1", "1", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass2", "1", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass3", "1", numServers, pw);
             } else {
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass0", "2", numServers, pw);
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass1", "2", numServers, pw);
                 SnappyTestUtils.verifyClassOnExecutors(snc, "FakeClass2", "2", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass0", "2", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass1", "2", numServers, pw);
+                SnappyTestUtils.verifyClassLoadedUsingForNameOnExecutors(snc, "FakeClass2", "2", numServers, pw);
             }
         } catch (Exception e) {
             if (expectedException && e.getMessage().contains("java.lang.ClassNotFoundException")) {
