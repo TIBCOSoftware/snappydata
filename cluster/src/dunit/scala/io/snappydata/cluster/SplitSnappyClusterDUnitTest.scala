@@ -21,6 +21,7 @@ import java.util.Properties
 
 import scala.language.postfixOps
 
+import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -87,6 +88,14 @@ class SplitSnappyClusterDUnitTest(s: String)
     startNetworkServers(3)
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
+        "PR_TABLE3" :+ "PR_TABLE4")
+  }
+
+
+  def testCColumnTableStatsInSplitMode(): Unit = {
+    startNetworkServers(3)
+    testObject.createColumnTableForCollocatedJoin()
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
   }
 }
@@ -269,6 +278,39 @@ object SplitSnappyClusterDUnitTest
 
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
+
+    logInfo("Successful")
+  }
+
+
+  def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
+      locatorProp: String, table1: String, table2: String): Unit = {
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("spark.testing.reservedMemory", "0")
+        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
+
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
+
+
+    snc.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
+        "column options(redundancy '1', buckets '1')")
+    val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
+        "(10))) as sym")
+    testDF.write.insertInto("snappyTable")
+    val stats = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats.getRowCount())
+    assert(stats.getRowCount == 10000000 )
 
     logInfo("Successful")
   }
