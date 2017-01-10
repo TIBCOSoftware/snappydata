@@ -56,25 +56,39 @@ class SnappyExecutor(
     val urls = userClassPath.toArray ++ currentJars.keySet.map { uri =>
       new File(uri.split("/").last).toURI.toURL
     }
-
-    new SnappyMutableURLClassLoader(urls, currentLoader)
+    val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
+    new SnappyMutableURLClassLoader(urls, currentLoader, jobJars)
 
   }
+
+  def getName(path: String) = new File(path).getName
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
       newJars: mutable.HashMap[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
-    def getName(path: String) = new File(path).getName
-    val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
-    val addedJarFiles = classloader.getAddedURLs.toList
-    val newJarFiles = newJars.keys.map(getName).toList
-    addedJarFiles.diff(newJarFiles).foreach(classloader.removeURL)
+    synchronized {
+      val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
+      val addedJarFiles = classloader.getAddedURLs.toList
+      val newJarFiles = newJars.keys.map(getName).toList
+      val diffJars = addedJarFiles.diff(newJarFiles)
+
+      if (diffJars.size > 0) {
+        diffJars.foreach(classloader.removeURL)
+        logInfo("As some of the Jars have changed setting up new ClassLoader for subsequent Threads")
+        diffJars.foreach(d => logInfo(d))
+        this.urlClassLoader =
+            new SnappyMutableURLClassLoader(classloader.getURLs(),
+              classloader.getParent, classloader.jobJars)
+      }
+    }
   }
 }
 
-class SnappyMutableURLClassLoader(urls: Array[URL], parent: ClassLoader)
+class SnappyMutableURLClassLoader(urls: Array[URL],
+    parent: ClassLoader,
+    val jobJars : scala.collection.mutable.Map[String, URLClassLoader])
     extends MutableURLClassLoader(urls, parent) {
-  protected val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
+
 
   protected def getJobName: String = {
     var jobFile = ""

@@ -143,6 +143,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -357,21 +358,23 @@ abstract class SnappyDDLParser(session: SnappySession)
    *
    * For example:
    * {{{
-   *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name
+   *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name RETURNS ReturnType
    *    USING JAR|FILE|ARCHIVE 'file_uri';
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~ qualifiedName ~ USING ~ resourceType ~>
-        { (te: Any, functionIdent: FunctionIdentifier, className: String, funcResource : FunctionResource) =>
+    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~
+        qualifiedName ~ RETURNS ~ columnDataType ~ USING ~ resourceType ~>
+        { (te: Any, functionIdent: FunctionIdentifier, className: String,
+            t: DataType, funcResource : FunctionResource) =>
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
-
+          val classNameWithType  = className + "__"+ t.json
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
-            className,
+            classNameWithType,
             funcResources,
             isTemp)
         }

@@ -16,7 +16,7 @@
  */
 package org.apache.spark.executor
 
-import java.net.URL
+import java.net.{URLClassLoader, URL}
 import java.util.Properties
 
 import io.snappydata.SnappyFunSuite
@@ -53,13 +53,14 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
   }
 
   test(" load class by setting job name in local properties") {
-    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
+    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null,
+      scala.collection.mutable.Map.empty[String, URLClassLoader])
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
   }
 
-/*  test("remove Jar from the MutableClassLoader") {
-    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
+  test("remove Jar from the MutableClassLoader") {
+    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null, scala.collection.mutable.Map.empty[String, URLClassLoader])
     val file = new java.io.File(testJar1.toURI)
     val fileName = file.getName
     addjar(classloader, testJar1)
@@ -68,5 +69,5 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
     intercept[ClassNotFoundException] {
       verifyClass(classloader, "FakeClass1", "1")
     }
-  }*/
+  }
 }
