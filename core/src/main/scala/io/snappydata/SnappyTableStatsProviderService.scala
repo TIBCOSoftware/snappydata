@@ -210,6 +210,9 @@ object SnappyTableStatsProviderService extends Logging {
             val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+            //Resetting PR Numrows in cached batch as this will be calculated every time.This
+            // will also count problem in future in case of deletes
+            pr.getPrStats.setPRNumRowsInCachedBatches(0)
             while (itr.hasNext) {
               pr.getPrStats.incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
                   .getRow(container).getColumn(colPos).getInt)
