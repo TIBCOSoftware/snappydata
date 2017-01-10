@@ -16,6 +16,7 @@
  */
 package io.snappydata.udf;
 
+import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.DataTypes;
 
@@ -26,8 +27,4 @@ public class StringLength implements UDF1<String, Integer> {
     return s.length();
   }
 
-  @Override
-  public DataType getDataType() {
-    return DataTypes.IntegerType;
-  }
 }

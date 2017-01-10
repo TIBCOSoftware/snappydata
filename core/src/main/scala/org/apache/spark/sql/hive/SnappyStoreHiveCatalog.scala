@@ -731,71 +731,59 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private val funcJars = scala.collection.mutable.Map[String, URLClassLoader]()
-
-  private def addToFuncJars(funcDefinition: CatalogFunction, qualifiedName : FunctionIdentifier): Unit = {
-    funcJars.get(qualifiedName.unquotedString) match {
-      case Some(x) => // do nothing
-      case None => {
-        val urls = funcDefinition.resources.map { resource =>
-          val path = resource.uri
-          val uri = new Path(path).toUri
-          val jarURL = if (uri.getScheme == null) {
-            // `path` is a local file path without a URL scheme
-            new File(path).toURI.toURL
-          } else {
-            // `path` is a URL with a scheme
-            uri.toURL
-          }
-          snappySession.sparkContext.addJar(path)
-          snappySession.sparkContext.setLocalProperty(
-            "SNAPPY_JOB_SERVER_JAR_NAME", path)
-          jarURL
-        }
-
-        val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-        funcJars.put(qualifiedName.unquotedString, new ChildFirstURLClassLoader(urls.toArray, parentLoader))
-      }
+  def toUrl(resource: FunctionResource): URL = {
+    val path = resource.uri
+    val uri = new Path(path).toUri
+    if (uri.getScheme == null) {
+      // `path` is a local file path without a URL scheme
+      new File(path).toURI.toURL
+    } else {
+      // `path` is a URL with a scheme
+      uri.toURL
     }
   }
 
-  private def removeFromFuncJars(funcDefinition: CatalogFunction, qualifiedName : FunctionIdentifier): Unit = {
-    funcJars.get(qualifiedName.unquotedString) match {
-      case Some(x) =>  {
-        funcDefinition.resources.map { resource =>
-          val path = resource.uri
-          val uri = new Path(path).toUri
-          val jarURL = if (uri.getScheme == null) {
-            // `path` is a local file path without a URL scheme
-            new File(path).toURI.toURL
-          } else {
-            // `path` is a URL with a scheme
-            uri.toURL
-          }
-          removeJar(path)
-        }
-        funcJars.remove(qualifiedName.unquotedString)
-        snappySession.clearPlanCache()
-      }
-      case _ =>
-    }
+  def addToSparkJars(resource: FunctionResource) {
+    println("Adding jar to sc " + resource.uri)
+    snappySession.sparkContext.addJar(resource.uri)
+    snappySession.sparkContext.setLocalProperty(
+      "SNAPPY_JOB_SERVER_JAR_NAME", resource.uri)
   }
 
-  def removeJar(jobJarToRemove: String): Unit = {
+  def removeFromSparkJars(resource: FunctionResource): Unit = {
     def getName(path: String): String = new File(path).getName
     val sc = snappySession.sparkContext
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
+    val keyToRemove = sc.listJars().filter(getName(_) == getName(resource.uri))
     if (keyToRemove.nonEmpty) {
       sc.addedJars.remove(keyToRemove.head)
     }
   }
 
-  override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {
-    super.createFunction(funcDefinition, ignoreIfExists)
+  val jarUtil = snappySession.sharedState.jarUtils
+
+  private def addToFuncJars(funcDefinition: CatalogFunction,
+      qualifiedName: FunctionIdentifier): Unit = {
+    val urls = funcDefinition.resources.map { r =>
+      addToSparkJars(r)
+      toUrl(r)
+    }
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    if(jarUtil.getEntityJar(qualifiedName.unquotedString).isEmpty){
+      jarUtil.addEntityJar(qualifiedName.unquotedString,
+        new MutableURLClassLoader(urls.toArray, parentLoader))
+    }
+  }
+
+  private def removeFromFuncJars(funcDefinition: CatalogFunction,
+      qualifiedName: FunctionIdentifier): Unit = {
+    funcDefinition.resources.map { r =>
+      removeFromSparkJars(r)
+    }
+    jarUtil.removeEntityJar(qualifiedName.unquotedString)
   }
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
-     funcJars.get(name.unquotedString) match {
+     jarUtil.getEntityJar(name.unquotedString) match {
       case Some(x) => {
         val catalogFunction = try {
           externalCatalog.getFunction(currentSchema, name.funcName)
@@ -811,7 +799,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = funcJars.get(funcName).get // There will be some classloader for sure
+    val uRLClassLoader = jarUtil.getEntityJar(funcName).get // There will be some classloader for sure
     UDFFunction.makeFunctionBuilder(funcName, uRLClassLoader.loadClass(className))
   }
 
@@ -889,7 +877,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // At here, we preserve the input from the user.
     val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
 
-    funcJars.get(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
+    jarUtil.getEntityJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
 
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
     createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
@@ -1068,13 +1056,4 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
-}
-
-private[spark] class SnappyMutableClassLoader(urls: Array[URL], parent: ClassLoader)
-    extends MutableURLClassLoader(urls, parent) {
-
-  override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    println(s"Loading class $name from SnappyLoader")
-    super.loadClass(name, resolve)
-  }
 }
