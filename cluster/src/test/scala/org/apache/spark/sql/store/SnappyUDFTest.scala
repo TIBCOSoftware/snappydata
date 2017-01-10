@@ -153,15 +153,16 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
       "jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     try {
+      //snc.sql("CREATE FUNCTION APP.strnglen AS io.snappydata.examples.StringLengthUDF RETURNS INTEGER USING JAR '/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples.jar' ")
       stmt.execute(
-        "CREATE FUNCTION APP.strnglen AS " +
-            "io.snappydata.examples.StringLengthUDF " +
-            "USING JAR '/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples.jar'")
+        "CREATE FUNCTION strnglen AS " +
+            "io.snappydata.examples.StringLengthUDF RETURNS INTEGER " +
+            "USING JAR '/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples1.jar' ")
       val rs = stmt.executeQuery("select strnglen(description) from col_table")
       while (rs.next()){
         println(rs.getInt(1))
       }
-      stmt.execute("drop FUNCTION APP.strnglen")
+      stmt.execute("drop FUNCTION IF exists strnglen")
     } finally {
       stmt.close()
       conn.close()

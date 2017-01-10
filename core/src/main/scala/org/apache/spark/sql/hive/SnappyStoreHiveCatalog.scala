@@ -743,27 +743,37 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  def addToSparkJars(resource: FunctionResource) {
+  private def addToSparkJars(resource: FunctionResource) {
     println("Adding jar to sc " + resource.uri)
     snappySession.sparkContext.addJar(resource.uri)
     snappySession.sparkContext.setLocalProperty(
       "SNAPPY_JOB_SERVER_JAR_NAME", resource.uri)
   }
 
-  def removeFromSparkJars(resource: FunctionResource): Unit = {
+  private def removeFromSparkJars(resource: FunctionResource): Unit = {
     def getName(path: String): String = new File(path).getName
-    val sc = snappySession.sparkContext
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(resource.uri))
+
+    println(s"Removing ${resource.uri} from Spark Jars ")
+    val scContextx = snappySession.sparkContext
+    println(scContextx)
+    val keyToRemove = scContextx.listJars().filter(getName(_) == getName(resource.uri))
     if (keyToRemove.nonEmpty) {
-      sc.addedJars.remove(keyToRemove.head)
+      scContextx.addedJars.remove(keyToRemove.head)
     }
   }
 
   val jarUtil = snappySession.sharedState.jarUtils
 
+  def checkExists(resource: FunctionResource) = {
+    if(!new File(resource.uri).exists()){
+      throw new AnalysisException(s"No file named ${resource.uri} exists")
+    }
+  }
+
   private def addToFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     val urls = funcDefinition.resources.map { r =>
+      checkExists(r)
       addToSparkJars(r)
       toUrl(r)
     }
@@ -776,22 +786,25 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
-    funcDefinition.resources.map { r =>
+    funcDefinition.resources.foreach { r =>
       removeFromSparkJars(r)
     }
     jarUtil.removeEntityJar(qualifiedName.unquotedString)
   }
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
-     jarUtil.getEntityJar(name.unquotedString) match {
+    // If the name itself is not qualified, add the current database to it.
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+     jarUtil.getEntityJar(qualifiedName.unquotedString) match {
       case Some(x) => {
         val catalogFunction = try {
-          externalCatalog.getFunction(currentSchema, name.funcName)
+          externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
         } catch {
-          case e: AnalysisException => failFunctionLookup(name.funcName)
-          case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+          case e: AnalysisException => failFunctionLookup(qualifiedName.funcName)
+          case e: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
         }
-        removeFromFuncJars(catalogFunction, name)
+        removeFromFuncJars(catalogFunction, qualifiedName)
       }
       case _ =>
     }
@@ -799,8 +812,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = jarUtil.getEntityJar(funcName).get // There will be some classloader for sure
-    UDFFunction.makeFunctionBuilder(funcName, uRLClassLoader.loadClass(className))
+    val uRLClassLoader = jarUtil.getEntityJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
+    val (actualClassName,typeName) = className.splitAt(className.lastIndexOf("__"))
+    UDFFunction.makeFunctionBuilder(funcName,
+      uRLClassLoader.loadClass(actualClassName),
+      DataType.fromJson(typeName.stripPrefix("__")))
   }
 
   /**
