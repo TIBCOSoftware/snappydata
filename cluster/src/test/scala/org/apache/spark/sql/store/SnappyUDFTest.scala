@@ -22,16 +22,14 @@ import scala.util.{Failure, Success, Try}
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.RefData
-import io.snappydata.udf.UDF1
 import io.snappydata.{Lead, ServiceManager, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.types.{DataType, DataTypes}
 
 class StringLengthUDF extends UDF1[String, Int] {
   override def call(t1: String): Int = t1.length
-
-  override def getDataType: DataType = DataTypes.IntegerType
 }
 
 class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
@@ -156,7 +154,13 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     val stmt = conn.createStatement()
     try {
       stmt.execute(
-        "CREATE FUNCTION APP.strnglen AS org.apache.spark.sql.store.StringLengthUDF")
+        "CREATE FUNCTION APP.strnglen AS " +
+            "io.snappydata.examples.StringLengthUDF " +
+            "USING JAR '/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples.jar'")
+      val rs = stmt.executeQuery("select strnglen(description) from col_table")
+      while (rs.next()){
+        println(rs.getInt(1))
+      }
       stmt.execute("drop FUNCTION APP.strnglen")
     } finally {
       stmt.close()
