@@ -80,6 +80,7 @@ class SnappyExecutor(
         this.replClassLoader =
             new SnappyMutableURLClassLoader(classloader.getURLs(),
               classloader.getParent, classloader.jobJars)
+        env.serializer.setDefaultClassLoader(replClassLoader)
       }
     }
   }
