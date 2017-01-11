@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql
 
+import java.io.File
 import java.util.Date
 
 import scala.collection.mutable.ArrayBuffer
@@ -352,6 +353,11 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+  def checkExists(resource: FunctionResource) = {
+    if(!new File(resource.uri).exists()){
+      throw new AnalysisException(s"No file named ${resource.uri} exists")
+    }
+  }
 
   /**
    * Create a [[CreateFunctionCommand]] command.
@@ -370,7 +376,8 @@ abstract class SnappyDDLParser(session: SnappySession)
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
-          val classNameWithType  = className + "__"+ t.json
+          funcResources.foreach(checkExists(_))
+          val classNameWithType  = className + "__"+ t.catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,

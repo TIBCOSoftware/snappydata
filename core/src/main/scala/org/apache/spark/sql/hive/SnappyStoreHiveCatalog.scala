@@ -36,6 +36,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
+import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -768,16 +769,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   val jarUtil = snappySession.sharedState.jarUtils
 
-  def checkExists(resource: FunctionResource) = {
-    if(!new File(resource.uri).exists()){
-      throw new AnalysisException(s"No file named ${resource.uri} exists")
-    }
-  }
-
   private def addToFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     val urls = funcDefinition.resources.map { r =>
-      checkExists(r)
       addToSparkJars(r)
       toUrl(r)
     }
@@ -820,7 +814,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val (actualClassName,typeName) = className.splitAt(className.lastIndexOf("__"))
     UDFFunction.makeFunctionBuilder(funcName,
       uRLClassLoader.loadClass(actualClassName),
-      DataType.fromJson(typeName.stripPrefix("__")))
+      CatalystSqlParser.parseDataType(typeName.stripPrefix("__")))
   }
 
   /**
