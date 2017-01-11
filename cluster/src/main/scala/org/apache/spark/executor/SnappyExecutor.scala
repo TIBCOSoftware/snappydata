@@ -71,12 +71,13 @@ class SnappyExecutor(
       val addedJarFiles = classloader.getAddedURLs.toList
       val newJarFiles = newJars.keys.map(getName).toList
       val diffJars = addedJarFiles.diff(newJarFiles)
-
       if (diffJars.size > 0) {
         diffJars.foreach(classloader.removeURL)
-        logInfo("As some of the Jars have changed setting up new ClassLoader for subsequent Threads")
-        diffJars.foreach(d => logInfo(d))
-        this.urlClassLoader =
+        println("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
+        diffJars.foreach(d => println(d))
+        println("job jars after delete in previous loader")
+        classloader.jobJars.keySet.foreach(println)
+        this.replClassLoader =
             new SnappyMutableURLClassLoader(classloader.getURLs(),
               classloader.getParent, classloader.jobJars)
       }
