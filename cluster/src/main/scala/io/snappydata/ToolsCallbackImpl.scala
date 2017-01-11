@@ -49,4 +49,7 @@ object ToolsCallbackImpl extends ToolsCallback {
       new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
     }
   }
+
+  override def removeAddedJar(sc: SparkContext, jarName: String) = sc.removeAddedJar(jarName)
+
 }

@@ -32,4 +32,6 @@ trait ToolsCallback {
       (Seq[Expression], Seq[Seq[Attribute]], Int, Int)]
 
   def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
+
+  def removeAddedJar(sc: SparkContext, jarName : String): Unit
 }

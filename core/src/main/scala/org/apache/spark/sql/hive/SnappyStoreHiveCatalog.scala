@@ -45,7 +45,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{ExpressionInfo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
@@ -752,13 +752,17 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   private def removeFromSparkJars(resource: FunctionResource): Unit = {
     def getName(path: String): String = new File(path).getName
+    val sc = SnappyContext.globalSparkContext
 
-    println(s"Removing ${resource.uri} from Spark Jars ")
-    val scContextx = snappySession.sparkContext
-    println(scContextx)
-    val keyToRemove = scContextx.listJars().filter(getName(_) == getName(resource.uri))
+    val keyToRemove = sc.listJars().filter(getName(_) == getName(resource.uri))
     if (keyToRemove.nonEmpty) {
-      scContextx.addedJars.remove(keyToRemove.head)
+      val callbacks = ToolsCallbackInit.toolsCallback
+      //@TODO This is a temp workaround to fix SNAP-1133. sc.addedJar should be directly be accessible from here.
+      //May be due to scala version mismatch.
+      if(callbacks != null){
+        println(s"Removing ${resource.uri} from Spark Jars ")
+        callbacks.removeAddedJar(sc, keyToRemove.head)
+      }
     }
   }
 
