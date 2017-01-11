@@ -24,7 +24,7 @@ import scala.language.postfixOps
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
@@ -39,7 +39,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     with Serializable {
 
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
+  val currenyLocatorPort = ClusterManagerTestBase.locPort
   override protected val productDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
@@ -92,12 +92,46 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
 
-  def testCColumnTableStatsInSplitMode(): Unit = {
+  def testColumnTableStatsInSplitMode(): Unit = {
     startNetworkServers(3)
-    testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
   }
+
+
+  def testColumnTableStatsInSplitModeWithHA(): Unit = {
+    startNetworkServers(2)
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "PR_TABLE3" :+ "PR_TABLE4")
+    val props = bootProps
+    val port = currenyLocatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats.getRowCount())
+    assert(stats.getRowCount == 10000000 )
+
+    vm0.invoke(restartServer)
+
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats1 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats1.getRowCount())
+    assert(stats1.getRowCount == 10000000 )
+
+    vm1.invoke(restartServer)
+
+
+
+
+  }
+
 }
 
 object SplitSnappyClusterDUnitTest
