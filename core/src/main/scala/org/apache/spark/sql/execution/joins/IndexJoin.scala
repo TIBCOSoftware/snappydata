@@ -61,23 +61,21 @@ class IndexJoin(_leftKeys: Seq[Expression],
 
   @transient private var indexTerm: String = _
 
-  override def productElement(n: Int): Any =
-    if (n < 10) super.productElement(n) else indexScan
+  override def productElement(n: Int): Any = n match {
+    case 0 => leftKeys
+    case 1 => rightKeys
+    case 2 => buildSide
+    case 3 => condition
+    case 4 => joinType
+    case 5 => left
+    case 6 => right
+    case 7 => leftSizeInBytes
+    case 8 => rightSizeInBytes
+    case 9 => replicatedTableJoin
+    case 10 => indexScan
+  }
 
   override def productArity: Int = 11
-
-  override def copy(leftKeys: Seq[Expression],
-      rightKeys: Seq[Expression],
-      buildSide: BuildSide,
-      condition: Option[Expression],
-      joinType: JoinType,
-      left: SparkPlan,
-      right: SparkPlan,
-      leftSizeInBytes: BigInt,
-      rightSizeInBytes: BigInt,
-      replicatedTableJoin: Boolean): SparkPlan = new IndexJoin(leftKeys,
-    rightKeys, buildSide, condition, joinType, left, right, leftSizeInBytes,
-    rightSizeInBytes, replicatedTableJoin, indexScan)
 
   override def nodeName: String = "IndexJoin"
 

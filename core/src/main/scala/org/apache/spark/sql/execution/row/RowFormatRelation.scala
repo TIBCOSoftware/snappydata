@@ -297,6 +297,8 @@ class RowFormatRelation(
   }
 
   override def getIndexScan(indexColumns: Seq[String]): Option[IndexScan] = {
+    None
+    /*
     // only in embedded mode for now
     if (connectionType != ConnectionType.Embedded) return None
 
@@ -307,22 +309,7 @@ class RowFormatRelation(
       if (pkCols.nonEmpty) {
       }
     }
-  }
-}
-
-final class RowTableIndexScan(indexName: String, isPrimaryKey: Boolean)
-    extends IndexScan {
-
-  override def initialize(projectionColumns: Seq[String]): Unit = {
-
-  }
-
-  override def lookup(key: InternalRow): Iterator[InternalRow] = {
-
-  }
-
-  override def close(): Unit = {
-
+    */
   }
 }
 
