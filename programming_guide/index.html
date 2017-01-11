@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData Development Team">
+  <meta name="author" content="SnappyData Team">
   
   <title>Programming Guide - SnappyData Documentation</title>
   
@@ -571,6 +571,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 //   connection at a server endpoint
 </code></pre>
 
+<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
 <h2 id="building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</h2>
 <h3 id="snappysession-usage">SnappySession Usage</h3>
 <h4 id="create-columnar-tables-using-api">Create Columnar Tables using API</h4>
@@ -810,7 +811,7 @@ snsc.sql(&quot;select count(*) from streamingExample&quot;).show()
    (
   COLUMN_DEFININTION
    )
-USING 'row | column'
+USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
 PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
@@ -819,7 +820,7 @@ REDUNDANCY        '1' ,
 RECOVER_DELAY     '-1',
 MAX_PART_SIZE      '50',
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string will map to default diskstore
+PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
 OFFHEAP ‘true | false’ ,
 EXPIRE ‘TIMETOLIVE in seconds',
 )
@@ -828,6 +829,7 @@ EXPIRE ‘TIMETOLIVE in seconds',
 DROP TABLE [IF EXISTS] table_name
 </code></pre>
 
+<p>Refer to the <a href="../howto">How-Tos</a> section for more information on partitioning and collocating data.</p>
 <p>For row format tables column definition can take underlying GemFire XD syntax to create a table. For example, note the PRIMARY KEY clause below.</p>
 <pre><code class="scala">snappy.sql(&quot;CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
          USING row options(BUCKETS '5')&quot; )
@@ -870,37 +872,37 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
 <ol>
 <li>
-<p>COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</p>
+<p>COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</p>
 </li>
 <li>
-<p>PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.</p>
+<p>PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.</p>
 </li>
 <li>
-<p>BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.</p>
+<p>BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.</p>
 </li>
 <li>
-<p>REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
+<p>REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
 </li>
 <li>
-<p>RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.</p>
+<p>RECOVER_DELAY: Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members wait for before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.</p>
 </li>
 <li>
-<p>MAX_PART_SIZE : The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.</p>
+<p>MAX_PART_SIZE: The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.</p>
 </li>
 <li>
-<p>EVICTION_BY : Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store</p>
+<p>EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store</p>
 </li>
 <li>
-<p>PERSISTENT :  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
+<p>PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
 </li>
 <li>
-<p>OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)</p>
+<p>OFFHEAP: SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)</p>
 </li>
 <li>
-<p>EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.</p>
+<p>EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
 </li>
 </ol>
-<h4 id="restrictions-on-column-tables">Restrictions on column tables</h4>
+<h4 id="restrictions-on-column-tables">Restrictions on Column Tables</h4>
 <ul>
 <li>
 <p>Column tables cannot specify any primary key, unique key constraints</p>
@@ -1034,7 +1036,7 @@ Any query on column table also takes into account the row cached buffer. By doin
 Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">Spark streaming</a> from the Spark Streaming guide. </p>
 <h3 id="spark-streaming-overview">Spark Streaming Overview</h3>
 <p>Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like <strong>map</strong>, <strong>reduce</strong>, <strong>join</strong> and <strong>window</strong>.</p>
-<p>Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's <a href="http://spark.apache.org/docs/latest/mllib-guide.html">machine learning</a> and <a href="http://spark.apache.org/docs/latest/graphx-programming-guide.html">graph processing</a> algorithms on data streams.  </p>
+<p>Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's <a href="http://spark.apache.org/docs/latest/mllib-guide.html">machine learning</a> and <a href="http://spark.apache.org/docs/latest/graphx-programming-guide.html">graph processing</a> algorithms on data streams.</p>
 <p><img alt="Spark Streaming architecture" src="http://spark.apache.org/docs/latest/img/streaming-arch.png" /></p>
 <p>Internally, it works as follows. Spark Streaming receives live input data streams and divides the data into batches, which are then processed by the Spark engine to generate the final stream of results in batches.</p>
 <p><img alt="Spark Streaming data flow" src="http://spark.apache.org/docs/latest/img/streaming-flow.png" /></p>
@@ -1155,7 +1157,7 @@ val resultStream = snsc.registerCQ(&quot;SELECT s1.id, s1.text FROM stream1 wind
 dStream.foreachDataFrame(_.write.insertInto(&quot;yourTableName&quot;))
 </code></pre>
 
-<h3 id="dynamicad-hoc-continuous-queries">Dynamic(ad-hoc) Continuous Queries</h3>
+<h3 id="dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</h3>
 <p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
               
             </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>memory - snappydata_2.11 0.7 API - org.apache.spark.memory</title>
-          <meta name="description" content="memory - snappydata 2.11 0.7 API - org.apache.spark.memory" />
-          <meta name="keywords" content="memory snappydata 2.11 0.7 API org.apache.spark.memory" />
+          <title>memory - snappy-cluster_2.11 0.6 API - org.apache.spark.memory</title>
+          <meta name="description" content="memory - snappy - cluster 2.11 0.6 API - org.apache.spark.memory" />
+          <meta name="keywords" content="memory snappy cluster 2.11 0.6 API org.apache.spark.memory" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,42 +47,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>This package implements Spark's memory management system. This system consists of two main
-components, a JVM-wide memory manager and a per-task manager:</p><ul><li><span class="extype" name="org.apache.spark.memory.MemoryManager">org.apache.spark.memory.MemoryManager</span> manages Spark's overall memory usage within a JVM.
-   This component implements the policies for dividing the available memory across tasks and for
-   allocating memory between storage (memory used caching and data transfer) and execution
-   (memory used by computations, such as shuffles, joins, sorts, and aggregations).</li><li><a href="TaskMemoryManager.html" class="extype" name="org.apache.spark.memory.TaskMemoryManager">org.apache.spark.memory.TaskMemoryManager</a> manages the memory allocated by individual
-   tasks. Tasks interact with TaskMemoryManager and never directly interact with the JVM-wide
-   MemoryManager.</li></ul><p>Internally, each of these components have additional abstractions for memory bookkeeping:</p><ul><li><a href="MemoryConsumer.html" class="extype" name="org.apache.spark.memory.MemoryConsumer">org.apache.spark.memory.MemoryConsumer</a>s are clients of the TaskMemoryManager and
-   correspond to individual operators and data structures within a task. The TaskMemoryManager
-   receives memory allocation requests from MemoryConsumers and issues callbacks to consumers
-   in order to trigger spilling when running low on memory.</li><li><span class="extype" name="org.apache.spark.memory.MemoryPool">org.apache.spark.memory.MemoryPool</span>s are a bookkeeping abstraction used by the
-   MemoryManager to track the division of memory between storage and execution.</li></ul><p>Diagrammatically:</p><pre>+-------------+
-| MemConsumer |----+                                   +------------------------+
-+-------------+    |    +-------------------+          |     MemoryManager      |
-                   +---&gt;| TaskMemoryManager |----+     |                        |
-+-------------+    |    +-------------------+    |     |  +------------------+  |
-| MemConsumer |----+                             |     |  |  StorageMemPool  |  |
-+-------------+         +-------------------+    |     |  +------------------+  |
-                        | TaskMemoryManager |----+     |                        |
-                        +-------------------+    |     |  +------------------+  |
-                                                 +----&gt;|  |OnHeapExecMemPool |  |
-                                 *               |     |  +------------------+  |
-                                 *               |     |                        |
-+-------------+                  *               |     |  +------------------+  |
-| MemConsumer |----+                             |     |  |OffHeapExecMemPool|  |
-+-------------+    |    +-------------------+    |     |  +------------------+  |
-                   +---&gt;| TaskMemoryManager |----+     |                        |
-                        +-------------------+          +------------------------+</pre><p>There are two implementations of <span class="extype" name="org.apache.spark.memory.MemoryManager">org.apache.spark.memory.MemoryManager</span> which vary in how
-they handle the sizing of their memory pools:</p><ul><li><span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">org.apache.spark.memory.UnifiedMemoryManager</span>, the default in Spark 1.6+, enforces soft
-   boundaries between storage and execution memory, allowing requests for memory in one region
-   to be fulfilled by borrowing memory from the other.</li><li><span class="extype" name="org.apache.spark.memory.StaticMemoryManager">org.apache.spark.memory.StaticMemoryManager</span> enforces hard boundaries between storage
-   and execution memory by statically partitioning Spark's memory and preventing storage and
-   execution from borrowing memory from each other. This mode is retained only for legacy
-   compatibility purposes.
-</li></ul></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -130,7 +97,7 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="MemoryConsumer.html"><span class="name">MemoryConsumer</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="MemoryConsumer.html"><span class="name">MemoryConsumer</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.package@MemoryConsumerextendsObject" title="Permalink" target="_top">
@@ -188,7 +155,7 @@ to allocate the space.</p></div></div>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TaskMemoryManager.html"><span class="name">TaskMemoryManager</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="TaskMemoryManager.html"><span class="name">TaskMemoryManager</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.package@TaskMemoryManagerextendsObject" title="Permalink" target="_top">
@@ -220,23 +187,6 @@ to allocate the space.</p></div></div>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.memory.UnifiedMemoryManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="UnifiedMemoryManager"></a>
-      <a id="UnifiedMemoryManager:UnifiedMemoryManager"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="UnifiedMemoryManager$.html"><span class="name">UnifiedMemoryManager</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.package@UnifiedMemoryManager" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li></ol>
             </div>
 
@@ -247,7 +197,7 @@ to allocate the space.</p></div></div>
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

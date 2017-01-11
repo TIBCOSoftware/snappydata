@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>xml - snappydata_2.11 0.7 API - org.apache.spark.sql.catalyst.expressions.xml</title>
-          <meta name="description" content="xml - snappydata 2.11 0.7 API - org.apache.spark.sql.catalyst.expressions.xml" />
-          <meta name="keywords" content="xml snappydata 2.11 0.7 API org.apache.spark.sql.catalyst.expressions.xml" />
+          <title>xml - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.xml</title>
+          <meta name="description" content="xml - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.catalyst.expressions.xml" />
+          <meta name="keywords" content="xml snappy cluster 2.11 0.6 API org.apache.spark.sql.catalyst.expressions.xml" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -75,7 +75,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="UDFXPathUtil.html"><span class="name">UDFXPathUtil</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="UDFXPathUtil.html"><span class="name">UDFXPathUtil</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@UDFXPathUtilextendsObject" title="Permalink" target="_top">
@@ -83,184 +83,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathBoolean" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathBooleanextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathBoolean:XPathBoolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathBoolean.html"><span class="name">XPathBoolean</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathBooleanextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathDoubleextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathDouble:XPathDouble"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathDouble.html"><span class="name">XPathDouble</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathDoubleextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="XPathExtractextendsBinaryExpressionwithExpectsInputTypeswithCodegenFallback"></a>
-      <a id="XPathExtract:XPathExtract"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathExtract.html"><span class="name">XPathExtract</span></a><span class="result"> extends <a href="../BinaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BinaryExpression">BinaryExpression</a> with <a href="../ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a> with <a href="../codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathExtractextendsBinaryExpressionwithExpectsInputTypeswithCodegenFallback" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Base class for xpath_boolean, xpath_double, xpath_int, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Base class for xpath_boolean, xpath_double, xpath_int, etc.</p><p>This is not the world's most efficient implementation due to type conversion, but works.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathFloatextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathFloat:XPathFloat"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathFloat.html"><span class="name">XPathFloat</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathFloatextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathIntextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathInt:XPathInt"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathInt.html"><span class="name">XPathInt</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathIntextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathListextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathList:XPathList"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathList.html"><span class="name">XPathList</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathListextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathLongextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathLong:XPathLong"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathLong.html"><span class="name">XPathLong</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathLongextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathShortextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathShort:XPathShort"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathShort.html"><span class="name">XPathShort</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathShortextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.xml.XPathString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="XPathStringextendsXPathExtractwithProductwithSerializable"></a>
-      <a id="XPathString:XPathString"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="XPathString.html"><span class="name">XPathString</span></a><span class="params">(<span name="xml">xml: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="path">path: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="XPathExtract.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.xml.XPathExtract">XPathExtract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.xml.package@XPathStringextendsXPathExtractwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
     </li></ol>
             </div>
 

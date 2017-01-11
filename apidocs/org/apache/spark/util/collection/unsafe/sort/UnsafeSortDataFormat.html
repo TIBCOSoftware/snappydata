@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>UnsafeSortDataFormat - snappydata_2.11 0.7 API - org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat</title>
-          <meta name="description" content="UnsafeSortDataFormat - snappydata 2.11 0.7 API - org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat" />
-          <meta name="keywords" content="UnsafeSortDataFormat snappydata 2.11 0.7 API org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat" />
+          <title>UnsafeSortDataFormat - snappy-cluster_2.11 0.6 API - org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat</title>
+          <meta name="description" content="UnsafeSortDataFormat - snappy - cluster 2.11 0.6 API - org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat" />
+          <meta name="keywords" content="UnsafeSortDataFormat snappy cluster 2.11 0.6 API org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -51,7 +51,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.util.collection.SortDataFormat">SortDataFormat</span>[<a href="RecordPointerAndKeyPrefix.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.RecordPointerAndKeyPrefix">RecordPointerAndKeyPrefix</a>, <a href="../../../../unsafe/array/LongArray.html" class="extype" name="org.apache.spark.unsafe.array.LongArray">LongArray</a>], <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.util.collection.SortDataFormat">SortDataFormat</span>[<a href="RecordPointerAndKeyPrefix.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.RecordPointerAndKeyPrefix">RecordPointerAndKeyPrefix</a>, <a href="../../../../unsafe/array/LongArray.html" class="extype" name="org.apache.spark.unsafe.array.LongArray">LongArray</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -181,9 +181,7 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Allocates a Buffer that can hold up to 'length' elements.</p><div class="fullcomment"><div class="comment cmt"><p>Allocates a Buffer that can hold up to 'length' elements.
-All elements of the buffer should be considered invalid until data is explicitly copied in.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -210,7 +208,7 @@ All elements of the buffer should be considered invalid until data is explicitly
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat@clone():Object" title="Permalink" target="_top">
@@ -240,7 +238,7 @@ All elements of the buffer should be considered invalid until data is explicitly
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Copy a single element from src(srcPos) to dst(dstPos).</p><div class="fullcomment"><div class="comment cmt"><p>Copy a single element from src(srcPos) to dst(dstPos).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat#copyRange" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="copyRange(src:org.apache.spark.unsafe.array.LongArray,srcPos:Int,dst:org.apache.spark.unsafe.array.LongArray,dstPos:Int,length:Int):Unit"></a>
       <a id="copyRange(LongArray,Int,LongArray,Int,Int):Unit"></a>
@@ -257,9 +255,7 @@ All elements of the buffer should be considered invalid until data is explicitly
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Copy a range of elements starting at src(srcPos) to dst, starting at dstPos.</p><div class="fullcomment"><div class="comment cmt"><p>Copy a range of elements starting at src(srcPos) to dst, starting at dstPos.
-Overlapping ranges are allowed.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -269,7 +265,7 @@ Overlapping ranges are allowed.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -350,10 +346,7 @@ Overlapping ranges are allowed.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the sort key for the element at the given index and reuse the input key if possible.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the sort key for the element at the given index and reuse the input key if possible.
-The default implementation ignores the reuse parameter and invokes <span class="extype" name="getKey(Buffer,">Int</span>.
-If you want to override this method, you must implement <span class="extype" name="newKey()">newKey()</span>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat#getKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getKey(data:org.apache.spark.unsafe.array.LongArray,pos:Int):org.apache.spark.util.collection.unsafe.sort.RecordPointerAndKeyPrefix"></a>
       <a id="getKey(LongArray,Int):RecordPointerAndKeyPrefix"></a>
@@ -370,7 +363,7 @@ If you want to override this method, you must implement <span class="extype" nam
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the sort key for the element at the given index.</p><div class="fullcomment"><div class="comment cmt"><p>Return the sort key for the element at the given index.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -414,7 +407,7 @@ If you want to override this method, you must implement <span class="extype" nam
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -438,9 +431,7 @@ If you want to override this method, you must implement <span class="extype" nam
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new mutable key for reuse.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new mutable key for reuse. This should be implemented if you want to override
-<span class="extype" name="getKey(Buffer,">Int, K)</span>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -491,7 +482,7 @@ If you want to override this method, you must implement <span class="extype" nam
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Swap two elements.</p><div class="fullcomment"><div class="comment cmt"><p>Swap two elements.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.util.collection.unsafe.sort.UnsafeSortDataFormat">UnsafeSortDataFormat</a> → SortDataFormat</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -607,7 +598,7 @@ If you want to override this method, you must implement <span class="extype" nam
         <div class="parent" name="org.apache.spark.util.collection.SortDataFormat">
               <h3>Inherited from <span class="extype" name="org.apache.spark.util.collection.SortDataFormat">SortDataFormat</span>[<a href="RecordPointerAndKeyPrefix.html" class="extype" name="org.apache.spark.util.collection.unsafe.sort.RecordPointerAndKeyPrefix">RecordPointerAndKeyPrefix</a>, <a href="../../../../unsafe/array/LongArray.html" class="extype" name="org.apache.spark.unsafe.array.LongArray">LongArray</a>]</h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

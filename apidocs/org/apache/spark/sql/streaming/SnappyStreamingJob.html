@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyStreamingJob - snappydata_2.11 0.7 API - org.apache.spark.sql.streaming.SnappyStreamingJob</title>
-          <meta name="description" content="SnappyStreamingJob - snappydata 2.11 0.7 API - org.apache.spark.sql.streaming.SnappyStreamingJob" />
-          <meta name="keywords" content="SnappyStreamingJob snappydata 2.11 0.7 API org.apache.spark.sql.streaming.SnappyStreamingJob" />
+          <title>SnappyStreamingJob - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.streaming.SnappyStreamingJob</title>
+          <meta name="description" content="SnappyStreamingJob - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.streaming.SnappyStreamingJob" />
+          <meta name="keywords" content="SnappyStreamingJob snappy cluster 2.11 0.6 API org.apache.spark.sql.streaming.SnappyStreamingJob" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -51,11 +51,8 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div><div class="toggleContainer block">
-            <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../../../../../io/snappydata/examples/TwitterPopularTagsJob$.html" class="extype" name="io.snappydata.examples.TwitterPopularTagsJob">TwitterPopularTagsJob</a></div>
-          </div></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
         
 
       <div id="mbrsel">
@@ -122,7 +119,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">C</span><span class="result"> = <a href="../../streaming/SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>
+        <span class="name">C</span><span class="result"> = <span class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@C=org.apache.spark.streaming.SnappyStreamingContext" title="Permalink" target="_top">
@@ -144,7 +141,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <a href="../../streaming/SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="../SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
+        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</span></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="../SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@isValidJob(sc:org.apache.spark.streaming.SnappyStreamingContext,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation" title="Permalink" target="_top">
@@ -161,7 +158,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">runSnappyJob</span><span class="params">(<span name="sc">sc: <a href="../../streaming/SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">runSnappyJob</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</span></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@runSnappyJob(sc:org.apache.spark.streaming.SnappyStreamingContext,jobConfig:com.typesafe.config.Config):Any" title="Permalink" target="_top">
@@ -225,6 +222,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SnappyStreamingJob#addOrReplaceJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addOrReplaceJar(sc:SnappyStreamingJob.this.C,jarName:String,jarPath:String):Unit"></a>
+      <a id="addOrReplaceJar(C,String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addOrReplaceJar</span><span class="params">(<span name="sc">sc: <a href="#C=org.apache.spark.streaming.SnappyStreamingContext" class="extmbr" name="org.apache.spark.sql.streaming.SnappyStreamingJob.C">C</a></span>, <span name="jarName">jarName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="jarPath">jarPath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@addOrReplaceJar(sc:SnappyStreamingJob.this.C,jarName:String,jarPath:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SnappyStreamingJob">SnappyStreamingJob</a> → SparkJobBase</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -251,7 +265,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@clone():Object" title="Permalink" target="_top">
@@ -274,7 +288,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -382,7 +396,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.SnappyStreamingJob@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -573,7 +587,7 @@
         <div class="parent" name="spark.jobserver.SparkJobBase">
               <h3>Inherited from <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>RowSet - snappydata_2.11 0.7 API - org.apache.hive.service.cli.RowSet</title>
-          <meta name="description" content="RowSet - snappydata 2.11 0.7 API - org.apache.hive.service.cli.RowSet" />
-          <meta name="keywords" content="RowSet snappydata 2.11 0.7 API org.apache.hive.service.cli.RowSet" />
+          <title>RowSet - snappy-cluster_2.11 0.6 API - org.apache.hive.service.cli.RowSet</title>
+          <meta name="description" content="RowSet - snappy - cluster 2.11 0.6 API - org.apache.hive.service.cli.RowSet" />
+          <meta name="keywords" content="RowSet snappy cluster 2.11 0.6 API org.apache.hive.service.cli.RowSet" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">RowSet</span><span class="result"> extends <span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]]</span>
+        <span class="name">RowSet</span><span class="result"> extends <span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]]</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]], <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="ColumnBasedSet.html" class="extype" name="org.apache.hive.service.cli.ColumnBasedSet">ColumnBasedSet</a>, <a href="RowBasedSet.html" class="extype" name="org.apache.hive.service.cli.RowBasedSet">RowBasedSet</a></div>
@@ -104,7 +104,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">addRow</span><span class="params">(<span name="fields">fields: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.hive.service.cli.RowSet">RowSet</a></span>
+        <span class="name">addRow</span><span class="params">(<span name="fields">fields: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.hive.service.cli.RowSet">RowSet</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@addRow(fields:Array[Object]):org.apache.hive.service.cli.RowSet" title="Permalink" target="_top">
@@ -155,7 +155,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterator</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]]</span>
+        <span class="name">iterator</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@iterator():java.util.Iterator[T]" title="Permalink" target="_top">
@@ -223,7 +223,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toTRowSet</span><span class="params">()</span><span class="result">: <a href="thrift/TRowSet.html" class="extype" name="org.apache.hive.service.cli.thrift.TRowSet">TRowSet</a></span>
+        <span class="name">toTRowSet</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.hive.service.cli.thrift.TRowSet">TRowSet</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@toTRowSet():org.apache.hive.service.cli.thrift.TRowSet" title="Permalink" target="_top">
@@ -313,7 +313,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@clone():Object" title="Permalink" target="_top">
@@ -336,7 +336,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -384,6 +384,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="java.lang.Iterable#forEach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="forEach(x$1:java.util.function.Consumer[_&gt;:T]):Unit"></a>
+      <a id="forEach(Consumer[_&gt;:Array[AnyRef]]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">forEach</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.function.Consumer">Consumer</span>[_ &gt;: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@forEach(x$1:java.util.function.Consumer[_&gt;:T]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterable</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -444,7 +461,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -486,6 +503,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="java.lang.Iterable#spliterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="spliterator():java.util.Spliterator[T]"></a>
+      <a id="spliterator():Spliterator[Array[AnyRef]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spliterator</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Spliterator">Spliterator</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.hive.service.cli.RowSet@spliterator():java.util.Spliterator[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterable</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -599,9 +633,9 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="java.lang.Iterable">
-              <h3>Inherited from <span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]]</h3>
+              <h3>Inherited from <span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData Development Team">
+  <meta name="author" content="SnappyData Team">
   
   <title>How Tos - SnappyData Documentation</title>
   
@@ -308,10 +308,11 @@ The SnappyData Locator has stopped.
 <p>To start the cluster on multiple hosts:</p>
 <ol>
 <li>
-<p>The easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.</p>
+<p>The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.</p>
 </li>
 <li>
-<p>In the <strong>conf</strong> folder, create the configuration files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>. Edit the files to include the hostnames on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, <strong>conf/servers.template)</strong>.</p>
+<p>Create the configuration files using the templates provided in the <strong>conf</strong> folder. Copy the exiting template files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>, and rename them to <strong>servers</strong>, <strong>locators</strong>, <strong>leads</strong>.
+</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the <a href="../configuration/#configuration-files">configuration</a> section for more information on properties.</p>
 </li>
 <li>
 <p>Start the cluster using <code>sbin/snappy-start-all.sh</code>. SnappyData starts the cluster using SSH.</p>
@@ -762,6 +763,7 @@ preparedStmt1.executeBatch()
 preparedStmt1.close()
 </code></pre>
 
+<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
 <p><a id="howto-JSON"></a></p>
 <h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
 <p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>

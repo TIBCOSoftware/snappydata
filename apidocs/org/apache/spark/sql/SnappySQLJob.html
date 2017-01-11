@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappySQLJob - snappydata_2.11 0.7 API - org.apache.spark.sql.SnappySQLJob</title>
-          <meta name="description" content="SnappySQLJob - snappydata 2.11 0.7 API - org.apache.spark.sql.SnappySQLJob" />
-          <meta name="keywords" content="SnappySQLJob snappydata 2.11 0.7 API org.apache.spark.sql.SnappySQLJob" />
+          <title>SnappySQLJob - snappy-cluster_2.11 0.6 API - org.apache.spark.sql.SnappySQLJob</title>
+          <meta name="description" content="SnappySQLJob - snappy - cluster 2.11 0.6 API - org.apache.spark.sql.SnappySQLJob" />
+          <meta name="keywords" content="SnappySQLJob snappy cluster 2.11 0.6 API org.apache.spark.sql.SnappySQLJob" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -28,7 +28,7 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Trait" src="../../../../lib/trait_big.png" />
+        <img alt="Class" src="../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
         <h1>SnappySQLJob</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="org.apache.spark.sql">package sql</a>
@@ -41,8 +41,8 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
         <span class="name">SnappySQLJob</span><span class="result"> extends <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span></span>
@@ -51,10 +51,10 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../../../../io/snappydata/examples/AirlineDataJob$.html" class="extype" name="io.snappydata.examples.AirlineDataJob">AirlineDataJob</a>, <a href="../examples/snappydata/CollocatedJoinExample$.html" class="extype" name="org.apache.spark.examples.snappydata.CollocatedJoinExample">CollocatedJoinExample</a>, <a href="../../../../io/snappydata/examples/CreateAndLoadAirlineDataJob$.html" class="extype" name="io.snappydata.examples.CreateAndLoadAirlineDataJob">CreateAndLoadAirlineDataJob</a>, <a href="../examples/snappydata/CreateColumnTable$.html" class="extype" name="org.apache.spark.examples.snappydata.CreateColumnTable">CreateColumnTable</a>, <a href="../examples/snappydata/CreatePartitionedRowTable$.html" class="extype" name="org.apache.spark.examples.snappydata.CreatePartitionedRowTable">CreatePartitionedRowTable</a>, <a href="../examples/snappydata/CreateReplicatedRowTable$.html" class="extype" name="org.apache.spark.examples.snappydata.CreateReplicatedRowTable">CreateReplicatedRowTable</a>, <a href="../../../../io/snappydata/examples/DataUpdateJob$.html" class="extype" name="io.snappydata.examples.DataUpdateJob">DataUpdateJob</a>, <a href="../../../../io/snappydata/examples/JavaCreateAndLoadAirlineDataJob.html" class="extype" name="io.snappydata.examples.JavaCreateAndLoadAirlineDataJob">JavaCreateAndLoadAirlineDataJob</a>, <a href="JavaSnappySQLJob.html" class="extype" name="org.apache.spark.sql.JavaSnappySQLJob">JavaSnappySQLJob</a>, <a href="../examples/snappydata/SynopsisDataExample$.html" class="extype" name="org.apache.spark.examples.snappydata.SynopsisDataExample">SynopsisDataExample</a>, <a href="../examples/snappydata/WorkingWithJson$.html" class="extype" name="org.apache.spark.examples.snappydata.WorkingWithJson">WorkingWithJson</a>, <a href="../examples/snappydata/WorkingWithObjects$.html" class="extype" name="org.apache.spark.examples.snappydata.WorkingWithObjects">WorkingWithObjects</a></div>
+            <div class="subClasses hiddenContent"><a href="../../../../io/snappydata/examples/JavaCreateAndLoadAirlineDataJob.html" class="extype" name="io.snappydata.examples.JavaCreateAndLoadAirlineDataJob">JavaCreateAndLoadAirlineDataJob</a></div>
           </div></div>
         
 
@@ -89,7 +89,27 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.SnappySQLJob#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():org.apache.spark.sql.SnappySQLJob"></a>
+      <a id="&lt;init&gt;:SnappySQLJob"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappySQLJob</span><span class="params">()</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@&lt;init&gt;():org.apache.spark.sql.SnappySQLJob" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
@@ -116,35 +136,35 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="org.apache.spark.sql.SnappySQLJob#isValidJob" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="isValidJob(sc:org.apache.spark.sql.SnappySession,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation"></a>
-      <a id="isValidJob(SnappySession,Config):SnappyJobValidation"></a>
+      <a id="isValidJob(sc:org.apache.spark.sql.SnappyContext,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation"></a>
+      <a id="isValidJob(SnappyContext,Config):SnappyJobValidation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
+        <span class="name">isValidJob</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</span></span>, <span name="config">config: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <a href="SnappyJobValidation.html" class="extype" name="org.apache.spark.sql.SnappyJobValidation">SnappyJobValidation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@isValidJob(sc:org.apache.spark.sql.SnappySession,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@isValidJob(sc:org.apache.spark.sql.SnappyContext,config:com.typesafe.config.Config):org.apache.spark.sql.SnappyJobValidation" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.SnappySQLJob#runSnappyJob" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="runSnappyJob(sc:org.apache.spark.sql.SnappySession,jobConfig:com.typesafe.config.Config):Any"></a>
-      <a id="runSnappyJob(SnappySession,Config):Any"></a>
+      <a id="runSnappyJob(sc:org.apache.spark.sql.SnappyContext,jobConfig:com.typesafe.config.Config):Any"></a>
+      <a id="runSnappyJob(SnappyContext,Config):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">runSnappyJob</span><span class="params">(<span name="sc">sc: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">runSnappyJob</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</span></span>, <span name="jobConfig">jobConfig: <span class="extype" name="com.typesafe.config.Config">Config</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@runSnappyJob(sc:org.apache.spark.sql.SnappySession,jobConfig:com.typesafe.config.Config):Any" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@runSnappyJob(sc:org.apache.spark.sql.SnappyContext,jobConfig:com.typesafe.config.Config):Any" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -205,6 +225,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappySQLJob#addOrReplaceJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addOrReplaceJar(sc:SnappySQLJob.this.C,jarName:String,jarPath:String):Unit"></a>
+      <a id="addOrReplaceJar(C,String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addOrReplaceJar</span><span class="params">(<span name="sc">sc: <a href="#C=Any" class="extmbr" name="org.apache.spark.sql.SnappySQLJob.C">C</a></span>, <span name="jarName">jarName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="jarPath">jarPath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@addOrReplaceJar(sc:SnappySQLJob.this.C,jarName:String,jarPath:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a> → SparkJobBase</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -231,7 +268,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@clone():Object" title="Permalink" target="_top">
@@ -254,7 +291,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -362,7 +399,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappySQLJob@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
@@ -553,7 +590,7 @@
         <div class="parent" name="spark.jobserver.SparkJobBase">
               <h3>Inherited from <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span></h3>
             </div><div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>
