@@ -72,13 +72,14 @@ private[sql] final case class ColumnTableScan(
     otherRDDs: Seq[RDD[InternalRow]],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan,
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
     isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
-      partitionColumns, baseRelation.asInstanceOf[BaseRelation])
-    with CodegenSupport {
+      partitionColumns, partitionColumnAliases,
+      baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
   override def getMetrics: Map[String, SQLMetric] = super.getMetrics ++ Map(
     "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,
@@ -462,8 +463,10 @@ private[sql] final case class ColumnTableScan(
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
+      val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
       s"""
         final $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
+        $columnBatchesSeen.${metricAdd("1")};
         $buffers = $batch.buffers();
         $numBatchRows = $batch.numRows();
       """

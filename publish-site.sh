@@ -19,13 +19,9 @@ echo LINE START $index_start_line
 if [ ! -z ${index_start_line} ]; then
   tail -n +$index_start_line ./docs/GettingStarted.md > ./docs/index.md
 else
-  echo "Did not find the Introduction line in README.md"
+  echo "Did not find the Introduction line in GettingStarted.md"
   exit 1
 fi
-
-# Copy the README.md also as is as the reference to this file from anywhere
-# else will not be broken
-#cp ./docs/index.md ./docs/README.md 
 
 # call the mkdocs utility
 MKDOCS_EXISTS=`which mkdocs`

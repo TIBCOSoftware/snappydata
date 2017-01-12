@@ -244,8 +244,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver");
+      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
+      DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
 
       String url = "jdbc:snappydata:;user=" +
           SnappyStoreHiveCatalog.HIVE_METASTORE() +
@@ -253,7 +253,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       HiveConf metadataConf = new HiveConf();
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
+          "io.snappydata.jdbc.EmbeddedDriver");
 
       try {
         HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);

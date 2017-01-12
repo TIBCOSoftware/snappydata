@@ -37,6 +37,7 @@ import io.snappydata.Constant
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -217,12 +218,12 @@ class SnappySession(@transient private val sc: SparkContext,
     removeContextObject(ctx -> (objectType -> key))
   }
 
-  private[sql] def linkBucketsToPartitions(flag: Boolean): Unit = {
-    addContextObject(StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED, flag)
+  private[sql] def linkPartitionsToBuckets(flag: Boolean): Unit = {
+    addContextObject(StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED, flag)
   }
 
-  private[sql] def hasLinkBucketsToPartitions: Boolean = {
-    getContextObject[Boolean](StoreUtils.PROPERTY_BUCKET_PARTITION_LINKED)
+  private[sql] def hasLinkPartitionsToBuckets: Boolean = {
+    getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
         .getOrElse(false)
   }
 
@@ -1527,7 +1528,7 @@ object SnappySession extends Logging {
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec =>
+      case _: ExecutedCommandExec | _: ExecutedCommand =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         (null, findShuffleDependencies(plan.childRDD).toArray,
@@ -1602,6 +1603,8 @@ object SnappySession extends Logging {
         }
         cachedDF = evaluation._1
         queryHints = evaluation._2
+      } else {
+        cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {

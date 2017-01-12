@@ -39,9 +39,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
-
-import org.apache.spark.sql.execution.joins.{HashedObjectCache, HashedRelationCache}
-
+import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
@@ -1084,7 +1082,6 @@ object SnappyContext extends Logging {
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
     CodeGeneration.clearCache()
-    HashedRelationCache.close()
     HashedObjectCache.close()
     _clusterMode match {
       case m: ExternalClusterMode =>

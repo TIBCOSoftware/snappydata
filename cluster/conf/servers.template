@@ -22,4 +22,16 @@
 # are not specified a default directory is created inside the SPARK_HOME directory.
 #
 # localhost   -dir=/tmp/data/server (config args)
+#
+# An example of how you can specify multiple locators for a server and
+# set its heap size to 64 GB.
+# 
+#     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
+# 
+# One can also specify bind address for clients and the port where it listens for
+# the client connections.
+# 
+#     localhost   -client-bind-address=server1 -client-port=1555
+# 
+# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

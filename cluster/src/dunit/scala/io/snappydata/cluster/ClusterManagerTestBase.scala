@@ -173,7 +173,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
@@ -193,7 +193,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 object ClusterManagerTestBase {
   val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
-  final val locPort: Int = locatorPort
+  final lazy val locPort: Int = locatorPort
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */

@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.datasources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
@@ -123,6 +123,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    // check for joinedCols in projections
+    val joinedAliases = if (projects.nonEmpty) {
+      joinedCols.map(j => projects.collect {
+        case a@Alias(child, _) if child.semanticEquals(j) => a.toAttribute
+      })
+    } else Seq.empty
     val metadata: Map[String, String] = if (numBuckets > 0) {
       Map.empty[String, String]
     } else {
@@ -154,6 +160,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           mappedProjects,
           numBuckets,
           joinedCols,
+          joinedAliases,
           rdd,
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
@@ -181,6 +188,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           requestedColumns,
           numBuckets,
           joinedCols,
+          joinedAliases,
           rdd,
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],

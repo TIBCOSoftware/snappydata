@@ -45,15 +45,32 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numLeads" -> 0)
     clusterStatsMap += ("numLocators" -> 0)
     clusterStatsMap += ("numTables" -> 0)
-    clusterStatsMap += ("numServers" -> 0)
+    clusterStatsMap += ("numDataServers" -> 0)
     clusterStatsMap += ("numClients" -> 0)
     clusterStatsMap += ("memoryUsage" -> 0)
 
-    val membersBuf = SnappyTableStatsProviderService.getMembersStatsFromService
+    val allMembers = SnappyTableStatsProviderService.getMembersStatsFromService
+
+    var clusterMembers = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
+    var sparkConnectors = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
+
+    allMembers.foreach(m => {
+      if (!m._2("dataServer").toString.toBoolean
+          && !m._2("activeLead").toString.toBoolean
+          && !m._2("lead").toString.toBoolean
+          && !m._2("locator").toString.toBoolean) {
+
+        if (!m._2("status").toString.equalsIgnoreCase("stopped"))
+          sparkConnectors += m
+
+      } else {
+        clusterMembers += m
+      }
+    })
 
     val tablesBuf = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand
 
-    updateClusterStats(clusterStatsMap, membersBuf, tablesBuf)
+    updateClusterStats(clusterStatsMap, clusterMembers, tablesBuf)
 
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
@@ -66,9 +83,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle, SnappyDashboardPage.membersStatsTitleTooltip)
 
-    val membersStatsTable = memberStats(membersBuf)
+    val membersStatsTable = memberStats(clusterMembers)
 
     val membersStatsDetails = membersStatsTitle ++ membersStatsTable
+
+    val sparkConnectorsStatsDetails = {
+      val sparkConnectorsStatsTitle = createTitleNode(SnappyDashboardPage.sparkConnectorsStatsTitle, SnappyDashboardPage.sparkConnectorsStatsTitleTooltip)
+      val sparkConnectorsStatsTable = connectorStats(sparkConnectors)
+
+      if(sparkConnectors.size > 0)
+        sparkConnectorsStatsTitle ++ sparkConnectorsStatsTable
+      else
+        mutable.Seq.empty[Node]
+    }
 
     val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle, SnappyDashboardPage.tablesStatsTitleTooltip)
 
@@ -76,7 +103,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val tablesStatsDetails = tablesStatsTitle ++ tablesStatsTable
 
-    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ tablesStatsDetails
+    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ sparkConnectorsStatsDetails ++ tablesStatsDetails
 
     UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
 
@@ -90,7 +117,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     var isClusterStateNormal = true
     var numLead = 0
     var numLocator = 0
-    var numServers = 0
+    var numDataServers = 0
     var numClients = 0
     var numClientsToLocator = 0
     var numClientsToDataServers = 0
@@ -109,11 +136,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         numLocator += 1
         numClientsToLocator = m("clients").toString.toInt
       }
-      if(m("cacheServer").toString.toBoolean
+      if(m("dataServer").toString.toBoolean
           && !m("activeLead").toString.toBoolean
           && !m("lead").toString.toBoolean
           && !m("locator").toString.toBoolean){
-        numServers += 1
+        numDataServers += 1
       }
 
       numClients += m("clients").toString.toInt
@@ -127,7 +154,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
     clusterStatsMap += ("numLocators" -> numLocator)
-    clusterStatsMap += ("numServers" -> numServers)
+    clusterStatsMap += ("numDataServers" -> numDataServers)
     clusterStatsMap += ("numClients" -> numClients)
     clusterStatsMap += ("numClientsToLocator" -> numClientsToLocator)
     clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
@@ -205,7 +232,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("locators")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numServers","NA")}</div>
+        <div class="keyStatsValue">{clusterDetails.getOrElse("numDataServers","NA")}</div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("servers")}</div>
       </div>
       <div class="keyStates">
@@ -287,6 +314,45 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
+  private def connectorStats(sparkConnectors: mutable.Map[String,mutable.Map[String, Any]]): Seq[Node] = {
+    <div>
+      <table class="table table-bordered table-condensed table-striped">
+        <thead>
+          <tr>
+            <th style="text-align:center;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrIdTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrId")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsage")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsageTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsage")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemory")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemory")}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sparkConnectors.map(mb => connectorRow(mb._2))}
+        </tbody>
+      </table>
+    </div>
+  }
+
   private def tableStats(tablesBuf: Map[String, SnappyRegionStats]): Seq[Node] = {
 
     <div>
@@ -358,8 +424,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           "LEAD"
       } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
         "LOCATOR"
+      } else if(memberDetails.getOrElse("dataServer",false).toString.toBoolean){
+        "DATA SERVER"
       } else {
-        "DATA SERVER "
+        "CONNECTOR"
       }
     }
 
@@ -396,6 +464,40 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{memberDetails.getOrElse("clients","NA")}</div>
+      </td>
+    </tr>
+  }
+
+  private def connectorRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
+
+    val nameOrId = {
+      if(memberDetails.getOrElse("name","NA").equals("NA")
+          || memberDetails.getOrElse("name","NA").equals("")){
+        memberDetails.getOrElse("id","NA")
+      }else{
+        memberDetails.getOrElse("name","NA")
+      }
+    }
+
+    val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
+    val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+    val memoryUsage: Double = (usedMemory * 100) / totalMemory
+
+    <tr>
+      <td>
+        <div style="width:100%; padding-left:10px;">{nameOrId}</div>
+      </td>
+      <td>
+        {makeProgressBar(memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble)}
+      </td>
+      <td>
+        {makeProgressBar(memoryUsage)}
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(usedMemory)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(totalMemory).toString}</div>
       </td>
     </tr>
   }
@@ -509,6 +611,26 @@ object SnappyDashboardPage{
   memberStatsColumn += ("locatorTooltip" -> "Member is Locator")
   memberStatsColumn += ("server" -> "Server")
   memberStatsColumn += ("serverTooltip" -> "Member is Server")
+
+  val sparkConnectorsStatsTitle = "Spark Connectors"
+  val sparkConnectorsStatsTitleTooltip = "Spark Connectors Summary"
+  val sparkConnectorsStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  sparkConnectorsStatsColumn += ("id" -> "Id")
+  sparkConnectorsStatsColumn += ("idTooltip" -> "Spark Connectors unique Identifier")
+  sparkConnectorsStatsColumn += ("name" -> "Name")
+  sparkConnectorsStatsColumn += ("nameTooltip" -> "Connector Name")
+  sparkConnectorsStatsColumn += ("nameOrId" -> "Member")
+  sparkConnectorsStatsColumn += ("nameOrIdTooltip" -> "Connector Name/Id")
+  sparkConnectorsStatsColumn += ("host" -> "Host")
+  sparkConnectorsStatsColumn += ("hostTooltip" -> "Physical machine on which member is running")
+  sparkConnectorsStatsColumn += ("cpuUsage" -> "CPU Usage")
+  sparkConnectorsStatsColumn += ("cpuUsageTooltip" -> "CPU used by Connector")
+  sparkConnectorsStatsColumn += ("memoryUsage" -> "Memory Usage")
+  sparkConnectorsStatsColumn += ("memoryUsageTooltip" -> "Memory used by Connector")
+  sparkConnectorsStatsColumn += ("usedMemory" -> "Used Memory")
+  sparkConnectorsStatsColumn += ("usedMemoryTooltip" -> "Used Memory")
+  sparkConnectorsStatsColumn += ("totalMemory" -> "Total Memory")
+  sparkConnectorsStatsColumn += ("totalMemoryTooltip" -> "Total Memory")
 
   val tablesStatsTitle = "Tables"
   val tablesStatsTitleTooltip = "SnappyData Tables Summary"
