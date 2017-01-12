@@ -42,13 +42,13 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
 
   def addjar(loader: SnappyMutableURLClassLoader, testJar: URL): Unit = {
     val taskProperties = new Properties()
-    taskProperties.setProperty("SNAPPY_JOB_SERVER_JAR_NAME", testJar.getFile)
+    taskProperties.setProperty("SNAPPY_CHANGEABLE_JAR_NAME", testJar.getFile)
     org.apache.spark.executor.Executor.taskDeserializationProps.set(taskProperties)
     loader.addURL(testJar)
   }
 
   def verifyClass(loader: SnappyMutableURLClassLoader, className: String, version: String): Unit = {
-    val fakeClass = loader.loadClass(className).newInstance()
+    val fakeClass = Class.forName(className, false, loader).newInstance()
     assert(fakeClass.toString.equals(version))
   }
 
@@ -66,8 +66,9 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
     classloader.removeURL(fileName)
+    val newClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(), classloader.getParent, classloader.jobJars)
     intercept[ClassNotFoundException] {
-      verifyClass(classloader, "FakeClass1", "1")
+      verifyClass(newClassLoader, "FakeClass1", "1")
     }
   }
 }

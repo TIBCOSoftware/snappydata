@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.ToolsCallbackInit
 
 object SnappyUtils {
 
@@ -36,10 +37,15 @@ object SnappyUtils {
 
   def removeJobJar(sc: SparkContext): Unit = {
     def getName(path: String): String = new File(path).getName
-    val jobJarToRemove = sc.getLocalProperty(Constant.JOB_SERVER_JAR_NAME)
+    val jobJarToRemove = sc.getLocalProperty(Constant.CHANGEABLE_JAR_NAME)
     val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
     if (keyToRemove.nonEmpty) {
-      sc.addedJars.remove(keyToRemove.head)
+      val callbacks = ToolsCallbackInit.toolsCallback
+      //@TODO This is a temp workaround to fix SNAP-1133. sc.addedJar should be directly be accessible from here.
+      //May be due to scala version mismatch.
+      if(callbacks != null){
+        callbacks.removeAddedJar(sc, keyToRemove.head)
+      }
     }
   }
 
