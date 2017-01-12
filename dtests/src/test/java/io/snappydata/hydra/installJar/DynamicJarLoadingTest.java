@@ -49,6 +49,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
     protected static String createJarFile(int numClasses, String classVersion) {
         String dir = getTempDir();
         List files = createClasses(numClasses, classVersion, dir);
+        files.add(createPersonClass("Person", dir));
         files.add(createJobClass("DynamicJarLoadingJob", dir));
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
@@ -69,12 +70,14 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     protected static String createJarFileWithOnlyJobClass(String dir) {
         List files = new ArrayList();
+        files.add(createPersonClass("Person", dir));
         files.add(createJobClass("DynamicJarLoadingJob", dir));
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
 
     protected static String createJarFileWithIdenticalJobClass(String dir) {
         List files = new ArrayList();
+        files.add(createPersonClass("Person", dir));
         files.add(createJobClassWithDifferentLogStatements("DynamicJarLoadingJob", dir));
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
@@ -105,6 +108,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 new scala.collection.mutable.ArrayBuffer<URL>());
     }
 
+
     public static File createJobClass(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
                 "import org.apache.spark.sql.*;\n" +
@@ -113,6 +117,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "import java.io.FileOutputStream;\n" +
                 "import java.io.PrintWriter;\n" +
                 "import java.io.StringWriter;\n" +
+                "import java.lang.reflect.Method;\n" +
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
@@ -121,6 +126,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "        try {\n" +
                 "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            Class c=Class.forName(\"person.Person\");\n" +
+                "            Method m=c.getDeclaredMethod(\"displayName\", String.class);\n" +
+                "            Object t = c.newInstance();\n" +
+                "            m.invoke(t, \"Swati\");" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob started ******\");\n" +
@@ -149,6 +158,29 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 new scala.collection.mutable.ArrayBuffer<URL>());
     }
 
+    public static File createPersonClass(String className, String destDir) {
+        String dir = destDir + File.separator + "person";
+        File person = new File(dir);
+        if (!person.exists()) FileUtil.mkdir(person);
+        String generalClassText = "package person;\n" +
+                "import com.typesafe.config.Config;\n" +
+                "public class Person {\n" +
+                "    private String name;\n" +
+                "\n" +
+                "    public Person(String n) {\n" +
+                "        name = n;\n" +
+                "    }\n" +
+                "\n" +
+                "    public void displayName() {\n" +
+                "        System.out.println(\"SS - Person Name is : \" + name);\n" +
+                "    }\n" +
+                "}";
+        return SnappyTestUtils.createCompiledClass(className,
+                person,
+                SnappyTestUtils.getJavaSourceFromString(className, generalClassText),
+                new scala.collection.mutable.ArrayBuffer<URL>());
+    }
+
     public static File createJobClassWithDifferentLogStatements(String className, String destDir) {
         String generalClassText = "import com.typesafe.config.Config;\n" +
                 "import org.apache.spark.sql.*;\n" +
@@ -157,6 +189,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "import java.io.FileOutputStream;\n" +
                 "import java.io.PrintWriter;\n" +
                 "import java.io.StringWriter;\n" +
+                "import java.lang.reflect.Method;\n" +
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
@@ -165,6 +198,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "        try {\n" +
                 "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            Class c=Class.forName(\"person.Person\");\n" +
+                "            Method m=c.getDeclaredMethod(\"displayName\", String.class);\n" +
+                "            Object t = c.newInstance();\n" +
+                "            m.invoke(t, \"Swati\");" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** Started DynamicJarLoadingJob With having Identical name but different functionality ******\");\n" +
@@ -201,6 +238,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "import java.io.FileOutputStream;\n" +
                 "import java.io.PrintWriter;\n" +
                 "import java.io.StringWriter;\n" +
+                "import java.lang.reflect.Method;\n" +
                 "\n" +
                 "public class DynamicJarLoadingJob extends JavaSnappySQLJob {\n" +
                 "    @Override\n" +
@@ -209,6 +247,10 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "        try {\n" +
                 "            SnappyContext snc = spark.sqlContext();\n" +
                 "            pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString(\"logFileName\")), true));\n" +
+                "            Class c=Class.forName(\"person.Person\");\n" +
+                "            Method m=c.getDeclaredMethod(\"displayName\", String.class);\n" +
+                "            Object t = c.newInstance();\n" +
+                "            m.invoke(t, \"Swati\");" +
                 "            int numServers = Integer.parseInt(jobConfig.getString(\"numServers\"));\n" +
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** Started DynamicJarLoadingJob accessing class loaded through previous job execution ******\");\n" +
@@ -297,6 +339,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     protected static String createJarFileWithJobAccessingClassFromPreviousJobExecution(String dir, int numClasses, String version) {
         List files = createClasses(numClasses, version, dir);
+        files.add(createPersonClass("Person", dir));
         files.add(createJobAccessingClassFromPreviousJobExecution("DynamicJarLoadingJob", dir));
         return SnappyTestUtils.createJarFile((JavaConversions.asScalaBuffer(files)).toList(), dir);
     }
