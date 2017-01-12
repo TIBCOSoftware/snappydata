@@ -173,7 +173,7 @@ public class TestThrift {
       super(inProtocol, outProtocol);
     }
 
-    public int getId() {
+    public long getId() {
       return this.connProperties.connId;
     }
 

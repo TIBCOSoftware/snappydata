@@ -109,7 +109,7 @@ class SnappyParser(session: SnappySession)
           Literal(longValue, LongType)
         }
       } catch {
-        case nfe: NumberFormatException =>
+        case _: NumberFormatException =>
           val decimal = BigDecimal(s)
           if (decimal.isValidInt) {
             Literal(decimal.toIntExact)
@@ -510,7 +510,7 @@ class SnappyParser(session: SnappySession)
           case WindowSpecReference(name) =>
             baseWindowMap.get(name) match {
               case Some(spec: WindowSpecDefinition) => spec
-              case Some(ref) => throw Utils.analysisException(
+              case Some(_) => throw Utils.analysisException(
                 s"Window reference '$name' is not a window specification")
               case None => throw Utils.analysisException(
                 s"Cannot resolve window reference '$name'")

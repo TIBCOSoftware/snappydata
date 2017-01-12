@@ -18,7 +18,7 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
+import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeSet, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.ClusteredDistribution
@@ -231,34 +231,45 @@ private[sql] trait SnappyStrategies {
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
       // if there is an index on the current stream side then use
       // IndexJoin which will use index instead of iterator
-      // TODO: also allow for index on smaller buildSide
-      val indexScan = side match {
+      val (indexScan, indexSide, indexProjects, indexFilters) = side match {
         case joins.BuildRight if canBuildLeft(joinType) => left match {
-          case PhysicalOperation(_, _,
-          LogicalRelation(index: IndexableRelation, _, _)) =>
+          case PhysicalOperation(projects, filters,
+          lr@LogicalRelation(indexed: IndexableRelation, _, _)) =>
             val indexColumns = rightKeys.collect {
+              case a: Alias if a.child.isInstanceOf[NamedExpression] =>
+                a.child.asInstanceOf[NamedExpression].name
               case ne: NamedExpression => ne.name
             }
-            if (indexColumns.isEmpty) None
-            else index.getIndexScan(indexColumns) match {
-              case None => None
-              case s@Some(_) => s
+            if (indexColumns.isEmpty) (None, side, Stream.empty, Stream.empty)
+            else {
+              val requiredColumns = (AttributeSet(projects) ++
+                  AttributeSet(filters)).map(lr.attributeMap).toSeq
+              indexed.getIndexScan(indexColumns, requiredColumns) match {
+                case None => (None, side, Stream.empty, Stream.empty)
+                case s@Some(_) => (s, joins.BuildLeft, projects, filters)
+              }
             }
         }
         case joins.BuildLeft if canBuildRight(joinType) => right match {
-          case PhysicalOperation(_, _,
-          LogicalRelation(index: IndexableRelation, _, _)) =>
+          case PhysicalOperation(projects, filters,
+          lr@LogicalRelation(index: IndexableRelation, _, _)) =>
             val indexColumns = leftKeys.collect {
+              case a: Alias if a.child.isInstanceOf[NamedExpression] =>
+                a.child.asInstanceOf[NamedExpression].name
               case ne: NamedExpression => ne.name
             }
-            if (indexColumns.isEmpty) None
-            else index.getIndexScan(indexColumns) match {
-              case None => None
-              case s@Some(_) => s
+            if (indexColumns.isEmpty) (None, side, Stream.empty, Stream.empty)
+            else {
+              val requiredColumns = (AttributeSet(projects) ++
+                  AttributeSet(filters)).map(lr.attributeMap).toSeq
+              index.getIndexScan(indexColumns, requiredColumns) match {
+                case None => (None, side, Stream.empty, Stream.empty)
+                case s@Some(_) => (s, joins.BuildRight, projects, filters)
+              }
             }
-          case _ => None
+          case _ => (None, side, Stream.empty, Stream.empty)
         }
-        case _ => None
+        case _ => (None, side, Stream.empty, Stream.empty)
       }
       indexScan match {
         case None =>
@@ -270,7 +281,8 @@ private[sql] trait SnappyStrategies {
           new joins.IndexJoin(leftKeys, rightKeys, side, condition,
             joinType, planLater(left), planLater(right),
             left.statistics.sizeInBytes, right.statistics.sizeInBytes,
-            replicatedTableJoin, scan) :: Nil
+            replicatedTableJoin, scan,
+            indexSide, indexProjects, indexFilters) :: Nil
       }
     }
   }

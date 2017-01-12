@@ -30,14 +30,15 @@ import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, LeafExecNode, PartitionedDataSourceScan, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
@@ -296,9 +297,8 @@ class RowFormatRelation(
     })
   }
 
-  override def getIndexScan(indexColumns: Seq[String]): Option[IndexScan] = {
-    None
-    /*
+  override def getIndexPlan(indexColumns: Seq[String],
+      requiredColumns: Seq[Attribute]): Option[IndexPlan] = {
     // only in embedded mode for now
     if (connectionType != ConnectionType.Embedded) return None
 
@@ -309,7 +309,20 @@ class RowFormatRelation(
       if (pkCols.nonEmpty) {
       }
     }
-    */
+  }
+}
+
+case class RowTableIndexPlan(indexName: String, isPrimaryKey: Boolean,
+    override protected val rdd: RDD[Any], output: Seq[Attribute],
+    keyIsUnique: Boolean) extends IndexPlan with LeafExecNode {
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    WholeStageCodegenExec(this).execute()
+  }
+
+  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
+      row: ExprCode): String = {
+
   }
 }
 

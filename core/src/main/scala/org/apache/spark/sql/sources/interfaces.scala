@@ -19,11 +19,14 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.CodegenSupport
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.{Partition, TaskContext}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -239,36 +242,39 @@ trait IndexableRelation {
       ifExists: Boolean): Unit
 
   /**
-   * Return an [[IndexScan]] if there is an index that can be used
-   * for repeated lookups on given key columns.
+   * Return an [[IndexPlan]] if there is an index that can be used
+   * for fast lookups on given key columns.
    */
-  def getIndexScan(indexColumns: Seq[String]): Option[IndexScan] = None
+  def getIndexPlan(indexColumns: Seq[String],
+      requiredColumns: Seq[Attribute]): Option[IndexPlan] = None
 }
 
 /** A trait to perform efficient index lookups for a set of indexed keys. */
 @DeveloperApi
-trait IndexScan extends Serializable {
+trait IndexPlan extends CodegenSupport {
+
+  protected var partitionTerm: String = _
+
+  protected def rdd: RDD[Any]
 
   /** Returns true if every key has a unique mapping. */
   def keyIsUnique: Boolean
 
-  /** Initialize the scan for given base table columns (0 based). */
-  def initialize(projectionColumns: Seq[String]): Unit
+  override def inputRDDs(): Seq[RDD[InternalRow]] = Seq.empty
 
-  /**
-   * Returns the set of projected rows mapped to given key columns
-   * and null for no match.
-   */
-  def get(key: InternalRow): Iterator[InternalRow]
-
-  /**
-   * Returns the matched single row when [[keyIsUnique]] is true
-   * or null if no match.
-   */
-  def getValue(key: InternalRow): InternalRow
-
-  /** Close the scan. */
-  def close(): Unit
+  override protected def doProduce(ctx: CodegenContext): String = {
+    val partitions = rdd.partitions
+    if (partitions.length == 1) {
+      partitionTerm = ctx.addReferenceObj("partition", partitions(0))
+    } else {
+      val partitionsTerm = ctx.addReferenceObj("partitions", partitions)
+      partitionTerm = ctx.freshName("partition")
+      ctx.addMutableState(classOf[Partition].getName, partitionTerm,
+        s"$partitionTerm = $partitionsTerm[${classOf[TaskContext].getName}" +
+            ".getPartitionId()];")
+    }
+    ""
+  }
 }
 
 /**

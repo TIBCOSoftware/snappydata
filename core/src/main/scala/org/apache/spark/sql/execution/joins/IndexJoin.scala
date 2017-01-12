@@ -37,12 +37,12 @@ package org.apache.spark.sql.execution.joins
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan}
-import org.apache.spark.sql.sources.IndexScan
+import org.apache.spark.sql.sources.IndexPlan
 
 @DeveloperApi
 class IndexJoin(_leftKeys: Seq[Expression],
@@ -55,7 +55,10 @@ class IndexJoin(_leftKeys: Seq[Expression],
     _leftSizeInBytes: BigInt,
     _rightSizeInBytes: BigInt,
     _replicatedTableJoin: Boolean,
-    val indexScan: IndexScan)
+    val indexPlan: IndexPlan,
+    val indexSide: BuildSide,
+    val indexProjects: Seq[NamedExpression],
+    val indexFilters: Seq[Expression])
     extends LocalJoin(_leftKeys, _rightKeys, _buildSide, _condition, _joinType,
       _left, _right, _leftSizeInBytes, _rightSizeInBytes, _replicatedTableJoin) {
 
@@ -72,10 +75,13 @@ class IndexJoin(_leftKeys: Seq[Expression],
     case 7 => leftSizeInBytes
     case 8 => rightSizeInBytes
     case 9 => replicatedTableJoin
-    case 10 => indexScan
+    case 10 => indexPlan
+    case 11 => indexSide
+    case 12 => indexProjects
+    case 13 => indexFilters
   }
 
-  override def productArity: Int = 11
+  override def productArity: Int = 14
 
   override def nodeName: String = "IndexJoin"
 
@@ -86,21 +92,25 @@ class IndexJoin(_leftKeys: Seq[Expression],
 
   override def canConsume(plan: SparkPlan): Boolean = false
 
-  private def indexPlan = streamedPlan
-
-  private def iteratePlan = buildPlan
-
-  private def iterationKeys = buildSideKeys
+  protected lazy val (indexPlan, indexKeys, iteratePlan, iterateKeys) = {
+    require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
+      "Join keys from two sides should have same types")
+    indexSide match {
+      case BuildLeft => (left, leftKeys, right, rightKeys)
+      case BuildRight => (right, rightKeys, left, leftKeys)
+    }
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     // stream side is where the index is while iteration needs to
     // be done on the buildSide
-    val indexObj = ctx.addReferenceObj("indexScan", indexScan)
-    val indexClass = indexScan.getClass.getName
+    val indexObj = ctx.addReferenceObj("indexScan", indexPlan)
+    val indexClass = indexPlan.getClass.getName
     // final stack variable to help reduce virtual calls
     indexTerm = ctx.freshName("index")
     s"""
        |final $indexClass $indexTerm = $indexObj;
+       |$indexTerm.initialize();
        |${iteratePlan.asInstanceOf[CodegenSupport].produce(ctx, this)}
     """.stripMargin
   }
@@ -119,23 +129,16 @@ class IndexJoin(_leftKeys: Seq[Expression],
   }
 
   /**
-   * Returns the code for generating join key for iteration side,
-   * and expression of whether the key has any null in it or not.
+   * Generate the keys to lookup the index from plan being iterated.
    */
-  // A more efficient SpecificMutableRow can be used to reduce copying
-  // in UnsafeRows (e.g. of strings) but this case is only for row tables
-  // while for column tables a different implementation will be used
-  private def genIterationSideJoinKey(
-      ctx: CodegenContext,
-      input: Seq[ExprCode]): (ExprCode, String) = {
+  private def genIndexLookupKeys(ctx: CodegenContext,
+      input: Seq[ExprCode]): Seq[ExprCode] = {
     ctx.currentVars = input
-    // generate the join key as UnsafeRow
-    val ev = GenerateUnsafeProjection.createCode(ctx, iterationKeys)
-    (ev, s"${ev.value}.anyNull()")
+    ctx.generateExpressions(iterateKeys)
   }
 
   /**
-   * Generates the code for variable of index side.
+   * Generates the code for variables of index side.
    */
   private def genIndexSideVars(ctx: CodegenContext,
       matched: String): Seq[ExprCode] = {
@@ -206,7 +209,7 @@ class IndexJoin(_leftKeys: Seq[Expression],
    */
   private def innerJoin(ctx: CodegenContext, input: Seq[ExprCode],
       indexTerm: String): String = {
-    val (keyEv, anyNull) = genIterationSideJoinKey(ctx, input)
+    val indexKeys = genIndexLookupKeys(ctx, input)
     val (matched, checkCondition, indexVars) = getJoinCondition(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
@@ -214,7 +217,7 @@ class IndexJoin(_leftKeys: Seq[Expression],
       case BuildLeft => input ++ indexVars
       case BuildRight => indexVars ++ input
     }
-    if (indexScan.keyIsUnique) {
+    if (indexPlan.keyIsUnique) {
       s"""
          |// generate join key for stream side
          |${keyEv.code}
@@ -245,13 +248,12 @@ class IndexJoin(_leftKeys: Seq[Expression],
     }
   }
 
-
   /**
    * Generates the code for left or right outer join.
    */
   private def outerJoin(ctx: CodegenContext,
       input: Seq[ExprCode], indexTerm: String): String = {
-    val (keyEv, anyNull) = genIterationSideJoinKey(ctx, input)
+    val (keyEv, anyNull) = genIndexLookupKeys(ctx, input)
     val matched = ctx.freshName("matched")
     val indexVars = genIndexSideVars(ctx, matched)
     val numOutput = metricTerm(ctx, "numOutputRows")
@@ -282,7 +284,7 @@ class IndexJoin(_leftKeys: Seq[Expression],
       case BuildLeft => input ++ indexVars
       case BuildRight => indexVars ++ input
     }
-    if (indexScan.keyIsUnique) {
+    if (indexPlan.keyIsUnique) {
       s"""
          |// generate join key for stream side
          |${keyEv.code}
@@ -328,10 +330,10 @@ class IndexJoin(_leftKeys: Seq[Expression],
    */
   private def semiJoin(ctx: CodegenContext,
       input: Seq[ExprCode], indexTerm: String): String = {
-    val (keyEv, anyNull) = genIterationSideJoinKey(ctx, input)
+    val (keyEv, anyNull) = genIndexLookupKeys(ctx, input)
     val (matched, checkCondition, _) = getJoinCondition(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
-    if (indexScan.keyIsUnique) {
+    if (indexPlan.keyIsUnique) {
       s"""
          |// generate join key for stream side
          |${keyEv.code}
@@ -370,8 +372,8 @@ class IndexJoin(_leftKeys: Seq[Expression],
    */
   private def antiJoin(ctx: CodegenContext,
       input: Seq[ExprCode], indexTerm: String): String = {
-    val uniqueKeyCodePath = indexScan.keyIsUnique
-    val (keyEv, anyNull) = genIterationSideJoinKey(ctx, input)
+    val uniqueKeyCodePath = indexPlan.keyIsUnique
+    val (keyEv, anyNull) = genIndexLookupKeys(ctx, input)
     val (matched, checkCondition, _) = getJoinCondition(ctx, input, uniqueKeyCodePath)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
@@ -424,7 +426,7 @@ class IndexJoin(_leftKeys: Seq[Expression],
    */
   private def existenceJoin(ctx: CodegenContext,
       input: Seq[ExprCode], indexTerm: String): String = {
-    val (keyEv, anyNull) = genIterationSideJoinKey(ctx, input)
+    val (keyEv, anyNull) = genIndexLookupKeys(ctx, input)
     val numOutput = metricTerm(ctx, "numOutputRows")
     val existsVar = ctx.freshName("exists")
 
@@ -449,7 +451,7 @@ class IndexJoin(_leftKeys: Seq[Expression],
     }
 
     val resultVar = input ++ Seq(ExprCode("", "false", existsVar))
-    if (indexScan.keyIsUnique) {
+    if (indexPlan.keyIsUnique) {
       s"""
          |// generate join key for stream side
          |${keyEv.code}
