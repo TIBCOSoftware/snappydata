@@ -97,7 +97,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
     val taskDeserializationProps = Executor.taskDeserializationProps.get()
     if (null != taskDeserializationProps) {
       jobFile = taskDeserializationProps.getProperty(io.snappydata.Constant
-          .JOB_SERVER_JAR_NAME, "")
+          .CHANGEABLE_JAR_NAME, "")
     }
     new File(jobFile).getName
   }

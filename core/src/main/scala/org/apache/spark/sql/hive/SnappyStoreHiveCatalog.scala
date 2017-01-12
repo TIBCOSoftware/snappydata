@@ -747,8 +747,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private def addToSparkJars(resource: FunctionResource) {
     println("Adding jar to sc " + resource.uri)
     snappySession.sparkContext.addJar(resource.uri)
-    snappySession.sparkContext.setLocalProperty(
-      "SNAPPY_JOB_SERVER_JAR_NAME", resource.uri)
+    snappySession.sparkContext.
+        setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, resource.uri)
   }
 
   private def removeFromSparkJars(resource: FunctionResource): Unit = {
