@@ -37,6 +37,7 @@ import io.snappydata.Constant
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -1571,7 +1572,7 @@ object SnappySession extends Logging {
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec =>
+      case _: ExecutedCommandExec | _: ExecutedCommand =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         (null, findShuffleDependencies(plan.childRDD).toArray,
@@ -1646,6 +1647,8 @@ object SnappySession extends Logging {
         }
         cachedDF = evaluation._1
         queryHints = evaluation._2
+      } else {
+        cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {

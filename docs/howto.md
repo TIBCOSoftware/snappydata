@@ -94,9 +94,10 @@ The SnappyData Locator has stopped.
 
 To start the cluster on multiple hosts:
 
-1. The easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
 
-2. In the **conf** folder, create the configuration files **servers.template**, **locators.template**, **leads.template**. Edit the files to include the hostnames on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, **conf/servers.template)**.
+2. Create the configuration files using the templates provided in the **conf** folder. Copy the exiting template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
+</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuration/#configuration-files) section for more information on properties.
 
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
@@ -157,8 +158,9 @@ For example, the command submits the job and runs it as:
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead [leadHost:port]
+    --lead hostNameOfLead:8090
 ```
+In the above comand, **--lead** option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).
 
 **Output**: It returns output similar to:
 
@@ -641,6 +643,7 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects
@@ -740,7 +743,7 @@ The code snippet below inserts Person objects into a column table. The source co
 
 **Get a SnappySession**:
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
@@ -751,53 +754,55 @@ The code snippet below inserts Person objects into a column table. The source co
 ```
 
 **Create DataFrame objects**:
-```
+```scala
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
 
-    val snSession = snc.snappySession
     // Create a Dataset using Spark APIs
-    val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
+    val people = Seq(Person("Tom", Address("Columbus", "Ohio"), Map("frnd1"-> "8998797979", "frnd2" -> "09878786886"))
+      , Person("Ned", Address("San Diego", "California"), Map.empty[String,String])).toDS()
 ```
 
 **Create a SnappyData table and insert data into it**:
 
-```
+```scala
     //Drop the table if it exists.
-    snSession.dropTable("people", ifExists = true)
+    snSession.dropTable("Persons", ifExists = true)
 
     //Create a columnar table with a Struct to store Address
-    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>) using column options()")
+    snSession.sql("CREATE table Persons(name String, address Struct<city: String, state:String>, " +
+         "emergencyContacts Map<String,String>) using column options()")
 
     // Write the created DataFrame to the columnar table.
-    people.write.insertInto("people")
+    people.write.insertInto("Persons")
 
     //print schema of the table
     println("Print Schema of the table\n################")
-    println(snSession.table("people").schema)
+    println(snSession.table("Persons").schema)
     
 
     // Append more people to the column table
-    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio")),
-      Person("Rob Stark", Address("San Diego", "California")),
-      Person("Michael", Address("Null", "California"))).toDS()
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio"), Map.empty[String,String]),
+      Person("Rob Stark", Address("San Diego", "California"), Map.empty[String,String]),
+      Person("Michael", Address("Null", "California"), Map.empty[String,String])).toDS()
 
-    morePeople.write.insertInto("people")
+    morePeople.write.insertInto("Persons")
 ```
 
 **Execute query on the table and return results**:
 
-```
+```scala
     // Query it like any other table
-    val nameAndAddress = snSession.sql("SELECT name, address FROM Persons")
+    val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
 
     //Reconstruct the objects from obtained Row
     val allPersons = nameAndAddress.collect.map(row => {
       Person(row(0).asInstanceOf[String],
         Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],
           row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        )
+        ),
+        row(2).asInstanceOf[Map[String, String]]
       )
     })
 ```

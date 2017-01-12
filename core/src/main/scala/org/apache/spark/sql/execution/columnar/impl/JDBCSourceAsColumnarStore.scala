@@ -86,12 +86,6 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
                 .asInstanceOf[LocalRegion]
             val batchUUID = Some(batchId.getOrElse(region.newJavaUUID()))
             super.doInsert(tableName, batch, batchUUID, partitionId)(connection)
-            region match {
-              case pr: PartitionedRegion =>
-                pr.asInstanceOf[PartitionedRegion]
-                    .getPrStats.incPRNumRowsInCachedBatches(batch.numRows)
-              case _ => // do nothing
-            }
           case _ =>
             super.doInsert(tableName, batch, batchId, partitionId)(connection)
         }
