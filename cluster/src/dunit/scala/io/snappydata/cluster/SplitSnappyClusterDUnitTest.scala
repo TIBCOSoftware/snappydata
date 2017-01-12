@@ -21,9 +21,10 @@ import java.util.Properties
 
 import scala.language.postfixOps
 
+import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
@@ -38,7 +39,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     with Serializable {
 
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
+  val currenyLocatorPort = ClusterManagerTestBase.locPort
   override protected val productDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
@@ -89,6 +90,62 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
   }
+
+
+  def testColumnTableStatsInSplitMode(): Unit = {
+    startNetworkServers(3)
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "1")
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "5")
+  }
+
+
+  def testColumnTableStatsInSplitModeWithHA(): Unit = {
+    startNetworkServers(3)
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "1")
+    val props = bootProps
+    val port = currenyLocatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats.getRowCount())
+
+    assert(stats.getRowCount == 10000100 )
+    vm0.invoke(restartServer)
+
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats1 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats1.getRowCount())
+    assert(stats1.getRowCount == 10000100 )
+    vm1.invoke(restartServer)
+
+
+    //Test using using 5 buckets
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
+        "5")
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats2 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats2.getRowCount())
+    assert(stats2.getRowCount == 10000100 )
+    val snc = SnappyContext(sc)
+    snc.sql("insert into snappyTable values(1,'Test')")
+    var stats3 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats3.getRowCount())
+    assert(stats3.getRowCount == 10000101)
+    vm0.invoke(restartServer)
+  }
+
 }
 
 object SplitSnappyClusterDUnitTest
@@ -270,6 +327,45 @@ object SplitSnappyClusterDUnitTest
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
+    logInfo("Successful")
+  }
+
+
+  def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
+      locatorProp: String, buckets: String): Unit = {
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("spark.testing.reservedMemory", "0")
+        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
+
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
+
+
+    snc.sql("drop table if exists snappyTable")
+    snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
+        s"column options(redundancy '1', buckets '$buckets')")
+    val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
+        "(10))) as sym")
+    testDF.write.insertInto("snappyTable")
+    val stats = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats.getRowCount())
+    assert(stats.getRowCount == 10000000 )
+    for (i <- 1 to 100) {
+      snc.sql(s"insert into snappyTable values($i,'Test$i')")
+    }
+    val stats1 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    assert(stats1.getRowCount == 10000100)
     logInfo("Successful")
   }
 }
