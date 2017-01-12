@@ -18,10 +18,7 @@ package org.apache.spark.sql
 
 import scala.reflect.ClassTag
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
-
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Dependency, Partition, Partitioner, SparkContext, TaskContext}
 
 
@@ -45,29 +42,6 @@ private[sql] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
     extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 
   override def getPreferredLocations(split: Partition): Seq[String] = p(split.index)
-}
-
-private[sql] final class PartitionedPreferredLocationsRDD[T: ClassTag](
-    var child: RDD[T], @transient val region: PartitionedRegion)
-    extends RDD[T](child) {
-
-  @transient override val partitioner: Option[Partitioner] = child.partitioner
-
-  assert(region.getTotalNumberOfBuckets == child.getNumPartitions)
-
-  override def getPreferredLocations(split: Partition): Seq[String] = {
-    StoreUtils.getBucketPreferredLocations(region, split.index)
-  }
-
-  override protected def getPartitions: Array[Partition] = child.partitions
-
-  override def compute(split: Partition, context: TaskContext): Iterator[T] =
-    child.compute(split, context)
-
-  override def clearDependencies() {
-    super.clearDependencies()
-    child = null
-  }
 }
 
 /**

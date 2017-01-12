@@ -49,7 +49,7 @@ import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
  * streaming through the other relation.
  */
 @DeveloperApi
-case class LocalJoin(leftKeys: Seq[Expression],
+case class HashJoinExec(leftKeys: Seq[Expression],
     rightKeys: Seq[Expression],
     buildSide: BuildSide,
     condition: Option[Expression],
@@ -61,7 +61,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
-  override def nodeName: String = "LocalJoin"
+  override def nodeName: String = "HashJoin"
 
   @transient private var mapAccessor: ObjectHashMapAccessor = _
   @transient private var hashMapTerm: String = _
@@ -342,7 +342,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
       """)
     }
 
-    // clear the parent by reflection if plan is sent by operators like Sort
+    // clear the parent by reflection if plan is serialized by operators like Sort
     TypeUtilities.parentSetter.invoke(buildPlan, null)
 
     // The child could change `copyResult` to true, but we had already

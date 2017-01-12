@@ -49,7 +49,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
+import org.apache.spark.sql.types.{ArrayType, DataType, MapType, MetadataBuilder, StringType, StructField, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -287,38 +287,49 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     this.relationDestroyVersion = globalVersion + 1
   }
 
+  def normalizeType(dataType: DataType): DataType = dataType match {
+    case a: ArrayType => a.copy(elementType = normalizeType(a.elementType))
+    case m: MapType => m.copy(keyType = normalizeType(m.keyType),
+      valueType = normalizeType(m.valueType))
+    case s: StructType => normalizeSchema(s)
+    case _ => dataType
+  }
+
+  def normalizeSchemaField(f: StructField): StructField = {
+    val name = Utils.toUpperCase(Utils.fieldName(f))
+    val dataType = normalizeType(f.dataType)
+    val metadata = if (f.metadata.contains("name")) {
+      val builder = new MetadataBuilder
+      builder.withMetadata(f.metadata).putString("name", name).build()
+    } else {
+      dataType match {
+        case StringType =>
+          if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+            val builder = new MetadataBuilder
+            builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
+              "STRING").build()
+          } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+              .equalsIgnoreCase("CLOB")) {
+            // Remove the CharType properties from metadata
+            val builder = new MetadataBuilder
+            builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
+                .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+          } else {
+            f.metadata
+          }
+        case _ => f.metadata
+      }
+    }
+    f.copy(name = name, dataType = dataType, metadata = metadata)
+  }
+
   def normalizeSchema(schema: StructType): StructType = {
     if (sqlConf.caseSensitiveAnalysis) {
       schema
     } else {
       val fields = schema.fields
       if (fields.exists(f => Utils.hasLowerCase(Utils.fieldName(f)))) {
-        StructType(fields.map { f =>
-          val name = Utils.toUpperCase(Utils.fieldName(f))
-          val metadata = if (f.metadata.contains("name")) {
-            val builder = new MetadataBuilder
-            builder.withMetadata(f.metadata).putString("name", name).build()
-          } else {
-            f.dataType match {
-              case StringType =>
-                if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
-                  val builder = new MetadataBuilder
-                  builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
-                    "STRING").build()
-                } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-                    .equalsIgnoreCase("CLOB")) {
-                  // Remove the CharType properties from metadata
-                  val builder = new MetadataBuilder
-                  builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
-                      .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
-                } else {
-                  f.metadata
-                }
-              case _ => f.metadata
-            }
-          }
-          f.copy(name = name, metadata = metadata)
-        })
+        StructType(fields.map(normalizeSchemaField))
       } else {
         schema
       }

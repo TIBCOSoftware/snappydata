@@ -228,7 +228,7 @@ private[sql] trait SnappyStrategies {
         joinType: JoinType,
         side: joins.BuildSide,
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
-      joins.LocalJoin(leftKeys, rightKeys, side, condition,
+      joins.HashJoinExec(leftKeys, rightKeys, side, condition,
         joinType, planLater(left), planLater(right),
         left.statistics.sizeInBytes, right.statistics.sizeInBytes,
         replicatedTableJoin) :: Nil

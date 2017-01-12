@@ -186,7 +186,7 @@ object Property extends Enumeration {
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in bytes) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval.", Some(32 * 1024 * 1024))
+        "for efficient storage and retrieval.", Some(24 * 1024 * 1024))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less" +

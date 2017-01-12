@@ -214,7 +214,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   override def writeBoolean(cursor: Long, value: Boolean): Long = {
     var position = cursor
     val b: Byte = if (value) 1 else 0
-    if (position + 1 > columnData.endPosition) {
+    if (position + 1 > columnEndPosition) {
       position = expand(position, 1)
     }
     Platform.putByte(columnBytes, position, b)
@@ -224,7 +224,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeByte(cursor: Long, value: Byte): Long = {
     var position = cursor
-    if (position + 1 > columnData.endPosition) {
+    if (position + 1 > columnEndPosition) {
       position = expand(position, 1)
     }
     Platform.putByte(columnBytes, position, value)
@@ -234,7 +234,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeShort(cursor: Long, value: Short): Long = {
     var position = cursor
-    if (position + 2 > columnData.endPosition) {
+    if (position + 2 > columnEndPosition) {
       position = expand(position, 2)
     }
     ColumnEncoding.writeShort(columnBytes, position, value)
@@ -244,7 +244,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeInt(cursor: Long, value: Int): Long = {
     var position = cursor
-    if (position + 4 > columnData.endPosition) {
+    if (position + 4 > columnEndPosition) {
       position = expand(position, 4)
     }
     ColumnEncoding.writeInt(columnBytes, position, value)
@@ -254,7 +254,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeLong(cursor: Long, value: Long): Long = {
     var position = cursor
-    if (position + 8 > columnData.endPosition) {
+    if (position + 8 > columnEndPosition) {
       position = expand(position, 8)
     }
     ColumnEncoding.writeLong(columnBytes, position, value)
@@ -264,25 +264,37 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeFloat(cursor: Long, value: Float): Long = {
     var position = cursor
-    if (position + 4 > columnData.endPosition) {
+    if (position + 4 > columnEndPosition) {
       position = expand(position, 4)
     }
-    if (littleEndian) Platform.putFloat(columnBytes, position, value)
-    else Platform.putInt(columnBytes, position,
-      java.lang.Integer.reverseBytes(java.lang.Float.floatToIntBits(value)))
-    updateDoubleStats(value.toDouble)
+    if (java.lang.Float.isNaN(value)) {
+      if (littleEndian) Platform.putFloat(columnBytes, position, Float.NaN)
+      else Platform.putInt(columnBytes, position,
+        java.lang.Integer.reverseBytes(java.lang.Float.floatToIntBits(Float.NaN)))
+    } else {
+      if (littleEndian) Platform.putFloat(columnBytes, position, value)
+      else Platform.putInt(columnBytes, position,
+        java.lang.Integer.reverseBytes(java.lang.Float.floatToIntBits(value)))
+      updateDoubleStats(value.toDouble)
+    }
     position + 4
   }
 
   override def writeDouble(cursor: Long, value: Double): Long = {
     var position = cursor
-    if (position + 8 > columnData.endPosition) {
+    if (position + 8 > columnEndPosition) {
       position = expand(position, 8)
     }
-    if (littleEndian) Platform.putDouble(columnBytes, position, value)
-    else Platform.putLong(columnBytes, position,
-      java.lang.Long.reverseBytes(java.lang.Double.doubleToLongBits(value)))
-    updateDoubleStats(value)
+    if (java.lang.Double.isNaN(value)) {
+      if (littleEndian) Platform.putDouble(columnBytes, position, Double.NaN)
+      else Platform.putLong(columnBytes, position,
+        java.lang.Long.reverseBytes(java.lang.Double.doubleToLongBits(Double.NaN)))
+    } else {
+      if (littleEndian) Platform.putDouble(columnBytes, position, value)
+      else Platform.putLong(columnBytes, position,
+        java.lang.Long.reverseBytes(java.lang.Double.doubleToLongBits(value)))
+      updateDoubleStats(value)
+    }
     position + 8
   }
 
@@ -309,7 +321,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   override def writeUTF8String(cursor: Long, value: UTF8String): Long = {
     var position = cursor
     val size = value.numBytes
-    if (position + size + 4 > columnData.endPosition) {
+    if (position + size + 4 > columnEndPosition) {
       position = expand(position, size + 4)
     }
     updateStringStatsClone(value)
@@ -319,7 +331,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   override def writeBinary(cursor: Long, value: Array[Byte]): Long = {
     var position = cursor
     val size = value.length
-    if (position + size + 4 > columnData.endPosition) {
+    if (position + size + 4 > columnEndPosition) {
       position = expand(position, size + 4)
     }
     val columnBytes = this.columnBytes
@@ -330,45 +342,27 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
     position + size
   }
 
-  override def writeArray(cursor: Long, value: UnsafeArrayData): Long = {
-    var position = cursor
-    val size = value.getSizeInBytes
-    if (position + size + 4 > columnData.endPosition) {
-      position = expand(position, size + 4)
-    }
-    val columnBytes = this.columnBytes
-    ColumnEncoding.writeInt(columnBytes, position, size)
-    position += 4
-    Platform.copyMemory(value.getBaseObject, value.getBaseOffset, columnBytes,
-      position, size)
-    position + size
+  override def writeIntUnchecked(cursor: Long, value: Int): Long = {
+    ColumnEncoding.writeInt(columnBytes, cursor, value)
+    cursor + 4
   }
 
-  override def writeMap(cursor: Long, value: UnsafeMapData): Long = {
-    var position = cursor
-    val size = value.getSizeInBytes
-    if (position + size + 4 > columnData.endPosition) {
-      position = expand(position, size + 4)
-    }
-    val columnBytes = this.columnBytes
-    ColumnEncoding.writeInt(columnBytes, position, size)
-    position += 4
-    Platform.copyMemory(value.getBaseObject, value.getBaseOffset, columnBytes,
-      position, size)
-    position + size
+  override def writeLongUnchecked(cursor: Long, value: Int): Long = {
+    ColumnEncoding.writeLong(columnBytes, cursor, value)
+    cursor + 8
   }
 
-  override def writeStruct(cursor: Long, value: UnsafeRow): Long = {
+  override def writeUnsafeData(cursor: Long, baseObject: AnyRef,
+      baseOffset: Long, numBytes: Int): Long = {
     var position = cursor
-    val size = value.getSizeInBytes
-    if (position + size + 4 > columnData.endPosition) {
-      position = expand(position, size + 4)
+    if (position + numBytes + 4 > columnEndPosition) {
+      position = expand(position, numBytes + 4)
     }
     val columnBytes = this.columnBytes
-    ColumnEncoding.writeInt(columnBytes, position, size)
+    ColumnEncoding.writeInt(columnBytes, position, numBytes)
     position += 4
-    Platform.copyMemory(value.getBaseObject, value.getBaseOffset, columnBytes,
-      position, size)
-    position + size
+    Platform.copyMemory(baseObject, baseOffset, columnBytes,
+      position, numBytes)
+    position + numBytes
   }
 }

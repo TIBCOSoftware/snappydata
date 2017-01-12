@@ -22,22 +22,26 @@ import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, BoundReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, BoundReference, Expression, Literal, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{PartitionedPreferredLocationsRDD, SnappySession}
+import org.apache.spark.sql.{DelegateRDD, SnappySession}
+import org.apache.spark.unsafe.bitset.BitSetMethods
 
 /**
  * Generated code plan for bulk insertion into a column table.
  */
 case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    relation: BaseColumnFormatRelation) extends UnaryExecNode with CodegenSupport {
+    relation: BaseColumnFormatRelation,
+    private[sql] var nonSerialized: Boolean = false)
+    extends UnaryExecNode with CodegenSupport {
 
   @transient private var encoderCursorTerms: Seq[(String, String)] = _
   @transient private var batchSizeTerm: String = _
@@ -104,7 +108,13 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     val inputRDDs = child.asInstanceOf[CodegenSupport].inputRDDs()
     // wrap shuffle RDDs to set preferred locations as per target table
     if (partitioned) {
-      inputRDDs.map(new PartitionedPreferredLocationsRDD(_, relation.region))
+      inputRDDs.map { rdd =>
+        val region = relation.region
+        assert(region.getTotalNumberOfBuckets == rdd.getNumPartitions)
+        new DelegateRDD(sparkContext, rdd,
+          Array.tabulate(region.getTotalNumberOfBuckets)(
+            StoreUtils.getBucketPreferredLocations(region, _)))
+      }
     }
     else inputRDDs
   }
@@ -185,8 +195,8 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
       batchFunctionCall.append(s"$encoderTerm, $cursorTerm,\n")
       calculateSize.append(
         s"$sizeTerm += $encoderTerm.sizeInBytes($cursorTerm);\n")
-      (init, genCodeColumnWrite(ctx, field, encoderTerm, cursorTerm, input(i)),
-          genCodeColumnStats(ctx, field, encoderTerm))
+      (init, genCodeColumnWrite(ctx, field.dataType, field.nullable, encoderTerm,
+        cursorTerm, input(i)), genCodeColumnStats(ctx, field, encoderTerm))
     }.unzip3
     initEncoders = encodersInit.mkString("\n")
 
@@ -197,12 +207,17 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     val cachedBatchClass = classOf[CachedBatch].getName
     val partitionIdCode =
       if (partitioned) s"$taskContextClass.getPartitionId()" else "-1"
-    val (statsCode, statsSchema, statsVars) = columnStats.unzip3
+    val (statsCode, statsSchema, stats) = columnStats.unzip3
+    val statsVars = stats.flatten
     val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
-      BoundReference(i, a.dataType, a.nullable)
+      a.dataType match {
+        // some types will always be null so avoid unnecessary generated code
+        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
+        case _ => BoundReference(i, a.dataType, a.nullable)
+      }
     }
     ctx.INPUT_ROW = null
-    ctx.currentVars = statsVars.flatten
+    ctx.currentVars = statsVars
     val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
     val statsRow = statsEv.value
     val columnTable = ColumnFormatRelation.cachedBatchTableName(relation.table)
@@ -254,44 +269,252 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     """.stripMargin
   }
 
-  private def genCodeColumnWrite(ctx: CodegenContext, field: StructField,
-      encoder: String, cursorTerm: String, ev: ExprCode): String = {
-    val sqlType = Utils.getSQLDataType(field.dataType)
+  private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
+      nullable: Boolean, encoder: String, cursorTerm: String,
+      ev: ExprCode, writeArrayTypeSize: Boolean = true,
+      aligned: Boolean = false): String = {
+    val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
+    var isNull = ev.isNull
     val writeValue = sqlType match {
+      // aligned = true cases for recursive writes of StructType that creates
+      // UnsafeRow format bytes which are 8 byte aligned
+      case BooleanType if aligned =>
+        s"$encoder.writeBoolean($cursorTerm, ${ev.value});\n$cursorTerm += 8;"
+      case ShortType if aligned =>
+        s"$encoder.writeShort($cursorTerm, ${ev.value});\n$cursorTerm += 8;"
+      case IntegerType if aligned =>
+        s"$encoder.writeInt($cursorTerm, ${ev.value});\n$cursorTerm += 8;"
+      case FloatType if aligned =>
+        s"$encoder.writeFloat($cursorTerm, ${ev.value});\n$cursorTerm += 8;"
       case _ if ctx.isPrimitiveType(jt) =>
         val typeName = ctx.primitiveTypeName(jt)
-        s"$encoder.write$typeName($cursorTerm, ${ev.value})"
+        s"$cursorTerm = $encoder.write$typeName($cursorTerm, ${ev.value});"
       case StringType =>
-        s"$encoder.writeUTF8String($cursorTerm, ${ev.value})"
+        s"$cursorTerm = $encoder.writeUTF8String($cursorTerm, ${ev.value});"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
-        s"$encoder.writeLongDecimal($cursorTerm, " +
-            s"${ev.value}, ${d.precision}, ${d.scale})"
+        s"$cursorTerm = $encoder.writeLongDecimal($cursorTerm, " +
+            s"${ev.value}, ${d.precision}, ${d.scale});"
       case d: DecimalType =>
-        s"$encoder.writeDecimal($cursorTerm, ${ev.value}, " +
-            s"${d.precision}, ${d.scale})"
+        s"$cursorTerm = $encoder.writeDecimal($cursorTerm, ${ev.value}, " +
+            s"${d.precision}, ${d.scale});"
       case CalendarIntervalType =>
-        s"$encoder.writeInterval($cursorTerm, ${ev.value})"
+        s"$cursorTerm = $encoder.writeInterval($cursorTerm, ${ev.value});"
       case BinaryType =>
-        s"$encoder.writeBinary($cursorTerm, ${ev.value})"
-      case _: ArrayType =>
-        s"$encoder.writeArray($cursorTerm, (UnsafeArrayData)(${ev.value}))"
-      case _: MapType =>
-        s"$encoder.writeMap($cursorTerm, (UnsafeMapData)(${ev.value}))"
-      case _: StructType =>
+        s"$cursorTerm = $encoder.writeBinary($cursorTerm, ${ev.value});"
+
+      // TODO: see what can be done about endian mismatch problem for complex
+      // types retrieved from a different endian platform. Only option looks
+      // to be new implementations for UnsafeArrayData/UnsafeMapData/UnsafeRow
+      // but then storage of raw unsafe data will also require conversion.
+      // Better option is to prove that SPARK PR#10725 causes no degradation
+      // and get it accepted upstream, then explicit endian checks can be
+      // removed completely from ColumnEncoder/ColumnDecoder classes.
+      case a: ArrayType =>
+        val numElements = ctx.freshName("numElements")
+        val index = ctx.freshName("index")
+        val input = ev.value
+        val eType = Utils.getSQLDataType(a.elementType)
+        val ejType = ctx.javaType(eType)
+        val getElement = ctx.getValue(input, eType, index)
+        // this is relative offset since re-allocation could mean that initial
+        // cursor position is no longer valid (e.g. for off-heap allocator)
+        val baseOffset = ctx.freshName("baseOffset")
+        val eVar = ctx.freshName("element")
+        val totalSize = ctx.freshName("totalSize")
+        val writeSize = if (writeArrayTypeSize) {
+          s"""
+             |// 8 additional bytes, 4 for total size and 4 for numElements
+             |$cursorTerm = $encoder.ensureCapacity($cursorTerm,
+             |  ($numElements + 2) << 2);
+             |$cursorTerm += 4; // skip for total size""".stripMargin
+        } else {
+          s"""
+             |// 4 additional bytes for numElements (no size)
+             |$cursorTerm = $encoder.ensureCapacity($cursorTerm,
+             |  ($numElements + 1) << 2);""".stripMargin
+        }
+        val writeHeader =
+          s"""
+             |final int $numElements = $input.numElements();
+             |$writeSize
+             |final long $baseOffset = $encoder.offset($cursorTerm);
+             |$cursorTerm = $encoder.writeIntUnchecked(
+             |  $cursorTerm, $numElements);""".stripMargin
+        // for non-nullable primitives, optimize to write the offsets upfront
+        // else need to rewind and write offset for each element separately
+        val serializeFrag = if (ctx.isPrimitiveType(eType) && !a.containsNull) {
+          val offset = ctx.freshName("offset")
+          s"""
+             |$writeHeader
+             |// write offsets upfront for fixed-width non-null elements
+             |for (int $index = 0, $offset = 4; $index < $numElements;
+             |    $index++, $offset += ${eType.defaultSize}) {
+             |  $cursorTerm = $encoder.writeIntUnchecked($cursorTerm, $offset);
+             |}
+             |for (int $index = 0; $index < $numElements; $index++) {
+             |  final $ejType $eVar = $getElement;
+             |  ${genCodeColumnWrite(ctx, eType, nullable = false, encoder,
+                  cursorTerm, ExprCode("", "false", eVar))}
+             |}
+          """.stripMargin
+        } else {
+          val baseCursorOffset = ctx.freshName("baseCursorOffset")
+          val (eNull, eCode) = if (a.containsNull) {
+            val nullVar = ctx.freshName("isNull")
+            (nullVar, s"final boolean $nullVar = $input.isNullAt($index);\n")
+          } else ("false", "")
+          s"""
+             |$writeHeader
+             |// space for offsets
+             |$cursorTerm += ($numElements << 2);
+             |for (int $index = 0; $index < $numElements; $index++) {
+             |  ${eCode}final $ejType $eVar = $eNull ? ${ctx.defaultValue(ejType)}
+             |    : $getElement;
+             |  final long $baseCursorOffset = $encoder.baseOffset() + $baseOffset;
+             |  // if null, then write negative relative offset (+4 for numElements)
+             |  $encoder.writeInt($baseCursorOffset + (($index + 1) << 2), $eNull
+             |     ? $baseCursorOffset - $cursorTerm : $cursorTerm - $baseCursorOffset);
+             |  // no "isNull" for recursive call since that is specifically
+             |  // written as negative offset by code above
+             |  ${genCodeColumnWrite(ctx, eType, nullable = false, encoder,
+                  cursorTerm, ExprCode("", "false", eVar))}
+             |}
+          """.stripMargin
+        }
+        val serializeArray = if (writeArrayTypeSize) {
+          s"""
+             |$serializeFrag
+             |// finally write the total length of serialized array at the start
+             |final long $totalSize = $encoder.offset($cursorTerm) - $baseOffset;
+             |if ($totalSize > Integer.MAX_VALUE) {
+             |  throw new java.nio.BufferOverflowException("Array size " +
+             |    $totalSize + " greater than maximum integer size");
+             |}
+             |// reduce four from totalSize for the integer totalSize itself
+             |$encoder.writeIntUnchecked($cursorTerm - $totalSize - 4, (int)$totalSize);
+          """.stripMargin
+        } else serializeFrag
+
+        if (nonSerialized) serializeArray
+        else {
+          s"""
+             |if ($input instanceof UnsafeArrayData) {
+             |  final UnsafeArrayData data = (UnsafeArrayData)($input);
+             |  $cursorTerm = $encoder.writeUnsafeData($cursorTerm,
+             |    data.getBaseObject(), data.getBaseOffset(), data.getSizeInBytes());
+             |} else { $serializeArray }
+          """.stripMargin
+        }
+
+      case m: MapType =>
+        val keys = ctx.freshName("keys")
+        val values = ctx.freshName("values")
+        val input = ev.value
+        // this is relative offset since re-allocation could mean that initial
+        // cursor position is no longer valid (e.g. for off-heap allocator)
+        val baseOffset = ctx.freshName("baseOffset")
+        val totalSize = ctx.freshName("totalSize")
+        val serializeMap =
+          s"""
+             |final ArrayData $keys = $input.keyArray();
+             |final ArrayData $values = $input.valueArray();
+             |
+             |// at least 8 bytes for writing the total size and key array size
+             |$cursorTerm = $encoder.ensureCapacity($cursorTerm, 8);
+             |// skip 4 bytes to write the total size
+             |$cursorTerm += 4;
+             |final long $baseOffset = $encoder.offset($cursorTerm);
+             |// write the keys with the array size
+             |${genCodeColumnWrite(ctx, ArrayType(m.keyType, containsNull = false),
+                nullable = false, encoder, cursorTerm, ExprCode("", "false", keys))}
+             |// write the values without the value array size
+             |${genCodeColumnWrite(ctx, ArrayType(m.valueType, m.valueContainsNull),
+                nullable = false, encoder, cursorTerm, ExprCode("", "false", values),
+                writeArrayTypeSize = false)}
+             |// finally write the total length of serialized map at the start
+             |final long $totalSize = $encoder.offset($cursorTerm) - $baseOffset;
+             |if ($totalSize > Integer.MAX_VALUE) {
+             |  throw new java.nio.BufferOverflowException("Map size " +
+             |    $totalSize + " greater than maximum integer size");
+             |}
+             |// reduce four from totalSize for the integer totalSize itself
+             |$encoder.writeIntUnchecked($cursorTerm - $totalSize - 4, (int)$totalSize);
+          """.stripMargin
+        if (nonSerialized) serializeMap
+        else {
+          s"""
+             |if ($input instanceof UnsafeMapData) {
+             |  final UnsafeMapData map = (UnsafeMapData)($input);
+             |  $cursorTerm = $encoder.writeUnsafeData($cursorTerm,
+             |    map.getBaseObject(), map.getBaseOffset(), map.getSizeInBytes());
+             |} else { $serializeMap }
+          """.stripMargin
+        }
+
+      case s: StructType =>
+        val input = ev.value
+        val bitSetMethodsClass = classOf[BitSetMethods].getName
+        // this is relative offset since re-allocation could mean that initial
+        // cursor position is no longer valid (e.g. for off-heap allocator)
+        val baseOffset = ctx.freshName("baseOffset")
+        val baseCursorOffset = ctx.freshName("baseCursorOffset")
+        val totalSize = ctx.freshName("totalSize")
+        val numNullBytes = UnsafeRow.calculateBitSetWidthInBytes(s.length)
+        val fixedWidth = numNullBytes + (s.length << 3)
+        val serializeElements = s.indices.map { index =>
+          val f = s(index)
+          val dateType = f.dataType
+          val getter = ctx.getValue(input, dataType, Integer.toString(index))
+          val value = ctx.freshName("value")
+          if (f.nullable) {
+            s"""
+               |if ($input.isNullAt($index)) {
+               |  final long $baseCursorOffset = $encoder.baseOffset() + $baseOffset;
+               |  $bitSetMethodsClass.set($encoder.buffer(), $baseCursorOffset, $index);
+               |} else {
+               |  final ${ctx.javaType(dataType)} $value = $getter;
+               |  // nullability already taken care of above
+               |  ${genCodeColumnWrite(ctx, dateType, nullable = false, encoder,
+                    cursorTerm, ExprCode("", "false", value), aligned = true)}
+               |}
+            """.stripMargin
+          } else {
+            s"""
+               |final ${ctx.javaType(dataType)} $value = $getter;
+               |${genCodeColumnWrite(ctx, dateType, nullable = false, encoder,
+                  cursorTerm, ExprCode("", "false", value), aligned = true)}
+            """.stripMargin
+          }
+        }.mkString("")
+        val serializeStruct =
+          s"""
+             |// space for nulls and offsets at the start; add 4 for total size
+             |$cursorTerm = $encoder.ensureCapacity($cursorTerm, $fixedWidth);
+             |// skip total size for base offset
+             |final long $baseOffset = $encoder.offset($cursorTerm + 4);
+             |// zero out the null bytes for off-heap bytes
+             |if ($encoder.isOffHeap()) {
+             |  for (int i = 0; i < $numNullBytes; i += 8) {
+             |    $encoder.writeLongUnchecked($baseOffset + i, 0L);
+             |  }
+             |}
+             |$cursorTerm += $fixedWidth;
+          """.stripMargin
         s"$encoder.writeStruct($cursorTerm, (UnsafeRow)(${ev.value}))"
-      case NullType => ev.isNull = "true"; ""
+
+      case NullType => isNull = "true"; ""
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
-    if (field.nullable) {
+    if (nullable) {
       s"""
-         |if (${ev.isNull}) {
+         |if ($isNull) {
          |  $encoder.writeIsNull($batchSizeTerm);
          |} else {
-         |  $cursorTerm = $writeValue;
+         |  $writeValue
          |}""".stripMargin
-    } else s"$cursorTerm = $writeValue;"
+    } else writeValue
   }
 
   private def genCodeColumnStats(ctx: CodegenContext, field: StructField,
@@ -335,7 +558,9 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
            |final Decimal $lower = $encoder.lowerDecimal();
            |final Decimal $upper = $encoder.upperDecimal();""".stripMargin
       case _ =>
-        canBeNull = true
+        lowerIsNull = "true"
+        upperIsNull = "true"
+        canBeNull = false
         s"""
            |final $jt $lower = null;
            |final $jt $upper = null;""".stripMargin

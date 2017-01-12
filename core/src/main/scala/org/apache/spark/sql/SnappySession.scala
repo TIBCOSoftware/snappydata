@@ -462,7 +462,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   override def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
     val encoder = encoderFor[T]
-    val output = encoder.schema.toAttributes
+    val output = sessionCatalog.normalizeSchema(encoder.schema).toAttributes
     val c = encoder.clsTag.runtimeClass
     val isFlat = !(classOf[Product].isAssignableFrom(c) ||
         classOf[DefinedByConstructorParams].isAssignableFrom(c))
@@ -1240,6 +1240,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
+    SnappySession.clearAllCache()
   }
 
   private[sql] def getIndexTable(
@@ -1290,6 +1291,7 @@ class SnappySession(@transient private val sc: SparkContext,
           s"No index found for $indexName")
       }
     }
+    SnappySession.clearAllCache()
   }
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
@@ -1742,7 +1744,8 @@ class RDDOperations[T: u.TypeTag : Encoder](rdd: RDD[T], session: SnappySession)
     val relation = sessionState.catalog.lookupRelation(tableIdent)
     val relationOutput = relation.output
     val encoder = implicitly[Encoder[T]].asInstanceOf[ExpressionEncoder[T]]
-    val output = encoder.schema.zipWithIndex.map { case (f, i) =>
+    val output = session.sessionCatalog.normalizeSchema(encoder.schema)
+        .zipWithIndex.map { case (f, i) =>
       // avoid an unnecessary precision/scale clone+cast for DECIMAL types
       val dataType = f.dataType match {
         case d: DecimalType => relationOutput(i).dataType match {

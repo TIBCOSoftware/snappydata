@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, LocalJoin}
+import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -311,7 +311,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // Also checks for other common plans known to provide immutable objects.
     // TODO: can be extended for more plans as per their behaviour.
     def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
-      case _: PartitionedPhysicalScan | _: LocalJoin => true
+      case _: PartitionedPhysicalScan | _: HashJoinExec => true
       case FilterExec(_, c) => providesImmutableObjects(c)
       case ProjectExec(_, c) => providesImmutableObjects(c)
       case _ => false
@@ -990,7 +990,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           declareLocalVars, moveNextValue, inputCodes)
 
       case _ => throw new IllegalArgumentException(
-        s"LocalJoin should not take $joinType as the JoinType")
+        s"HashJoin should not take $joinType as the JoinType")
     }
 
     s"""

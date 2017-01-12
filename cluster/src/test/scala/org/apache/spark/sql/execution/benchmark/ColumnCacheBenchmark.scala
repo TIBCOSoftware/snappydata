@@ -52,28 +52,23 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
     val conf = new SparkConf()
-        .setIfMissing("spark.master", "local[1]")
+        .setMaster("local[*]")
         .setAppName("microbenchmark")
-    conf.set("spark.sql.shuffle.partitions", "1")
-    conf.set("snappydata.store.eviction-heap-percentage", "90")
-    conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
       addOn(conf)
     }
     conf
   }
 
-  private val sparkSession = new SparkSession(sc)
-  private val snappySession = snc.snappySession
+  private lazy val sparkSession = new SparkSession(sc)
+  private lazy val snappySession = snc.snappySession
 
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
 
   test("cache with randomized keys - query") {
-    benchmarkRandomizedKeys(size = 20000000, queryPath = true)
+    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
   /**
@@ -112,25 +107,17 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   /**
    * Benchmark caching randomized keys created from a range.
-   *
-   * NOTE: When running this benchmark, you will get a lot of WARN logs complaining that the
-   * shuffle files do not exist. This is intentional; we delete the shuffle files manually
-   * after every call to `collect` to avoid the next run to reuse shuffle files written by
-   * the previous run.
    */
   private def benchmarkRandomizedKeys(size: Int, queryPath: Boolean,
-      runSparkCaching: Boolean = true): Unit = {
-    val numIters = 10
+      numIters: Int = 10, runSparkCaching: Boolean = true): Unit = {
     val benchmark = new Benchmark("Cache random keys", size)
     sparkSession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     sparkSession.sql("drop table if exists test")
     snappySession.sql("drop table if exists test")
-    var testDF = sparkSession.range(size)
+    val testDF = sparkSession.range(size)
         .selectExpr("id", "floor(rand() * 10000) as k")
     val testDF2 = snappySession.range(size)
         .selectExpr("id", "floor(rand() * 10000) as k")
-    // var testDF = sparkSession.range(size)
-    //    .selectExpr("id", "concat('val', cast((id % 100) as string)) as k")
     testDF.createOrReplaceTempView("test")
 
     val query = "select avg(k), avg(id) from test"
@@ -141,28 +128,22 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
      * Add a benchmark case, optionally specifying whether to cache the dataset.
      */
     def addBenchmark(name: String, cache: Boolean, params: Map[String, String] = Map(),
-        snappy: Boolean = false, nullable: Boolean = false): Unit = {
+        snappy: Boolean = false): Unit = {
       val defaults = params.keys.flatMap { k => sparkSession.conf.getOption(k).map((k, _)) }
       val defaults2 = params.keys.flatMap { k => snappySession.conf.getOption(k).map((k, _)) }
 
       def prepare(): Unit = {
         params.foreach { case (k, v) => sparkSession.conf.set(k, v) }
         params.foreach { case (k, v) => snappySession.conf.set(k, v) }
-        if (!nullable) {
-          testDF = ColumnCacheBenchmark.applySchema(testDF,
-            StructType(testDF.schema.fields.map(_.copy(nullable = false))))
-          testDF.createOrReplaceTempView("test")
-        }
         sparkSession.catalog.clearCache()
         doGC()
         if (cache) {
           testDF.createOrReplaceTempView("test")
           sparkSession.catalog.cacheTable("test")
         } else if (snappy) {
-          val nullableStr = if (nullable) "" else " not null"
           snappySession.sql("drop table if exists test")
-          snappySession.sql(s"create table test (id bigint $nullableStr, " +
-              s"k bigint $nullableStr) using column")
+          snappySession.sql(s"create table test (id bigint not null, " +
+              s"k bigint not null) using column")
           testDF2.write.insertInto("test")
         }
         if (snappy) {
@@ -213,11 +194,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       }
     }
 
-    // All of these are codegen = T hashmap = T
-    sparkSession.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    sparkSession.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
-    snappySession.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-
     // Benchmark cases:
     //   (1) Caching with defaults
     //   (2) Caching with SnappyData column batches with defaults
@@ -225,9 +201,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     if (runSparkCaching) {
       addBenchmark("cache = T", cache = true, Map.empty)
     }
-
-    addBenchmark("cache = F snappy = T", cache = false, Map.empty,
-      snappy = true)
+    addBenchmark("snappy = T", cache = false, Map.empty, snappy = true)
 
     benchmark.run()
   }

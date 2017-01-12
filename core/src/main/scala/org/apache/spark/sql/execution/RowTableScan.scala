@@ -46,7 +46,7 @@ private[sql] final case class RowTableScan(
       baseRelation.asInstanceOf[BaseRelation]) {
 
   override def doProduce(ctx: CodegenContext): String = {
-    // a parent plan may set a custom input (e.g. LocalJoin)
+    // a parent plan may set a custom input (e.g. HashJoinExec)
     // for that case no need to add the "shouldStop()" calls
     // PartitionedPhysicalRDD always has one input
     val input = ctx.freshName("input")

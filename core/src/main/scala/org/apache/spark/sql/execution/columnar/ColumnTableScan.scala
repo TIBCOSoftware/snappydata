@@ -333,6 +333,8 @@ private[sql] final case class ColumnTableScan(
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
     val rowFormatter = s"${batch}RowFormatter"
+    val numRows = ctx.freshName("numRows")
+    val batchOrdinal = ctx.freshName("batchOrdinal")
 
     ctx.addMutableState("byte[][]", buffers, s"$buffers = null;")
     ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
@@ -454,7 +456,7 @@ private[sql] final case class ColumnTableScan(
       cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
       val notNullVar = if (attr.nullable) ctx.freshName("notNull") else null
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-        cursorVar, "batchOrdinal", attr.dataType, notNullVar)).append('\n')
+        cursorVar, batchOrdinal, attr.dataType, notNullVar)).append('\n')
       val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
         cursorVar, attr, notNullVar, weightVarName)
       bufferInitCode.append(bufferInit)
@@ -585,14 +587,14 @@ private[sql] final case class ColumnTableScan(
        |  while ($nextBatch()) {
        |    ${bufferInitCode.toString()}
        |    $batchConsume
-       |    final int numRows = $numBatchRows;
-       |    for (int batchOrdinal = $batchIndex; batchOrdinal < numRows;
-       |         batchOrdinal++) {
+       |    final int $numRows = $numBatchRows;
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
+       |         $batchOrdinal++) {
        |      ${moveNextCode.toString()}
        |      $consumeCode
        |      if (shouldStop()) {
        |        // increment index for return
-       |        $batchIndex = batchOrdinal + 1;
+       |        $batchIndex = $batchOrdinal + 1;
        |        // set the cursors
        |        ${cursorUpdateCode.toString()}
        |        return;

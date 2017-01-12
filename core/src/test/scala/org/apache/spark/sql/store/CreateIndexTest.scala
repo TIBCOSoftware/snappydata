@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
+import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SnappyContext}
@@ -554,8 +554,8 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"and t5.col2 = t2.col2 and t5.col3 = t2.col3 " +
         s"and t5.col4 = 'p1' ") { df => // t1 -> t4, t1 -> t5 -> t2
       CreateIndexTest.validateIndex(Seq(index1), rtable5, table2)(df)
-      val leaf = df.queryExecution.sparkPlan.collectFirst({ case l: LocalJoin => l }).
-          getOrElse(fail("LocalJoin not found"))
+      val leaf = df.queryExecution.sparkPlan.collectFirst({ case l: HashJoinExec => l }).
+          getOrElse(fail("HashJoin not found"))
       leaf.find({
         case p: PartitionedPhysicalScan => p.relation match {
           case r: RowFormatRelation if r.table.indexOf(rtable5.toUpperCase) > 0 => true
@@ -571,8 +571,8 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"and t6.col2 = t2.col2 and t6.col3 = t2.col3 " +
         s"and t5.col4 = 'p1' ", true) { df => // t1 -> t4, t1 -> t5 -> t2
       CreateIndexTest.validateIndex(Seq(index1), rtable5, rtable6, table2)(df)
-      val leaf = df.queryExecution.sparkPlan.collectFirst({ case l: LocalJoin => l }).
-          getOrElse(fail("LocalJoin not found"))
+      val leaf = df.queryExecution.sparkPlan.collectFirst({ case l: HashJoinExec => l }).
+          getOrElse(fail("HashJoin not found"))
       leaf.find({
         case p: PartitionedPhysicalScan => p.relation match {
           case r: RowFormatRelation if r.table.indexOf(rtable5.toUpperCase) > 0 => true

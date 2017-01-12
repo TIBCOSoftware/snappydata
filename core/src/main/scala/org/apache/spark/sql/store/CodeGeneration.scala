@@ -36,7 +36,6 @@ import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, U
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -56,7 +55,7 @@ object CodeGeneration extends Logging {
    */
   private[this] val cache = CacheBuilder.newBuilder().maximumSize(100).build(
     new CacheLoader[ExecuteKey, GeneratedStatement]() {
-      override def load(key: ExecuteKey) = {
+      override def load(key: ExecuteKey): GeneratedStatement = {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
@@ -67,7 +66,7 @@ object CodeGeneration extends Logging {
 
   private[this] val indexCache = CacheBuilder.newBuilder().maximumSize(100).build(
     new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
-      override def load(key: ExecuteKey) = {
+      override def load(key: ExecuteKey): GeneratedIndexStatement = {
         val start = System.nanoTime()
         val result = compileGeneratedIndexUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
@@ -81,7 +80,7 @@ object CodeGeneration extends Logging {
    */
   private[this] val typeCache = CacheBuilder.newBuilder().maximumSize(100).build(
     new CacheLoader[DataType, SerializeComplexType]() {
-      override def load(key: DataType) = {
+      override def load(key: DataType): SerializeComplexType = {
         val start = System.nanoTime()
         val result = compileComplexType(key)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
@@ -96,11 +95,11 @@ object CodeGeneration extends Logging {
    */
   private[this] val allMethods = GenerateUnsafeProjection.getClass
       .getDeclaredMethods.toIndexedSeq
-  private[this] val generateArrayCodeMethod = getComplexTypeCodeMethod(
+  private[sql] val generateArrayCodeMethod = getComplexTypeCodeMethod(
     "writeArrayToBuffer")
-  private[this] val generateMapCodeMethod = getComplexTypeCodeMethod(
+  private[sql] val generateMapCodeMethod = getComplexTypeCodeMethod(
     "writeMapToBuffer")
-  private[this] val generateStructCodeMethod = getComplexTypeCodeMethod(
+  private[sql] val generateStructCodeMethod = getComplexTypeCodeMethod(
     "writeStructToBuffer")
 
   private[this] def getComplexTypeCodeMethod(methodName: String): Method = {
@@ -111,7 +110,7 @@ object CodeGeneration extends Logging {
     method
   }
 
-  private[this] def generateComplexTypeCode(method: Method,
+  private[sql] def generateComplexTypeCode(method: Method,
       typeArgs: Object*): String =
     method.invoke(GenerateUnsafeProjection, typeArgs: _*).asInstanceOf[String]
 
@@ -482,7 +481,7 @@ object CodeGeneration extends Logging {
     val schemaArr = schema.map(_.dataType).toArray
     val result = indexCache.get(new ExecuteKey(name, schemaArr,
       dialect, forIndex = true))
-    result.addBatch(schemaArr, dialect) _
+    result.addBatch(schemaArr, dialect)
   }
 
   def removeCache(name: String): Unit =
