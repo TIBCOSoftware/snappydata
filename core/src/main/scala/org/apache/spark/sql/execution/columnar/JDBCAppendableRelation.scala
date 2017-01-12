@@ -300,7 +300,15 @@ case class JDBCAppendableRelation(
 
 object JDBCAppendableRelation extends Logging {
 
-  private[sql] final def cachedBatchTableName(table: String): String = {
+//  final def actualTableName(cachedBatchTableName: String): String = {
+//    val tableNameAndSchema = cachedBatchTableName.split("__")
+//    tableNameAndSchema(1).replace(Constant.SHADOW_TABLE_SUFFIX, "")
+//  }
+//  final def actualSchema(cachedBatchTableName: String): String = {
+//    val tableNameAndSchema = cachedBatchTableName.split("__")
+//    tableNameAndSchema(0)
+//  }
+   private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
     } else {
@@ -324,9 +332,9 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     val sc = sqlContext.sparkContext
 
     val connectionProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
+    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
       forManagedTable = false)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties,
@@ -383,7 +391,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
       options: Map[String, String]): ColumnarRelationProvider = {
 
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val clazz = JdbcDialects.get(url) match {
       case _: GemFireXDBaseDialect =>
         DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]

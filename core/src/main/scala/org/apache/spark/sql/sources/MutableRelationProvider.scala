@@ -48,7 +48,7 @@ abstract class MutableRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
@@ -89,7 +89,7 @@ abstract class MutableRelationProvider
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType): JDBCMutableRelation = {
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
@@ -112,7 +112,7 @@ abstract class MutableRelationProvider
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): JDBCMutableRelation = {
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
     val relation = createRelation(sqlContext, mode, options, schemaString, None)

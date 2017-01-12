@@ -265,7 +265,7 @@ final class DefaultSource extends MutableRelationProvider {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getTotalPartitions(
-      sqlContext.sparkContext, parameters,
+      Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
@@ -274,7 +274,7 @@ final class DefaultSource extends MutableRelationProvider {
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val sc = sqlContext.sparkContext
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     StoreUtils.validateConnProps(parameters)
 

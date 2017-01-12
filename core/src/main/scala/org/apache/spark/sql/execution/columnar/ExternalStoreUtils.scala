@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import io.snappydata.Constant
@@ -26,9 +27,11 @@ import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
+import org.apache.spark.sql.api.r.SQLUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -49,7 +52,8 @@ object ExternalStoreUtils {
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
-
+  final val USE_COMPRESSION = "USE_COMPRESSION"
+  final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -152,20 +156,24 @@ object ExternalStoreUtils {
     optMap.toMap
   }
 
-  def defaultStoreURL(sc: SparkContext): String = {
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // Already connected to SnappyData in embedded mode.
-        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
-      case SplitClusterMode(_, _) =>
-        ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
-      case ExternalEmbeddedMode(_, url) =>
-        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
-      case LocalMode(_, url) =>
-        Constant.DEFAULT_EMBEDDED_URL + ';' + url
-      case ExternalClusterMode(_, url) =>
-        throw new AnalysisException("Option 'url' not specified for cluster " +
-            url)
+  def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
+    sparkContext match {
+      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case Some(sc) =>
+       SnappyContext.getClusterMode(sc) match {
+          case SnappyEmbeddedMode(_, _) =>
+            // Already connected to SnappyData in embedded mode.
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+          case SplitClusterMode(_, _) =>
+            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
+          case ExternalEmbeddedMode(_, url) =>
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+          case LocalMode(_, url) =>
+            Constant.DEFAULT_EMBEDDED_URL + ';' + url
+          case ExternalClusterMode(_, url) =>
+            throw new AnalysisException("Option 'url' not specified for cluster " +
+                url)
+        }
     }
   }
 
@@ -176,7 +184,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(sc: SparkContext,
+  def validateAndGetAllProps(sc: Option[SparkContext],
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
@@ -208,7 +216,11 @@ object ExternalStoreUtils {
       }
     }: _*)).getOrElse(Map.empty)
 
-    val isLoner = Utils.isLoner(sc)
+    val isLoner = sc match {
+      case None => false
+      case Some(sparkContext) => Utils.isLoner(sparkContext)
+    }
+
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     val executorConnProps = new Properties()
@@ -436,18 +448,29 @@ object ExternalStoreUtils {
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
 
-  def getTotalPartitions(sc: SparkContext,
+  def getTotalPartitions(parameters: java.util.Map[String, String],
+      forManagedTable: Boolean): Int = {
+    getTotalPartitions(None, parameters.asScala,
+      forManagedTable, true, false)
+  }
+
+  def getTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],
       forManagedTable: Boolean, forColumnTable: Boolean = true,
       forSampleTable: Boolean = false): Int = {
+
     parameters.getOrElse(BUCKETS, {
-      val partitions = SnappyContext.getClusterMode(sc) match {
-        case LocalMode(_, _) =>
-          if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
-          else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
-        case _ =>
-          if (forSampleTable)  DEFAULT_SAMPLE_TABLE_BUCKETS
-          else DEFAULT_TABLE_BUCKETS
+      val partitions = sparkContext match {
+        case Some(sc) =>
+          SnappyContext.getClusterMode(sc) match {
+            case LocalMode(_, _) =>
+              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+              else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
+            case _ =>
+              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS
+              else DEFAULT_TABLE_BUCKETS
+          }
+        case None => DEFAULT_TABLE_BUCKETS
       }
       if (forManagedTable) {
         if (forColumnTable) {
@@ -460,6 +483,7 @@ object ExternalStoreUtils {
       }
       partitions
     }).toInt
+
   }
 
   final def cachedBatchesToRows(
@@ -501,6 +525,32 @@ object ExternalStoreUtils {
     CodeGeneration.removeCache(table)
     Iterator.empty
   }
+
+  def getExternalStoreOnExecutor(parameters : java.util.Map[String, String],
+      partitions: Integer): ExternalStore = {
+    val connProperties: ConnectionProperties =
+      ExternalStoreUtils.validateAndGetAllProps(None, parameters.asScala)
+    new JDBCSourceAsColumnarStore(connProperties,
+      partitions)
+  }
+
+  def convertSchemaMap(tableProps: java.util.Map[String, String]): StructType = {
+    val jsonString = tableProps.asScala.get(
+      SnappyStoreHiveCatalog.HIVE_SCHEMA_NUMPARTS).map { numParts =>
+      (0 until numParts.toInt).map { index =>
+        val partProp = s"${SnappyStoreHiveCatalog.HIVE_SCHEMA_PART}.$index"
+        tableProps.asScala.get(partProp) match {
+          case Some(part) => part
+          case None => throw new AnalysisException("Could not read " +
+              "schema from metastore because it is corrupted (missing " +
+              s"part $index of the schema, $numParts parts expected).")
+        }
+        // Stick all parts back to a single schema string.
+      }.mkString
+    }
+    StructType.fromString(jsonString.get)
+  }
+
 }
 
 object ConnectionType extends Enumeration {

@@ -21,6 +21,7 @@ import java.sql.{Connection, PreparedStatement}
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.catalog.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
@@ -31,7 +32,6 @@ import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirect
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
@@ -652,14 +652,14 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   final def cachedBatchTableName(table: String): String =
     JDBCAppendableRelation.cachedBatchTableName(table)
 
-  def getIndexUpdateStruct(indexEntry: ExecutorCatalogEntry,
+  def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,
       connectedExternalStore: ConnectedExternalStore):
   ColumnFormatRelation.IndexUpdateStruct = {
-    assert(indexEntry.dmls.nonEmpty)
-    val rowInsertStr = indexEntry.dmls(0)
+    assert(indexEntry.dml.nonEmpty)
+    val rowInsertStr = indexEntry.dml
     (CodeGeneration.getGeneratedIndexStatement(indexEntry.entityName,
-      indexEntry.schema,
-      indexEntry.externalStore.connProperties.dialect),
+      indexEntry.schema.asInstanceOf[StructType],
+      indexEntry.externalStore.asInstanceOf[JDBCSourceAsColumnarStore].connProperties.dialect),
         connectedExternalStore.conn.prepareStatement(rowInsertStr))
   }
 }
@@ -672,7 +672,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
+    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
       forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
@@ -686,7 +686,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     StoreUtils.validateConnProps(parameters)
 
@@ -736,11 +736,11 @@ final class DefaultSource extends ColumnarRelationProvider {
     try {
       relation.createTable(mode)
 
-      StoreCallbacksImpl.registerExternalStoreAndSchema(
-        ExecutorCatalogEntry(table, schema, externalStore,
-          sqlContext.conf.columnBatchSize,
-          sqlContext.conf.useCompression,
-          baseTable, ArrayBuffer(relation.rowInsertStr)))
+//      StoreCallbacksImpl.registerExternalStoreAndSchema(
+//        ExecutorCatalogEntry(table, schema, externalStore,
+//          sqlContext.conf.columnBatchSize,
+//          sqlContext.conf.useCompression,
+//          baseTable, ArrayBuffer(relation.rowInsertStr)))
 
       connProperties.dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext,

@@ -255,10 +255,10 @@ object StoreUtils extends Logging {
       registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
     Utils.mapExecutors(sqlContext, () => {
-      StoreCallbacksImpl.executorCatalog.remove(table)
+      // StoreCallbacksImpl.executorCatalog.remove(table)
       Iterator.empty
     }).count()
-    StoreCallbacksImpl.executorCatalog.remove(table)
+    // StoreCallbacksImpl.executorCatalog.remove(table)
   }
 
   def appendClause(sb: mutable.StringBuilder,
