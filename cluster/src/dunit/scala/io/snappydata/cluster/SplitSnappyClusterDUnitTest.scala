@@ -95,14 +95,16 @@ class SplitSnappyClusterDUnitTest(s: String)
   def testColumnTableStatsInSplitMode(): Unit = {
     startNetworkServers(3)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
-        "PR_TABLE3" :+ "PR_TABLE4")
+        "1")
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "5")
   }
 
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
-    startNetworkServers(2)
+    startNetworkServers(3)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
-        "PR_TABLE3" :+ "PR_TABLE4")
+        "1")
     val props = bootProps
     val port = currenyLocatorPort
 
@@ -114,8 +116,8 @@ class SplitSnappyClusterDUnitTest(s: String)
     var stats = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
     println(stats.getRowCount())
-    assert(stats.getRowCount == 10000000 )
 
+    assert(stats.getRowCount == 10000100 )
     vm0.invoke(restartServer)
 
 
@@ -123,13 +125,25 @@ class SplitSnappyClusterDUnitTest(s: String)
     var stats1 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
     println(stats1.getRowCount())
-    assert(stats1.getRowCount == 10000000 )
-
+    assert(stats1.getRowCount == 10000100 )
     vm1.invoke(restartServer)
 
 
-
-
+    //Test using using 5 buckets
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
+        "5")
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats2 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats2.getRowCount())
+    assert(stats2.getRowCount == 10000100 )
+    val snc = SnappyContext(sc)
+    snc.sql("insert into snappyTable values(1,'Test')")
+    var stats3 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    println(stats3.getRowCount())
+    assert(stats3.getRowCount == 10000101)
+    vm0.invoke(restartServer)
   }
 
 }
@@ -318,7 +332,7 @@ object SplitSnappyClusterDUnitTest
 
 
   def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
-      locatorProp: String, table1: String, table2: String): Unit = {
+      locatorProp: String, buckets: String): Unit = {
     // Test setting locators property via environment variable.
     // Also enables checking for "spark." or "snappydata." prefix in key.
     System.setProperty(locatorProp, s"localhost:$locatorPort")
@@ -336,8 +350,9 @@ object SplitSnappyClusterDUnitTest
     val snc = SnappyContext(sc)
 
 
-    snc.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
-        "column options(redundancy '1', buckets '1')")
+    snc.sql("drop table if exists snappyTable")
+    snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
+        s"column options(redundancy '1', buckets '$buckets')")
     val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
         "(10))) as sym")
     testDF.write.insertInto("snappyTable")
@@ -345,7 +360,12 @@ object SplitSnappyClusterDUnitTest
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
     println(stats.getRowCount())
     assert(stats.getRowCount == 10000000 )
-
+    for (i <- 1 to 100) {
+      snc.sql(s"insert into snappyTable values($i,'Test$i')")
+    }
+    val stats1 = SnappyTableStatsProviderService.
+        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+    assert(stats1.getRowCount == 10000100)
     logInfo("Successful")
   }
 }
