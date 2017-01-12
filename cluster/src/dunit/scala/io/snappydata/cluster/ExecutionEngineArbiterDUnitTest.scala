@@ -610,7 +610,7 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, false, s" select *  from $testTable1 t1 where col1 in  " +
         s"(select avg(col1) from $testTable group by col2)")
 
-    runAndValidateQuery(conn, true, s"create index  testIndex on $testTable1(col1)", false)
+    runAndValidateQuery(conn, true, s"create index  testIndex on $testTable1(col1)", true)
 
     runAndValidateQuery(conn, false, s"select count(col1)  from $testTable1 " +
         s" where col1 in ( 5, 1, 2, 4, 5, 6,7,8,9,10) group by col3 ")
