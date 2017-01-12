@@ -23,6 +23,7 @@ import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
@@ -65,7 +66,6 @@ class SnappyExecutor(
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
       newJars: mutable.HashMap[String, Long]): Unit = {
-    super.updateDependencies(newFiles, newJars)
     synchronized {
       val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
       val addedJarFiles = classloader.getAddedURLs.toList
@@ -77,10 +77,15 @@ class SnappyExecutor(
         diffJars.foreach(d => println(d))
         println("job jars after delete in previous loader")
         classloader.jobJars.keySet.foreach(println)
-        this.replClassLoader =
-            new SnappyMutableURLClassLoader(classloader.getURLs(),
-              classloader.getParent, classloader.jobJars)
-        env.serializer.setDefaultClassLoader(replClassLoader)
+        this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
+          classloader.getParent, classloader.jobJars)
+        this.replClassLoader = urlClassLoader
+        super.updateDependencies(newFiles, newJars)
+        env.serializer.setDefaultClassLoader(this.replClassLoader)
+        env.closureSerializer.setDefaultClassLoader(this.replClassLoader)
+        Thread.currentThread().setContextClassLoader(this.replClassLoader)
+      } else {
+        super.updateDependencies(newFiles, newJars)
       }
     }
   }
@@ -146,6 +151,9 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
   }
 
   def loadClassFromJobJar(className: String): Class[_] = {
+    if(className.equalsIgnoreCase("IntegerUDF")){
+      println(s"Loading class $className by "+ this)
+    }
     val jobName = getJobName
     if (!jobName.isEmpty) {
       jobJars.get(jobName) match {

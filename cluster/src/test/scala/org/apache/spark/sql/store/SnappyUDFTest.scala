@@ -17,20 +17,15 @@
 package org.apache.spark.sql.store
 
 import java.io.File
-import java.net.URL
-import java.sql.DriverManager
 
 import scala.util.{Failure, Success, Try}
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.core.RefData
-import io.snappydata.{Lead, ServiceManager, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.{TestUtils, DynamicJarInstallationDUnitTest}
-import org.apache.spark.TestUtils.JavaSourceFromString
-import org.apache.spark.sql.api.java.UDF1
-import org.apache.spark.sql.types.{DataType, DataTypes}
+import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
+import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 
 case class OrderData(ref: Int, description: String, amount:Long)
 
@@ -38,21 +33,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   val query = s"select strnglen(description) from RR_TABLE"
   var serverHostPort: String = null
-  val currDir: File = new File(System.getProperty("user.dir"))
 
-  def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
-    new JavaSourceFromString(name, code)
-  }
-
-  def createUDFClass(name: String, code: String): File = {
-    TestUtils.createCompiledClass(name, currDir, getJavaSourceFromString(name, code), Seq.empty[URL])
-  }
-
-  def createJarFile(files: Seq[File]): String = {
-    val jarFile = new File(currDir, "testJar-%s.jar".format(System.currentTimeMillis()))
-    TestUtils.createJar(files, jarFile)
-    jarFile.getName
-  }
 
   override def beforeAll: Unit = {
     val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
