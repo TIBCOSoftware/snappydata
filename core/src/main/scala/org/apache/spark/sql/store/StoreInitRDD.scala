@@ -51,8 +51,6 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
   val columnBatchSize = sqlContext.conf.columnBatchSize
   val keepReservoirInRegion = sqlContext.conf.getConfString(Constant.RESERVOIR_AS_REGION,
     "true").toBoolean
-  GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
-    Constant.COLUMN_MIN_BATCH_SIZE)
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[(InternalDistributedMember,
@@ -88,8 +86,6 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
         }
     }
 
-    GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
-      Constant.COLUMN_MIN_BATCH_SIZE)
     Seq(Misc.getGemFireCache.getMyId ->
         SparkEnv.get.blockManager.blockManagerId).iterator
   }

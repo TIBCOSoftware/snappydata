@@ -21,9 +21,8 @@ import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
-import com.pivotal.gemfirexd.internal.catalog.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -101,7 +100,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             null, null, 0, null, null, 0, null)
 
           val dependents = if (catalogEntry.dependents != null) {
-            catalogEntry.dependents.toSeq.map(executorCatalog(_))
+            // catalogEntry.dependents.toSeq.map(executorCatalog(_))
+            Seq.empty
           } else {
             Seq.empty
           }

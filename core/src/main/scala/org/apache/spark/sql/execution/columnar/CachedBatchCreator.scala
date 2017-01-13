@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.UUID
 
-import com.pivotal.gemfirexd.internal.catalog.ExternalTableMetaData
+import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController

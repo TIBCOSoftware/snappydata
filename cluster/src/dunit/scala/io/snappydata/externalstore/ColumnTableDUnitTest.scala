@@ -466,7 +466,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         sc.getConf.get("spark.sql.inMemoryColumnarStorage.batchSize"))
 
     val regionSize = region.size() +
-        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()
+        region.getColumnBatchSize * shadowRegion.size()
     assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 

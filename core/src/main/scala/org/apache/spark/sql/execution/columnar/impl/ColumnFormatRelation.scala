@@ -20,8 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.pivotal.gemfirexd.internal.catalog.ExternalTableMetaData
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 

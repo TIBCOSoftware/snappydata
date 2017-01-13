@@ -29,8 +29,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
 import com.gemstone.gemfire.internal.LogWriterImpl;
+import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
+import com.gemstone.gemfire.internal.cache.PartitionedRegion;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
-import com.pivotal.gemfirexd.internal.catalog.ExternalTableMetaData;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
@@ -247,8 +248,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           return true;
         case GET_COL_TABLE:
           hmc = SnappyHiveCatalog.this.hmClients.get();
-//          this.dbName = JDBCAppendableRelation$.MODULE$.actualSchema(this.tableName);
-//          this.tableName = JDBCAppendableRelation$.MODULE$.actualTableName(this.tableName);
           Table table = getTableWithRetry(hmc);
           String fullyQualifiedName = table.getDbName().toUpperCase() +
               "." + table.getTableName().toUpperCase();
@@ -262,13 +261,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           if (parameters.containsKey(ExternalStoreUtils.DEPENDENT_RELATIONS())) {
             dependentRelations = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS()).split(",");
           }
-          long cachedBatchSize = -1;
+          int cachedBatchSize = PartitionedRegion.COLUMN_BATCH_SIZE_DEFAULT;
           if (parameters.containsKey(ExternalStoreUtils.COLUMN_BATCH_SIZE())) {
-            cachedBatchSize = Long.getLong(parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE()));
+            cachedBatchSize = Integer.parseInt(parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE()));
           }
           boolean useCompression = true;
           if (parameters.containsKey(ExternalStoreUtils.USE_COMPRESSION())) {
-            useCompression = Boolean.getBoolean(parameters.get(ExternalStoreUtils.USE_COMPRESSION()));
+            useCompression = Boolean.parseBoolean(parameters.get(ExternalStoreUtils.USE_COMPRESSION()));
           }
           return new ExternalTableMetaData(
               this.dbName + "." + this.tableName,
