@@ -667,11 +667,8 @@ COLOCATE_WITH 'table_name',  // Default none
 PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
-RECOVER_DELAY     '-1',
-MAX_PART_SIZE      '50',
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
 PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
-OFFHEAP ‘true | false’ ,
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -735,20 +732,18 @@ The below mentioned DDL extensions are required to configure a table based on us
    2. PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
 
    3. BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+
    4. REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   5. RECOVER_DELAY: Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members wait for before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
+   5. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
 
-   6. MAX_PART_SIZE: The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.
+   6. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   7. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   
+   Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
-   8. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
-
-   9. OFFHEAP: SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
-
-  10. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
-
+	
 #### Restrictions on Column Tables
 * Column tables cannot specify any primary key, unique key constraints
 
@@ -772,7 +767,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 #### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
 ```
-    //  Applicable for both row & column tables
+    //  Applicable for both row and column tables
     def insert(tableName: String, rows: Row*): Int .
 
     // Only for row tables
@@ -891,7 +886,7 @@ We use a persistent Hive catalog for all our metadata storage. All table, schema
 
 #### SQL Reference to the Syntax
 
-Refer to the [GemFire XD](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html) for information on the syntax.
+Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the syntax.
 
 
 ## Stream processing using SQL
