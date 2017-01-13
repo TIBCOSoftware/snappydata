@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{ExpressionInfo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{Utils, ToolsCallbackInit}
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
@@ -765,6 +765,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         callbacks.removeAddedJar(sc, keyToRemove.head)
       }
     }
+    //Remove the jar from all live executors.
+   org.apache.spark.sql.collection.Utils.mapExecutors(
+      snappySession.sqlContext,
+      () => Seq(1).iterator
+    ).count
   }
 
   val jarUtil = snappySession.sharedState.jarUtils
