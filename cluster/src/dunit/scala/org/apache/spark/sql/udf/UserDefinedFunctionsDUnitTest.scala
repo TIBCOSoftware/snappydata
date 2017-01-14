@@ -45,7 +45,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     refDf.write.insertInto("COL_TABLE")
   }
 
-  def testJarDeployedWithSparkContext(): Unit = {
+  def testSameUDFWithCodeChange(): Unit = {
     val snSession = new SnappySession(sc)
     createTables(snSession)
 
@@ -59,7 +59,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     snSession.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
-    var row = snSession.sqlUncached("select intudf(description) from col_table").collect()
+    var row = snSession.sql("select intudf(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 6))
 
@@ -77,9 +77,54 @@ class UserDefinedFunctionsDUnitTest(val s: String)
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
 
-    row = snSession.sqlUncached("select intudf(description) from col_table").collect()
+    row = snSession.sql("select intudf(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 7))
+
+  }
+
+  //@TODO This test shsould pass once we support a single jar for multiple UDFs
+  def IGNORE_testTwoUDFsDroppingOne(): Unit = {
+    val snSession = new SnappySession(sc)
+    createTables(snSession)
+
+    var udfText: String = "public class IntegerUDF1 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 6; " +
+        "}" +
+        "}"
+    val file1 = createUDFClass("IntegerUDF1", udfText)
+
+    udfText = "public class IntegerUDF2 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 8; " +
+        "}" +
+        "}"
+
+    val file2 = createUDFClass("IntegerUDF2", udfText)
+
+    val jar = createJarFile(Seq(file1,file2))
+    snSession.sql(s"CREATE FUNCTION APP.intudf1 AS IntegerUDF1 " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    var row = snSession.sql("select intudf1(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+
+    snSession.sql(s"CREATE FUNCTION APP.intudf2 AS IntegerUDF2 " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    row = snSession.sql("select intudf2(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 8))
+
+    snSession.sql("drop function intudf1")
+
+    row = snSession.sql("select intudf2(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 8))
+
+
 
   }
 }

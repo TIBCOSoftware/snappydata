@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.io.File
 
 import scala.util.{Failure, Success, Try}
 
@@ -24,10 +23,9 @@ import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 
-case class OrderData(ref: Int, description: String, amount:Long)
+case class OrderData(ref: Int, description: String, price: Long, tax : BigDecimal)
 
 class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -36,13 +34,15 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
   override def beforeAll: Unit = {
-    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
+    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i, i/2)))
     val refDf = snc.createDataFrame(rdd)
+    refDf.createTempView("tempTable")
+
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
 
-    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT)")
-    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG) using column options()")
+    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT, serviceTax DECIMAL)")
+    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG, serviceTax DECIMAL) using column options(PARTITION_BY 'OrderRef')")
 
     refDf.write.insertInto("RR_TABLE")
     refDf.write.insertInto("COL_TABLE")
@@ -75,6 +75,20 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
       case Success(df) => throw new AssertionError(" Should not have succeded with dropped function")
       case Failure(error) => // Do nothing
     }
+  }
+
+  test("Test UDF with decimal  Return type") {
+    val udfText: String = "public class DecimalUDF implements org.apache.spark.sql.api.java.UDF1<java.math.BigDecimal, java.math.BigDecimal> {" +
+        " @Override public java.math.BigDecimal call(java.math.BigDecimal s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file = createUDFClass("DecimalUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.decimaludf AS DecimalUDF " +
+        s"RETURNS DECIMAL USING FILE " +
+        s"'$jar'")
+    snc.sql("select decimaludf(serviceTax) from col_table").collect().foreach(r => println(r))
   }
 
   test("Test UDF with Multiple  interface") {
@@ -151,5 +165,20 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select strudf(description) from col_table").collect().foreach(r => println(r))
   }
+
+
+  ignore("Test with jar") {
+    snc.sql(s"CREATE FUNCTION APP.decimaludf AS io.snappydata.examples.DecimalUDF " +
+        s"RETURNS DECIMAL USING JAR " +
+        s"'/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples1.jar'")
+    snc.sql("select decimaludf(servicetax) from col_table").collect().foreach(r => println(r))
+  }
+
+  ignore("Test Spark UDF") {
+
+    snc.udf.register("decudf", (n: BigDecimal) => { BigDecimal(2.0) })
+    snc.sql("select decudf(tax) from tempTable").collect().foreach(r => println(r))
+  }
+
 
 }
