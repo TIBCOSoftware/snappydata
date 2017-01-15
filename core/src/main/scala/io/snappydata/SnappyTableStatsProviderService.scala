@@ -210,10 +210,14 @@ object SnappyTableStatsProviderService extends Logging {
             val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+            //Resetting PR Numrows in cached batch as this will be calculated every time.
+            //TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+            var rowsInCachedBatch:Long = 0
             while (itr.hasNext) {
-              pr.getPrStats.incPRNumRowsInCachedBatches(itr.next().asInstanceOf[RowLocation]
-                  .getRow(container).getColumn(colPos).getInt)
+              rowsInCachedBatch = rowsInCachedBatch + itr.next().asInstanceOf[RowLocation]
+                  .getRow(container).getColumn(colPos).getInt
             }
+            pr.getPrStats.setPRNumRowsInCachedBatches(rowsInCachedBatch)
           }
         }
       }
