@@ -411,26 +411,28 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     ActorSystem("SnappyLeadJobServer", conf)
   }
 
+  /*
   @throws[SparkException]
   override def startNetworkServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
     throw new SparkException("Network server cannot be started on lead node.")
-  }
+  }*/
 
-  @throws[SparkException]
+ /* @throws[SparkException]
   override def startThriftServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
     throw new SparkException("Thrift server cannot be started on lead node.")
-  }
+  }*/
 
+  /*
   @throws[SparkException]
   override def startDRDAServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
     throw new SparkException("DRDA server cannot be started on lead node.")
-  }
+  }*/
 
   override def stopAllNetworkServers(): Unit = {
     // nothing to do as none of the net servers are allowed to start.

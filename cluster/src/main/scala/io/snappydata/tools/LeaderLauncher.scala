@@ -61,7 +61,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
     args(0).equalsIgnoreCase("start") match {
       case true =>
-        changeOrAppend(GfxdServerLauncher.RUN_NETSERVER, "false", true)
+        changeOrAppend(GfxdServerLauncher.RUN_NETSERVER, "true", true)
       case _ =>
     }
 
@@ -92,7 +92,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     this.bootProps = props
   }
 
-  @throws[Exception]
+ /* @throws[Exception]
   override protected def startAdditionalServices(cache: Cache,
       options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
@@ -100,7 +100,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
     // disabling net server startup etc.
 
-  }
+  }*/
 
   override protected def checkStatusForWait(status: CacheServerLauncher.Status): Boolean = {
     (status.state == CacheServerLauncher.STARTING ||

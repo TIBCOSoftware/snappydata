@@ -176,6 +176,7 @@ object ExternalStoreUtils {
     }
   }
 
+
   def validateAndGetAllProps(sc: SparkContext,
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 

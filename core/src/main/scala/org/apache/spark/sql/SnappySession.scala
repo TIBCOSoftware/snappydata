@@ -1574,7 +1574,7 @@ object SnappySession extends Logging {
         }
       }
     }
-    CacheBuilder.newBuilder().maximumSize(300).build(loader)
+    CacheBuilder.newBuilder().maximumSize(1000).build(loader)
   }
 
   private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
