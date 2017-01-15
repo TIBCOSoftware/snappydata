@@ -392,12 +392,13 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
 
   override protected def moveNext(): Unit = {
+    val itr = this.itr
     while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
+      val rl = itr.next()
       val owner = itr.getHostedBucketRegion
       if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
-          (RegionEntryUtils.fillRowWithoutFaultIn(container, owner,
-            rl.getRegionEntry, currentVal) ne null)) {
+          RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
+            rl.asInstanceOf[RowLocation], currentVal)) {
         return
       }
     }
