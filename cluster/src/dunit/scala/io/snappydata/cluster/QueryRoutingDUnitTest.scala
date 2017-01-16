@@ -290,8 +290,6 @@ class QueryRoutingDUnitTest(val s: String)
     val md = rs.getMetaData
 
     assert(md.getColumnCount == 3, "column count is = " + md.getColumnCount)
-//    println("1 = " + md.getColumnName(1) + " 2=" +md.getColumnName(2) + " 3=" + md.getColumnName(3)
-//    + " 4=" + md.getColumnName(4))
     assert(md.getColumnName(1).equals("COL1"))
     assert(md.getColumnName(2).equals("COL2"))
     assert(md.getColumnName(3).equals("COL3"))
