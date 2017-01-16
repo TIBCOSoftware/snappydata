@@ -42,30 +42,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val partitioner = new StoreHashFunction
 
-  var useCompression = false
-  var cachedBatchSize = 0
-
-//  def registerExternalStoreAndSchema(catalogEntry: ExecutorCatalogEntry): Unit = {
-//    executorCatalog.synchronized {
-//      executorCatalog.get(catalogEntry.entityName) match {
-//        case None => executorCatalog.put(catalogEntry.entityName, catalogEntry)
-//        case Some(previousEntry) =>
-//          if (previousEntry.schema != catalogEntry.schema) {
-//            executorCatalog.put(catalogEntry.entityName, catalogEntry)
-//          }
-//      }
-//      if (catalogEntry.baseTable.isDefined) {
-//        val baseTable = executorCatalog.get(catalogEntry.baseTable.get)
-//        assert(baseTable.isDefined)
-//        if (!baseTable.get.dependents.contains(catalogEntry.entityName)) {
-//          baseTable.get.dependents += catalogEntry.entityName
-//        }
-//      }
-//    }
-//    useCompression = catalogEntry.useCompression
-//    cachedBatchSize = catalogEntry.cachedBatchSize
-//  }
-
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
     val container = region.getPartitionedRegion
@@ -112,7 +88,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             container.getQualifiedTableName, catalogEntry.schema.asInstanceOf[StructType],
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             dependents,
-            cachedBatchSize, useCompression)
+            catalogEntry.cachedBatchSize, catalogEntry.useCompression)
           batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
         } finally {

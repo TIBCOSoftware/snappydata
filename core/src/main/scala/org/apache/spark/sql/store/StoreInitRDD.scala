@@ -62,10 +62,6 @@ class StoreInitRDD(@transient private val sqlContext: SQLContext,
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
-//        val store = new JDBCSourceAsColumnarStore(connProperties, partitions)
-//        StoreCallbacksImpl.registerExternalStoreAndSchema(
-//          ExecutorCatalogEntry(table, schema, store, columnBatchSize, userCompression,
-//            baseTable, dmls))
         if (keepReservoirInRegion) {
           schema.fields.last match {
             case StructField("SNAPPY_SAMPLER_WEIGHTAGE", LongType, _, _) =>

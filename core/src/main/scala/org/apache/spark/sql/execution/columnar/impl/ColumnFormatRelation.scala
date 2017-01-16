@@ -735,12 +735,6 @@ final class DefaultSource extends ColumnarRelationProvider {
     try {
       relation.createTable(mode)
 
-//      StoreCallbacksImpl.registerExternalStoreAndSchema(
-//        ExecutorCatalogEntry(table, schema, externalStore,
-//          sqlContext.conf.columnBatchSize,
-//          sqlContext.conf.useCompression,
-//          baseTable, ArrayBuffer(relation.rowInsertStr)))
-
       connProperties.dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext,
           table, Some(schema), partitions, connProperties,

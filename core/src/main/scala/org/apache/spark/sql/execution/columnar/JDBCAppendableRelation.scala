@@ -313,14 +313,6 @@ case class JDBCAppendableRelation(
 
 object JDBCAppendableRelation extends Logging {
 
-//  final def actualTableName(cachedBatchTableName: String): String = {
-//    val tableNameAndSchema = cachedBatchTableName.split("__")
-//    tableNameAndSchema(1).replace(Constant.SHADOW_TABLE_SUFFIX, "")
-//  }
-//  final def actualSchema(cachedBatchTableName: String): String = {
-//    val tableNameAndSchema = cachedBatchTableName.split("__")
-//    tableNameAndSchema(0)
-//  }
    private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
