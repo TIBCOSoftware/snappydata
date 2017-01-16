@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>impl - snappy-cluster_2.11 0.6 API - org.apache.spark.graphx.impl</title>
-          <meta name="description" content="impl - snappy - cluster 2.11 0.6 API - org.apache.spark.graphx.impl" />
-          <meta name="keywords" content="impl snappy cluster 2.11 0.6 API org.apache.spark.graphx.impl" />
+          <title>impl - snappydata_2.11 0.7 API - org.apache.spark.graphx.impl</title>
+          <meta name="description" content="impl - snappydata 2.11 0.7 API - org.apache.spark.graphx.impl" />
+          <meta name="keywords" content="impl snappydata 2.11 0.7 API org.apache.spark.graphx.impl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -49,7 +49,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -105,12 +105,86 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.graphx.impl.EdgeRDDImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EdgeRDDImpl[ED,VD]extendsEdgeRDD[ED]"></a>
+      <a id="EdgeRDDImpl[ED,VD]:EdgeRDDImpl[ED,VD]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="EdgeRDDImpl.html"><span class="name">EdgeRDDImpl</span></a><span class="tparams">[<span name="ED">ED</span>, <span name="VD">VD</span>]</span><span class="result"> extends <a href="../EdgeRDD.html" class="extype" name="org.apache.spark.graphx.EdgeRDD">EdgeRDD</a>[<span class="extype" name="org.apache.spark.graphx.impl.EdgeRDDImpl.ED">ED</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.graphx.impl.package@EdgeRDDImpl[ED,VD]extendsEdgeRDD[ED]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.graphx.impl.GraphImpl" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GraphImpl[VD,ED]extendsGraph[VD,ED]withSerializable"></a>
+      <a id="GraphImpl[VD,ED]:GraphImpl[VD,ED]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GraphImpl.html"><span class="name">GraphImpl</span></a><span class="tparams">[<span name="VD">VD</span>, <span name="ED">ED</span>]</span><span class="result"> extends <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a>[<span class="extype" name="org.apache.spark.graphx.impl.GraphImpl.VD">VD</span>, <span class="extype" name="org.apache.spark.graphx.impl.GraphImpl.ED">ED</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.graphx.impl.package@GraphImpl[VD,ED]extendsGraph[VD,ED]withSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An implementation of <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">org.apache.spark.graphx.Graph</a> to support computation on graphs.</p><div class="fullcomment"><div class="comment cmt"><p>An implementation of <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">org.apache.spark.graphx.Graph</a> to support computation on graphs.</p><p>Graphs are represented using two RDDs: <code>vertices</code>, which contains vertex attributes and the
+routing information for shipping vertex attributes to edge partitions, and
+<code>replicatedVertexView</code>, which contains edges and the vertex attributes mentioned by each edge.
+</p></div></div>
+    </li><li name="org.apache.spark.graphx.impl.VertexRDDImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VertexRDDImpl[VD]extendsVertexRDD[VD]"></a>
+      <a id="VertexRDDImpl[VD]:VertexRDDImpl[VD]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VertexRDDImpl.html"><span class="name">VertexRDDImpl</span></a><span class="tparams">[<span name="VD">VD</span>]</span><span class="result"> extends <a href="../VertexRDD.html" class="extype" name="org.apache.spark.graphx.VertexRDD">VertexRDD</a>[<span class="extype" name="org.apache.spark.graphx.impl.VertexRDDImpl.VD">VD</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.graphx.impl.package@VertexRDDImpl[VD]extendsVertexRDD[VD]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li></ol>
             </div>
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.graphx.impl.GraphImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GraphImpl"></a>
+      <a id="GraphImpl:GraphImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GraphImpl$.html"><span class="name">GraphImpl</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.graphx.impl.package@GraphImpl" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -119,7 +193,7 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
             </div>

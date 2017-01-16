@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData Team">
+  <meta name="author" content="SnappyData Development Team">
   
   <title>Programming Guide - SnappyData Documentation</title>
   
@@ -817,11 +817,8 @@ COLOCATE_WITH 'table_name',  // Default none
 PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
-RECOVER_DELAY     '-1',
-MAX_PART_SIZE      '50',
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
 PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
-OFFHEAP ‘true | false’ ,
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -884,24 +881,16 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <p>REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
 </li>
 <li>
-<p>RECOVER_DELAY: Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members wait for before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.</p>
-</li>
-<li>
-<p>MAX_PART_SIZE: The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.</p>
-</li>
-<li>
 <p>EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store</p>
 </li>
 <li>
 <p>PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
 </li>
 <li>
-<p>OFFHEAP: SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)</p>
-</li>
-<li>
 <p>EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
 </li>
 </ol>
+<p>Refer to the <a href="http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html">SQL Reference Guide</a> for information on the extensions.</p>
 <h4 id="restrictions-on-column-tables">Restrictions on Column Tables</h4>
 <ul>
 <li>
@@ -929,7 +918,7 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 
 <h4 id="api-extensions-provided-in-snappycontext">API Extensions Provided in SnappyContext</h4>
 <p>Several APIs have been added in <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.</p>
-<pre><code>    //  Applicable for both row &amp; column tables
+<pre><code>    //  Applicable for both row and column tables
     def insert(tableName: String, rows: Row*): Int .
 
     // Only for row tables
@@ -1030,7 +1019,7 @@ Any query on column table also takes into account the row cached buffer. By doin
 <!--<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
 <h4 id="sql-reference-to-the-syntax">SQL Reference to the Syntax</h4>
-<p>Refer to the <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html">GemFire XD</a> for information on the syntax.</p>
+<p>Refer to the <a href="http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html">SQL Reference Guide</a> for information on the syntax.</p>
 <h2 id="stream-processing-using-sql">Stream processing using SQL</h2>
 <p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">Spark streaming</a> from the Spark Streaming guide. </p>

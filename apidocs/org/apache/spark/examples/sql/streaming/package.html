@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>streaming - snappy-cluster_2.11 0.6 API - org.apache.spark.examples.sql.streaming</title>
-          <meta name="description" content="streaming - snappy - cluster 2.11 0.6 API - org.apache.spark.examples.sql.streaming" />
-          <meta name="keywords" content="streaming snappy cluster 2.11 0.6 API org.apache.spark.examples.sql.streaming" />
+          <title>streaming - snappydata_2.11 0.7 API - org.apache.spark.examples.sql.streaming</title>
+          <meta name="description" content="streaming - snappydata 2.11 0.7 API - org.apache.spark.examples.sql.streaming" />
+          <meta name="keywords" content="streaming snappydata 2.11 0.7 API org.apache.spark.examples.sql.streaming" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -75,7 +75,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="JavaStructuredNetworkWordCount.html"><span class="name">JavaStructuredNetworkWordCount</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a href="JavaStructuredNetworkWordCount.html"><span class="name">JavaStructuredNetworkWordCount</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@JavaStructuredNetworkWordCountextendsObject" title="Permalink" target="_top">
@@ -92,7 +92,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="JavaStructuredNetworkWordCountWindowed.html"><span class="name">JavaStructuredNetworkWordCountWindowed</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a href="JavaStructuredNetworkWordCountWindowed.html"><span class="name">JavaStructuredNetworkWordCountWindowed</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@JavaStructuredNetworkWordCountWindowedextendsObject" title="Permalink" target="_top">
@@ -105,7 +105,67 @@
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.examples.sql.streaming.StructuredNetworkWordCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredNetworkWordCount"></a>
+      <a id="StructuredNetworkWordCount:StructuredNetworkWordCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredNetworkWordCount$.html"><span class="name">StructuredNetworkWordCount</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@StructuredNetworkWordCount" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Counts words in UTF8 encoded, '\n' delimited text received from the network.</p><div class="fullcomment"><div class="comment cmt"><p>Counts words in UTF8 encoded, '\n' delimited text received from the network.</p><p>Usage: StructuredNetworkWordCount &lt;hostname&gt; &lt;port&gt;
+&lt;hostname&gt; and &lt;port&gt; describe the TCP server that Structured Streaming
+would connect to receive data.</p><p>To run this on your local machine, you need to first run a Netcat server
+   <code>$ nc -lk 9999</code>
+and then run the example
+   <code>$ bin/run-example sql.streaming.StructuredNetworkWordCount
+   localhost 9999</code>
+</p></div></div>
+    </li><li name="org.apache.spark.examples.sql.streaming.StructuredNetworkWordCountWindowed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredNetworkWordCountWindowed"></a>
+      <a id="StructuredNetworkWordCountWindowed:StructuredNetworkWordCountWindowed"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredNetworkWordCountWindowed$.html"><span class="name">StructuredNetworkWordCountWindowed</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@StructuredNetworkWordCountWindowed" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Counts words in UTF8 encoded, '\n' delimited text received from the network over a
+sliding window of configurable duration.</p><div class="fullcomment"><div class="comment cmt"><p>Counts words in UTF8 encoded, '\n' delimited text received from the network over a
+sliding window of configurable duration. Each line from the network is tagged
+with a timestamp that is used to determine the windows into which it falls.</p><p>Usage: StructuredNetworkWordCountWindowed &lt;hostname&gt; &lt;port&gt; &lt;window duration&gt;
+  [&lt;slide duration&gt;]
+&lt;hostname&gt; and &lt;port&gt; describe the TCP server that Structured Streaming
+would connect to receive data.
+&lt;window duration&gt; gives the size of window, specified as integer number of seconds
+&lt;slide duration&gt; gives the amount of time successive windows are offset from one another,
+given in the same units as above. &lt;slide duration&gt; should be less than or equal to
+&lt;window duration&gt;. If the two are equal, successive windows have no overlap. If
+&lt;slide duration&gt; is not provided, it defaults to &lt;window duration&gt;.</p><p>To run this on your local machine, you need to first run a Netcat server
+   <code>$ nc -lk 9999</code>
+and then run the example
+   <code>$ bin/run-example sql.streaming.StructuredNetworkWordCountWindowed
+   localhost 9999 &lt;window duration in seconds&gt; [&lt;slide duration in seconds&gt;]</code></p><p>One recommended &lt;window duration&gt;, &lt;slide duration&gt; pair is 10, 5
+</p></div></div>
+    </li></ol>
+            </div>
 
         
 
