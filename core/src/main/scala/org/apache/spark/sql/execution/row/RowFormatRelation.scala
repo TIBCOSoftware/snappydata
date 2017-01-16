@@ -290,11 +290,6 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
-      connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          None, partitions, connProperties)
-        case _ =>
-      }
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))

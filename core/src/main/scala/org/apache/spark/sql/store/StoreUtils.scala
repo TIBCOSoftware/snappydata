@@ -240,26 +240,9 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  def initStore(sqlContext: SQLContext,
-      table: String,
-      schema: Option[StructType],
-      partitions: Int,
-      connProperties: ConnectionProperties,
-      baseTable: Option[String] = None,
-      dmls: ArrayBuffer[String] = ArrayBuffer.empty): Unit = {
-    // TODO for SnappyCluster manager optimize this . Rather than calling this
-    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties,
-      baseTable, dmls).collect()
-  }
-
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
-    Utils.mapExecutors(sqlContext, () => {
-      // StoreCallbacksImpl.executorCatalog.remove(table)
-      Iterator.empty
-    }).count()
-    // StoreCallbacksImpl.executorCatalog.remove(table)
   }
 
   def appendClause(sb: mutable.StringBuilder,

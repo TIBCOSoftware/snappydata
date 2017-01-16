@@ -122,9 +122,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     partitioner.computeHash(dvds, numPartitions)
   }
 
-  override def invalidateReplicatedTableCache(region: LocalRegion): Unit = {
-  }
-
   override def cachedBatchTableName(table: String): String = {
     ColumnFormatRelation.cachedBatchTableName(table)
   }
