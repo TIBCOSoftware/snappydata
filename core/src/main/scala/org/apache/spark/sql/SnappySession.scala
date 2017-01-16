@@ -934,8 +934,10 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val plan = LogicalRelation(relation)
-    sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
-      Array.empty[String], source, params, relation)
+    if (!isBuiltIn) {
+      sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
+        Array.empty[String], source, params, relation)
+    }
     snappyContextFunctions.postRelationCreation(relation, this)
     plan
   }
@@ -1025,8 +1027,10 @@ class SnappySession(@transient private val sc: SparkContext,
 
     // need to register if not existing in catalog
     if (insertRelation.isEmpty || overwrite) {
-      sessionCatalog.registerDataSourceTable(tableIdent, schema,
-        partitionColumns, source, params, relation)
+      if (!isBuiltIn) {
+        sessionCatalog.registerDataSourceTable(tableIdent, schema,
+          partitionColumns, source, params, relation)
+      }
       snappyContextFunctions.postRelationCreation(relation, this)
     }
     LogicalRelation(relation)
