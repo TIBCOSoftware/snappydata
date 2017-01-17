@@ -1817,7 +1817,6 @@ public class SnappyTest implements Serializable {
         tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
         List<ClientVmInfo> vmList;
         vmList = (List<ClientVmInfo>) (tmpArr[0]);
-        Log.getLogWriter().info("SS tempArray: " + tmpArr[0].toString());
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         for (int i = 0; i < vmList.size(); i++) {
@@ -1964,7 +1963,7 @@ public class SnappyTest implements Serializable {
             if (num == 1) {
                 pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
                 log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "snappyClusterSystem.log";
+                String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
                 File logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
                 snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
