@@ -1107,7 +1107,6 @@ class SnappySession(@transient private val sc: SparkContext,
         }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
-            sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           case _ => if (!isTempTable) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }

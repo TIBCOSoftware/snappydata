@@ -553,17 +553,13 @@ object ExternalStoreUtils {
     StructType.fromString(jsonString.get)
   }
 
-  def getExternalTableMetaData(table: QualifiedTableName): ExternalTableMetaData = {
+  def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
     val container = Misc.getMemStore.getAllContainers.asScala.find(c => {
-      val schema = table.database match {
-        case None => ""
-        case Some(s) => s
-      }
-      c.getTableName == table.identifier &&
-          c.getSchemaName == schema
+      c.getTableName.equalsIgnoreCase(table) &&
+          c.getSchemaName.equalsIgnoreCase(schema)
     })
     container match {
-      case None => throw new IllegalStateException(s"Table $table not found in containers")
+      case None => throw new IllegalStateException(s"Table $schema.$table not found in containers")
       case Some(c) => c.fetchHiveMetaData(false)
     }
   }

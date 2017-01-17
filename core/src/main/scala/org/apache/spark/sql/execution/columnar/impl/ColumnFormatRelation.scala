@@ -33,7 +33,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, columnar}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -170,9 +170,9 @@ class BaseColumnFormatRelation(
 
 
   def getExternalStoreMetaData: ExternalTableMetaData = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snc.sessionState.catalog
-    ExternalStoreUtils.getExternalTableMetaData(catalog.newQualifiedTableName(table))
+    val dotIndex = table.indexOf('.')
+    ExternalStoreUtils.getExternalTableMetaData(table.substring(0, dotIndex),
+      table.substring(dotIndex + 1))
   }
 
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
@@ -294,6 +294,13 @@ class BaseColumnFormatRelation(
         }
       } finally {
         conn.close()
+      }
+      if (sqlContext.isInstanceOf[SnappyContext]) {
+        try {
+          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(table), Some(this))
+        } finally {
+        }
       }
     }
   }
