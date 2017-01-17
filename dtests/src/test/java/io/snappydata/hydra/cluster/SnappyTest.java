@@ -1817,6 +1817,7 @@ public class SnappyTest implements Serializable {
         tmpArr = getPrimaryLeadVM(cycleLeadVMTarget);
         List<ClientVmInfo> vmList;
         vmList = (List<ClientVmInfo>) (tmpArr[0]);
+        Log.getLogWriter().info("SS tempArray: " + tmpArr[0].toString());
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         for (int i = 0; i < vmList.size(); i++) {
@@ -1949,6 +1950,31 @@ public class SnappyTest implements Serializable {
     public int getMyTid() {
         int myTid = RemoteTestModule.getCurrentThread().getThreadId();
         return myTid;
+    }
+
+
+    /**
+     * Start snappy cluster using snappy-start-all.sh script.
+     */
+    public static synchronized void HydraTask_startSnappyCluster() {
+        File log = null;
+        ProcessBuilder pb = null;
+        try {
+            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
+            if (num == 1) {
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + "snappyClusterSystem.log";
+                File logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+                snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
+                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+                snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
+            }
+        } catch (IOException e) {
+            String s = "problem occurred while retriving destination logFile path " + log;
+            throw new TestException(s, e);
+        }
     }
 
     /**
