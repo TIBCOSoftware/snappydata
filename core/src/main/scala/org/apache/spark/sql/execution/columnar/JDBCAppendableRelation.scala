@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
+import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -151,6 +152,12 @@ case class JDBCAppendableRelation(
     externalStore.storeCachedBatch(table, batch)
   }
 
+  def getExternalStoreMetaData: ExternalTableMetaData = {
+    val dotIndex = table.indexOf('.')
+    ExternalStoreUtils.getExternalTableMetaData(table.substring(0, dotIndex),
+      table.substring(dotIndex + 1))
+  }
+
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
       overwrite: Boolean): Unit = {
 
@@ -159,8 +166,9 @@ case class JDBCAppendableRelation(
       truncate()
     }
 
-    val useCompression = sqlContext.conf.useCompression
-    val columnBatchSize = sqlContext.conf.columnBatchSize
+    val extMetaData = getExternalStoreMetaData
+    val columnBatchSize = extMetaData.cachedBatchSize
+    val useCompression = extMetaData.useCompression
 
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserve(rowIterator => {

@@ -169,12 +169,6 @@ class BaseColumnFormatRelation(
     "snappydata.testForceFlush")
 
 
-  def getExternalStoreMetaData: ExternalTableMetaData = {
-    val dotIndex = table.indexOf('.')
-    ExternalStoreUtils.getExternalTableMetaData(table.substring(0, dotIndex),
-      table.substring(dotIndex + 1))
-  }
-
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
