@@ -22,6 +22,8 @@ import java.util.Properties
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.util.ServiceUtils
 
@@ -33,7 +35,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
@@ -549,6 +551,21 @@ object ExternalStoreUtils {
       }.mkString
     }
     StructType.fromString(jsonString.get)
+  }
+
+  def getExternalTableMetaData(table: QualifiedTableName): ExternalTableMetaData = {
+    val container = Misc.getMemStore.getAllContainers.asScala.find(c => {
+      val schema = table.database match {
+        case None => ""
+        case Some(s) => s
+      }
+      c.getTableName == table.identifier &&
+          c.getSchemaName == schema
+    })
+    container match {
+      case None => throw new IllegalStateException(s"Table $table not found in containers")
+      case Some(c) => c.fetchHiveMetaData(false)
+    }
   }
 
 }

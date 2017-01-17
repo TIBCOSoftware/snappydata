@@ -77,8 +77,6 @@ class BaseColumnFormatRelation(
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
-  val columnBatchSize: Int = sqlContext.conf.columnBatchSize
-
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
 
@@ -170,11 +168,18 @@ class BaseColumnFormatRelation(
   private[this] val forceFlush = java.lang.Boolean.getBoolean(
     "snappydata.testForceFlush")
 
+
+  def getExternalStoreMetaData: ExternalTableMetaData = {
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val catalog = snc.sessionState.catalog
+    ExternalStoreUtils.getExternalTableMetaData(catalog.newQualifiedTableName(table))
+  }
+
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
     if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
-        batch.numRows <= math.max(1, columnBatchSize)) {
+        batch.numRows <= math.max(1, getExternalStoreMetaData.cachedBatchSize)) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
