@@ -25,57 +25,144 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 
-case class OrderData(ref: Int, description: String, price: Long, tax : BigDecimal)
+case class OrderData(ref: Int, description: String, price: Long,
+    tax : BigDecimal, surcharge: Float, date:  java.sql.Date, time : String)
 
 class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
 
-  val query = s"select strnglen(description) from RR_TABLE"
-  var serverHostPort: String = null
 
 
   override def beforeAll: Unit = {
-    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i, i/2)))
+    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i, i/2,
+      i/2 , java.sql.Date.valueOf("2012-12-12"), "2000-02-03 12:23:04")))
     val refDf = snc.createDataFrame(rdd)
     refDf.createTempView("tempTable")
 
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
 
-    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT, serviceTax DECIMAL)")
-    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG, serviceTax DECIMAL) using column options(PARTITION_BY 'OrderRef')")
+    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, " +
+        "price BIGINT, serviceTax DECIMAL, surcharge Float, purchase_date DATE, time Timestamp)")
+
+    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  " +
+        "LONG, serviceTax DECIMAL, surcharge Float, purchase_date DATE, time Timestamp) " +
+        "using column options(PARTITION_BY 'OrderRef')")
 
     refDf.write.insertInto("RR_TABLE")
     refDf.write.insertInto("COL_TABLE")
-    serverHostPort = TestUtil.startNetServer()
   }
 
   override def afterAll: Unit = {
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
-    TestUtil.stopNetServer()
   }
 
-  private def detailedTest(): Unit = {
-    assert(snc.snappySession.sessionCatalog.listFunctions("app", "str*").
-        find(f => (f._1.toString().contains("strnglen"))).size == 1)
 
-
-    assert(snc.snappySession.sql("DESCRIBE FUNCTION APP.strnglen").collect().length == 3)
-    assert(snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED APP.strnglen").collect().length == 4)
-    assert(snc.snappySession.sql("DESCRIBE FUNCTION strnglen").collect().length == 3)
-    assert(snc.snappySession.sql("DESCRIBE FUNCTION EXTENDED strnglen").collect().length == 4)
-    assert(snc.snappySession.sql("SHOW FUNCTIONS strnglen").collect().length == 1)
-    assert(snc.snappySession.sql("SHOW FUNCTIONS APP.strnglen").collect().length == 1)
-
-    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strnglen")
-    //Drop again to check if exists functionality
-    snc.snappySession.sql("DROP FUNCTION IF EXISTS app.strnglen")
-
-    Try(snc.sql(query).count()) match {
-      case Success(df) => throw new AssertionError(" Should not have succeded with dropped function")
-      case Failure(error) => // Do nothing
-    }
+  test("Test UDF with Byte  Return type") {
+    val udfText: String = "public class ByteUDF implements org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.Byte> {" +
+        " @Override public java.lang.Byte call(String s){ " +
+        "               return new java.lang.Byte((byte)122); " +
+        "}" +
+        "}"
+    val file = createUDFClass("ByteUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.byteudf AS ByteUDF " +
+        s"RETURNS BYTE USING JAR " +
+        s"'$jar'")
+    snc.sql("select byteudf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select byteudf(description) from rr_table").collect().foreach(r => println(r))
   }
+
+  test("Test UDF with Short  Return type") {
+    val udfText: String = "public class ShortUDF implements org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.Short> {" +
+        " @Override public java.lang.Short call(String s){ " +
+        "               return new java.lang.Short((short)122); " +
+        "}" +
+        "}"
+    val file = createUDFClass("ShortUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.shortudf AS ShortUDF " +
+        s"RETURNS SHORT USING JAR " +
+        s"'$jar'")
+    snc.sql("select shortudf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select shortudf(description) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with TIMESTAMP  Return type") {
+    val udfText: String = "public class TimeUDF implements org.apache.spark.sql.api.java.UDF1<java.sql.Timestamp, java.sql.Timestamp> {" +
+        " @Override public java.sql.Timestamp call(java.sql.Timestamp s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file = createUDFClass("TimeUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.timeudf AS TimeUDF " +
+        s"RETURNS Timestamp USING JAR " +
+        s"'$jar'")
+    snc.sql("select timeudf(time) from col_table").collect().foreach(r => println(r))
+    snc.sql("select timeudf(time) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with Double  Return type") {
+    val udfText: String = "public class DoubleUDF implements org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.Double> {" +
+        " @Override public java.lang.Double call(String s){ " +
+        "               return new java.lang.Double(12223.678); " +
+        "}" +
+        "}"
+    val file = createUDFClass("DoubleUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.doubleudf AS DoubleUDF " +
+        s"RETURNS Double USING JAR " +
+        s"'$jar'")
+    snc.sql("select doubleudf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select doubleudf(description) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with Boolean  Return type") {
+    val udfText: String = "public class BooleanUDF implements org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.Boolean> {" +
+        " @Override public java.lang.Boolean call(String s){ " +
+        "               return new java.lang.Boolean(true); " +
+        "}" +
+        "}"
+    val file = createUDFClass("BooleanUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.booludf AS BooleanUDF " +
+        s"RETURNS Boolean USING JAR " +
+        s"'$jar'")
+    snc.sql("select booludf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select booludf(description) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with Date  Return type") {
+    val udfText: String = "public class DateUDF implements org.apache.spark.sql.api.java.UDF1<java.sql.Date, java.sql.Date> {" +
+        " @Override public java.sql.Date call(java.sql.Date s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file = createUDFClass("DateUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.dateudf AS DateUDF " +
+        s"RETURNS Date USING JAR " +
+        s"'$jar'")
+    snc.sql("select dateudf(purchase_date) from col_table").collect().foreach(r => println(r))
+    snc.sql("select dateudf(purchase_date) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with float  Return type") {
+    val udfText: String = "public class FloatUDF implements org.apache.spark.sql.api.java.UDF1<Float, Float> {" +
+        " @Override public Float call(Float s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file = createUDFClass("FloatUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.floatudf AS FloatUDF " +
+        s"RETURNS Float USING JAR " +
+        s"'$jar'")
+    //snc.sql("select floatudf(surcharge) from col_table").collect().foreach(r => println(r))
+    snc.sql("select floatudf(surcharge) from rr_table").collect().foreach(r => println(r))
+  }
+
 
   test("Test UDF with decimal  Return type") {
     val udfText: String = "public class DecimalUDF implements org.apache.spark.sql.api.java.UDF1<java.math.BigDecimal, java.math.BigDecimal> {" +
@@ -86,10 +173,42 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     val file = createUDFClass("DecimalUDF", udfText)
     val jar = createJarFile(Seq(file))
     snc.sql(s"CREATE FUNCTION APP.decimaludf AS DecimalUDF " +
-        s"RETURNS DECIMAL USING FILE " +
+        s"RETURNS DECIMAL USING JAR " +
         s"'$jar'")
     snc.sql("select decimaludf(serviceTax) from col_table").collect().foreach(r => println(r))
+    snc.sql("select decimaludf(serviceTax) from rr_table").collect().foreach(r => println(r))
   }
+
+  test("Test UDF with Integer  Return type") {
+    val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return s.length(); " +
+        "}" +
+        "}"
+    val file = createUDFClass("IntegerUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    snc.sql("select intudf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select intudf(description) from rr_table").collect().foreach(r => println(r))
+  }
+
+  test("Test UDF with Long  Return type") {
+    val udfText: String = "public class LongUDF implements org.apache.spark.sql.api.java.UDF1<Long,Long> {" +
+        " @Override public Long call(Long s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file = createUDFClass("LongUDF", udfText)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.longudf AS LongUDF " +
+        s"RETURNS Long USING JAR " +
+        s"'$jar'")
+    snc.sql("select longudf(PRICE) from col_table").collect().foreach(r => println(r))
+    snc.sql("select longudf(PRICE) from rr_table").collect().foreach(r => println(r))
+  }
+
 
   test("Test UDF with Multiple  interface") {
     val udfText: String = "public class MultUDF implements org.apache.spark.sql.api.java.UDF1<Integer,Integer>, org.apache.spark.sql.api.java.UDF2<Integer,Integer, Integer> {" +
@@ -103,46 +222,15 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     val file = createUDFClass("MultUDF", udfText)
     val jar = createJarFile(Seq(file))
     snc.sql(s"CREATE FUNCTION APP.multudf AS MultUDF " +
-        s"RETURNS Integer USING FILE " +
+        s"RETURNS Integer USING JAR " +
         s"'$jar'")
     snc.sql("select multudf(OrderRef) from col_table").collect().foreach(r => println(r))
     snc.sql("select multudf(OrderRef, OrderRef) from col_table").collect().foreach(r => println(r))
+
+    snc.sql("select multudf(OrderRef) from rr_table").collect().foreach(r => println(r))
+    snc.sql("select multudf(OrderRef, OrderRef) from rr_table").collect().foreach(r => println(r))
   }
 
-  test("Test UDF with Integer  Return type") {
-    val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
-        " @Override public Integer call(String s){ " +
-        "               return s.length(); " +
-        "}" +
-        "}"
-    val file = createUDFClass("IntegerUDF", udfText)
-    val jar = createJarFile(Seq(file))
-    snc.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
-        s"RETURNS Integer USING FILE " +
-        s"'$jar'")
-    snc.sql("select intudf(description) from col_table").collect().foreach(r => println(r))
-  }
-
-  test("Test UDF with Long  Return type") {
-    val udfText: String = "public class LongUDF implements org.apache.spark.sql.api.java.UDF1<Long,Long> {" +
-        " @Override public Long call(Long s){ " +
-        "               return s; " +
-        "}" +
-        "}"
-    val file = createUDFClass("LongUDF", udfText)
-    val jar = createJarFile(Seq(file))
-    snc.sql(s"CREATE FUNCTION APP.longudf AS LongUDF " +
-        s"RETURNS Long USING FILE " +
-        s"'$jar'")
-    snc.sql("select longudf(PRICE) from col_table").collect().foreach(r => println(r))
-  }
-
-  ignore("Test all UDFs") {
-    // create a table with 22 cols with int type
-    // insert 4 rows with all 1 values
-    // create 22 udfs which will sum the cols. assertion will be udf1 = 1 udf2 = 2 etc
-
-  }
 
   ignore("Test UDAFs") {
 
@@ -161,12 +249,13 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     val file = createUDFClass("StringUDF", udfText)
     val jar = createJarFile(Seq(file))
     snc.sql(s"CREATE FUNCTION APP.strudf AS StringUDF " +
-        s"RETURNS STRING USING FILE " +
+        s"RETURNS STRING USING JAR " +
         s"'$jar'")
     snc.sql("select strudf(description) from col_table").collect().foreach(r => println(r))
+    snc.sql("select strudf(description) from rr_table").collect().foreach(r => println(r))
   }
 
-
+/*
   ignore("Test with jar") {
     snc.sql(s"CREATE FUNCTION APP.decimaludf AS io.snappydata.examples.DecimalUDF " +
         s"RETURNS DECIMAL USING JAR " +
@@ -175,10 +264,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   ignore("Test Spark UDF") {
-
     snc.udf.register("decudf", (n: BigDecimal) => { BigDecimal(2.0) })
     snc.sql("select decudf(tax) from tempTable").collect().foreach(r => println(r))
-  }
-
-
+  }*/
 }

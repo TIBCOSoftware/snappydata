@@ -80,7 +80,47 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     row = snSession.sql("select intudf(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 7))
+    snSession.sql("drop function APP.intudf")
+  }
 
+  def testSameUDFWithFieldChange(): Unit = {
+    val snSession = new SnappySession(sc)
+    createTables(snSession)
+
+    var udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        "\n                       " +
+        " private int value = 6 ;" +
+        " @Override public Integer call(String s){ " +
+        "               return value; " +
+        "}" +
+        "}"
+    var file = createUDFClass("IntegerUDF", udfText)
+    var jar = createJarFile(Seq(file))
+    snSession.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    var row = snSession.sql("select intudf(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+
+    udfText = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 6; " +
+        "}" +
+        "}"
+
+    snSession.sql("drop function intudf")
+    file = createUDFClass("IntegerUDF", udfText)
+    jar = createJarFile(Seq(file))
+
+    snSession.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+
+    row = snSession.sql("select intudf(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+    snSession.sql("drop function APP.intudf")
   }
 
   //@TODO This test shsould pass once we support a single jar for multiple UDFs
