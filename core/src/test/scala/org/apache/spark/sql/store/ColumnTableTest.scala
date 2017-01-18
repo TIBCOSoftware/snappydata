@@ -17,15 +17,16 @@
 package org.apache.spark.sql.store
 
 import java.sql.DriverManager
+import java.util
 
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
 import io.snappydata.core.{Data, TestData, TestData2}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -926,6 +927,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInCachedBatches
 
