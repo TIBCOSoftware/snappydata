@@ -29,21 +29,6 @@ import org.apache.spark.sql.types.DataType
 
 object UDFFunction {
 
-/*  val CALL_METHOD = "call"
-
-  def returnType(clazz: Class[_], children: Seq[Expression]): DataType = {
-    children.map(c => c.dataType)
-    val method = clazz.getMethods.find(m => {
-      if (m.getName == CALL_METHOD && m.getParameterTypes.length == children.length) true else false
-    })
-    if (!method.isDefined) {
-      throw new AnalysisException(s"No suitable method found in '${clazz.getCanonicalName}'")
-    }
-
-    method.get.getParameterTypes.foreach(println)
-    ObjectInspector.javaClassToDataType(method.get.getReturnType)
-  }*/
-
   def makeFunctionBuilder(name: String, clazz: Class[_] , returnType: DataType): FunctionBuilder = {
     (children: Seq[Expression]) => {
       try {

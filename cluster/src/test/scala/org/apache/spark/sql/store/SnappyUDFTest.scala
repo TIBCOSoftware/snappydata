@@ -17,9 +17,8 @@
 package org.apache.spark.sql.store
 
 
-import scala.util.{Failure, Success, Try}
+import java.math
 
-import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
@@ -232,12 +231,54 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-  ignore("Test UDAFs") {
+  test("Test UDAFs") {
 
-    snc.snappySession.sql(s"CREATE FUNCTION APP.mydoubleavg AS io.snappydata.udf.MyDoubleAvg")
-    val query = s"select mydoubleavg(ORDERREF) from COL_TABLE"
-    val udfdf = snc.sql(query)
-    assert(udfdf.collect().apply(0)(0) == 103)
+    val udafTest : String = "import org.apache.spark.sql.Row;" +
+        "import org.apache.spark.sql.expressions.MutableAggregationBuffer;" +
+        "import org.apache.spark.sql.expressions.UserDefinedAggregateFunction;" +
+        "import org.apache.spark.sql.types.DataType;" +
+        "import org.apache.spark.sql.types.DataTypes;" +
+        "import org.apache.spark.sql.types.StructType;" +
+        "" +
+        "public class LongProductSum extends UserDefinedAggregateFunction " +
+        "{  " +
+        "public StructType inputSchema() {" +
+        "    return new StructType()" +
+        "        .add(\"a\", DataTypes.LongType)" +
+        "        .add(\"b\", DataTypes.LongType);" +
+        "  }" +
+        "  " +
+        "  public StructType bufferSchema() {" +
+        "    return new StructType()" +
+        "        .add(\"product\", DataTypes.LongType);" +
+        "  }" +
+        "  public DataType dataType() {" +
+        "    return DataTypes.LongType;" +
+        "  }" +
+        "  public boolean deterministic() {" +
+        "    return true;" +
+        "  }" +
+        "  public void initialize(MutableAggregationBuffer buffer) {" +
+        "    buffer.update(0, 0L);" +
+        "  }" +
+        "  public void update(MutableAggregationBuffer buffer, Row input) {" +
+        "    if (!(input.isNullAt(0) || input.isNullAt(1))) {" +
+        "      buffer.update(0, buffer.getLong(0) + input.getLong(0) * input.getLong(1));" +
+        "    }" +
+        "  }" +
+        "  public void merge(MutableAggregationBuffer buffer1, Row buffer2) {" +
+        "    buffer1.update(0, buffer1.getLong(0) + buffer2.getLong(0));" +
+        "  }" +
+        "  public Object evaluate(Row buffer) {" +
+        "    return buffer.getLong(0);" +
+        "  }" +
+        "}"
+    val file = createUDFClass("LongProductSum", udafTest)
+    val jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.longproductsum AS LongProductSum " +
+        s" RETURNS LONG USING JAR " +
+        s"'$jar'")
+    snc.sql("select longproductsum(price, price) from col_table").collect().foreach(r => println(r))
   }
 
   test("Test UDF with String  Return type") {
@@ -255,16 +296,18 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select strudf(description) from rr_table").collect().foreach(r => println(r))
   }
 
-/*
-  ignore("Test with jar") {
+  test("Test Spark UDF") {
+    snc.udf.register("decudf", (n: java.math.BigDecimal) => { n.multiply(new math.BigDecimal(2)) })
+    snc.sql("select decudf(tax) from tempTable").collect().foreach(r => println(r))
+  }
+
+
+  /*ignore("Test with jar") {
     snc.sql(s"CREATE FUNCTION APP.decimaludf AS io.snappydata.examples.DecimalUDF " +
         s"RETURNS DECIMAL USING JAR " +
         s"'/rishim1/snappy/snappy-commons/examples/build-artifacts/scala-2.11/classes/main/examples1.jar'")
     snc.sql("select decimaludf(servicetax) from col_table").collect().foreach(r => println(r))
-  }
-
-  ignore("Test Spark UDF") {
-    snc.udf.register("decudf", (n: BigDecimal) => { BigDecimal(2.0) })
-    snc.sql("select decudf(tax) from tempTable").collect().foreach(r => println(r))
   }*/
+
+
 }
