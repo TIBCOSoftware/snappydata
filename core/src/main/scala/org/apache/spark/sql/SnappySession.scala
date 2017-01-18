@@ -1018,7 +1018,11 @@ class SnappySession(@transient private val sc: SparkContext,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, data)
-            (r, Some(r.schema))
+            if (None != userSpecifiedSchema) {
+              (r, Some(userSpecifiedSchema.get))
+            } else {
+              (r, Some(r.schema))
+            }
         }
     }
 
