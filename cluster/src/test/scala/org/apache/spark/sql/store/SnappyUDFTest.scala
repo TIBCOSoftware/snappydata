@@ -148,18 +148,31 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("Test UDF with float  Return type") {
+    // Intentionally used double types for row tables
     val udfText: String = "public class FloatUDF implements org.apache.spark.sql.api.java.UDF1<Float, Float> {" +
         " @Override public Float call(Float s){ " +
         "               return s; " +
         "}" +
         "}"
-    val file = createUDFClass("FloatUDF", udfText)
-    val jar = createJarFile(Seq(file))
+
+    val udfText1: String = "public class DoubleUDF1 implements org.apache.spark.sql.api.java.UDF1<Double, Double> {" +
+        " @Override public Double call(Double s){ " +
+        "               return s; " +
+        "}" +
+        "}"
+    val file1 = createUDFClass("FloatUDF", udfText)
+    val file2 = createUDFClass("DoubleUDF1", udfText1)
+    val jar = createJarFile(Seq(file1, file2))
+
     snc.sql(s"CREATE FUNCTION APP.floatudf AS FloatUDF " +
         s"RETURNS Float USING JAR " +
         s"'$jar'")
-    //snc.sql("select floatudf(surcharge) from col_table").collect().foreach(r => println(r))
-    snc.sql("select floatudf(surcharge) from rr_table").collect().foreach(r => println(r))
+
+    snc.sql(s"CREATE FUNCTION APP.doubleudf1 AS DoubleUDF1 " +
+        s"RETURNS Double USING JAR " +
+        s"'$jar'")
+    snc.sql("select floatudf(surcharge) from col_table").collect().foreach(r => println(r))
+    snc.sql("select doubleudf1(surcharge) from rr_table").collect().foreach(r => println(r))
   }
 
 
