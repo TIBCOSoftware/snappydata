@@ -224,15 +224,17 @@ $ bin/snappy-job.sh submit  \
 ```
 The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.
 
-Python users can also submit the Python Script using spark-submit in SnappyData Connector mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "snappydata.store.locators" property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.
+### Running Python Applications
+Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. For example, run the command given below to submit a Python application:
 
 ```bash
 $ bin/spark-submit \
-  --master spark://localhost:7077 \
+  --master local[*]
   --conf snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042
   python/examples/AirlineDataPythonApp.py
 ```
+`snappydata.store.locators` property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.
 
 ### Streaming Jobs
 
@@ -321,7 +323,6 @@ Example: Removing a JAR
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
 
-
 ## Using SnappyData Shell
 The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. 
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
@@ -388,7 +389,6 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 
 # The results can be seen on the command line.
 ```
-
 
 ## Using JDBC with SnappyData
 SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information, and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
