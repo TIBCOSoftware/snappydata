@@ -164,7 +164,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V], bucketId: (Int) => Int,
-      isLocal: Boolean) {
+      isLocal: Boolean) : Long = {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -198,6 +198,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       }
     }
 
+    var rowCount = 0
     // split into max batch sizes to avoid buffering up too much
     val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
@@ -217,6 +218,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
           groupedKeys(segIndex) = newBuffer
           groupedHashes(segIndex) = newHashBuffer
         }
+        rowCount += 1
       }
 
       var lockedState = false
@@ -278,6 +280,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
 
     }
 
+    rowCount
   }
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)
