@@ -517,79 +517,85 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       options: Map[String, String],
       relation: BaseRelation): Unit = {
 
-    // invalidate any cached plan for the table
-    tableIdent.invalidate()
-    cachedDataSourceTables.invalidate(tableIdent)
+    withHiveExceptionHandling(
+      client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
+      case None =>
+        // invalidate any cached plan for the table
+        tableIdent.invalidate()
+        cachedDataSourceTables.invalidate(tableIdent)
 
 
-    val tableProperties = new mutable.HashMap[String, String]
-    tableProperties.put(HIVE_PROVIDER, provider)
+        val tableProperties = new mutable.HashMap[String, String]
+        tableProperties.put(HIVE_PROVIDER, provider)
 
-    // Saves optional user specified schema.  Serialized JSON schema string
-    // may be too long to be stored into a single meta-store SerDe property.
-    // In this case, we split the JSON string and store each part as a
-    // separate SerDe property.
-    if (userSpecifiedSchema.isDefined) {
-      val threshold = sqlConf.schemaStringLengthThreshold
-      val schemaJsonString = userSpecifiedSchema.get.json
-      // Split the JSON string.
-      val parts = schemaJsonString.grouped(threshold).toSeq
-      tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
-      parts.zipWithIndex.foreach { case (part, index) =>
-        tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
-      }
-    }
-
-    // get the tableType
-    val tableType = getTableType(relation)
-    tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.toString)
-    // add baseTable property if required
-    relation match {
-      case dep: DependentRelation => dep.baseTable.foreach { t =>
-        lookupRelation(newQualifiedTableName(t)) match {
-          case LogicalRelation(p: ParentRelation, _, _) =>
-            p.addDependent(dep, this)
-            addDependentRelation(newQualifiedTableName(t),
-              newQualifiedTableName(dep.name))
-          case _ => // ignore
+        // Saves optional user specified schema.  Serialized JSON schema string
+        // may be too long to be stored into a single meta-store SerDe property.
+        // In this case, we split the JSON string and store each part as a
+        // separate SerDe property.
+        if (userSpecifiedSchema.isDefined) {
+          val threshold = sqlConf.schemaStringLengthThreshold
+          val schemaJsonString = userSpecifiedSchema.get.json
+          // Split the JSON string.
+          val parts = schemaJsonString.grouped(threshold).toSeq
+          tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
+          parts.zipWithIndex.foreach { case (part, index) =>
+            tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
+          }
         }
-        tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
-      }
-      case _ => // ignore baseTable for others
+
+        // get the tableType
+        val tableType = getTableType(relation)
+        tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.toString)
+        // add baseTable property if required
+        relation match {
+          case dep: DependentRelation => dep.baseTable.foreach { t =>
+            lookupRelation(newQualifiedTableName(t)) match {
+              case LogicalRelation(p: ParentRelation, _, _) =>
+                p.addDependent(dep, this)
+                addDependentRelation(newQualifiedTableName(t),
+                  newQualifiedTableName(dep.name))
+              case _ => // ignore
+            }
+            tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
+          }
+          case _ => // ignore baseTable for others
+        }
+
+        val schemaName = tableIdent.schemaName
+        val dbInHive = client.getDatabaseOption(schemaName)
+        dbInHive match {
+          case Some(x) => // We are all good
+          case None => client.createDatabase(CatalogDatabase(
+            schemaName,
+            description = schemaName,
+            getDefaultDBPath(schemaName),
+            Map.empty[String, String]),
+            ignoreIfExists = true)
+          // Path is empty String for now @TODO for parquet & hadoop relation
+          // handle path correctly
+        }
+
+        val hiveTable = CatalogTable(
+          identifier = tableIdent,
+          // Can not inherit from this class. Ideally we should
+          // be extending from this case class
+          tableType = CatalogTableType.EXTERNAL,
+          schema = Nil,
+          storage = CatalogStorageFormat(
+            locationUri = None,
+            inputFormat = None,
+            outputFormat = None,
+            serde = None,
+            compressed = false,
+            serdeProperties = options
+          ),
+          properties = tableProperties.toMap)
+
+        withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
+        SnappySession.clearAllCache()
+      case Some(t) =>  // Do nothing
     }
 
-    val schemaName = tableIdent.schemaName
-    val dbInHive = client.getDatabaseOption(schemaName)
-    dbInHive match {
-      case Some(x) => // We are all good
-      case None => client.createDatabase(CatalogDatabase(
-        schemaName,
-        description = schemaName,
-        getDefaultDBPath(schemaName),
-        Map.empty[String, String]),
-        ignoreIfExists = true)
-      // Path is empty String for now @TODO for parquet & hadoop relation
-      // handle path correctly
-    }
-
-    val hiveTable = CatalogTable(
-      identifier = tableIdent,
-      // Can not inherit from this class. Ideally we should
-      // be extending from this case class
-      tableType = CatalogTableType.EXTERNAL,
-      schema = Nil,
-      storage = CatalogStorageFormat(
-        locationUri = None,
-        inputFormat = None,
-        outputFormat = None,
-        serde = None,
-        compressed = false,
-        serdeProperties = options
-      ),
-      properties = tableProperties.toMap)
-
-    withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
-    SnappySession.clearAllCache()
   }
 
 

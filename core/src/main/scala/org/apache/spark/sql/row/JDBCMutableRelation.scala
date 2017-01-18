@@ -149,12 +149,6 @@ case class JDBCMutableRelation(
         conn.close()
       }
     }
-    if (sqlContext.isInstanceOf[SnappyContext]) {
-      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-      catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(table), Some(schema),
-        Array.empty[String], provider, origOptions, this)
-    }
     tableSchema
   }
 
@@ -295,13 +289,6 @@ case class JDBCMutableRelation(
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
         conn.close()
-      }
-      if (sqlContext.isInstanceOf[SnappyContext]) {
-        try {
-          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(table), Some(this))
-        } finally {
-        }
       }
     }
   }

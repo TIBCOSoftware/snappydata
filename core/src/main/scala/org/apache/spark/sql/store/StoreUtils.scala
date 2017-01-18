@@ -29,7 +29,7 @@ import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallb
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, Partition}
@@ -92,7 +92,8 @@ object StoreUtils extends Logging {
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
-    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION)
+    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION,
+    ExternalStoreUtils.RELATION_FOR_SAMPLE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"

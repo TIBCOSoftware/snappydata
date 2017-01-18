@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.row
 
+import java.sql.Connection
+
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -277,10 +279,10 @@ final class DefaultSource extends MutableRelationProvider {
       ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     StoreUtils.validateConnProps(parameters)
-
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      tableName,
       getClass.getCanonicalName,
       preservePartitions.exists(_.toBoolean),
       mode,
@@ -295,6 +297,11 @@ final class DefaultSource extends MutableRelationProvider {
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
         case None =>
       }
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), Some(relation.schema),
+        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
+        options, relation)
       success = true
       relation
     } finally {

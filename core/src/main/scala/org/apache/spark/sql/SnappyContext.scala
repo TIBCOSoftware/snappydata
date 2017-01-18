@@ -792,7 +792,7 @@ object SnappyContext extends Logging {
 
   val DEFAULT_SOURCE = ROW_SOURCE
 
-  private val builtinSources = new CaseInsensitiveMap(Map(
+  private[sql] val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,

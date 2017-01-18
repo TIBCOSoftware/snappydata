@@ -262,12 +262,6 @@ case class JDBCAppendableRelation(
               sqlContext.conf.caseSensitiveAnalysis, conn)
             case _ => // do nothing
           }
-          if (sqlContext.isInstanceOf[SnappyContext]) {
-            val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-            catalog.registerDataSourceTable(
-              catalog.newQualifiedTableName(table), Some(schema),
-              Array.empty[String], provider, origOptions, this)
-          }
         }
       })
   }
@@ -287,13 +281,6 @@ case class JDBCAppendableRelation(
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
         conn.close()
-      }
-      if (sqlContext.isInstanceOf[SnappyContext]) {
-        try {
-          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(table), Some(this))
-        } finally {
-        }
       }
     }
   }
@@ -340,7 +327,6 @@ class ColumnarRelationProvider extends SchemaRelationProvider
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 

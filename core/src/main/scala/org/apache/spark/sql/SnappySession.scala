@@ -47,11 +47,12 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -934,7 +935,9 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val plan = LogicalRelation(relation)
-    if (!isBuiltIn) {
+    if (!source.equals(SnappyContext.builtinSources(SnappyContext.COLUMN_SOURCE)) &&
+      !source.equals(SnappyContext.builtinSources(SnappyContext.ROW_SOURCE)) &&
+          !source.equals(SnappyContext.builtinSources(SnappyContext.SAMPLE_SOURCE))) {
       sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
         Array.empty[String], source, params, relation)
     }
@@ -1027,7 +1030,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
     // need to register if not existing in catalog
     if (insertRelation.isEmpty || overwrite) {
-      if (!isBuiltIn) {
+      if (!source.equals(SnappyContext.builtinSources(SnappyContext.COLUMN_SOURCE)) &&
+          !source.equals(SnappyContext.builtinSources(SnappyContext.ROW_SOURCE)) &&
+          !source.equals(SnappyContext.builtinSources(SnappyContext.SAMPLE_SOURCE))) {
         sessionCatalog.registerDataSourceTable(tableIdent, schema,
           partitionColumns, source, params, relation)
       }
@@ -1107,6 +1112,7 @@ class SnappySession(@transient private val sc: SparkContext,
         }
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
+            sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           case _ => if (!isTempTable) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }

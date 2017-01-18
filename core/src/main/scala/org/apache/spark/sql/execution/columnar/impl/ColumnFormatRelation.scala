@@ -289,13 +289,6 @@ class BaseColumnFormatRelation(
       } finally {
         conn.close()
       }
-      if (sqlContext.isInstanceOf[SnappyContext]) {
-        try {
-          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(table), Some(this))
-        } finally {
-        }
-      }
     }
   }
 
@@ -673,6 +666,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
+
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
@@ -709,12 +703,13 @@ final class DefaultSource extends ColumnarRelationProvider {
       partitions)
 
     var success = false
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
 
     // create an index relation if it is an index table
     val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
-      case Some(btable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
-          processTableIdentifier(table, sqlContext.conf),
+      case Some(btable) => new IndexColumnFormatRelation(
+          tableName,
         getClass.getCanonicalName,
         mode,
         schema,
@@ -725,8 +720,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         partitioningColumn,
         sqlContext,
         btable)
-      case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
-          processTableIdentifier(table, sqlContext.conf),
+      case None => new ColumnFormatRelation(
+          tableName,
         getClass.getCanonicalName,
         mode,
         schema,
@@ -740,6 +735,15 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
+      val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE).
+          map(_.toBoolean).getOrElse(false)
+      if (!isRelationforSample) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.registerDataSourceTable(
+          catalog.newQualifiedTableName(tableName), Some(relation.schema),
+          partitioningColumn.toArray, classOf[execution.columnar.DefaultSource].getCanonicalName,
+          options, relation)
+      }
       success = true
       relation
     } finally {

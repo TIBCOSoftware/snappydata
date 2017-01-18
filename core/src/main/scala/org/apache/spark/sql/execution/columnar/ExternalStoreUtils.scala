@@ -56,6 +56,7 @@ object ExternalStoreUtils {
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
   final val USE_COMPRESSION = "USE_COMPRESSION"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
+  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
