@@ -55,7 +55,7 @@ object TPCHUtils {
     "q20", "q21", "q22")
 
   def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath
+    val tpchDataPath = getClass.getResource("/TPCH").getPath //"/data/wrk/w/TPCH/1GB" //
 
     val usingOptionString =
       s"""

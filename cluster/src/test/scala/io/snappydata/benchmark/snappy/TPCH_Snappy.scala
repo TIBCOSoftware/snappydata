@@ -84,7 +84,7 @@ object TPCH_Snappy {
     try {
       println(s"Started executing $queryNumber")
       if (isResultCollection) {
-        val resultSet = queryExecution(queryNumber, sqlContext, useIndex, true)
+        val (resultSet, _) = queryExecution(queryNumber, sqlContext, useIndex, true)
         println(s"$queryNumber : ${resultSet.length}")
 
         for (row <- resultSet) {
@@ -101,9 +101,9 @@ object TPCH_Snappy {
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {
-            cnts = queryExecution(queryNumber, sqlContext, useIndex, true)
+            cnts = queryExecution(queryNumber, sqlContext, useIndex, true)._1
           } else {
-            cnts = queryExecution(queryNumber, sqlContext, useIndex)
+            cnts = queryExecution(queryNumber, sqlContext, useIndex)._1
           }
           for (s <- cnts) {
             // just iterating over result
@@ -144,103 +144,103 @@ object TPCH_Snappy {
     // scalastyle:on println
   }
 
-  def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean, genPlan:
-  Boolean = false):
-  scala.Array[org.apache.spark.sql.Row] = {
-    val cnts: scala.Array[org.apache.spark.sql.Row] = queryNumber match {
+  def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean,
+      genPlan: Boolean = false): (scala.Array[org.apache.spark.sql.Row], DataFrame) = {
+    val df = queryNumber match {
       case "q1s" =>
-        val df = sqlContext.sql(getSampledQuery1)
-        df.collect()
+        sqlContext.sql(getSampledQuery1)
       case "q3s" =>
-        val df = sqlContext.sql(getSampledQuery3)
-        val cnt = df.collect()
-        cnt
+        sqlContext.sql(getSampledQuery3)
       case "q5s" =>
-        sqlContext.sql(getSampledQuery5).collect()
+        sqlContext.sql(getSampledQuery5)
       case "q6s" =>
-        sqlContext.sql(getSampledQuery6).collect()
+        sqlContext.sql(getSampledQuery6)
       case "q10s" =>
-        sqlContext.sql(getSampledQuery10).collect()
+        sqlContext.sql(getSampledQuery10)
       case "q1" =>
         val df = sqlContext.sql(getQuery1)
         if (genPlan) {
           printPlan(df, "Q1")
         }
-        df.collect()
+        df
       case "q2" =>
-        /*val result = sqlContext.sql(getTempQuery2())
+        /*
+        val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
-        val df = sqlContext.sql(getQuery2())*/
+        val df = sqlContext.sql(getQuery2())
+        */
         val df = sqlContext.sql(getQuery2_Original)
         if (genPlan) {
           printPlan(df, "Q2")
         }
-        df.collect()
+        df
       case "q3" =>
         val df = sqlContext.sql(getQuery3)
         if (genPlan) {
           printPlan(df, "Q3")
         }
-        df.collect()
+        df
       case "q4" =>
         val df = sqlContext.sql(getQuery4)
         if (genPlan) {
           printPlan(df, "Q4")
         }
-        df.collect()
+        df
       case "q5" =>
         val df = sqlContext.sql(getQuery5)
         if (genPlan) {
           printPlan(df, "Q5")
         }
-        df.collect()
+        df
       case "q6" =>
         val df = sqlContext.sql(getQuery6)
         if (genPlan) {
           printPlan(df, "Q6")
         }
-        df.collect()
+        df
       case "q7" =>
         val df = sqlContext.sql(getQuery7)
         if (genPlan) {
           printPlan(df, "Q7")
         }
-        df.collect()
+        df
       case "q8" =>
         val df = sqlContext.sql(getQuery8(useIndex))
         if (genPlan) {
           printPlan(df, "Q8")
         }
-        df.collect()
+        df
       case "q9" =>
         val df = sqlContext.sql(getQuery9(useIndex))
         if (genPlan) {
           printPlan(df, "Q9")
         }
-        df.collect()
+        df
       case "q10" =>
         val df = sqlContext.sql(getQuery10)
         if (genPlan) {
           printPlan(df, "Q10")
         }
-        df.collect()
+        df
       case "q11" =>
-       /*val result = sqlContext.sql(getTempQuery11)
-        val res: Array[Row] = result.collect()
-        var df: DataFrame = null
-        var res1: Array[Row] = null
-        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))*/
+        /*
+         val result = sqlContext.sql(getTempQuery11)
+         val res: Array[Row] = result.collect()
+         var df: DataFrame = null
+         var res1: Array[Row] = null
+         df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))
+         */
         val df = sqlContext.sql(getQuery11_Original)
         if (genPlan) {
           printPlan(df, "Q11")
         }
-        df.collect()
+        df
       case "q12" =>
         val df = sqlContext.sql(getQuery12)
         if (genPlan) {
           printPlan(df, "Q12")
         }
-        df.collect()
+        df
       case "q13" =>
         /*
         val result = sqlContext.sql(getTempQuery13(useIndex))
@@ -251,13 +251,13 @@ object TPCH_Snappy {
         if (genPlan) {
           printPlan(df, "Q13")
         }
-        df.collect()
+        df
       case "q14" =>
         val df = sqlContext.sql(getQuery14(useIndex))
         if (genPlan) {
           printPlan(df, "Q14")
         }
-        df.collect()
+        df
       case "q15" =>
         val result = sqlContext.sql(getTempQuery15_1)
         result.createOrReplaceTempView("revenue")
@@ -266,34 +266,36 @@ object TPCH_Snappy {
         if (genPlan) {
           printPlan(df, "Q15")
         }
-        df.collect()
+        df
       case "q16" =>
         val df = sqlContext.sql(getQuery16)
         if (genPlan) {
           printPlan(df, "Q16")
         }
-        df.collect()
+        df
       case "q17" =>
-/*        val result = sqlContext.sql(getTempQuery17(useIndex))
+        /*
+        val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
-        val df = sqlContext.sql(getQuery17(useIndex))*/
+        val df = sqlContext.sql(getQuery17(useIndex))
+        */
         val df = sqlContext.sql(getQuery17_Original)
         if (genPlan) {
           printPlan(df, "Q17")
         }
-        df.collect()
+        df
       case "q18" =>
         val df = sqlContext.sql(getQuery18)
         if (genPlan) {
           printPlan(df, "Q18")
         }
-        df.collect()
+        df
       case "q19" =>
         val df = sqlContext.sql(getQuery19(useIndex))
         if (genPlan) {
           printPlan(df, "Q19")
         }
-        df.collect()
+        df
       case "q20" =>
 //        val result = sqlContext.sql(getTempQuery20(useIndex))
 //        result.createOrReplaceTempView("ViewQ20")
@@ -301,21 +303,22 @@ object TPCH_Snappy {
         if (genPlan) {
           printPlan(df, "Q20")
         }
-        df.collect()
+        df
       case "q21" =>
         val df = sqlContext.sql(getQuery21)
         if (genPlan) {
           printPlan(df, "Q21")
         }
-        df.collect()
+        df
       case "q22" =>
         val df = sqlContext.sql(getQuery22_Original)
         if (genPlan) {
           printPlan(df, "Q22")
         }
-        df.collect()
+        df
     }
-    cnts
+
+    (df.collect(), df)
   }
 
 
@@ -1852,4 +1855,3 @@ object TPCH_Snappy {
   }
 
 }
-
