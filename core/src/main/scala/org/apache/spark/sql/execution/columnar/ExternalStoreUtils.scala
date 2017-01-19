@@ -24,16 +24,17 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 import io.snappydata.util.ServiceUtils
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext, SparkEnv}
 import org.apache.spark.sql._
 import org.apache.spark.sql.api.r.SQLUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
+import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -57,7 +58,7 @@ object ExternalStoreUtils {
   final val USE_COMPRESSION = "USE_COMPRESSION"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
-
+  final val COLUMN_BATCH_SIZE_DEFAULT: Int = 10000
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -565,6 +566,12 @@ object ExternalStoreUtils {
     }
   }
 
+  def getDefaultCachedBatchSize() : Int = {
+    Property.CachedBatchSize.getOption(SparkEnv.get.conf) match {
+      case Some(size) => Integer.parseInt(size)
+      case None => COLUMN_BATCH_SIZE_DEFAULT
+    }
+  }
 }
 
 object ConnectionType extends Enumeration {

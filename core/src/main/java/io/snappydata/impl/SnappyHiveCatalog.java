@@ -254,20 +254,20 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           StructType schema = ExternalStoreUtils.convertSchemaMap(table.getParameters());
           Map<String,String> parameters = table.getSd().getSerdeInfo().getParameters();
           Integer partitions = ExternalStoreUtils.getTotalPartitions(parameters, true);
-          String baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
+          String baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE().toLowerCase());
           String dmls = ExternalStoreUtils.
               getInsertStringWithColumnName(fullyQualifiedName, schema);
           String[] dependentRelations = null;
-          if (parameters.containsKey(ExternalStoreUtils.DEPENDENT_RELATIONS())) {
-            dependentRelations = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS()).split(",");
+          if (parameters.containsKey(ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase())) {
+            dependentRelations = parameters.get(
+                ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase()).split(",");
           }
-          int cachedBatchSize = PartitionedRegion.COLUMN_BATCH_SIZE_DEFAULT;
-          if (parameters.containsKey(ExternalStoreUtils.COLUMN_BATCH_SIZE())) {
-            cachedBatchSize = Integer.parseInt(parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE()));
-          }
+          int cachedBatchSize = Integer.parseInt(parameters.get(
+              ExternalStoreUtils.COLUMN_BATCH_SIZE().toLowerCase()));
           boolean useCompression = true;
-          if (parameters.containsKey(ExternalStoreUtils.USE_COMPRESSION())) {
-            useCompression = Boolean.parseBoolean(parameters.get(ExternalStoreUtils.USE_COMPRESSION()));
+          if (parameters.containsKey(ExternalStoreUtils.USE_COMPRESSION().toLowerCase())) {
+            useCompression = Boolean.parseBoolean(parameters.get(
+                ExternalStoreUtils.USE_COMPRESSION().toLowerCase()));
           }
           return new ExternalTableMetaData(
               this.dbName + "." + this.tableName,

@@ -37,6 +37,7 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val table = "TEST.TEST_TABLE"
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
 
   def nodeShutDown(): Unit = {
     ClusterManagerTestBase.stopSpark()
@@ -47,7 +48,6 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
-    snc.setConf("spark.sql.inMemoryColumnarStorage.batchSize", "500")
     snc
   }
 

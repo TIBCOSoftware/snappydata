@@ -38,6 +38,8 @@ class SplitSnappyClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+    SplitSnappyClusterDUnitTest.batchSize.toString)
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   val currenyLocatorPort = ClusterManagerTestBase.locPort
   override protected val productDir =
@@ -153,7 +155,6 @@ object SplitSnappyClusterDUnitTest
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
-    context.getConf.set(SQLConf.COLUMN_BATCH_SIZE.key, batchSize.toString)
     context
   }
 

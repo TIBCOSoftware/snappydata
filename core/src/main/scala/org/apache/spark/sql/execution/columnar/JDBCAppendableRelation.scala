@@ -155,7 +155,7 @@ case class JDBCAppendableRelation(
   def getCachedBatchParams: (Integer, Boolean) = {
     val columnBatchSize = origOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) => Integer.parseInt(cb)
-      case None => PartitionedRegion.COLUMN_BATCH_SIZE_DEFAULT
+      case None => ExternalStoreUtils.getDefaultCachedBatchSize()
     }
     val useCompression = origOptions.get(ExternalStoreUtils.USE_COMPRESSION) match {
       case Some(uc) => java.lang.Boolean.parseBoolean(uc)

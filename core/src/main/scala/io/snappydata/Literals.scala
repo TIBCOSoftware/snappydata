@@ -153,6 +153,9 @@ object Property extends Enumeration {
       Some(propertyName.substring(Constant.SPARK_SNAPPY_PREFIX.length))
     } else None
   }
+  val CachedBatchSize = Val[Long](s"${Constant.PROPERTY_PREFIX}cachedBatchSize",
+    "Controls the size of batches for columnar caching in SnappyData's column tables.",
+    Some(10000), Constant.SPARK_PREFIX)
 
   val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +

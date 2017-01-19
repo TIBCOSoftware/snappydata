@@ -516,10 +516,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       provider: String,
       options: Map[String, String],
       relation: BaseRelation): Unit = {
-
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
+
+        val newOptions = options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+          case Some(c) => options
+          case None => options + (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+              ExternalStoreUtils.getDefaultCachedBatchSize().toString)
+        }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
         cachedDataSourceTables.invalidate(tableIdent)
@@ -587,7 +592,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             outputFormat = None,
             serde = None,
             compressed = false,
-            serdeProperties = options
+            serdeProperties = newOptions
           ),
           properties = tableProperties.toMap)
 
