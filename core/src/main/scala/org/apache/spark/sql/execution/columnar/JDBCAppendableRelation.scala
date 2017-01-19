@@ -184,9 +184,8 @@ case class JDBCAppendableRelation(
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
         schema, cachedBatchAggregate)
-
-      holder.forceEndOfBatch()
       rowIterator.foreach(holder.appendRow)
+      holder.forceEndOfBatch()
       Iterator.empty
     }, preservesPartitioning = true)
     // trigger an Action to materialize 'cached' batch

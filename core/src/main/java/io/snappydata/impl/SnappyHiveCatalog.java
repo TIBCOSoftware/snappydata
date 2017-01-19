@@ -36,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
+import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -252,22 +253,25 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           String fullyQualifiedName = table.getDbName().toUpperCase() +
               "." + table.getTableName().toUpperCase();
           StructType schema = ExternalStoreUtils.convertSchemaMap(table.getParameters());
-          Map<String,String> parameters = table.getSd().getSerdeInfo().getParameters();
+          CaseInsensitiveMap parameters = new CaseInsensitiveMap(table.getSd().getSerdeInfo().getParameters());
           Integer partitions = ExternalStoreUtils.getTotalPartitions(parameters, true);
-          String baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE().toLowerCase());
+          String baseTable = "";
+          if (parameters.containsKey(StoreUtils.GEM_INDEXED_TABLE().toLowerCase())) {
+            baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE().toLowerCase()).toString();
+          }
           String dmls = ExternalStoreUtils.
               getInsertStringWithColumnName(fullyQualifiedName, schema);
           String[] dependentRelations = null;
           if (parameters.containsKey(ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase())) {
             dependentRelations = parameters.get(
-                ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase()).split(",");
+                ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase()).toString().split(",");
           }
           int cachedBatchSize = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE().toLowerCase()));
+              ExternalStoreUtils.COLUMN_BATCH_SIZE().toLowerCase()).toString());
           boolean useCompression = true;
           if (parameters.containsKey(ExternalStoreUtils.USE_COMPRESSION().toLowerCase())) {
             useCompression = Boolean.parseBoolean(parameters.get(
-                ExternalStoreUtils.USE_COMPRESSION().toLowerCase()));
+                ExternalStoreUtils.USE_COMPRESSION().toLowerCase()).toString());
           }
           return new ExternalTableMetaData(
               this.dbName + "." + this.tableName,
