@@ -17,15 +17,16 @@
 package org.apache.spark.sql.store
 
 import java.sql.DriverManager
+import java.util
 
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
 import io.snappydata.core.{Data, TestData, TestData2}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -33,6 +34,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
 /**
@@ -925,6 +927,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInCachedBatches
 
@@ -976,5 +979,28 @@ class ColumnTableTest
     } catch {
       case t: Throwable => throw new AssertionError(t.getMessage, t);
     }
+  }
+
+  test("Creation of table using other table and verify schema") {
+
+    snc.sql("create table t1(a int,b int) using column options()")
+    snc.sql("insert into t1 values(1,2)")
+    snc.sql("select * from t1").show
+    snc.sql("create table t2(c int,d int) using column options() as (select * from t1)")
+
+    snc.sql("create table t3 using column options() as (select * from t1)")
+
+    val struct = (new StructType())
+      .add(StructField("C", IntegerType, true))
+      .add(StructField("D", IntegerType, true))
+
+
+    val df1=snc.sql("select * from t1")
+    val df2=snc.sql("select * from t2")
+    val df3=snc.sql("select * from t3")
+
+    assert(struct == df2.schema)
+    assert(df1.schema == df3.schema)
+
   }
 }

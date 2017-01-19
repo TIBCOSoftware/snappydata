@@ -17,12 +17,16 @@
 package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintStream}
+import java.sql.PreparedStatement
 
 import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.AvailablePortHelper
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.TPCHUtils._
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
@@ -44,6 +48,86 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     TPCHUtils.createAndLoadTables(snc, isSnappy = false)
     TPCHUtils.queryExecution(snc, isSnappy = false)
     TPCHUtils.validateResult(snc, isSnappy = false)
+  }
+
+  def testSnap1296_1297(): Unit = {
+    val snc = SnappyContext(sc)
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    val conn = getANetConnection(netPort1)
+    val prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery10)
+    verifyResultSnap1296_1297(prepStatement)
+    prepStatement.close()
+
+// TODO: Enable the test below after fixing SNAP-1323
+//    val prepStatement2 = conn.prepareStatement(getTPCHQuery10Parameterized)
+//    val pmd = prepStatement2.getParameterMetaData
+//    println("pmd = " + pmd  + " pmd.getParameterCount =" + pmd.getParameterCount)
+//    prepStatement2.setString(1, "1993-10-01")
+//    prepStatement2.setString(2, "1993-10-01")
+//
+//    verifyResultSnap1296_1297(prepStatement2)
+//    prepStatement2.close()
+
+  }
+
+  private def verifyResultSnap1296_1297(prepStatement: PreparedStatement): Unit = {
+    val rs = prepStatement.executeQuery
+    val rsmd = rs.getMetaData()
+    val columnsNumber = rsmd.getColumnCount()
+    var count = 0
+    val result = scala.collection.mutable.ArrayBuffer.empty[String]
+    while (rs.next()) {
+      count += 1
+      var row: String = ""
+      for (i <- 1 to columnsNumber) {
+        if (i > 1) row += ","
+        row = row + rs.getString(i)
+      }
+      result += row
+    }
+    println(s"Number of rows : $count")
+
+    val expectedFile = sc.textFile(getClass.getResource(
+      s"/TPCH/RESULT/Snappy_q10.out").getPath)
+    val expectedNoOfLines = expectedFile.collect().size
+    assert(count == expectedNoOfLines)
+  }
+
+  private def getTPCHQuery10Parameterized: String = {
+    "select" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+        "         C_ACCTBAL," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_PHONE," +
+        "         C_COMMENT" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM," +
+        "         CUSTOMER," +
+        "         NATION" +
+        " where" +
+        "         C_CUSTKEY = o_custkey" +
+        "         and l_orderkey = o_orderkey" +
+        "         and o_orderdate >= ?" +
+        "         and o_orderdate < add_months(?, 3)" +
+        "         and l_returnflag = 'R'" +
+        "         and C_NATIONKEY = n_nationkey" +
+        " group by" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         C_ACCTBAL," +
+        "         C_PHONE," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_COMMENT" +
+        " order by" +
+        "         revenue desc" +
+        " limit 20"
   }
 
 }
