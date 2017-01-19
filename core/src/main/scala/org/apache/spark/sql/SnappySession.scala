@@ -935,9 +935,7 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val plan = LogicalRelation(relation)
-    if (!source.equals(SnappyContext.builtinSources(SnappyContext.COLUMN_SOURCE)) &&
-      !source.equals(SnappyContext.builtinSources(SnappyContext.ROW_SOURCE)) &&
-          !source.equals(SnappyContext.builtinSources(SnappyContext.SAMPLE_SOURCE))) {
+    if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
       sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
         Array.empty[String], source, params, relation)
     }
@@ -1030,9 +1028,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     // need to register if not existing in catalog
     if (insertRelation.isEmpty || overwrite) {
-      if (!source.equals(SnappyContext.builtinSources(SnappyContext.COLUMN_SOURCE)) &&
-          !source.equals(SnappyContext.builtinSources(SnappyContext.ROW_SOURCE)) &&
-          !source.equals(SnappyContext.builtinSources(SnappyContext.SAMPLE_SOURCE))) {
+      if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
         sessionCatalog.registerDataSourceTable(tableIdent, schema,
           partitionColumns, source, params, relation)
       }

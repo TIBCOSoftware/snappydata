@@ -27,7 +27,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode, SnappySession, execution}
 
 abstract class MutableRelationProvider
     extends ExternalSchemaRelationProvider
@@ -64,13 +64,19 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
     var success = false
     val relation = JDBCMutableRelation(connProperties,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      tableName,
       getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), Some(relation.schema), Array.empty[String],
+        classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
+        options, relation)
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))

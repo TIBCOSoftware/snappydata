@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
-import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -152,10 +152,16 @@ case class JDBCAppendableRelation(
     externalStore.storeCachedBatch(table, batch)
   }
 
-  def getExternalStoreMetaData: ExternalTableMetaData = {
-    val dotIndex = table.indexOf('.')
-    ExternalStoreUtils.getExternalTableMetaData(table.substring(0, dotIndex),
-      table.substring(dotIndex + 1))
+  def getCachedBatchParams: (Integer, Boolean) = {
+    val columnBatchSize = origOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+      case Some(cb) => Integer.parseInt(cb)
+      case None => PartitionedRegion.COLUMN_BATCH_SIZE_DEFAULT
+    }
+    val useCompression = origOptions.get(ExternalStoreUtils.USE_COMPRESSION) match {
+      case Some(uc) => java.lang.Boolean.parseBoolean(uc)
+      case None => true
+    }
+    (columnBatchSize, useCompression)
   }
 
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
@@ -165,11 +171,7 @@ case class JDBCAppendableRelation(
     if (overwrite) {
       truncate()
     }
-
-    val extMetaData = getExternalStoreMetaData
-    val columnBatchSize = extMetaData.cachedBatchSize
-    val useCompression = extMetaData.useCompression
-
+    val (columnBatchSize, useCompression) = getCachedBatchParams
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserve(rowIterator => {
 
@@ -183,8 +185,8 @@ case class JDBCAppendableRelation(
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
         schema, cachedBatchAggregate)
 
-      rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()
+      rowIterator.foreach(holder.appendRow)
       Iterator.empty
     }, preservesPartitioning = true)
     // trigger an Action to materialize 'cached' batch
@@ -338,14 +340,19 @@ class ColumnarRelationProvider extends SchemaRelationProvider
 
     val externalStore = getExternalSource(sqlContext, connectionProperties,
       partitions)
-
+    val tableName = SnappyStoreHiveCatalog
+        .processTableIdentifier(table, sqlContext.conf)
     var success = false
-    val relation = new JDBCAppendableRelation(SnappyStoreHiveCatalog
-        .processTableIdentifier(table, sqlContext.conf),
+    val relation = new JDBCAppendableRelation(tableName,
       getClass.getCanonicalName, mode, schema, options,
       externalStore, sqlContext)
     try {
       relation.createTable(mode)
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), Some(relation.schema),
+        Array.empty[String], classOf[execution.columnar.DefaultSource].getCanonicalName,
+        options, relation)
       success = true
       relation
     } finally {

@@ -172,8 +172,9 @@ class BaseColumnFormatRelation(
   override def cachedBatchAggregate(batch: CachedBatch): Unit = {
     // if number of rows are greater than columnBatchSize then store
     // otherwise store locally
+    val (columnBatchSize, useCompression) = getCachedBatchParams
     if (batch.numRows >= Constant.COLUMN_MIN_BATCH_SIZE || forceFlush ||
-        batch.numRows <= math.max(1, getExternalStoreMetaData.cachedBatchSize)) {
+        batch.numRows <= math.max(1, columnBatchSize)) {
       externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
     } else {
