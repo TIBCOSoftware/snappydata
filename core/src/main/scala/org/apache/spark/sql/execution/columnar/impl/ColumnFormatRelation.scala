@@ -733,11 +733,11 @@ final class DefaultSource extends ColumnarRelationProvider {
         partitioningColumn,
         sqlContext)
     }
+    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE).
+        map(_.toBoolean).getOrElse(false)
 
     try {
       relation.createTable(mode)
-      val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE).
-          map(_.toBoolean).getOrElse(false)
       if (!isRelationforSample) {
         val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
         catalog.registerDataSourceTable(
@@ -749,6 +749,11 @@ final class DefaultSource extends ColumnarRelationProvider {
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        if (!isRelationforSample) {
+          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(tableName),
+            Some(relation))
+        }
         // destroy the relation
         relation.destroy(ifExists = true)
       }
