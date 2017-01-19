@@ -41,7 +41,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
   }
 
   private def getANetConnection(netPort: Int): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     // scalastyle:off classforname
     Class.forName(driver).newInstance
     val url = "jdbc:snappydata://localhost:" + netPort + "/"

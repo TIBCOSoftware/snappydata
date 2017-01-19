@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
+import org.apache.spark.util.Utils
 import org.apache.spark.{Dependency, Partition, Partitioner, SparkContext, TaskContext}
 
 
@@ -33,6 +34,8 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
 
   override def compute(split: Partition, context: TaskContext): Iterator[U] =
     f(context, split, firstParent[T].iterator(split, context))
+
+  override def count(): Long = sparkContext.runJob(this, RDDs.getIteratorSize _).sum
 }
 
 private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
@@ -42,6 +45,8 @@ private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
     extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 
   override def getPreferredLocations(split: Partition): Seq[String] = p(split.index)
+
+  override def count(): Long = sparkContext.runJob(this, RDDs.getIteratorSize _).sum
 }
 
 /**
@@ -70,4 +75,16 @@ class DelegateRDD[T: ClassTag](
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] =
     baseRdd.compute(split, context)
+}
+
+case class EmptyIteratorWithRowCount[U](rowCount : Long) extends Iterator[U] {
+  def hasNext: Boolean = Iterator.empty.hasNext
+  def next(): Nothing = Iterator.empty.next()
+}
+
+object RDDs {
+  def getIteratorSize[T](iterator: Iterator[T]): Long = iterator match {
+    case EmptyIteratorWithRowCount(rowCount) => rowCount
+    case _ => Utils.getIteratorSize[T](iterator)
+  }
 }

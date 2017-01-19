@@ -34,9 +34,9 @@ object Constant {
 
   val JDBC_URL_PREFIX = "snappydata://"
 
-  val JDBC_EMBEDDED_DRIVER = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+  val JDBC_EMBEDDED_DRIVER = "io.snappydata.jdbc.EmbeddedDriver"
 
-  val JDBC_CLIENT_DRIVER = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+  val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
   val PROPERTY_PREFIX = "snappydata."
 
@@ -197,6 +197,11 @@ object Property extends Enumeration {
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
+
+  val FlushReservoirThreshold = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
+    "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
+        " on baset table of size more than flushReservoirThreshold." +
+        " Default value is 10,000.", Some(10000L))
 }
 
 // extractors for properties
