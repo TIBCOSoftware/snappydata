@@ -477,32 +477,37 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    */
   def unregisterDataSourceTable(tableIdent: QualifiedTableName,
       relation: Option[BaseRelation]): Unit = {
-    // remove from parent relation, if any
-    relation.foreach {
-      case dep: DependentRelation => dep.baseTable.foreach { t =>
-        try {
-          lookupRelation(newQualifiedTableName(t)) match {
-            case LogicalRelation(p: ParentRelation, _, _) =>
-              p.removeDependent(dep, this)
-              removeDependentRelation(newQualifiedTableName(t),
-                newQualifiedTableName(dep.name))
-            case _ => // ignore
+    withHiveExceptionHandling(
+      client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
+      case Some(t) =>
+        // remove from parent relation, if any
+        relation.foreach {
+          case dep: DependentRelation => dep.baseTable.foreach { t =>
+            try {
+              lookupRelation(newQualifiedTableName(t)) match {
+                case LogicalRelation(p: ParentRelation, _, _) =>
+                  p.removeDependent(dep, this)
+                  removeDependentRelation(newQualifiedTableName(t),
+                    newQualifiedTableName(dep.name))
+                case _ => // ignore
+              }
+            } catch {
+              case NonFatal(_) => // ignore at this point
+            }
           }
-        } catch {
-          case NonFatal(_) => // ignore at this point
+          case _ => // nothing for others
         }
-      }
-      case _ => // nothing for others
+
+        tableIdent.invalidate()
+        cachedDataSourceTables.invalidate(tableIdent)
+
+        registerRelationDestroy()
+
+        val schemaName = tableIdent.schemaName
+        withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
+          tableIdent.table, ignoreIfNotExists = false))
+      case None =>
     }
-
-    tableIdent.invalidate()
-    cachedDataSourceTables.invalidate(tableIdent)
-
-    registerRelationDestroy()
-
-    val schemaName = tableIdent.schemaName
-    withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
-      tableIdent.table, ignoreIfNotExists = false))
   }
 
   /**
