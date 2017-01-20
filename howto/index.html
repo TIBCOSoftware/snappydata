@@ -296,7 +296,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)&lt;v0&gt;:16944, 192.168.63.1(9519:datastore)&lt;v1&gt;:46966
 </code></pre>
 
-<p>You can check SnappyData UI by opening <code>http://&lt;leadHostname&gt;:4040</code> in browser, where <strong>leadHostname</strong> is the host name of your lead node). Use <a href="#howto-snappyShell">snappy-shell</a> to connect to the cluster and perform various SQL operations.</p>
+<p>You can check SnappyData UI by opening <code>http://&lt;leadHostname&gt;:4040</code> in browser, where <code>&lt;leadHostname&gt;</code> is the host name of your lead node. Use <a href="#howto-snappyShell">snappy-shell</a> to connect to the cluster and perform various SQL operations.</p>
 <p><strong>Shutdown Cluster</strong>: You can shutdown the cluster using the <code>sbin/snappy-stop-all.sh</code> command:</p>
 <pre><code>$ sbin/snappy-stop-all.sh
 The SnappyData Leader has stopped.
@@ -428,10 +428,10 @@ You can now create tables and run queries in SnappyData store using your Apache 
 <p><strong>Connect to a SnappyData Cluster</strong>: 
 Use the <code>snappy-shell</code> and <code>connect client</code> command on the Snappy Shell</p>
 <pre><code>$ bin/snappy-shell
-snappy&gt; connect client 'locatorHostName:1527';
+snappy&gt; connect client '&lt;locatorHostName&gt;:1527';
 </code></pre>
 
-<p><strong>1527</strong> is the default port on which locatorHost listens for connections. </p>
+<p>Where <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <strong>1527</strong> is the default port on which the locator listens for connections. </p>
 <p><strong>Execute SQL queries</strong>: Once connected you can execute SQL queries using <code>snappy-shell</code></p>
 <pre><code>snappy&gt; CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
@@ -476,7 +476,7 @@ APP                 |PARTSUPP                      |TABLE     |
 <h2 id="how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</h2>
 <p>Each record in a Row table is managed in contiguous memory, and therefore, optimized for selective queries (For example. key based point lookup ) or updates. 
 A row table can either be replicated to all nodes or partitioned across nodes. It can be created by using DataFrame API or using SQL.</p>
-<p>Refer to the <a href="../programming_guide#tables-in-snappydata">Row and column tables</a> documentation for complete list of attributes for row tables.</p>
+<p>Refer to the <a href="../programming_guide#ddl">Row and column tables</a> documentation for complete list of attributes for row tables.</p>
 <p>Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala">CreateReplicatedRowTable.scala</a> and <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a></p>
 <h3 id="create-a-row-table-using-dataframe-api">Create a Row Table using DataFrame API:</h3>
 <p>The code snippet below shows how to create a replicated row table using API.</p>
@@ -731,7 +731,8 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
 <p><a id="howto-jdbc"></a></p>
 <h2 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h2>
 <p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.</p>
-<p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://locatorHostName:locatorClientPort/</code></p>
+<p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
+<p>Where the <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
 <p><strong>Code Example: </strong>
 <strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
 <p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>

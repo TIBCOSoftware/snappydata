@@ -420,14 +420,16 @@ The program is compiled into a jar file (<strong>quickstart.jar</strong>) and su
 </code></pre>
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.</p>
-<p>Python users can also submit the Python Script using spark-submit in SnappyData Connector mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "snappydata.store.locators" property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.</p>
+<h3 id="running-python-applications">Running Python Applications</h3>
+<p>Python users can submit a Python application using <code>spark-submit</code> in the SnappyData Connector mode. For example, run the command given below to submit a Python application:</p>
 <pre><code class="bash">$ bin/spark-submit \
-  --master spark://localhost:7077 \
+  --master local[*]
   --conf snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042
-  python/examples/AirlineDataPythonApp.py
+  quickstart/python/AirlineDataPythonApp.py
 </code></pre>
 
+<p><code>snappydata.store.locators</code> property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.</p>
 <h3 id="streaming-jobs">Streaming Jobs</h3>
 <p>An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying <code>--stream</code> as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as <code>--context &lt;context-name&gt;</code> with the <code>submit</code> command.</p>
