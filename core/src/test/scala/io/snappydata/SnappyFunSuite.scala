@@ -25,8 +25,6 @@ import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
 
-import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
 import org.apache.spark.sql.catalyst.util.sideBySide
@@ -219,8 +217,8 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
       case a: Alias =>
         Alias(a.child, a.name)(exprId = ExprId(0))
-      case ae: AggregateExpression =>
-        ae.copy(resultId = ExprId(0))
+//      case ae: AggregateExpression =>
+//        ae.copy(resultId = ExprId(0))
     }
   }
 
