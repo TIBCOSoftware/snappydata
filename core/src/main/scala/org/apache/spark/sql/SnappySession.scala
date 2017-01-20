@@ -37,6 +37,7 @@ import io.snappydata.Constant
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -1018,7 +1019,11 @@ class SnappySession(@transient private val sc: SparkContext,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, data)
-            (r, Some(r.schema))
+            if (None != userSpecifiedSchema) {
+              (r, Some(userSpecifiedSchema.get))
+            } else {
+              (r, Some(r.schema))
+            }
         }
     }
 
@@ -1527,7 +1532,7 @@ object SnappySession extends Logging {
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec =>
+      case _: ExecutedCommandExec | _: ExecutedCommand =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         (null, findShuffleDependencies(plan.childRDD).toArray,
