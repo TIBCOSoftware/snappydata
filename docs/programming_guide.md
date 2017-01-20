@@ -232,7 +232,7 @@ $ bin/spark-submit \
   --master local[*]
   --conf snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042
-  python/examples/AirlineDataPythonApp.py
+  quickstart/python/AirlineDataPythonApp.py
 ```
 `snappydata.store.locators` property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.
 
