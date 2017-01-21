@@ -69,7 +69,8 @@ class SnappyCoarseGrainedExecutorBackend(
    * after every merge.
    */
   override def exitExecutor(code: Int,
-      reason: String, throwable: Throwable): Unit = {
+      reason: String, throwable: Throwable,
+      notifyDriver: Boolean = true): Unit = {
     exitWithoutRestart()
     // See if the VM is going down
     GemFireStore.getBootingInstance.getGemFireCache.getCancelCriterion.
@@ -101,6 +102,6 @@ class SnappyCoarseGrainedExecutorBackend(
       rpcEnv.shutdown()
     }
 
-    SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
+    SparkHadoopUtil.get.stopCredentialUpdater()
   }
 }
