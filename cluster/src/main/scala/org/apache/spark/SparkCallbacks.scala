@@ -17,10 +17,10 @@
 package org.apache.spark
 
 import org.apache.spark
-import org.apache.spark.deploy.SparkHadoopUtil
 
+import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{RetrieveSparkAppConfig, SparkAppConfig}
 
 /**
  * Calls that are needed to be sent to snappy-cluster classes because
@@ -29,14 +29,16 @@ import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveS
 object SparkCallbacks {
 
   def createExecutorEnv(
-      conf: SparkConf,
+      driverConf: SparkConf,
       executorId: String,
       hostname: String,
       port: Int,
       numCores: Int,
+      ioEncryptionKey: Option[Array[Byte]],
       isLocal: Boolean): SparkEnv = {
-    SparkEnv.createExecutorEnv(conf, executorId, hostname,
-      port, numCores, isLocal)
+
+    SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
+      port, numCores, ioEncryptionKey, isLocal)
   }
 
   def getRpcEnv(sparkEnv: SparkEnv): RpcEnv = {
@@ -48,13 +50,13 @@ object SparkCallbacks {
       SparkHadoopUtil.get.runAsSparkUser { () =>
         env.stop()
         SparkEnv.set(null)
-        SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
+        SparkHadoopUtil.get.stopCredentialUpdater()
       }
     }
   }
 
-  def fetchDriverProperty(host: String, executorConf: SparkConf,
-      port: Int, url: String): Seq[(String, String)] = {
+  def fetchDriverProperty(appId: String, host: String, executorConf: SparkConf,
+      port: Int, url: String): (Option[Array[Byte]], Seq[(String, String)]) = {
     val fetcher = RpcEnv.create(
       "driverPropsFetcher",
       host,
@@ -62,9 +64,12 @@ object SparkCallbacks {
       executorConf,
       new spark.SecurityManager(executorConf), clientMode = true)
     val driver = fetcher.setupEndpointRefByURI(url)
-    val props = driver.askWithRetry[Seq[(String, String)]](RetrieveSparkProps)
+    val cfg = driver.askWithRetry[SparkAppConfig](RetrieveSparkAppConfig)
+    val ioEncryptionKey: Option[Array[Byte]] = cfg.ioEncryptionKey
+    val props = cfg.sparkProperties ++
+        Seq[(String, String)](("spark.app.id", appId))
     fetcher.shutdown()
-    props
+    (ioEncryptionKey, props)
   }
 
   def isExecutorStartupConf(key: String): Boolean = {
