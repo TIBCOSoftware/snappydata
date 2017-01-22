@@ -444,12 +444,12 @@ class SnappyParser(session: SnappySession)
           case None =>
             assertNoQueryHint(QueryHint.Index,
               s"${QueryHint.Index} cannot be applied to derived table $alias")
-            SubqueryAlias(alias, child)
+            SubqueryAlias(alias, child, None)
           case Some(win) =>
             assertNoQueryHint(QueryHint.Index,
               s"${QueryHint.Index} cannot be applied to derived table $alias")
             WindowLogicalPlan(win._1, win._2,
-              SubqueryAlias(alias, child))
+              SubqueryAlias(alias, child, None))
         })
   }
 

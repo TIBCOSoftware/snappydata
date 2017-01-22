@@ -340,12 +340,12 @@ object HasColocatedEntities {
         val leftReplacement = leftTable match {
           case _: LogicalRelation => Replacement(leftTable, leftPlan)
           case subquery@SubqueryAlias(alias, _, v) =>
-            Replacement(subquery, SubqueryAlias(alias, leftPlan))
+            Replacement(subquery, SubqueryAlias(alias, leftPlan, None))
         }
         val rightReplacement = rightTable match {
           case _: LogicalRelation => Replacement(rightTable, rightPlan)
           case subquery@SubqueryAlias(alias, _, _) =>
-            Replacement(subquery, SubqueryAlias(alias, rightPlan))
+            Replacement(subquery, SubqueryAlias(alias, rightPlan, None))
         }
         ((leftRelation.get, rightRelation.get),
             ColocatedReplacements(ArrayBuffer(leftReplacement, rightReplacement)))

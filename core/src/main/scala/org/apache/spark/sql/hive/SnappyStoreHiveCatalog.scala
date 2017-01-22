@@ -449,7 +449,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // If an alias was specified by the lookup, wrap the plan in a
     // sub-query so that attributes are properly qualified with this alias
     SubqueryAlias(alias.getOrElse(tableIdent.table),
-      lookupRelation(newQualifiedTableName(tableIdent)))
+      lookupRelation(newQualifiedTableName(tableIdent)), None)
   }
 
   override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
