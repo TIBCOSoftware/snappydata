@@ -23,19 +23,18 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
-import org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins._
-import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.Entity.{INDEX, INDEX_RELATION, TABLE}
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 
 object RuleUtils extends PredicateHelper {
 
@@ -208,7 +207,7 @@ object RuleUtils extends PredicateHelper {
           table match {
             case LogicalRelation(b: ColumnFormatRelation, _, _) if b.table.indexOf(t) > 0 =>
               predicates
-            case SubqueryAlias(alias, _) if alias.equals(t) =>
+            case SubqueryAlias(alias, _, _) if alias.equals(t) =>
               predicates
             case _ => Seq.empty
           }
@@ -263,7 +262,7 @@ object Entity {
       plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
     case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
       relation
-    case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _)) =>
+    case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _), _) =>
       relation
   }
 
@@ -340,12 +339,12 @@ object HasColocatedEntities {
       } yield {
         val leftReplacement = leftTable match {
           case _: LogicalRelation => Replacement(leftTable, leftPlan)
-          case subquery@SubqueryAlias(alias, _) =>
+          case subquery@SubqueryAlias(alias, _, v) =>
             Replacement(subquery, SubqueryAlias(alias, leftPlan))
         }
         val rightReplacement = rightTable match {
           case _: LogicalRelation => Replacement(rightTable, rightPlan)
-          case subquery@SubqueryAlias(alias, _) =>
+          case subquery@SubqueryAlias(alias, _, _) =>
             Replacement(subquery, SubqueryAlias(alias, rightPlan))
         }
         ((leftRelation.get, rightRelation.get),
