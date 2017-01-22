@@ -32,11 +32,10 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodegenContext, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -218,8 +217,7 @@ object CodeGeneration extends Logging {
       classOf[UnsafeArrayData].getName,
       classOf[MapData].getName,
       classOf[UnsafeMapData].getName,
-      classOf[java.util.Arrays].getName,
-      classOf[MutableRow].getName)
+      classOf[java.util.Arrays].getName)
 
   private[this] def getRowSetterFragment(schema: Array[DataType],
       dialect: JdbcDialect,
@@ -415,8 +413,7 @@ object CodeGeneration extends Logging {
       classOf[MapData].getName,
       classOf[UnsafeMapData].getName,
       classOf[java.util.Arrays].getName,
-      classOf[InternalDataSerializer].getName,
-      classOf[MutableRow].getName))
+      classOf[InternalDataSerializer].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
