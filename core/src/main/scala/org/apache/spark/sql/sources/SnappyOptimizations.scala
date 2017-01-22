@@ -53,9 +53,9 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
     plan transformUp {
       case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
         explicitIndexHint.getOrElse(colRelation.table, Some(table)).get
-      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _)) =>
+      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _), _) =>
         explicitIndexHint.get(alias) match {
-          case Some(Some(index)) => SubqueryAlias(alias, index)
+          case Some(Some(index)) => SubqueryAlias(alias, index, None)
           case _ => subQuery
         }
     } transformUp {

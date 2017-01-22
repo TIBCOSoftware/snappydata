@@ -62,7 +62,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child) => unwrapSubquery(child)
+      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
       case _ => plan
     }
   }
