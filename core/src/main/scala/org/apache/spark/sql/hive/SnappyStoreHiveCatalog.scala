@@ -44,7 +44,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.{StaticSQLConf, SQLConf}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
@@ -151,9 +151,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val schemaString = getSchemaString(table.properties)
         val userSpecifiedSchema = schemaString.map(s =>
           DataType.fromJson(s).asInstanceOf[StructType])
-        val partitionColumns = table.partitionColumns.map(_.name)
+        val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        val options = table.storage.serdeProperties
+        val options = table.storage.properties
         val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
@@ -415,7 +415,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         tempTables.getOrElse(tableIdent.table,
           throw new TableNotFoundException(s"Table '$tableIdent' not found")) match {
           case lr: LogicalRelation =>
-            lr.copy(metastoreTableIdentifier = Some(tableIdent))
+            // TODO Yogs_2_1_Merge
+            // lr.copy(metastoreTableIdentifier = lr.metastoreTableIdentifier)
+            lr.copy()
           case x => x
         }
       }
@@ -530,7 +532,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // In this case, we split the JSON string and store each part as a
     // separate SerDe property.
     if (userSpecifiedSchema.isDefined) {
-      val threshold = sqlConf.schemaStringLengthThreshold
+      val threshold = org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
       val schemaJsonString = userSpecifiedSchema.get.json
       // Split the JSON string.
       val parts = schemaJsonString.grouped(threshold).toSeq
@@ -577,14 +579,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       // Can not inherit from this class. Ideally we should
       // be extending from this case class
       tableType = CatalogTableType.EXTERNAL,
-      schema = Nil,
+      schema = null,
       storage = CatalogStorageFormat(
         locationUri = None,
         inputFormat = None,
         outputFormat = None,
         serde = None,
         compressed = false,
-        serdeProperties = options
+        properties = options
       ),
       properties = tableProperties.toMap)
 
