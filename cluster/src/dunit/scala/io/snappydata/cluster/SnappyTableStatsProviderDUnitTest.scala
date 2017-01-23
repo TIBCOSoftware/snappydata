@@ -271,6 +271,7 @@ object SnappyTableStatsProviderDUnitTest {
 
   def verifyResults(snc: SnappyContext, table: String,
       tableType: String = "C", expectedRowCount: Int = 7000): Unit = {
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
     val isColumnTable = if (tableType.equals("C")) true else false
     val isReplicatedTable = if (tableType.equals("R")) true else false
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
