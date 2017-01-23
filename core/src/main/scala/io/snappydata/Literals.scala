@@ -323,17 +323,7 @@ object JOS extends Enumeration {
   val IncludeGeneratedPaths = Value("includeGeneratedPaths")
 
   /**
-   * Applies replicated table with filter conditions in the given order of preference in
-   * 'joinOrder' query hint comma separated values.
-   *
-   * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
-   * will apply the rule in the mentioned order and rest of the rules will be skipped.
+   * Don't alter the join order provided by the user.
    */
-  val ReplicateWithFilters = Value("RWF")
-
-  val ColocatedWithFilters = Value("CWF")
-
-  val LargestColocationChain = Value("LCC")
-
-  val NonColocatedWithFilters = Value("NCWF")
+  val Fixed = Value("fixed")
 }
