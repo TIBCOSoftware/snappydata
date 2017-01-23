@@ -1002,6 +1002,26 @@ class SnappySession(@transient private val sc: SparkContext,
 
       case None =>
         val data = Dataset.ofRows(this, query)
+        val df = userSpecifiedSchema match {
+          // If we are inserting into an existing table, just use the existing schema.
+          case Some(s) => {
+            if (s.size != data.schema.size) {
+              throw new AnalysisException(s"The column number " +
+                  s"of the specified schema[${s}] "
+                  + s"doesn't match the data schema[${data.schema}]'s")
+            }
+            s.zip(data.schema).
+                find(x => x._1.dataType != x._2.dataType) match {
+              case Some(x) => throw new AnalysisException(s"The column types " +
+                  s"of the specified schema[${s}] " +
+                  s"doesn't match the data schema[${data.schema}]'s")
+              case None => // do nothing
+            }
+            data.toDF(s.fieldNames: _*)
+          }
+          case None => data
+        }
+
         insertRelation match {
           case Some(ir) =>
             var success = false
@@ -1021,7 +1041,7 @@ class SnappySession(@transient private val sc: SparkContext,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
-              options = params).write(mode, data)
+              options = params).write(mode, df)
             if (None != userSpecifiedSchema) {
               (r, Some(userSpecifiedSchema.get))
             } else {
