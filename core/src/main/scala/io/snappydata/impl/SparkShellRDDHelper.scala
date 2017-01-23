@@ -32,7 +32,8 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
-import org.apache.spark.Partition
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext}
+import org.apache.spark.{SparkContext, Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -108,11 +109,17 @@ final class SparkShellRDDHelper {
   }
 }
 
-object SparkShellRDDHelper {
+object SparkShellRDDHelper extends Logging {
 
-  def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
+  def getPartitions(tableName: String, conn: Connection, sc: SparkContext,
+      isPartitioned: Boolean): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
-    val bucketToServerList = getBucketToServerMapping(resolvedName)
+    val bucketToServerList = SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => getBucketToServerMapping(conn, resolvedName,
+        isPartitioned)
+      case _ => getBucketToServerMapping(resolvedName)
+    }
+    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
@@ -202,4 +209,102 @@ object SparkShellRDDHelper {
           s"${r.getAttributes.getDataPolicy} attributes: ${r.getAttributes}")
     }
   }
+
+  private def getBucketToServerMapping(connection: Connection, tableName: String,
+      isPartitioned: Boolean): Array[ArrayBuffer[(String, String)]] = {
+    if (isPartitioned) {
+      val getBktLocationProc = connection.prepareCall(s"call SYS.GET_BUCKET_TO_SERVER_MAPPING2(?, ?)")
+      getBktLocationProc.setString(1, tableName)
+      getBktLocationProc.registerOutParameter(2, java.sql.Types.CLOB)
+      getBktLocationProc.execute
+      val bucketToServerMappingStr: String = getBktLocationProc.getString(2)
+      val allNetUrls = setBucketToServerMappingInfo(bucketToServerMappingStr)
+      allNetUrls
+    } else {
+      val getReplicaNodes = connection.prepareCall(s"call SYS.GET_INITIALIZED_REPLICAS(?, ?)")
+      getReplicaNodes.setString(1, tableName)
+      getReplicaNodes.registerOutParameter(2, java.sql.Types.CLOB)
+      getReplicaNodes.execute
+      val replicaNodesStr: String = getReplicaNodes.getString(2)
+      logInfo("sdeshmukh replicaNodesStr = " + replicaNodesStr)
+      val allNetUrls = setReplicasToServerMappingInfo(replicaNodesStr)
+      allNetUrls
+    }
+  }
+
+  private def setReplicasToServerMappingInfo(replicaNodesStr: String): Array[ArrayBuffer[(String, String)]]  = {
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    // no query routing or load-balancing
+    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+        ClientAttribute.LOAD_BALANCE + "=false"
+    val arr = replicaNodesStr.split("\\|")
+    if (arr(0).toInt > 0) {
+      val hosts = arr(1).split(";")
+      val allNetUrls = new Array[ArrayBuffer[(String, String)]](arr(0).toInt)
+      var i = 0
+      for (host <- hosts) {
+        val hostAddressPort = returnHostPortFromServerString(arr(1))
+        val netUrls = ArrayBuffer.empty[(String, String)]
+        netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+        allNetUrls(i) = netUrls
+        i += 1
+      }
+     return allNetUrls
+    }
+    Array.empty
+  }
+
+  private def setBucketToServerMappingInfo(bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    // no query routing or load-balancing
+    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+        ClientAttribute.LOAD_BALANCE + "=false"
+    if (bucketToServerMappingStr != null) {
+      val arr: Array[String] = bucketToServerMappingStr.split(":")
+      val noOfBuckets = arr(0).toInt
+//    val redundancy = arr(1).toInt
+      val allNetUrls = new Array[ArrayBuffer[(String, String)]](noOfBuckets)
+      val bucketsServers: String = arr(2)
+      val newarr: Array[String] = bucketsServers.split("\\|")
+      for (x <- newarr) {
+        val aBucketInfo: Array[String] = x.split(";")
+        val bid: Int = aBucketInfo(0).toInt
+        if (!(aBucketInfo(1) == "null")) {
+          // get (addr,host,port)
+          val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
+          val netUrls = ArrayBuffer.empty[(String, String)]
+          netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+          allNetUrls(bid) = netUrls
+        }
+      }
+      return allNetUrls
+    }
+    Array.empty
+  }
+
+  /*
+  * The pattern to extract addresses from the result of
+  * GET_ALLSERVERS_AND_PREFSERVER2 procedure; format is:
+  *
+  * host1/addr1[port1]{kind1},host2/addr2[port2]{kind2},...
+  */
+  private lazy val addrPattern: java.util.regex.Pattern = java.util.regex.Pattern.compile("([^,/]*)(/[^,\\[]+)?\\[([\\d]+)\\](\\{[^}]+\\})?")
+
+  private def returnHostPortFromServerString(serverStr: String): (String, String, String) = {
+    if (serverStr == null || serverStr.length == 0) {
+      return null
+    }
+    val matcher: java.util.regex.Matcher = addrPattern.matcher(serverStr)
+    val matchFound: Boolean = matcher.find
+    if (!matchFound) {
+      (null, null, null)
+    } else {
+      val host: String = matcher.group(1)
+      val addr: String = matcher.group(2)
+      val portStr: String = matcher.group(3)
+      (addr, host, portStr)
+    }
+  }
+
+
 }

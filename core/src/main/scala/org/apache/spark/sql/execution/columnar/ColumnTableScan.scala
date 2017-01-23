@@ -42,7 +42,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
@@ -228,8 +228,17 @@ private[sql] final case class ColumnTableScan(
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
       .asInstanceOf[Seq[RDD[Any]]])
 
-  private val isOffHeap = GemFireXDUtils.getGemFireContainer(
-    baseRelation.table, true).isOffHeap
+  // TODO: [shirishd] Fix this. Setting offheap false for thin client
+  // connector cluster. Should this be true for offheap tables?
+  private val isOffHeap = {
+    SnappyContext.getClusterMode(sqlContext.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => false
+      case _ => GemFireXDUtils.getGemFireContainer(
+        baseRelation.table, true).isOffHeap
+    }
+  }
+
+
 
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
 

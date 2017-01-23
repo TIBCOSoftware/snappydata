@@ -187,7 +187,8 @@ final class SparkShellCachedBatchRDD(
   }
 
   override def getPartitions: Array[Partition] = {
-    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
+    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _,
+      session.sparkContext, isPartitioned = true))
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -268,7 +269,7 @@ class SparkShellRowRDD(_session: SnappySession,
     val conn = ExternalStoreUtils.getConnection(tableName, connProperties,
       forExecutor = true)
     try {
-      SparkShellRDDHelper.getPartitions(tableName, conn)
+      SparkShellRDDHelper.getPartitions(tableName, conn, session.sparkContext, _isPartitioned)
     } finally {
       conn.close()
     }

@@ -94,7 +94,17 @@ class BaseColumnFormatRelation(
   }
 
   override lazy val numBuckets: Int = {
-    region.getTotalNumberOfBuckets
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => {
+        val conn = connFactory()
+        val rs = conn.createStatement().executeQuery(s"values sys.get_bucket_count('${_table}')")
+        rs.next()
+        val bucketCount = rs.getInt(1)
+        rs.close()
+        bucketCount
+      }
+      case _ => region.getTotalNumberOfBuckets
+    }
   }
 
   override def partitionColumns: Seq[String] = {
@@ -138,7 +148,8 @@ class BaseColumnFormatRelation(
     // finally skipping any IDs greater than the noted ones.
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
-    val isPartitioned = region.getPartitionAttributes != null
+//    val isPartitioned = region.getPartitionAttributes != null
+    val isPartitioned = (numBuckets != 0)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>

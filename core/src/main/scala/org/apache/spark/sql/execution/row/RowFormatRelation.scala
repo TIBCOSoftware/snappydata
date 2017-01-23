@@ -100,7 +100,8 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = region.getPartitionAttributes != null
+    val isPartitioned = (numBuckets != 1)
+//    val isPartitioned = region.getPartitionAttributes != null
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -128,21 +129,63 @@ class RowFormatRelation(
     (rdd, Nil)
   }
 
-  override lazy val numBuckets: Int = {
-    region match {
-      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-      case _ => 1
-    }
-  }
+//  override lazy val numBuckets: Int = {
+//    SnappyContext.getClusterMode(_context.sparkContext) match {
+//      case ThinClientConnectorMode(_, _) => {
+//        val conn = connFactory()
+//        val rs = conn.createStatement().executeQuery(s"values sys.get_bucket_count('${_table}')")
+//        rs.next()
+//        val bucketCount = rs.getInt(1)
+//        rs.close()
+//        if (bucketCount > 0) bucketCount else 1
+//      }
+//      case _ => region match {
+//        case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
+//        case _ => 1
+//      }
+//    }
+//  }
+//
+//  override def partitionColumns: Seq[String] = {
+//    region match {
+//      case pr: PartitionedRegion =>
+//        val resolver = pr.getPartitionResolver
+//            .asInstanceOf[GfxdPartitionByExpressionResolver]
+//        val parColumn = resolver.getColumnNames
+//        parColumn.toSeq
+//      case _ => Seq.empty[String]
+//    }
+//  }
 
-  override def partitionColumns: Seq[String] = {
-    region match {
-      case pr: PartitionedRegion =>
-        val resolver = pr.getPartitionResolver
-            .asInstanceOf[GfxdPartitionByExpressionResolver]
-        val parColumn = resolver.getColumnNames
-        parColumn.toSeq
-      case _ => Seq.empty[String]
+  override lazy val (numBuckets, partitionColumns) = {
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => {
+        val conn = connFactory()
+        try {
+          val pstmt = conn.prepareCall(
+            s"call sys.GET_PARTITIONING_COLUMNS_AND_BUCKET_COUNT('${_table}', ?, ?)")
+          pstmt.registerOutParameter(1, java.sql.Types.VARCHAR)
+          pstmt.registerOutParameter(2, java.sql.Types.INTEGER)
+          pstmt.execute
+          val bucketCount = pstmt.getInt(2)
+          if (bucketCount > 0) {
+            val pCols = pstmt.getString(1).split(":")
+            (bucketCount, pCols.toSeq)
+          } else {
+            (1, Seq.empty[String])
+          }
+        } finally {
+          conn.close()
+        }
+      }
+      case _ => region match {
+        case pr: PartitionedRegion =>
+          val resolver = pr.getPartitionResolver
+              .asInstanceOf[GfxdPartitionByExpressionResolver]
+          val parColumn = resolver.getColumnNames
+          (pr.getTotalNumberOfBuckets, parColumn.toSeq)
+        case _ => (1, Seq.empty[String])
+      }
     }
   }
 
@@ -290,6 +333,7 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+      //TODO note sdeshmukh initialize numBuckets here
       connProperties.dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
           None, partitions, connProperties)
