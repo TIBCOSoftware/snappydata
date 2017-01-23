@@ -93,7 +93,7 @@ object StoreUtils extends Logging {
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
     ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION,
-    ExternalStoreUtils.RELATION_FOR_SAMPLE)
+    ExternalStoreUtils.RELATION_FOR_SAMPLE, ExternalStoreUtils.EXTERNAL_DATASOURCE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"

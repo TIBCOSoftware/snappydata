@@ -22,6 +22,7 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -74,9 +75,9 @@ abstract class MutableRelationProvider
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), Some(relation.schema), Array.empty[String],
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
-        options, relation)
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))

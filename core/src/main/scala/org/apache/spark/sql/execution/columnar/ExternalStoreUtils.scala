@@ -58,6 +58,8 @@ object ExternalStoreUtils {
   final val USE_COMPRESSION = "USE_COMPRESSION"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
+  final val EXTERNAL_DATASOURCE = "EXTERNAL_DATASOURCE"
+
   final val COLUMN_BATCH_SIZE_DEFAULT: Int = 10000
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {

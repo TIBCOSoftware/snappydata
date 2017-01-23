@@ -1000,7 +1000,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query)), None)
 
-      case None =>
+      case None => {
         val data = Dataset.ofRows(this, query)
         val df = userSpecifiedSchema match {
           // If we are inserting into an existing table, just use the existing schema.
@@ -1042,12 +1042,9 @@ class SnappySession(@transient private val sc: SparkContext,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, df)
-            if (None != userSpecifiedSchema) {
-              (r, Some(userSpecifiedSchema.get))
-            } else {
-              (r, Some(r.schema))
-            }
+            (r, Some(r.schema))
         }
+      }
     }
 
     // need to register if not existing in catalog

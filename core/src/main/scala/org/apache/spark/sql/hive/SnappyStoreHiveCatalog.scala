@@ -154,7 +154,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
         val options = table.storage.serdeProperties
-        val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
+        val relation = options.get(ExternalStoreUtils.EXTERNAL_DATASOURCE) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 

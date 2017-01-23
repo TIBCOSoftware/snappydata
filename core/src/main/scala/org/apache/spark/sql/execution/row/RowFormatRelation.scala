@@ -297,11 +297,12 @@ final class DefaultSource extends MutableRelationProvider {
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
         case None =>
       }
+
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), Some(relation.schema),
+        catalog.newQualifiedTableName(tableName), None,
         Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
-        options, relation)
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       success = true
       relation
     } finally {

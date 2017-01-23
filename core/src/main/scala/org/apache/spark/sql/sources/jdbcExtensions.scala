@@ -228,7 +228,8 @@ object JdbcExtendedUtils extends Logging {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString)),
+          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString) +
+              (ExternalStoreUtils.EXTERNAL_DATASOURCE -> "true")),
           schemaString, data)
 
       case _ => throw new AnalysisException(
