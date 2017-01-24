@@ -440,7 +440,7 @@ object SplitSnappyClusterDUnitTest
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "BUCKETS '3')")
+        "BUCKETS '3', COLUMN_BATCH_SIZE '10000')")
 
     val rdd = sc.parallelize(
       (1 to 100000).map(i => TestData(i, i.toString)))
