@@ -30,6 +30,7 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.Property
 import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
@@ -167,10 +168,14 @@ object ExecutorInitiator extends Logging {
                     }
                     // TODO: Hemant: add executor specific properties from local
                     // TODO: conf to this conf that was received from driver.
-
-                    // If memory manager is not set, use Snappy unified memory manager
-                    driverConf.setIfMissing("spark.memory.manager",
-                      SNAPPY_MEMORY_MANAGER)
+                    if (Property.UseSparkMemoryManager.getOption(driverConf).exists(_.toBoolean)) {
+                      // If memory manager is set as spark,
+                      driverConf.remove("spark.memory.manager")
+                    } else {
+                      // If memory manager is not set, use Snappy unified memory manager
+                      driverConf.setIfMissing("spark.memory.manager",
+                        SNAPPY_MEMORY_MANAGER)
+                    }
 
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)
