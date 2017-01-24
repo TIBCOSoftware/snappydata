@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>Replacement - snappydata_2.11 0.7 API - org.apache.spark.sql.sources.Replacement</title>
-          <meta name="description" content="Replacement - snappydata 2.11 0.7 API - org.apache.spark.sql.sources.Replacement" />
-          <meta name="keywords" content="Replacement snappydata 2.11 0.7 API org.apache.spark.sql.sources.Replacement" />
+          <title>ReplacementSet - snappydata_2.11 0.7 API - org.apache.spark.sql.sources.ReplacementSet</title>
+          <meta name="description" content="ReplacementSet - snappydata 2.11 0.7 API - org.apache.spark.sql.sources.ReplacementSet" />
+          <meta name="keywords" content="ReplacementSet snappydata 2.11 0.7 API org.apache.spark.sql.sources.ReplacementSet" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../../index.html';
-            var hash = 'org.apache.spark.sql.sources.Replacement';
+            var hash = 'org.apache.spark.sql.sources.ReplacementSet';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -30,10 +30,10 @@
       <div id="definition">
         <img alt="Class" src="../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.sources">sources</a></p>
-        <h1>Replacement</h1><h3><span class="morelinks"><div>Related Doc:
+        <h1>ReplacementSet</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="org.apache.spark.sql.sources">package sources</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -45,14 +45,17 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Replacement</span><span class="params">(<span name="table">table: <a href="Entity$.html#TABLE=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.TABLE">TABLE</a></span>, <span name="index">index: <a href="Entity$.html#INDEX=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.INDEX">INDEX</a></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ReplacementSet</span><span class="params">(<span name="chain">chain: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>, <span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../../../../../scala/package.html#Ordered[T]=scala.math.Ordered[T]" class="extmbr" name="scala.Ordered">Ordered</a>[<a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Table to table or Table to index replacement.
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A set of possible replacements of table to indexes.
+<br>
+<strong>Note:</strong> The chain if consists of multiple partitioned tables, they must satisfy
+colocation criteria.
+</p></div><dl class="paramcmts block"><dt class="param">chain</dt><dd class="cmt"><p>Multiple replacements.</p></dd><dt class="param">conditions</dt><dd class="cmt"><p>user provided join + filter conditions.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a>, <span class="extype" name="scala.math.Ordered">Ordered</span>[<a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>], <span class="extype" name="java.lang.Comparable">Comparable</span>[<a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>], <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -70,7 +73,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.sources.Replacement"><span>Replacement</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper"><span>PredicateHelper</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.sources.ReplacementSet"><span>ReplacementSet</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper"><span>PredicateHelper</span></li><li class="in" name="scala.math.Ordered"><span>Ordered</span></li><li class="in" name="java.lang.Comparable"><span>Comparable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -89,23 +92,23 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.sources.Replacement#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(table:org.apache.spark.sql.sources.Entity.TABLE,index:org.apache.spark.sql.sources.Entity.INDEX,isPartitioned:Boolean):org.apache.spark.sql.sources.Replacement"></a>
-      <a id="&lt;init&gt;:Replacement"></a>
+              <ol><li name="org.apache.spark.sql.sources.ReplacementSet#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(chain:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.sources.Replacement],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.sources.ReplacementSet"></a>
+      <a id="&lt;init&gt;:ReplacementSet"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Replacement</span><span class="params">(<span name="table">table: <a href="Entity$.html#TABLE=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.TABLE">TABLE</a></span>, <span name="index">index: <a href="Entity$.html#INDEX=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.INDEX">INDEX</a></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span>
+        <span class="name">ReplacementSet</span><span class="params">(<span name="chain">chain: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>, <span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@&lt;init&gt;(table:org.apache.spark.sql.sources.Entity.TABLE,index:org.apache.spark.sql.sources.Entity.INDEX,isPartitioned:Boolean):org.apache.spark.sql.sources.Replacement" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@&lt;init&gt;(chain:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.sources.Replacement],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.sources.ReplacementSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">chain</dt><dd class="cmt"><p>Multiple replacements.</p></dd><dt class="param">conditions</dt><dd class="cmt"><p>user provided join + filter conditions.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -127,7 +130,7 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -144,11 +147,45 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@##():Int" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@##():Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.math.Ordered#&lt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;(that:A):Boolean"></a>
+      <a id="&lt;(ReplacementSet):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less" class="name">&lt;</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@&lt;(that:A):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Ordered</dd></dl></div>
+    </li><li name="scala.math.Ordered#&lt;=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;=(that:A):Boolean"></a>
+      <a id="&lt;=(ReplacementSet):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$eq" class="name">&lt;=</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@&lt;=(that:A):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Ordered</dd></dl></div>
     </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a>
       <a id="==(Any):Boolean"></a>
@@ -161,11 +198,45 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.math.Ordered#&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&gt;(that:A):Boolean"></a>
+      <a id="&gt;(ReplacementSet):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater" class="name">&gt;</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@&gt;(that:A):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Ordered</dd></dl></div>
+    </li><li name="scala.math.Ordered#&gt;=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&gt;=(that:A):Boolean"></a>
+      <a id="&gt;=(ReplacementSet):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater$eq" class="name">&gt;=</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@&gt;=(that:A):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Ordered</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -178,11 +249,62 @@
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#bestJoinOrder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bestJoinOrder:Seq[org.apache.spark.sql.sources.Replacement]"></a>
+      <a id="bestJoinOrder:Seq[Replacement]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bestJoinOrder</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@bestJoinOrder:Seq[org.apache.spark.sql.sources.Replacement]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#bestJoinOrderConditions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bestJoinOrderConditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="bestJoinOrderConditions:Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bestJoinOrderConditions</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@bestJoinOrderConditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#bestPlanEstimatedSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bestPlanEstimatedSize:BigInt"></a>
+      <a id="bestPlanEstimatedSize:BigInt"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bestPlanEstimatedSize</span><span class="result">: <a href="../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@bestPlanEstimatedSize:BigInt" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#canEvaluate" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canEvaluate(expr:org.apache.spark.sql.catalyst.expressions.Expression,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Boolean"></a>
       <a id="canEvaluate(Expression,LogicalPlan):Boolean"></a>
@@ -195,7 +317,7 @@
         <span class="name">canEvaluate</span><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@canEvaluate(expr:org.apache.spark.sql.catalyst.expressions.Expression,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@canEvaluate(expr:org.apache.spark.sql.catalyst.expressions.Expression,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -205,6 +327,23 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
 - <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
 - <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#chain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="chain:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.sources.Replacement]"></a>
+      <a id="chain:ArrayBuffer[Replacement]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">chain</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@chain:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.sources.Replacement]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Multiple replacements.</p>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -217,7 +356,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@clone():Object" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -228,6 +367,57 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#compare" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compare(that:org.apache.spark.sql.sources.ReplacementSet):Int"></a>
+      <a id="compare(ReplacementSet):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compare</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@compare(that:org.apache.spark.sql.sources.ReplacementSet):Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a> → Ordered</dd></dl></div>
+    </li><li name="scala.math.Ordered#compareTo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compareTo(that:A):Int"></a>
+      <a id="compareTo(ReplacementSet):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compareTo</span><span class="params">(<span name="that">that: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@compareTo(that:A):Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Ordered → Comparable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#conditions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="conditions:Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">conditions</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">user provided join + filter conditions.</p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -240,28 +430,28 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#estimatedSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="estimatedSize(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):BigInt"></a>
-      <a id="estimatedSize(Seq[Expression]):BigInt"></a>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(other:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">estimatedSize</span><span class="params">(<span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>
+        <span class="name">equals</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@estimatedSize(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):BigInt" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@equals(other:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -274,7 +464,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -297,45 +487,11 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@getClass():Class[_]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#index" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="index:org.apache.spark.sql.sources.Entity.INDEX"></a>
-      <a id="index:INDEX"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">index</span><span class="result">: <a href="Entity$.html#INDEX=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.INDEX">INDEX</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@index:org.apache.spark.sql.sources.Entity.INDEX" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.sources.Replacement#indexAttributes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="indexAttributes:Seq[org.apache.spark.sql.catalyst.expressions.AttributeReference]"></a>
-      <a id="indexAttributes:Seq[AttributeReference]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">indexAttributes</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="../catalyst/expressions/AttributeReference.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeReference">AttributeReference</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@indexAttributes:Seq[org.apache.spark.sql.catalyst.expressions.AttributeReference]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -348,58 +504,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#isPartitioned" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="isPartitioned:Boolean"></a>
-      <a id="isPartitioned:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isPartitioned</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@isPartitioned:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.sources.Replacement#isReplacable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="isReplacable:Boolean"></a>
-      <a id="isReplacable:Boolean"></a>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#merge" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="merge(current:org.apache.spark.sql.sources.ReplacementSet):org.apache.spark.sql.sources.ReplacementSet"></a>
+      <a id="merge(ReplacementSet):ReplacementSet"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isReplacable</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">merge</span><span class="params">(<span name="current">current: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@isReplacable:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.sources.Replacement#mappedConditions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mappedConditions(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
-      <a id="mappedConditions(Seq[Expression]):Seq[Expression]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">mappedConditions</span><span class="params">(<span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@mappedConditions(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@merge(current:org.apache.spark.sql.sources.ReplacementSet):org.apache.spark.sql.sources.ReplacementSet" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -416,7 +538,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -433,7 +555,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -450,24 +572,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#numPartitioningCols" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="numPartitioningCols:Int"></a>
-      <a id="numPartitioningCols:Int"></a>
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#numPartitioningColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="numPartitioningColumns:Int"></a>
+      <a id="numPartitioningColumns:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">numPartitioningCols</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">numPartitioningColumns</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@numPartitioningCols:Int" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@numPartitioningColumns:Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -484,28 +606,11 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">replaceAlias</span><span class="params">(<span name="condition">condition: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="aliases">aliases: <a href="../catalyst/expressions/AttributeMap.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeMap">AttributeMap</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@replaceAlias(condition:org.apache.spark.sql.catalyst.expressions.Expression,aliases:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@replaceAlias(condition:org.apache.spark.sql.catalyst.expressions.Expression,aliases:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#replacedPlan" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="replacedPlan(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="replacedPlan(Seq[Expression]):LogicalPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">replacedPlan</span><span class="params">(<span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@replacedPlan(conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.sql.sources">org.apache.spark.sql.sources</a>] </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#splitConjunctivePredicates" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="splitConjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="splitConjunctivePredicates(Expression):Seq[Expression]"></a>
@@ -518,7 +623,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">splitConjunctivePredicates</span><span class="params">(<span name="condition">condition: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@splitConjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@splitConjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -535,7 +640,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">splitDisjunctivePredicates</span><span class="params">(<span name="condition">condition: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@splitDisjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@splitDisjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -552,46 +657,12 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.Replacement#table" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="table:org.apache.spark.sql.sources.Entity.TABLE"></a>
-      <a id="table:TABLE"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">table</span><span class="result">: <a href="Entity$.html#TABLE=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.TABLE">TABLE</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@table:org.apache.spark.sql.sources.Entity.TABLE" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.sources.Replacement#tableToIndexAttributeMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tableToIndexAttributeMap:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.AttributeReference]"></a>
-      <a id="tableToIndexAttributeMap:AttributeMap[AttributeReference]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">tableToIndexAttributeMap</span><span class="result">: <a href="../catalyst/expressions/AttributeMap.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeMap">AttributeMap</a>[<a href="../catalyst/expressions/AttributeReference.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeReference">AttributeReference</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@tableToIndexAttributeMap:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.AttributeReference]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.sources.Replacement#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.sources.ReplacementSet#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -603,11 +674,11 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@toString():String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@toString():String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a> → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -620,7 +691,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -643,7 +714,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -666,7 +737,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.Replacement@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ReplacementSet@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -696,6 +767,10 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">
               <h3>Inherited from <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></h3>
+            </div><div class="parent" name="scala.math.Ordered">
+              <h3>Inherited from <span class="extype" name="scala.math.Ordered">Ordered</span>[<a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>]</h3>
+            </div><div class="parent" name="java.lang.Comparable">
+              <h3>Inherited from <span class="extype" name="java.lang.Comparable">Comparable</span>[<a href="" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

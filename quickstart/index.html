@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="author" content="SnappyData Development Team">
+  <meta name="author" content="SnappyData Team">
   
   <title>Getting Started - SnappyData Documentation</title>
   
@@ -71,19 +71,19 @@
             
                 <li class="toctree-l3"><a href="#getting-started-in-5-minutes-or-less">Getting Started in 5 Minutes or Less</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</a></li>
+                    <li><a class="toctree-l4" href="#option-1-getting-started-with-your-spark-distribution">Option 1: Getting Started with your Spark Distribution</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</a></li>
+                    <li><a class="toctree-l4" href="#option-2-getting-started-using-spark-scala-apis">Option 2: Getting Started Using Spark Scala APIs</a></li>
                 
-                    <li><a class="toctree-l4" href="#20x-faster-than-spark-202">20X Faster than Spark 2.0.2</a></li>
+                    <li><a class="toctree-l4" href="#option-3-20x-faster-than-spark-202">Option 3: 20X Faster than Spark 2.0.2</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-using-sql">Getting Started using SQL</a></li>
+                    <li><a class="toctree-l4" href="#option-4-getting-started-using-sql">Option 4: Getting Started using SQL</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</a></li>
+                    <li><a class="toctree-l4" href="#option-5-getting-started-by-installing-snappydata-on-premise">Option 5: Getting Started by Installing SnappyData On-Premise</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-on-aws">Getting Started on AWS</a></li>
+                    <li><a class="toctree-l4" href="#option-6-getting-started-on-aws">Option 6: Getting Started on AWS</a></li>
                 
-                    <li><a class="toctree-l4" href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
+                    <li><a class="toctree-l4" href="#option-7-getting-started-with-docker-image">Option 7: Getting Started with Docker Image</a></li>
                 
             
             </ul>
@@ -217,16 +217,16 @@
 We provide you multiple choices for getting started with SnappyData. 
 Depending on your preference you can try any of the following options:</p>
 <ul>
-<li><a href="#getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</a></li>
-<li><a href="#getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</a></li>
-<li><a href="#Start Benchmark">20X Faster than Spark 2.0.2 Caching</a></li>
-<li><a href="#getting-started-using-sql">Getting Started using SQL</a></li>
-<li><a href="#getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</a></li>
-<li><a href="#getting-started-on-aws">Getting Started on AWS</a></li>
-<li><a href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
+<li><a href="#getting-started-with-your-spark-distribution">Option 1: Getting Started with your Spark Distribution</a></li>
+<li><a href="#getting-started-using-spark-scala-apis">Option 2: Getting Started Using Spark Scala APIs</a></li>
+<li><a href="#Start Benchmark">Option 3: 20X Faster than Spark 2.0.2 Caching</a></li>
+<li><a href="#getting-started-using-sql">Option 4: Getting Started using SQL</a></li>
+<li><a href="#getting-started-by-installing-snappydata-on-premise">Option 5: Getting Started by Installing SnappyData On-Premise</a></li>
+<li><a href="#getting-started-on-aws">Option 6: Getting Started on AWS</a></li>
+<li><a href="#getting-started-with-docker-image">Option 7: Getting Started with Docker Image</a></li>
 </ul>
 <p><Note>Note: Support for Microsoft Azure will be provided in future releases</Note></p>
-<h2 id="getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</h2>
+<h2 id="option-1-getting-started-with-your-spark-distribution">Option 1: Getting Started with your Spark Distribution</h2>
 <p>If you are a Spark developer and already using Spark 2.0.2,(Core SnappyData is compatible with Spark 2.0.2 version) 
  the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.</p>
 <p>This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.</p>
@@ -243,7 +243,7 @@ All SnappyData metadata as well as persistent data is stored in the directory <s
 In this document, we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables.</p>
 <p>Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the <a href="../programming_guide/#ddl">detailed documentation</a>. </p>
 <p>While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.</p>
-<h2 id="getting-started-using-spark-scala-apis">Getting Started Using Spark Scala APIs</h2>
+<h2 id="option-2-getting-started-using-spark-scala-apis">Option 2: Getting Started Using Spark Scala APIs</h2>
 <p><strong>Create a SnappySession</strong>: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.</p>
 <pre><code class="scala">scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 //Import snappy extensions
@@ -326,7 +326,7 @@ scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
 </code></pre>
 
 <p><a id="Start Benchmark"></a></p>
-<h2 id="20x-faster-than-spark-202">20X Faster than Spark 2.0.2</h2>
+<h2 id="option-3-20x-faster-than-spark-202">Option 3: 20X Faster than Spark 2.0.2</h2>
 <p>Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
 <p><Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note></p>
@@ -410,7 +410,7 @@ scala&gt;  snappy.sql(&quot;create table snappyTable (id bigint not null, sym va
 <p><Note>  We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS
 t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0.2 .
 </Note></p>
-<h2 id="getting-started-using-sql">Getting Started using SQL</h2>
+<h2 id="option-4-getting-started-using-sql">Option 4: Getting Started using SQL</h2>
 <p>We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the <a href="../howto/#howto-snappyShell">How-to</a> section.</p>
 <p><strong>Create a column table with a simple schema [Int, String] and default options.</strong>
 For details on the options refer to the <a href="../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
@@ -454,7 +454,7 @@ scala&gt;  snappy.sql(&quot;drop table if exists colTable &quot;)
 </code></pre>
 
 <p>Now that we have seen the basic working of SnappyData tables, let us run the <a href="#Start Benchmark">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
-<h2 id="getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</h2>
+<h2 id="option-5-getting-started-by-installing-snappydata-on-premise">Option 5: Getting Started by Installing SnappyData On-Premise</h2>
 <p>Download the latest version of SnappyData from the <a href="https://github.com/SnappyDataInc/snappydata/releases/">SnappyData Release Page</a> page, which lists the latest and previous releases of SnappyData.</p>
 <pre><code class="bash">$ tar -xzf snappydata-0.7-bin.tar.gz
 $ cd snappydata-0.7-bin/
@@ -464,7 +464,7 @@ $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
 </code></pre>
 
 <p>It opens a Spark Shell. All SnappyData metadata as well as persistent data is stored in the directory <strong>quickstartdatadir</strong>. Follow the steps mentioned <a href="#Start_quickStart">here</a></p>
-<h2 id="getting-started-on-aws">Getting Started on AWS</h2>
+<h2 id="option-6-getting-started-on-aws">Option 6: Getting Started on AWS</h2>
 <p>You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.</p>
 <h3 id="prerequisites">Prerequisites</h3>
 <p>Before you begin:</p>
@@ -497,7 +497,7 @@ $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
 <p>Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.</p>
 </li>
 <li>
-<p>Select Instance Type: By default the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.</p>
+<p>Select Instance Type: By default, the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.</p>
 </li>
 <li>
 <p>Select KeyPairName: Select a key pair from the list of key pairs available to you. This is a mandatory field.</p>
@@ -545,9 +545,9 @@ When the cluster has started, the status of the stack changes to <strong>CREATE_
 <li><Note> Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the <a href="../install/#EC2">EC2 scripts</a>.</Note></li>
 <li><Note>To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.</Note></li>
 </ul>
-<h2 id="getting-started-with-docker-image">Getting Started with Docker Image</h2>
+<h2 id="option-7-getting-started-with-docker-image">Option 7: Getting Started with Docker Image</h2>
 <p>SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to easily try the quick start program and more, with SnappyData.</p>
-<p>This section assumes you have already installed Docker and its configured properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
+<p>This section assumes you have already installed Docker and it is configured properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
 <p><strong>Verify that Docker is installed</strong>: In the command prompt run the command:</p>
 <pre><code class="scala">$ docker run hello-world
 
