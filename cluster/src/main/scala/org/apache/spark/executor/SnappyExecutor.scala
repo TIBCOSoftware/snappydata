@@ -73,9 +73,9 @@ class SnappyExecutor(
       val diffJars = addedJarFiles.diff(newJarFiles)
       if (diffJars.size > 0) {
         diffJars.foreach(classloader.removeURL)
-        println("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
+        logInfo("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
         diffJars.foreach(d => println(d))
-        println("job jars after delete in previous loader")
+        logInfo("job jars after delete in previous loader")
         classloader.jobJars.keySet.foreach(println)
         this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
           classloader.getParent, classloader.jobJars)
@@ -151,9 +151,6 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
   }
 
   def loadClassFromJobJar(className: String): Class[_] = {
-    if(className.equalsIgnoreCase("IntegerUDF")){
-      println(s"Loading class $className by "+ this)
-    }
     val jobName = getJobName
     if (!jobName.isEmpty) {
       jobJars.get(jobName) match {
