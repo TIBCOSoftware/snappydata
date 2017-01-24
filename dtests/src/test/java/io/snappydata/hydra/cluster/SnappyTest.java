@@ -166,6 +166,14 @@ public class SnappyTest implements Serializable {
         return snappyTestsJar;
     }
 
+    protected String getClusterTestsJar() {
+        String clusterTestsJar = getUserAppJarLocation("snappydata-cluster*tests.jar", hd
+                .getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
+                hd.getFileSep() + ".." + hd.getFileSep());
+        Log.getLogWriter().info("SS - clusterTestsJar : " + clusterTestsJar);
+        return clusterTestsJar;
+    }
+
     protected void getClientHostDescription() {
         hd = TestConfig.getInstance()
                 .getClientDescription(RemoteTestModule.getMyClientName())
@@ -299,7 +307,7 @@ public class SnappyTest implements Serializable {
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
                         " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar();// + ":" + getClusterTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
@@ -318,7 +326,7 @@ public class SnappyTest implements Serializable {
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        " -classpath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() /*+ ":" + getClusterTestsJar()*/ + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
                         SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -spark.driver.extraClassPath=" + getSnappyTestsJar() + ":" + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
                         getSnappyTestsJar() + ":" + getStoreTestsJar();
