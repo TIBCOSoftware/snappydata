@@ -119,7 +119,7 @@ object SparkShellRDDHelper extends Logging {
         isPartitioned)
       case _ => getBucketToServerMapping(resolvedName)
     }
-    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
+//    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
@@ -155,6 +155,10 @@ object SparkShellRDDHelper extends Logging {
     }
   }
 
+  /*
+  * Called when using smart connector mode that uses accessor
+  * to get SnappyData cluster info
+  **/
   private def getBucketToServerMapping(
       resolvedName: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
@@ -210,6 +214,11 @@ object SparkShellRDDHelper extends Logging {
     }
   }
 
+  /*
+   * Called when using connector mode that uses thin client connection
+   * to get SnappyData cluster info. This uses system procs to get
+   * information.
+  **/
   private def getBucketToServerMapping(connection: Connection, tableName: String,
       isPartitioned: Boolean): Array[ArrayBuffer[(String, String)]] = {
     if (isPartitioned) {
@@ -226,7 +235,6 @@ object SparkShellRDDHelper extends Logging {
       getReplicaNodes.registerOutParameter(2, java.sql.Types.CLOB)
       getReplicaNodes.execute
       val replicaNodesStr: String = getReplicaNodes.getString(2)
-      logInfo("sdeshmukh replicaNodesStr = " + replicaNodesStr)
       val allNetUrls = setReplicasToServerMappingInfo(replicaNodesStr)
       allNetUrls
     }

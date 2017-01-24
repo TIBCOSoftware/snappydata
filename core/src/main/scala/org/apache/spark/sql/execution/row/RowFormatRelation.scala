@@ -129,34 +129,6 @@ class RowFormatRelation(
     (rdd, Nil)
   }
 
-//  override lazy val numBuckets: Int = {
-//    SnappyContext.getClusterMode(_context.sparkContext) match {
-//      case ThinClientConnectorMode(_, _) => {
-//        val conn = connFactory()
-//        val rs = conn.createStatement().executeQuery(s"values sys.get_bucket_count('${_table}')")
-//        rs.next()
-//        val bucketCount = rs.getInt(1)
-//        rs.close()
-//        if (bucketCount > 0) bucketCount else 1
-//      }
-//      case _ => region match {
-//        case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-//        case _ => 1
-//      }
-//    }
-//  }
-//
-//  override def partitionColumns: Seq[String] = {
-//    region match {
-//      case pr: PartitionedRegion =>
-//        val resolver = pr.getPartitionResolver
-//            .asInstanceOf[GfxdPartitionByExpressionResolver]
-//        val parColumn = resolver.getColumnNames
-//        parColumn.toSeq
-//      case _ => Seq.empty[String]
-//    }
-//  }
-
   override lazy val (numBuckets, partitionColumns) = {
     SnappyContext.getClusterMode(_context.sparkContext) match {
       case ThinClientConnectorMode(_, _) => {

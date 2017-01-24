@@ -97,11 +97,15 @@ class BaseColumnFormatRelation(
     SnappyContext.getClusterMode(_context.sparkContext) match {
       case ThinClientConnectorMode(_, _) => {
         val conn = connFactory()
-        val rs = conn.createStatement().executeQuery(s"values sys.get_bucket_count('${_table}')")
-        rs.next()
-        val bucketCount = rs.getInt(1)
-        rs.close()
-        bucketCount
+        try {
+          val rs = conn.createStatement().executeQuery(s"values sys.get_bucket_count('${_table}')")
+          rs.next()
+          val bucketCount = rs.getInt(1)
+          rs.close()
+          if (bucketCount > 0) bucketCount else 1
+        } finally {
+          conn.close()
+        }
       }
       case _ => region.getTotalNumberOfBuckets
     }
@@ -149,7 +153,7 @@ class BaseColumnFormatRelation(
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
 //    val isPartitioned = region.getPartitionAttributes != null
-    val isPartitioned = (numBuckets != 0)
+    val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
