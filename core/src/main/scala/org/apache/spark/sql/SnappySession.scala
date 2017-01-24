@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -1014,16 +1014,19 @@ class SnappySession(@transient private val sc: SparkContext,
               }
             }
           case None =>
-            val r = DataSource(self,
+            val dataSource = DataSource(self,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
-              options = params).write(mode, data)
-            if (None != userSpecifiedSchema) {
-              (r, Some(userSpecifiedSchema.get))
-            } else {
-              (r, Some(r.schema))
+              options = params)
+            val clazz: Class[_] = dataSource.providingClass
+            val r = clazz.newInstance() match {
+              case schemaRelationProvider: SchemaRelationProvider =>
+                schemaRelationProvider.createRelation(sqlContext, new CaseInsensitiveMap(params)
+                  , userSpecifiedSchema.getOrElse(data.schema))
             }
+            dataSource.write(mode, data)
+            (r, Some(r.schema))
         }
     }
 
