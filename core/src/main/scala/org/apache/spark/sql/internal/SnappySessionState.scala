@@ -451,12 +451,20 @@ trait AltName[T] {
 trait SQLAltName[T] extends AltName[T] {
 
   private def get(conf: SQLConf, entry: SQLConfigEntry): T = {
-    conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
+    entry.defaultValue match {
+      case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
+      case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
+    }
+
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
-    configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+    }
+
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -474,7 +482,7 @@ trait SQLAltName[T] extends AltName[T] {
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
-    if (conf.contains(name)) Some(get(conf, name, ""))
+    if (conf.contains(name)) Some(get(conf, name, "<undefined>"))
     else defaultValue
   } else {
     if (conf.contains(name)) {
