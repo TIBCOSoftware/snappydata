@@ -79,19 +79,6 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     {
       (connection: Connection) => {
         super.doInsert(tableName, batch, batchId, partitionId)(connection)
-        connectionType match {
-          case ConnectionType.Embedded =>
-            val resolvedName = ExternalStoreUtils.lookupName(tableName,
-              connection.getSchema)
-            val region = Misc.getRegionForTable(resolvedName, true)
-            region.asInstanceOf[AbstractRegion] match {
-              case pr: PartitionedRegion =>
-                pr.asInstanceOf[PartitionedRegion]
-                    .getPrStats.incPRNumRowsInCachedBatches(batch.numRows)
-              case _ => // do nothing
-            }
-          case _ => // do nothing
-        }
       }
     }
   }

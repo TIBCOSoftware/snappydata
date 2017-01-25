@@ -197,6 +197,11 @@ object Property extends Enumeration {
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
+
+  val FlushReservoirThreshold = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
+    "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
+        " on baset table of size more than flushReservoirThreshold." +
+        " Default value is 10,000.", Some(10000L))
 }
 
 // extractors for properties
@@ -318,17 +323,7 @@ object JOS extends Enumeration {
   val IncludeGeneratedPaths = Value("includeGeneratedPaths")
 
   /**
-   * Applies replicated table with filter conditions in the given order of preference in
-   * 'joinOrder' query hint comma separated values.
-   *
-   * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
-   * will apply the rule in the mentioned order and rest of the rules will be skipped.
+   * Don't alter the join order provided by the user.
    */
-  val ReplicateWithFilters = Value("RWF")
-
-  val ColocatedWithFilters = Value("CWF")
-
-  val LargestColocationChain = Value("LCC")
-
-  val NonColocatedWithFilters = Value("NCWF")
+  val Fixed = Value("fixed")
 }
