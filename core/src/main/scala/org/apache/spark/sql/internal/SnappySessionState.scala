@@ -21,11 +21,9 @@ import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, OptionalConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
@@ -325,7 +323,12 @@ class SnappyConf(@transient val session: SnappySession)
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
     keyUpdateActions(entry.key, doSet = true)
-    super.setConf[T](entry, value)
+    require(entry != null, "entry cannot be null")
+    require(value != null, s"value cannot be null for key: ${entry.key}")
+    entry.defaultValue match {
+      case Some(_) => super.setConf(entry, value)
+      case None => super.setConf(entry.asInstanceOf[ConfigEntry[Option[T]]], Some(value))
+    }
   }
 
   override def unsetConf(key: String): Unit = {
