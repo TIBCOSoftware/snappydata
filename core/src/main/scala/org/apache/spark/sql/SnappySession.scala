@@ -39,20 +39,19 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.catalog.FunctionResource
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
-import org.apache.spark.sql.execution.command.{CreateFunctionCommand, DropFunctionCommand, ExecutedCommandExec}
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.{ExprCodeEx, HashingUtil, LogicalRDD, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -1432,30 +1431,6 @@ class SnappySession(@transient private val sc: SparkContext,
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }
-  }
-
-  def createFunction(functionName: String, className: String, isTemporary: Boolean): Unit = {
-    val tableIdent = this.sessionState.sqlParser.parseTableIdentifier(functionName)
-
-    val cmd =
-      CreateFunctionCommand(
-        tableIdent.database,
-        tableIdent.table,
-        className = className,
-        Seq.empty[FunctionResource],
-        isTemp = isTemporary)
-    this.sessionState.executePlan(cmd).toRdd
-  }
-
-  def dropFunction(functionName: String, isTemporary: Boolean, ignoreIfExists : Boolean): Unit = {
-    val tableIdent = this.sessionState.sqlParser.parseTableIdentifier(functionName)
-    val cmd =
-      DropFunctionCommand(
-        tableIdent.database,
-        tableIdent.table,
-        ifExists = ignoreIfExists,
-        isTemp = isTemporary)
-    this.sessionState.executePlan(cmd).toRdd
   }
 
   private def convertListToRow(row: java.util.ArrayList[_]): Row = {
