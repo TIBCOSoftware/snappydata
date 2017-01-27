@@ -760,7 +760,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     funcDefinition.resources.foreach { r =>
-      jarUtil.removeFromSparkJars(r.uri)
+      jarUtil.removeFromSparkJars(funcDefinition.identifier.toString(), r.uri)
     }
     jarUtil.removeDriverJar(qualifiedName.unquotedString)
   }

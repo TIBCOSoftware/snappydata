@@ -124,7 +124,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
   }
 
   //@TODO This test shsould pass once we support a single jar for multiple UDFs
-  def _testTwoUDFsDroppingOne(): Unit = {
+  def testTwoUDFsDroppingOne(): Unit = {
     val snSession = new SnappySession(sc)
     createTables(snSession)
 

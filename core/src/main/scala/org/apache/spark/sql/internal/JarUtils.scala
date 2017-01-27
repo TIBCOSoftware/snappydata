@@ -23,10 +23,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.scheduler.local.LocalSchedulerBackend
+import org.apache.spark.sql.collection.{ToolsCallbackInit}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.util.MutableURLClassLoader
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.util.{Utils, MutableURLClassLoader}
+import org.apache.spark.{SparkEnv, SparkFiles, Logging, SparkContext}
 
 /**
  * An utility class to store jar file reference with their individual classloaders. This is reflect class changes at driver side.
@@ -36,6 +38,8 @@ import org.apache.spark.{Logging, SparkContext}
  *
  */
 class ContextJarUtils(sparkContext: SparkContext) extends Logging{
+
+  val workingDir = new File(System.getProperty("user.dir"))
 
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
 
@@ -56,39 +60,56 @@ class ContextJarUtils(sparkContext: SparkContext) extends Logging{
 
   /**
    * This method will copy the given jar to Spark root directory and then it will add the same jar to Spark.
-   * This ensures class & jar isolation although it might be repeatitive.
+   * This ensures class & jar isolation although it might be repetitive.
    * @param prefix prefix to be given to the jar name
-   * @param path  original path of the jar/
+   * @param path  original path of the jar
    */
-  def addToSparkJars(prefix: String , path: String) {
-    logInfo("Adding jar to sc from driver loader" + path)
-    sparkContext.addJar(path)
-    //Setting the local property. Snappy Cluster executors will take appropriate actions
-    sparkContext.
-        setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, path)
-  }
+  def addToSparkJars(prefix: String, path: String) {
 
-  def removeFromSparkJars(path: String): Unit = {
-    def getName(path: String): String = new File(path).getName
-    val sc = SnappyContext.globalSparkContext
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      val localName = path.split("/").last
+      val changedFileName = s"${prefix}-${localName}"
 
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(path))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      //@TODO This is a temp workaround to fix SNAP-1133. sc.addedJar should be directly be accessible from here.
-      //May be due to scala version mismatch.
-      if (callbacks != null) {
-        logInfo(s"Removing ${path} from Spark Jars by Driver loader")
-        callbacks.removeAddedJar(sc, keyToRemove.head)
+      val changedFile = new File(workingDir, changedFileName)
+      if (!changedFile.exists()) {//After creation removeFromSparkJars() is the only place which can remove this jar
+        println("Adding jar to sc from driver loader" + path)
+        val newFile = callbacks.doFetchFile(path, workingDir, changedFileName)
+        sparkContext.addJar(newFile.getPath)
+        //Setting the local property. Snappy Cluster executors will take appropriate actions
+        sparkContext.
+            setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, newFile.getPath)
       }
+    }else{
+      sparkContext.addJar(path)
     }
-    //Remove the jar from all live executors.
-    org.apache.spark.sql.collection.Utils.mapExecutors(
-      sparkContext,
-      (_, _) => Seq(1).iterator
-    ).count
   }
 
+  def removeFromSparkJars(prefix: String, path: String): Unit = {
+    def getName(path: String): String = new File(path).getName
+
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      val localName = path.split("/").last
+      val changedFileName = s"${prefix}-${localName}"
+      val jarFile = new File(workingDir, changedFileName)
+
+      if (jarFile.exists()) {
+        jarFile.delete()
+      }
+
+      val keyToRemove = sparkContext.listJars().filter(getName(_) == getName(jarFile.getPath))
+      if (keyToRemove.nonEmpty) {
+        println(s"Removing ${path} from Spark Jars by Driver loader")
+        callbacks.removeAddedJar(sparkContext, keyToRemove.head)
+      }
+      //Remove the jar from all live executors.
+      org.apache.spark.sql.collection.Utils.mapExecutors(
+        sparkContext,
+        (_, _) => Seq(1).iterator
+      ).count
+    }
+  }
 }
 
 //@TODO To be implemented later

@@ -25,7 +25,8 @@ import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
 import spark.jobserver.util.ContextURLClassLoader
 
-import org.apache.spark.SparkContext
+import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.{SparkEnv, SparkContext}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 
 object SnappyUtils {
@@ -53,6 +54,18 @@ object SnappyUtils {
       parent: ContextURLClassLoader): ContextURLClassLoader = parent match {
     case _: SnappyContextURLLoader => parent // no double wrap
     case _ => new SnappyContextURLLoader(parent)
+  }
+
+  def doFetchFile(
+      url: String,
+      targetDir: File,
+      filename: String): File = {
+
+    val env = SparkEnv.get
+    val conf = env.conf
+    val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
+    org.apache.spark.util.Utils.doFetchFile(url, targetDir, filename, conf, env.securityManager, hadoopConf)
+    new File(targetDir, filename)
   }
 }
 
