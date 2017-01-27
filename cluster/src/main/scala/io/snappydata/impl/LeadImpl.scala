@@ -125,7 +125,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         }
         conf.set(key, v)
       })
-
+      // set spark ui port to 5050 that is snappy's default. 
+      conf.set("spark.ui.port",
+        bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 
       if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
         "false").equalsIgnoreCase("true")) {
@@ -476,6 +478,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
 object LeadImpl {
 
+  val SPARKUI_PORT = 5050
   val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
   private[this] val startingContext: AtomicReference[SparkContext] =
     new AtomicReference[SparkContext](null)
