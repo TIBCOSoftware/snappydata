@@ -1,5 +1,6 @@
 package org.apache.spark.sql
 
+import java.io.PrintWriter
 import java.util.TimeZone
 
 import io.snappydata.benchmark.snappy.{TPCH_Snappy, SnappyAdapter, TPCH}
@@ -44,7 +45,7 @@ object DistIndexTestUtils {
     b.run()
   }
 
-  def executeQueriesWithResultValidation(snc: SnappyContext): Unit ={
+  def executeQueriesWithResultValidation(snc: SnappyContext, pw: PrintWriter): Unit ={
     // scalastyle:off println
     val qryProvider = new TPCH with SnappyAdapter
 
@@ -76,12 +77,12 @@ object DistIndexTestUtils {
            |$results
        """.stripMargin
       }
-      println(s"Done $qNum")
+      pw.println(s"Done $qNum")
     }
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, existing)
   }
 
-  def executeQueriesForBenchmarkResults(snc: SnappyContext): Unit ={
+  def executeQueriesForBenchmarkResults(snc: SnappyContext, pw: PrintWriter): Unit ={
     val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11",
       "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
       "q20", "q21", "q22")
@@ -108,7 +109,7 @@ object DistIndexTestUtils {
       (tableName, snc.table(tableName).count())
     }.toMap
 
-    tableSizes.foreach(println)
+    tableSizes.foreach(pw.println)
     queries.foreach(q => benchmark(q, tableSizes, snc))
 
     snc.sql(s"DROP INDEX idx_orders_cust")

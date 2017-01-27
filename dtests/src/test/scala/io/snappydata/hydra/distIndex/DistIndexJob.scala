@@ -14,7 +14,12 @@ class DistIndexJob  extends SnappySQLJob {
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
     Try {
       pw.println("****** DistIndexJob started ******")
-      DistIndexTestUtils.executeQueriesWithResultValidation(snc)
+      pw.println("****** executeQueriesWithResultValidation task started ******")
+      DistIndexTestUtils.executeQueriesWithResultValidation(snc, pw)
+      pw.println("****** executeQueriesWithResultValidation task finished ******")
+      pw.println("****** executeQueriesForBenchmarkResults task started ******")
+      DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw)
+      pw.println("****** executeQueriesForBenchmarkResults task finished ******")
       pw.println("****** DistIndexJob finished ******")
       return String.format("See %s/" + jobConfig.getString("logFileName"), getCurrentDirectory)
     } match {
