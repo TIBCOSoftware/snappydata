@@ -26,12 +26,13 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeMap, AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins._
 import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatRelation
@@ -130,7 +131,7 @@ object RuleUtils extends PredicateHelper {
       val (tableJoinConditions, otherJoinConditions) = RuleUtils.partitionBy(joinRefs,
         finalPlan.conditions)
       val pTabOrIndex = RuleUtils.chooseIndexForFilter(table, tableFilters)
-      if (tableJoinConditions.nonEmpty || finalPlan.curPlan == null) {
+      if ((tableJoinConditions.toSet -- tableFilters.toSet).nonEmpty || finalPlan.curPlan == null) {
         val newPlan = finalPlan.copy(
           curPlan = RuleUtils.createJoin(finalPlan.curPlan, pTabOrIndex.map(_.index)
               .getOrElse(table),
@@ -156,6 +157,9 @@ object RuleUtils extends PredicateHelper {
       val joinRefs = finalPlan.outputSet ++ replacement.table.outputSet
       val (pTabJoinConditions, otherJoinConditions) = RuleUtils.partitionBy(joinRefs,
         finalPlan.conditions)
+      assert((pTabJoinConditions.toSet -- tableFilters.toSet).nonEmpty || finalPlan.curPlan == null,
+        s"joinConditions ${pTabJoinConditions.mkString(" && ")} " +
+            s"filterConditions ${tableFilters.mkString(" && ")}")
       val newPlan = finalPlan.copy(
         curPlan = RuleUtils.createJoin(finalPlan.curPlan, replacement.index, pTabJoinConditions),
         replaced = finalPlan.replaced ++ Some(replacement),
@@ -284,12 +288,22 @@ object Entity {
     )
   }.nonEmpty
 
+
+  def replaceAttribute(condition: Expression,
+      attributeMapping: Map[Attribute, Attribute]): Expression = {
+    condition.transformUp {
+      case a: Attribute =>
+        attributeMapping.find({
+          case (source, _) => source.exprId == a.exprId
+        }).map({ case (t, i) => i.withQualifier(t.qualifier) }).getOrElse(a)
+    }
+  }
 }
 
 object HasColocatedEntities {
 
   type ReturnType = (
-      Seq[(INDEX_RELATION, INDEX_RELATION)], Seq[ColocatedReplacements]
+      Seq[(INDEX_RELATION, INDEX_RELATION)], Seq[ReplacementSet]
       )
 
   def unapply(tables: (LogicalPlan, LogicalPlan))(implicit snappySession: SnappySession):
@@ -297,25 +311,25 @@ object HasColocatedEntities {
     val (left, right) = tables
 
     /** now doing a one-to-one mapping of lefttable and its indexes with
-      * right table and its indexes. Following example explains the combination
-      * generator.
-      *
-      * val l = Seq(1, 2, 3)
-      * val r = Seq(4, 5)
-      * l.zip(Seq.fill(l.length)(r)).flatMap {
-      * case (leftElement, rightList) => rightList.flatMap { e =>
-      * Seq((leftElement, e))
-      * }
-      * }.foreach(println)
-      * will output :
-      * (1, 4)
-      * (1, 5)
-      * (2, 4)
-      * (2, 5)
-      * (3, 4)
-      * (3, 5)
-      *
-      */
+     * right table and its indexes. Following example explains the combination
+     * generator.
+     *
+     * val l = Seq(1, 2, 3)
+     * val r = Seq(4, 5)
+     * l.zip(Seq.fill(l.length)(r)).flatMap {
+     * case (leftElement, rightList) => rightList.flatMap { e =>
+     * Seq((leftElement, e))
+     * }
+     * }.foreach(println)
+     * will output :
+     * (1, 4)
+     * (1, 5)
+     * (2, 4)
+     * (2, 5)
+     * (3, 4)
+     * (3, 5)
+     *
+     */
     val leftRightEntityMapping = for {
       (leftTable, leftIndexes) <- RuleUtils.fetchIndexes(snappySession, left)
       (rightTable, rightIndexes) <- RuleUtils.fetchIndexes(snappySession, right)
@@ -349,7 +363,7 @@ object HasColocatedEntities {
             Replacement(subquery, SubqueryAlias(alias, rightPlan))
         }
         ((leftRelation.get, rightRelation.get),
-            ColocatedReplacements(ArrayBuffer(leftReplacement, rightReplacement)))
+            ReplacementSet(ArrayBuffer(leftReplacement, rightReplacement), Seq.empty))
       }
     }
 
@@ -363,79 +377,169 @@ object HasColocatedEntities {
 }
 
 /**
-  * Table to table or Table to index replacement.
-  */
-case class Replacement(table: TABLE, index: INDEX) {
+ * Table to table or Table to index replacement.
+ */
+case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true)
+    extends PredicateHelper {
+
+  def isReplacable: Boolean = table != index
+
+
+  val indexAttributes = index.output.collect { case ar: AttributeReference => ar }
+
+  val tableToIndexAttributeMap = AttributeMap(table.output.map {
+    case f: AttributeReference =>
+      val newA = indexAttributes.find(_.name.equalsIgnoreCase(f.name)).
+          getOrElse(throw new IllegalStateException(
+            s"Field $f not found in ${indexAttributes}"))
+      (f, newA)
+    case a => throw new AssertionError(s"UnHandled Attribute ${a} in table" +
+        s" ${table.output.mkString(",")}")
+  })
+
+  private var _replacedEntity: LogicalPlan = null
+
   def numPartitioningCols: Int = index match {
     case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.partitionColumns.length
     case _ => 0
   }
 
-  override def toString: String = (
-      table match {
-        case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
-        case _ => table.toString()
-      }) + " ----> " + (
-      index match {
-        case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
-        case LogicalRelation(r: RowFormatRelation, _, _) => r.table
-        case _ => index.toString()
-      })
-}
-
-object Replacement {
-  implicit val replacementOrd = Ordering[(Int, BigInt)].reverse.on[Replacement] { r => (
-      r.index.asInstanceOf[LogicalRelation].relation.asInstanceOf[BaseColumnFormatRelation]
-          .partitionColumns.length, r.index.statistics.sizeInBytes)
+  override def toString: String = {
+    "" + (table match {
+      case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
+      case _ => table.toString()
+    }) + " ----> " +
+        (index match {
+          case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
+          case LogicalRelation(r: RowFormatRelation, _, _) => r.table
+          case _ => index.toString()
+        })
   }
+
+  def mappedConditions(conditions: Seq[Expression]): Seq[Expression] =
+    conditions.map(Entity.replaceAttribute(_, tableToIndexAttributeMap))
+
+  protected[sources] def replacedPlan(conditions: Seq[Expression]): LogicalPlan = {
+    if (_replacedEntity == null) {
+      val tableConditions = conditions.filter(canEvaluate(_, table))
+      _replacedEntity = if (tableConditions.isEmpty) {
+        index
+      } else {
+        plans.logical.Filter(mappedConditions(tableConditions).reduce(expressions.And), index)
+      }
+    }
+    _replacedEntity
+  }
+
+  def estimatedSize(conditions: Seq[Expression]): BigInt =
+    replacedPlan(conditions).statistics.sizeInBytes
+
 }
 
-case class ColocatedReplacements private(chains: ArrayBuffer[Replacement]) {
+/**
+ * A set of possible replacements of table to indexes.
+ * <br>
+ * <strong>Note:</strong> The chain if consists of multiple partitioned tables, they must satisfy
+ * colocation criteria.
+ *
+ * @param chain      Multiple replacements.
+ * @param conditions user provided join + filter conditions.
+ */
+case class ReplacementSet(chain: ArrayBuffer[Replacement],
+    conditions: Seq[Expression])
+    extends Ordered[ReplacementSet] with PredicateHelper {
+
+  lazy val bestJoinOrder: Seq[Replacement] = {
+    val (part, rep) = chain.partition(_.isPartitioned)
+    // pick minimum number of replicated tables required to fulfill colocated join order.
+    val feasibleJoinPlan = Seq.range(0, chain.length - part.length + 1).flatMap(elem =>
+      rep.combinations(elem).map(part ++ _).
+        flatMap(_.permutations).filter(hasJoinConditions)).filter(_.nonEmpty)
+
+    if(feasibleJoinPlan.isEmpty) {
+      Seq.empty
+    } else {
+      val all = feasibleJoinPlan.sortBy { jo =>
+        estimateSize(jo)
+      }(implicitly[Ordering[BigInt]].reverse)
+
+      all.head
+    }
+  }
+
+  lazy val bestPlanEstimatedSize = estimateSize(bestJoinOrder)
+
+  lazy val bestJoinOrderConditions = joinConditions(bestJoinOrder)
+
+  private def joinConditions(joinOrder: Seq[Replacement]) = {
+    val refs = joinOrder.map(_.table.outputSet).reduce(_ ++ _)
+    conditions.filter(_.references.subsetOf(refs))
+  }
+
+  private def estimateSize(joinOrder: Seq[Replacement]): BigInt = {
+    if (joinOrder.isEmpty) {
+      return BigInt(0)
+    }
+    var newConditions = joinConditions(joinOrder)
+    newConditions = joinOrder.foldLeft(newConditions) { case (nc, e) =>
+      e.mappedConditions(nc)
+    }
+
+    val sz = joinOrder.map(_.replacedPlan(conditions)).zipWithIndex.foldLeft(BigInt(0)) {
+      case (tot, (table, depth)) if depth == 2 => tot + table.statistics.sizeInBytes
+      case (tot, (table, depth)) => tot + (table.statistics.sizeInBytes * depth)
+    }
+
+    sz
+  }
+
+  private def hasJoinConditions(replacements: Seq[Replacement]): Boolean = {
+    replacements.sliding(2).forall(_.toList match {
+      case table1 :: table2 :: _ =>
+        RuleUtils.getJoinKeys(table1.table, table2.table, conditions).nonEmpty
+      case _ => false
+    })
+  }
 
   override def equals(other: Any): Boolean = other match {
-    case cr: ColocatedReplacements if chains.nonEmpty & cr.chains.nonEmpty =>
-      Entity.isColocated(chains(0).index, cr.chains(0).index)
+    case cr: ReplacementSet if chain.nonEmpty & cr.chain.nonEmpty =>
+      Entity.isColocated(chain(0).index, cr.chain(0).index)
     case _ => false
   }
 
-  def merge(current: ColocatedReplacements): ColocatedReplacements = {
-    current.chains.foreach { r =>
-      chains.find(_.index == r.index) match {
-        case None => chains += r
+  def merge(current: ReplacementSet): ReplacementSet = {
+    current.chain.foreach { r =>
+      chain.find(_.index == r.index) match {
+        case None => chain += r
         case _ =>
       }
     }
-    chains.sorted
     this
   }
 
-  def numPartitioningColumns: Int = chains.headOption.map(_.numPartitioningCols).getOrElse(0)
+  def numPartitioningColumns: Int = chain.headOption.map(_.numPartitioningCols).getOrElse(0)
 
-  def estimatedSize: BigInt = chains.map(_.index.statistics.sizeInBytes).sum
+  override def toString: String = chain.mkString("\n")
 
-  override def toString: String = chains.mkString("\n")
+  override def compare(that: ReplacementSet): Int =
+    bestJoinOrder.length compareTo that.bestJoinOrder.length match {
+      case 0 => // for equal length chain, sort by smallest size
+        bestPlanEstimatedSize compare that.bestPlanEstimatedSize match {
+          // in case sizes are same (like in unit test we made it equal) pick the greater one
+          case 0 => -(bestJoinOrderConditions.length compare that.bestJoinOrderConditions.length)
+          case r => r
+        }
+      case c => -c // sort by largest chain
+    }
 }
 
 /**
-  * Captures chain of colocated group of table -> index replacements.
-  */
-object ColocatedReplacements {
-
-  val empty: ColocatedReplacements = new ColocatedReplacements(ArrayBuffer.empty[Replacement])
-
-  implicit val colocatedRepOrd = Ordering[(Int, Int, BigInt)].reverse.on[ColocatedReplacements] {
-    rep => (rep.chains.length, rep.numPartitioningColumns, rep.estimatedSize)
-  }
-
-}
-
-/**
-  * This we have to copy from spark patterns.scala because we want handle single table with
-  * filters as well.
-  *
-  * This will have another advantage later if we decide to move our rule to the last instead of
-  * injecting just after ReorderJoin, whereby additional nodes like Project requires handling.
-  */
+ * This we have to copy from spark patterns.scala because we want handle single table with
+ * filters as well.
+ *
+ * This will have another advantage later if we decide to move our rule to the last instead of
+ * injecting just after ReorderJoin, whereby additional nodes like Project requires handling.
+ */
 object ExtractFiltersAndInnerJoins extends PredicateHelper {
 
   // flatten all inner joins, which are next to each other
@@ -466,26 +570,26 @@ object ExtractFiltersAndInnerJoins extends PredicateHelper {
 }
 
 trait SubPlan {
-  def currentColocatedGroup: ColocatedReplacements =
+  def currentColocatedGroup: ReplacementSet =
     throw new AnalysisException("Unexpected call")
 }
 
 case class PartialPlan(curPlan: LogicalPlan, replaced: Seq[Replacement], outputSet: AttributeSet,
     input: Seq[LogicalPlan],
     conditions: Seq[Expression],
-    colocatedGroups: Seq[ColocatedReplacements],
+    colocatedGroups: Seq[ReplacementSet],
     partitioned: Seq[LogicalPlan],
     replicates: Seq[LogicalPlan],
     others: Seq[LogicalPlan]) extends SubPlan {
   var curColocatedIndex = 0
 
-  override def currentColocatedGroup: ColocatedReplacements = colocatedGroups(curColocatedIndex)
+  override def currentColocatedGroup: ReplacementSet = colocatedGroups(curColocatedIndex)
 
   override def toString: String = if (curPlan != null) curPlan.toString() else "No Plan yet"
 
   /**
-    * Apply on multiple entities one by one validating common conditions.
-    */
+   * Apply on multiple entities one by one validating common conditions.
+   */
   def /:[A](plansToApply: Seq[A])
       (specializedHandling: PartialFunction[(PartialPlan, A), PartialPlan])
       (implicit snappySession: SnappySession): SubPlan = {

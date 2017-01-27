@@ -1020,7 +1020,11 @@ class SnappySession(@transient private val sc: SparkContext,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, data)
-            (r, Some(r.schema))
+            if (None != userSpecifiedSchema) {
+              (r, Some(userSpecifiedSchema.get))
+            } else {
+              (r, Some(r.schema))
+            }
         }
     }
 
@@ -1197,6 +1201,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
+    SnappySession.clearAllCache()
   }
 
   private[sql] def getIndexTable(
@@ -1247,6 +1252,7 @@ class SnappySession(@transient private val sc: SparkContext,
           s"No index found for $indexName")
       }
     }
+    SnappySession.clearAllCache()
   }
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {

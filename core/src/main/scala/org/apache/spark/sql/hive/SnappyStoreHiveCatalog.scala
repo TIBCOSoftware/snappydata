@@ -17,7 +17,7 @@
 package org.apache.spark.sql.hive
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -29,35 +29,33 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
-import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
-import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{NoSuchFunctionException, FunctionAlreadyExistsException, NoSuchPermanentFunctionException, FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPermanentFunctionException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.expressions.{ExpressionInfo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
+import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.collection.{Utils, ToolsCallbackInit}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.{UDFFunction, SQLConf}
+import org.apache.spark.sql.internal.{SQLConf, UDFFunction}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
-import org.apache.spark.util.{ChildFirstURLClassLoader, MutableURLClassLoader}
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
+import org.apache.spark.util.MutableURLClassLoader
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -80,6 +78,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   val sparkConf = snappySession.sparkContext.getConf
 
   private[sql] var client = metadataHive
+
+  val jarUtil = snappySession.sharedState.jarUtils
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -744,45 +744,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def addToSparkJars(resource: FunctionResource) {
-    println("Adding jar to sc " + resource.uri)
-    snappySession.sparkContext.addJar(resource.uri)
-    snappySession.sparkContext.
-        setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, resource.uri)
-  }
-
-  private def removeFromSparkJars(resource: FunctionResource): Unit = {
-    def getName(path: String): String = new File(path).getName
-    val sc = SnappyContext.globalSparkContext
-
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(resource.uri))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      //@TODO This is a temp workaround to fix SNAP-1133. sc.addedJar should be directly be accessible from here.
-      //May be due to scala version mismatch.
-      if(callbacks != null){
-        println(s"Removing ${resource.uri} from Spark Jars ")
-        callbacks.removeAddedJar(sc, keyToRemove.head)
-      }
-    }
-    //Remove the jar from all live executors.
-   org.apache.spark.sql.collection.Utils.mapExecutors(
-      snappySession.sqlContext,
-      () => Seq(1).iterator
-    ).count
-  }
-
-  val jarUtil = snappySession.sharedState.jarUtils
-
   private def addToFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     val urls = funcDefinition.resources.map { r =>
-      addToSparkJars(r)
+      jarUtil.addToSparkJars(funcDefinition.identifier.toString(), r.uri)
       toUrl(r)
     }
     val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    if(jarUtil.getEntityJar(qualifiedName.unquotedString).isEmpty){
-      jarUtil.addEntityJar(qualifiedName.unquotedString,
+    if(jarUtil.getDriverJar(qualifiedName.unquotedString).isEmpty){
+      jarUtil.addDriverJar(qualifiedName.unquotedString,
         new MutableURLClassLoader(urls.toArray, parentLoader))
     }
   }
@@ -790,16 +760,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     funcDefinition.resources.foreach { r =>
-      removeFromSparkJars(r)
+      jarUtil.removeFromSparkJars(r.uri)
     }
-    jarUtil.removeEntityJar(qualifiedName.unquotedString)
+    jarUtil.removeDriverJar(qualifiedName.unquotedString)
   }
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
     // If the name itself is not qualified, add the current database to it.
     val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
     val qualifiedName = name.copy(database = database)
-     jarUtil.getEntityJar(qualifiedName.unquotedString) match {
+     jarUtil.getDriverJar(qualifiedName.unquotedString) match {
       case Some(x) => {
         val catalogFunction = try {
           externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
@@ -815,7 +785,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = jarUtil.getEntityJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
+    val uRLClassLoader = jarUtil.getDriverJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
     val (actualClassName,typeName) = className.splitAt(className.lastIndexOf("__"))
     UDFFunction.makeFunctionBuilder(funcName,
       uRLClassLoader.loadClass(actualClassName),
@@ -896,7 +866,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // At here, we preserve the input from the user.
     val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
 
-    jarUtil.getEntityJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
+    jarUtil.getDriverJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
 
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
     createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)

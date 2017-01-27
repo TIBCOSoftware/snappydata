@@ -124,7 +124,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
   }
 
   //@TODO This test shsould pass once we support a single jar for multiple UDFs
-  def IGNORE_testTwoUDFsDroppingOne(): Unit = {
+  def _testTwoUDFsDroppingOne(): Unit = {
     val snSession = new SnappySession(sc)
     createTables(snSession)
 
@@ -171,19 +171,29 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
 object UserDefinedFunctionsDUnitTest {
 
-  val currDir: File = new File(System.getProperty("user.dir"))
+  val userDir = System.getProperty("user.dir")
+
+  val pathSeparator = File.pathSeparator
+
+  def destDir : File ={
+    val jarDir = new File(s"$userDir/jars")
+    if(!jarDir.exists()){
+      jarDir.mkdir()
+    }
+    jarDir
+  }
 
   def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
     new JavaSourceFromString(name, code)
   }
 
   def createUDFClass(name: String, code: String): File = {
-    TestUtils.createCompiledClass(name, currDir, getJavaSourceFromString(name, code), Seq.empty[URL])
+    TestUtils.createCompiledClass(name, destDir, getJavaSourceFromString(name, code), Seq.empty[URL])
   }
 
   def createJarFile(files: Seq[File]): String = {
-    val jarFile = new File(currDir, "testJar-%s.jar".format(System.currentTimeMillis()))
+    val jarFile = new File(destDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
-    jarFile.getName
+    jarFile.getPath
   }
 }
