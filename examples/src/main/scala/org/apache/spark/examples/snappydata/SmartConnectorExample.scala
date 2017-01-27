@@ -33,7 +33,7 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * This will start a simple cluster with one data node, one lead node and a locator
  *
  * 3.  Open Snappy Shell
- * ./bin/snappy-shell
+ * ./bin/snappy-sql
  * This will open Snappy shell which can be used to create and query tables.
  *
  * 4. Connect to the Snappy Cluster. On the shell prompt type

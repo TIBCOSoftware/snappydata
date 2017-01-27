@@ -94,10 +94,10 @@ For example to create a stream table using kafka source :
     // You can also save the DataFrames to an external table
     dStream.foreachDataFrame(_.write.insertInto(tableName))
 ```
-The streamTable created in above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
+The streamTable created in above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.
 
-##Stream SQL through Snappy-Shell
-Start a SnappyData cluster and connect through snappy-shell : 
+##Stream SQL through snappy-sql
+Start a SnappyData cluster and connect through snappy-sql :
  
     //create a connection
     snappy> connect client 'localhost:1527';
@@ -139,4 +139,4 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
 ## Dynamic(ad-hoc) Continuous queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
 
-## Continuous Queries through command line (Snappy-Shell)
+## Continuous Queries through command line (snappy-sql)
