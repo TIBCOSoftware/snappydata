@@ -14,6 +14,7 @@ Depending on your preference you can try any of the following options:
 
 <Note>Note: Support for Microsoft Azure will be provided in future releases</Note>
 
+<a id="getting-started-with-your-spark-distribution"></a>
 ##Option 1: Getting Started with your Spark Distribution
 
 If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
@@ -39,6 +40,7 @@ Tables in SnappyData exhibit many operational capabilities like disk persistence
 
 While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.
 
+<a id="getting-started-using-spark-scala-apis"></a>
 ##Option 2: Getting Started Using Spark Scala APIs
 
 **Create a SnappySession**: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
@@ -241,6 +243,7 @@ scala> :q // Quit the Spark Shell
 t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0.2 .
 </Note>
 
+<a id="getting-started-using-sql"></a> 
 ##Option 4: Getting Started using SQL
 
 We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
@@ -298,6 +301,7 @@ scala> :q //Quit the Spark Shell
 
 Now that we have seen the basic working of SnappyData tables, let us run the [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
+<a id="getting-started-by-installing-snappydata-on-premise"></a>
 ##Option 5: Getting Started by Installing SnappyData On-Premise
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
@@ -310,7 +314,7 @@ $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
 ```
 It opens a Spark Shell. All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**. Follow the steps mentioned [here](#Start_quickStart)
 
-
+<a id="getting-started-on-aws"></a>
 ##Option 6: Getting Started on AWS
 
 You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.
@@ -377,6 +381,7 @@ For more information, refer to the [Apache Zeppelin](aqp_aws#LoggingZeppelin) se
 * <Note> Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](install.md#EC2).</Note>
 * <Note>To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.</Note>
 
+<a id="getting-started-with-docker-image"></a>
 ##Option 7: Getting Started with Docker Image
 
 SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to easily try the quick start program and more, with SnappyData.
