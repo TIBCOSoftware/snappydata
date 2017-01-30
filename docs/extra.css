@@ -62,8 +62,6 @@ Defines the indetation for the navigation pane
   float: left;
 }
 
-
-
 /*
 Formatting for code snippets 
 */
@@ -105,6 +103,31 @@ note {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
+/*
+Formatting for Glossary Term
+*/
+
+glossary {
+    color: black;
+    font-size: 25px;
+    font-style: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+glossaryterm {
+    color: Blue;
+    font-size: 16px;
+    font-style: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+glossarytext {
+    color: black;
+    font-size: 14px;
+    font-style: normal;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
 /* Image Alignment - Center
 */
 img {
@@ -124,3 +147,4 @@ mark {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background-color: #f6f3d7;
 }
+

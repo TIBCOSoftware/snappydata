@@ -1,6 +1,6 @@
-site_name: SnappyData Documentation
+site_name: SnappyData GA RELEASE
 site_url: http://www.snappydata.io
-site_description: Project documentation for SnappyData
+site_description: Project documentation for SnappyData.
 site_author: SnappyData Team
 site_favicon: favicon.ico
 
@@ -14,13 +14,22 @@ pages:
 - Getting Started: quickstart.md
 - Download and Install: install.md
 - How Tos: howto.md
+- Best Practises: 'best_practises/best_practises.md'
 - Architecture: architecture.md
 - Configuring the Cluster: configuration.md
 - Programming Guide: programming_guide.md
+- Design Database and Schema: 'design_schema/design_schema.md'
+- Managing your Data: 'manage_data/manage_data.md'
 - Affinity Modes: deployment.md
 - Synopsis Data Engine (SDE): aqp.md
-- Using iSight-Cloud: aqp_aws.md
-- API: apidocsintro.md
+- Backup and Recovery: 'backup/backup.md'
+- Import and Export: 'import_export/import_export.md'
+- Troubleshooting and Analysis: 'troubleshooting/troubleshooting.md'
+- Appendix A-SQL Reference Guide: 'sql_reference/sql_reference.md'
+- Appendix B-API Reference Guide: 'api_reference/api_reference.md'
+- Appendix C-Using iSight-Cloud: aqp_aws.md
+- Appendix D-Performance Tuning Guide: 'performance_tuning/performance_tuning.md' 
+- Glossary: 'glossary/glossary.md'
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
@@ -29,6 +38,8 @@ pages:
 
 theme: readthedocs
 
+theme_dir: docs/custom_theme
+
 extra_css: [extra.css]
 
-copyright: Copyright &copy; 2016 SnappyData Inc.
+copyright: Copyright &copy; 2017 SnappyData Inc.
