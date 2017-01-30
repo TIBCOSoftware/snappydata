@@ -122,7 +122,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
               deletestmt.setInt(2, -1)
               deletestmt.executeUpdate()
             } catch {
-              case _ => // Do nothing
+              case _: Exception => // Do nothing
             }
 
             for (idx <- 1 to batch.buffers.size) {
@@ -131,7 +131,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
                 deletestmt.setInt(2, idx)
                 deletestmt.executeUpdate()
               } catch {
-                case _ => // Do nothing
+                case _: Exception => // Do nothing
               }
             }
             deletestmt.close()

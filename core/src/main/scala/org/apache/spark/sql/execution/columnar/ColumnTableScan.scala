@@ -201,7 +201,7 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
     // skip filtering if nothing is to be applied
     if (predicateEval.value == "true" && predicateEval.isNull == "false") {
-      return ""
+      return ("", "")
     }
     val filterFunction = ctx.freshName("columnBatchFilter")
     val getUnsafeRow = ctx.freshName("getUnsafeRow")
