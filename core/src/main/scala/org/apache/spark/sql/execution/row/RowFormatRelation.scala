@@ -22,8 +22,8 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.access.index.GfxdIndexManager
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
@@ -80,16 +80,29 @@ class RowFormatRelation(
   @transient private[this] lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
-  private[this] lazy val indexedColumns: mutable.HashSet[String] = {
+  private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
-    val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
-    if (im != null && im.getIndexConglomerateDescriptors != null) {
-      val baseColumns = im.getContainer.getTableDescriptor.getColumnNamesArray
-      val itr = im.getIndexConglomerateDescriptors.iterator()
-      while (itr.hasNext) {
-        // first column of index has to be present in filter to be usable
-        val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-        cols += baseColumns(indexCols(0) - 1)
+    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
+    val td = container.getTableDescriptor
+    if (td ne null) {
+      val baseColumns = td.getColumnNamesArray
+      val im = container.getIndexManager
+      if ((im ne null) && (im.getIndexConglomerateDescriptors ne null)) {
+        val itr = im.getIndexConglomerateDescriptors.iterator()
+        while (itr.hasNext) {
+          // first column of index has to be present in filter to be usable
+          val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
+          cols += baseColumns(indexCols(0) - 1)
+        }
+      }
+      // also add primary key
+      val primaryKey = td.getPrimaryKey
+      if (primaryKey ne null) {
+        // first column of primary key has to be present in filter to be usable
+        val pkCols = primaryKey.getKeyColumns
+        if (pkCols.nonEmpty) {
+          cols += baseColumns(pkCols(0) - 1)
+        }
       }
     }
     cols

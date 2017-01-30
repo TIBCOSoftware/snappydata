@@ -1222,6 +1222,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
+    SnappySession.clearAllCache()
   }
 
   private[sql] def getIndexTable(
@@ -1272,6 +1273,7 @@ class SnappySession(@transient private val sc: SparkContext,
           s"No index found for $indexName")
       }
     }
+    SnappySession.clearAllCache()
   }
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
