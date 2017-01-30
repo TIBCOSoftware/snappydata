@@ -21,13 +21,15 @@ import java.util.Properties
 
 import scala.language.postfixOps
 
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.core.TestData2
+import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
-import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
-import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -38,6 +40,8 @@ class SplitSnappyClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+    SplitSnappyClusterDUnitTest.batchSize.toString)
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   val currenyLocatorPort = ClusterManagerTestBase.locPort
   override protected val productDir =
@@ -90,8 +94,6 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
   }
-
-
   def testColumnTableStatsInSplitMode(): Unit = {
     startNetworkServers(3)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
@@ -100,6 +102,84 @@ class SplitSnappyClusterDUnitTest(s: String)
         "5")
   }
 
+  def testBatchSize(): Unit = {
+    doTestBatchSize
+  }
+
+  def doTestBatchSize(): Unit = {
+    startNetworkServers(3)
+    val snc = SnappyContext(sc)
+    val tblBatchSizeSmall = "APP.tblBatchSizeSmall_embedded"
+    val tblSizeBig = "APP.tblBatchSizeBig_embedded"
+    val tblBatchSizeBig_split = "APP.tblBatchSizeBig_split"
+    val tblBatchSizeSmall_split = "APP.tblBatchSizeSmall_split"
+
+    snc.sql(s"drop table if exists $tblBatchSizeSmall")
+    snc.sql(s"drop table if exists $tblSizeBig")
+    snc.sql(s"drop table if exists $tblBatchSizeBig_split")
+    snc.sql(s"drop table if exists $tblBatchSizeSmall_split")
+
+    snc.sql(s"CREATE TABLE $tblBatchSizeSmall(Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '10')")
+
+    snc.sql(s"CREATE TABLE $tblSizeBig (Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '10000')")
+
+    val rdd = sc.parallelize(
+      (1 to 100000).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tblBatchSizeSmall)
+    dataDF.write.insertInto(tblSizeBig)
+
+    // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "splitModeTableCreate",
+      startArgs :+ locatorProperty)
+
+    assert(getShadowRegionSize(tblBatchSizeSmall) > 10,
+      s"Expected batches should be greater than " +
+        s"10 but are ${getShadowRegionSize(tblBatchSizeSmall)}")
+    assert(getShadowRegionSize(tblSizeBig) > 0, s"Expected batches should be greater than " +
+        s"0 but are ${getShadowRegionSize(tblSizeBig)}")
+    assert(getShadowRegionSize(tblSizeBig) < 10, s"Expected batches should be less than " +
+        s"10 but are ${getShadowRegionSize(tblSizeBig)}")
+
+    assert(getShadowRegionSize(tblBatchSizeSmall_split) > 10,
+      s"Expected batches should be greater than " +
+        s"10 but are ${getShadowRegionSize(tblBatchSizeSmall_split)}")
+
+    assert(getShadowRegionSize(tblBatchSizeBig_split) > 0,
+      s"Expected batches should be greater than " +
+        s"0 but are ${getShadowRegionSize(tblBatchSizeBig_split)}")
+
+    assert(getShadowRegionSize(tblBatchSizeBig_split) < 10,
+      s"Expected batches should be less than " +
+          s"10 but are ${getShadowRegionSize(tblBatchSizeBig_split)}")
+
+    logInfo("Test Completed Successfully")
+  }
+
+  def getRegionSize(tbl: String) : Long = {
+    Misc.getRegionForTable(tbl.toUpperCase,
+      true).asInstanceOf[PartitionedRegion].size()
+
+  }
+
+  def getShadowRegionSize(tbl: String) : Long = {
+    Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName(tbl).toUpperCase,
+      true).asInstanceOf[PartitionedRegion].size()
+
+  }
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
     startNetworkServers(3)
@@ -153,7 +233,6 @@ object SplitSnappyClusterDUnitTest
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
-    context.getConf.set(SQLConf.COLUMN_BATCH_SIZE.key, batchSize.toString)
     context
   }
 
@@ -330,6 +409,47 @@ object SplitSnappyClusterDUnitTest
     logInfo("Successful")
   }
 
+  def splitModeTableCreate(locatorPort: Int,
+      prop: Properties, locatorProp: String): Unit = {
+    val tblBatchSize100 = "tblBatchSizeBig_split"
+
+    val tblBatchSize5 = "tblBatchSizeSmall_split"
+
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
+    snc.sql(s"CREATE TABLE $tblBatchSize5(Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '10')")
+
+    snc.sql(s"CREATE TABLE $tblBatchSize100 (Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '10000')")
+
+    val rdd = sc.parallelize(
+      (1 to 100000).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tblBatchSize5)
+    dataDF.write.insertInto(tblBatchSize100)
+  }
 
   def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
       locatorProp: String, buckets: String): Unit = {

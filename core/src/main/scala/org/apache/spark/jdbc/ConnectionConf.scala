@@ -129,7 +129,7 @@ class ConnectionConfBuilder(session: SnappySession) {
       connSettings.put("poolProperties", poolProperties)
     }
 
-    val connProps = ExternalStoreUtils.validateAndGetAllProps(session.sparkContext,
+    val connProps = ExternalStoreUtils.validateAndGetAllProps(Some(session.sparkContext),
       new CaseInsensitiveMutableHashMap(connSettings))
     new ConnectionConf(connProps)
   }
