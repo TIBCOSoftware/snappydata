@@ -368,7 +368,6 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob4(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
 
     snc.sql(s"CREATE TABLE $tableNameWithPartition" +
         s"(Key1 INT ,Value STRING, other1 STRING, other2 STRING )" +
@@ -376,7 +375,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "REDUNDANCY '2')")
+        "REDUNDANCY '2', COLUMN_BATCH_SIZE '4')")
 
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
       Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
@@ -422,7 +421,6 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def startSparkJob5(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 4")
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
       Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
     1 to 1000 foreach { _ =>
@@ -432,7 +430,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       s(1), s(2), s(3)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createTable(tableNameWithPartition, "column", dataDF.schema, props)
+    snc.createTable(tableNameWithPartition, "column", dataDF.schema,
+      props + ("COLUMN_BATCH_SIZE" -> "4"))
 
     data.map { r =>
       snc.insert(tableNameWithPartition, Row.fromSeq(r))
@@ -462,11 +461,9 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
-    println("spark.sql.inMemoryColumnarStorage.batchSize " +
-        sc.getConf.get("spark.sql.inMemoryColumnarStorage.batchSize"))
-
+    
     val regionSize = region.size() +
-        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()
+        region.getColumnBatchSize * shadowRegion.size()
     assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
