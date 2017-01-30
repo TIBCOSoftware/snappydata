@@ -13,6 +13,7 @@ class DistIndexJob  extends SnappySQLJob {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
     Try {
+      snc.sql("set spark.sql.crossJoin.enabled = true")
       pw.println("****** DistIndexJob started ******")
       pw.println("****** executeQueriesWithResultValidation task started ******")
       DistIndexTestUtils.executeQueriesWithResultValidation(snc, pw)
