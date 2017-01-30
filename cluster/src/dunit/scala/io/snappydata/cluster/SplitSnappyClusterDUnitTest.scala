@@ -27,8 +27,10 @@ import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
+import org.apache.spark.sql.{SplitClusterMode, ThinClientConnectorMode, SnappySession, SaveMode, SnappyContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+
+import org.apache.log4j.{Level, Logger}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -39,11 +41,15 @@ class SplitSnappyClusterDUnitTest(s: String)
     with Serializable {
 
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
+
   val currenyLocatorPort = ClusterManagerTestBase.locPort
+
   override protected val productDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override protected val locatorProperty = "snappydata.store.locators"
+
+  override protected val useThinClientConnector = false
 
   override def beforeClass(): Unit = {
     super.beforeClass()
@@ -55,13 +61,17 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "stopSparkCluster", productDir)
   }
 
+  override protected def locatorClientPort = { locatorNetPort }
+
   override protected def startNetworkServers(num: Int): Unit = {
     if (num > 3 || num < 1) {
       throw new IllegalArgumentException(
         s"unexpected number of network servers to start: $num")
     }
+
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
+
     if (num > 1) {
       vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
         AvailablePortHelper.getRandomAvailableTCPPort)
@@ -81,30 +91,32 @@ class SplitSnappyClusterDUnitTest(s: String)
     startNetworkServers(3)
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
-        "PR_TABLE1" :+ "PR_TABLE2")
+        "PR_TABLE1" :+ "PR_TABLE2" :+ Boolean.box(useThinClientConnector) :+
+        Int.box(locatorClientPort))
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
     startNetworkServers(3)
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
-        "PR_TABLE3" :+ "PR_TABLE4")
+        "PR_TABLE3" :+ "PR_TABLE4" :+ Boolean.box(useThinClientConnector) :+
+        Int.box(locatorClientPort))
   }
 
 
   def testColumnTableStatsInSplitMode(): Unit = {
     startNetworkServers(3)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
-        "1")
+        "1" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
-        "5")
+        "5" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
   }
 
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
     startNetworkServers(3)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
-        "1")
+        "1" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     val props = bootProps
     val port = currenyLocatorPort
 
@@ -131,7 +143,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     //Test using using 5 buckets
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
-        "5")
+        "5" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats2 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
@@ -307,22 +319,10 @@ object SplitSnappyClusterDUnitTest
 
 
   def checkCollocatedJoins(locatorPort: Int, prop: Properties,
-      locatorProp: String, table1: String, table2: String): Unit = {
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
-    System.setProperty(locatorProp, s"localhost:$locatorPort")
-    val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf()
-        .setAppName("test Application")
-        .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-        .set("spark.testing.reservedMemory", "0")
-        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
-
-
-    val sc = SparkContext.getOrCreate(conf)
-    val snc = SnappyContext(sc)
+      locatorProp: String, table1: String, table2: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort,
+      locatorProp, useThinConnectorMode = useThinClientConnector, locatorClientPort)
 
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
@@ -330,25 +330,67 @@ object SplitSnappyClusterDUnitTest
     logInfo("Successful")
   }
 
+  /**
+   * Returns the SnappyContext for external(compute) Spark cluster connected to
+   * SnappyData cluster using the locator property
+   */
+  override def getSnappyContextForComputeCluster(locatorPort: Int, locatorProp: String,
+      useThinConnectorMode: Boolean, locatorClientPort: Int): SnappyContext = {
+    val hostName = InetAddress.getLocalHost.getHostName
+    if (!useThinConnectorMode) {
+      // Test setting locators property via environment variable.
+      // Also enables checking for "spark." or "snappydata." prefix in key.
+      System.setProperty(locatorProp, s"localhost:$locatorPort")
+      val conf = new SparkConf()
+          .setAppName("test Application")
+          .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.extraClassPath",
+            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          .set("spark.testing.reservedMemory", "0")
+          .set("spark.sql.autoBroadcastJoinThreshold", "-1")
+
+      val sc = SparkContext.getOrCreate(conf)
+      val snc = SnappyContext(sc)
+
+      val mode = SnappyContext.getClusterMode(snc.sparkContext)
+      mode match {
+        case SplitClusterMode(_, _) => //expected
+        case _ => assert(false , "cluster mode is " + mode)
+      }
+      snc
+    } else {
+      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+      val conf = new SparkConf()
+          .setAppName("test Application")
+          .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.extraClassPath",
+            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          .set("spark.testing.reservedMemory", "0")
+          .set("spark.sql.autoBroadcastJoinThreshold", "-1")
+          .set("snappydata.ClusterURL", connectionURL)
+      conf.getAll.foreach(println)
+
+      val sc = SparkContext.getOrCreate(conf)
+      sc.setLogLevel("DEBUG")
+      Logger.getLogger("org").setLevel(Level.DEBUG)
+      Logger.getLogger("akka").setLevel(Level.DEBUG)
+      val snc = SnappyContext(sc)
+
+      val mode = SnappyContext.getClusterMode(snc.sparkContext)
+      mode match {
+        case ThinClientConnectorMode(_, _) => //expected
+        case _ => assert(false , "cluster mode is " + mode)
+      }
+
+      snc
+    }
+  }
 
   def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
-      locatorProp: String, buckets: String): Unit = {
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
-    System.setProperty(locatorProp, s"localhost:$locatorPort")
-    val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf()
-        .setAppName("test Application")
-        .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-        .set("spark.testing.reservedMemory", "0")
-        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
-
-
-    val sc = SparkContext.getOrCreate(conf)
-    val snc = SnappyContext(sc)
-
+      locatorProp: String, buckets: String, useThinClientConnector: Boolean,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort, locatorProp,
+      useThinConnectorMode = useThinClientConnector, locatorClientPort)
 
     snc.sql("drop table if exists snappyTable")
     snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +

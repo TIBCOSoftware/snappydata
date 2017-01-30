@@ -33,9 +33,11 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql.{ThinClientConnectorMode, SplitClusterMode, AnalysisException, SnappyContext}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+
+import org.apache.log4j.{Level, Logger}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -60,6 +62,10 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def locatorProperty: String
 
+  protected def useThinClientConnector: Boolean
+
+  protected def locatorClientPort: Int
+
   protected def startNetworkServers(num: Int): Unit
 
   protected def batchSize = testObject.batchSize
@@ -76,18 +82,19 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty)
+      startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty
+     :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
 
     // make sure that table dropped from external cluster is not cached
     // in catalog of embedded mode cluster
-    testObject.assertTableNotCachedInHiveCatalog("APP.EMBEDDEDMODETABLE1")
+//    testObject.assertTableNotCachedInHiveCatalog("APP.EMBEDDEDMODETABLE1")
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = false, props)
 
     // make sure that table dropped from embedded cluster is not cached
     // in catalog of external cluster
-    vm3.invoke(getClass, "assertTableNotCachedInHiveCatalog", "APP.SPLITMODETABLE1")
+//    vm3.invoke(getClass, "assertTableNotCachedInHiveCatalog", "APP.SPLITMODETABLE1")
 
     logInfo("Test Completed Successfully")
   }
@@ -104,7 +111,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "row" :+ Boolean.box(false) :+ props :+ locatorProperty)
+      startArgs :+ "row" :+ Boolean.box(false) :+ props :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("row", isComplex = false, props)
@@ -125,7 +133,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "column" :+ Boolean.box(true) :+ props :+ locatorProperty)
+      startArgs :+ "column" :+ Boolean.box(true) :+ props :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = true, props)
@@ -163,20 +172,11 @@ trait SplitClusterDUnitTestObject extends Logging {
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
       prop: Properties, tableType: String, isComplex: Boolean,
-      props: Map[String, String], locatorProp: String): Unit = {
+      props: Map[String, String], locatorProp: String,
+      useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
 
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
-    System.setProperty(locatorProp, s"localhost:$locatorPort")
-    val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf()
-        .setAppName("test Application")
-        .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-
-    val sc = SparkContext.getOrCreate(conf)
-    val snc = SnappyContext(sc)
+    val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort, locatorProp,
+      useThinConnectorMode, locatorClientPort)
 
     snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
 
@@ -220,6 +220,58 @@ trait SplitClusterDUnitTestObject extends Logging {
     selectFromTable(snc, "splitModeTable1", 1005, expected)
 
     logInfo("Successful")
+  }
+
+  /**
+   * Returns the SnappyContext for external(compute) Spark cluster connected to
+   * SnappyData cluster
+   */
+  def getSnappyContextForComputeCluster(locatorPort: Int, locatorProp: String,
+      useThinConnectorMode: Boolean, locatorClientPort: Int): SnappyContext = {
+    val hostName = InetAddress.getLocalHost.getHostName
+
+
+    if (!useThinConnectorMode) {
+      // Test setting locators property via environment variable.
+      // Also enables checking for "spark." or "snappydata." prefix in key.
+      System.setProperty(locatorProp, s"localhost:$locatorPort")
+      val conf = new SparkConf()
+          .setAppName("test Application")
+          .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.extraClassPath",
+            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+
+      val sc = SparkContext.getOrCreate(conf)
+      val snc = SnappyContext(sc)
+
+      val mode = SnappyContext.getClusterMode(snc.sparkContext)
+      mode match {
+        case SplitClusterMode(_, _) => //expected
+        case _ => assert(false , "cluster mode is " + mode)
+      }
+      snc
+    } else {
+      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+      val conf = new SparkConf()
+          .setAppName("test Application")
+          .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.extraClassPath",
+            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          .set("snappydata.ClusterURL", connectionURL)
+
+      val sc = SparkContext.getOrCreate(conf)
+      sc.setLogLevel("DEBUG")
+      Logger.getLogger("org").setLevel(Level.DEBUG)
+      Logger.getLogger("akka").setLevel(Level.DEBUG)
+      val snc = SnappyContext(sc)
+
+      val mode = SnappyContext.getClusterMode(snc.sparkContext)
+      mode match {
+        case ThinClientConnectorMode(_, _) => //expected
+        case _ => assert(false , "cluster mode is " + mode)
+      }
+      snc
+    }
   }
 
   def createTableUsingDataSourceAPI(snc: SnappyContext,

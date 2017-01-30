@@ -119,7 +119,7 @@ object SparkShellRDDHelper extends Logging {
         isPartitioned)
       case _ => getBucketToServerMapping(resolvedName)
     }
-//    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
+    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
@@ -235,31 +235,10 @@ object SparkShellRDDHelper extends Logging {
       getReplicaNodes.registerOutParameter(2, java.sql.Types.CLOB)
       getReplicaNodes.execute
       val replicaNodesStr: String = getReplicaNodes.getString(2)
+      logInfo("SparkShellRDDHelper.getBucketToServerMapping: GET_INITIALIZED_REPLICAS returned " + replicaNodesStr)
       val allNetUrls = setReplicasToServerMappingInfo(replicaNodesStr)
       allNetUrls
     }
-  }
-
-  private def setReplicasToServerMappingInfo(replicaNodesStr: String): Array[ArrayBuffer[(String, String)]]  = {
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
-    // no query routing or load-balancing
-    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-        ClientAttribute.LOAD_BALANCE + "=false"
-    val arr = replicaNodesStr.split("\\|")
-    if (arr(0).toInt > 0) {
-      val hosts = arr(1).split(";")
-      val allNetUrls = new Array[ArrayBuffer[(String, String)]](arr(0).toInt)
-      var i = 0
-      for (host <- hosts) {
-        val hostAddressPort = returnHostPortFromServerString(arr(1))
-        val netUrls = ArrayBuffer.empty[(String, String)]
-        netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
-        allNetUrls(i) = netUrls
-        i += 1
-      }
-     return allNetUrls
-    }
-    Array.empty
   }
 
   private def setBucketToServerMappingInfo(bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
@@ -269,11 +248,13 @@ object SparkShellRDDHelper extends Logging {
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
       val arr: Array[String] = bucketToServerMappingStr.split(":")
+      val orphanBuckets = ArrayBuffer.empty[Int]
       val noOfBuckets = arr(0).toInt
 //    val redundancy = arr(1).toInt
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](noOfBuckets)
       val bucketsServers: String = arr(2)
       val newarr: Array[String] = bucketsServers.split("\\|")
+      val availableNetUrls = ArrayBuffer.empty[(String, String)]
       for (x <- newarr) {
         val aBucketInfo: Array[String] = x.split(";")
         val bid: Int = aBucketInfo(0).toInt
@@ -283,7 +264,46 @@ object SparkShellRDDHelper extends Logging {
           val netUrls = ArrayBuffer.empty[(String, String)]
           netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
           allNetUrls(bid) = netUrls
+          for (e <- netUrls) {
+            if (!availableNetUrls.contains(e)) {
+              availableNetUrls += e
+            }
+          }
+        } else {
+          // Save the bucket which does not have a neturl,
+          // and later assign available ones to it.
+          orphanBuckets += bid
         }
+      }
+      for (bucket <- orphanBuckets) {
+        allNetUrls(bucket) = availableNetUrls
+      }
+      return allNetUrls
+    }
+    Array.empty
+  }
+
+  private def setReplicasToServerMappingInfo(replicaNodesStr: String): Array[ArrayBuffer[(String, String)]]  = {
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    // no query routing or load-balancing
+    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+        ClientAttribute.LOAD_BALANCE + "=false"
+//    val arr = replicaNodesStr.split("\\|")
+    val arr = replicaNodesStr.split(";")
+    // last element of array indicates no of replicas
+    val numReplicas = arr(arr.length - 1).toInt
+    if (numReplicas > 0) {
+      // remove the last element(numReplicas)
+      val hostInfo = arr.dropRight(1)
+      hostInfo.foreach( h => logInfo("" + h))
+      val allNetUrls = new Array[ArrayBuffer[(String, String)]](numReplicas)
+      var i = 0
+      for (host <- hostInfo) {
+        val hostAddressPort = returnHostPortFromServerString(arr(1))
+        val netUrls = ArrayBuffer.empty[(String, String)]
+        netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+        allNetUrls(i) = netUrls
+        i += 1
       }
       return allNetUrls
     }
@@ -309,8 +329,9 @@ object SparkShellRDDHelper extends Logging {
     } else {
       val host: String = matcher.group(1)
       val addr: String = matcher.group(2)
+      val address = if (addr.charAt(0) == '/') addr.drop(1) else addr
       val portStr: String = matcher.group(3)
-      (addr, host, portStr)
+      (address, host, portStr)
     }
   }
 

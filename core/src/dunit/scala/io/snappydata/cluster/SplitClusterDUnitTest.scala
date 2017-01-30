@@ -34,7 +34,7 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import org.junit.Assert
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{SparkConf, SparkContext}
@@ -78,6 +78,10 @@ class SplitClusterDUnitTest(s: String)
   // see comments in SNAP-606 about Apache Spark filtering out "spark.*"
   // properties for this, so fails with just "snappydata." prefix
   override protected val locatorProperty = "spark.snappydata.store.locators"
+
+  override protected val useThinClientConnector = false
+
+  override protected def locatorClientPort = { testObject.locatorNetPort }
 
   override def beforeClass(): Unit = {
     super.beforeClass()
