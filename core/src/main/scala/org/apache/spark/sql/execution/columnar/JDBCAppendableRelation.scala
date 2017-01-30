@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -151,6 +152,18 @@ case class JDBCAppendableRelation(
     externalStore.storeCachedBatch(table, batch)
   }
 
+  def getCachedBatchParams: (Integer, Boolean) = {
+    val columnBatchSize = origOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+      case Some(cb) => Integer.parseInt(cb)
+      case None => ExternalStoreUtils.getDefaultCachedBatchSize()
+    }
+    val useCompression = origOptions.get(ExternalStoreUtils.USE_COMPRESSION) match {
+      case Some(uc) => java.lang.Boolean.parseBoolean(uc)
+      case None => true
+    }
+    (columnBatchSize, useCompression)
+  }
+
   protected def insert(rdd: RDD[InternalRow], df: DataFrame,
       overwrite: Boolean): Unit = {
 
@@ -158,10 +171,7 @@ case class JDBCAppendableRelation(
     if (overwrite) {
       truncate()
     }
-
-    val useCompression = sqlContext.conf.useCompression
-    val columnBatchSize = sqlContext.conf.columnBatchSize
-
+    val (columnBatchSize, useCompression) = getCachedBatchParams
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserve(rowIterator => {
 
@@ -174,7 +184,6 @@ case class JDBCAppendableRelation(
 
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
         schema, cachedBatchAggregate)
-
       rowIterator.foreach(holder.appendRow)
       holder.forceEndOfBatch()
       Iterator.empty
@@ -300,7 +309,7 @@ case class JDBCAppendableRelation(
 
 object JDBCAppendableRelation extends Logging {
 
-  private[sql] final def cachedBatchTableName(table: String): String = {
+   private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
     } else {
@@ -319,30 +328,37 @@ class ColumnarRelationProvider extends SchemaRelationProvider
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 
     val connectionProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
+    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
       forManagedTable = false)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties,
       partitions)
-
+    val tableName = SnappyStoreHiveCatalog
+        .processTableIdentifier(table, sqlContext.conf)
     var success = false
-    val relation = new JDBCAppendableRelation(SnappyStoreHiveCatalog
-        .processTableIdentifier(table, sqlContext.conf),
+    val relation = new JDBCAppendableRelation(tableName,
       getClass.getCanonicalName, mode, schema, options,
       externalStore, sqlContext)
     try {
       relation.createTable(mode)
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), Some(relation.schema),
+        Array.empty[String], classOf[execution.columnar.DefaultSource].getCanonicalName,
+        options, relation)
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -373,6 +389,9 @@ class ColumnarRelationProvider extends SchemaRelationProvider
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -383,7 +402,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
       options: Map[String, String]): ColumnarRelationProvider = {
 
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val clazz = JdbcDialects.get(url) match {
       case _: GemFireXDBaseDialect =>
         DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
