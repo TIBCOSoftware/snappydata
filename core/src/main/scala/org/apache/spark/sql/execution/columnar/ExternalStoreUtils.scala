@@ -156,13 +156,13 @@ object ExternalStoreUtils {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
         // Already connected to SnappyData in embedded mode.
-        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0,skip-constraint-checks=true"
       case SplitClusterMode(_, _) =>
-        ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
+        ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false,skip-constraint-checks=true"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
-        Constant.DEFAULT_EMBEDDED_URL + ';' + url
+        Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
       case ExternalClusterMode(_, url) =>
         throw new AnalysisException("Option 'url' not specified for cluster " +
             url)
@@ -222,12 +222,14 @@ object ExternalStoreUtils {
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
+
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
         true
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty("route-query", "false")
         executorConnProps.setProperty("route-query", "false")
+
         false
       case d: JdbcExtendedDialect =>
         d.addExtraDriverProperties(isLoner, connProps)

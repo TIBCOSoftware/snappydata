@@ -69,18 +69,34 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
         "PARTITION_BY 'Key1'," +
         "BUCKETS '1')")
 
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
-    assert(r.length == 0)
+    //val r = result.collect
+    //assert(r.length == 0)
 
-    val rdd = sc.parallelize(
-      (1 to 1000).map(i => TestData(i, i.toString)))
-
-    val dataDF = snc.createDataFrame(rdd)
-
+    var rdd = sc.parallelize(
+      (1 to 10).map(i => TestData(i, i.toString)))
+    var rd2 = rdd.repartition(1)
+    val dataDF = snc.createDataFrame(rd2)
     dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    val t = new Thread(new Runnable() {
+      override def run(): Unit = {
+        rdd = sc.parallelize(
+          (11 to 20).map(i => TestData(i, i.toString)))
+        rd2 = rdd.repartition(1)
+        val dataDF = snc.createDataFrame(rd2)
+        dataDF.write.insertInto(tableName)
+        val result = snc.sql("SELECT * FROM " + tableName)
+        val r2 = result.collect
+
+        assert(r2.length == 20)
+      }
+    })
+    t.start()
+    t.join()
+
     val r2 = result.collect
-    assert(r2.length == 1000)
+    assert(r2.length == 20)
     println("Successful")
   }
 
@@ -92,7 +108,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
         "USING column " +
         "options " +
         "(" +
-        "BUCKETS '100')")
+        "BUCKETS '1')")
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect

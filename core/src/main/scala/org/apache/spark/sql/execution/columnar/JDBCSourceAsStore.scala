@@ -25,7 +25,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 
-import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
+import com.gemstone.gemfire.internal.cache.{TXId, NonLocalRegionEntry, OffHeapRegionEntry}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 
@@ -228,8 +228,8 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 }
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
+    bucketIds: java.util.Set[Integer], txId: TXId)
+    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds, txId) {
 
   assert(!container.isOffHeap,
     s"Unexpected byte[][] iterator call for off-heap $container")
@@ -255,9 +255,9 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 }
 
 final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
+    bucketIds: java.util.Set[Integer], txId: TXId)
     extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
-      bucketIds) {
+      bucketIds, txId) {
 
   assert(container.isOffHeap,
     s"Unexpected off-heap iterator call for on-heap $container")

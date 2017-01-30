@@ -24,13 +24,13 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{TXState, GemFireCacheImpl, TXId, CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedResultSet}
 import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
@@ -169,7 +169,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val conn = ExternalStoreUtils.getConnection(tableName,
       connProperties, forExecutor = true)
-
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
@@ -185,7 +184,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         ps.close()
       }
     }
-
+    //conn.setAutoCommit(false)
     val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -196,7 +195,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
-
+    // begin a tx.
+    //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
     val rs = stmt.executeQuery()
     /* (hangs for some reason)
     // setup context stack for lightWeightNext calls
@@ -215,6 +215,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
     if (pushProjections || useResultSet) {
+      // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       new ResultSetTraversal(conn, stmt, rs, context)
     } else {
@@ -227,7 +228,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        new CompactExecRowIteratorOnScan(container, bucketIds)
+        //TODO: Suranjan being tx here? as
+        //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
+        //val txId = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
+        val txId = null
+        new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         val ers = rs match {
@@ -349,13 +354,20 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](val container: GemFireContainer,
-    bucketIds: java.util.Set[Integer]) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer], txId: TXId) extends Iterator[T] {
 
   protected final var hasNextValue = true
   protected final var doMove = true
+  // Get newTXId from above and use it to create TxState and start tx.
 
+  //TODO:Suranjan Have to fill the tx here for read. May be later. Not now.
+  // Instead for column table do the read after taking snapshot.
+  val txIdd = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
+  // transaction started by row buffer scan should be used here
+  // can there be change in executor threads...in that case we should use masquerade as
+  val tx = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTXState
   protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+    bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
 
   protected def currentVal: T
@@ -367,7 +379,13 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       moveNext()
       doMove = false
     }
+    // commit here as row and column iteration is complete.
+    if (!hasNextValue) {
+      GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+      GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+    }
     hasNextValue
+
   }
 
   override final def next: T = {
@@ -380,8 +398,8 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
+    bucketIds: java.util.Set[Integer], txId: TXId)
+    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds, txId) {
 
   override protected val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

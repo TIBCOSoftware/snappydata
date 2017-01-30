@@ -21,8 +21,9 @@ import java.util.UUID
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.SparkShellRDDHelper
 
@@ -142,12 +143,20 @@ final class ColumnarStorePartitionedRDD(
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+    // TODO: maybe we can start tx here
+    // We can start different tx in each executor for first phase, till global snapshot is available.
+    // check if the tx is already running.
+    //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
+    //GemFireCacheImpl.getInstance().getCacheTransactionManager.
+    // who will call commit.
+    //val txId = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId;
+    val txId = null
     val bucketIds = part match {
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
-    else new ByteArraysIteratorOnScan(container, bucketIds)
+    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds, txId)
+    else new ByteArraysIteratorOnScan(container, bucketIds, txId)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

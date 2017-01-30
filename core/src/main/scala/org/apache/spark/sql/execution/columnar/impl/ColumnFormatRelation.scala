@@ -342,7 +342,7 @@ class BaseColumnFormatRelation(
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId) ",
             d.getPartitionByClause("partitionId"),
-            "  DISABLE CONCURRENCY CHECKS ")
+            "  ENABLE CONCURRENCY CHECKS ")
       case _ => ("primary key (uuid)", "", "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
@@ -370,7 +370,7 @@ class BaseColumnFormatRelation(
         dialect, sqlContext)
       if (!tableExists) {
         val sql =
-          s"CREATE TABLE $tableName $schemaExtensions DISABLE CONCURRENCY CHECKS"
+          s"CREATE TABLE $tableName $schemaExtensions ENABLE CONCURRENCY CHECKS"
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
