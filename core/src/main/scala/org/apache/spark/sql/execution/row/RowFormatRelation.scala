@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.row
 
+import java.sql.Connection
+
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -265,7 +267,7 @@ final class DefaultSource extends MutableRelationProvider {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getTotalPartitions(
-      sqlContext.sparkContext, parameters,
+      Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
@@ -274,13 +276,13 @@ final class DefaultSource extends MutableRelationProvider {
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val sc = sqlContext.sparkContext
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     StoreUtils.validateConnProps(parameters)
-
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      tableName,
       getClass.getCanonicalName,
       preservePartitions.exists(_.toBoolean),
       mode,
@@ -290,20 +292,24 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
-      connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          None, partitions, connProperties)
-        case _ =>
-      }
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
         case None =>
       }
+
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), None,
+        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }

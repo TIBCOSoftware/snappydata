@@ -102,6 +102,6 @@ object ServiceUtils {
   }
 
   def clearStaticArtifacts(): Unit = {
-    StoreCallbacksImpl.executorCatalog.clear()
+
   }
 }

@@ -46,11 +46,12 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -933,8 +934,10 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val plan = LogicalRelation(relation)
-    sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
-      Array.empty[String], source, params, relation)
+    if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
+      sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
+        Array.empty[String], source, params, relation)
+    }
     snappyContextFunctions.postRelationCreation(relation, this)
     plan
   }
@@ -996,8 +999,28 @@ class SnappySession(@transient private val sc: SparkContext,
       case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query)), None)
 
-      case None =>
+      case None => {
         val data = Dataset.ofRows(this, query)
+        val df = userSpecifiedSchema match {
+          // If we are inserting into an existing table, just use the existing schema.
+          case Some(s) => {
+            if (s.size != data.schema.size) {
+              throw new AnalysisException(s"The column number " +
+                  s"of the specified schema[${s}] "
+                  + s"doesn't match the data schema[${data.schema}]'s")
+            }
+            s.zip(data.schema).
+                find(x => x._1.dataType != x._2.dataType) match {
+              case Some(x) => throw new AnalysisException(s"The column types " +
+                  s"of the specified schema[${s}] " +
+                  s"doesn't match the data schema[${data.schema}]'s")
+              case None => // do nothing
+            }
+            data.toDF(s.fieldNames: _*)
+          }
+          case None => data
+        }
+
         insertRelation match {
           case Some(ir) =>
             var success = false
@@ -1017,19 +1040,18 @@ class SnappySession(@transient private val sc: SparkContext,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
-              options = params).write(mode, data)
-            if (None != userSpecifiedSchema) {
-              (r, Some(userSpecifiedSchema.get))
-            } else {
-              (r, Some(r.schema))
-            }
+              options = params).write(mode, df)
+            (r, Some(r.schema))
         }
+      }
     }
 
     // need to register if not existing in catalog
     if (insertRelation.isEmpty || overwrite) {
-      sessionCatalog.registerDataSourceTable(tableIdent, schema,
-        partitionColumns, source, params, relation)
+      if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
+        sessionCatalog.registerDataSourceTable(tableIdent, schema,
+          partitionColumns, source, params, relation)
+      }
       snappyContextFunctions.postRelationCreation(relation, this)
     }
     LogicalRelation(relation)
@@ -1253,7 +1275,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      sparkContext, new mutable.HashMap[String, String])
+      Some(sparkContext), new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
       connProperties.connProps)()
     try {
