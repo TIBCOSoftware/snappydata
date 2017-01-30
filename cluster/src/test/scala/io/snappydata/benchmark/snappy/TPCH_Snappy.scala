@@ -20,6 +20,7 @@ package io.snappydata.benchmark.snappy
 import java.io.{File, FileOutputStream, PrintStream}
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import java.sql.{DriverManager, PreparedStatement, ResultSet, Statement}
 
 /**
  * Created by kishor on 27/10/15.
@@ -33,6 +34,105 @@ object TPCH_Snappy {
     planPrintStream.close
     planFileStream.close()
   }
+
+  def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement, warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
+
+    var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
+    var queryPrintStream = new PrintStream(queryFileStream)
+
+    var resultFormat = queryNumber match {
+      case "1" => getResultString1
+      case "2" => getResultString2
+      case "3" => getResultString3
+      case "4" => getResultString4
+      case "5" => getResultString5
+      case "6" => getResultString6
+      case "7" => getResultString7
+      case "8" => getResultString8
+      case "9" => getResultString9
+      case "10" => getResultString10
+      case "11" => getResultString11
+      case "12" => getResultString12
+      case "13" => getResultString13
+      case "14" => getResultString14
+      case "15" => getResultString15
+      case "16" => getResultString16
+      case "17" => getResultString17
+      case "18" => getResultString18
+      case "19" => getResultString19
+      case "20" => getResultString20
+      case "21" => getResultString21
+      case "22" => getResultString22
+    }
+
+    var rs: ResultSet = null
+    try {
+      println(s"Started executing $queryNumber")
+      if (isResultCollection) {
+        rs = queryExecution(queryNumber, stmt)
+        //queryPrintStream.println(s"$resultFormat")
+        val rsmd = rs.getMetaData()
+        val columnsNumber = rsmd.getColumnCount();
+        var count: Int = 0
+        while (rs.next()) {
+          count += 1
+          for (i <- 1 to columnsNumber) {
+            if (i > 1) queryPrintStream.print(",")
+            queryPrintStream.print(rs.getString(i))
+          }
+          queryPrintStream.println()
+        }
+        println(s"NUmber of results : $count")
+        println(s"$queryNumber Result Collected in file $queryNumber.out")
+        if (queryNumber.equals("q13")) {
+          stmt.execute("drop view ViewQ13")
+        }
+        if (queryNumber.equals("q15")) {
+          stmt.execute("drop view revenue")
+        }
+      } else {
+        var totalTime: Long = 0
+        for (i <- 1 to (warmup + runsForAverage)) {
+          val startTime = System.currentTimeMillis()
+          rs = queryExecution(queryNumber, stmt)
+          //rs = stmt.executeQuery(query)
+          while (rs.next()) {
+            //just iterating over result
+          }
+          val endTime = System.currentTimeMillis()
+          val iterationTime = endTime - startTime
+          queryPrintStream.println(s"$iterationTime")
+          if (i > warmup) {
+            totalTime += iterationTime
+          }
+          if (queryNumber.equals("q13")) {
+            stmt.execute("drop view ViewQ13")
+          }
+          if (queryNumber.equals("q15")) {
+            stmt.execute("drop view revenue")
+          }
+        }
+        queryPrintStream.println(s"${totalTime / runsForAverage}")
+        avgPrintStream.println(s"$queryNumber,${totalTime / runsForAverage}")
+      }
+      println(s"Finished executing $queryNumber")
+    } catch {
+      case e: Exception => {
+        e.printStackTrace()
+        e.printStackTrace(queryPrintStream)
+        e.printStackTrace(avgPrintStream)
+        println(s" Exception while executing $queryNumber in written to file $queryNumber.txt")
+      }
+    } finally {
+      if (isResultCollection) {
+        queryPrintStream.close()
+        queryFileStream.close()
+      }
+
+    }
+    rs.close()
+  }
+
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
       isSnappy: Boolean, itr: Int = 0, useIndex: Boolean = false, warmup: Int = 0,
@@ -51,33 +151,33 @@ object TPCH_Snappy {
 
     val resultFormat = queryNumber match {
       case "q" => getResultString
-      case "q1" => getResultString1
-      case "q2" => getResultString2
-      case "q3" => getResultString3
-      case "q4" => getResultString4
-      case "q5" => getResultString5
-      case "q6" => getResultString6
-      case "q7" => getResultString7
-      case "q8" => getResultString8
-      case "q9" => getResultString9
-      case "q10" => getResultString10
-      case "q11" => getResultString11
-      case "q12" => getResultString12
-      case "q13" => getResultString13
-      case "q14" => getResultString14
-      case "q15" => getResultString15
-      case "q16" => getResultString16
-      case "q17" => getResultString17
-      case "q18" => getResultString18
-      case "q19" => getResultString19
-      case "q20" => getResultString20
-      case "q21" => getResultString21
-      case "q22" => getResultString22
-      case "q1s" => getResultString1s
-      case "q3s" => getResultString3
-      case "q5s" => getResultString5s
-      case "q6s" => getResultString6
-      case "q10s" => getResultString10
+      case "1" => getResultString1
+      case "2" => getResultString2
+      case "3" => getResultString3
+      case "4" => getResultString4
+      case "5" => getResultString5
+      case "6" => getResultString6
+      case "7" => getResultString7
+      case "8" => getResultString8
+      case "9" => getResultString9
+      case "10" => getResultString10
+      case "11" => getResultString11
+      case "12" => getResultString12
+      case "13" => getResultString13
+      case "14" => getResultString14
+      case "15" => getResultString15
+      case "16" => getResultString16
+      case "17" => getResultString17
+      case "18" => getResultString18
+      case "19" => getResultString19
+      case "20" => getResultString20
+      case "21" => getResultString21
+      case "22" => getResultString22
+      case "1s" => getResultString1s
+      case "3s" => getResultString3
+      case "5s" => getResultString5s
+      case "6s" => getResultString6
+      case "10s" => getResultString10
     }
 
     // scalastyle:off println
@@ -144,26 +244,102 @@ object TPCH_Snappy {
     // scalastyle:on println
   }
 
+  def queryExecution(queryNumber: String, prepStatement: PreparedStatement): ResultSet = {
+
+    val rs: ResultSet = queryNumber match {
+      case "1" => {
+        prepStatement.executeQuery()
+      }
+      case "2" => {
+        prepStatement.executeQuery()
+      }
+      case "3" => {
+        prepStatement.executeQuery()
+      }
+      case "4" => {
+        prepStatement.executeQuery()
+      }
+      case "5" => {
+        prepStatement.executeQuery()
+      }
+      case "6" => {
+        prepStatement.executeQuery()
+      }
+      case "7" => {
+        prepStatement.executeQuery()
+      }
+      case "8" => {
+        prepStatement.executeQuery()
+      }
+      case "9" => {
+        prepStatement.executeQuery()
+      }
+      case "10" => {
+        prepStatement.executeQuery()
+      }
+      case "11" => {
+        prepStatement.executeQuery()
+      }
+      case "12" => {
+        prepStatement.executeQuery()
+      }
+      case "13" => {
+        prepStatement.executeQuery()
+      }
+      case "14" => {
+        prepStatement.executeQuery()
+      }
+      case "15" => {
+        prepStatement.execute(getTempQuery15_Original())
+        prepStatement.executeQuery(getQuery15_Original())
+      }
+      case "16" => {
+        prepStatement.executeQuery()
+      }
+      case "17" => {
+        prepStatement.executeQuery()
+      }
+      case "18" => {
+        prepStatement.executeQuery()
+      }
+      case "19" => {
+        prepStatement.executeQuery()
+      }
+      case "20" => {
+        prepStatement.executeQuery()
+      }
+      case "21" => {
+        prepStatement.executeQuery()
+      }
+      case "22" => {
+        prepStatement.executeQuery()
+      }
+    }
+    rs
+
+  }
+
+
   def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean,
       genPlan: Boolean = false): (scala.Array[org.apache.spark.sql.Row], DataFrame) = {
     val df = queryNumber match {
-      case "q1s" =>
+      case "1s" =>
         sqlContext.sql(getSampledQuery1)
-      case "q3s" =>
+      case "3s" =>
         sqlContext.sql(getSampledQuery3)
-      case "q5s" =>
+      case "5s" =>
         sqlContext.sql(getSampledQuery5)
-      case "q6s" =>
+      case "6s" =>
         sqlContext.sql(getSampledQuery6)
-      case "q10s" =>
+      case "10s" =>
         sqlContext.sql(getSampledQuery10)
-      case "q1" =>
+      case "1" =>
         val df = sqlContext.sql(getQuery1)
         if (genPlan) {
           printPlan(df, "Q1")
         }
         df
-      case "q2" =>
+      case "2" =>
         /*
         val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
@@ -174,55 +350,55 @@ object TPCH_Snappy {
           printPlan(df, "Q2")
         }
         df
-      case "q3" =>
+      case "3" =>
         val df = sqlContext.sql(getQuery3)
         if (genPlan) {
           printPlan(df, "Q3")
         }
         df
-      case "q4" =>
+      case "4" =>
         val df = sqlContext.sql(getQuery4)
         if (genPlan) {
           printPlan(df, "Q4")
         }
         df
-      case "q5" =>
+      case "5" =>
         val df = sqlContext.sql(getQuery5)
         if (genPlan) {
           printPlan(df, "Q5")
         }
         df
-      case "q6" =>
+      case "6" =>
         val df = sqlContext.sql(getQuery6)
         if (genPlan) {
           printPlan(df, "Q6")
         }
         df
-      case "q7" =>
+      case "7" =>
         val df = sqlContext.sql(getQuery7)
         if (genPlan) {
           printPlan(df, "Q7")
         }
         df
-      case "q8" =>
+      case "8" =>
         val df = sqlContext.sql(getQuery8(useIndex))
         if (genPlan) {
           printPlan(df, "Q8")
         }
         df
-      case "q9" =>
+      case "9" =>
         val df = sqlContext.sql(getQuery9(useIndex))
         if (genPlan) {
           printPlan(df, "Q9")
         }
         df
-      case "q10" =>
+      case "10" =>
         val df = sqlContext.sql(getQuery10)
         if (genPlan) {
           printPlan(df, "Q10")
         }
         df
-      case "q11" =>
+      case "11" =>
         /*
          val result = sqlContext.sql(getTempQuery11)
          val res: Array[Row] = result.collect()
@@ -235,13 +411,13 @@ object TPCH_Snappy {
           printPlan(df, "Q11")
         }
         df
-      case "q12" =>
+      case "12" =>
         val df = sqlContext.sql(getQuery12)
         if (genPlan) {
           printPlan(df, "Q12")
         }
         df
-      case "q13" =>
+      case "13" =>
         /*
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
@@ -252,13 +428,13 @@ object TPCH_Snappy {
           printPlan(df, "Q13")
         }
         df
-      case "q14" =>
+      case "14" =>
         val df = sqlContext.sql(getQuery14(useIndex))
         if (genPlan) {
           printPlan(df, "Q14")
         }
         df
-      case "q15" =>
+      case "15" =>
         val result = sqlContext.sql(getTempQuery15_1)
         result.createOrReplaceTempView("revenue")
 
@@ -267,13 +443,13 @@ object TPCH_Snappy {
           printPlan(df, "Q15")
         }
         df
-      case "q16" =>
+      case "16" =>
         val df = sqlContext.sql(getQuery16)
         if (genPlan) {
           printPlan(df, "Q16")
         }
         df
-      case "q17" =>
+      case "17" =>
         /*
         val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
@@ -284,19 +460,19 @@ object TPCH_Snappy {
           printPlan(df, "Q17")
         }
         df
-      case "q18" =>
+      case "18" =>
         val df = sqlContext.sql(getQuery18)
         if (genPlan) {
           printPlan(df, "Q18")
         }
         df
-      case "q19" =>
+      case "19" =>
         val df = sqlContext.sql(getQuery19(useIndex))
         if (genPlan) {
           printPlan(df, "Q19")
         }
         df
-      case "q20" =>
+      case "20" =>
 //        val result = sqlContext.sql(getTempQuery20(useIndex))
 //        result.createOrReplaceTempView("ViewQ20")
         val df = sqlContext.sql(getQuery20_Original)
@@ -304,13 +480,13 @@ object TPCH_Snappy {
           printPlan(df, "Q20")
         }
         df
-      case "q21" =>
+      case "21" =>
         val df = sqlContext.sql(getQuery21)
         if (genPlan) {
           printPlan(df, "Q21")
         }
         df
-      case "q22" =>
+      case "22" =>
         val df = sqlContext.sql(getQuery22_Original)
         if (genPlan) {
           printPlan(df, "Q22")
@@ -1247,6 +1423,44 @@ object TPCH_Snappy {
   def getResultString14: String = {
     "PROMO_REVENUE"
   }
+
+  def getTempQuery15_Original(): String = {
+    "create view " +
+        "        revenue as" +
+        " select" +
+        "      l_suppkey as supplier_no ," +
+        "      sum(l_extendedprice * (1 - l_discount)) as total_revenue" +
+        " from" +
+        "      LINEITEM" +
+        " where" +
+        "      l_shipdate >= '1996-01-01'" +
+        "      and l_shipdate < '1996-01-01' + interval '3' month" +
+        " group by" +
+        "      l_suppkey"
+  }
+
+  def getQuery15_Original(): String = {
+    "select" +
+        "        s_suppkey," +
+        "        s_name," +
+        "        s_address," +
+        "        s_phone," +
+        "        total_revenue" +
+        " from" +
+        "        SUPPLIER," +
+        "        revenue" +
+        " where" +
+        "        s_suppkey = supplier_no" +
+        "        and total_revenue = (" +
+        "                select" +
+        "                        max(total_revenue)" +
+        "                from" +
+        "                        revenue" +
+        "        )" +
+        " order by" +
+        "        s_suppkey;"
+  }
+
 
   def getTempQuery15_1: String = {
     "select" +
