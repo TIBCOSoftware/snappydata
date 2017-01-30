@@ -230,7 +230,6 @@ trait SplitClusterDUnitTestObject extends Logging {
       useThinConnectorMode: Boolean, locatorClientPort: Int): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
 
-
     if (!useThinConnectorMode) {
       // Test setting locators property via environment variable.
       // Also enables checking for "spark." or "snappydata." prefix in key.
@@ -386,6 +385,11 @@ trait SplitClusterDUnitTestObject extends Logging {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
+  }
+
+  def stopSparkContext(): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    if (sparkContext != null) sparkContext.stop()
   }
 }
 

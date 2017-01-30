@@ -42,7 +42,7 @@ import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
 
-final class SparkShellRDDHelper {
+final class SparkShellRDDHelper extends Logging {
 
   var useLocatorURL: Boolean = false
 
@@ -241,7 +241,8 @@ object SparkShellRDDHelper extends Logging {
     }
   }
 
-  private def setBucketToServerMappingInfo(bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
+  private def setBucketToServerMappingInfo(
+      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
@@ -262,7 +263,8 @@ object SparkShellRDDHelper extends Logging {
           // get (addr,host,port)
           val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
           val netUrls = ArrayBuffer.empty[(String, String)]
-          netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+          netUrls += hostAddressPort._1 ->
+              (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
           allNetUrls(bid) = netUrls
           for (e <- netUrls) {
             if (!availableNetUrls.contains(e)) {
@@ -283,31 +285,21 @@ object SparkShellRDDHelper extends Logging {
     Array.empty
   }
 
-  private def setReplicasToServerMappingInfo(replicaNodesStr: String): Array[ArrayBuffer[(String, String)]]  = {
+  private def setReplicasToServerMappingInfo(
+      replicaNodesStr: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
-//    val arr = replicaNodesStr.split("\\|")
-    val arr = replicaNodesStr.split(";")
-    // last element of array indicates no of replicas
-    val numReplicas = arr(arr.length - 1).toInt
-    if (numReplicas > 0) {
-      // remove the last element(numReplicas)
-      val hostInfo = arr.dropRight(1)
-      hostInfo.foreach( h => logInfo("" + h))
-      val allNetUrls = new Array[ArrayBuffer[(String, String)]](numReplicas)
-      var i = 0
-      for (host <- hostInfo) {
-        val hostAddressPort = returnHostPortFromServerString(arr(1))
-        val netUrls = ArrayBuffer.empty[(String, String)]
-        netUrls += hostAddressPort._1 -> (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
-        allNetUrls(i) = netUrls
-        i += 1
-      }
-      return allNetUrls
+    val hostInfo = replicaNodesStr.split(";")
+    hostInfo.foreach(h => logInfo("" + h))
+    val netUrls = ArrayBuffer.empty[(String, String)]
+    for (host <- hostInfo) {
+      val hostAddressPort = returnHostPortFromServerString(host)
+      netUrls += hostAddressPort._1 ->
+          (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
-    Array.empty
+    return Array(netUrls)
   }
 
   /*
@@ -316,7 +308,8 @@ object SparkShellRDDHelper extends Logging {
   *
   * host1/addr1[port1]{kind1},host2/addr2[port2]{kind2},...
   */
-  private lazy val addrPattern: java.util.regex.Pattern = java.util.regex.Pattern.compile("([^,/]*)(/[^,\\[]+)?\\[([\\d]+)\\](\\{[^}]+\\})?")
+  private lazy val addrPattern =
+    java.util.regex.Pattern.compile("([^,/]*)(/[^,\\[]+)?\\[([\\d]+)\\](\\{[^}]+\\})?")
 
   private def returnHostPortFromServerString(serverStr: String): (String, String, String) = {
     if (serverStr == null || serverStr.length == 0) {
