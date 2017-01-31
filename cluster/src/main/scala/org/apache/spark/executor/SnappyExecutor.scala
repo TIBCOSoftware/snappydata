@@ -74,12 +74,11 @@ class SnappyExecutor(
       if (diffJars.size > 0) {
         diffJars.foreach(classloader.removeURL)
         logInfo("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
-        diffJars.foreach(d => println(d))
-        logInfo("job jars after delete in previous loader")
-        classloader.jobJars.keySet.foreach(println)
+        diffJars.foreach(d => logInfo(s"removed jar $d"))
+
         this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
           classloader.getParent, classloader.jobJars)
-        this.replClassLoader = urlClassLoader
+        this.replClassLoader = addReplClassLoaderIfNeeded(urlClassLoader)
         super.updateDependencies(newFiles, newJars)
         env.serializer.setDefaultClassLoader(this.replClassLoader)
         env.closureSerializer.setDefaultClassLoader(this.replClassLoader)

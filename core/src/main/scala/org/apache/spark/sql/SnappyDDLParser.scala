@@ -345,7 +345,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     identifier ~ stringLiteral ~> { (rType: String, path: String) =>
       val resourceType = rType.toLowerCase
       resourceType match {
-        case "jar" | "file" | "archive" =>
+        case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
         case other =>
           throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
@@ -365,7 +365,7 @@ abstract class SnappyDDLParser(session: SnappySession)
    * For example:
    * {{{
    *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name RETURNS ReturnType
-   *    USING JAR|FILE|ARCHIVE 'file_uri';
+   *    USING JAR 'file_uri';
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {

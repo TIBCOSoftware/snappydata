@@ -31,15 +31,24 @@ import org.apache.spark.util.{Utils, MutableURLClassLoader}
 import org.apache.spark.{SparkEnv, SparkFiles, Logging, SparkContext}
 
 /**
- * An utility class to store jar file reference with their individual classloaders. This is reflect class changes at driver side.
+ * An utility class to store jar file reference with their individual classloaders.
+ * This is to reflect class changes at driver side.
  * e.g. If an UDF definition changes the driver should pick up the correct UDF class.
  * This class can not initialize itself after a driver failure. So the callers will have  to make sure that the classloader gets
  * initialized after a driver startup. Usually it can be achieved by adding classloader at query time.
  *
  */
-class ContextJarUtils(sparkContext: SparkContext) extends Logging{
+class ContextJarUtils(sparkContext: SparkContext) extends Logging {
 
-  val workingDir = new File(System.getProperty("user.dir"))
+  val JAR_PATH = "snappy-jars"
+
+  def jarDir = {
+    val jarDirectory = new File(System.getProperty("user.dir"), JAR_PATH)
+    if(!jarDirectory.exists()) jarDirectory.mkdir()
+    jarDirectory
+  }
+
+
 
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
 
@@ -65,22 +74,27 @@ class ContextJarUtils(sparkContext: SparkContext) extends Logging{
    * @param path  original path of the jar
    */
   def addToSparkJars(prefix: String, path: String) {
-
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
       val localName = path.split("/").last
       val changedFileName = s"${prefix}-${localName}"
 
-      val changedFile = new File(workingDir, changedFileName)
-      if (!changedFile.exists()) {//After creation removeFromSparkJars() is the only place which can remove this jar
-        println("Adding jar to sc from driver loader" + path)
-        val newFile = callbacks.doFetchFile(path, workingDir, changedFileName)
+      val changedFile = new File(jarDir, changedFileName)
+      if (!changedFile.exists()) {
+        //After creation removeFromSparkJars() is the only place which can remove this jar
+        logInfo("Adding jar to sc from driver loader" + path)
+        val newFile = callbacks.doFetchFile(path, jarDir, changedFileName)
         sparkContext.addJar(newFile.getPath)
         //Setting the local property. Snappy Cluster executors will take appropriate actions
         sparkContext.
             setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, newFile.getPath)
+      } else {
+        sparkContext.addJar(changedFile.getPath)
+        //Setting the local property. Snappy Cluster executors will take appropriate actions
+        sparkContext.
+            setLocalProperty(io.snappydata.Constant.CHANGEABLE_JAR_NAME, changedFile.getPath)
       }
-    }else{
+    } else {
       sparkContext.addJar(path)
     }
   }
@@ -92,7 +106,7 @@ class ContextJarUtils(sparkContext: SparkContext) extends Logging{
     if (callbacks != null) {
       val localName = path.split("/").last
       val changedFileName = s"${prefix}-${localName}"
-      val jarFile = new File(workingDir, changedFileName)
+      val jarFile = new File(jarDir, changedFileName)
 
       if (jarFile.exists()) {
         jarFile.delete()
@@ -100,7 +114,7 @@ class ContextJarUtils(sparkContext: SparkContext) extends Logging{
 
       val keyToRemove = sparkContext.listJars().filter(getName(_) == getName(jarFile.getPath))
       if (keyToRemove.nonEmpty) {
-        println(s"Removing ${path} from Spark Jars by Driver loader")
+        logInfo(s"Removing ${path} from Spark Jars by Driver loader")
         callbacks.removeAddedJar(sparkContext, keyToRemove.head)
       }
       //Remove the jar from all live executors.

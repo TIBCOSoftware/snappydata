@@ -19,7 +19,10 @@ package org.apache.spark.sql.udf
 import java.io.File
 import java.net.URL
 
+import scala.util.{Failure, Success, Try}
+
 import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.TestUtils
 import org.apache.spark.TestUtils.JavaSourceFromString
@@ -32,7 +35,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
   def createTables(session: SnappySession) {
-    val snSession = new SnappySession(sc)
+    val snSession = session
     val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
     val refDf = snSession.createDataFrame(rdd)
     snSession.sql("DROP TABLE IF EXISTS RR_TABLE")
@@ -43,6 +46,43 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
     refDf.write.insertInto("RR_TABLE")
     refDf.write.insertInto("COL_TABLE")
+  }
+
+  def testUDFWithConnection(): Unit = {
+    var snSession = new SnappySession(sc)
+    createTables(snSession)
+
+    val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 6; " +
+        "}" +
+        "}"
+    val file = createUDFClass("IntegerUDF", udfText)
+    val jar = createJarFile(Seq(file))
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val s = conn.createStatement()
+
+    s.execute(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+
+    val row = snSession.sql("select intudf(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+
+    s.execute("drop function intudf")
+
+    snSession = new SnappySession(sc)
+
+    Try(snSession.sql("select intudf(description) from col_table ")) match {
+      case Success(df) => throw new AssertionError(
+        "Should not have succedded with dropped udf")
+      case Failure(error) => // Do nothing
+    }
+    conn.close()
   }
 
   def testSameUDFWithCodeChange(): Unit = {
@@ -123,7 +163,6 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     snSession.sql("drop function APP.intudf")
   }
 
-  //@TODO This test shsould pass once we support a single jar for multiple UDFs
   def testTwoUDFsDroppingOne(): Unit = {
     val snSession = new SnappySession(sc)
     createTables(snSession)
@@ -163,9 +202,6 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     row = snSession.sql("select intudf2(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 8))
-
-
-
   }
 }
 

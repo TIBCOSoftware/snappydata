@@ -748,7 +748,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  def toUrl(resource: FunctionResource): URL = {
+  private def toUrl(resource: FunctionResource): URL = {
     val path = resource.uri
     val uri = new Path(path).toUri
     if (uri.getScheme == null) {
