@@ -161,7 +161,7 @@ object ExternalStoreUtils {
     })
     optMap.toMap
   }
-  
+
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
       case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0,skip-constraint-checks=true"
@@ -175,7 +175,7 @@ object ExternalStoreUtils {
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ';skip-constraint-checks=true' + url
+            Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
