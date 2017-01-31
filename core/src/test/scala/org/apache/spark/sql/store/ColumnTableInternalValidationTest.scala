@@ -136,7 +136,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
-    assert(GemFireCacheImpl.getColumnBatchSize == 4)
+    assert(region.getColumnBatchSize == 4)
 
     assert(region.size == 0)
     assert(shadowRegion.size == 1)
@@ -181,7 +181,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (GemFireCacheImpl.getColumnBatchSize == 3) {
+    if (region.getColumnBatchSize == 3) {
       assert(region.size > 0)
       assert(shadowRegion.size > 0)
     }
@@ -225,7 +225,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (GemFireCacheImpl.getColumnBatchSize == 4) {
+    if (region.getColumnBatchSize == 4) {
       assert(region.size == 1)
       assert(shadowRegion.size == 1)
     }

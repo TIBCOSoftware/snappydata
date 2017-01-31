@@ -22,12 +22,13 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode, SnappySession, execution}
 
 abstract class MutableRelationProvider
     extends ExternalSchemaRelationProvider
@@ -48,7 +49,7 @@ abstract class MutableRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
@@ -64,13 +65,19 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
     var success = false
     val relation = JDBCMutableRelation(connProperties,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      tableName,
       getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
+        classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
@@ -80,6 +87,9 @@ abstract class MutableRelationProvider
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }
@@ -89,7 +99,7 @@ abstract class MutableRelationProvider
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType): JDBCMutableRelation = {
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
@@ -112,7 +122,7 @@ abstract class MutableRelationProvider
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): JDBCMutableRelation = {
     val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
     val relation = createRelation(sqlContext, mode, options, schemaString, None)
@@ -123,6 +133,9 @@ abstract class MutableRelationProvider
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }
