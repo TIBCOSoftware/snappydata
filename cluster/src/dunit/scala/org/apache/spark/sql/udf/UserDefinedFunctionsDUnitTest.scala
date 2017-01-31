@@ -69,7 +69,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
 
-    val row = snSession.sql("select intudf(description) from col_table").collect()
+    var row = snSession.sql("select intudf(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 6))
 
@@ -82,6 +82,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
         "Should not have succedded with dropped udf")
       case Failure(error) => // Do nothing
     }
+
     conn.close()
   }
 

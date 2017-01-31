@@ -38,7 +38,8 @@ import org.apache.spark.{SparkEnv, SparkFiles, Logging, SparkContext}
  * initialized after a driver startup. Usually it can be achieved by adding classloader at query time.
  *
  */
-class ContextJarUtils(sparkContext: SparkContext) extends Logging {
+object ContextJarUtils extends Logging {
+  val sparkContext = SnappyContext.globalSparkContext
 
   val JAR_PATH = "snappy-jars"
 

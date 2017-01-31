@@ -73,8 +73,8 @@ class SnappyExecutor(
       val diffJars = addedJarFiles.diff(newJarFiles)
       if (diffJars.size > 0) {
         diffJars.foreach(classloader.removeURL)
-        logInfo("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
-        diffJars.foreach(d => logInfo(s"removed jar $d"))
+        Misc.getCacheLogWriter.info("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
+        diffJars.foreach(d => Misc.getCacheLogWriter.info(s"removed jar $d"))
 
         this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
           classloader.getParent, classloader.jobJars)

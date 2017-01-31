@@ -50,7 +50,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.{SQLConf, UDFFunction}
+import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
@@ -78,8 +78,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   val sparkConf = snappySession.sparkContext.getConf
 
   private[sql] var client = metadataHive
-
-  val jarUtil = snappySession.sharedState.jarUtils
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -763,12 +761,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private def addToFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     val urls = funcDefinition.resources.map { r =>
-      jarUtil.addToSparkJars(funcDefinition.identifier.toString(), r.uri)
+      ContextJarUtils.addToSparkJars(funcDefinition.identifier.toString(), r.uri)
       toUrl(r)
     }
     val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    if(jarUtil.getDriverJar(qualifiedName.unquotedString).isEmpty){
-      jarUtil.addDriverJar(qualifiedName.unquotedString,
+    if(ContextJarUtils.getDriverJar(qualifiedName.unquotedString).isEmpty){
+      ContextJarUtils.addDriverJar(qualifiedName.unquotedString,
         new MutableURLClassLoader(urls.toArray, parentLoader))
     }
   }
@@ -776,16 +774,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     funcDefinition.resources.foreach { r =>
-      jarUtil.removeFromSparkJars(funcDefinition.identifier.toString(), r.uri)
+      ContextJarUtils.removeFromSparkJars(funcDefinition.identifier.toString(), r.uri)
     }
-    jarUtil.removeDriverJar(qualifiedName.unquotedString)
+    ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
   }
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
     // If the name itself is not qualified, add the current database to it.
     val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
     val qualifiedName = name.copy(database = database)
-     jarUtil.getDriverJar(qualifiedName.unquotedString) match {
+    ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
       case Some(x) => {
         val catalogFunction = try {
           externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
@@ -801,7 +799,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = jarUtil.getDriverJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
+    val uRLClassLoader = ContextJarUtils.getDriverJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
     val (actualClassName,typeName) = className.splitAt(className.lastIndexOf("__"))
     UDFFunction.makeFunctionBuilder(funcName,
       uRLClassLoader.loadClass(actualClassName),
@@ -882,7 +880,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // At here, we preserve the input from the user.
     val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
 
-    jarUtil.getDriverJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
+    ContextJarUtils.getDriverJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
 
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
     createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
