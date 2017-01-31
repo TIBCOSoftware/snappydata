@@ -80,15 +80,20 @@ class RowFormatRelation(
 
   private[this] lazy val indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
-    val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
-    if (im != null && im.getIndexConglomerateDescriptors != null) {
-      val baseColumns = im.getContainer.getTableDescriptor.getColumnNamesArray
-      val itr = im.getIndexConglomerateDescriptors.iterator()
-      while (itr.hasNext) {
-        // first column of index has to be present in filter to be usable
-        val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-        cols += baseColumns(indexCols(0) - 1)
-      }
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+      //@TODO [shirishd] support in thin client connector mode
+      case _ =>
+        val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
+        if (im != null && im.getIndexConglomerateDescriptors != null) {
+          val baseColumns = im.getContainer.getTableDescriptor.getColumnNamesArray
+          val itr = im.getIndexConglomerateDescriptors.iterator()
+          while (itr.hasNext) {
+            // first column of index has to be present in filter to be usable
+            val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
+            cols += baseColumns(indexCols(0) - 1)
+          }
+        }
     }
     cols
   }

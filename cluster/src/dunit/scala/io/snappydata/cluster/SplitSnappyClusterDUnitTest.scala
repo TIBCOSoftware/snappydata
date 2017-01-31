@@ -27,6 +27,7 @@ import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.store.SnappyJoinSuite
 import org.apache.spark.sql.{SplitClusterMode, ThinClientConnectorMode, SnappySession, SaveMode, SnappyContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -324,7 +325,13 @@ object SplitSnappyClusterDUnitTest
     val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort,
       locatorProp, useThinConnectorMode = useThinClientConnector, locatorClientPort)
 
-    val testJoins = new ClusterSnappyJoinSuite()
+    val testJoins = {
+      if (useThinClientConnector) {
+        new SnappyJoinSuite()
+      } else {
+        new ClusterSnappyJoinSuite()
+      }
+    }
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
     logInfo("Successful")
