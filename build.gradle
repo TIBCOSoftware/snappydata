@@ -34,7 +34,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.13-1'
+    classpath 'io.snappydata:gradle-scalatest:0.13.1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
   }
@@ -289,6 +289,13 @@ subprojects {
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING JUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
   }
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
@@ -333,6 +340,13 @@ subprojects {
 
     systemProperties 'java.net.preferIPv4Stack': 'true',
                      'SNAPPY_HOME': snappyProductDir
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
   }
 
   gradle.taskGraph.whenReady({ graph ->
