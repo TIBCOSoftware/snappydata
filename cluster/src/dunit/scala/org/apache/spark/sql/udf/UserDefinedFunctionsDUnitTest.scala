@@ -60,7 +60,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "simpleUDFTest", false)
       vm3.invoke(getClass, "stopSpark")
     } catch {
-      case e => throw new Exception(e)
+      case  e: Throwable => throw new Exception(e)
     } finally {
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
       val snSession = new SnappySession(sc)
