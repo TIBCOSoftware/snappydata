@@ -56,6 +56,23 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
   }
 
+  private def dropUdf(udfName : String): Unit ={
+    snc.sql(s"drop function $udfName")
+    snc.sql(s"drop function if exists $udfName")
+  }
+
+  private def showDescribe(udfName : String): Unit = {
+    assert(snc.snappySession.sessionCatalog.listFunctions("app", s"${udfName.substring(0,udfName.length -2)}*").
+        find(f => (f._1.toString().contains(udfName))).size == 1)
+
+    assert(snc.snappySession.sql(s"DESCRIBE FUNCTION $udfName").collect().length == 3)
+    assert(snc.snappySession.sql(s"DESCRIBE FUNCTION EXTENDED $udfName").collect().length == 4)
+    assert(snc.snappySession.sql(s"DESCRIBE FUNCTION $udfName").collect().length == 3)
+    assert(snc.snappySession.sql(s"DESCRIBE FUNCTION EXTENDED $udfName").collect().length == 4)
+    assert(snc.snappySession.sql(s"SHOW FUNCTIONS $udfName").collect().length == 1)
+    assert(snc.snappySession.sql(s"SHOW FUNCTIONS $udfName").collect().length == 1)
+  }
+
 
   test("Test UDF with Byte  Return type") {
     val udfText: String = "public class ByteUDF implements org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.Byte> {" +
@@ -70,6 +87,8 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select byteudf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select byteudf(description) from rr_table").collect().foreach(r => println(r))
+    showDescribe("byteudf")
+    dropUdf("byteudf")
   }
 
   test("Test UDF with Short  Return type") {
@@ -85,6 +104,8 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select shortudf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select shortudf(description) from rr_table").collect().foreach(r => println(r))
+    showDescribe("shortudf")
+    dropUdf("shortudf")
   }
 
   test("Test UDF with TIMESTAMP  Return type") {
@@ -100,6 +121,8 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select timeudf(time) from col_table").collect().foreach(r => println(r))
     snc.sql("select timeudf(time) from rr_table").collect().foreach(r => println(r))
+    showDescribe("timeudf")
+    dropUdf("timeudf")
   }
 
   test("Test UDF with Double  Return type") {
@@ -115,6 +138,8 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select doubleudf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select doubleudf(description) from rr_table").collect().foreach(r => println(r))
+    showDescribe("doubleudf")
+    dropUdf("doubleudf")
   }
 
   test("Test UDF with Boolean  Return type") {
@@ -130,6 +155,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select booludf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select booludf(description) from rr_table").collect().foreach(r => println(r))
+    dropUdf("booludf")
   }
 
   test("Test UDF with Date  Return type") {
@@ -145,6 +171,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select dateudf(purchase_date) from col_table").collect().foreach(r => println(r))
     snc.sql("select dateudf(purchase_date) from rr_table").collect().foreach(r => println(r))
+    dropUdf("dateudf")
   }
 
   test("Test UDF with float  Return type") {
@@ -173,6 +200,8 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select floatudf(surcharge) from col_table").collect().foreach(r => println(r))
     snc.sql("select doubleudf1(surcharge) from rr_table").collect().foreach(r => println(r))
+    dropUdf("floatudf")
+    dropUdf("doubleudf1")
   }
 
 
@@ -189,6 +218,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select decimaludf(serviceTax) from col_table").collect().foreach(r => println(r))
     snc.sql("select decimaludf(serviceTax) from rr_table").collect().foreach(r => println(r))
+    dropUdf("decimaludf")
   }
 
   test("Test UDF with Integer  Return type") {
@@ -204,6 +234,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select intudf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select intudf(description) from rr_table").collect().foreach(r => println(r))
+    dropUdf("intudf")
   }
 
   test("Test UDF with Long  Return type") {
@@ -219,6 +250,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select longudf(PRICE) from col_table").collect().foreach(r => println(r))
     snc.sql("select longudf(PRICE) from rr_table").collect().foreach(r => println(r))
+    dropUdf("longudf")
   }
 
 
@@ -241,6 +273,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     snc.sql("select multudf(OrderRef) from rr_table").collect().foreach(r => println(r))
     snc.sql("select multudf(OrderRef, OrderRef) from rr_table").collect().foreach(r => println(r))
+    dropUdf("multudf")
   }
 
 
@@ -292,6 +325,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s" RETURNS LONG USING JAR " +
         s"'$jar'")
     snc.sql("select longproductsum(price, price) from col_table").collect().foreach(r => println(r))
+    dropUdf("longproductsum")
   }
 
   test("Test UDF with String  Return type") {
@@ -307,6 +341,7 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"'$jar'")
     snc.sql("select strudf(description) from col_table").collect().foreach(r => println(r))
     snc.sql("select strudf(description) from rr_table").collect().foreach(r => println(r))
+    dropUdf("strudf")
   }
 
   test("Test Spark UDF") {
