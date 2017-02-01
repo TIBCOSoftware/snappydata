@@ -65,7 +65,7 @@ public class SnappyTest implements Serializable {
     private static String productLibsDir = productDir + "lib" + sep;
     private static String productSbinDir = productDir + "sbin" + sep;
     private static String productBinDir = productDir + "bin" + sep;
-    protected static String SnappyShellPath = productBinDir + "snappy-shell";
+    protected static String SnappyShellPath = productBinDir + "snappy-sql";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
     private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;

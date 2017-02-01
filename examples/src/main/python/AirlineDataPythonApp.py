@@ -21,7 +21,7 @@ ROW_TABLE_NAME = "airlineref"
 
 def main(snappy):
     snappy.sql("set spark.sql.shuffle.partitions=6")
-    # Get the tables that were created using sql scripts via snappy-shell
+    # Get the tables that were created using sql scripts via snappy-sql
     airlineDF = snappy.table(COLUMN_TABLE_NAME)
     airlineCodeDF = snappy.table(ROW_TABLE_NAME)
 

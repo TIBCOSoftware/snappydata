@@ -46,7 +46,7 @@ with Logging with Retries {
   //One can ovveride this method to pass other parameters like heap size.
   def servers = s"$localHostName\n$localHostName"
 
-  def snappyShell = s"$snappyHome/bin/snappy-shell"
+  def snappyShell = s"$snappyHome/bin/snappy-sql"
 
   def sparkShell = s"$snappyHome/bin/spark-shell"
 
