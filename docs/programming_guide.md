@@ -224,15 +224,17 @@ $ bin/snappy-job.sh submit  \
 ```
 The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.
 
-Python users can also submit the Python Script using spark-submit in SnappyData Connector mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "snappydata.store.locators" property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.
+### Running Python Applications
+Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. For example, run the command given below to submit a Python application:
 
 ```bash
 $ bin/spark-submit \
-  --master spark://localhost:7077 \
+  --master local[*]
   --conf snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042
-  python/examples/AirlineDataPythonApp.py
+  quickstart/python/AirlineDataPythonApp.py
 ```
+`snappydata.store.locators` property denotes the locator URL of the SnappyData cluster and it is used to connect to the SnappyData cluster.
 
 ### Streaming Jobs
 
@@ -321,9 +323,8 @@ Example: Removing a JAR
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
 
-
 ## Using SnappyData Shell
-The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. 
+The SnappyData SQL Shell (_snappy-sql_) provides a simple command line interface to the SnappyData cluster.
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
@@ -332,7 +333,7 @@ javascript
 
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
-$ ../../bin/snappy-shell  
+$ ../../bin/snappy-sql
 Version 2.0-BETA
 snappy> 
 
@@ -372,7 +373,7 @@ To run all SnappyData functionalities you need to create a [SnappySession](http:
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
 scala>
-#Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
+#Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
@@ -389,7 +390,6 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 # The results can be seen on the command line.
 ```
 
-
 ## Using JDBC with SnappyData
 SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information, and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
 
@@ -400,7 +400,7 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 // While, clients typically just point to a locator, you could also directly point the 
 //   connection at a server endpoint
 ```
-
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
 
 ## Building SnappyData Applications using Spark API
 
@@ -646,6 +646,7 @@ snsc.sql("select count(*) from streamingExample").show()
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
 <a id="markdown_link_row_and_column_tables"></a>
+
 ## Tables in SnappyData
 ### Row and Column Tables
 Column tables organize and manage data in memory in compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
@@ -660,23 +661,22 @@ CREATE TABLE [IF NOT EXISTS] table_name
    (
   COLUMN_DEFININTION
    )
-USING 'row | column'
+USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
 PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
-RECOVER_DELAY     '-1',
-MAX_PART_SIZE      '50',
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string will map to default diskstore
-OFFHEAP ‘true | false’ ,
+PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
 
 DROP TABLE [IF EXISTS] table_name
 ```
+Refer to the [How-Tos](howto) section for more information on partitioning and collocating data.
+
 For row format tables column definition can take underlying GemFire XD syntax to create a table. For example, note the PRIMARY KEY clause below.
 
 ```scala
@@ -727,26 +727,24 @@ Create a SnappyStore table using Spark APIs
 #### DDL extensions to SnappyStore Tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
-   1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+   1. COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.
+   2. PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
 
-   3. BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
-   4. REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
+   3. BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
 
-   5. RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
+   4. REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   6. MAX_PART_SIZE : The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.
+   5. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
 
-   7. EVICTION_BY : Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   6. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   8. PERSISTENT :  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   
+   Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
-   9. OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
-
-  10. EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
-
-#### Restrictions on column tables
+	
+#### Restrictions on Column Tables
 * Column tables cannot specify any primary key, unique key constraints
 
 * Index on column table is not supported
@@ -769,7 +767,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 #### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
 ```
-    //  Applicable for both row & column tables
+    //  Applicable for both row and column tables
     def insert(tableName: String, rows: Row*): Int .
 
     // Only for row tables
@@ -840,7 +838,7 @@ To ensure optimal performance for SELECT queries executed over JDBC connection (
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 
 ```
-bin/snappy-shell leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
+bin/snappy leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
 Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
@@ -888,7 +886,7 @@ We use a persistent Hive catalog for all our metadata storage. All table, schema
 
 #### SQL Reference to the Syntax
 
-Refer to the [GemFire XD](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html) for information on the syntax.
+Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the syntax.
 
 
 ## Stream processing using SQL
@@ -900,7 +898,7 @@ Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/lates
 
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like **map**, **reduce**, **join** and **window**.
 
-Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.  
+Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.
 
 ![Spark Streaming architecture](http://spark.apache.org/docs/latest/img/streaming-arch.png)
 
@@ -985,10 +983,10 @@ For example to create a stream table using kafka source :
  // You can also save the DataFrames to an external table
  dStream.foreachDataFrame(_.write.insertInto(tableName))
 ```
-The streamTable created in the above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
+The streamTable created in the above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.
 
-### Stream SQL through Snappy-Shell
-Start a SnappyData cluster and connect through snappy-shell : 
+### Stream SQL through snappy-sql
+Start a SnappyData cluster and connect through snappy-sql :
 
 ```bash
 //create a connection
@@ -1029,5 +1027,5 @@ val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (d
 dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
-### Dynamic(ad-hoc) Continuous Queries
+### Dynamic (ad-hoc) Continuous Queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.

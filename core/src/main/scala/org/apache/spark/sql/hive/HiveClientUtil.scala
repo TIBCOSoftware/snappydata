@@ -208,8 +208,8 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
               "Please set spark.sql.hive.metastore.jars.")
       }
 
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
+      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver")
+      DriverRegistry.register("io.snappydata.jdbc.ClientDriver")
 
       // set as system properties for default HiveConf's
       val props = metadataConf.getAllProperties
@@ -283,7 +283,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       case None => SnappyContext.getClusterMode(sc) match {
         case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
              LocalMode(_, _) =>
-          (true, ExternalStoreUtils.defaultStoreURL(sc) +
+          (true, ExternalStoreUtils.defaultStoreURL(Some(sc)) +
               ";disable-streaming=true;default-persistent=true",
               Constant.JDBC_EMBEDDED_DRIVER)
         case SplitClusterMode(_, props) =>

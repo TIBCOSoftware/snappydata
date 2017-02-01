@@ -21,11 +21,9 @@ import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, OptionalConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
@@ -73,12 +71,13 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          AnalyzeDMLExternalTables(snappySession) ::
+          AnalyzeChildQuery(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
     override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+      datasources.PreWriteCheck(conf, catalog),
+      PrePutCheck)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -179,7 +178,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeDMLExternalTables(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
@@ -324,7 +323,12 @@ class SnappyConf(@transient val session: SnappySession)
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
     keyUpdateActions(entry.key, doSet = true)
-    super.setConf[T](entry, value)
+    require(entry != null, "entry cannot be null")
+    require(value != null, s"value cannot be null for key: ${entry.key}")
+    entry.defaultValue match {
+      case Some(_) => super.setConf(entry, value)
+      case None => super.setConf(entry.asInstanceOf[ConfigEntry[Option[T]]], Some(value))
+    }
   }
 
   override def unsetConf(key: String): Unit = {
@@ -450,12 +454,20 @@ trait AltName[T] {
 trait SQLAltName[T] extends AltName[T] {
 
   private def get(conf: SQLConf, entry: SQLConfigEntry): T = {
-    conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
+    entry.defaultValue match {
+      case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
+      case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
+    }
+
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
-    configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+    }
+
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -473,7 +485,7 @@ trait SQLAltName[T] extends AltName[T] {
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
-    if (conf.contains(name)) Some(get(conf, name, ""))
+    if (conf.contains(name)) Some(get(conf, name, "<undefined>"))
     else defaultValue
   } else {
     if (conf.contains(name)) {

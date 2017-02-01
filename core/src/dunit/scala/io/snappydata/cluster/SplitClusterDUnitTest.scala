@@ -47,6 +47,9 @@ class SplitClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+    SplitClusterDUnitTest.batchSize.toString)
+
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
@@ -610,8 +613,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private def checkValidJsonString(s: String): Unit = {
     try {
-      val parser = new ObjectMapper().getJsonFactory
-          .createJsonParser(s)
+      val parser = new ObjectMapper().getFactory()
+          .createParser(s)
       while (parser.nextToken() != null) {
       }
       return

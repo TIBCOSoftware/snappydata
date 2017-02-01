@@ -79,7 +79,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where **leadHostname** is the host name of your lead node). Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-sql](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -94,9 +94,10 @@ The SnappyData Locator has stopped.
 
 To start the cluster on multiple hosts:
 
-1. The easiest way to run SnappyData on multiple nodes is to make sure you can use a shared file system such as NFS on all the nodes. Else, extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
 
-2. In the **conf** folder, create the configuration files **servers.template**, **locators.template**, **leads.template**. Edit the files to include the hostnames on which to start the server, locators, lead respectively. You can also create a copy and rename the existing template files (For example, **conf/servers.template)**.
+2. Create the configuration files using the templates provided in the **conf** folder. Copy the exiting template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
+</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuration/#configuration-files) section for more information on properties.
 
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
@@ -230,20 +231,20 @@ You can now create tables and run queries in SnappyData store using your Apache 
 
 
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy-shell)
-`snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
+## How to Use SnappyData SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy-shell` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy Shell
 
 ```
-$ bin/snappy-shell
-snappy> connect client 'locatorHostName:1527';
+$ bin/snappy-sql
+snappy> connect client '<locatorHostName>:1527';
 ```
 
- **1527** is the default port on which locatorHost listens for connections. 
+Where `<locatorHostName>` is the host name of the node on which the locator is started and **1527** is the default port on which the locator listens for connections. 
 
-**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-shell`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
@@ -293,7 +294,7 @@ APP                 |PARTSUPP                      |TABLE     |
 Each record in a Row table is managed in contiguous memory, and therefore, optimized for selective queries (For example. key based point lookup ) or updates. 
 A row table can either be replicated to all nodes or partitioned across nodes. It can be created by using DataFrame API or using SQL.
 
-Refer to the [Row and column tables](programming_guide#tables-in-snappydata) documentation for complete list of attributes for row tables.
+Refer to the [Row and column tables](programming_guide#ddl) documentation for complete list of attributes for row tables.
 
 Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in [CreateReplicatedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala) and [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala)
 
@@ -608,7 +609,9 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 
-**To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
+**To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
+
+Where the `<locatorHostName>` is the host name of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
 **Code Example: **
 **Connect to a SnappyData cluster using JDBC on default client port**
@@ -642,6 +645,7 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
+<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects

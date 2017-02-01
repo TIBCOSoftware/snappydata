@@ -173,7 +173,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false): Connection = {
-    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
@@ -220,7 +220,7 @@ object ClusterManagerTestBase {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
-    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+    conf.set(io.snappydata.Property.CachedBatchSize.name, "3")
     // conf.set("spark.executor.memory", "2g")
     // conf.set("spark.shuffle.manager", "SORT")
     Utils.setDefaultSerializerAndCodec(conf)

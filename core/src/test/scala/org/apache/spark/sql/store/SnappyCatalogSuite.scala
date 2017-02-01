@@ -403,7 +403,7 @@ abstract class CatalogTestUtils {
   def newTable(name: String, db: String): CatalogTable = newTable(name, Some(db))
 
   def newTable(name: String, database: Option[String] = None): CatalogTable = {
-    CatalogTable(
+      CatalogTable(
       identifier = TableIdentifier(name, database),
       tableType = CatalogTableType.EXTERNAL,
       storage = storageFormat,
@@ -413,7 +413,10 @@ abstract class CatalogTestUtils {
         CatalogColumn("a", "int"),
         CatalogColumn("b", "string")),
       partitionColumnNames = Seq("a", "b"),
-      bucketColumnNames = Seq("col1"))
+      bucketColumnNames = Seq("col1"),
+      // Pass the properties so that the hack applied in SnappyExternalCatalog.createTable
+      // takes affect
+      properties = Map("spark.sql.sources.provider" -> "column"))
   }
 
   def newFunc(name: String, database: Option[String] = None): CatalogFunction = {
