@@ -12,7 +12,7 @@ object DistIndexTestUtils {
   def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext) = {
 
     val qryProvider = new TPCH with SnappyAdapter
-    val query = qNum.substring(1).toInt
+    val query = qNum.toInt
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
@@ -61,9 +61,11 @@ object DistIndexTestUtils {
     for ((q, i) <- queries.zipWithIndex) {
       val qNum = i + 1
       val (expectedAnswer, _) = qryProvider.execute(qNum, str => {
+        pw.println("Query String is : " + str)
         snc.sql(str)
       })
       val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
+      newAnswer.foreach(pw.println)
       val isSorted = df.logicalPlan.collect { case s: Sort => s }.nonEmpty
       QueryTest.sameRows(expectedAnswer, newAnswer, isSorted).map { results =>
         s"""
@@ -94,7 +96,7 @@ object DistIndexTestUtils {
     //TPCHUtils.createAndLoadTables(snc, true)
 
     snc.sql(
-      s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
+      s"""CREATE INDEX idx_orders_cust ON DistIndexTestUtils.scala(o_custkey)
              options (COLOCATE_WITH 'customer')
           """)
 
