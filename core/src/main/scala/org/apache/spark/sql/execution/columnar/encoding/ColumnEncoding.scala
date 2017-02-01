@@ -36,7 +36,7 @@ import org.apache.spark.util.collection.BitSet
  *   .----------------------- Encoding scheme (4 bytes)
  *   |   .------------------- Null bitset size as number of longs N (4 bytes)
  *   |   |   .--------------- Null bitset longs (8 x N bytes,
- *                                               empty if null count is zero)
+ *   |   |   |                                   empty if null count is zero)
  *   |   |   |     .--------- Encoded non-null elements
  *   V   V   V     V
  *   +---+---+-----+---------+

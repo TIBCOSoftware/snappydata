@@ -214,7 +214,7 @@ object SnappyTableStatsProviderService extends Logging {
             // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
             var rowsInCachedBatch: Long = 0
             while (itr.hasNext) {
-              rowsInCachedBatch = rowsInCachedBatch + itr.next().asInstanceOf[RowLocation]
+              rowsInCachedBatch += itr.next().asInstanceOf[RowLocation]
                   .getRow(container).getColumn(colPos).getInt
             }
             pr.getPrStats.setPRNumRowsInCachedBatches(rowsInCachedBatch)

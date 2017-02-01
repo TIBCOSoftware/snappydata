@@ -21,7 +21,7 @@ import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils

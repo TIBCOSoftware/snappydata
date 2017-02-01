@@ -24,24 +24,22 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{Constant, Property}
 import io.snappydata.util.ServiceUtils
+import io.snappydata.{Constant, Property}
 
-import org.apache.spark.{SparkConf, SparkContext, SparkEnv}
 import org.apache.spark.sql._
-import org.apache.spark.sql.api.r.SQLUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
+import org.apache.spark.{SparkContext, SparkEnv}
 
 /**
  * Utility methods used by external storage layers.
@@ -457,7 +455,7 @@ object ExternalStoreUtils {
   def getTotalPartitions(parameters: java.util.Map[String, String],
       forManagedTable: Boolean): Int = {
     getTotalPartitions(None, parameters.asScala,
-      forManagedTable, true, false)
+      forManagedTable, forColumnTable = true, forSampleTable = false)
   }
 
   def getTotalPartitions(sparkContext: Option[SparkContext],
@@ -568,7 +566,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getDefaultCachedBatchSize() : Int = {
+  def defaultCachedBatchSize: Int = {
     Property.CachedBatchSize.getOption(SparkEnv.get.conf) match {
       case Some(size) => Integer.parseInt(size)
       case None => COLUMN_BATCH_SIZE_DEFAULT

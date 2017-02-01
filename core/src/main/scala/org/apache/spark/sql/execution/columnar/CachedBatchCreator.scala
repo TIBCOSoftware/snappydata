@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.execution.CompactExecRowToMutableRow
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.StructType
 
 final class CachedBatchCreator(
@@ -58,7 +58,7 @@ final class CachedBatchCreator(
         connectedExternalStore))
 
       def cachedBatchAggregate(batch: CachedBatch): Unit = {
-        connectedExternalStore.withDependentAction { conn =>
+        connectedExternalStore.withDependentAction { _ =>
           indexStatements.foreach { case (_, ps) => ps.executeBatch() }
         }.storeCachedBatch(tableName, batch,
           bucketID, Option(batchID))

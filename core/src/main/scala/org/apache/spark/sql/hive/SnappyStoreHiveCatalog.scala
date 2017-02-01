@@ -543,12 +543,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val newOptions = options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
           case Some(c) => options
           case None => options + (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
-              ExternalStoreUtils.getDefaultCachedBatchSize().toString)
+              ExternalStoreUtils.defaultCachedBatchSize.toString)
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
         cachedDataSourceTables.invalidate(tableIdent)
-
 
         val tableProperties = new mutable.HashMap[String, String]
         tableProperties.put(HIVE_PROVIDER, provider)

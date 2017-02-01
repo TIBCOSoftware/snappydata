@@ -18,8 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -32,7 +30,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, ExecutePlan, PartitionedDataSourceScan, SparkPlan, columnar}
+import org.apache.spark.sql.execution.{ConnectionPool, ExecutePlan, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -709,8 +707,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         partitioningColumns,
         sqlContext)
     }
-    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE).
-        map(_.toBoolean).getOrElse(false)
+    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
+        .exists(_.toBoolean)
 
     try {
       relation.createTable(mode)
@@ -718,7 +716,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
         catalog.registerDataSourceTable(
           catalog.newQualifiedTableName(tableName), Some(relation.schema),
-          partitioningColumn.toArray, classOf[execution.columnar.DefaultSource].getCanonicalName,
+          partitioningColumns.toArray,
+          classOf[execution.columnar.DefaultSource].getCanonicalName,
           options, relation)
       }
       success = true

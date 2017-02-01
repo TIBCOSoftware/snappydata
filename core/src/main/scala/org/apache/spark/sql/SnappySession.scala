@@ -29,7 +29,7 @@ import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.gemstone.gemfire.internal.shared.FinalizeObject
+import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
@@ -1548,7 +1548,7 @@ private class FinalizeSession(session: SnappySession)
 
   private var sessionId = session.id
 
-  override protected def getHolder = FinalizeObject.getServerHolder
+  override def getHolder: FinalizeHolder = FinalizeObject.getServerHolder
 
   override protected def doFinalize(): Boolean = {
     if (sessionId != SnappySession.INVALID_ID) {
