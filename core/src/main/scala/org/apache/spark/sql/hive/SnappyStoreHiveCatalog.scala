@@ -880,7 +880,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // At here, we preserve the input from the user.
     val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
 
-    ContextJarUtils.getDriverJar(qualifiedName.unquotedString).getOrElse(addToFuncJars(catalogFunction, qualifiedName))
+    addToFuncJars(catalogFunction, qualifiedName)
 
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
     createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)

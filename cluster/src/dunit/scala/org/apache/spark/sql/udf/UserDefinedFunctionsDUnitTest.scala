@@ -27,30 +27,67 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.TestUtils
 import org.apache.spark.TestUtils.JavaSourceFromString
 import UserDefinedFunctionsDUnitTest._
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 
 case class OrderData(ref: Int, description: String, amount: Long)
 
 class UserDefinedFunctionsDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
-  def createTables(session: SnappySession) {
-    val snSession = session
-    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
-    val refDf = snSession.createDataFrame(rdd)
-    snSession.sql("DROP TABLE IF EXISTS RR_TABLE")
-    snSession.sql("DROP TABLE IF EXISTS COL_TABLE")
+  override def tearDown2(): Unit = {
+    val snSession = new SnappySession(sc)
+    snSession.sessionCatalog.reset()
+    super.tearDown2()
+  }
 
-    snSession.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT)")
-    snSession.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG) using column options()")
+  def testDriverHA(): Unit = {
+    // Stop the lead node
+    ClusterManagerTestBase.stopSpark()
 
-    refDf.write.insertInto("RR_TABLE")
-    refDf.write.insertInto("COL_TABLE")
+    // Start the lead node in another JVM. The executors should
+    // connect with this new lead.
+    // In this case servers are already running and a lead comes
+    // and join
+    try {
+      vm3.invoke(getClass, "startSnappyLead", startArgs)
+      vm3.invoke(getClass, "createTables")
+      vm3.invoke(getClass, "simpleUDFTest", true)
+      vm3.invoke(getClass, "stopSpark")
+      //Again start the lead node
+      vm3.invoke(getClass, "startSnappyLead", startArgs)
+      vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
+
+      vm3.invoke(getClass, "simpleUDFTest", false)
+      vm3.invoke(getClass, "stopSpark")
+    } catch {
+      case e => throw new Exception(e)
+    } finally {
+      ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+      val snSession = new SnappySession(sc)
+      snSession.sql("drop function if exists APP.intudf")
+    }
+  }
+
+  def testExecutorHA(): Unit = {
+    var snSession = new SnappySession(sc)
+    createTables
+
+    simpleUDFTest(createUDF = true)
+
+    try {
+      failTheExecutors
+    } catch {
+      case _: Throwable =>
+    }
+    // The executors should have started automatically, so this should not hang
+    snSession = new SnappySession(sc)
+    simpleUDFTest(createUDF = false)
+    snSession.sql("drop function APP.intudf")
   }
 
   def testUDFWithConnection(): Unit = {
     var snSession = new SnappySession(sc)
-    createTables(snSession)
+    createTables
 
     val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
@@ -69,7 +106,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
 
-    var row = snSession.sql("select intudf(description) from col_table").collect()
+    val row = snSession.sql("select intudf(description) from col_table").collect()
     row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 6))
 
@@ -88,7 +125,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
   def testSameUDFWithCodeChange(): Unit = {
     val snSession = new SnappySession(sc)
-    createTables(snSession)
+    createTables
 
     var udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
@@ -126,7 +163,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
   def testSameUDFWithFieldChange(): Unit = {
     val snSession = new SnappySession(sc)
-    createTables(snSession)
+    createTables
 
     var udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         "\n                       " +
@@ -166,7 +203,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
   def testTwoUDFsDroppingOne(): Unit = {
     val snSession = new SnappySession(sc)
-    createTables(snSession)
+    createTables
 
     var udfText: String = "public class IntegerUDF1 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
@@ -183,7 +220,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
     val file2 = createUDFClass("IntegerUDF2", udfText)
 
-    val jar = createJarFile(Seq(file1,file2))
+    val jar = createJarFile(Seq(file1, file2))
     snSession.sql(s"CREATE FUNCTION APP.intudf1 AS IntegerUDF1 " +
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
@@ -208,13 +245,15 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
 object UserDefinedFunctionsDUnitTest {
 
+  private def sc = SnappyContext.globalSparkContext
+
   val userDir = System.getProperty("user.dir")
 
   val pathSeparator = File.pathSeparator
 
-  def destDir : File ={
+  def destDir: File = {
     val jarDir = new File(s"$userDir/jars")
-    if(!jarDir.exists()){
+    if (!jarDir.exists()) {
       jarDir.mkdir()
     }
     jarDir
@@ -232,5 +271,46 @@ object UserDefinedFunctionsDUnitTest {
     val jarFile = new File(destDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
     jarFile.getPath
+  }
+
+  def failTheExecutors: Unit = {
+    sc.parallelize(1 until 100, 5).map { i =>
+      throw new InternalError()
+    }.collect()
+  }
+
+  def simpleUDFTest(createUDF: Boolean): Unit = {
+    val snSession = new SnappySession(sc)
+    if (createUDF) {
+      val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+          " @Override public Integer call(String s){ " +
+          "               return 6; " +
+          "}" +
+          "}"
+      val file = createUDFClass("IntegerUDF", udfText)
+      val jar = createJarFile(Seq(file))
+
+      snSession.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+          s"RETURNS Integer USING JAR " +
+          s"'$jar'")
+    }
+
+    val row = snSession.sql("select intudf(description) from col_table").collect()
+    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+  }
+
+  def createTables() {
+    val snSession = new SnappySession(sc)
+    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
+    val refDf = snSession.createDataFrame(rdd)
+    snSession.sql("DROP TABLE IF EXISTS RR_TABLE")
+    snSession.sql("DROP TABLE IF EXISTS COL_TABLE")
+
+    snSession.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT)")
+    snSession.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG) using column options()")
+
+    refDf.write.insertInto("RR_TABLE")
+    refDf.write.insertInto("COL_TABLE")
   }
 }

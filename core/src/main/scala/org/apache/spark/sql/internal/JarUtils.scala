@@ -39,7 +39,7 @@ import org.apache.spark.{SparkEnv, SparkFiles, Logging, SparkContext}
  *
  */
 object ContextJarUtils extends Logging {
-  val sparkContext = SnappyContext.globalSparkContext
+  def sparkContext = SnappyContext.globalSparkContext
 
   val JAR_PATH = "snappy-jars"
 
@@ -48,9 +48,6 @@ object ContextJarUtils extends Logging {
     if(!jarDirectory.exists()) jarDirectory.mkdir()
     jarDirectory
   }
-
-
-
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
 
   def addDriverJar(key: String, classLoader: URLClassLoader): Option[URLClassLoader] = {
@@ -65,7 +62,6 @@ object ContextJarUtils extends Logging {
 
   def removeDriverJar(key: String) = driverJars.remove(key)
 
-
   def getDriverJar(key: String): Option[URLClassLoader] = driverJars.get(key)
 
   /**
@@ -79,11 +75,10 @@ object ContextJarUtils extends Logging {
     if (callbacks != null) {
       val localName = path.split("/").last
       val changedFileName = s"${prefix}-${localName}"
-
+      logInfo("Adding jar to sc from driver loader" + path)
       val changedFile = new File(jarDir, changedFileName)
       if (!changedFile.exists()) {
         //After creation removeFromSparkJars() is the only place which can remove this jar
-        logInfo("Adding jar to sc from driver loader" + path)
         val newFile = callbacks.doFetchFile(path, jarDir, changedFileName)
         sparkContext.addJar(newFile.getPath)
         //Setting the local property. Snappy Cluster executors will take appropriate actions
