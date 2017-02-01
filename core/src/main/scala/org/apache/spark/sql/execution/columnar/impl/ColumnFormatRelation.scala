@@ -20,7 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
@@ -30,10 +30,9 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, ExecutePlan, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, ExecutePlan, PartitionedDataSourceScan, SparkPlan, columnar}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -77,8 +76,6 @@ class BaseColumnFormatRelation(
     with RowInsertableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
-
-  val columnBatchSize: Int = sqlContext.conf.columnBatchSize
 
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
@@ -630,14 +627,14 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   final def cachedBatchTableName(table: String): String =
     JDBCAppendableRelation.cachedBatchTableName(table)
 
-  def getIndexUpdateStruct(indexEntry: ExecutorCatalogEntry,
+  def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,
       connectedExternalStore: ConnectedExternalStore):
   ColumnFormatRelation.IndexUpdateStruct = {
-    assert(indexEntry.dmls.nonEmpty)
-    val rowInsertStr = indexEntry.dmls(0)
+    assert(indexEntry.dml.nonEmpty)
+    val rowInsertStr = indexEntry.dml
     (CodeGeneration.getGeneratedIndexStatement(indexEntry.entityName,
-      indexEntry.schema,
-      indexEntry.externalStore.connProperties.dialect),
+      indexEntry.schema.asInstanceOf[StructType],
+      indexEntry.externalStore.asInstanceOf[JDBCSourceAsColumnarStore].connProperties.dialect),
         connectedExternalStore.conn.prepareStatement(rowInsertStr))
   }
 }
@@ -646,11 +643,12 @@ final class DefaultSource extends ColumnarRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
+
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
+    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
       forManagedTable = true)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
@@ -664,7 +662,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
     val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
 
     StoreUtils.validateConnProps(parameters)
 
@@ -682,12 +680,13 @@ final class DefaultSource extends ColumnarRelationProvider {
       partitions)
 
     var success = false
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
 
     // create an index relation if it is an index table
     val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
-      case Some(btable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
-          processTableIdentifier(table, sqlContext.conf),
+      case Some(btable) => new IndexColumnFormatRelation(
+          tableName,
         getClass.getCanonicalName,
         mode,
         schema,
@@ -698,8 +697,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         partitioningColumns,
         sqlContext,
         btable)
-      case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
-          processTableIdentifier(table, sqlContext.conf),
+      case None => new ColumnFormatRelation(
+          tableName,
         getClass.getCanonicalName,
         mode,
         schema,
@@ -710,26 +709,27 @@ final class DefaultSource extends ColumnarRelationProvider {
         partitioningColumns,
         sqlContext)
     }
+    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE).
+        map(_.toBoolean).getOrElse(false)
 
     try {
       relation.createTable(mode)
-
-      StoreCallbacksImpl.registerExternalStoreAndSchema(
-        ExecutorCatalogEntry(table, schema, externalStore,
-          sqlContext.conf.columnBatchSize,
-          sqlContext.conf.useCompression,
-          baseTable, ArrayBuffer(relation.rowInsertStr)))
-
-      connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext,
-          table, Some(schema), partitions, connProperties,
-          baseTable, ArrayBuffer(relation.rowInsertStr))
-        case _ =>
+      if (!isRelationforSample) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.registerDataSourceTable(
+          catalog.newQualifiedTableName(tableName), Some(relation.schema),
+          partitioningColumn.toArray, classOf[execution.columnar.DefaultSource].getCanonicalName,
+          options, relation)
       }
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        if (!isRelationforSample) {
+          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(tableName),
+            Some(relation))
+        }
         // destroy the relation
         relation.destroy(ifExists = true)
       }

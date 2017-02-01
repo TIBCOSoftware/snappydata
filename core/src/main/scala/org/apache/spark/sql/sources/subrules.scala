@@ -106,7 +106,7 @@ object JoinOrderStrategy {
   * largest colocated group.
   */
 case object Replicates extends JoinOrderStrategy {
-  override def shortName: String = JOS.ReplicateWithFilters
+  override def shortName: String = ""// JOS.ReplicateWithFilters
 
   implicit def addToDef(newPlan: PartialPlan, repTab: LogicalPlan): PartialPlan = newPlan.copy(
     replicates = newPlan.replicates.filterNot(_ == repTab))
@@ -120,7 +120,7 @@ case object Replicates extends JoinOrderStrategy {
   * Pick the current colocated group and put tables with filters with the currently built plan.
   */
 case object ColocatedWithFilters extends JoinOrderStrategy {
-  override def shortName: String = JOS.CollocatedWithFilters
+  override def shortName: String = ""// JOS.CollocatedWithFilters
 
   implicit def addToDef(newPlan: PartialPlan, replacement: Replacement): PartialPlan = newPlan
 
@@ -129,7 +129,7 @@ case object ColocatedWithFilters extends JoinOrderStrategy {
     if (partial.colocatedGroups.isEmpty) {
       partial
     } else {
-      (partial.currentColocatedGroup.chains /: partial) {
+      (partial.currentColocatedGroup.chain /: partial) {
         case a => RuleUtils.applyDefaultAction(a, withFilters = true)
       }
     }
@@ -139,14 +139,14 @@ case object ColocatedWithFilters extends JoinOrderStrategy {
   * Put rest of the colocated table joins after applying ColocatedWithFilters.
   */
 case object LargestColocationChain extends JoinOrderStrategy {
-  override def shortName: String = JOS.LargestCollocationChain
+  override def shortName: String = ""// JOS.LargestCollocationChain
 
   override def apply(partial: PartialPlan, _ignored: Boolean)
       (implicit snappySession: SnappySession): SubPlan = {
     if (partial.colocatedGroups.isEmpty) {
       return partial
     }
-    (partial.currentColocatedGroup.chains /: partial) {
+    (partial.currentColocatedGroup.chain /: partial) {
       case (finalPlan, replacement: Replacement) =>
         val joinRefs = finalPlan.outputSet ++ replacement.table.outputSet
         val (pTabJoinConditions, otherJoinConditions) = RuleUtils.partitionBy(joinRefs,
@@ -172,7 +172,7 @@ case object LargestColocationChain extends JoinOrderStrategy {
   * join condition.
   */
 case object NonColocated extends JoinOrderStrategy {
-  override def shortName: String = JOS.NonCollocatedWithFilters
+  override def shortName: String = ""// JOS.NonCollocatedWithFilters
 
   implicit def addToDef(newPlan: PartialPlan, pTab: LogicalPlan): PartialPlan = newPlan.copy(
     partitioned = newPlan.partitioned.filterNot(_ == pTab))
@@ -186,7 +186,7 @@ case object NonColocated extends JoinOrderStrategy {
       // handling any of it because Spark is getting a CBO as we speak and we might have to redo
       // this logic anyway.
       val nonColocated = partial.partitioned.filter(p =>
-        !partial.currentColocatedGroup.chains.exists(_ != p))
+        !partial.currentColocatedGroup.chain.exists(_ != p))
 
       (nonColocated /: partial) { case a => RuleUtils.applyDefaultAction(a, withFilters) }
     } else {
@@ -221,12 +221,12 @@ case object ApplyRest extends JoinOrderStrategy {
   * This doesn't require any alteration to joinOrder as such.
   */
 case object ContinueOptimizations extends JoinOrderStrategy {
-  override def shortName: String = JOS.ContinueOptimizations
+  override def shortName: String = ""// JOS.ContinueOptimizations
 }
 
 /**
   * This hint too doesn't require any implementation as such.
   */
 case object IncludeGeneratedPaths extends JoinOrderStrategy {
-  override def shortName: String = JOS.IncludeGeneratedPaths
+  override def shortName: String = ""// JOS.IncludeGeneratedPaths
 }

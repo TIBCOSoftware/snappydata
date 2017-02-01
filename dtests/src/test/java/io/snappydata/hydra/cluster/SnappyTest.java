@@ -65,7 +65,7 @@ public class SnappyTest implements Serializable {
     private static String productLibsDir = productDir + "lib" + sep;
     private static String productSbinDir = productDir + "sbin" + sep;
     private static String productBinDir = productDir + "bin" + sep;
-    protected static String SnappyShellPath = productBinDir + "snappy-shell";
+    protected static String SnappyShellPath = productBinDir + "snappy-sql";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
     private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
@@ -1949,6 +1949,31 @@ public class SnappyTest implements Serializable {
     public int getMyTid() {
         int myTid = RemoteTestModule.getCurrentThread().getThreadId();
         return myTid;
+    }
+
+
+    /**
+     * Start snappy cluster using snappy-start-all.sh script.
+     */
+    public static synchronized void HydraTask_startSnappyCluster() {
+        File log = null;
+        ProcessBuilder pb = null;
+        try {
+            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
+            if (num == 1) {
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
+                File logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+                snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
+                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+                snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
+            }
+        } catch (IOException e) {
+            String s = "problem occurred while retriving destination logFile path " + log;
+            throw new TestException(s, e);
+        }
     }
 
     /**
