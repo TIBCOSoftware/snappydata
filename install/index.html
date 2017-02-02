@@ -331,7 +331,12 @@ $ bin/snappy-shell server stop
 <p>The search result is displayed. From the search results, click <strong>Select</strong> to choose the AMI with the latest release version.</p>
 </li>
 <li>
-<p>On the <strong>Choose an Instance Type</strong> page, select the instance type as per the requirement of your use case and then click <strong>Review and Launch</strong> to launch the instance with default configurations. <br/><Note> Note: You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note></p>
+<p>On the <strong>Choose an Instance Type</strong> page, select the instance type as per the requirement of your use case and then click <strong>Review and Launch</strong> to launch the instance with default configurations. <br/>
+    <note> Note:  </note></p>
+<ul>
+<li><note> You can continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note></li>
+<li><note> When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</note></li>
+</ul>
 </li>
 <li>
 <p>You are directed to the last step <strong>Review Instance Launch</strong>. Check the details of your instance, and click <strong>Launch</strong>.</p>
@@ -349,13 +354,14 @@ $ bin/snappy-shell server stop
 <p>Once the status of the instance changes to <strong>running</strong>, you have successfully created and launched the instance with the SnappyData AMI.</p>
 </li>
 <li>
-<p>Use SSH to connect to the instance. You require:</p>
+<p>Use SSH to connect to the instance using the <strong>ubuntu</strong> username. You require:</p>
 <ul>
 <li>
 <p>The private key file of the key pair with which the instance was launched, and </p>
 </li>
 <li>
-<p>Details of the public hostname or IP address of the instance. </p>
+<p>Details of the public hostname or IP address of the instance. 
+ Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
 </li>
 </ul>
 <p><note> Note: </note></p>
@@ -400,7 +406,7 @@ If you already have set up the AWS Command Line Interface on your local machine,
 </ul>
 <h4 id="cluster-management">Cluster Management</h4>
 <h5 id="launching-snappydata-cluster">Launching SnappyData Cluster</h5>
-<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappydata-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
 <p>Enter the command in the following format.</p>
 <p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
 <p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file and <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>

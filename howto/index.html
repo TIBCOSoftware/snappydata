@@ -365,10 +365,9 @@ For example, the command submits the job and runs it as:</p>
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead hostNameOfLead:8090
+    --lead [leadHost:port]
 </code></pre>
 
-<p>In the above comand, <strong>--lead</strong> option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).</p>
 <p><strong>Output</strong>: It returns output similar to:</p>
 <pre><code>{
   &quot;status&quot;: &quot;STARTED&quot;,
@@ -764,7 +763,7 @@ preparedStmt1.executeBatch()
 preparedStmt1.close()
 </code></pre>
 
-<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
+<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>com.pivotal.gemfirexd.jdbc.ClientDriver</strong> class.</Note></p>
 <p><a id="howto-JSON"></a></p>
 <h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
 <p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>
@@ -845,7 +844,7 @@ The source code for JSON example is located at <a href="https://github.com/Snapp
 <p><strong>Code Example: Insert Person object into the column table</strong></p>
 <p>The code snippet below inserts Person objects into a column table. The source code for this example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala">WorkingWithObjects.scala</a>. After creating SnappySession, the Person objects is inserted using Spark API and loads into a SnappyData table.</p>
 <p><strong>Get a SnappySession</strong>:</p>
-<pre><code class="scala">    val spark: SparkSession = SparkSession
+<pre><code>    val spark: SparkSession = SparkSession
         .builder
         .appName(&quot;CreateReplicatedRowTable&quot;)
         .master(&quot;local[4]&quot;)
@@ -855,50 +854,48 @@ The source code for JSON example is located at <a href="https://github.com/Snapp
 </code></pre>
 
 <p><strong>Create DataFrame objects</strong>:</p>
-<pre><code class="scala">    //Import the implicits for automatic conversion between Objects to DataSets.
+<pre><code>    //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
 
+    val snSession = snc.snappySession
     // Create a Dataset using Spark APIs
-    val people = Seq(Person(&quot;Tom&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;), Map(&quot;frnd1&quot;-&gt; &quot;8998797979&quot;, &quot;frnd2&quot; -&gt; &quot;09878786886&quot;))
-      , Person(&quot;Ned&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;), Map.empty[String,String])).toDS()
+    val people = Seq(Person(&quot;Tom&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)), Person(&quot;Ned&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;))).toDS()
 </code></pre>
 
 <p><strong>Create a SnappyData table and insert data into it</strong>:</p>
-<pre><code class="scala">    //Drop the table if it exists.
-    snSession.dropTable(&quot;Persons&quot;, ifExists = true)
+<pre><code>    //Drop the table if it exists.
+    snSession.dropTable(&quot;people&quot;, ifExists = true)
 
     //Create a columnar table with a Struct to store Address
-    snSession.sql(&quot;CREATE table Persons(name String, address Struct&lt;city: String, state:String&gt;, &quot; +
-         &quot;emergencyContacts Map&lt;String,String&gt;) using column options()&quot;)
+    snSession.sql(&quot;CREATE table Persons(name String, address Struct&lt;city: String, state:String&gt;) using column options()&quot;)
 
     // Write the created DataFrame to the columnar table.
-    people.write.insertInto(&quot;Persons&quot;)
+    people.write.insertInto(&quot;people&quot;)
 
     //print schema of the table
     println(&quot;Print Schema of the table\n################&quot;)
-    println(snSession.table(&quot;Persons&quot;).schema)
+    println(snSession.table(&quot;people&quot;).schema)
 
 
     // Append more people to the column table
-    val morePeople = Seq(Person(&quot;Jon Snow&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;), Map.empty[String,String]),
-      Person(&quot;Rob Stark&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;), Map.empty[String,String]),
-      Person(&quot;Michael&quot;, Address(&quot;Null&quot;, &quot;California&quot;), Map.empty[String,String])).toDS()
+    val morePeople = Seq(Person(&quot;Jon Snow&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)),
+      Person(&quot;Rob Stark&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;)),
+      Person(&quot;Michael&quot;, Address(&quot;Null&quot;, &quot;California&quot;))).toDS()
 
-    morePeople.write.insertInto(&quot;Persons&quot;)
+    morePeople.write.insertInto(&quot;people&quot;)
 </code></pre>
 
 <p><strong>Execute query on the table and return results</strong>:</p>
-<pre><code class="scala">    // Query it like any other table
-    val nameAndAddress = snSession.sql(&quot;SELECT name, address, emergencyContacts FROM Persons&quot;)
+<pre><code>    // Query it like any other table
+    val nameAndAddress = snSession.sql(&quot;SELECT name, address FROM Persons&quot;)
 
     //Reconstruct the objects from obtained Row
     val allPersons = nameAndAddress.collect.map(row =&gt; {
       Person(row(0).asInstanceOf[String],
         Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],
+          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
           row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        ),
-        row(2).asInstanceOf[Map[String, String]]
+        )
       )
     })
 </code></pre>
@@ -1156,7 +1153,7 @@ This same table can be created by using createTable API. First we create a schem
     snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
-<p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
+<p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
               
             </div>
           </div>

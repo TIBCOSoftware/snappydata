@@ -228,8 +228,7 @@ Depending on your preference you can try any of the following options:</p>
 <p><Note>Note: Support for Microsoft Azure will be provided in future releases</Note></p>
 <p><a id="getting-started-with-your-spark-distribution"></a></p>
 <h2 id="option-1-getting-started-with-your-spark-distribution">Option 1: Getting Started with your Spark Distribution</h2>
-<p>If you are a Spark developer and already using Spark 2.0.2,(Core SnappyData is compatible with Spark 2.0.2 version) 
- the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.</p>
+<p>If you are a Spark developer and already using Spark 2.0, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.</p>
 <p>This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.</p>
 <p><strong>Open a command terminal and go to the location of the Spark installation directory:</strong></p>
 <pre><code class="bash">$ cd &lt;Spark_Install_dir&gt;
@@ -331,12 +330,12 @@ scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
 <h2 id="option-3-20x-faster-than-spark-202">Option 3: 20X Faster than Spark 2.0.2</h2>
 <p>Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
-<p><Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note></p>
+<p><Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test.</Note></p>
 <p><strong>Start the Spark Shell using any of the options mentioned below:</strong></p>
-<p><strong>If you are using your own Spark 2.0.2 installation:</strong></p>
+<p><strong>If you are using your own Spark 2.0 installation:</strong></p>
 <pre><code class="bash"># Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.7.0-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
 </code></pre>
 
 <p><strong>If you have downloaded SnappyData </strong>:</p>

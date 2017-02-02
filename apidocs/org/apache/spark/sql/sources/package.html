@@ -196,6 +196,23 @@ for experimentation.
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ColocatedReplacements" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColocatedReplacementsextendsProductwithSerializable"></a>
+      <a id="ColocatedReplacements:ColocatedReplacements"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColocatedReplacements.html"><span class="name">ColocatedReplacements</span></a><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ColocatedReplacementsextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.sources.CompletePlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CompletePlanextendsSubPlanwithProductwithSerializable"></a>
       <a id="CompletePlan:CompletePlan"></a>
@@ -762,7 +779,7 @@ less than or equal to <code>value</code>.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="PartialPlan.html"><span class="name">PartialPlan</span></a><span class="params">(<span name="curPlan">curPlan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="replaced">replaced: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>, <span name="outputSet">outputSet: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="colocatedGroups">colocatedGroups: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="ReplacementSet.html" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>]</span>, <span name="partitioned">partitioned: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="replicates">replicates: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="others">others: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result"> extends <a href="SubPlan.html" class="extype" name="org.apache.spark.sql.sources.SubPlan">SubPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="PartialPlan.html"><span class="name">PartialPlan</span></a><span class="params">(<span name="curPlan">curPlan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="replaced">replaced: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>, <span name="outputSet">outputSet: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="colocatedGroups">colocatedGroups: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="ColocatedReplacements.html" class="extype" name="org.apache.spark.sql.sources.ColocatedReplacements">ColocatedReplacements</a>]</span>, <span name="partitioned">partitioned: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="replicates">replicates: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="others">others: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result"> extends <a href="SubPlan.html" class="extype" name="org.apache.spark.sql.sources.SubPlan">SubPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sources.package@PartialPlanextendsSubPlanwithProductwithSerializable" title="Permalink" target="_top">
@@ -880,7 +897,7 @@ data source 'org.apache.spark.sql.json.DefaultSource'</p><p>A new instance of th
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.Replacement" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ReplacementextendsPredicateHelperwithProductwithSerializable"></a>
+      <a id="ReplacementextendsProductwithSerializable"></a>
       <a id="Replacement:Replacement"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -888,35 +905,14 @@ data source 'org.apache.spark.sql.json.DefaultSource'</p><p>A new instance of th
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Replacement.html"><span class="name">Replacement</span></a><span class="params">(<span name="table">table: <a href="Entity$.html#TABLE=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.TABLE">TABLE</a></span>, <span name="index">index: <a href="Entity$.html#INDEX=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.INDEX">INDEX</a></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Replacement.html"><span class="name">Replacement</span></a><span class="params">(<span name="table">table: <a href="Entity$.html#TABLE=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.TABLE">TABLE</a></span>, <span name="index">index: <a href="Entity$.html#INDEX=org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" class="extmbr" name="org.apache.spark.sql.sources.Entity.INDEX">INDEX</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ReplacementextendsPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ReplacementextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Table to table or Table to index replacement.</p>
-    </li><li name="org.apache.spark.sql.sources.ReplacementSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ReplacementSetextendsOrdered[org.apache.spark.sql.sources.ReplacementSet]withPredicateHelperwithProductwithSerializable"></a>
-      <a id="ReplacementSet:ReplacementSet"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="ReplacementSet.html"><span class="name">ReplacementSet</span></a><span class="params">(<span name="chain">chain: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="Replacement.html" class="extype" name="org.apache.spark.sql.sources.Replacement">Replacement</a>]</span>, <span name="conditions">conditions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../../../../../scala/package.html#Ordered[T]=scala.math.Ordered[T]" class="extmbr" name="scala.Ordered">Ordered</a>[<a href="ReplacementSet.html" class="extype" name="org.apache.spark.sql.sources.ReplacementSet">ReplacementSet</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ReplacementSetextendsOrdered[org.apache.spark.sql.sources.ReplacementSet]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A set of possible replacements of table to indexes.</p><div class="fullcomment"><div class="comment cmt"><p>A set of possible replacements of table to indexes.
-<br>
-<strong>Note:</strong> The chain if consists of multiple partitioned tables, they must satisfy
-colocation criteria.
-</p></div><dl class="paramcmts block"><dt class="param">chain</dt><dd class="cmt"><p>Multiple replacements.</p></dd><dt class="param">conditions</dt><dd class="cmt"><p>user provided join + filter conditions.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.ResolveIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ResolveIndexextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
       <a id="ResolveIndex:ResolveIndex"></a>
@@ -1347,6 +1343,23 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.sources.ColocatedReplacements" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColocatedReplacements"></a>
+      <a id="ColocatedReplacements:ColocatedReplacements"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColocatedReplacements$.html"><span class="name">ColocatedReplacements</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ColocatedReplacements" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Captures chain of colocated group of table -&gt; index replacements.</p>
     </li><li name="org.apache.spark.sql.sources.ColocatedWithFilters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ColocatedWithFilters"></a>
       <a id="ColocatedWithFilters:ColocatedWithFilters"></a>
@@ -1543,6 +1556,23 @@ injecting just after ReorderJoin, whereby additional nodes like Project requires
     </span>
       <p class="shortcomment cmt">Tables considered non-colocated according to currentColocatedGroup with Filters are put into
 join condition.</p>
+    </li><li name="org.apache.spark.sql.sources.Replacement" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Replacement"></a>
+      <a id="Replacement:Replacement"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Replacement$.html"><span class="name">Replacement</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@Replacement" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.sources.Replicates" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Replicates"></a>
       <a id="Replicates:Replicates"></a>

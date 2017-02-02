@@ -229,8 +229,8 @@ Data in tables is primarily managed in-memory with one or more consistent copies
 <p><a id="snappysession"></a></p>
 <h2 id="snappysession-and-snappystreamingcontext">SnappySession and SnappyStreamingContext</h2>
 <p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's <a href="http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SparkSession">SparkSession</a> to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
-Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
-<a href="http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext">Streaming Context</a>.</p>
+Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's 
+<a href="http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext">Streaming Context</a>. </p>
 <p>Also SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see <a href="../deployment/">SnappyData Spark Affinity modes</a>.</p>
 <p>If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.</p>
 <h3 id="to-create-a-snappysession">To Create a SnappySession</h3>
@@ -573,7 +573,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 //   connection at a server endpoint
 </code></pre>
 
-<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
+<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>com.pivotal.gemfirexd.jdbc.ClientDriver</strong> class.</Note></p>
 <h2 id="building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</h2>
 <h3 id="snappysession-usage">SnappySession Usage</h3>
 <h4 id="create-columnar-tables-using-api">Create Columnar Tables using API</h4>
@@ -820,7 +820,8 @@ PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a repli
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
+PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
+STORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -867,7 +868,7 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <pre><code>snappy.dropTable(tableName, ifExists = true)
 </code></pre>
 <p><a id="ddl"></a></p>
-<h4 id="ddl-extensions-to-snappystore-tables">DDL extensions to SnappyStore Tables</h4>
+<h4 id="ddl-extensions-to-snappystore-tables">DDL Extensions to SnappyStore Tables</h4>
 <p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
 <ol>
 <li>
@@ -886,7 +887,10 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <p>EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store</p>
 </li>
 <li>
-<p>PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
+<p>PERSISTENT: When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
+</li>
+<li>
+<p>STORE: The disk directory where you want to persist the table data. For more information, refer to <a href="http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore">this document</a>.</p>
 </li>
 <li>
 <p>EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
