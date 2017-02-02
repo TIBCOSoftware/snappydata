@@ -17,6 +17,9 @@
 
 package org.apache.spark.sql
 
+
+import java.io.File
+
 import scala.util.Try
 
 import io.snappydata.Constant
@@ -24,6 +27,9 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
+import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
+import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -136,6 +142,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -332,6 +339,71 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+  protected final def resourceType: Rule1[FunctionResource] = rule {
+    identifier ~ stringLiteral ~> { (rType: String, path: String) =>
+      val resourceType = rType.toLowerCase
+      resourceType match {
+        case "jar" =>
+          FunctionResource(FunctionResourceType.fromString(resourceType), path)
+        case other =>
+          throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
+      }
+    }
+  }
+
+  def checkExists(resource: FunctionResource) = {
+    if(!new File(resource.uri).exists()){
+      throw new AnalysisException(s"No file named ${resource.uri} exists")
+    }
+  }
+
+  /**
+   * Create a [[CreateFunctionCommand]] command.
+   *
+   * For example:
+   * {{{
+   *   CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name RETURNS ReturnType
+   *    USING JAR 'file_uri';
+   * }}}
+   */
+  protected def createFunction: Rule1[LogicalPlan] = rule {
+    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~
+        qualifiedName ~ RETURNS ~ columnDataType ~ USING ~ resourceType ~>
+        { (te: Any, functionIdent: FunctionIdentifier, className: String,
+            t: DataType, funcResource : FunctionResource) =>
+
+          val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
+          val funcResources = Seq(funcResource)
+          funcResources.foreach(checkExists(_))
+          val classNameWithType  = className + "__"+ t.catalogString
+          CreateFunctionCommand(
+            functionIdent.database,
+            functionIdent.funcName,
+            classNameWithType,
+            funcResources,
+            isTemp)
+        }
+  }
+
+
+  /**
+   * Create a [[DropFunctionCommand]] command.
+   *
+   * For example:
+   * {{{
+   *   DROP [TEMPORARY] FUNCTION [IF EXISTS] function;
+   * }}}
+   */
+  protected def dropFunction: Rule1[LogicalPlan] = rule {
+    DROP ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ (IF ~ EXISTS ~> trueFn).? ~ functionIdentifier ~>
+        ((te: Any, ifExists: Any, functionIdent: FunctionIdentifier) =>  DropFunctionCommand(
+          functionIdent.database,
+          functionIdent.funcName,
+          ifExists = ifExists.asInstanceOf[Option[Boolean]].isDefined,
+          isTemp = te.asInstanceOf[Option[Boolean]].isDefined))
+  }
+
+
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
@@ -395,10 +467,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   // SHOW FUNCTIONS func1;
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
-    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
+   SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
       ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-    SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
-        (tableIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
+       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+        (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
         case None | Some("all") => (true, true)
@@ -408,8 +480,8 @@ abstract class SnappyDDLParser(session: SnappySession)
           throw Utils.analysisException(s"SHOW $x FUNCTIONS not supported")
       }
       nameOrPat match {
-        case Some(name: TableIdentifier) => ShowFunctionsCommand(
-          name.database, Some(name.table), user, system)
+        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
+          name.database, Some(name.funcName), user, system)
         case Some(pat: String) => ShowFunctionsCommand(
           None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
@@ -419,10 +491,13 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+
+
+
   protected def desc: Rule1[LogicalPlan] = rule {
     DESCRIBE ~ FUNCTION ~ (EXTENDED ~> trueFn).? ~
-        (identifier | stringLiteral) ~> ((extended: Any, name: String) =>
-      DescribeFunctionCommand(FunctionIdentifier(name),
+        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
+      DescribeFunctionCommand(name,
         extended.asInstanceOf[Option[Boolean]].isDefined))
   }
 
@@ -502,7 +577,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createStream | streamContext | createIndex | dropIndex
+    createStream | streamContext | createIndex | dropIndex | createFunction | dropFunction | show
   }
 
   protected def query: Rule1[LogicalPlan]

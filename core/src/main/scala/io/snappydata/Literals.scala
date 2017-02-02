@@ -100,7 +100,7 @@ object Constant {
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 
-  val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+  val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 }
