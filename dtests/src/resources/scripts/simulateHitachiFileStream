@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+#set -vx
+
+# This script helps to simulate twitter stream as a file stream. It copies
+# tweet files from one folder to another folder on which a file stream can be
+# created for about 10 mins.
+
+if [ $# -ne 0 ]; then
+    echo "ERROR: incorrect argument specified: " "$@"
+    echo "Usage:./simulateHitachiFileStream.sh"
+    exit 1
+fi
+
+# Removing directories from user specified location if exists and creating new ones.
+rm -rf /tmp/ACC/myFile*
+rm -rf /tmp/BIO/myFile*
+rm -rf /tmp/ENV/myFile*
+
+
+# Copy csv to a folder to simulate a file stream.
+count=0
+start=$(date +%s%3N)
+end=$((start+200000))
+while [ "$start" -lt "$end" ]; do
+start=$(date +%s%3N)
+count=$((count+1))
+accfile=/tmp/ACC/acc.txt
+echo "Copying csv file $accfile in /tmp/ACC/myFile$start"
+cp $accfile /tmp/ACC/"myFile"$start
+sleep 0.4
+biofile=/tmp/BIO/bio.txt
+echo "Copying csv file $biofile in /tmp/BIO/myFile$start"
+cp $biofile /tmp/BIO/"myFile"$start
+sleep 0.4
+envfile=/tmp/ENV/env.txt
+echo "Copying csv file $envfile in /tmp/ENV/myFile$start"
+cp $envfile /tmp/ENV/"myFile"$start
+sleep 0.4
+done
+sleep 1
+echo "Data copying done"
+
