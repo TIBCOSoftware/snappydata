@@ -407,7 +407,7 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = baseRelation.schema.fieldIndex(attr.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
-      val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
+      val bufferPosition = baseIndex + 1
 
       ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
 
@@ -441,7 +441,7 @@ private[sql] final case class ColumnTableScan(
           """)
       } else {
         columnBufferInitCode.append(
-          s"$buffer = $rowFormatter.getLob($buffers, $bufferPosition);")
+          s"$buffer = $colInput.getColumnLob($bufferPosition);")
       }
       columnBufferInitCode.append(
         s"""
@@ -489,7 +489,7 @@ private[sql] final case class ColumnTableScan(
           while (true) {
             $batch = ($execRowClass)$colInput.next();
             final byte[] statBytes = $batch.getRowBytes(
-              ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+              ${PartitionedPhysicalScan.CT_BLOB_POSITION});
             UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
             if ($filterFunction(unsafeRow)) {
               $numBatchRows = unsafeRow.getInt(3);
@@ -513,7 +513,7 @@ private[sql] final case class ColumnTableScan(
              $rowFormatter = $colInput.rowFormatter();
              $buffers = (byte[][])$colInput.next();
              final byte[] statBytes = $rowFormatter.getLob($buffers,
-               ${PartitionedPhysicalScan.CT_STATROW_POSITION});
+               ${PartitionedPhysicalScan.CT_BLOB_POSITION});
              UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
              if ($filterFunction(unsafeRow)) {
                $numBatchRows = unsafeRow.getInt(3);

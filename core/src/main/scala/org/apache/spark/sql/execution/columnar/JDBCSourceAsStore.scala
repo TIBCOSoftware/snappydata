@@ -25,14 +25,15 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 
-import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeRegionKey, GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
+import com.gemstone.gemfire.internal.cache.{BucketRegion, NonLocalRegionEntry, OffHeapRegionEntry}
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey,
+GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedPhysicalScan}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.{Logging, Partition, TaskContext}
@@ -104,7 +105,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
           // add the stat row
           stmt.setString(1, uuid)
           stmt.setInt(2, partitionId)
-          stmt.setInt(3, -1)
+          stmt.setInt(3, JDBCSourceAsStore.STATROW_COL_INDEX)
           stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
           stmt.addBatch()
 
@@ -279,17 +280,38 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
 
   protected var currentVal: Array[Array[Byte]] = _
   var rowFormatter: RowFormatter = _
+  var currentKeyUUID: DataValueDescriptor = _
+  var currentKeyPartitionId: DataValueDescriptor = _
+  var currentBucketRegion: BucketRegion = _
+
+  def getColumnLob(bufferPosition: Int): Array[Byte] = {
+    val key = new CompactCompositeRegionKey(Array(
+      currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
+      container.getExtraTableInfo());
+    val rl = currentBucketRegion.get(key)
+    val value = rl.asInstanceOf[Array[Array[Byte]]]
+    val rf = container.getRowFormatter(value(0))
+    rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
+  }
 
   override protected def moveNext(): Unit = {
     while (itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
-      val owner = itr.getHostedBucketRegion
-      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
-        if (v ne null) {
-          currentVal = v.asInstanceOf[Array[Array[Byte]]]
-          rowFormatter = container.getRowFormatter(currentVal(0))
-          return
+      currentBucketRegion = itr.getHostedBucketRegion
+      // get the stat row region entries only. region entries for individual columns
+      // will be fetched on demand
+      if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+        val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+        if (key.getKeyColumn(2).getInt ==
+            JDBCSourceAsStore.STATROW_COL_INDEX) {
+          val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(currentBucketRegion, rl)
+          if (v ne null) {
+            currentVal = v.asInstanceOf[Array[Array[Byte]]]
+            currentKeyUUID = key.getKeyColumn(0)
+            currentKeyPartitionId = key.getKeyColumn(1)
+            rowFormatter = container.getRowFormatter(currentVal(0))
+            return
+          }
         }
       }
     }
@@ -324,6 +346,9 @@ final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
   }
 }
 
+object JDBCSourceAsStore {
+  val STATROW_COL_INDEX = -1
+}
 class ExternalStorePartitionedRDD[T: ClassTag](
     @transient val session: SparkSession,
     tableName: String, requiredColumns: Array[String],
