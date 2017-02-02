@@ -51,16 +51,33 @@ Defines the indetation for the navigation pane
 .wy-menu-vertical li.current > a::before {
     content: url("Images/arrow-20x20-expanded.png");
     float: left;
-}
+    line-height: 18px;
+    padding: 0em 0em;
+    display: block;
+    position: relative;
 
+    color: #838383;
+}
+/*
 .wy-menu-vertical li > a[class="toctree-l4"]{
+    line-height: 18px;
+    padding: 0.1em 0.1em;
+    display: block;
+    position: relative;
   margin-left: 10px;
 }
 
+*/
+
 .wy-menu-vertical li > a[class="toctree-l4"]::before {
+    line-height: 11px;
+    padding: 0.1em 0.1em;
+    display: block;
+    position: relative;
   content: url("Images/dash-20x20-collapsed.png");
   float: left;
 }
+
 
 /*
 Formatting for code snippets 
@@ -147,4 +164,3 @@ mark {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background-color: #f6f3d7;
 }
-
