@@ -22,6 +22,8 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
@@ -315,4 +317,145 @@ object ClusterManagerTestBase {
       throwOnTimeout)
   }
 
+/*
+  def notifyVmIfWaiting(netPort1: Int): Unit = {
+    val cache = GemFireCacheImpl.getInstance()
+    if (null != cache) {
+      cache.notifyRvvTestHook();
+      cache.notifyRvvSnapshotTestHook();
+      cache.setRvvSnapshotTestHook(null);
+    }
+
+  }*/
+
+  def validateResults(netPort: Int): Unit = {
+
+    val cache = GemFireCacheImpl.getInstance()
+    if (null != cache) {
+      cache.setRvvSnapshotTestHook(new MyTestHook)
+      cache.waitOnRvvTestHook()
+
+    } else {
+      return;
+    }
+
+    if (null == cache) {
+      return;
+    }
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = null
+
+    url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+    val tableName: String = "APP.TESTTABLE"
+    val conn = DriverManager.getConnection(url)
+
+
+    val s = conn.createStatement()
+    s.execute(s"select * from $tableName")
+    var cnt = 0
+    val rs = s.getResultSet
+    while (rs.next) {
+      cnt = cnt + 1
+    }
+
+    println("Row count before creating the cachebatch: " + cnt)
+    assert(cnt == 5)
+
+
+
+    var cnt1 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs1 = s.getResultSet
+    while (rs1.next) {
+      cnt1 = cnt1 + 1
+    }
+    println("Row count before creating the cachebatch in row buffer: " + cnt1)
+    assert(cnt1 == 5)
+
+
+
+
+    var cnt2 = 0;
+    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
+        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs2 = s.getResultSet
+    while (rs2.next) {
+      cnt2 = cnt2 + 1
+    }
+    println("Row count before creating the cachebatch in column store: " + cnt2)
+    assert(cnt2 == 0)
+
+
+    //Thread.sleep(3000)
+    cache.notifyRvvSnapshotTestHook()
+    cache.waitOnRvvTestHook()
+
+    var cnt3 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs3 = s.getResultSet
+    while (rs3.next) {
+      cnt3 = cnt3 + 1
+    }
+
+    println("Row count in row buffer after destroy all entries from row buffer  : " + cnt3)
+    assert(cnt3 == 0)
+
+
+
+    var cnt4 = 0;
+    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
+        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs4 = s.getResultSet
+    while (rs4.next) {
+      cnt4 = cnt4 + 1
+    }
+    println("Row count in column store after destroy all entries from row buffer  : " + cnt4)
+    assert(cnt4 == 1)
+
+    var cnt5 = 0;
+    s.execute(s"select * from $tableName")
+    val rs5 = s.getResultSet
+    while (rs5.next) {
+      cnt5 = cnt5 + 1
+    }
+    println("Row count in column table : " + cnt5)
+    assert(cnt5 == 5)
+
+    cache.notifyRvvSnapshotTestHook()
+
+
+    //Thread.sleep(1000)
+    cache.setRvvSnapshotTestHook(null)
+  }
+
+  class MyTestHook extends RvvSnapshotTestHook {
+    val lockForTest: AnyRef = new AnyRef
+    val operationLock: AnyRef = new AnyRef
+
+    override def notifyOperationLock(): Unit = {
+      operationLock.synchronized {
+        operationLock.notify()
+      }
+    }
+
+    override def notifyTestLock(): Unit = {
+      lockForTest.synchronized {
+        lockForTest.notify()
+      }
+    }
+
+    override def waitOnTestLock(): Unit = {
+      lockForTest.synchronized {
+        lockForTest.wait()
+      }
+    }
+
+    override def waitOnOperationLock(): Unit = {
+      operationLock.synchronized {
+        operationLock.wait()
+      }
+    }
+  }
 }
