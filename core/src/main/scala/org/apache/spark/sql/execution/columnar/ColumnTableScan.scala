@@ -199,12 +199,23 @@ private[sql] final case class ColumnTableScan(
     val platformClass = classOf[Platform].getName
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
+
+    val getUnsafeRow = ctx.freshName("getUnsafeRow")
+    ctx.addNewFunction(getUnsafeRow,
+      s"""
+         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
+         |  final UnsafeRow unsafeRow = new UnsafeRow($numStatFields);
+         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statBytes.length);
+         |  return unsafeRow;
+         |}
+       """.stripMargin)
+
     // skip filtering if nothing is to be applied
     if (predicateEval.value == "true" && predicateEval.isNull == "false") {
-      return ("", "")
+      return (getUnsafeRow, "")
     }
     val filterFunction = ctx.freshName("columnBatchFilter")
-    val getUnsafeRow = ctx.freshName("getUnsafeRow")
     ctx.addNewFunction(filterFunction,
       s"""
          |private boolean $filterFunction(UnsafeRow $statRow) {
@@ -220,15 +231,6 @@ private[sql] final case class ColumnTableScan(
          |}
        """.stripMargin)
 
-    ctx.addNewFunction(getUnsafeRow,
-      s"""
-         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
-         |  final UnsafeRow unsafeRow = new UnsafeRow($numStatFields);
-         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statBytes.length);
-         |  return unsafeRow;
-         |}
-       """.stripMargin)
 
     (getUnsafeRow, filterFunction)
   }
@@ -504,14 +506,21 @@ private[sql] final case class ColumnTableScan(
     } else {
       val filterCode = if (filterFunction.isEmpty) {
         val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
-        s"""final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
+        s"""
           $buffers = (byte[][])$colInput.next();
-          $columnBatchesSeen.${metricAdd("1")};"""
+          final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
+          $columnBatchesSeen.${metricAdd("1")};
+          final byte[] statBytes = $rowFormatter.getLob($buffers,
+            ${PartitionedPhysicalScan.CT_BLOB_POSITION});
+           UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
+           $numBatchRows = unsafeRow.getInt(3);
+            """
+
       } else {
         s"""$rowFormatterClass $rowFormatter;
            while (true) {
-             $rowFormatter = $colInput.rowFormatter();
              $buffers = (byte[][])$colInput.next();
+             $rowFormatter = $colInput.rowFormatter();
              final byte[] statBytes = $rowFormatter.getLob($buffers,
                ${PartitionedPhysicalScan.CT_BLOB_POSITION});
              UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
