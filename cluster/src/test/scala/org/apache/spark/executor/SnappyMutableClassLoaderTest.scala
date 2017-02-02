@@ -16,7 +16,7 @@
  */
 package org.apache.spark.executor
 
-import java.net.URL
+import java.net.{URLClassLoader, URL}
 import java.util.Properties
 
 import io.snappydata.SnappyFunSuite
@@ -42,31 +42,33 @@ class SnappyMutableClassLoaderTest extends SnappyFunSuite {
 
   def addjar(loader: SnappyMutableURLClassLoader, testJar: URL): Unit = {
     val taskProperties = new Properties()
-    taskProperties.setProperty("SNAPPY_JOB_SERVER_JAR_NAME", testJar.getFile)
+    taskProperties.setProperty("SNAPPY_CHANGEABLE_JAR_NAME", testJar.getFile)
     org.apache.spark.executor.Executor.taskDeserializationProps.set(taskProperties)
     loader.addURL(testJar)
   }
 
   def verifyClass(loader: SnappyMutableURLClassLoader, className: String, version: String): Unit = {
-    val fakeClass = loader.loadClass(className).newInstance()
+    val fakeClass = Class.forName(className, false, loader).newInstance()
     assert(fakeClass.toString.equals(version))
   }
 
   test(" load class by setting job name in local properties") {
-    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
+    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null,
+      scala.collection.mutable.Map.empty[String, URLClassLoader])
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
   }
 
   test("remove Jar from the MutableClassLoader") {
-    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null)
+    val classloader = new SnappyMutableURLClassLoader(Array.empty[URL], null, scala.collection.mutable.Map.empty[String, URLClassLoader])
     val file = new java.io.File(testJar1.toURI)
     val fileName = file.getName
     addjar(classloader, testJar1)
     verifyClass(classloader, "FakeClass1", "1")
     classloader.removeURL(fileName)
+    val newClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(), classloader.getParent, classloader.jobJars)
     intercept[ClassNotFoundException] {
-      verifyClass(classloader, "FakeClass1", "1")
+      verifyClass(newClassLoader, "FakeClass1", "1")
     }
   }
 }

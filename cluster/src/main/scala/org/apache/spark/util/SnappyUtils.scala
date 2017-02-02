@@ -25,7 +25,9 @@ import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
 import spark.jobserver.util.ContextURLClassLoader
 
-import org.apache.spark.SparkContext
+import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.{SparkEnv, SparkContext}
+import org.apache.spark.sql.collection.ToolsCallbackInit
 
 object SnappyUtils {
 
@@ -36,10 +38,15 @@ object SnappyUtils {
 
   def removeJobJar(sc: SparkContext): Unit = {
     def getName(path: String): String = new File(path).getName
-    val jobJarToRemove = sc.getLocalProperty(Constant.JOB_SERVER_JAR_NAME)
+    val jobJarToRemove = sc.getLocalProperty(Constant.CHANGEABLE_JAR_NAME)
     val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
     if (keyToRemove.nonEmpty) {
-      sc.addedJars.remove(keyToRemove.head)
+      val callbacks = ToolsCallbackInit.toolsCallback
+      //@TODO This is a temp workaround to fix SNAP-1133. sc.addedJar should be directly be accessible from here.
+      //May be due to scala version mismatch.
+      if(callbacks != null){
+        callbacks.removeAddedJar(sc, keyToRemove.head)
+      }
     }
   }
 
@@ -47,6 +54,18 @@ object SnappyUtils {
       parent: ContextURLClassLoader): ContextURLClassLoader = parent match {
     case _: SnappyContextURLLoader => parent // no double wrap
     case _ => new SnappyContextURLLoader(parent)
+  }
+
+  def doFetchFile(
+      url: String,
+      targetDir: File,
+      filename: String): File = {
+
+    val env = SparkEnv.get
+    val conf = env.conf
+    val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
+    org.apache.spark.util.Utils.doFetchFile(url, targetDir, filename, conf, env.securityManager, hadoopConf)
+    new File(targetDir, filename)
   }
 }
 
