@@ -9,14 +9,15 @@ import org.apache.spark.util.Benchmark
 
 object DistIndexTestUtils {
 
-  def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext) = {
+  def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext, pw: PrintWriter)
+  = {
 
     val qryProvider = new TPCH with SnappyAdapter
     val query = qNum.toInt
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
-    println(s"$qNum size $size")
+    pw.println(s"$qNum size $size")
     val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 10)
 
     def case1(): Unit = snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
@@ -95,8 +96,7 @@ object DistIndexTestUtils {
 
     //TPCHUtils.createAndLoadTables(snc, true)
 
-    snc.sql(
-      s"""CREATE INDEX idx_orders_cust ON DistIndexTestUtils.scala(o_custkey)
+    snc.sql(s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')
           """)
 
