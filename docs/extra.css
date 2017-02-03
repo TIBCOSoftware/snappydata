@@ -3,7 +3,7 @@ html {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 /*
-Formatting for body text
+-----------------------------------------------------Formatting for body text
 */
 p{
 font-size: 14px;
@@ -11,7 +11,7 @@ font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 /*
-Formatting for headings
+-----------------------------------------------------Formatting for headings
 */
 
 h1{
@@ -45,7 +45,7 @@ h4 {
 
 
 /*
-Defines the indetation for the navigation pane
+----------------------------------------------------- Define the navigation pane
 */
 
 .wy-menu-vertical li.current > a::before {
@@ -80,7 +80,7 @@ Defines the indetation for the navigation pane
 
 
 /*
-Formatting for code snippets 
+-----------------------------------------------------Formatting for code snippets 
 */
 
 pre code {
@@ -94,7 +94,7 @@ pre code {
 }
 
 /*
-Formatting for inline code  
+-----------------------------------------------------Formatting for inline code  
 */
 
 code {
@@ -110,7 +110,7 @@ pre .cs, pre .c {
 }
 
 /*
-Formatting for information in the Note
+-----------------------------------------------------Formatting for Note
 */
 
 note {
@@ -121,7 +121,7 @@ note {
 }
 
 /*
-Formatting for Glossary Term
+-----------------------------------------------------Formatting for Glossary Term
 */
 
 glossary {
@@ -145,7 +145,8 @@ glossarytext {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-/* Image Alignment - Center
+/* 
+-----------------------------------------------------Image Alignment - Center
 */
 img {
     display: block;
@@ -155,7 +156,7 @@ img {
 }
 
 /*
-Formatting for text for review/comments purpose only
+-----------------------------------------------------Formatting for text for review/comments purpose only
 */
 
 mark {
@@ -164,3 +165,23 @@ mark {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background-color: #f6f3d7;
 }
+
+/*
+-----------------------------------------------------Formatting for TroubleShooting
+*/
+
+question {
+    color: black;
+    font-size: 16px;
+    font-style: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+solution {
+    color: black;
+    font-size: 12px;
+    font-style: italic;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+
