@@ -7,20 +7,24 @@ import org.apache.spark.sql._
 
 import scala.util.{Failure, Success, Try}
 
-class DistIndexJob  extends SnappySQLJob {
+class DistIndexJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
+    val resultValidation: Boolean = jobConfig.getString("resultValidation").toBoolean
     Try {
       snc.sql("set spark.sql.crossJoin.enabled = true")
       pw.println("****** DistIndexJob started ******")
-      pw.println("****** executeQueriesWithResultValidation task started ******")
-      DistIndexTestUtils.executeQueriesWithResultValidation(snc, pw)
-      pw.println("****** executeQueriesWithResultValidation task finished ******")
-      pw.println("****** executeQueriesForBenchmarkResults task started ******")
-      DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw)
-      pw.println("****** executeQueriesForBenchmarkResults task finished ******")
+      if (resultValidation) {
+        pw.println("****** executeQueriesWithResultValidation task started ******")
+        DistIndexTestUtils.executeQueriesWithResultValidation(snc, pw)
+        pw.println("****** executeQueriesWithResultValidation task finished ******")
+      } else {
+        pw.println("****** executeQueriesForBenchmarkResults task started ******")
+        DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw)
+        pw.println("****** executeQueriesForBenchmarkResults task finished ******")
+      }
       pw.println("****** DistIndexJob finished ******")
       return String.format("See %s/" + jobConfig.getString("logFileName"), getCurrentDirectory)
     } match {

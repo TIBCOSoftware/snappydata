@@ -11,6 +11,7 @@ io/snappydata/hydra/distIndex/distIndexResultValidation.conf
   inMemoryColumnarStorageCompressed=false
   dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
+  resultValidation=true
 
 io/snappydata/hydra/distIndex/distIndexPerformance.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -25,3 +26,4 @@ io/snappydata/hydra/distIndex/distIndexPerformance.conf
   inMemoryColumnarStorageCompressed=false
   dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
+  resultValidation=false

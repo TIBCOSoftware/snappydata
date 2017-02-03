@@ -113,7 +113,7 @@ object DistIndexTestUtils {
     }.toMap
 
     tableSizes.foreach(pw.println)
-    queries.foreach(q => benchmark(q, tableSizes, snc))
+    queries.foreach(q => benchmark(q, tableSizes, snc, pw))
 
     snc.sql(s"DROP INDEX idx_orders_cust")
     snc.sql(s"DROP INDEX idx_lineitem_part")
