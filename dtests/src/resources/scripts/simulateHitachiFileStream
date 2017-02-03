@@ -12,9 +12,9 @@ if [ $# -ne 0 ]; then
 fi
 
 # Removing directories from user specified location if exists and creating new ones.
-rm -rf /tmp/ACC/myFile*
-rm -rf /tmp/BIO/myFile*
-rm -rf /tmp/ENV/myFile*
+rm -rf /tmp/ACC/*
+rm -rf /tmp/BIO/*
+rm -rf /tmp/ENV/*
 
 
 # Copy csv to a folder to simulate a file stream.
@@ -24,17 +24,17 @@ end=$((start+200000))
 while [ "$start" -lt "$end" ]; do
 start=$(date +%s%3N)
 count=$((count+1))
-accfile=/tmp/ACC/acc.txt
-echo "Copying csv file $accfile in /tmp/ACC/myFile$start"
-cp $accfile /tmp/ACC/"myFile"$start
+accfile=/home/swati/hitachi/zip/question0131_details/data/test_src1_1.csv
+echo "Copying csv file $accfile in /tmp/ACC/test_src1$count"
+cp $accfile /tmp/ACC/"test_src1"$countt
 sleep 0.4
-biofile=/tmp/BIO/bio.txt
-echo "Copying csv file $biofile in /tmp/BIO/myFile$start"
-cp $biofile /tmp/BIO/"myFile"$start
+biofile=/home/swati/hitachi/zip/question0131_details/data/test_src2_1.csv
+echo "Copying csv file $biofile in /tmp/BIO/test_src2$count"
+cp $biofile /tmp/BIO/"test_src2"$count
 sleep 0.4
-envfile=/tmp/ENV/env.txt
-echo "Copying csv file $envfile in /tmp/ENV/myFile$start"
-cp $envfile /tmp/ENV/"myFile"$start
+envfile=/home/swati/hitachi/zip/question0131_details/data/test_src3_1.csv
+echo "Copying csv file $envfile in /tmp/ENV/test_src3$count"
+cp $envfile /tmp/ENV/"test_src3"$count
 sleep 0.4
 done
 sleep 1
