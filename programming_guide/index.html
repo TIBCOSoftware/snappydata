@@ -821,7 +821,7 @@ BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
 PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
-STORE 'DISKSTORE_NAME', //empty string maps to default diskstore
+DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -890,7 +890,7 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <p>PERSISTENT: When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
 </li>
 <li>
-<p>STORE: The disk directory where you want to persist the table data. For more information, refer to <a href="http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore">this document</a>.</p>
+<p>DISKSTORE: The disk directory where you want to persist the table data. For more information, refer to <a href="http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore">this document</a>.</p>
 </li>
 <li>
 <p>EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
