@@ -211,7 +211,8 @@ case object ApplyRest extends JoinOrderStrategy {
     newPlan match {
       case p: PartialPlan =>
         // if none of the rules got applied, nothing is possible then. We just reassemble & return.
-        RuleUtils.returnPlan(p)
+        // RuleUtils.returnPlan(p)
+        p
       case _ => newPlan
     }
   }
