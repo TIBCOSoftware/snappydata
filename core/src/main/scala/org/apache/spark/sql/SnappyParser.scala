@@ -460,8 +460,7 @@ class SnappyParser(session: SnappySession)
         USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
             ((t: Any, r: LogicalPlan, ids: Any) =>
               (Some(UsingJoin(t.asInstanceOf[Option[JoinType]]
-                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]]
-                  .map(UnresolvedAttribute.quoted))), r, None)) |
+                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]])), r, None)) |
         MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
     ) |
     NATURAL ~ joinType.? ~ JOIN ~ relationFactor ~> ((t: Any,
@@ -722,7 +721,7 @@ class SnappyParser(session: SnappySession)
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
     TABLE.? ~ relation ~ query ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
-        Option[String]], s, o, ifNotExists = false))
+        Option[String]], s, OverwriteOptions(o), ifNotExists = false))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
@@ -733,7 +732,12 @@ class SnappyParser(session: SnappySession)
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
-        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2))).toMap))
+        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2, None)))))
+  }
+
+  override protected def start: Rule1[LogicalPlan] = rule {
+    query.named("select") | insert | put | dmlOperation | ctes |
+        ddl | set | cache | uncache | show | desc
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
@@ -742,10 +746,7 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | show | desc
-  }
+
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
