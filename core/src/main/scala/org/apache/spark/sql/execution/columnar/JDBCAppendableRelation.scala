@@ -20,6 +20,7 @@ import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 
@@ -30,7 +31,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -68,7 +69,8 @@ case class JDBCAppendableRelation(
     externalStore.connProperties
 
   protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url, connProperties.connProps)
+      .createConnectionFactory(new JDBCOptions(connProperties.url,
+        null, connProperties.connProps.asScala.toMap))
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
