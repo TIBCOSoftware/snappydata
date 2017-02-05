@@ -70,7 +70,8 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
   // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
-  override val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
+  // TODO Yogs_2_1_Merge
+  /* override */ val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     rdd :: Nil
@@ -202,7 +203,8 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  override def children: Seq[SparkPlan] = basePlan :: otherPlan :: Nil
+  // TODO Yogs_2_1_Merge
+  // /* override */ def children: Seq[SparkPlan] = basePlan :: otherPlan :: Nil
 
   override def requiredChildDistribution: Seq[Distribution] =
     ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
@@ -306,6 +308,12 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
   def getMap(ordinal: Int): MapData = throw new UnsupportedOperationException("not implemented")
 
   def get(ordinal: Int, dataType: DataType): Object =
+    throw new UnsupportedOperationException("not implemented")
+
+  override def setNullAt(i: Int): Unit =
+    throw new UnsupportedOperationException("not implemented")
+
+  override def update(i: Int, value: Any): Unit =
     throw new UnsupportedOperationException("not implemented")
 }
 
