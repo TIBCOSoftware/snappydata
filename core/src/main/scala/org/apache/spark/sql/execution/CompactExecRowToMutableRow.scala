@@ -45,7 +45,7 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
   final lazy val defaultTZ = defaultCal.getTimeZone
 
   protected final def createInternalRow(execRow: AbstractCompactExecRow,
-      mutableRow: SpecificMutableRow): InternalRow = {
+      mutableRow: SpecificInternalRow): InternalRow = {
     var i = 0
     while (i < schema.length) {
       val pos = i + 1
