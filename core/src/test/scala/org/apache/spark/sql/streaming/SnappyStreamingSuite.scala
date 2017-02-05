@@ -18,7 +18,6 @@ package org.apache.spark.sql.streaming
 
 import java.io.File
 import java.net.InetSocketAddress
-import java.util
 import java.util.Properties
 import java.util.concurrent.TimeoutException
 
@@ -44,8 +43,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -259,11 +257,9 @@ class SnappyStreamingSuite
     }
 
     def getLogSchema: StructType = {
-      val publisher = createStructField("publisher", StringType, true)
-      val advertiser = createStructField("advertiser", StringType, true)
-      val fields = util.Arrays.asList(publisher, advertiser)
-      val schema = DataTypes.createStructType(fields)
-      schema
+      StructType(Seq(
+        StructField("publisher", StringType, true),
+        StructField("advertiser", StringType, true)))
     }
 
     val rowStream = ssnc.createSchemaDStream(getRowDStream, getLogSchema)

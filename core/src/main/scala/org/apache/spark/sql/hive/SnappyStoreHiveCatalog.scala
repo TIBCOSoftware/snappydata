@@ -44,11 +44,12 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.{StaticSQLConf, SQLConf}
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.StaticSQLConf._
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -57,12 +58,14 @@ import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, Struct
 class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val snappySession: SnappySession,
     metadataHive: HiveClient,
+    globalTempViewManager: GlobalTempViewManager,
     functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
     hadoopConf: Configuration)
     extends SessionCatalog(
       externalCatalog,
+      globalTempViewManager,
       functionResourceLoader,
       functionRegistry,
       sqlConf,
@@ -82,7 +85,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   // private val sessionTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
   override def dropTable(name: TableIdentifier,
-      ignoreIfNotExists: Boolean): Unit = synchronized {
+      ignoreIfNotExists: Boolean, purge: Boolean): Unit = synchronized {
     snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
   }
 
@@ -504,7 +507,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
     val schemaName = tableIdent.schemaName
     withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
-      tableIdent.table, ignoreIfNotExists = false))
+      tableIdent.table, ignoreIfNotExists = false, purge = false))
   }
 
   /**
@@ -532,7 +535,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // In this case, we split the JSON string and store each part as a
     // separate SerDe property.
     if (userSpecifiedSchema.isDefined) {
-      val threshold = org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
+      val threshold = sparkConf.get(SCHEMA_STRING_LENGTH_THRESHOLD)
       val schemaJsonString = userSpecifiedSchema.get.json
       // Split the JSON string.
       val parts = schemaJsonString.grouped(threshold).toSeq
@@ -743,7 +746,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
 
     listTables(Constant.DEFAULT_SCHEMA).foreach { table =>
-      dropTable(table, ignoreIfNotExists = false)
+      dropTable(table, ignoreIfNotExists = false, purge = false)
     }
     listFunctions(Constant.DEFAULT_SCHEMA).map(_._1).foreach { func =>
       if (func.database.isDefined) {

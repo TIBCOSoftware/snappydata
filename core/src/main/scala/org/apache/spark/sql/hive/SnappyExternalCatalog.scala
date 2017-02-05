@@ -30,6 +30,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.hive.client.HiveClient
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
@@ -41,7 +42,6 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   private val clientExceptions = Set(
     classOf[HiveException].getCanonicalName,
     classOf[TException].getCanonicalName)
-
 
   /**
    * Whether this is an exception thrown by the hive client that should be wrapped.
@@ -105,7 +105,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     }
   }
 
-  private def requireTableExists(db: String, table: String): Unit = {
+  override def requireTableExists(db: String, table: String): Unit = {
     withClient {
       getTable(db, table)
     }
@@ -169,11 +169,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // --------------------------------------------------------------------------
 
   override def createTable(
-      db: String,
       tableDefinition: CatalogTable,
       ignoreIfExists: Boolean): Unit = withClient {
-    requireDbExists(db)
-    requireDbMatches(db, tableDefinition)
+    requireDbExists(tableDefinition.database)
+    requireDbMatches(tableDefinition.database, tableDefinition)
 
     if (
     // If this is an external data source table...
@@ -215,9 +214,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   override def dropTable(
       db: String,
       table: String,
-      ignoreIfNotExists: Boolean): Unit = withClient {
+      ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = withClient {
     requireDbExists(db)
-    withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists))
+    withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists, purge))
     SnappySession.clearAllCache()
   }
 
@@ -235,9 +235,9 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
    * Note: As of now, this only supports altering table properties, serde properties,
    * and num buckets!
    */
-  override def alterTable(db: String, tableDefinition: CatalogTable): Unit = withClient {
-    requireDbMatches(db, tableDefinition)
-    requireTableExists(db, tableDefinition.identifier.table)
+  override def alterTable(tableDefinition: CatalogTable): Unit = withClient {
+    requireDbMatches(tableDefinition.database, tableDefinition)
+    requireTableExists(tableDefinition.database, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
     SnappySession.clearAllCache()
   }
@@ -285,8 +285,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       partition: TablePartitionSpec,
       isOverwrite: Boolean,
       holdDDLTime: Boolean,
-      inheritTableSpecs: Boolean,
-      isSkewedStoreAsSubdir: Boolean): Unit = withClient {
+      inheritTableSpecs: Boolean): Unit = withClient {
     requireTableExists(db, table)
 
     val orderedPartitionSpec = new util.LinkedHashMap[String, String]()
@@ -296,17 +295,48 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
 
     withHiveExceptionHandling(client.loadPartition(
       loadPath,
-      s"$db.$table",
+      s"$db",
+      s".$table",
       orderedPartitionSpec,
       isOverwrite,
       holdDDLTime,
-      inheritTableSpecs,
-      isSkewedStoreAsSubdir))
+      inheritTableSpecs))
   }
 
   // --------------------------------------------------------------------------
   // Partitions
   // --------------------------------------------------------------------------
+
+  // TODO Yogs_2_1_Merge
+  override def loadDynamicPartitions(
+      db: String,
+      table: String,
+      loadPath: String,
+      partition: TablePartitionSpec,
+      replace: Boolean,
+      numDP: Int,
+      holdDDLTime: Boolean): Unit = {}
+
+  override def getPartitionOption(
+      db: String,
+      table: String,
+      spec: TablePartitionSpec): Option[CatalogTablePartition] = {
+    null
+  }
+
+  override def listPartitionNames(
+      db: String,
+      table: String,
+      partialSpec: Option[TablePartitionSpec]): Seq[String] = {
+    null
+  }
+
+  override def listPartitionsByFilter(
+      db: String,
+      table: String,
+      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
+    null
+  }
 
   override def createPartitions(
       db: String,
@@ -322,9 +352,12 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       db: String,
       table: String,
       parts: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean): Unit = withClient {
+      ignoreIfNotExists: Boolean,
+      purge: Boolean,
+      retainData: Boolean): Unit = withClient {
     requireTableExists(db, table)
-    withHiveExceptionHandling(client.dropPartitions(db, table, parts, ignoreIfNotExists))
+    withHiveExceptionHandling(client.dropPartitions(
+      db, table, parts, ignoreIfNotExists, purge = false, retainData = false))
     SnappySession.clearAllCache()
   }
 
@@ -404,4 +437,5 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
   }
+
 }

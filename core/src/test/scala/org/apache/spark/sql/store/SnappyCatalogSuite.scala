@@ -37,6 +37,7 @@ package org.apache.spark.sql.store
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
+import org.apache.spark.sql.types.{StringType, StructField, StructType, IntegerType}
 import org.apache.spark.sql.{SnappySession, AnalysisException}
 import org.apache.spark.sql.catalog.{Column, Function, Table, Database}
 import org.apache.spark.sql.catalyst.{ScalaReflection, FunctionIdentifier, TableIdentifier}
@@ -94,7 +95,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
   }
 
   private def dropTable(name: String, db: Option[String] = None): Unit = {
-    sessionCatalog.dropTable(TableIdentifier(name, db), ignoreIfNotExists = false)
+    sessionCatalog.dropTable(TableIdentifier(name, db), ignoreIfNotExists = false, purge = false)
   }
 
   private def createFunction(name: String, db: Option[String] = None): Unit = {
@@ -124,11 +125,11 @@ class SnappyCatalogSuite extends SnappyFunSuite
         }
     assume(tableMetadata.schema.nonEmpty, "bad test")
     // assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
-    assume(tableMetadata.bucketColumnNames.nonEmpty, "bad test")
+    assume(tableMetadata.bucketSpec.nonEmpty, "bad test")
     assert(columns.collect().map(_.name).toSet == tableMetadata.schema.map(_.name).toSet)
     columns.collect().foreach { col =>
       assert(col.isPartition == tableMetadata.partitionColumnNames.contains(col.name))
-      assert(col.isBucket == tableMetadata.bucketColumnNames.contains(col.name))
+      assert(col.isBucket == tableMetadata.bucketSpec.contains(col.name))
     }
   }
 
@@ -355,7 +356,7 @@ abstract class CatalogTestUtils {
     outputFormat = Some(tableOutputFormat),
     serde = None,
     compressed = false,
-    serdeProperties = Map.empty)
+    properties = Map.empty)
   lazy val part1 = CatalogTablePartition(Map("a" -> "1", "b" -> "2"), storageFormat)
   lazy val part2 = CatalogTablePartition(Map("a" -> "3", "b" -> "4"), storageFormat)
   lazy val part3 = CatalogTablePartition(Map("a" -> "5", "b" -> "6"), storageFormat)
@@ -385,8 +386,8 @@ abstract class CatalogTestUtils {
     catalog.createDatabase(newDb("default"), ignoreIfExists = true)
     catalog.createDatabase(newDb("db1"), ignoreIfExists = false)
     catalog.createDatabase(newDb("db2"), ignoreIfExists = false)
-    catalog.createTable("db2", newTable("tbl1", "db2"), ignoreIfExists = false)
-    catalog.createTable("db2", newTable("tbl2", "db2"), ignoreIfExists = false)
+    catalog.createTable(newTable("tbl1", "db2"), ignoreIfExists = false)
+    catalog.createTable(newTable("tbl2", "db2"), ignoreIfExists = false)
     catalog.createPartitions("db2", "tbl2", Seq(part1, part2), ignoreIfExists = false)
     catalog.createFunction("db2", newFunc("func1", Some("db2")))
     catalog
@@ -407,13 +408,13 @@ abstract class CatalogTestUtils {
       identifier = TableIdentifier(name, database),
       tableType = CatalogTableType.EXTERNAL,
       storage = storageFormat,
-      schema = Seq(
-        CatalogColumn("col1", "int"),
-        CatalogColumn("col2", "string"),
-        CatalogColumn("a", "int"),
-        CatalogColumn("b", "string")),
+      schema = StructType(Seq(
+          StructField("col1", IntegerType),
+          StructField("col2", StringType),
+          StructField("a", IntegerType),
+          StructField("b", StringType))),
       partitionColumnNames = Seq("a", "b"),
-      bucketColumnNames = Seq("col1"),
+      bucketSpec = Some(BucketSpec(8, Seq("col1"), Nil)),
       // Pass the properties so that the hack applied in SnappyExternalCatalog.createTable
       // takes affect
       properties = Map("spark.sql.sources.provider" -> "column"))
