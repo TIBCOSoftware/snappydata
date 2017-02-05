@@ -22,9 +22,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, Strategy, execution}
 
@@ -100,7 +101,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       }
     }
 
-    val (unhandledPredicates, pushedFilters) =
+    val (unhandledPredicates, pushedFilters, _) =
       selectFilters(relation.relation, candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down
@@ -134,7 +135,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     } else {
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
       if (pushedFilters.nonEmpty) {
-        pairs += (DataSourceScanExec.PUSHED_FILTERS ->
+        pairs += ("PushedFilters" ->
             pushedFilters.mkString("[", ", ", "]"))
       }
       pairs.toMap
@@ -169,11 +170,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           (requestedColumns, pushedFilters)
         )
       } else {
-        execution.DataSourceScanExec.create(
+        RowDataSourceScanExec(
           mappedProjects,
-          scanBuilder(requestedColumns, candidatePredicates,
-            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
-          relation.relation, metadata, relation.metastoreTableIdentifier)
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+          relation.relation, UnknownPartitioning(0), metadata,
+          relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
@@ -198,11 +200,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         )
 
       } else {
-        execution.DataSourceScanExec.create(
-          requestedColumns,
-          scanBuilder(requestedColumns, candidatePredicates,
-            pushedFilters)._1.asInstanceOf[RDD[InternalRow]],
-          relation.relation, metadata, relation.metastoreTableIdentifier)
+        RowDataSourceScanExec(
+          mappedProjects,
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+          relation.relation, UnknownPartitioning(0), metadata,
+          relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,
         filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
