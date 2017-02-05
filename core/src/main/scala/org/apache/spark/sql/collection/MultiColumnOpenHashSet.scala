@@ -1205,7 +1205,9 @@ object QCSSQLColumnHandler {
 object RowToInternalRow extends BaseGenericInternalRow {
   val rowHolder = new ThreadLocal[(Row, Array[Any => Any])]()
 
-  override def numFields = rowHolder.get()._2.length
+  override def numFields: Int = {
+    rowHolder.get()._2.length
+  }
 
   override protected def genericGet(ordinal: Int): Any = {
     val (row, converters) = rowHolder.get()
@@ -1214,6 +1216,9 @@ object RowToInternalRow extends BaseGenericInternalRow {
 
   override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
 
+  override def setNullAt(i: Int): Unit = {}
+
+  override def update(i: Int, value: Any): Unit = {}
 }
 
 
