@@ -50,7 +50,7 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
@@ -1255,8 +1255,10 @@ class SnappySession(@transient private val sc: SparkContext,
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       sparkContext, new mutable.HashMap[String, String])
-    val conn = JdbcUtils.createConnectionFactory(connProperties.url,
-      connProperties.connProps)()
+    val jdbcOptions = new JDBCOptions(connProperties.url, null,
+      connProperties.connProps.asScala.toMap)
+    val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
+
     try {
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
