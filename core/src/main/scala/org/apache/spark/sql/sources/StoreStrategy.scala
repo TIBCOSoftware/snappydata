@@ -21,9 +21,9 @@ import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecutedCommand, Execut
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation}
 import org.apache.spark.sql.types.DataType
-
+import org.apache.spark.sql.{CreateTableUsing,CreateMetastoreTableUsingSelect}
 /**
  * Support for DML and other operations on external tables.
  */

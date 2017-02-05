@@ -32,7 +32,7 @@ import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.plans.{logical, QueryPlan}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
@@ -537,6 +537,22 @@ case class CreateTableUsing(
     bucketSpec: Option[BucketSpec],
     allowExisting: Boolean,
     managedIfNoPath: Boolean) extends Command
+
+/**
+  * A node used to support CTAS statements and saveAsTable for the data source API.
+  */
+case class CreateTableUsingAsSelect(
+    tableIdent: TableIdentifier,
+    provider: String,
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
+    mode: SaveMode,
+    options: Map[String, String],
+    query: LogicalPlan) extends logical.Command {
+
+  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+  override lazy val resolved: Boolean = query.resolved
+}
 
 private[sql] case class CreateMetastoreTableUsing(
     tableIdent: TableIdentifier,
