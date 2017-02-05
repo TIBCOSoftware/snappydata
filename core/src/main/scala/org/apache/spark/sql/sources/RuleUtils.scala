@@ -25,7 +25,6 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
-import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.{expressions, plans}
@@ -178,10 +177,12 @@ object RuleUtils extends PredicateHelper {
   (Seq[Expression], Seq[Expression]) = expressions.partition(e =>
     e.references.subsetOf(allColumns) && !SubqueryExpression.hasCorrelatedSubquery(e))
 
-  protected[sql] def returnPlan(partial: PartialPlan) = CompletePlan(ReorderJoin.createOrderedJoin(
-    if (partial.curPlan == null) partial.input else Seq(partial.curPlan) ++ partial.input,
-    partial.conditions),
-    partial.replaced ++ partial.input.map(t => Replacement(t, t)))
+  // TODO Yogs_2_1_Merge
+  //  protected[sql] def returnPlan(partial: PartialPlan) =
+//    CompletePlan(ReorderJoin.createOrderedJoin(
+//    if (partial.curPlan == null) partial.input
+//    else Seq(partial.curPlan) ++ partial.input,
+//    partial.conditions), partial.replaced ++ partial.input.map(t => Replacement(t, t)))
 
   protected[sql] def chooseIndexForFilter(child: LogicalPlan, conditions: Seq[Expression])
       (implicit snappySession: SnappySession) = {
