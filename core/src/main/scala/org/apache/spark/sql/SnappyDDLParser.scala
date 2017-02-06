@@ -27,9 +27,7 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
-import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
-import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical._
