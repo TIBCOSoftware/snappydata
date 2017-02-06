@@ -47,13 +47,15 @@ class SplitClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
-    SplitClusterDUnitTest.batchSize.toString)
+
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+    SplitClusterDUnitTest.batchSize.toString)
 
   private[this] var host: Host = _
   var vm0: VM = _

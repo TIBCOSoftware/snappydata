@@ -16,13 +16,16 @@
  */
 package io.snappydata
 
-import io.snappydata.impl.LeadImpl
+import java.io.File
 
-import org.apache.spark.SparkContext
+import io.snappydata.impl.LeadImpl
+import org.apache.hadoop.conf.Configuration
+
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
-import org.apache.spark.ui.SparkUI
-import org.apache.spark.ui.SnappyDashboardTab
+import org.apache.spark.ui.{SnappyDashboardTab, SparkUI}
+import org.apache.spark.util.SnappyUtils
+import org.apache.spark.{SparkConf, SparkContext}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -48,5 +51,17 @@ object ToolsCallbackImpl extends ToolsCallback {
     scUI.foreach { ui =>
       new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
     }
+  }
+
+  override def removeAddedJar(sc: SparkContext, jarName: String) = sc.removeAddedJar(jarName)
+
+  /**
+   * Callback to spark Utils to fetch file
+   */
+  override def doFetchFile(
+      url: String,
+      targetDir: File,
+      filename: String): File ={
+     SnappyUtils.doFetchFile(url, targetDir, filename)
   }
 }
