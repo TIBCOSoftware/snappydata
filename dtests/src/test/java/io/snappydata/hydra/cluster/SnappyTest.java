@@ -62,7 +62,7 @@ public class SnappyTest implements Serializable {
     protected static char sep = hd.getFileSep();
     private static String gemfireHome = hd.getGemFireHome() + sep;
     protected static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
-    private static String productConfDirPath = productDir + "conf" + sep;
+    protected static String productConfDirPath = productDir + "conf" + sep;
     private static String productLibsDir = productDir + "lib" + sep;
     private static String productSbinDir = productDir + "sbin" + sep;
     private static String productBinDir = productDir + "bin" + sep;

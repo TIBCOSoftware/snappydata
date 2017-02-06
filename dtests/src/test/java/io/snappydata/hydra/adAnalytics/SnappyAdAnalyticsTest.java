@@ -64,10 +64,19 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       log = new File(".");
       kafkaLogDir = log.getCanonicalPath() + sep + "kafka_logs";
       new File(kafkaLogDir).mkdir();
+      snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
     } catch (IOException e) {
       String s = "Problem while creating the dir : " + kafkaLogDir;
       throw new TestException(s, e);
     }
+  }
+
+  protected void writeSnappyPocToSparkEnv() {
+    String filePath = productConfDirPath + sep + "spark-env.sh";
+    File file = new File(filePath);
+    file.setExecutable(true);
+    String fileContent = "SPARK_DIST_CLASSPATH=" + snappyPocJarPath;
+    snappyAdAnalyticsTest.writeToFile(fileContent, file);
   }
 
   /**
@@ -254,6 +263,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     userAppJar = SnappyPrms.getUserAppJar();
     verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
+    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String)jobClassNames.elementAt(i);
@@ -262,7 +272,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         } else {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
-        String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + LEAD_PORT +
+        String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
             " --app-name AdAnalytics --class " + userJob + " --app-jar " + userAppJar + " --stream ";
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -293,7 +303,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           processName + " > " + logFile + " & ";
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
-      Log.getLogWriter().info("Started Kafka topic");
       recordSnappyProcessIDinNukeRun(processName);
     }
   }
