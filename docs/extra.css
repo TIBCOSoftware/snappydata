@@ -3,7 +3,7 @@ html {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 /*
------------------------------------------------------Formatting for body text
+-------------------Formatting for body text-------------------
 */
 p{
 font-size: 14px;
@@ -11,7 +11,7 @@ font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 /*
------------------------------------------------------Formatting for headings
+-------------------Formatting for headings-------------------
 */
 
 h1{
@@ -45,7 +45,7 @@ h4 {
 
 
 /*
------------------------------------------------------ Define the navigation pane
+------------------- Define the navigation pane-------------------
 */
 
 .wy-menu-vertical li.current > a::before {
@@ -80,7 +80,7 @@ h4 {
 
 
 /*
------------------------------------------------------Formatting for code snippets 
+-------------------Formatting for code snippets-------------------
 */
 
 pre code {
@@ -94,7 +94,7 @@ pre code {
 }
 
 /*
------------------------------------------------------Formatting for inline code  
+-------------------Formatting for inline code-------------------  
 */
 
 code {
@@ -110,18 +110,42 @@ pre .cs, pre .c {
 }
 
 /*
------------------------------------------------------Formatting for Note
-*/
+-------------------Formatting for Note-------------------
 
-note {
+note-sub {
+    background-color: #e8f7ff; 
     color: green;
-    font-size: 14px;
-    font-style: italic;
+    margin: 10px 0px;
+    border: #e8f7ff 1px solid;
+    border-radius: 5px; 
+    word-wrap: normal;
+    display: block;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:14px;
+    font-style: italic;
+    list-style-type: square;
 }
 
+{
+  background-color: #e8f7ff; 
+  color: green;
+  background-image: url(Images/info.png);
+  margin: 10px 0px;
+  padding:5px 5px 10px 50px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  border: #e8f7ff 1px solid;
+  border-radius: 5px; 
+  word-wrap: normal;
+  display: block;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size:14px;
+  font-style: italic;
+}
+*/
+
 /*
------------------------------------------------------Formatting for Glossary Term
+-------------------Formatting for Glossary Term-------------------
 */
 
 glossary {
@@ -146,7 +170,7 @@ glossarytext {
 }
 
 /* 
------------------------------------------------------Image Alignment - Center
+-------------------Image Alignment - Center-------------------
 */
 img {
     display: block;
@@ -156,7 +180,7 @@ img {
 }
 
 /*
------------------------------------------------------Formatting for text for review/comments purpose only
+-------------------Formatting for text for review/comments purpose only-------------------
 */
 
 mark {
@@ -167,7 +191,7 @@ mark {
 }
 
 /*
------------------------------------------------------Formatting for TroubleShooting
+-------------------Formatting for TroubleShooting-------------------
 */
 
 question {
@@ -183,5 +207,40 @@ solution {
     font-style: italic;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
+
+/*
+-------------------Formatting for Tables-------------------
+*/
+      
+table
+{
+    background: #f5f5f5;
+    border-collapse: separate;
+    line-height: 24px;
+    margin: 15px auto;
+    text-align: center;
+    width: auto;
+    color: black;
+    font-size: 14px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+th {
+    background: linear-gradient(#777, #444);
+    border-left: 1px solid #555;
+    border-right: 1px solid #777;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #333;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;  
+}
+
+
+
+
 
 

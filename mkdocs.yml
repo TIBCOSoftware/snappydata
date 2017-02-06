@@ -16,14 +16,17 @@ pages:
 - How Tos: howto.md
 - Best Practises: 'best_practises/best_practises.md'
 - Architecture: architecture.md
-- Configuring the Cluster: configuration.md
+- Managing the Cluster: configuration.md
 - Programming Guide: programming_guide.md
 - Design Database and Schema: 'design_schema/design_schema.md'
 - Managing your Data: 'manage_data/manage_data.md'
 - Affinity Modes: deployment.md
-- Synopsis Data Engine (SDE): aqp.md
 - Backup and Recovery: 'backup/backup.md'
+- Developing Applications: 'developing_applications/developing_applications.md'
 - Import and Export: 'import_export/import_export.md'
+- Caching Data: 'caching/caching.md'
+- Managing and Monitoring: 'monitoring/monitoring.md'
+- Synopsis Data Engine (SDE): aqp.md
 - Troubleshooting and Analysis: 'troubleshooting/troubleshooting.md'
 - Appendix A-SQL Reference Guide: 'sql_reference/sql_reference.md'
 - Appendix B-API Reference Guide: 'api_reference/api_reference.md'
@@ -41,5 +44,8 @@ theme: readthedocs
 theme_dir: docs/custom_theme
 
 extra_css: [extra.css]
+
+markdown_extensions:
+    - admonition:
 
 copyright: Copyright &copy; 2017 SnappyData Inc.
