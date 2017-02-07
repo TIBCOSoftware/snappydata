@@ -130,7 +130,10 @@ public class SnappyTest implements Serializable {
 
     public static void HydraTask_stopSnappy() {
         SparkContext sc = SnappyContext.globalSparkContext();
-        if (sc != null) sc.stop();
+        if (sc != null) {
+            sc.stop();
+        }
+        else Log.getLogWriter().info("Spark Context is null.");
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
@@ -1300,7 +1303,10 @@ public class SnappyTest implements Serializable {
                 String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult.log";
+                String logFileName = SnappyPrms.getLogFileName();
+                if (logFileName == null)
+                    logFileName = "sqlScriptsResult.log";
+                String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
                 String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
                 String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");

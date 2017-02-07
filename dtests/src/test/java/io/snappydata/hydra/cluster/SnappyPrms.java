@@ -326,14 +326,20 @@ public class SnappyPrms extends BasePrms {
     public static Long shufflePartitions;
 
     /**
-     * path for kafka directory
+     * (String) path for kafka directory
      */
     public static Long kafkaDir;
 
     /**
-     * snappy-poc jar path
+     * (String) snappy-poc jar path
      */
     public static Long snappyPocJarPath;
+
+    /**
+     * (String) log file name where the output of task(snappy-shell output/snappyJob/sparkApp) to
+     * be written
+     */
+    public static Long logFileName;
 
     /**
      * kafka topic name
@@ -553,7 +559,10 @@ public class SnappyPrms extends BasePrms {
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-
+    public static String getLogFileName() {
+        Long key = logFileName;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
 
     static {
         BasePrms.setValues(SnappyPrms.class);

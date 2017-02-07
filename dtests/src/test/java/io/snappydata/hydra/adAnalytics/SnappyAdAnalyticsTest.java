@@ -36,6 +36,7 @@ import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
+import org.apache.spark.streaming.SnappyStreamingContext;
 import util.TestException;
 
 public class SnappyAdAnalyticsTest extends SnappyTest {
@@ -348,13 +349,16 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_stopStreaming() {
-    SparkContext sc = SnappyContext.globalSparkContext();
-    if(sc!=null){
-      SnappyContext snc = new SnappyContext(sc);
-      snc.sql("streaming stop");
-      Log.getLogWriter().info("Snappy streaming stopped successfully");
-    } else
-    Log.getLogWriter().info("Spark context is null");
+    Log.getLogWriter().info("Stopping Snappy streaming...");
+    SnappyStreamingContext.getActive().get().stop(false, true);
+    Log.getLogWriter().info("Snappy streaming stopped successfully");
+//    SparkContext sc = SnappyContext.globalSparkContext();
+//    if(sc!=null){
+//      SnappyContext snc = new SnappyContext(sc);
+//      snc.sql("streaming stop");
+//      Log.getLogWriter().info("Snappy streaming stopped successfully");
+//    } else
+//      Log.getLogWriter().info("Spark context is null");
 
   }
 
