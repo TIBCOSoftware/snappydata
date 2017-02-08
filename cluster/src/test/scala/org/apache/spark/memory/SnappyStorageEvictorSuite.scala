@@ -61,7 +61,7 @@ class SnappyStorageEvictorSuite extends FunSuite with BeforeAndAfter with Before
     val sparkSession = createSparkSession(1,0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     println(SparkEnv.get.memoryManager.storageMemoryUsed)
-    /*snSession.createTable("t1", "row", struct, roptions)
+    snSession.createTable("t1", "row", struct, roptions)
     println(SparkEnv.get.memoryManager)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val row = Row(1, 1, 1)
@@ -69,10 +69,10 @@ class SnappyStorageEvictorSuite extends FunSuite with BeforeAndAfter with Before
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0)// borrowed from execution memory
     snSession.delete("t1", "col1=1")
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
-    snSession.dropTable("t1")*/
+    snSession.dropTable("t1")
   }
 
-  ignore("Test storage when storage can borrow from execution memory"){
+  test("Test storage when storage can borrow from execution memory"){
     val sparkSession = createSparkSession(1,0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     snSession.createTable("t1", "row", struct, options)
@@ -86,7 +86,7 @@ class SnappyStorageEvictorSuite extends FunSuite with BeforeAndAfter with Before
     snSession.dropTable("t1")
   }
 
-  ignore("Test storage when storage can not borrow from execution memory") {
+  test("Test storage when storage can not borrow from execution memory") {
     val sparkSession = createSparkSession(1, 0.5)
     val snSession = new SnappySession(sparkSession.sparkContext)
     println(SparkEnv.get.memoryManager)
@@ -108,7 +108,7 @@ class SnappyStorageEvictorSuite extends FunSuite with BeforeAndAfter with Before
     snSession.dropTable("t1")
   }
 
-  ignore("Test eviction when storage memory has borrowed some memory from execution") {
+  test("Test eviction when storage memory has borrowed some memory from execution") {
     val sparkSession = createSparkSession(1, 0.5)
     val snSession = new SnappySession(sparkSession.sparkContext)
     snSession.createTable("t1", "row", struct, options)
