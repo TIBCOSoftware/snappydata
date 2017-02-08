@@ -16,14 +16,8 @@
  */
 package org.apache.spark.memory
 
-import scala.collection.mutable.ArrayBuffer
-
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.SparkConf
-import scala.collection.mutable
-
-import org.apache.spark.storage.{BlockStatus, BlockId}
+import org.apache.spark.storage.BlockId
 
 /**
   * When there is request for execution or storage memory, critical up and eviction up
@@ -33,6 +27,7 @@ import org.apache.spark.storage.{BlockStatus, BlockId}
   * In such cases Spark either fails the task or move the current RDDs data to disk.
   * If the critical and eviction events are not set, it asks the UnifiedMemoryManager
   * to allocate the space.
+  *
   * @param conf
   * @param maxHeapMemory
   * @param numCores
@@ -45,69 +40,136 @@ class SnappyUnifiedMemoryManager private[memory](
   (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
   numCores) {
 
+  val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
   def this(conf: SparkConf, numCores: Int) = {
-    this( conf,
+    this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
       numCores)
   }
-  private val listener = Misc.getMemStoreBooting.thresholdListener()
+
+  private[memory] val evictor = new SnappyStorageEvictor
 
   /**
-   * if freeMemory has been invoked from acquireStorageMemory, return false if
-   * evictBlocksToFreeSpace fails and evictionUp is still true
-   * if freeMemory() has been invoked from acquireExecutionMemory then
-   * only fail if criticalUp is still true after evictBlocksToFreeSpace
-   */
-  private def freeMemory(blockId: Option[BlockId], numBytes: Long,
-    memoryMode: MemoryMode, storageMemory: Boolean): Boolean = {
-    val freeMemory = Runtime.getRuntime.freeMemory()
-    if (freeMemory < numBytes) {
-      val storageMemoryPool = memoryMode match {
-        case MemoryMode.ON_HEAP =>
-          onHeapStorageMemoryPool
-        case MemoryMode.OFF_HEAP =>
-          offHeapStorageMemoryPool
-      }
-      val requestedSpace = numBytes - freeMemory
-      val spaceFreed = storageMemoryPool.memoryStore.evictBlocksToFreeSpace(blockId,
-        requestedSpace, memoryMode)
-      if (storageMemory) {
-        (spaceFreed >= requestedSpace) || !listener.isEviction
-      } else {
-        !listener.isCritical
-      }
-    }
-    false
-  }
-
+    * This method is copied from Spark. In addition to evicting data from spark block manager,
+    * this will also evict data from SnappyStore.
+    *
+    * Try to acquire up to `numBytes` of execution memory for the current task and return the
+    * number of bytes obtained, or 0 if none can be allocated.
+    *
+    * This call may block until there is enough free memory in some situations, to make sure each
+    * task has a chance to ramp up to at least 1 / 2N of the total memory pool (where N is the # of
+    * active tasks) before it is forced to spill. This can happen if the number of tasks increase
+    * but an older task had a lot of memory already.
+    */
   override private[memory] def acquireExecutionMemory(
       numBytes: Long,
       taskAttemptId: Long,
       memoryMode: MemoryMode): Long = synchronized {
+    assertInvariants()
     assert(numBytes >= 0)
-    if (listener.isEviction || listener.isCritical) {
-      val evictedBlocks = new ArrayBuffer[(BlockId, BlockStatus)]
-      // If free memory not available, let Spark
-      // take a corrective action
-      if (!freeMemory(None, numBytes, memoryMode, false)) {
-        return 0
+    val (executionPool, storagePool, storageRegionSize, maxMemory) = memoryMode match {
+      case MemoryMode.ON_HEAP => (
+          onHeapExecutionMemoryPool,
+          onHeapStorageMemoryPool,
+          onHeapStorageRegionSize,
+          maxHeapMemory)
+      case MemoryMode.OFF_HEAP => (
+          offHeapExecutionMemoryPool,
+          offHeapStorageMemoryPool,
+          offHeapStorageMemory,
+          maxOffHeapMemory)
+    }
+
+    /**
+      * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
+      *
+      * When acquiring memory for a task, the execution pool may need to make multiple
+      * attempts. Each attempt must be able to evict storage in case another task jumps in
+      * and caches a large block between the attempts. This is called once per attempt.
+      */
+    def maybeGrowExecutionPool(extraMemoryNeeded: Long): Unit = {
+      if (extraMemoryNeeded > 0) {
+        // There is not enough free memory in the execution pool, so try to reclaim memory from
+        // storage. We can reclaim any free memory from the storage pool. If the storage pool
+        // has grown to become larger than `storageRegionSize`, we can evict blocks and reclaim
+        // the memory that storage has borrowed from execution.
+        val memoryReclaimableFromStorage = math.max(
+          storagePool.memoryFree,
+          storagePool.poolSize - storageRegionSize)
+        if (memoryReclaimableFromStorage > 0) {
+          // Only reclaim as much space as is necessary and available:
+          val spaceToReclaim = storagePool.freeSpaceToShrinkPool(
+            math.min(extraMemoryNeeded, memoryReclaimableFromStorage))
+
+          val bytesEvictedFromStore = if(spaceToReclaim < extraMemoryNeeded){
+            val moreBytesRequired = extraMemoryNeeded - spaceToReclaim
+            evictor.evictRegionData(math.min(moreBytesRequired, memoryReclaimableFromStorage))
+          }else{
+            0L
+          }
+          storagePool.decrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+          executionPool.incrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+        }
       }
     }
-    super.acquireExecutionMemory(numBytes, taskAttemptId, memoryMode)
+
+    /**
+      * The size the execution pool would have after evicting storage memory.
+      *
+      * The execution memory pool divides this quantity among the active tasks evenly to cap
+      * the execution memory allocation for each task. It is important to keep this greater
+      * than the execution pool size, which doesn't take into account potential memory that
+      * could be freed by evicting storage. Otherwise we may hit SPARK-12155.
+      *
+      * Additionally, this quantity should be kept below `maxMemory` to arbitrate fairness
+      * in execution memory allocation across tasks, Otherwise, a task may occupy more than
+      * its fair share of execution memory, mistakenly thinking that other tasks can acquire
+      * the portion of storage memory that cannot be evicted.
+      */
+    def computeMaxExecutionPoolSize(): Long = {
+      maxMemory - math.min(storagePool.memoryUsed, storageRegionSize)
+    }
+
+    executionPool.acquireMemory(
+      numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
   }
 
   override def acquireStorageMemory(
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = synchronized {
-    if (listener.isEviction || listener.isCritical) {
-      // If free memory not available, let Spark
-      // take a corrective action
-      if (!freeMemory(Some(blockId), numBytes, memoryMode, true)){
-        return false
-      }
+
+    val (executionPool, storagePool, maxMemory) = memoryMode match {
+      case MemoryMode.ON_HEAP => (
+          onHeapExecutionMemoryPool,
+          onHeapStorageMemoryPool,
+          maxOnHeapStorageMemory)
+      case MemoryMode.OFF_HEAP => (
+          offHeapExecutionMemoryPool,
+          offHeapStorageMemoryPool,
+          maxOffHeapMemory)
     }
-    super.acquireStorageMemory(blockId, numBytes, memoryMode)
+
+    //First let spark try to free some memory
+    if (super.acquireStorageMemory(blockId, numBytes, memoryMode)) {
+      return true
+    } else {
+      //println(s"Could not acquire $numBytes from spark, storage pool freememory = ${storagePool.memoryFree}")
+      //Sufficient memory could not be freed. Time to evict from Snappy Data store.
+      if (numBytes > storagePool.memoryFree) {
+        val requiredBytes = numBytes - storagePool.memoryFree
+        //println(s"before eviction, storage pool freememory = ${storagePool.memoryFree}")
+        evictor.evictRegionData(requiredBytes)
+        //println(s"after eviction, storage pool freememory = ${storagePool.memoryFree}")
+        val success = storagePool.acquireMemory(blockId, numBytes)
+        /*        if (!success) {
+                  println(s"Could not acquire $numBytes , storage pool freememory = ${storagePool.memoryFree}")
+                }*/
+        return success
+      }
+      // This should never have happened.
+      return false
+    }
   }
 }
 
@@ -116,9 +178,9 @@ private object SnappyUnifiedMemoryManager {
   private val RESERVED_SYSTEM_MEMORY_BYTES = 300 * 1024 * 1024
 
   /**
-   * Return the total amount of memory shared between execution and storage, in bytes.
-   * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
-   */
+    * Return the total amount of memory shared between execution and storage, in bytes.
+    * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
+    */
   private def getMaxMemory(conf: SparkConf): Long = {
     val systemMemory = conf.getLong("spark.testing.memory", Runtime.getRuntime.maxMemory)
     val reservedMemory = conf.getLong("spark.testing.reservedMemory",
@@ -126,27 +188,20 @@ private object SnappyUnifiedMemoryManager {
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
-        s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
-        s"option or spark.driver.memory in Spark configuration.")
+          s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
+          s"option or spark.driver.memory in Spark configuration.")
     }
     // SPARK-12759 Check executor memory to fail fast if memory is insufficient
     if (conf.contains("spark.executor.memory")) {
       val executorMemory = conf.getSizeAsBytes("spark.executor.memory")
       if (executorMemory < minSystemMemory) {
         throw new IllegalArgumentException(s"Executor memory $executorMemory must be at least " +
-          s"$minSystemMemory. Please increase executor memory using the " +
-          s"--executor-memory option or spark.executor.memory in Spark configuration.")
+            s"$minSystemMemory. Please increase executor memory using the " +
+            s"--executor-memory option or spark.executor.memory in Spark configuration.")
       }
     }
     val usableMemory = systemMemory - reservedMemory
-    // GemFireXD is required to be already booted before constructing
-    // snappy memory manager
-    var evictFraction: Double = GemFireCacheImpl.getExisting.getResourceManager
-      .getEvictionHeapPercentage/100
-    if (evictFraction <= 0.0) {
-      evictFraction = 0.75
-    }
-    val memoryFraction = conf.getDouble("spark.memory.fraction", evictFraction)
+    val memoryFraction = conf.getDouble("spark.memory.fraction", usableMemory)
     (usableMemory * memoryFraction).toLong
   }
 

@@ -19,6 +19,9 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.lang
 import java.util.{Collections, UUID}
 
+import org.apache.spark.memory.MemoryMode
+import org.apache.spark.storage.TestBlockId
+
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
@@ -36,7 +39,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode, _}
-import org.apache.spark.{Logging, SparkException}
+import org.apache.spark.{SparkEnv, Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -170,6 +173,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       -1
     }
   }
+
+  override def acquireStorageMemory(numBytes: Long): Boolean = {
+    val blockId = TestBlockId("temp")
+    SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, MemoryMode.ON_HEAP)
+  }
+
+  override def releaseStorageMemory(numBytes: Long): Unit = {
+    SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, MemoryMode.ON_HEAP)
+  }
+
+  override def isSnappyStore: Boolean = true
 }
 
 trait StoreCallback extends Serializable {
