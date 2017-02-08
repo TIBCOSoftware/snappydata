@@ -92,7 +92,7 @@ private[sql] final case class ColumnTableScan(
       else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
         "number of output rows from other RDDs")))
 
-  private def generateStatPredicate(ctx: CodegenContext): (String, String) = {
+  private def generateStatPredicate(ctx: CodegenContext): String = {
 
     val columnBatchStatistics = relation match {
       case columnRelation: BaseColumnFormatRelation =>
@@ -186,34 +186,20 @@ private[sql] final case class ColumnTableScan(
     }
 
     val columnBatchStatsSchema = getColumnBatchStatSchema
-    val numStatFields = columnBatchStatsSchema.length
     val predicate = ExpressionCanonicalizer.execute(
       BindReferences.bindReference(columnBatchStatFilters
           .reduceOption(And).getOrElse(Literal(true)), columnBatchStatsSchema))
     val statRow = ctx.freshName("statRow")
-    val statBytes = ctx.freshName("statBytes")
     ctx.INPUT_ROW = statRow
     ctx.currentVars = null
     val predicateEval = predicate.genCode(ctx)
 
-    val platformClass = classOf[Platform].getName
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
 
-    val getUnsafeRow = ctx.freshName("getUnsafeRow")
-    ctx.addNewFunction(getUnsafeRow,
-      s"""
-         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
-         |  final UnsafeRow unsafeRow = new UnsafeRow($numStatFields);
-         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statBytes.length);
-         |  return unsafeRow;
-         |}
-       """.stripMargin)
-
     // skip filtering if nothing is to be applied
     if (predicateEval.value == "true" && predicateEval.isNull == "false") {
-      return (getUnsafeRow, "")
+      return ""
     }
     val filterFunction = ctx.freshName("columnBatchFilter")
     ctx.addNewFunction(filterFunction,
@@ -232,7 +218,7 @@ private[sql] final case class ColumnTableScan(
        """.stripMargin)
 
 
-    (getUnsafeRow, filterFunction)
+    filterFunction
   }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
@@ -470,7 +456,27 @@ private[sql] final case class ColumnTableScan(
       ev
     }
 
-    val (getUnsafeRow, filterFunction) = generateStatPredicate(ctx)
+    val filterFunction = generateStatPredicate(ctx)
+    val getUnsafeRow = ctx.freshName("getUnsafeRow")
+    val statBytes = ctx.freshName("statBytes")
+    val platformClass = classOf[Platform].getName
+
+    // Stat row contains 5 stats per column as specified in PartitionStatistics
+    // If number of stats in PartitionStatistics is changed this should be changed.
+    val numColumnsInStatBlob = relation.schema.size * 5
+
+    ctx.addNewFunction(getUnsafeRow,
+      s"""
+         |
+         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
+         |  final UnsafeRow unsafeRow = new UnsafeRow($numColumnsInStatBlob);
+         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statBytes.length);
+         |  return unsafeRow;
+         |}
+       """.stripMargin)
+
+
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
@@ -505,7 +511,7 @@ private[sql] final case class ColumnTableScan(
       """
     } else {
       val filterCode = if (filterFunction.isEmpty) {
-        val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+         val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
         s"""
           $buffers = (byte[][])$colInput.next();
           final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
