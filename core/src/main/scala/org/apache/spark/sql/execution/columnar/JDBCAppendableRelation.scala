@@ -317,6 +317,11 @@ object JDBCAppendableRelation extends Logging {
     }
     Constant.INTERNAL_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
+
+  final def getTableName(cachedBatchTablename: String): String = {
+    cachedBatchTablename.substring(Constant.INTERNAL_SCHEMA_NAME.length + 1,
+      cachedBatchTablename.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider

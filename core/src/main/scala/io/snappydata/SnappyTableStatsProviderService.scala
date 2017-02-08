@@ -30,18 +30,22 @@ import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{LocalRegion, NonLocalRegionEntry, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.PartitionedPhysicalScan
+import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, JDBCSourceAsStore}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
@@ -207,15 +211,38 @@ object SnappyTableStatsProviderService extends Logging {
         if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
             table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
           if (container != null) {
-            val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
+            val bufferTable = JDBCAppendableRelation.getTableName(table)
+            val numColumnsInBaseTbl = Misc.getMemStore.getAllContainers.asScala.find(c => {
+              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns
+
+            // Stat row contains 5 stats per column as specified in PartitionStatistics
+            // If number of stats in PartitionStatistics is changed this should be changed.
+            val numColumnsInStatBlob = numColumnsInBaseTbl * 5
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            //Resetting PR Numrows in cached batch as this will be calculated every time.
-            //TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInCachedBatch:Long = 0
+
+            // Resetting PR Numrows in cached batch as this will be calculated every time.
+            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+            var rowsInCachedBatch: Long = 0
             while (itr.hasNext) {
-              rowsInCachedBatch = rowsInCachedBatch + itr.next().asInstanceOf[RowLocation]
-                  .getRow(container).getColumn(colPos).getInt
+              val rl = itr.next().asInstanceOf[RowLocation]
+              val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+              val x = key.getKeyColumn(2).getInt
+              val currentBucketRegion = itr.getHostedBucketRegion
+              if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
+                val v = RegionEntryUtils.
+                    getValueWithoutFaultInOrOffHeapEntry(currentBucketRegion, rl)
+                if (v ne null) {
+                  val currentVal = v.asInstanceOf[Array[Array[Byte]]]
+                  val rowFormatter = container.
+                      getRowFormatter(currentVal(0))
+                  val statBytes = rowFormatter.getLob(currentVal, 4)
+                  val unsafeRow = new UnsafeRow(numColumnsInStatBlob);
+                  unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
+                    statBytes.length);
+                  rowsInCachedBatch += unsafeRow.getInt(3);
+                }
+              }
             }
             pr.getPrStats.setPRNumRowsInCachedBatches(rowsInCachedBatch)
           }
