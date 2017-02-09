@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
@@ -317,16 +318,6 @@ object ClusterManagerTestBase {
       throwOnTimeout)
   }
 
-/*
-  def notifyVmIfWaiting(netPort1: Int): Unit = {
-    val cache = GemFireCacheImpl.getInstance()
-    if (null != cache) {
-      cache.notifyRvvTestHook();
-      cache.notifyRvvSnapshotTestHook();
-      cache.setRvvSnapshotTestHook(null);
-    }
-
-  }*/
 
   def validateResults(netPort: Int): Unit = {
 
@@ -374,9 +365,6 @@ object ClusterManagerTestBase {
     println("Row count before creating the cachebatch in row buffer: " + cnt1)
     assert(cnt1 == 5)
 
-
-
-
     var cnt2 = 0;
     s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
         s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
@@ -387,11 +375,8 @@ object ClusterManagerTestBase {
     println("Row count before creating the cachebatch in column store: " + cnt2)
     assert(cnt2 == 0)
 
-
-    //Thread.sleep(3000)
     cache.notifyRvvSnapshotTestHook()
     cache.waitOnRvvTestHook()
-
     var cnt3 = 0;
     s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs3 = s.getResultSet
@@ -402,8 +387,9 @@ object ClusterManagerTestBase {
     println("Row count in row buffer after destroy all entries from row buffer  : " + cnt3)
     assert(cnt3 == 0)
 
-
-
+    cache.notifyRvvSnapshotTestHook()
+    //Thread.sleep(1000)
+    cache.setRvvSnapshotTestHook(null)
     var cnt4 = 0;
     s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
         s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
@@ -411,7 +397,8 @@ object ClusterManagerTestBase {
     while (rs4.next) {
       cnt4 = cnt4 + 1
     }
-    println("Row count in column store after destroy all entries from row buffer  : " + cnt4)
+    println("Row count in column store after destroy all entries from row buffer " +
+        "and reinitialize snapshot   : " + cnt4)
     assert(cnt4 == 1)
 
     var cnt5 = 0;
@@ -423,11 +410,6 @@ object ClusterManagerTestBase {
     println("Row count in column table : " + cnt5)
     assert(cnt5 == 5)
 
-    cache.notifyRvvSnapshotTestHook()
-
-
-    //Thread.sleep(1000)
-    cache.setRvvSnapshotTestHook(null)
   }
 
   class MyTestHook extends RvvSnapshotTestHook {
