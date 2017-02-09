@@ -37,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.streaming.SnappyStreamingContext;
+import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import util.TestException;
 
 public class SnappyAdAnalyticsTest extends SnappyTest {
@@ -348,18 +349,31 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     Log.getLogWriter().info("Stopped Kafka zookeeper");
   }
 
-  public static void HydraTask_stopStreaming() {
-    Log.getLogWriter().info("Stopping Snappy streaming...");
-    SnappyStreamingContext.getActive().get().stop(false, true);
-    Log.getLogWriter().info("Snappy streaming stopped successfully");
-//    SparkContext sc = SnappyContext.globalSparkContext();
-//    if(sc!=null){
-//      SnappyContext snc = new SnappyContext(sc);
-//      snc.sql("streaming stop");
-//      Log.getLogWriter().info("Snappy streaming stopped successfully");
-//    } else
-//      Log.getLogWriter().info("Spark context is null");
+  public static void HydraTask_stopStreamingJob() {
+    snappyAdAnalyticsTest.stopSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames());
+  }
 
+  protected void stopSnappyStreamingJob(Vector jobClassNames) {
+    String snappyJobScript = getScriptLocation("snappy-job.sh");
+    ProcessBuilder pb = null;
+    File log = null;
+    File logFile = null;
+    userAppJar = SnappyPrms.getUserAppJar();
+    verifyDataForJobExecution(jobClassNames, userAppJar);
+    leadHost = getLeadHost();
+    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    try {
+        String userJob = (String)jobClassNames.elementAt(0);
+        String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+            " --app-name AdAnalytics --class " + userJob + " --app-jar " + userAppJar;
+        log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + "stopSnappyStreamingJobTaskResult.log";
+        logFile = new File(dest);
+        pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
+        snappyTest.executeProcess(pb, logFile);
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+    }
   }
 
 }
