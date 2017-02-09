@@ -16,7 +16,11 @@
  */
 package io.snappydata
 
-import org.apache.spark.SparkContext
+import java.io.File
+
+import org.apache.hadoop.conf.Configuration
+
+import org.apache.spark.{SecurityManager, SparkConf, SparkContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
@@ -32,4 +36,25 @@ trait ToolsCallback {
       (Seq[Expression], Seq[Seq[Attribute]], Int, Int)]
 
   def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
+
+  def removeAddedJar(sc: SparkContext, jarName : String): Unit
+
+  /**
+   * Callback to spark Utils to fetch file
+   * Download a file or directory to target directory. Supports fetching the file in a variety of
+   * ways, including HTTP, Hadoop-compatible filesystems, and files on a standard filesystem, based
+   * on the URL parameter. Fetching directories is only supported from Hadoop-compatible
+   * filesystems.
+   *
+   * If `useCache` is true, first attempts to fetch the file to a local cache that's shared
+   * across executors running the same application. `useCache` is used mainly for
+   * the executors, and not in local mode.
+   *
+   * Throws SparkException if the target file already exists and has different contents than
+   * the requested file.
+   */
+  def doFetchFile(
+      url: String,
+      targetDir: File,
+      filename: String) : File
 }

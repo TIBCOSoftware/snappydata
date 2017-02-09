@@ -39,7 +39,7 @@ object AirlineDataSparkJobApp {
     val colTableName = "airline"
     val rowTableName = "airlineref"
 
-    // Get the tables that were created using sql scripts via snappy-shell
+    // Get the tables that were created using sql scripts via snappy-sql
     val airlineDF: DataFrame = snc.table(colTableName)
     val airlineCodeDF: DataFrame = snc.table(rowTableName)
 

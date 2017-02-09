@@ -52,11 +52,19 @@ object Constant {
 
   val DEFAULT_SCHEMA = "APP"
 
-  val DEFAULT_CONFIDENCE: Double = 0.95
+  val DEFAULT_CONFIDENCE: Double = 0.95d
 
-  val DEFAULT_ERROR: Double = 0.2
+  val DEFAULT_ERROR: Double = 0.2d
 
   val DEFAULT_BEHAVIOR: String = "DEFAULT_BEHAVIOR"
+  val BEHAVIOR_RUN_ON_FULL_TABLE = "RUN_ON_FULL_TABLE"
+  val BEHAVIOR_DO_NOTHING = "DO_NOTHING"
+  val BEHAVIOR_LOCAL_OMIT = "LOCAL_OMIT"
+  val BEHAVIOR_STRICT = "STRICT"
+  val BEHAVIOR_PARTIAL_RUN_ON_BASE_TABLE = "PARTIAL_RUN_ON_BASE_TABLE"
+
+  val keyBypassSampleOperator = "aqp.debug.byPassSampleOperator"
+  val defaultBehaviorAsDO_NOTHING = "spark.sql.aqp.defaultBehaviorAsDO_NOTHING"
 
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
@@ -100,7 +108,7 @@ object Constant {
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 
-  val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+  val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 }
@@ -153,6 +161,9 @@ object Property extends Enumeration {
       Some(propertyName.substring(Constant.SPARK_SNAPPY_PREFIX.length))
     } else None
   }
+  val CachedBatchSize = Val[Long](s"${Constant.PROPERTY_PREFIX}cachedBatchSize",
+    "Controls the size of batches for columnar caching in SnappyData's column tables.",
+    Some(10000), Constant.SPARK_PREFIX)
 
   val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
@@ -202,6 +213,48 @@ object Property extends Enumeration {
     "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
         " on baset table of size more than flushReservoirThreshold." +
         " Default value is 10,000.", Some(10000L))
+
+  val NumBootStrapTrials = SQLVal[Int](s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
+    "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
+    Some(100))
+
+  // TODO: check with suyog  Why are we having two different error defaults one as 1 & other as .2?
+
+  val MaxErrorAllowed = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
+    "Maximum relative error tolerable in the approximate value calculation. It should be a " +
+      "fractional value not exceeding 1. Default value is 1.0", Some(1.0d), null, false)
+
+  val Error = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.error",
+    "Maximum relative error tolerable in the approximate value calculation. It should be a " +
+      s"fractional value not exceeding 1. Default value is ${Constant.DEFAULT_ERROR}",
+    Some(Constant.DEFAULT_ERROR))
+
+  val Confidence = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.confidence",
+    "Confidence with which the error bounds are calculated for the approximate value. It should " +
+    s"be a fractional value not exceeding 1. Default value is ${Constant.DEFAULT_CONFIDENCE}",
+    None)
+
+  val Behavior = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.behavior",
+    s" The action to be taken if the error computed goes oustide the error tolerance limit. " +
+      s"Default value is ${Constant.BEHAVIOR_DO_NOTHING}", None)
+
+  val AqpDebug = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug",
+    s" Boolean if true tells engine to do  bootstrap analysis in debug mode returning an array of" +
+      s" values for the iterations. Default is false", Some(false), null, false)
+
+  val AqpDebugFixedSeed = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug.fixedSeed",
+    s" Boolean if true tells engine to initialize the seed for poisson value calculation with a " +
+      s"fixed  number 123456789L. Default is false.", Some(false), null, false)
+
+  val AQPDebugPoissonType = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.debug.poissonType",
+    s" If aqp debugging is enbaled, this property can be used to set different types of algorithm" +
+      s" to generate bootstrap multiplicity numbers. Default is Real", None, null, false)
+
+  val ClosedFormEstimates = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.closedFormEstimates",
+    s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
+      s". Default is true.", Some(true), null, false)
+
+
 }
 
 // extractors for properties
