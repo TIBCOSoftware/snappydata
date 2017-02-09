@@ -46,6 +46,9 @@ class SnappyUnifiedMemoryManager private[memory](
 
   val maxExecutionSize = (maxHeapMemory * 0.75).toLong
 
+  @volatile
+  var threadsWaitingForStorage = 0
+
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
@@ -142,48 +145,50 @@ class SnappyUnifiedMemoryManager private[memory](
   override def acquireStorageMemory(
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean = synchronized {
-    assertInvariants()
-    assert(numBytes >= 0)
-    val (executionPool, storagePool, maxMemory) = memoryMode match {
-      case MemoryMode.ON_HEAP => (
-          onHeapExecutionMemoryPool,
-          onHeapStorageMemoryPool,
-          maxOnHeapStorageMemory)
-      case MemoryMode.OFF_HEAP => (
-          offHeapExecutionMemoryPool,
-          offHeapStorageMemoryPool,
-          maxOffHeapMemory)
-    }
-    if (numBytes > maxMemory) {
-      // Fail fast if the block simply won't fit
-      logInfo(s"Will not store $blockId as the required space ($numBytes bytes) exceeds our " +
-          s"memory limit ($maxMemory bytes)")
-      return false
-    }
-    if (numBytes > storagePool.memoryFree) {
-      // There is not enough free memory in the storage pool, so try to borrow free memory from
-      // the execution pool.
-      val memoryBorrowedFromExecution = Math.min(executionPool.memoryFree, numBytes)
-      val actualBorrowedMemory = if (storagePool.poolSize + memoryBorrowedFromExecution > maxStorageSize) {
-        maxStorageSize - storagePool.poolSize
-      } else {
-        memoryBorrowedFromExecution
+      memoryMode: MemoryMode): Boolean = {
+    threadsWaitingForStorage += 1
+    synchronized {assertInvariants()
+      assert(numBytes >= 0)
+      val (executionPool, storagePool, maxMemory) = memoryMode match {
+        case MemoryMode.ON_HEAP => (
+            onHeapExecutionMemoryPool,
+            onHeapStorageMemoryPool,
+            maxOnHeapStorageMemory)
+        case MemoryMode.OFF_HEAP => (
+            offHeapExecutionMemoryPool,
+            offHeapStorageMemoryPool,
+            maxOffHeapMemory)
       }
-      executionPool.decrementPoolSize(actualBorrowedMemory)
-      storagePool.incrementPoolSize(actualBorrowedMemory)
-    }
-    //First let spark try to free some memory
-    val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
-    if(!enoughMemory){
-      //Sufficient memory could not be freed. Time to evict from SnappyData store.
-      val requiredBytes = numBytes - storagePool.memoryFree
-      evictor.evictRegionData(requiredBytes)
-      storagePool.acquireMemory(blockId, numBytes)
-    } else {
-      enoughMemory
-    }
-
+      if (numBytes > maxMemory) {
+        // Fail fast if the block simply won't fit
+        logInfo(s"Will not store $blockId as the required space ($numBytes bytes) exceeds our " +
+            s"memory limit ($maxMemory bytes)")
+        return false
+      }
+      if (numBytes > storagePool.memoryFree) {
+        // There is not enough free memory in the storage pool, so try to borrow free memory from
+        // the execution pool.
+        val memoryBorrowedFromExecution = Math.min(executionPool.memoryFree, numBytes)
+        val actualBorrowedMemory = if (storagePool.poolSize + memoryBorrowedFromExecution > maxStorageSize) {
+          maxStorageSize - storagePool.poolSize
+        } else {
+          memoryBorrowedFromExecution
+        }
+        executionPool.decrementPoolSize(actualBorrowedMemory)
+        storagePool.incrementPoolSize(actualBorrowedMemory)
+      }
+      //First let spark try to free some memory
+      val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
+      if(!enoughMemory){
+        //Sufficient memory could not be freed. Time to evict from SnappyData store.
+        val requiredBytes = numBytes - storagePool.memoryFree
+        evictor.evictRegionData(requiredBytes)
+        threadsWaitingForStorage -= 1
+        storagePool.acquireMemory(blockId, numBytes)
+      } else {
+        threadsWaitingForStorage -= 1
+        enoughMemory
+      }}
   }
 }
 
