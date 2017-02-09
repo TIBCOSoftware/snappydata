@@ -10,7 +10,7 @@ object Consts {
   val RUN_PERSISTENTLY = false
 
   val MEASURE_TIME = 60
-  val DATAFRAME_WIDTH = 5
+  val DATAFRAME_WIDTH = 1
   val GROUP_WIDTH = 3 //static time window based on data generated time
 
   val SRC1_TABLE_NAME   = "APP.ACCELERATION"
@@ -41,9 +41,16 @@ object Consts {
 //  val HDFS_HOST   = BuildConfig.HDFS_HOST //e.g) ide-snappy-loclead:9000
 //  val HDFS_USER   = BuildConfig.HDFS_USER //e.g) ubuntu
 
-  val SOURCE1_DIR = s"/tmp/ACC"
+  val HDFS_HOST   = "localhost:9000" //e.g) ide-snappy-loclead:9000
+  val HDFS_USER   = "swati" //e.g) ubuntu
+
+  val SOURCE1_DIR = s"hdfs://${HDFS_HOST}/user/${HDFS_USER}/ACCELERATION"
+  val SOURCE2_DIR = s"hdfs://${HDFS_HOST}/user/${HDFS_USER}/BIO_INFO"
+  val SOURCE3_DIR = s"hdfs://${HDFS_HOST}/user/${HDFS_USER}/ENVIRONMENT"
+
+  /*val SOURCE1_DIR = s"/tmp/ACC"
   val SOURCE2_DIR = s"/tmp/BIO"
-  val SOURCE3_DIR = s"/tmp/ENV"
+  val SOURCE3_DIR = s"/tmp/ENV"*/
 
   val TABLE_TYPE  = "row" //column or row or jdbc
 

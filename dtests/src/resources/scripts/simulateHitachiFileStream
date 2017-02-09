@@ -26,15 +26,15 @@ start=$(date +%s%3N)
 count=$((count+1))
 accfile=/home/swati/hitachi/zip/question0131_details/data/test_src1_1.csv
 echo "Copying csv file $accfile in /tmp/ACC/test_src1$count"
-cp $accfile /tmp/ACC/"test_src1"$countt
+cp $accfile /tmp/ACC/"test_src1_"$count".csv"
 sleep 0.4
 biofile=/home/swati/hitachi/zip/question0131_details/data/test_src2_1.csv
 echo "Copying csv file $biofile in /tmp/BIO/test_src2$count"
-cp $biofile /tmp/BIO/"test_src2"$count
+cp $biofile /tmp/BIO/"test_src2_"$count".csv"
 sleep 0.4
 envfile=/home/swati/hitachi/zip/question0131_details/data/test_src3_1.csv
 echo "Copying csv file $envfile in /tmp/ENV/test_src3$count"
-cp $envfile /tmp/ENV/"test_src3"$count
+cp $envfile /tmp/ENV/"test_src3_"$count".csv"
 sleep 0.4
 done
 sleep 1

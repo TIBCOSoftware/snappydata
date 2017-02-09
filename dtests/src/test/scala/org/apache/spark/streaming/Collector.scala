@@ -1,9 +1,9 @@
 package org.apache.spark.streaming
 
 import com.typesafe.config.Config
-import org.apache.spark._
-import org.apache.spark.streaming.{SnappyStreamingContext, Seconds, Duration}
-import org.apache.spark.streaming.dstream.DStream
+// import org.apache.spark._
+//import org.apache.spark.streaming.{SnappyStreamingContext, Seconds, Duration}
+// import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.sql._
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
@@ -49,20 +49,20 @@ object Collector extends SnappyStreamingJob {
                  Seconds(Consts.DATAFRAME_WIDTH)
                 ,Seconds(Consts.DATAFRAME_WIDTH)
               )
-    val batchedInput_SRC3 = csv_SRC3.window(
-                 Seconds(Consts.DATAFRAME_WIDTH)
-                ,Seconds(Consts.DATAFRAME_WIDTH)
-              )
+//    val batchedInput_SRC3 = csv_SRC3.window(
+//                 Seconds(Consts.DATAFRAME_WIDTH)
+//                ,Seconds(Consts.DATAFRAME_WIDTH)
+//              )
 
     /** Parse DStream to Intervaled SchemaDStream */
     val parsedInput_SRC1 = psr.parseCSV_SRC1(batchedInput_SRC1, snsc) //to SchemaDStream
     val parsedInput_SRC2 = psr.parseCSV_SRC2(batchedInput_SRC2, snsc) //to SchemaDStream
-    val parsedInput_SRC3 = psr.parseCSV_SRC3(batchedInput_SRC3, snsc) //to SchemaDStream
+    //val parsedInput_SRC3 = psr.parseCSV_SRC3(batchedInput_SRC3, snsc) //to SchemaDStream
 
     /** Register SchemaDStream as Temp Table */
     parsedInput_SRC1.registerAsTable("temp_SRC1")
     parsedInput_SRC2.registerAsTable("temp_SRC2")
-    parsedInput_SRC3.registerAsTable("temp_SRC3")
+    //parsedInput_SRC3.registerAsTable("temp_SRC3")
 
     /** Register Continuous Query to Temp Table */
     val aggregated_SRC1 = snsc.registerCQ(s"SELECT ${Col.ID}, ${Col.ACC_TS}"
@@ -80,11 +80,15 @@ object Collector extends SnappyStreamingJob {
         + s" FROM temp_SRC2 GROUP BY ${Col.ID}, ${Col.BIO_TS}"
     )
     
-    val aggregated_SRC3 = snsc.registerCQ(s"SELECT ${Col.ID}, ${Col.ENV_TS}"
-        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=1 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA1}"
-        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=2 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA2}"
-        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=3 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA3}" 
-        + s" FROM temp_SRC3 GROUP BY ${Col.ID}, ${Col.ENV_TS}")
+//    val aggregated_SRC3 = snsc.registerCQ(s"SELECT ${Col.ID}, ${Col.ENV_TS}"
+//        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=1 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA1}"
+//        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=2 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA2}"
+//        + s", avg(CASE WHEN ${Col.SENSOR_CODE}=3 THEN ${Col.SENSOR_VALUE} END) AS ${Col.ENV_DATA3}"
+//        + s" FROM temp_SRC3 GROUP BY ${Col.ID}, ${Col.ENV_TS}")
+
+    aggregated_SRC1.foreachDataFrame(_.show())
+    aggregated_SRC2.foreachDataFrame(_.show())
+    // aggregated_SRC3.foreachDataFrame(_.show())
 
 
     // When Input format is horizon, we do not need pivot
@@ -95,40 +99,26 @@ object Collector extends SnappyStreamingJob {
 
     /** Put Aggregated SchemaDStrem into ROW Table */
     aggregated_SRC1.foreachDataFrame { df =>
-
       val isEmpty = df.limit(1).rdd.isEmpty
-
-      if (!isEmpty) {
-
-        df.write.putInto(Consts.SRC1_TABLE_NAME)
-      
-      }
-
+      if (!isEmpty) df.write.putInto(Consts.SRC1_TABLE_NAME)
     }
 
     aggregated_SRC2.foreachDataFrame { df =>
-
-      val isEmpty = df.limit(1).rdd.isEmpty
-
-      if (!isEmpty) {
-
-        df.write.putInto(Consts.SRC2_TABLE_NAME)
-
-      }
-
+    val isEmpty = df.limit(1).rdd.isEmpty
+    if (!isEmpty) df.write.putInto(Consts.SRC2_TABLE_NAME)
     }
    
-    aggregated_SRC3.foreachDataFrame { df =>
-
-      val isEmpty = df.limit(1).rdd.isEmpty
-
-      if (!isEmpty) {
-
-        df.write.putInto(Consts.SRC3_TABLE_NAME)
-
-      }
-
-    } 
+//    aggregated_SRC3.foreachDataFrame { df =>
+//
+//      val isEmpty = df.limit(1).rdd.isEmpty
+//
+//      if (!isEmpty) {
+//
+//        df.write.putInto(Consts.SRC3_TABLE_NAME)
+//
+//      }
+//
+//    }
 
  
 
@@ -136,7 +126,7 @@ object Collector extends SnappyStreamingJob {
     // Test to store SchemaDStream as STREAM TABLE
     // 2017.01.18 added by ide
 
-    aggregated_SRC1.registerAsTable(Consts.SRC1_STREAMTABLE_NAME)
+    /*aggregated_SRC1.registerAsTable(Consts.SRC1_STREAMTABLE_NAME)
     aggregated_SRC2.registerAsTable(Consts.SRC2_STREAMTABLE_NAME)
     aggregated_SRC3.registerAsTable(Consts.SRC3_STREAMTABLE_NAME)
 
@@ -157,11 +147,17 @@ object Collector extends SnappyStreamingJob {
     )
     sds3FromTable.foreachDataFrame { df =>
       df.show
-    }
+    }*/
 
 //    def analyzer = new Analyzer()
 //    analyzer.analyze(snsc)
     //----------------------------------------------------
+
+    parsedInput_SRC1.foreachDataFrame(_.show())
+    parsedInput_SRC2.foreachDataFrame(_.show())
+
+    aggregated_SRC1.foreachDataFrame(_.show())
+    aggregated_SRC2.foreachDataFrame(_.show())
 
     snsc.start()
     try {
@@ -174,8 +170,10 @@ object Collector extends SnappyStreamingJob {
       }
     }
     finally {
+      ss.clearPlanCache()
       snsc.stop(stopSparkContext=false, stopGracefully=true)
-      logger.info("STOP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      logger.info("/stop" +
+        "/")
     }
 
   }
