@@ -21,10 +21,9 @@ import java.util.{Collections, UUID}
 
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.storage.TestBlockId
-
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, DiskEntry, ExternalTableMetaData, LocalRegion, RegionEntry}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -32,6 +31,7 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
 import io.snappydata.Constant
 
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
@@ -39,7 +39,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode, _}
-import org.apache.spark.{SparkEnv, Logging, SparkException}
+import org.apache.spark.{Logging, SparkEnv, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -184,6 +184,16 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def isSnappyStore: Boolean = true
+
+  val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
+
+  override def getEntryOverhead(entry: RegionEntry): Long = {
+    var entryOverhead: Long = sizer.sizeof(entry)
+    if (entry.isInstanceOf[DiskEntry]) {
+      entryOverhead += sizer.sizeof(entry.asInstanceOf[DiskEntry].getDiskId)
+    }
+    return entryOverhead
+  }
 }
 
 trait StoreCallback extends Serializable {
