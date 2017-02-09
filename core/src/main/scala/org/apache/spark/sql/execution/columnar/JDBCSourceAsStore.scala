@@ -58,7 +58,7 @@ class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
       self.getConnection(tableName, onExecutor)
   }
 
-  override def getCachedBatchRDD(tableName: String,
+  override def getCachedBatchRDD(tableName: String, rowBuffer: String,
       requiredColumns: Array[String],
       session: SparkSession): RDD[CachedBatch] = {
     new ExternalStorePartitionedRDD(session, tableName, requiredColumns,

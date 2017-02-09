@@ -111,15 +111,14 @@ final class SparkShellRDDHelper extends Logging {
 
 object SparkShellRDDHelper extends Logging {
 
-  def getPartitions(tableName: String, conn: Connection, sc: SparkContext,
-      isPartitioned: Boolean): Array[Partition] = {
+  def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
-    val bucketToServerList = SnappyContext.getClusterMode(sc) match {
-      case ThinClientConnectorMode(_, _) => getBucketToServerMapping(conn, resolvedName,
-        isPartitioned)
-      case _ => getBucketToServerMapping(resolvedName)
-    }
+    val bucketToServerList = getBucketToServerMapping(resolvedName)
     logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
+    getPartitions(bucketToServerList)
+  }
+
+  def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
@@ -214,34 +213,7 @@ object SparkShellRDDHelper extends Logging {
     }
   }
 
-  /*
-   * Called when using connector mode that uses thin client connection
-   * to get SnappyData cluster info. This uses system procs to get
-   * information.
-  **/
-  private def getBucketToServerMapping(connection: Connection, tableName: String,
-      isPartitioned: Boolean): Array[ArrayBuffer[(String, String)]] = {
-    if (isPartitioned) {
-      val getBktLocationProc = connection.prepareCall(s"call SYS.GET_BUCKET_TO_SERVER_MAPPING2(?, ?)")
-      getBktLocationProc.setString(1, tableName)
-      getBktLocationProc.registerOutParameter(2, java.sql.Types.CLOB)
-      getBktLocationProc.execute
-      val bucketToServerMappingStr: String = getBktLocationProc.getString(2)
-      val allNetUrls = setBucketToServerMappingInfo(bucketToServerMappingStr)
-      allNetUrls
-    } else {
-      val getReplicaNodes = connection.prepareCall(s"call SYS.GET_INITIALIZED_REPLICAS(?, ?)")
-      getReplicaNodes.setString(1, tableName)
-      getReplicaNodes.registerOutParameter(2, java.sql.Types.CLOB)
-      getReplicaNodes.execute
-      val replicaNodesStr: String = getReplicaNodes.getString(2)
-      logInfo("SparkShellRDDHelper.getBucketToServerMapping: GET_INITIALIZED_REPLICAS returned " + replicaNodesStr)
-      val allNetUrls = setReplicasToServerMappingInfo(replicaNodesStr)
-      allNetUrls
-    }
-  }
-
-  private def setBucketToServerMappingInfo(
+  def setBucketToServerMappingInfo(
       bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
@@ -285,7 +257,7 @@ object SparkShellRDDHelper extends Logging {
     Array.empty
   }
 
-  private def setReplicasToServerMappingInfo(
+  def setReplicasToServerMappingInfo(
       replicaNodesStr: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing

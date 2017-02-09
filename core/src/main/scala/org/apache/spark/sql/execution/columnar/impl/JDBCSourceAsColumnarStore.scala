@@ -32,17 +32,18 @@ import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
+import org.apache.spark.sql.hive.SnappyConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.{SnappySession, SparkSession}
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext, SnappySession, SparkSession}
+import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
  * Column Store implementation for GemFireXD.
  */
 class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     _numPartitions: Int)
-    extends JDBCSourceAsStore(_connProperties, _numPartitions) {
+    extends JDBCSourceAsStore(_connProperties, _numPartitions) with Logging {
 
   self =>
 
@@ -54,8 +55,8 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         self.getConnection(tableName, onExecutor)
     }
 
-  override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
+  override def getCachedBatchRDD(tableName: String, rowBuffer: String,
+      requiredColumns: Array[String], session: SparkSession): RDD[CachedBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -66,11 +67,22 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         // partition-specific
         val poolProps = _connProperties.poolProps -
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
+
+        val parts = SnappyContext.getClusterMode(session.sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+            val catalog = snappySession.sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
+            val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
+            relInfo.partitions
+          case _ =>
+            Array.empty[Partition]
+        }
+
+
         new SparkShellCachedBatchRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
-            _connProperties.hikariCP), this)
+            _connProperties.hikariCP), this, parts)
     }
   }
 
@@ -167,7 +179,8 @@ final class SparkShellCachedBatchRDD(
     private var tableName: String,
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
-    @transient private val store: ExternalStore)
+    @transient private val store: ExternalStore,
+    val parts: Array[Partition])
     extends RDDKryo[CachedBatch](session.sparkContext, Nil)
         with KryoSerializable {
 
@@ -187,8 +200,10 @@ final class SparkShellCachedBatchRDD(
   }
 
   override def getPartitions: Array[Partition] = {
-    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _,
-      session.sparkContext, isPartitioned = true))
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
+    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -269,7 +284,7 @@ class SparkShellRowRDD(_session: SnappySession,
     val conn = ExternalStoreUtils.getConnection(tableName, connProperties,
       forExecutor = true)
     try {
-      SparkShellRDDHelper.getPartitions(tableName, conn, session.sparkContext, _isPartitioned)
+      SparkShellRDDHelper.getPartitions(tableName, conn)
     } finally {
       conn.close()
     }

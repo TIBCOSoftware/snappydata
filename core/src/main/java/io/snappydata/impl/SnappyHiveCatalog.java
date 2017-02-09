@@ -38,6 +38,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
@@ -81,6 +82,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public Table getTable(String schema, String tableName, boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.GET_TABLE, tableName, schema, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Table)handleFutureResult(f);
   }
 
   public boolean isColumnTable(String schema, String tableName, boolean skipLocks) {
@@ -167,6 +175,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // this will exclude external tables like parquet tables, stream tables
     private static final int GET_ALL_TABLES_MANAGED_IN_DD = 4;
     private static final int REMOVE_TABLE = 5;
+    private static final int GET_TABLE = 6;
     // private static final int CLOSE_HMC = 4;
 
     // More to be added later
@@ -206,6 +215,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         case COLUMNTABLE_SCHEMA:
           hmc = SnappyHiveCatalog.this.hmClients.get();
           return getSchema(hmc);
+
+        case GET_TABLE:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          return getTable(hmc, this.dbName, this.tableName);
 
         case GET_ALL_TABLES_MANAGED_IN_DD:
           hmc = SnappyHiveCatalog.this.hmClients.get();

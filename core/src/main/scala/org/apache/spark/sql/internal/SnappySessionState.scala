@@ -41,7 +41,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -196,14 +196,28 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = new SnappyStoreHiveCatalog(
-    sharedState.externalCatalog,
-    snappySession,
-    metadataHive,
-    functionResourceLoader,
-    functionRegistry,
-    conf,
-    newHadoopConf())
+  override lazy val catalog = {
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        new SnappyConnectorCatalog(
+          sharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+      case _ =>
+        new SnappyStoreHiveCatalog(
+          sharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+    }
+  }
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)

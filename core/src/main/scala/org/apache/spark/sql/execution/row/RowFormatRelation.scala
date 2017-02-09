@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUti
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, RelationInfo, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -82,7 +82,8 @@ class RowFormatRelation(
     val cols = new mutable.HashSet[String]()
     SnappyContext.getClusterMode(_context.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
-      //@TODO [shirishd] support in thin client connector mode
+        cols ++= relInfo.indexCols
+
       case _ =>
         val im = region.getIndexUpdater.asInstanceOf[GfxdIndexManager]
         if (im != null && im.getIndexConglomerateDescriptors != null) {
@@ -128,33 +129,29 @@ class RowFormatRelation(
           isPartitioned,
           requiredColumns,
           connProperties,
-          handledFilters
+          handledFilters,
+          _parts = relInfo.partitions
         )
     }
     (rdd, Nil)
   }
 
+  lazy val relInfo: RelationInfo = {
+    val mode = SnappyContext.getClusterMode(_context.sparkContext)
+     mode match {
+      case ThinClientConnectorMode(_, _) =>
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      case _ =>
+         new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition])
+//        throw new AnalysisException("Not expected to be called for " + mode)
+    }
+  }
+
   override lazy val (numBuckets, partitionColumns) = {
     SnappyContext.getClusterMode(_context.sparkContext) match {
-      case ThinClientConnectorMode(_, _) => {
-        val conn = connFactory()
-        try {
-          val pstmt = conn.prepareCall(
-            s"call sys.GET_PARTITIONING_COLUMNS_AND_BUCKET_COUNT('${_table}', ?, ?)")
-          pstmt.registerOutParameter(1, java.sql.Types.VARCHAR)
-          pstmt.registerOutParameter(2, java.sql.Types.INTEGER)
-          pstmt.execute
-          val bucketCount = pstmt.getInt(2)
-          if (bucketCount > 0) {
-            val pCols = pstmt.getString(1).split(":")
-            (bucketCount, pCols.toSeq)
-          } else {
-            (1, Seq.empty[String])
-          }
-        } finally {
-          conn.close()
-        }
-      }
+      case ThinClientConnectorMode(_, _) =>
+        (relInfo.numBuckets, relInfo.partitioningCols)
       case _ => region match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver
@@ -310,7 +307,6 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
-      //TODO note sdeshmukh initialize numBuckets here
       connProperties.dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
           None, partitions, connProperties)

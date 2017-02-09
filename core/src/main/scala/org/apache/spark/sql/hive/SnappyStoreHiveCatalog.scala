@@ -142,10 +142,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
-      (LogicalRelation, CatalogTable)] = {
+      (LogicalRelation, CatalogTable, RelationInfo)] = {
     val cacheLoader = new CacheLoader[QualifiedTableName,
-        (LogicalRelation, CatalogTable)]() {
-      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable) = {
+        (LogicalRelation, CatalogTable, RelationInfo)]() {
+      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
         val schemaString = getSchemaString(table.properties)
@@ -179,7 +179,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table)
+        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty))
       }
     }
 
@@ -192,7 +192,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   protected def createCachedSampleTables =
     SnappyStoreHiveCatalog.cachedSampleTables
 
-  private var relationDestroyVersion = 0
+  var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
@@ -635,7 +635,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     cachedDataSourceTables.invalidate(table)
   }
 
-  private def isDisconnectException(t: Throwable): Boolean = {
+  def isDisconnectException(t: Throwable): Boolean = {
     if (t != null) {
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||
@@ -812,7 +812,7 @@ object SnappyStoreHiveCatalog {
   }
 
   private[this] var relationDestroyVersion = 0
-  private val relationDestroyLock = new ReentrantReadWriteLock()
+  val relationDestroyLock = new ReentrantReadWriteLock()
   private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
@@ -829,7 +829,7 @@ object SnappyStoreHiveCatalog {
     }
   }
 
-  private def getSchemaString(
+  def getSchemaString(
       tableProps: scala.collection.Map[String, String]): Option[String] = {
     tableProps.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
       (0 until numParts.toInt).map { index =>
