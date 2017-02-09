@@ -41,6 +41,11 @@ class SnappyUnifiedMemoryManager private[memory](
   numCores) {
 
   val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
+
+  val maxStorageSize = (maxHeapMemory * 0.75).toLong
+
+  val maxExecutionSize = (maxHeapMemory * 0.75).toLong
+
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
@@ -138,7 +143,8 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = synchronized {
-
+    assertInvariants()
+    assert(numBytes >= 0)
     val (executionPool, storagePool, maxMemory) = memoryMode match {
       case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
@@ -149,27 +155,35 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemoryPool,
           maxOffHeapMemory)
     }
-
-    //First let spark try to free some memory
-    if (super.acquireStorageMemory(blockId, numBytes, memoryMode)) {
-      return true
-    } else {
-      //println(s"Could not acquire $numBytes from spark, storage pool freememory = ${storagePool.memoryFree}")
-      //Sufficient memory could not be freed. Time to evict from Snappy Data store.
-      if (numBytes > storagePool.memoryFree) {
-        val requiredBytes = numBytes - storagePool.memoryFree
-        //println(s"before eviction, storage pool freememory = ${storagePool.memoryFree}")
-        evictor.evictRegionData(requiredBytes)
-        //println(s"after eviction, storage pool freememory = ${storagePool.memoryFree}")
-        val success = storagePool.acquireMemory(blockId, numBytes)
-        /*        if (!success) {
-                  println(s"Could not acquire $numBytes , storage pool freememory = ${storagePool.memoryFree}")
-                }*/
-        return success
-      }
-      // This should never have happened.
+    if (numBytes > maxMemory) {
+      // Fail fast if the block simply won't fit
+      logInfo(s"Will not store $blockId as the required space ($numBytes bytes) exceeds our " +
+          s"memory limit ($maxMemory bytes)")
       return false
     }
+    if (numBytes > storagePool.memoryFree) {
+      // There is not enough free memory in the storage pool, so try to borrow free memory from
+      // the execution pool.
+      val memoryBorrowedFromExecution = Math.min(executionPool.memoryFree, numBytes)
+      val actualBorrowedMemory = if (storagePool.poolSize + memoryBorrowedFromExecution > maxStorageSize) {
+        maxStorageSize - storagePool.poolSize
+      } else {
+        memoryBorrowedFromExecution
+      }
+      executionPool.decrementPoolSize(actualBorrowedMemory)
+      storagePool.incrementPoolSize(actualBorrowedMemory)
+    }
+    //First let spark try to free some memory
+    val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
+    if(!enoughMemory){
+      //Sufficient memory could not be freed. Time to evict from SnappyData store.
+      val requiredBytes = numBytes - storagePool.memoryFree
+      evictor.evictRegionData(requiredBytes)
+      storagePool.acquireMemory(blockId, numBytes)
+    } else {
+      enoughMemory
+    }
+
   }
 }
 
