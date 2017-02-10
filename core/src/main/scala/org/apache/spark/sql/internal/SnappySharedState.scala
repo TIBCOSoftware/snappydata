@@ -24,8 +24,7 @@ import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
  * re-visit if we need this at all.
  *
  */
-private[sql] class SnappySharedState(override val sparkContext: SparkContext)
-    extends SharedState(sparkContext) {
+private[sql] class SnappySharedState(val sparkContext: SparkContext){
 
   /**
    * A Hive client used to interact with the metastore.
@@ -33,7 +32,6 @@ private[sql] class SnappySharedState(override val sparkContext: SparkContext)
   lazy val metadataHive = new HiveClientUtil(sparkContext).client
 
 
-  override val externalCatalog = {
-    new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
-  }
+  val externalCatalog = new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+
 }

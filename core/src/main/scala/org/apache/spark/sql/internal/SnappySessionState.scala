@@ -58,10 +58,10 @@ class SnappySessionState(snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected lazy val sharedState: SnappySharedState =
-    snappySession.sharedState.asInstanceOf[SnappySharedState]
+  protected lazy val snappySharedState: SnappySharedState =
+    snappySession.snappySharedState.asInstanceOf[SnappySharedState]
 
-  protected lazy val metadataHive = sharedState.metadataHive.newSession()
+  protected lazy val metadataHive = snappySharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -197,7 +197,7 @@ class SnappySessionState(snappySession: SnappySession)
    * Internal catalog for managing table and database states.
    */
   override lazy val catalog = new SnappyStoreHiveCatalog(
-    sharedState.externalCatalog,
+    snappySharedState.externalCatalog,
     snappySession,
     metadataHive,
     snappySession.sharedState.globalTempViewManager,
