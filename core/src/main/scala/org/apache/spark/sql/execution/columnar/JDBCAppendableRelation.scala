@@ -70,7 +70,7 @@ case class JDBCAppendableRelation(
 
   protected final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,
-        null, connProperties.connProps.asScala.toMap))
+        table, connProperties.connProps.asScala.toMap))
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
