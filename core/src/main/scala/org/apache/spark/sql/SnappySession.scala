@@ -92,7 +92,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * and a catalog that interacts with external systems.
    */
   @transient
-  private[spark] lazy override val sharedState: SnappySharedState = {
+  private[spark] lazy val snappySharedState: SnappySharedState = {
     existingSharedState.getOrElse(new SnappySharedState(sc))
   }
 
@@ -153,7 +153,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @since 2.0.0
    */
   override def newSession(): SnappySession = {
-    new SnappySession(sparkContext, Some(sharedState))
+    new SnappySession(sparkContext, Some(snappySharedState))
   }
 
   override def sql(sqlText: String): CachedDataFrame =
