@@ -112,7 +112,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val snc = SnappyContext(sc)
     val tableName: String = "TESTTABLE"
-    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 2")
+    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
 
 
     snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
