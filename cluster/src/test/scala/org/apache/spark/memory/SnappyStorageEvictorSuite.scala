@@ -63,6 +63,33 @@ class SnappyStorageEvictorSuite extends FunSuite with BeforeAndAfter with Before
         .getOrCreate
   }
 
+  test("Test storage for column tables with one row") {
+    val sparkSession = createSparkSession(1, 0)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    snSession.createTable("t1", "column", struct, options)
+
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val memoryMode = MemoryMode.ON_HEAP
+    val taskAttemptId = 0L
+    //artificially acquire memory
+    SparkEnv.get.memoryManager.acquireExecutionMemory(500L, taskAttemptId, memoryMode)
+    assert(SparkEnv.get.memoryManager.executionMemoryUsed == 500)
+    val row = Row(100000000, 10000000, 10000000)
+    snSession.insert("t1", row)
+    println(SparkEnv.get.memoryManager.storageMemoryUsed)
+    snSession.insert("t1", row)
+    println(SparkEnv.get.memoryManager.storageMemoryUsed)
+    snSession.insert("t1", row)
+    snSession.insert("t1", row)
+    snSession.insert("t1", row)
+    println(SparkEnv.get.memoryManager.storageMemoryUsed)
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
+    snSession.dropTable("t1")
+
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+
+    }
+
   test("Test storage for replicated tables") {
     val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)

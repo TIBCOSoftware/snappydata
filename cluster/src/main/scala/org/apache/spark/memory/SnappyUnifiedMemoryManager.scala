@@ -16,8 +16,14 @@
  */
 package org.apache.spark.memory
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import com.gemstone.gemfire.internal.cache.DiskEntry
+
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.storage.BlockId
+import SnappyUnifiedMemoryManager._
 
 /**
   * When there is request for execution or storage memory, critical up and eviction up
@@ -46,8 +52,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
   val maxExecutionSize = (maxHeapMemory * 0.75).toLong
 
-  @volatile
-  var threadsWaitingForStorage = 0
+
+  val threadsWaitingForStorage = new AtomicInteger()
 
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
@@ -87,6 +93,7 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemory,
           maxOffHeapMemory)
     }
+    if(SnappyMemoryUtils.isCriticalUp) return 0
 
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
@@ -146,8 +153,9 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = {
-    threadsWaitingForStorage += 1
-    synchronized {assertInvariants()
+    threadsWaitingForStorage.incrementAndGet()
+    synchronized {
+      assertInvariants()
       assert(numBytes >= 0)
       val (executionPool, storagePool, maxMemory) = memoryMode match {
         case MemoryMode.ON_HEAP => (
@@ -159,6 +167,7 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapStorageMemoryPool,
             maxOffHeapMemory)
       }
+      if (SnappyMemoryUtils.isCriticalUp) return false
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
         logInfo(s"Will not store $blockId as the required space ($numBytes bytes) exceeds our " +
@@ -182,13 +191,25 @@ class SnappyUnifiedMemoryManager private[memory](
       if(!enoughMemory){
         //Sufficient memory could not be freed. Time to evict from SnappyData store.
         val requiredBytes = numBytes - storagePool.memoryFree
+        DiskEntry.entryEvictionMemoryOverHead.set(0L)
         evictor.evictRegionData(requiredBytes)
-        threadsWaitingForStorage -= 1
-        storagePool.acquireMemory(blockId, numBytes)
+        val memoryAcquiredDueToEviction = DiskEntry.entryEvictionMemoryOverHead.get
+        if(memoryAcquiredDueToEviction > 0){
+          storagePool.decrementPoolSize(memoryAcquiredDueToEviction)
+        }
+        threadsWaitingForStorage.decrementAndGet()
+        val couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
+        if(!couldEvictSomeData){
+          logInfo(s"Could not allocate memory for $blockId. Memory pool size " + storagePool.memoryUsed)
+        }else{
+          logInfo(s"Allocated memory for $blockId. Memory pool size " + storagePool.memoryUsed)
+        }
+        couldEvictSomeData
       } else {
-        threadsWaitingForStorage -= 1
+        threadsWaitingForStorage.decrementAndGet()
         enoughMemory
-      }}
+      }
+    }
   }
 }
 
@@ -219,8 +240,11 @@ private object SnappyUnifiedMemoryManager {
             s"--executor-memory option or spark.executor.memory in Spark configuration.")
       }
     }
-    val usableMemory = systemMemory - reservedMemory
-    val memoryFraction = conf.getDouble("spark.memory.fraction", usableMemory)
+
+    val bootingTimeTempStorage = StoreCallbacksImpl.tempMemoryManager.getTempStoroageSize()
+
+    val usableMemory = systemMemory - reservedMemory - bootingTimeTempStorage
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.90)
     (usableMemory * memoryFraction).toLong
   }
 

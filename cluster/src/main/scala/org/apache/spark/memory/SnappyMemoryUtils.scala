@@ -16,6 +16,7 @@
  */
 package org.apache.spark.memory
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 object SnappyMemoryUtils {
@@ -23,8 +24,11 @@ object SnappyMemoryUtils {
    * Checks whether GemFire critical threshold is breached
    * @return
    */
-  def isCriticalUp: Boolean = {
-    Option(GemFireStore.getBootingInstance).exists(g => g.thresholdListener.isCritical)
+  def isCriticalUp: Boolean = Option(GemFireCacheImpl.getInstance).exists {
+    cache =>
+      val irm = cache.getResourceManager
+      if (irm.getHeapMonitor.getBytesUsed >= irm.getHeapMonitor.getThresholds.getCriticalThresholdBytes) true else false
+
   }
 
   /**
