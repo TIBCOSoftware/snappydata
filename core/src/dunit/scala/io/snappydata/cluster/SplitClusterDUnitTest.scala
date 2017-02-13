@@ -52,7 +52,7 @@ class SplitClusterDUnitTest(s: String)
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name,
     SplitClusterDUnitTest.batchSize.toString)
 
   private[this] var host: Host = _
