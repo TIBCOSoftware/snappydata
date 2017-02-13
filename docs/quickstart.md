@@ -12,7 +12,8 @@ Depending on your preference you can try any of the following options:
 * [Option 6: Getting Started on AWS](#getting-started-on-aws)
 * [Option 7: Getting Started with Docker Image](#getting-started-with-docker-image)
 
-<Note>Note: Support for Microsoft Azure will be provided in future releases</Note>
+	!!! Note
+		Support for Microsoft Azure will be provided in future releases.
 
 <a id="getting-started-with-your-spark-distribution"></a>
 ##Option 1: Getting Started with your Spark Distribution
@@ -141,7 +142,8 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
- <Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note>
+!!! Note
+	It is recommended that you should have at least 4GB of RAM reserved for this test. </Note>
  
 
 **Start the Spark Shell using any of the options mentioned below:**

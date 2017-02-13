@@ -1,7 +1,11 @@
 #EXTRA "HOW TO" TOPICS FOR GA REALEASE
 
 * How to Import/Export data
-* 
+* How to connect to SnappyData using third party tools-
+	- Tablaeu: Steps for how to use with SnappyData
+	- Zoomdata: Steps for how to use with SnappyData
+	- Zeppelin: Steps for how to use with SnappyData (already covered in iSight?)
+
 
 #Overview
 This section introduces you to several common operations such as, starting a cluster, working with tables(load, query, update), working with streams and running approximate queries.

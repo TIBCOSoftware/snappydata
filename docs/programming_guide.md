@@ -154,7 +154,8 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 }
 ```
 
-<Note> Note: The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). </Note>
+!!! Note
+	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 * `runSnappyJob` contains the implementation of the Job.
 The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
@@ -400,7 +401,8 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 // While, clients typically just point to a locator, you could also directly point the 
 //   connection at a server endpoint
 ```
-<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
+!!! Note
+	 If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
 
 ## Building SnappyData Applications using Spark API
 
@@ -653,6 +655,7 @@ Column tables organize and manage data in memory in compressed columnar form suc
 
 Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location is determined by a hash function and hence is fast for point lookups or updates.
 
+
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 #### DDL and DML Syntax for Tables
@@ -700,7 +703,8 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 
 To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
-<note>Note : Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</note>
+!!! Note
+	Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 #### Spark API for Managing Tables
 
@@ -741,7 +745,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
    
-   Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
+   Refer to the [SQL Reference Guide](#sql_reference/sql_reference.md) for information on the extensions.
 
 	
 #### Restrictions on Column Tables
@@ -828,8 +832,8 @@ CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
     snappy.createTable(tableName, "row", schema, Map.empty[String, String])
 ```
 
-
-<note>Note: STRING columns are handled differently when queried over a JDBC connection.</note>
+!!! Note
+	STRING columns are handled differently when queried over a JDBC connection.
 
 To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
@@ -886,7 +890,7 @@ We use a persistent Hive catalog for all our metadata storage. All table, schema
 
 #### SQL Reference to the Syntax
 
-Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the syntax.
+Refer to the [SQL Reference Guide](#sql_reference/sql_reference.md) for information on the syntax.
 
 
 ## Stream processing using SQL

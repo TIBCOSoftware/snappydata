@@ -159,7 +159,8 @@ $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
-<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
+!!! Note
+	The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala

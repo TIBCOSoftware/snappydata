@@ -69,7 +69,8 @@ SnappyData also has multiple deployment options. For more information refer to, 
 
 ### Interacting with SnappyData
 
-<Note> Note: For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
+!!! Note
+	For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
 And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs listed in the Spark guides work in SnappyData as well.
 For the section on SQL, no Spark knowledge is necessary.</Note>
 

@@ -113,7 +113,8 @@ Here are some general guidelines to use when creating samples:
 
 * When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
-<Note> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</Note>
+!!!Note:
+	The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</Note>
 
 
 ## Running Queries

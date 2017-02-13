@@ -80,6 +80,12 @@ Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There 
 <a id="p"></a> 
 <glossary>P</glossary></br>
 
+<glossaryterm>Partitioned Table</glossaryterm>
+<glossarytext>A table that manages large volumes of data by partitioning it into manageable chunks and distributing it across all the servers in its hosting server groups. Partitioning attributes, including the partitioning strategy can be specified by supplying a PARTITION BY clause in a CREATE TABLE statement. See also replicated table and <mark>Add Link</mark> partitioning strategy <mark>Add Link</mark>.</glossarytext>
+
+<glossaryterm>Partitioning Strategy</glossaryterm>
+<glossarytext>The policy used to determine the specific bucket for a field in a partitioned table. SnappyData currently only supports horizontal partitioning , so an entire row is stored in the same bucket. You can hash-partition a table based on its primary key or on an internally-generated unique row id if the table has no primary key. Other partitioning strategies can be specified in the PARTITION BY clause in a CREATE TABLE statement. The strategies that are supported by SnappyData include hash-partitioning on columns other than the primary key, range-partitioning , and list-partitioning.</glossarytext>
+
 <hr>
 <a id="q"></a> 
 <glossary>Q</glossary></br>
@@ -87,7 +93,11 @@ Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There 
 <hr>
 <a id="r"></a> 
 <glossary>R</glossary></br>
-Resilient Distributed Dataset (RDD)
+<glossaryterm>Resilient Distributed Dataset (RDD)</glossaryterm>
+<glossarytext> </glossarytext>
+
+<glossaryterm>Replicated Table</glossaryterm>
+<glossarytext>A table that keeps a copy of its entire dataset locally on every data store in its server groups. SnappyData creates replicated tables by default if you do not specify a PARTITION BY clause. See also partitioned table.<mark>Add Link</mark></glossarytext>
 
 <hr>
 <a id="s"></a> 
@@ -98,7 +108,7 @@ Server
 </glossaryterm>
 
 <glossarytext>
-A JVM started with the `snappy-shell rowstore server` command, or any JVM that calls the `FabricServer.start` method. A RowStore server may or may not also be a data store, and may or may not also be a network server.
+A JVM started with the `snappy-shell server` command, or any JVM that calls the `FabricServer.start` method. A SnappyData server may or may not also be a data store, and may or may not also be a network server.
 </glossarytext>
 
 <hr>

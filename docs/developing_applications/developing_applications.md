@@ -7,8 +7,8 @@ SnappyData provides support for the Progress DataDirect ODBC driver version 1.7.
 
 | Operating System | Driver Manager | Driver Download| Character Types
 |--------|--------|--------|--------|
-|RHEL 4, 5, 6 or 7, CentOS 4, 5, 6, or 7, SUSE Linux Enterprise Server 10.x, and 11 </br>(32-bit and 64-bit)|Progress DataDirect v1.7|        |Unicode, ANSII|
-|Windows Server 2003 Service Pack 2 and higher, Windows Server 2008, Windows Server 2012, Windows 7, Windows 8.x, Windows Vista, Windows XP Service Pack 2 and higher </br>(32-bit and 64-bit)|Progress DataDirect v1.7|        |Unicode, ANSII|
+|RHEL 4, 5, 6 or 7 </br> CentOS 4, 5, 6, or 7</br> SUSE Linux Enterprise Server 10.x, and 11 </br>(32-bit and 64-bit)|Progress DataDirect v1.7|        |Unicode, ANSII|
+|Windows Server 2003 Service Pack 2 and higher</br> Windows Server 2008</br> Windows Server 2012</br> Windows 7</br> Windows 8.x</br> Windows Vista </br>Windows XP Service Pack 2 and higher </br>(32-bit and 64-bit)|Progress DataDirect v1.7|        |Unicode, ANSII|
 
 ##Installing and Configuring the Progress DataDirect ODBC Driver
 This topic describes how to install and configure the Progress DataDirect ODBC driver on Linux and Windows platforms.

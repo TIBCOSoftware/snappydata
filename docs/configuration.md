@@ -74,7 +74,8 @@ Since SnappyData embeds Spark components, [Spark Runtime environment properties]
 
 Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prefix them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
 
-<Note>Note: Currently we do not honor properties specified using spark-config.sh. </Note>
+!!! Note
+	Currently we do not honor properties specified using spark-config.sh. </Note>
 
 ## Example for Multiple-Host Configuration
 
@@ -101,8 +102,8 @@ $ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
-
-<Note> Note: Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. </Note>
+!!! Note
+	Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. </Note>
 
 ## Environment Settings
 
@@ -127,7 +128,82 @@ SERVER_STARTUP_OPTIONS="-heap-size=4096m"
 LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 ```
 
-## snappy-shell Command Line Utility
+## Add Servers to the Cluster and Stop Servers
+RowStore manages data in a flexible way that enables you to expand or contract your cluster at runtime to support different loads. To dynamically add more capacity to a cluster, you add new server members and specify the -`rebalance` option.
+
+1. Open a new terminal or command prompt window, and create a directory for the new server:
+
+        $ cd ~
+        $ mkdir server3        
+
+2. When you add a new server to the cluster, you can specify the -rebalance option to move partitioned table data buckets between host members as needed to establish the best balance of data across the distributed system. (See Rebalancing Partitioned Data on RowStore Members for more information.) Start the new server to see rebalancing in action:
+
+        $ snappy-shell rowstore server start -dir=$HOME/server3 -locators=localhost[10101] -client-port=1530 -enable-network-partition-detection=true -rebalance
+        Starting RowStore Server using locators for peer discovery: localhost[10101]
+        Starting network server for RowStore Server at address localhost/127.0.0.1[1530]
+        Logs generated in /home/gpadmin/server3/snappyserver.log
+        RowStore Server pid: 41165 status: running
+          Distributed system now has 4 members.
+          Other members: 192.168.125.147(39381:locator)<v0>:50344, 192.168.125.147(40612:datastore)<v5>:11337, 192.168.125.147(40776:datastore)<v6>:31019
+
+3. View the contents of the new RowStore directory:
+
+        $ ls server3
+        BACKUPGFXD-DEFAULT-DISKSTORE_1.crf  DRLK_IFGFXD-DEFAULT-DISKSTORE.lk
+        BACKUPGFXD-DEFAULT-DISKSTORE_1.drf  snappyserver.log
+        BACKUPGFXD-DEFAULT-DISKSTORE.if     start_snappyserver.log
+        datadictionary
+
+4. You can view all members of the distributed system using `snappy-shell.` Return to the `snappy-shell` session window and execute the query:
+
+        snappy> select id from sys.members;
+        ID                                                                             
+        -------------------------------------------------------------------------------
+        192.168.125.147(40612)<v5>:11337                                               
+        192.168.125.147(39381)<v0>:50344                                               
+        192.168.125.147(40776)<v6>:31019                                               
+        192.168.125.147(41165)<v7>:35662                                               
+        
+        4 rows selected
+
+5. Verify that all servers now host the data:
+
+        snappy> select distinct dsid() as id from flights;
+        ID                                                                             
+        -------------------------------------------------------------------------------
+        192.168.125.147(40612)<v5>:11337                                               
+        192.168.125.147(40776)<v6>:31019                                               
+        192.168.125.147(41165)<v7>:35662                                               
+        
+        3 rows selected
+
+6. Examine the table data that each server hosts:
+
+        snappy> select count(*) memberRowCount, dsid() from flights group by dsid();
+        MEMBERROWCOUNT|2                                                               
+        -------------------------------------------------------------------------------
+        150           |192.168.125.147(40612)<v5>:11337                                
+        114           |192.168.125.147(40776)<v6>:31019                                
+        278           |192.168.125.147(41165)<v7>:35662                                
+        
+        3 rows selected
+
+7. Exit the snappy-shell session:
+
+        snappy> exit;
+
+8. You can stop an individual RowStore server by using the snappy-shell rowstore server stop command and specifying the server directory. To shut down all data stores at once, use the snappy-shell shut-down-all command:
+
+        $ snappy-shell shut-down-all -locators=localhost[10101]
+        Connecting to distributed system: locators=localhost[10101]
+        Successfully shut down 3 members
+
+9. After all data stores have stopped, shut down the locator as well:
+
+        $ snappy-shell locator stop -dir=$HOME/locator
+        The RowStore Locator has stopped.
+
+## Starting Members Individually using Command Line (without scripts)
 
 Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. 
 

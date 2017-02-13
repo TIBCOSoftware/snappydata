@@ -13,12 +13,14 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+- Configuration and System Requirements: 'sys_requirement/sys_requirement.md'
 - How Tos: howto.md
 - Best Practises: 'best_practises/best_practises.md'
 - Architecture: architecture.md
 - Managing the Cluster: configuration.md
 - Programming Guide: programming_guide.md
 - Design Database and Schema: 'design_schema/design_schema.md'
+- Replicated and Partitioned Tables: 'concepts/table_types.md'
 - Managing your Data: 'manage_data/manage_data.md'
 - Affinity Modes: deployment.md
 - Backup and Recovery: 'backup/backup.md'
