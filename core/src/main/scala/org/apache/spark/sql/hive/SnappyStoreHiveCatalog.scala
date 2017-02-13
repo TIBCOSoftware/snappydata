@@ -276,7 +276,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def registerRelationDestroy(): Unit = {
+  protected def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()

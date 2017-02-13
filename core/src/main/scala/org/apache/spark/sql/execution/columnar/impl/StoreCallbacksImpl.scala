@@ -30,14 +30,17 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.snappy.LeadNodeMetastoreUpdateContext
 import io.snappydata.Constant
 
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode, _}
-import org.apache.spark.{Logging, SparkException}
+import org.apache.spark.sql._
+import org.apache.spark.{SparkContext, Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -199,6 +202,48 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
+  }
+
+  override def updateMetastore(ctx: Object): Unit = {
+
+    val context = ctx.asInstanceOf[LeadNodeMetastoreUpdateContext]
+
+    context.getType match {
+      case LeadNodeMetastoreUpdateContext.Optype.REGISTER_TABLE =>
+        val tableIdent = context.getTableIdentifier
+        val userSpecifiedSchema = SnappyConnectorCatalog.
+            deserialize(context.getUserSpecifiedSchema).asInstanceOf[Option[StructType]]
+        val partitionColumns = SnappyConnectorCatalog.
+            deserialize(context.getPartitionColumns).asInstanceOf[Array[String]]
+        val provider = context.getProvider
+        val options = SnappyConnectorCatalog
+            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
+        val relation = SnappyConnectorCatalog.
+            deserialize(context.getRelation).asInstanceOf[BaseRelation]
+
+        logInfo("sdeshmukh updateMetastore calling registerDataSourceTable")
+        val session = SnappyContext(null: SparkContext).snappySession
+        session.sessionCatalog.registerDataSourceTable(
+          session.sessionCatalog.newQualifiedTableName(tableIdent),
+          userSpecifiedSchema, partitionColumns, provider, options, relation)
+
+      case LeadNodeMetastoreUpdateContext.Optype.UNREGISTER_TABLE =>
+        logInfo("sdeshmukh updateMetastore calling unregisterDataSourceTable")
+        val tableIdent = context.getTableIdentifier
+
+        val relation = Option(context.getRelation) match {
+          case Some(br) => Option(SnappyConnectorCatalog.deserialize(br).asInstanceOf[BaseRelation])
+          case _ => None
+        }
+        val session = SnappyContext(null: SparkContext).snappySession
+          logInfo("sdeshmukh updateMetastore calling unregisterDataSourceTable tableIdent=" + tableIdent + " relation" + relation)
+        session.sessionCatalog.unregisterDataSourceTable(
+          session.sessionCatalog.newQualifiedTableName(tableIdent), relation)
+
+      case _ =>
+        throw new AnalysisException("StoreCallbacksImpl.updateMetastore unknown option")
+    }
+
   }
 
   override def getLastIndexOfRow(o: Object): Int = {

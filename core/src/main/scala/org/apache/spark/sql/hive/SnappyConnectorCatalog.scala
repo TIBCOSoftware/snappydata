@@ -16,7 +16,8 @@
  */
 package org.apache.spark.sql.hive
 
-import java.io.{ByteArrayInputStream, ObjectInputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.sql.{Connection, CallableStatement}
 import java.util.Properties
 import java.util.concurrent.ExecutionException
 
@@ -78,29 +79,37 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   private var conn = connFactory()
-  private val metadataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?)"
-  private var metadataStmt = conn.prepareCall(metadataStmtString)
+  private val registerSnappyTblString = "call sys.REGISTER_SNAPPY_TABLE(?, ?, ?, ?, ?, ?)"
+  private val unregisterSnappyTblString = "call sys.UNREGISTER_SNAPPY_TABLE(?, ?)"
+  private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?)"
+  private var getMetaDataStmt: CallableStatement = conn.prepareCall(getMetaDataStmtString)
+  private var registerSnappyTblStmt: CallableStatement = conn.prepareCall(registerSnappyTblString)
+  private var unregisterSnappyTblStmt: CallableStatement = conn.prepareCall(unregisterSnappyTblString)
 
   def executeMetaDataStatement(tableName: String): Unit = {
-    metadataStmt.setString(1, tableName)
-    metadataStmt.registerOutParameter(2, java.sql.Types.BLOB) /*Hive table object*/
-    metadataStmt.registerOutParameter(3, java.sql.Types.INTEGER) /*bucket count*/
-    metadataStmt.registerOutParameter(4, java.sql.Types.VARCHAR) /*partitioning columns*/
-    metadataStmt.registerOutParameter(5, java.sql.Types.VARCHAR) /*index columns*/
-    metadataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
-    metadataStmt.execute
+//    getMetaDataStmt: CallableStatement = conn.prepareCall(getMetaDataStmtString)
+    getMetaDataStmt.setString(1, tableName)
+    getMetaDataStmt.registerOutParameter(2, java.sql.Types.BLOB) /*Hive table object*/
+    getMetaDataStmt.registerOutParameter(3, java.sql.Types.INTEGER) /*bucket count*/
+    getMetaDataStmt.registerOutParameter(4, java.sql.Types.VARCHAR) /*partitioning columns*/
+    getMetaDataStmt.registerOutParameter(5, java.sql.Types.VARCHAR) /*index columns*/
+    getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
+    getMetaDataStmt.execute
   }
 
-  def runMetaDataStmtWithExceptionHandling(tableName: String): Unit = {
+
+  def runStmtWithExceptionHandling[T](function: => T): T = {
     try {
-      executeMetaDataStatement(tableName)
+      function
     } catch {
       case e: Exception if isDisconnectException(e) =>
         // stale JDBC connection
         conn.close()
         conn = connFactory()
-        metadataStmt = conn.prepareCall(metadataStmtString)
-        executeMetaDataStatement(tableName)
+        getMetaDataStmt = conn.prepareCall(getMetaDataStmtString)
+        registerSnappyTblStmt = conn.prepareCall(registerSnappyTblString)
+        unregisterSnappyTblStmt = conn.prepareCall(unregisterSnappyTblString)
+        function
     }
   }
 
@@ -178,9 +187,10 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def getHiveTableAndMetadata(in: QualifiedTableName): (Table, RelationInfo) = {
-    runMetaDataStmtWithExceptionHandling(in.toString)
 
-    val tableObjectBlob = Option(metadataStmt.getBlob(2)).
+    runStmtWithExceptionHandling(executeMetaDataStatement(in.toString))
+
+    val tableObjectBlob = Option(getMetaDataStmt.getBlob(2)).
         getOrElse(throw new TableNotFoundException(s"Table ${in} not found"))
 
     val t: Table = {
@@ -189,20 +199,20 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       val ois = new ObjectInputStream(baip)
       ois.readObject().asInstanceOf[Table]
     }
-    val bucketCount = metadataStmt.getInt(3)
-    val indexColsString = metadataStmt.getString(5)
+    val bucketCount = getMetaDataStmt.getInt(3)
+    val indexColsString = getMetaDataStmt.getString(5)
     val indexCols = Option(indexColsString) match {
       case Some(str) => str.split(":")
       case None => Array.empty[String]
     }
     if (bucketCount > 0) {
-      val partitionCols = metadataStmt.getString(4).split(":")
-      val bucketToServerMappingStr = metadataStmt.getString(6)
+      val partitionCols = getMetaDataStmt.getString(4).split(":")
+      val bucketToServerMappingStr = getMetaDataStmt.getString(6)
       val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
       val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
       (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
     } else {
-      val replicaToNodesInfo = metadataStmt.getString(6)
+      val replicaToNodesInfo = getMetaDataStmt.getString(6)
       val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
       val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
       (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
@@ -283,13 +293,85 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       provider: String,
       options: Map[String, String],
       relation: BaseRelation): Unit = {
+//    logInfo(s"sdeshmukh registerDataSourceTable = tableIdent = $tableIdent , " +
+//        s"userSpecifiedSchema = $userSpecifiedSchema, partitionColumns = $partitionColumns, " +
+//        s"provider = $provider, options = $options, relation = $relation ")
 
-    logInfo(s"sdeshmukh registerDataSourceTable = tableIdent = $tableIdent , " +
-        s"userSpecifiedSchema = $userSpecifiedSchema, partitionColumns = $partitionColumns, " +
-        s"provider = $provider, options = $options, relation = $relation ")
+    // invalidate any cached plan for the table
+    tableIdent.invalidate()
+    cachedDataSourceTables.invalidate(tableIdent)
 
-    super.registerDataSourceTable(tableIdent, userSpecifiedSchema, partitionColumns, provider, options, relation )
+    runStmtWithExceptionHandling(executeRegisterTableStatement(tableIdent, userSpecifiedSchema,
+      partitionColumns, provider, options, relation))
 
+    SnappySession.clearAllCache()
+  }
+
+  def executeRegisterTableStatement(tableIdent: QualifiedTableName,
+      userSpecifiedSchema: Option[StructType],
+      partitionColumns: Array[String],
+      provider: String,
+      options: Map[String, String],
+      relation: BaseRelation): Unit = {
+    registerSnappyTblStmt.setString(1, tableIdent.database.get + "." + tableIdent.table)
+//    registerSnappyTblStmt.setBlob(1, SnappyConnectorCatalog.getBlob(tableIdent, conn))
+    registerSnappyTblStmt.setBlob(2, SnappyConnectorCatalog.getBlob(userSpecifiedSchema, conn))
+    registerSnappyTblStmt.setBlob(3, SnappyConnectorCatalog.getBlob(partitionColumns, conn))
+    registerSnappyTblStmt.setString(4, provider)
+    registerSnappyTblStmt.setBlob(5, SnappyConnectorCatalog.getBlob(options, conn))
+    registerSnappyTblStmt.setBlob(6, SnappyConnectorCatalog.getBlob(relation, conn))
+    registerSnappyTblStmt.execute
+  }
+
+  /**
+   * Drops a data source table from Hive's meta-store.
+   */
+  override def unregisterDataSourceTable(tableIdent: QualifiedTableName,
+      relation: Option[BaseRelation]): Unit = {
+//    tableIdent.invalidate()
+//    cachedDataSourceTables.invalidate(tableIdent)
+
+    runStmtWithExceptionHandling(executeUnregisterTableStatement(tableIdent, relation))
+
+    registerRelationDestroy()
+  }
+
+  def executeUnregisterTableStatement(tableIdent: QualifiedTableName,
+      relation: Option[BaseRelation]): Unit = {
+//    unregisterSnappyTblStmt.setBlob(1, SnappyConnectorCatalog.getBlob(tableIdent, conn))
+    unregisterSnappyTblStmt.setString(1, tableIdent.database.get + "." + tableIdent.table)
+    relation match {
+      case Some(br) =>
+        unregisterSnappyTblStmt.setBlob(2, SnappyConnectorCatalog.getBlob(br, conn))
+      case None =>
+        val blob: java.sql.Blob = null
+        unregisterSnappyTblStmt.setBlob(2, blob)
+    }
+    unregisterSnappyTblStmt.execute
+  }
+}
+
+object SnappyConnectorCatalog {
+
+  def getBlob(value: Any, conn: Connection): java.sql.Blob = {
+    val serializedValue: Array[Byte] = serialize(value)
+    val blob = conn.createBlob()
+    blob.setBytes(1, serializedValue)
+    blob
+  }
+
+  def serialize(value: Any): Array[Byte] = {
+    val baos: ByteArrayOutputStream = new ByteArrayOutputStream()
+    val os: ObjectOutputStream = new ObjectOutputStream(baos)
+    os.writeObject(value)
+    os.close()
+    baos.toByteArray()
+  }
+
+  def deserialize(value: Array[Byte]): Any = {
+    val baip = new ByteArrayInputStream(value)
+    val ois = new ObjectInputStream(baip)
+    ois.readObject()
   }
 
 }
