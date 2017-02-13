@@ -419,7 +419,7 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       columnBufferInitCode.append(
         s"""
-          $buffer = $buffers[$index];
+          $buffer = $buffers[$baseIndex];
           $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
             $planSchema.apply($index));
           // initialize the decoder and store the starting cursor position

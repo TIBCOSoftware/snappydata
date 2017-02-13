@@ -336,8 +336,9 @@ object JdbcExtendedUtils extends Logging {
       table, connProperties, forExecutor = true)
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
+    val rddSchema = df.schema
     df.queryExecution.toRdd.foreachPartition { iterator =>
-      savePartition(getConnection, table, iterator, df.schema, tableSchema,
+      savePartition(getConnection, table, iterator, rddSchema, tableSchema,
         connProperties.dialect, batchSize, upsert)
     }
   }

@@ -306,8 +306,8 @@ object TAQTest extends Logging {
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
       itr.map { id =>
-        val sym = syms(rnd.nextInt(numSyms))
-        val ex = exs(rnd.nextInt(numExs))
+        val sym = syms(math.abs(rnd.nextInt() % numSyms))
+        val ex = exs(math.abs(rnd.nextInt() % numExs))
         if (numDays > 1) {
           dayCounter += 1
           // change date after some number of iterations
@@ -321,10 +321,10 @@ object TAQTest extends Logging {
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt(8))
-          cal.set(Calendar.MINUTE, rnd.nextInt(60))
-          cal.set(Calendar.SECOND, rnd.nextInt(60))
-          cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
+          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
+          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
+          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
+          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
         }
         val time = new Timestamp(cal.getTimeInMillis + gid)
         Quote(sym, ex, rnd.nextDouble() * 1000.0, time, date)
@@ -342,8 +342,8 @@ object TAQTest extends Logging {
       var date = new Date(cal.getTimeInMillis)
       var dayCounter = 0
       itr.map { id =>
-        val sym = syms(rnd.nextInt(numSyms))
-        val ex = exs(rnd.nextInt(numExs))
+        val sym = syms(math.abs(rnd.nextInt() % numSyms))
+        val ex = exs(math.abs(rnd.nextInt() % numExs))
         if (numDays > 1) {
           dayCounter += 1
           // change date after some number of iterations
@@ -358,13 +358,13 @@ object TAQTest extends Logging {
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt(8))
-          cal.set(Calendar.MINUTE, rnd.nextInt(60))
-          cal.set(Calendar.SECOND, rnd.nextInt(60))
-          cal.set(Calendar.MILLISECOND, rnd.nextInt(1000))
+          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
+          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
+          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
+          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
         }
         val time = new Timestamp(cal.getTimeInMillis + gid)
-        val dec = Decimal(rnd.nextInt(100000000), 10, 4)
+        val dec = Decimal(math.abs(rnd.nextInt() % 100000000), 10, 4)
         Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000)
       }
     }
