@@ -328,9 +328,6 @@ The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interfa
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
-<!--using javascript as the code language here... should this be sql?-->
-javascript
-
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
 $ ../../bin/snappy-shell  

@@ -673,7 +673,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
-    val people = snSession.jsonFile(some_people_path)
+    val people = snSession.read.json(some_people_path)
     people.printSchema()
 ```
 
@@ -759,7 +759,6 @@ The code snippet below inserts Person objects into a column table. The source co
     //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
 
-    val snSession = snc.snappySession
     // Create a Dataset using Spark APIs
     val people = Seq(Person("Tom", Address("Columbus", "Ohio")), Person("Ned", Address("San Diego", "California"))).toDS()
 ```
