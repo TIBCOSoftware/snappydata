@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import java.io.PrintWriter
+import java.io._
 import java.util.TimeZone
 
 import io.snappydata.benchmark.snappy.{TPCH_Snappy, SnappyAdapter, TPCH}
@@ -9,7 +9,8 @@ import org.apache.spark.util.Benchmark
 
 object DistIndexTestUtils {
 
-  def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext, pw: PrintWriter)
+  def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext, pw: PrintWriter,
+                fos: FileOutputStream)
   = {
 
     val qryProvider = new TPCH with SnappyAdapter
@@ -18,7 +19,7 @@ object DistIndexTestUtils {
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
     pw.println(s"$qNum size $size")
-    val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 10)
+    val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 5, output = Some(fos))
 
     def case1(): Unit = snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
       "false")
@@ -84,7 +85,7 @@ object DistIndexTestUtils {
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, existing)
   }
 
-  def executeQueriesForBenchmarkResults(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def executeQueriesForBenchmarkResults(snc: SnappyContext, pw: PrintWriter, fos: FileOutputStream): Unit = {
     val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
       "12", "13", "14", "15", "16", "17", "18", "19",
       "20", "21", "22")
@@ -113,7 +114,7 @@ object DistIndexTestUtils {
     }.toMap
 
     tableSizes.foreach(pw.println)
-    queries.foreach(q => benchmark(q, tableSizes, snc, pw))
+    queries.foreach(q => benchmark(q, tableSizes, snc, pw, fos))
 
     snc.sql(s"DROP INDEX idx_orders_cust")
     snc.sql(s"DROP INDEX idx_lineitem_part")

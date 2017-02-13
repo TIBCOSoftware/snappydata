@@ -11,7 +11,9 @@ class DistIndexJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
+    //
+    val fileOutputStream = new FileOutputStream(new File(jobConfig.getString("logFileName")))
+    val pw: PrintWriter = new PrintWriter(fileOutputStream, true)
     val resultValidation: Boolean = jobConfig.getString("resultValidation").toBoolean
     Try {
       snc.sql("set spark.sql.crossJoin.enabled = true")
@@ -22,7 +24,7 @@ class DistIndexJob extends SnappySQLJob {
         pw.println("****** executeQueriesWithResultValidation task finished ******")
       } else {
         pw.println("****** executeQueriesForBenchmarkResults task started ******")
-        DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw)
+        DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw, fileOutputStream)
         pw.println("****** executeQueriesForBenchmarkResults task finished ******")
       }
       pw.println("****** DistIndexJob finished ******")
