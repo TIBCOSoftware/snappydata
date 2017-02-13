@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
+import java.nio.ByteBuffer
+
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.util.StringUtils
 
@@ -341,7 +343,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     writeIndex(cursor, index)
   }
 
-  override def finish(indexCursor: Long): AnyRef = {
+  override def finish(indexCursor: Long): ByteBuffer = {
     val numIndexBytes = indexCursor - this.columnData.baseOffset
     var numElements = this.numStrings
     if (stringMap eq null) {
@@ -414,7 +416,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // reuse this index data in next round if possible
     releaseForReuse(this.columnData, numIndexBytes)
 
-    columnBytes
+    allocator.toBuffer(columnData)
   }
 }
 

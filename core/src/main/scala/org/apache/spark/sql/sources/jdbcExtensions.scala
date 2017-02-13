@@ -43,8 +43,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   /**
    * Retrieve the jdbc / sql type for a given datatype.
+   *
    * @param dataType The datatype (e.g. [[StringType]])
-   * @param md The metadata
+   * @param md       The metadata
    * @return The new JdbcType if there is an override for this DataType
    */
   def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
@@ -141,7 +142,7 @@ object JdbcExtendedUtils extends Logging {
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {
-      case t: java.sql.SQLException => false
+      case _: java.sql.SQLException => false
     }
   }
 
@@ -283,7 +284,7 @@ object JdbcExtendedUtils extends Logging {
       getConnection: () => Connection,
       table: String,
       iterator: Iterator[InternalRow],
-      rddSchema: Array[DataType],
+      rddSchema: StructType,
       tableSchema: StructType,
       dialect: JdbcDialect,
       batchSize: Int,
@@ -295,7 +296,7 @@ object JdbcExtendedUtils extends Logging {
         val stmt = insertStatement(conn, table, tableSchema, upsert)
         try {
           CodeGeneration.executeUpdate(table, stmt, iterator,
-            multipleRows = true, batchSize, rddSchema, dialect)
+            multipleRows = true, batchSize, rddSchema.fields, dialect)
         } finally {
           stmt.close()
         }
@@ -335,9 +336,8 @@ object JdbcExtendedUtils extends Logging {
       table, connProperties, forExecutor = true)
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
-    val rddSchema = df.schema.fields.map(_.dataType)
     df.queryExecution.toRdd.foreachPartition { iterator =>
-      savePartition(getConnection, table, iterator, rddSchema, tableSchema,
+      savePartition(getConnection, table, iterator, df.schema, tableSchema,
         connProperties.dialect, batchSize, upsert)
     }
   }

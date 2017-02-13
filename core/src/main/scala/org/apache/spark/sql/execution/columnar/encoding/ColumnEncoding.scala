@@ -17,8 +17,9 @@
 package org.apache.spark.sql.execution.columnar.encoding
 
 import java.lang.reflect.Field
-import java.nio.ByteOrder
+import java.nio.{ByteBuffer, ByteOrder}
 
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, UnsafeArrayData, UnsafeMapData, UnsafeRow}
@@ -65,8 +66,13 @@ abstract class ColumnDecoder extends ColumnEncoding {
   protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long
 
-  def initialize(columnBytes: Array[Byte], field: StructField): Long = {
-    initialize(columnBytes, Platform.BYTE_ARRAY_OFFSET, field)
+  def initialize(buffer: ByteBuffer, field: StructField): Long = {
+    if (buffer.isDirect) {
+      initialize(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
+    } else {
+      initialize(buffer.array(), buffer.arrayOffset() +
+          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
+    }
   }
 
   def initialize(columnBytes: AnyRef, cursor: Long,
@@ -455,7 +461,7 @@ trait ColumnEncoder extends ColumnEncoding {
       numBytes: Int): Long =
     throw new UnsupportedOperationException(s"writeUnsafeData for $toString")
 
-  def finish(cursor: Long): AnyRef
+  def finish(cursor: Long): ByteBuffer
 
   protected def getNumNullWords: Int
 
@@ -499,9 +505,13 @@ object ColumnEncoding {
     createLongDeltaDecoder
   )
 
-  def getColumnDecoder(columnBytes: Array[Byte],
-      field: StructField): ColumnDecoder = {
-    getColumnDecoder(columnBytes, Platform.BYTE_ARRAY_OFFSET, field)
+  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
+    if (buffer.isDirect) {
+      getColumnDecoder(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
+    } else {
+      getColumnDecoder(buffer.array(), buffer.arrayOffset() +
+          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
+    }
   }
 
   def getColumnDecoder(columnBytes: AnyRef, offset: Long,
@@ -681,12 +691,15 @@ private[columnar] case class ColumnStatsSchema(fieldName: String,
     fieldName + ".lowerBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
     fieldName + ".nullCount", IntegerType, nullable = false)()
-  val count: AttributeReference = AttributeReference(
-    fieldName + ".count", IntegerType, nullable = false)()
 
-  val schema = Seq(lowerBound, upperBound, nullCount, count)
+  val schema = Seq(lowerBound, upperBound, nullCount)
+
+  assert(schema.length == ColumnStatsSchema.NUM_STATS_PER_COLUMN)
 }
 
+private[columnar] object ColumnStatsSchema {
+  val NUM_STATS_PER_COLUMN = 3
+}
 
 final class ColumnData(val bytes: AnyRef, val baseOffset: Long,
     val endPosition: Long) {
@@ -718,6 +731,8 @@ trait ColumnAllocator {
 
   /** Release data block allocated previously using allocate or expand. */
   def release(columnData: ColumnData): Unit
+
+  def toBuffer(data: ColumnData): ByteBuffer
 
   /** Return true if allocations are done off-heap */
   def isOffHeap: Boolean
@@ -764,6 +779,10 @@ object HeapAllocator extends ColumnAllocator {
   }
 
   override def release(columnData: ColumnData): Unit = {}
+
+  override def toBuffer(data: ColumnData): ByteBuffer = {
+    ByteBuffer.wrap(data.bytes.asInstanceOf[Array[Byte]])
+  }
 
   override def isOffHeap: Boolean = false
 }
@@ -837,9 +856,9 @@ trait NotNullEncoder extends ColumnEncoder {
   override protected def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = cursor
 
-  override def finish(cursor: Long): AnyRef = {
+  override def finish(cursor: Long): ByteBuffer = {
     // check if need to shrink byte array since it is stored as is in region
-    if (cursor == columnEndPosition) columnBytes
+    if (cursor == columnEndPosition) allocator.toBuffer(columnData)
     else {
       // copy to exact size
       val newSize = cursor - columnData.baseOffset
@@ -853,7 +872,7 @@ trait NotNullEncoder extends ColumnEncoder {
       columnData = newColumnData
       columnBytes = newColumnBytes
       columnEndPosition = newColumnData.endPosition
-      columnBytes
+      allocator.toBuffer(columnData)
     }
   }
 }
@@ -930,7 +949,7 @@ trait NullableEncoder extends NotNullEncoder {
     position
   }
 
-  override def finish(cursor: Long): AnyRef = {
+  override def finish(cursor: Long): ByteBuffer = {
     // trim trailing empty words
     val numWords = getNumNullWords
     // maximum number of null words that can be allowed to go waste in storage
@@ -948,7 +967,7 @@ trait NullableEncoder extends NotNullEncoder {
       // write till initialNumWords and not just numWords to clear any
       // trailing empty bytes (required since ColumnData can be reused)
       writeNulls(columnBytes, baseOffset + 8, initialNumWords)
-      columnBytes
+      allocator.toBuffer(columnData)
     } else {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3
@@ -977,7 +996,7 @@ trait NullableEncoder extends NotNullEncoder {
 
       // write the null words
       writeNulls(newColumnBytes, position, numWords)
-      newColumnBytes
+      allocator.toBuffer(newColumnData)
     }
   }
 }

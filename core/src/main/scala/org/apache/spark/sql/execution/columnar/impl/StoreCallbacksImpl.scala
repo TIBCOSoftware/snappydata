@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 
-import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
@@ -42,7 +42,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val partitioner = new StoreHashFunction
 
-  override def createCachedBatch(region: BucketRegion, batchID: UUID,
+  override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
     val container = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
@@ -83,14 +83,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             Seq.empty
           }
 
-          val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
-            container.getQualifiedTableName, catalogEntry.schema.asInstanceOf[StructType],
+          val batchCreator = new ColumnBatchCreator(ColumnFormatRelation
+              .columnBatchTableName(container.getQualifiedTableName),
+            catalogEntry.schema.asInstanceOf[StructType],
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
-            dependents,
-            catalogEntry.cachedBatchSize, catalogEntry.useCompression)
+            catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
-            batchID, bucketID)
+            batchID, bucketID, dependents)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
         }
@@ -122,8 +121,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     partitioner.computeHash(dvds, numPartitions)
   }
 
-  override def cachedBatchTableName(table: String): String = {
-    ColumnFormatRelation.cachedBatchTableName(table)
+  override def columnBatchTableName(table: String): String = {
+    ColumnFormatRelation.columnBatchTableName(table)
   }
 
   override def snappyInternalSchemaName(): String = {

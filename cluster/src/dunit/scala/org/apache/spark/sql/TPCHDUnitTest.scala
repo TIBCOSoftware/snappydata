@@ -23,15 +23,11 @@ import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.TPCHUtils._
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "10000")
-  
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")

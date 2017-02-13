@@ -72,7 +72,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var dictionaryArrayTerm: String = _
 
   @transient val (metricAdd, _): (String => String, String => String) =
-    Utils.metricMethods(sparkContext)
+    Utils.metricMethods
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),

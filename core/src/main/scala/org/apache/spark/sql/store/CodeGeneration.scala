@@ -28,15 +28,17 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStrea
 import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.Logging
+import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodegenContext, GenerateUnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodeAndComment, CodeGenerator, CodegenContext, GenerateUnsafeProjection, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -58,9 +60,39 @@ object CodeGeneration extends Logging {
       override def load(key: ExecuteKey): GeneratedStatement = {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
-        def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
+        val elapsed = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
         result
+      }
+    })
+
+  /**
+   * Similar to Spark's CodeGenerator.compile cache but allows lookup using
+   * a key (name+schema) instead of the code string itself to avoid having
+   * to create the code string upfront. Code adapted from CodeGenerator.cache
+   */
+  private[this] val codeCache = CacheBuilder.newBuilder().maximumSize(100).build(
+    new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
+      // invoke CodeGenerator.doCompile by reflection to reduce code duplication
+      private val doCompileMethod = {
+        val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
+        val method = allMethods.find(_.getName.endsWith("doCompile"))
+            .getOrElse(sys.error(s"Failed to find method 'doCompile' in " +
+                s"CodeGenerator (methods=$allMethods)"))
+        method.setAccessible(true)
+        method
+      }
+
+      override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
+        val (code, references) = key.genCode()
+        val startTime = System.nanoTime()
+        val result = doCompileMethod.invoke(CodeGenerator, code)
+        val endTime = System.nanoTime()
+        val timeMs = (endTime - startTime).toDouble / 1000000.0
+        CodegenMetrics.METRIC_SOURCE_CODE_SIZE.update(code.body.length)
+        CodegenMetrics.METRIC_COMPILATION_TIME.update(timeMs.toLong)
+        logInfo(s"Local code generated in $timeMs ms")
+        (result.asInstanceOf[GeneratedClass], references)
       }
     })
 
@@ -69,7 +101,7 @@ object CodeGeneration extends Logging {
       override def load(key: ExecuteKey): GeneratedIndexStatement = {
         val start = System.nanoTime()
         val result = compileGeneratedIndexUpdate(key.name, key.schema, key.dialect)
-        def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
+        val elapsed = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"PreparedUpdate expression code generated in $elapsed ms")
         result
       }
@@ -83,7 +115,7 @@ object CodeGeneration extends Logging {
       override def load(key: DataType): SerializeComplexType = {
         val start = System.nanoTime()
         val result = compileComplexType(key)
-        def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
+        val elapsed = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"Serializer code generated in $elapsed ms")
         result
       }
@@ -91,7 +123,7 @@ object CodeGeneration extends Logging {
 
   /**
    * Using reflection to invoke these private methods since using the public
-   * GenerateUnsafeProjection.createCode method is awkward.
+   * GenerateUnsafeProjection.createCode method is awkward to use here.
    */
   private[this] val allMethods = GenerateUnsafeProjection.getClass
       .getDeclaredMethods.toIndexedSeq
@@ -195,7 +227,7 @@ object CodeGeneration extends Logging {
               $buffVar.buffer, $buffVar.totalSize()));
         }"""
       case _ =>
-        s"stmt.setObject(${col + 1}, row.get($col, schema[$col]));"
+        s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
     }
     (nonNullCode, s"stmt.setNull(${col + 1}, " +
         s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
@@ -220,13 +252,13 @@ object CodeGeneration extends Logging {
       classOf[java.util.Arrays].getName,
       classOf[MutableRow].getName)
 
-  private[this] def getRowSetterFragment(schema: Array[DataType],
+  private[this] def getRowSetterFragment(schema: Array[StructField],
       dialect: JdbcDialect,
       ctx: CodegenContext): StringBuilder = {
     val sb = new StringBuilder()
     schema.indices.foreach { col =>
       val (nonNullCode, nullCode) = getColumnSetterFragment(col,
-        schema(col), dialect, ctx)
+        schema(col).dataType, dialect, ctx)
       sb.append(
         s"""
         if (!row.isNullAt($col)) {
@@ -239,7 +271,7 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def compilePreparedUpdate(table: String,
-      schema: Array[DataType], dialect: JdbcDialect): GeneratedStatement = {
+      schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
     val ctx = new CodegenContext
     val sb = getRowSetterFragment(schema, dialect, ctx)
 
@@ -284,7 +316,7 @@ object CodeGeneration extends Logging {
 
 
   private[this] def compileGeneratedIndexUpdate(table: String,
-      schema: Array[DataType], dialect: JdbcDialect): GeneratedIndexStatement = {
+      schema: Array[StructField], dialect: JdbcDialect): GeneratedIndexStatement = {
     val ctx = new CodegenContext
     val sb = getRowSetterFragment(schema, dialect, ctx)
 
@@ -432,7 +464,7 @@ object CodeGeneration extends Logging {
 
   private[this] def executeUpdate(name: String, stmt: PreparedStatement,
       rows: java.util.Iterator[InternalRow], multipleRows: Boolean,
-      batchSize: Int, schema: Array[DataType], dialect: JdbcDialect): Int = {
+      batchSize: Int, schema: Array[StructField], dialect: JdbcDialect): Int = {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize,
       schema, dialect)
@@ -440,7 +472,7 @@ object CodeGeneration extends Logging {
 
   def executeUpdate(name: String, stmt: PreparedStatement,
       rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[DataType], dialect: JdbcDialect): Int =
+      schema: Array[StructField], dialect: JdbcDialect): Int =
     executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
       schema, dialect)
 
@@ -462,14 +494,21 @@ object CodeGeneration extends Logging {
         throw new UnsupportedOperationException("remove not supported")
     }
     executeUpdate(name, stmt, iterator, multipleRows, batchSize,
-      schema.map(_.dataType), dialect)
+      schema, dialect)
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
     val encoder = RowEncoder(StructType(schema))
     executeUpdate(name, stmt, Collections.singleton(encoder.toRow(row))
-        .iterator(), multipleRows = false, 0, schema.map(_.dataType), dialect)
+        .iterator(), multipleRows = false, 0, schema, dialect)
+  }
+
+  def compileCode(name: String, schema: Array[StructField],
+      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass,
+      Array[Any]) = {
+    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
+      forIndex = false, genCode = genCode))
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
@@ -478,10 +517,9 @@ object CodeGeneration extends Logging {
   def getGeneratedIndexStatement(name: String,
       schema: StructType,
       dialect: JdbcDialect): (PreparedStatement, InternalRow) => Int = {
-    val schemaArr = schema.map(_.dataType).toArray
-    val result = indexCache.get(new ExecuteKey(name, schemaArr,
+    val result = indexCache.get(new ExecuteKey(name, schema.fields,
       dialect, forIndex = true))
-    result.addBatch(schemaArr, dialect)
+    result.addBatch(schema.fields, dialect)
   }
 
   def removeCache(name: String): Unit =
@@ -492,8 +530,14 @@ object CodeGeneration extends Logging {
   def removeIndexCache(indexName: String): Unit =
     indexCache.invalidate(new ExecuteKey(indexName, null, null, true))
 
-  def clearCache(): Unit = cache.invalidateAll()
-
+  def clearAllCache(skipTypeCache: Boolean = true): Unit = {
+    cache.invalidateAll()
+    codeCache.invalidateAll()
+    indexCache.invalidateAll()
+    if (!skipTypeCache) {
+      typeCache.invalidateAll()
+    }
+  }
 }
 
 trait GeneratedStatement {
@@ -501,7 +545,7 @@ trait GeneratedStatement {
   @throws[java.sql.SQLException]
   def executeStatement(stmt: PreparedStatement, multipleRows: Boolean,
       rows: java.util.Iterator[InternalRow], batchSize: Int,
-      schema: Array[DataType], dialect: JdbcDialect): Int
+      schema: Array[StructField], dialect: JdbcDialect): Int
 }
 
 trait SerializeComplexType {
@@ -511,26 +555,36 @@ trait SerializeComplexType {
       dos: GfxdHeapDataOutputStream): Array[Byte]
 }
 
-
 trait GeneratedIndexStatement {
 
   @throws[java.sql.SQLException]
-  def addBatch(schema: Array[DataType], dialect: JdbcDialect)
+  def addBatch(schema: Array[StructField], dialect: JdbcDialect)
       (stmt: PreparedStatement, row: InternalRow): Int
 }
 
 
-private final class ExecuteKey(val name: String,
-    val schema: Array[DataType], val dialect: JdbcDialect,
-    val forIndex: Boolean = false) {
+final class ExecuteKey(val name: String,
+    val schema: Array[StructField], val dialect: JdbcDialect,
+    val forIndex: Boolean = false,
+    val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
   override def hashCode(): Int = if (schema != null && !forIndex) {
-    scala.util.hashing.MurmurHash3.arrayHash(schema)
+    scala.util.hashing.MurmurHash3.seqHash(schema)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
     case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
-      schema.sameElements(o.schema)
+      val numFields = schema.length
+      if (numFields == o.schema.length) {
+        var i = 0
+        while (i < numFields) {
+          if (!schema(i).equals(o.schema(i))) {
+            return false
+          }
+          i += 1
+        }
+        true
+      } else false
     } else {
       name == o.name
     }

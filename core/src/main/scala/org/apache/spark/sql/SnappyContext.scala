@@ -851,7 +851,7 @@ object SnappyContext extends Logging {
     if (id.blockId == null || !id.blockId.isDriver) {
       totalCoreCount.addAndGet(id.numProcessors)
     }
-    SnappySession.clearAllCache()
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
   }
 
   private[spark] def removeBlockId(
@@ -861,7 +861,7 @@ object SnappyContext extends Logging {
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
-        SnappySession.clearAllCache()
+        SnappySession.clearAllCache(onlyQueryPlanCache = true)
         s
       case None => None
     }
@@ -902,7 +902,7 @@ object SnappyContext extends Logging {
         numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
       totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearAllCache()
+      SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
 
@@ -1067,7 +1067,7 @@ object SnappyContext extends Logging {
   private def stopSnappyContext(): Unit = {
     val sc = globalSparkContext
     if (_globalSNContextInitialized) {
-      // then on the driver
+      // clear static objects on the driver
       clearStaticArtifacts()
 
       if (_globalClear ne null) {
@@ -1090,10 +1090,10 @@ object SnappyContext extends Logging {
   /** Cleanup static artifacts on this lead/executor. */
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
-    CodeGeneration.clearCache()
+    CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
     _clusterMode match {
-      case m: ExternalClusterMode =>
+      case _: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
     }
   }

@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.UUID
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -54,19 +53,19 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         self.getConnection(tableName, onExecutor)
     }
 
-  override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
+  override def getColumnBatchRDD(tableName: String, requiredColumns: Array[String],
+      session: SparkSession): RDD[ColumnBatch] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession,
-          tableName, this).asInstanceOf[RDD[CachedBatch]]
+          tableName, this).asInstanceOf[RDD[ColumnBatch]]
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
         val poolProps = _connProperties.poolProps -
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        new SparkShellCachedBatchRDD(snappySession,
+        new SparkShellColumnBatchRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
             _connProperties.connProps, _connProperties.executorConnProps,
@@ -74,8 +73,8 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     }
   }
 
-  override protected def doInsert(tableName: String, batch: CachedBatch,
-      batchId: Option[UUID], partitionId: Int): (Connection => Any) = {
+  override protected def doInsert(tableName: String, batch: ColumnBatch,
+      batchId: Option[String], partitionId: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
         connectionType match {
@@ -84,7 +83,7 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
               connection.getSchema)
             val region = Misc.getRegionForTable(resolvedName, true)
                 .asInstanceOf[LocalRegion]
-            val batchUUID = Some(batchId.getOrElse(region.newJavaUUID()))
+            val batchUUID = Some(batchId.getOrElse(region.newJavaUUID().toString))
             super.doInsert(tableName, batch, batchUUID, partitionId)(connection)
           case _ =>
             super.doInsert(tableName, batch, batchId, partitionId)(connection)
@@ -144,8 +143,7 @@ final class ColumnarStorePartitionedRDD(
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    if (container.isOffHeap) new OffHeapLobsIteratorOnScan(container, bucketIds)
-    else new ByteArraysIteratorOnScan(container, bucketIds)
+    new ColumnBatchIterator(container, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -173,23 +171,23 @@ final class ColumnarStorePartitionedRDD(
   }
 }
 
-final class SparkShellCachedBatchRDD(
+final class SparkShellColumnBatchRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
     @transient private val store: ExternalStore)
-    extends RDDKryo[CachedBatch](session.sparkContext, Nil)
+    extends RDDKryo[ColumnBatch](session.sparkContext, Nil)
         with KryoSerializable {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[CachedBatch] = {
+      context: TaskContext): Iterator[ColumnBatch] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
     val query: String = helper.getSQLStatement(ExternalStoreUtils.lookupName(
       tableName, conn.getSchema), requiredColumns, split.index)
     val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
-    new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
+    new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

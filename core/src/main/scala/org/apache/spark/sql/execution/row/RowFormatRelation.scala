@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.execution.row
 
-import java.sql.Connection
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -39,7 +37,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 
@@ -313,17 +311,13 @@ final class DefaultSource extends MutableRelationProvider {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val partitions = ExternalStoreUtils.getTotalPartitions(
-      Some(sqlContext.sparkContext), parameters,
-      forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
-    val sc = sqlContext.sparkContext
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
     val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)

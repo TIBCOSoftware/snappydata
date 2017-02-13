@@ -164,7 +164,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           rdd,
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          filterPredicates, // filter predicates for cached batch screening
+          filterPredicates, // filter predicates for column batch screening
           relation.output,
           (requestedColumns, pushedFilters)
         )
@@ -192,7 +192,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           rdd,
           otherRDDs,
           relation.relation.asInstanceOf[PartitionedDataSourceScan],
-          filterPredicates, // filter predicates for cached batch screening
+          filterPredicates, // filter predicates for column batch screening
           relation.output,
           (requestedColumns, pushedFilters)
         )

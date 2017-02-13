@@ -19,8 +19,7 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.shared.ClientSharedData
-import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, ResultWasNull}
+import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
@@ -30,19 +29,15 @@ import org.apache.spark.sql.types.{DataType, Decimal, DecimalType, StructType}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-abstract class CompactExecRowToMutableRow extends ResultNullHolder {
+abstract class CompactExecRowToMutableRow extends ResultSetNullHolder {
 
   val schema: StructType
 
   protected final val dataTypes: ArrayBuffer[DataType] =
     new ArrayBuffer[DataType](schema.length)
 
-  protected final val fieldTypes = StoreUtils.mapCatalystTypes(
+  protected final val fieldTypes: Array[Int] = StoreUtils.mapCatalystTypes(
     schema, dataTypes)
-
-  final lazy val defaultCal = ClientSharedData.getDefaultCalendar
-
-  final lazy val defaultTZ = defaultCal.getTimeZone
 
   protected final def createInternalRow(execRow: AbstractCompactExecRow,
       mutableRow: SpecificMutableRow): InternalRow = {
@@ -216,26 +211,4 @@ abstract class CompactExecRowToMutableRow extends ResultNullHolder {
     }
     mutableRow
   }
-}
-
-class ResultNullHolder extends ResultWasNull {
-
-  final var wasNull: Boolean = _
-
-  override final def setWasNull(): Unit = {
-    wasNull = true
-  }
-
-  final def wasNullAndClear(): Boolean = {
-    val result = wasNull
-    wasNull = false
-    result
-  }
-}
-
-final class ResultSetNullHolder extends ResultNullHolder {
-
-  lazy val defaultCal = ClientSharedData.getDefaultCleanCalendar
-
-  lazy val defaultTZ = defaultCal.getTimeZone
 }

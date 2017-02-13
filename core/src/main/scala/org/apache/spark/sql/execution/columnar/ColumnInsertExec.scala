@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import io.snappydata.Property
-
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -26,8 +24,8 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
-import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
@@ -39,22 +37,34 @@ import org.apache.spark.unsafe.bitset.BitSetMethods
  */
 case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    relation: BaseColumnFormatRelation,
-    private[sql] var nonSerialized: Boolean = false)
-    extends UnaryExecNode with CodegenSupport {
+    relation: Option[JDBCAppendableRelation], columnBatchSize: Int,
+    numBuckets: Int, columnTable: String, relationSchema: StructType,
+    externalStore: ExternalStore, useMemberVariables: Boolean,
+    onExecutor: Boolean, private[sql] var nonSerialized: Boolean)
+    extends UnaryExecNode with CodegenSupportOnExecutor {
+
+  def this(child: SparkPlan, overwrite: Boolean,
+      partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
+      relation: JDBCAppendableRelation, table: String,
+      nonSerialized: Boolean = false) = {
+    // TODO: add compression for binary/complex types
+    this(child, overwrite, partitionColumns, partitionExpressions,
+      Some(relation), relation.getColumnBatchParams._1, relation.numBuckets,
+      table, relation.schema, relation.externalStore,
+      useMemberVariables = false, onExecutor = false, nonSerialized)
+  }
 
   @transient private var encoderCursorTerms: Seq[(String, String)] = _
   @transient private var batchSizeTerm: String = _
   @transient private var defaultBatchSizeTerm: String = _
-  @transient private var numInsertedRows: String = _
+  @transient private var numInsertions: String = _
   @transient private var schemaTerm: String = _
-  @transient private var callStoreCachedBatch: String = _
+  @transient private var callStoreColumnBatch: String = _
   @transient private var initEncoders: String = _
 
-  private val columnBatchSize = Property.ColumnBatchSize.get(sqlContext.conf)
+  @transient private lazy val (metricAdd, _) = Utils.metricMethods
 
-  @transient private lazy val (metricAdd, metricGet) =
-    Utils.metricMethods(sparkContext)
+  private[sql] var batchIdRef = -1
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
@@ -65,12 +75,12 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   // Only one insert plan possible in the plan tree, so no clashes.
   if (partitioned) {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.sessionState.conf.setExecutionShufflePartitions(relation.numBuckets)
+    session.sessionState.conf.setExecutionShufflePartitions(numBuckets)
   }
 
   /** Specifies how data is partitioned for the table. */
   override lazy val outputPartitioning: Partitioning = {
-    if (partitioned) HashPartitioning(partitionExpressions, relation.numBuckets)
+    if (partitioned) HashPartitioning(partitionExpressions, numBuckets)
     else super.outputPartitioning
   }
 
@@ -78,20 +88,22 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitioned) {
       // For partitionColumns find the matching child columns
-      val schema = relation.schema
+      val schema = relationSchema
       val childPartitioningAttributes = partitionColumns.map(partColumn =>
         child.output(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
       ClusteredDistribution(childPartitioningAttributes) :: Nil
     } else UnspecifiedDistribution :: Nil
   }
 
-  override lazy val metrics = Map(
-    "numInsertedRows" -> SQLMetrics.createMetric(sparkContext,
+  override lazy val metrics: Map[String, SQLMetric] = {
+    if (sqlContext eq null) Map.empty
+    else Map("numInsertedRows" -> SQLMetrics.createMetric(sparkContext,
       "number of inserted rows"))
+  }
 
   override protected def doExecute(): RDD[InternalRow] = {
     if (overwrite) {
-      relation.truncate()
+      relation.get.truncate()
     }
     // don't expect code generation to fail
     WholeStageCodegenExec(this).execute()
@@ -99,7 +111,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
 
   override def executeCollect(): Array[InternalRow] = {
     if (overwrite) {
-      relation.truncate()
+      relation.get.truncate()
     }
     super.executeCollect()
   }
@@ -108,6 +120,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     val inputRDDs = child.asInstanceOf[CodegenSupport].inputRDDs()
     // wrap shuffle RDDs to set preferred locations as per target table
     if (partitioned) {
+      val relation = this.relation.get.asInstanceOf[BaseColumnFormatRelation]
       inputRDDs.map { rdd =>
         val region = relation.region
         assert(region.getTotalNumberOfBuckets == rdd.getNumPartitions)
@@ -122,59 +135,81 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
   override protected def doProduce(ctx: CodegenContext): String = {
     val encodingClass = classOf[ColumnEncoding].getName
     val encoderClass = classOf[ColumnEncoder].getName
-    schemaTerm = ctx.addReferenceObj("schema", relation.schema,
+    val numInsertedRowsMetric = if (sqlContext eq null) null
+    else metricTerm(ctx, "numInsertedRows")
+    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
       classOf[StructType].getName)
-    encoderCursorTerms = relation.schema.map { _ =>
+    encoderCursorTerms = relationSchema.map { _ =>
       (ctx.freshName("encoder"), ctx.freshName("cursor"))
     }
-    val result = ctx.freshName("result")
-    ctx.addMutableState("long", result, s"$result = -1L;")
+    numInsertions = ctx.freshName("numInsertions")
+    ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     batchSizeTerm = ctx.freshName("currentBatchSize")
+    val batchSizeDeclaration = if (useMemberVariables) {
+      ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
+      ""
+    } else {
+      s"int $batchSizeTerm = 0;"
+    }
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
-    val fieldType = ctx.freshName("fieldType")
+    ctx.addMutableState("int", defaultBatchSizeTerm, "")
     val defaultRowSize = ctx.freshName("defaultRowSize")
-    val childProduce = child.asInstanceOf[CodegenSupport].produce(ctx, this)
+    val childProduce = child match {
+      case c: CodegenSupportOnExecutor if onExecutor =>
+        c.produceOnExecutor(ctx, this)
+      case c: CodegenSupport => c.produce(ctx, this)
+      case _ => throw new UnsupportedOperationException(
+        s"Expected a child supporting code generation. Got: $child")
+    }
     val declarations = encoderCursorTerms.indices.map { i =>
       val (encoder, cursor) = encoderCursorTerms(i)
+      ctx.addMutableState(encoderClass, encoder,
+        s"""
+           |this.$encoder = $encodingClass$$.MODULE$$.getColumnEncoder(
+           |  $schemaTerm.fields()[$i]);
+        """.stripMargin)
+      val cursorDeclaration = if (useMemberVariables) {
+        ctx.addMutableState("long", cursor, s"$cursor = 0L;")
+        ""
+      } else s"long $cursor = 0L;"
       s"""
-         |$fieldType = $schemaTerm.fields()[$i];
-         |final $encoderClass $encoder = $encodingClass$$.MODULE$$.getColumnEncoder(
-         |  $fieldType);
-         |$defaultRowSize += $encoder.defaultSize($fieldType.dataType());
-         |long $cursor = 0L;
+         |final $encoderClass $encoder = this.$encoder;
+         |$defaultRowSize += $encoder.defaultSize($schemaTerm.fields()[$i].dataType());
+         |$cursorDeclaration
       """.stripMargin
     }.mkString("\n")
+    val checkEnd = if (useMemberVariables) {
+      "if (!currentRows.isEmpty()) return"
+    } else {
+      s"if ($numInsertions >= 0) return"
+    }
     s"""
-       |if ($result >= 0) return; // already done
-       |${classOf[StructField].getName} $fieldType;
+       |$checkEnd; // already done
        |int $defaultRowSize = 0;
        |$declarations
-       |int $defaultBatchSizeTerm = Math.max(
+       |$defaultBatchSizeTerm = Math.max(
        |  ($columnBatchSize - 8) / $defaultRowSize, 16);
        |// ceil to nearest multiple of 16 since size is checked every 16 rows
        |$defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / 16) + 1) * 16;
        |$initEncoders
-       |int $batchSizeTerm = 0;
+       |$batchSizeDeclaration
        |$childProduce
        |if ($batchSizeTerm > 0) {
-       |  $callStoreCachedBatch;
+       |  $callStoreColumnBatch;
        |  $batchSizeTerm = 0;
        |}
-       |$result = ${metricGet(numInsertedRows)};
-       |${consume(ctx, Seq(ExprCode("", "false", result)))}
+       |${if (sqlContext eq null) "" else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
+       |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
     """.stripMargin
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    val schema = relation.schema
-    numInsertedRows = metricTerm(ctx, "numInsertedRows")
-    val externalStore = ctx.addReferenceObj("externalStore",
-      relation.externalStore)
+    val schema = relationSchema
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
-    val partitionId = ctx.freshName("partitionId")
     val buffers = ctx.freshName("buffers")
-    val cachedBatch = ctx.freshName("cachedBatch")
+    val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
 
     val encoderClass = classOf[ColumnEncoder].getName
@@ -189,7 +224,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
       val init = s"$cursorTerm = $encoderTerm.initialize(" +
           s"$schemaTerm.fields()[$i], $defaultBatchSizeTerm);"
       buffersCode.append(
-        s"$buffers[$i] = (byte[])$encoderTerm.finish($cursorTerm);\n")
+        s"$buffers[$i] = $encoderTerm.finish($cursorTerm);\n")
       batchFunctionDeclarations.append(
         s"$encoderClass $encoderTerm, long $cursorTerm,\n")
       batchFunctionCall.append(s"$encoderTerm, $cursorTerm,\n")
@@ -204,9 +239,20 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
       batchFunctionDeclarations.length - 2)
     batchFunctionCall.setLength(batchFunctionCall.length - 2)
 
-    val cachedBatchClass = classOf[CachedBatch].getName
-    val partitionIdCode =
-      if (partitioned) s"$taskContextClass.getPartitionId()" else "-1"
+    val columnBatchClass = classOf[ColumnBatch].getName
+    batchIdRef = ctx.references.length
+    val batchUUID = ctx.addReferenceObj("batchUUID", None,
+      classOf[Option[_]].getName)
+    val partitionIdCode = if (partitioned) s"$taskContextClass.getPartitionId()"
+    else {
+      // check for bucketId variable if available
+      ctx.mutableStates.collectFirst {
+        case (_, varName, _) if varName ==
+            ExternalStoreUtils.COLUMN_BATCH_BUCKETID_VARNAME => varName
+      }.getOrElse(
+        // add as a reference object which can be updated by caller if required
+        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+    }
     val (statsCode, statsSchema, stats) = columnStats.unzip3
     val statsVars = stats.flatten
     val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
@@ -220,24 +266,23 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     ctx.currentVars = statsVars
     val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
     val statsRow = statsEv.value
-    val columnTable = ColumnFormatRelation.cachedBatchTableName(relation.table)
-    val storeCachedBatch = ctx.freshName("storeCachedBatch")
-    ctx.addNewFunction(storeCachedBatch,
+    val storeColumnBatch = ctx.freshName("storeColumnBatch")
+    ctx.addNewFunction(storeColumnBatch,
       s"""
-         |private final void $storeCachedBatch(int $batchSizeTerm,
+         |private final void $storeColumnBatch(int $batchSizeTerm,
          |    ${batchFunctionDeclarations.toString()}) {
          |  // create statistics row
          |  ${statsCode.mkString("\n")}
          |  ${statsEv.code.trim}
-         |  // create CachedBatch and insert
-         |  final byte[][] $buffers = new byte[${schema.length}][];
+         |  // create ColumnBatch and insert
+         |  final java.nio.ByteBuffer[] $buffers =
+         |      new java.nio.ByteBuffer[${schema.length}];
          |  ${buffersCode.toString()}
-         |  final $cachedBatchClass $cachedBatch =
-         |    $cachedBatchClass.apply($batchSizeTerm, $buffers, $statsRow);
-         |  final int $partitionId = $partitionIdCode;
-         |  $externalStore.storeCachedBatch("$columnTable",
-         |    $cachedBatch, $partitionId, scala.None$$.MODULE$$);
-         |  $numInsertedRows.${metricAdd(batchSizeTerm)};
+         |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
+         |      $batchSizeTerm, $buffers, $statsRow.getBytes());
+         |  $externalStoreTerm.storeColumnBatch("$columnTable",
+         |    $columnBatch, $partitionIdCode, $batchUUID);
+         |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
     // no shouldStop check required
@@ -250,15 +295,15 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
           }
         """)
     }
-    callStoreCachedBatch =
-        s"$storeCachedBatch($batchSizeTerm, ${batchFunctionCall.toString()})"
+    callStoreColumnBatch =
+        s"$storeColumnBatch($batchSizeTerm, ${batchFunctionCall.toString()})"
     s"""
        |if (($batchSizeTerm & 0x0f) == 0 && $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
        |  long $sizeTerm = 0L;
        |  ${calculateSize.toString()}
        |  if ($sizeTerm >= $columnBatchSize) {
-       |    $callStoreCachedBatch;
+       |    $callStoreColumnBatch;
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -581,7 +626,6 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     (code, ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode("", lowerIsNull, lower),
       ExprCode("", upperIsNull, upper),
-      ExprCode("", "false", nullCount),
-      ExprCode("", "false", batchSizeTerm)))
+      ExprCode("", "false", nullCount)))
   }
 }

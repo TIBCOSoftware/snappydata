@@ -47,17 +47,16 @@ import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, S
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.{DataType, DecimalType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -111,13 +110,13 @@ class SnappySession(@transient private val sc: SparkContext,
       clazz.getConstructor(classOf[SnappySession]).
         newInstance(self).asInstanceOf[SnappySessionState]
     } catch {
-      case NonFatal(e) =>
-        new SnappySessionState(this)
+      case NonFatal(_) => new SnappySessionState(this)
     }
   }
 
   @transient
-  lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+  lazy val sessionCatalog: SnappyStoreHiveCatalog =
+    sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
@@ -1032,8 +1031,7 @@ class SnappySession(@transient private val sc: SparkContext,
           val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
             sessionState.catalog.lookupRelation(tableIdent))
           EliminateSubqueryAliases(plan) match {
-            case l@LogicalRelation(ir: InsertableRelation, _, _) =>
-              Some(ir)
+            case LogicalRelation(ir: InsertableRelation, _, _) => Some(ir)
             case o => throw new AnalysisException(
               s"Saving data in ${o.toString} is not supported.")
           }
@@ -1044,25 +1042,24 @@ class SnappySession(@transient private val sc: SparkContext,
       case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query)), None)
 
-      case None => {
+      case None =>
         val data = Dataset.ofRows(this, query)
         val df = userSpecifiedSchema match {
           // If we are inserting into an existing table, just use the existing schema.
-          case Some(s) => {
+          case Some(s) =>
             if (s.size != data.schema.size) {
               throw new AnalysisException(s"The column number " +
-                  s"of the specified schema[${s}] "
+                  s"of the specified schema[$s] "
                   + s"doesn't match the data schema[${data.schema}]'s")
             }
             s.zip(data.schema).
                 find(x => x._1.dataType != x._2.dataType) match {
-              case Some(x) => throw new AnalysisException(s"The column types " +
-                  s"of the specified schema[${s}] " +
+              case Some(_) => throw new AnalysisException(s"The column types " +
+                  s"of the specified schema[$s] " +
                   s"doesn't match the data schema[${data.schema}]'s")
               case None => // do nothing
             }
             data.toDF(s.fieldNames: _*)
-          }
           case None => data
         }
 
@@ -1088,7 +1085,6 @@ class SnappySession(@transient private val sc: SparkContext,
               options = params).write(mode, df)
             (r, Some(r.schema))
         }
-      }
     }
 
     // need to register if not existing in catalog
@@ -1322,7 +1318,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(sparkContext), new mutable.HashMap[String, String])
+      Some(this), new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
       connProperties.connProps)()
     try {
@@ -1572,14 +1568,14 @@ object SnappySession extends Logging {
 
     override def profileCreated(profile: Profile): Unit = {
       // clear all plans pessimistically for now
-      clearAllCache()
+      clearAllCache(onlyQueryPlanCache = true)
     }
 
     override def profileUpdated(profile: Profile): Unit = {}
 
     override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
       // clear all plans pessimistically for now
-      clearAllCache()
+      clearAllCache(onlyQueryPlanCache = true)
     }
   }
 
@@ -1709,8 +1705,18 @@ object SnappySession extends Logging {
     }
   }
 
-  def clearAllCache(): Unit = {
+  def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
     planCache.invalidateAll()
+    if (!onlyQueryPlanCache) {
+      CodeGeneration.clearAllCache()
+      val sc = SnappyContext.globalSparkContext
+      if (sc ne null) {
+        Utils.mapExecutors(sc, (_, _) => {
+          CodeGeneration.clearAllCache()
+          Iterator.empty
+        })
+      }
+    }
   }
 
   // TODO: hemant : Its clumsy design to use where SnappySession.Builder
@@ -1764,7 +1770,7 @@ private final class Expr(val name: String, val e: Expression) {
 
 class RDDOperations[T: u.TypeTag : Encoder](rdd: RDD[T], session: SnappySession) {
 
-  def insertInto(tableName: String): Unit = {
+  def insertInto(tableName: String): Array[InternalRow] = {
     val sessionState = session.sessionState
     val tableIdent = sessionState.sqlParser.parseTableIdentifier(tableName)
     val relation = sessionState.catalog.lookupRelation(tableIdent)
@@ -1789,6 +1795,6 @@ class RDDOperations[T: u.TypeTag : Encoder](rdd: RDD[T], session: SnappySession)
         partition = Map.empty[String, Option[String]],
         child = new EncoderPlan(rdd, encoder, isFlat, output, session),
         overwrite = false,
-        ifNotExists = false)).toRdd
+        ifNotExists = false)).executedPlan.executeCollect()
   }
 }

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +29,6 @@ import java.util.concurrent.ThreadFactory;
 
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
-import com.gemstone.gemfire.internal.cache.PartitionedRegion;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -44,12 +42,9 @@ import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation;
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation$;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
-import org.apache.spark.sql.sources.ConnectionProperties;
 import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
@@ -253,32 +248,29 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           String fullyQualifiedName = table.getDbName().toUpperCase() +
               "." + table.getTableName().toUpperCase();
           StructType schema = ExternalStoreUtils.convertSchemaMap(table.getParameters());
-          CaseInsensitiveMap parameters = new CaseInsensitiveMap(table.getSd().getSerdeInfo().getParameters());
-          Integer partitions = ExternalStoreUtils.getTotalPartitions(parameters, true);
-          String baseTable = "";
-          if (parameters.containsKey(StoreUtils.GEM_INDEXED_TABLE().toLowerCase())) {
-            baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE().toLowerCase()).toString();
-          }
+          CaseInsensitiveMap parameters = new CaseInsensitiveMap(
+              table.getSd().getSerdeInfo().getParameters());
+          int partitions = ExternalStoreUtils.getTotalPartitions(parameters, true);
+          Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
+          String baseTable = value != null ? value.toString() : "";
           String dmls = ExternalStoreUtils.
               getInsertStringWithColumnName(fullyQualifiedName, schema);
-          String[] dependentRelations = null;
-          if (parameters.containsKey(ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase())) {
-            dependentRelations = parameters.get(
-                ExternalStoreUtils.DEPENDENT_RELATIONS().toLowerCase()).toString().split(",");
-          }
-          int cachedBatchSize = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE().toLowerCase()).toString());
-          boolean useCompression = true;
-          if (parameters.containsKey(ExternalStoreUtils.USE_COMPRESSION().toLowerCase())) {
-            useCompression = Boolean.parseBoolean(parameters.get(
-                ExternalStoreUtils.USE_COMPRESSION().toLowerCase()).toString());
-          }
+          value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
+          String[] dependentRelations = value != null
+              ? value.toString().split(",") : null;
+          int columnBatchSize = Integer.parseInt(parameters.get(
+              ExternalStoreUtils.COLUMN_BATCH_SIZE()).toString());
+          int columnMaxDeltaRows = Integer.parseInt(parameters.get(
+              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()).toString());
+          value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
+          String compressionCodec = value == null ? null : value.toString();
           return new ExternalTableMetaData(
               this.dbName + "." + this.tableName,
               schema,
               ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions),
-              cachedBatchSize,
-              useCompression,
+              columnBatchSize,
+              columnMaxDeltaRows,
+              compressionCodec,
               baseTable,
               dmls,
               dependentRelations);

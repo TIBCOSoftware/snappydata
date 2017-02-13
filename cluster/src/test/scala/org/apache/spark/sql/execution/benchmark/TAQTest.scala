@@ -152,8 +152,14 @@ class TAQTestJob extends SnappySQLJob with Logging {
 case class Quote(sym: UTF8String, ex: UTF8String, bid: Double,
     time: Timestamp, date: Date)
 
+case class TradeB(gid: Int, arr: Array[UTF8String])
+
+case class TradeC(sym: UTF8String, gid: Int, map: Map[UTF8String, Int])
+
 case class Trade(sym: UTF8String, ex: UTF8String, price: Decimal,
-    time: Timestamp, date: Date, size: Double)
+    time: Timestamp, date: Date, size: Double, c1: Array[Long],
+    c2: Array[UTF8String], c3: Map[UTF8String, Int],
+    c4: Map[UTF8String, TradeB], c5: TradeC)
 
 object TAQTest extends Logging {
 
@@ -194,7 +200,12 @@ object TAQTest extends Logging {
        |   price DECIMAL(10,4) NOT NULL,
        |   time TIMESTAMP NOT NULL,
        |   date DATE NOT NULL,
-       |   size DOUBLE NOT NULL
+       |   size DOUBLE NOT NULL,
+       |   c1 ARRAY<LONG>,
+       |   c2 ARRAY<STRING> NOT NULL,
+       |   c3 MAP<STRING, INT> NOT NULL,
+       |   c4 MAP<STRING, STRUCT<gid: Int, arr: Array<CHAR(4)>>>,
+       |   c5 STRUCT<sym: STRING, gid: INT, map: Map<String, Int>>
        |)
      """.stripMargin
 
@@ -365,7 +376,15 @@ object TAQTest extends Logging {
         }
         val time = new Timestamp(cal.getTimeInMillis + gid)
         val dec = Decimal(rnd.nextInt(100000000), 10, 4)
-        Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000)
+        val c1 = Array(id, id + 1, id + 2, id + 3)
+        val c2 = Array(sym, ex, sym)
+        val idInt = id.toInt
+        val c3 = Map(sym -> idInt, ex -> idInt)
+        val tradeB = TradeB(gid, c2)
+        val c4 = Map(sym -> tradeB, ex -> tradeB)
+        val c5 = TradeC(sym, gid, c3)
+        Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000,
+          c1, c2, c3, c4, c5)
       }
     }
 

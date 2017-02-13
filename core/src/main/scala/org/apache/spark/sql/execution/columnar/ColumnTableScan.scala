@@ -38,9 +38,6 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{OffHeapCompactExecRowWithLobs, ResultWasNull, RowFormatter}
-
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -81,6 +78,8 @@ private[sql] final case class ColumnTableScan(
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
+  override val nodeName: String = "ColumnTableScan"
+
   override def getMetrics: Map[String, SQLMetric] = super.getMetrics ++ Map(
     "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,
       "number of output rows from row buffer"),
@@ -92,8 +91,10 @@ private[sql] final case class ColumnTableScan(
       else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
         "number of output rows from other RDDs")))
 
-  private def generateStatPredicate(ctx: CodegenContext): String = {
+  private def generateStatPredicate(ctx: CodegenContext,
+      numRowsTerm: String): String = {
 
+    val numBatchRows = NumBatchRows(numRowsTerm)
     val (columnBatchStatsMap, columnBatchStats) = relation match {
       case _: BaseColumnFormatRelation =>
         val allStats = schemaAttributes.map(a => a ->
@@ -164,7 +165,7 @@ private[sql] final case class ColumnTableScan(
         }
 
       case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-      case IsNotNull(a: Attribute) => statsFor(a).count > statsFor(a).nullCount
+      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
     }
 
     // This code is picked up from InMemoryTableScanExec
@@ -192,14 +193,13 @@ private[sql] final case class ColumnTableScan(
     val predicate = ExpressionCanonicalizer.execute(
       BindReferences.bindReference(columnBatchStatFilters
           .reduceOption(And).getOrElse(Literal(true)), columnBatchStatsSchema))
-    val statRow = ctx.freshName("statRow")
-    val statBytes = ctx.freshName("statBytes")
-    ctx.INPUT_ROW = statRow
+    val statsRow = ctx.freshName("statsRow")
+    val statsData = ctx.freshName("statsData")
+    ctx.INPUT_ROW = statsRow
     ctx.currentVars = null
     val predicateEval = predicate.genCode(ctx)
 
     val platformClass = classOf[Platform].getName
-    val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
     // skip filtering if nothing is to be applied
     if (predicateEval.value == "true" && predicateEval.isNull == "false") {
@@ -208,11 +208,10 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = ctx.freshName("columnBatchFilter")
     ctx.addNewFunction(filterFunction,
       s"""
-         |private boolean $filterFunction(byte[] $statBytes) {
-         |  final UnsafeRow $statRow = new UnsafeRow($numStatFields);
-         |  $statRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statBytes.length);
-         |  $columnBatchesSeen.${metricAdd("1")};
+         |private boolean $filterFunction(byte[] $statsData) {
+         |  final UnsafeRow $statsRow = new UnsafeRow($numStatFields);
+         |  $statsRow.pointTo($statsData, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statsData.length);
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
          |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
@@ -229,9 +228,6 @@ private[sql] final case class ColumnTableScan(
   private val allRDDs = if (otherRDDs.isEmpty) rdd
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
       .asInstanceOf[Seq[RDD[Any]]])
-
-  private val isOffHeap = GemFireXDUtils.getGemFireContainer(
-    baseRelation.table, true).isOffHeap
 
   private val otherRDDsPartitionIndex = rdd.getNumPartitions
 
@@ -281,9 +277,8 @@ private[sql] final case class ColumnTableScan(
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
 
-    val colItrClass = if (!isEmbedded) classOf[CachedBatchIteratorOnRS].getName
-    else if (isOffHeap) classOf[OffHeapLobsIteratorOnScan].getName
-    else classOf[ByteArraysIteratorOnScan].getName
+    val colItrClass = if (!isEmbedded) classOf[ColumnBatchIteratorOnRS].getName
+    else classOf[ColumnBatchIterator].getName
 
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
@@ -320,23 +315,19 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
-    val cachedBatchClass = classOf[CachedBatch].getName
-    val execRowClass = classOf[OffHeapCompactExecRowWithLobs].getName
+    val columnBatchClass = classOf[ColumnBatch].getName
     val encodingClass = classOf[ColumnEncoding].getName
     val decoderClass = classOf[ColumnDecoder].getName
-    val wasNullClass = classOf[ResultWasNull].getName
     val rsDecoderClass = classOf[ResultSetDecoder].getName
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
-    val rowFormatterClass = classOf[RowFormatter].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
-    val rowFormatter = s"${batch}RowFormatter"
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
 
-    ctx.addMutableState("byte[][]", buffers, s"$buffers = null;")
+    ctx.addMutableState("java.nio.ByteBuffer[]", buffers, s"$buffers = null;")
     ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
@@ -403,9 +394,7 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = baseRelation.schema.fieldIndex(attr.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
-      val bufferPosition = baseIndex + PartitionedPhysicalScan.CT_COLUMN_START
-
-      ctx.addMutableState("byte[]", buffer, s"$buffer = null;")
+      ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
       val rowDecoderCode = s"$decoder = new $rsDecoderClass($rs, $rsPosition);"
       if (otherRDDs.isEmpty) {
@@ -428,31 +417,21 @@ private[sql] final case class ColumnTableScan(
         )
       }
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
-      if (!isEmbedded) {
-        columnBufferInitCode.append(s"$buffer = $buffers[$index];")
-      } else if (isOffHeap) {
-        columnBufferInitCode.append(
-          s"""
-            $buffer = $batch.getAsBytes($bufferPosition, ($wasNullClass)null);
-          """)
-      } else {
-        columnBufferInitCode.append(
-          s"$buffer = $rowFormatter.getLob($buffers, $bufferPosition);")
-      }
       columnBufferInitCode.append(
         s"""
+          $buffer = $buffers[$index];
           $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
             $planSchema.apply($index));
-          // intialize the decoder and store the starting cursor position
+          // initialize the decoder and store the starting cursor position
           $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
         """)
       bufferInitCode.append(
         s"""
           final $decoderClass $decoderVar = $decoder;
-          final byte[] $bufferVar = $buffer;
+          final Object $bufferVar = ($buffer == null || $buffer.isDirect()) ? null
+              : $buffer.array();
           long $cursorVar = $cursor;
-        """
-      )
+        """)
       cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
       val notNullVar = if (attr.nullable) ctx.freshName("notNull") else null
       moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
@@ -463,64 +442,28 @@ private[sql] final case class ColumnTableScan(
       ev
     }
 
-    val filterFunction = generateStatPredicate(ctx)
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
-    val batchInit = if (!isEmbedded) {
-      val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+    val filterFunction = if (!isEmbedded) ""
+    else generateStatPredicate(ctx, numBatchRows)
+
+    val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+    val batchAssign =
       s"""
-        final $cachedBatchClass $batch = ($cachedBatchClass)$colInput.next();
+        final $columnBatchClass $batch = ($columnBatchClass)$colInput.next();
         $columnBatchesSeen.${metricAdd("1")};
         $buffers = $batch.buffers();
         $numBatchRows = $batch.numRows();
       """
-    } else if (isOffHeap) {
-      val filterCode = if (filterFunction.isEmpty) {
-        val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
-        s"""final $execRowClass $batch = ($execRowClass)$colInput.next();
-          $columnBatchesSeen.${metricAdd("1")};"""
-      } else {
-        s"""$execRowClass $batch;
-          while (true) {
-            $batch = ($execRowClass)$colInput.next();
-            final byte[] statBytes = $batch.getRowBytes(
-              ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-            if ($filterFunction(statBytes)) {
-              break;
-            }
-            if (!$colInput.hasNext()) return false;
-          }"""
-      }
+    val batchInit = if (filterFunction.isEmpty) batchAssign else {
       s"""
-        $filterCode
-        $numBatchRows = $batch.getAsInt(
-          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, ($wasNullClass)null);
-      """
-    } else {
-      val filterCode = if (filterFunction.isEmpty) {
-        val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
-        s"""final $rowFormatterClass $rowFormatter = $colInput.rowFormatter();
-          $buffers = (byte[][])$colInput.next();
-          $columnBatchesSeen.${metricAdd("1")};"""
-      } else {
-        s"""$rowFormatterClass $rowFormatter;
-           while (true) {
-             $rowFormatter = $colInput.rowFormatter();
-             $buffers = (byte[][])$colInput.next();
-             final byte[] statBytes = $rowFormatter.getLob($buffers,
-               ${PartitionedPhysicalScan.CT_STATROW_POSITION});
-             if ($filterFunction(statBytes)) {
-               break;
-             }
-             if (!$colInput.hasNext()) return false;
-           }"""
-      }
-      s"""
-        $filterCode
-        $numBatchRows = $rowFormatter.getAsInt(
-          ${PartitionedPhysicalScan.CT_NUMROWS_POSITION}, $buffers[0],
-          ($wasNullClass)null);
-      """
+        while (true) {
+          $batchAssign
+          if ($filterFunction($batch.statsData())) {
+            break;
+          }
+          if (!$colInput.hasNext()) return false;
+        }"""
     }
     val nextBatch = ctx.freshName("nextBatch")
     val switchSRR = if (isForSampleReservoirAsRegion) {
@@ -819,4 +762,21 @@ private[sql] final class UnionScanRDD[T: ClassTag](
     super.clearDependencies()
     rdds = null
   }
+}
+
+case class NumBatchRows(varName: String) extends LeafExpression {
+
+  override def nullable: Boolean = false
+
+  override def dataType: DataType = IntegerType
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    ExprCode("", "false", varName)
+  }
+
+  override def eval(input: InternalRow): Any =
+    throw new UnsupportedOperationException(
+      "NumBatchRows.eval not expected to be invoked")
+
+  override def sql: String = s"NumBatchRows($varName)"
 }

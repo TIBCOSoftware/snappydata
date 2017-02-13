@@ -112,7 +112,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
         asInstanceOf[PartitionedRegion]
 
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+        columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2)) // Seq(5, 6))
@@ -136,7 +136,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
-    assert(region.getColumnBatchSize == 4)
+    assert(region.getColumnMaxDeltaRows == 4)
 
     assert(region.size == 0)
     assert(shadowRegion.size == 1)
@@ -157,7 +157,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
         asInstanceOf[PartitionedRegion]
 
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+        columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
@@ -181,7 +181,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (region.getColumnBatchSize == 3) {
+    if (region.getColumnMaxDeltaRows == 3) {
       assert(region.size > 0)
       assert(shadowRegion.size > 0)
     }
@@ -207,7 +207,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase()
+        columnBatchTableName("COLUMNTABLE7").toUpperCase()
       , true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
@@ -225,7 +225,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (region.getColumnBatchSize == 4) {
+    if (region.getColumnMaxDeltaRows == 4) {
       assert(region.size == 1)
       assert(shadowRegion.size == 1)
     }

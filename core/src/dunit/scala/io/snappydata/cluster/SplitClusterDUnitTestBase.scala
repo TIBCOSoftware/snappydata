@@ -55,7 +55,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def testObject: SplitClusterDUnitTestObject
 
-  protected def props = testObject.props
+  protected def props: Map[String, String] = testObject.props
 
   protected def productDir: String
 
@@ -63,7 +63,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def startNetworkServers(num: Int): Unit
 
-  protected def batchSize = testObject.batchSize
+  protected def batchSize: Int = testObject.batchSize
 
   def doTestColumnTableCreation(skewServerDistribution: Boolean): Unit = {
     if (skewServerDistribution) {
@@ -151,7 +151,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 
   val props = Map.empty[String, String]
 
-  val batchSize = 100
+  val batchSize = 1024
 
   def createTablesAndInsertData(tableType: String): Unit
 

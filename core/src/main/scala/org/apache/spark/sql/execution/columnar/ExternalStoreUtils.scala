@@ -24,13 +24,19 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.jdbc.ClientAttribute
+import io.snappydata.thrift.common.ThriftUtils
+import io.snappydata.thrift.snappydataConstants
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -39,7 +45,7 @@ import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.{SparkContext, SparkEnv}
+import org.apache.spark.unsafe.Platform
 
 /**
  * Utility methods used by external storage layers.
@@ -53,12 +59,15 @@ object ExternalStoreUtils {
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
-  final val USE_COMPRESSION = "USE_COMPRESSION"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
+  final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
+  final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   final val EXTERNAL_DATASOURCE = "EXTERNAL_DATASOURCE"
 
-  final val COLUMN_BATCH_SIZE_DEFAULT: Int = 10000
+  /** variable name used for passing partitionId of current column batch */
+  final val COLUMN_BATCH_BUCKETID_VARNAME = "columnBatchBucketId"
+
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -188,10 +197,11 @@ object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(sc: Option[SparkContext],
+  def validateAndGetAllProps(session: Option[SparkSession],
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 
-    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
+    val url = parameters.remove("url").getOrElse(defaultStoreURL(
+      session.map(_.sparkContext)))
 
     val dialect = JdbcDialects.get(url)
     val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
@@ -220,9 +230,9 @@ object ExternalStoreUtils {
       }
     }: _*)).getOrElse(Map.empty)
 
-    val isLoner = sc match {
+    val isLoner = session match {
       case None => false
-      case Some(sparkContext) => Utils.isLoner(sparkContext)
+      case Some(ss) => Utils.isLoner(ss.sparkContext)
     }
 
     // remaining parameters are passed as properties to getConnection
@@ -242,8 +252,18 @@ object ExternalStoreUtils {
         true
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
-        connProps.setProperty("route-query", "false")
-        executorConnProps.setProperty("route-query", "false")
+        connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        // increase the lob-chunk-size to match/exceed column batch size
+        val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
+          case Some(s) => Integer.parseInt(s)
+          case None => session.map(defaultColumnBatchSize).getOrElse(
+            Property.ColumnBatchSize.defaultValue.get)
+        }
+        val columnBatchSize = math.max((batchSize << 2) / 3,
+          snappydataConstants.DEFAULT_LOB_CHUNKSIZE)
+        executorConnProps.setProperty(ClientAttribute.THRIFT_LOB_CHUNK_SIZE,
+          Integer.toString(columnBatchSize))
         false
       case d: JdbcExtendedDialect =>
         d.addExtraDriverProperties(isLoner, connProps)
@@ -454,6 +474,7 @@ object ExternalStoreUtils {
 
   def getTotalPartitions(parameters: java.util.Map[String, String],
       forManagedTable: Boolean): Int = {
+    // noinspection RedundantDefaultArgument
     getTotalPartitions(None, parameters.asScala,
       forManagedTable, forColumnTable = true, forSampleTable = false)
   }
@@ -490,8 +511,8 @@ object ExternalStoreUtils {
 
   }
 
-  final def cachedBatchesToRows(
-      cachedBatches: Iterator[CachedBatch],
+  final def columnBatchesToRows(
+      columnBatches: Iterator[ColumnBatch],
       requestedColumns: Array[String],
       schema: StructType, forScan: Boolean): Iterator[InternalRow] = {
     // check and compare with InMemoryColumnarTableScan
@@ -507,7 +528,14 @@ object ExternalStoreUtils {
       }
     }
     val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
-    columnarIterator.initialize(cachedBatches, columnDataTypes, columnIndices)
+    columnarIterator.initialize(columnBatches.map { batch =>
+      val statsData = batch.statsData
+      val statsRow = new UnsafeRow(
+        numColumns * ColumnStatsSchema.NUM_STATS_PER_COLUMN)
+      statsRow.pointTo(statsData, Platform.BYTE_ARRAY_OFFSET, statsData.length)
+      CachedBatch(batch.numRows, batch.buffers.map(ThriftUtils.toBytes),
+        statsRow)
+    }, columnDataTypes, columnIndices)
     columnarIterator
   }
 
@@ -531,11 +559,10 @@ object ExternalStoreUtils {
   }
 
   def getExternalStoreOnExecutor(parameters : java.util.Map[String, String],
-      partitions: Integer): ExternalStore = {
+      partitions: Int): ExternalStore = {
     val connProperties: ConnectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(None, parameters.asScala)
-    new JDBCSourceAsColumnarStore(connProperties,
-      partitions)
+    new JDBCSourceAsColumnarStore(connProperties, partitions)
   }
 
   def convertSchemaMap(tableProps: java.util.Map[String, String]): StructType = {
@@ -566,57 +593,20 @@ object ExternalStoreUtils {
     }
   }
 
-  def defaultCachedBatchSize: Int = {
-    Property.CachedBatchSize.getOption(SparkEnv.get.conf) match {
-      case Some(size) => Integer.parseInt(size)
-      case None => COLUMN_BATCH_SIZE_DEFAULT
-    }
+  def defaultColumnBatchSize(session: SparkSession): Int = {
+    Property.ColumnBatchSize.get(session.sessionState.conf)
+  }
+
+  def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
+    Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
+  }
+
+  def defaultCompressionCodec(session: SparkSession): String = {
+    Property.CompressionCodec.get(session.sessionState.conf)
   }
 }
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
-}
-
-private[sql] final class ArrayBufferForRows(externalStore: ExternalStore,
-    colTableName: String,
-    schema: StructType,
-    useCompression: Boolean,
-    bufferSize: Int,
-    reservoirInRegion: Boolean, columnBatchSize: Int) {
-
-  private var holder = getCachedBatchHolder(-1)
-
-  def getCachedBatchHolder(bucketId: Int): CachedBatchHolder =
-    new CachedBatchHolder(columnBuilders, 0,
-      Int.MaxValue, schema, (c: CachedBatch) =>
-        externalStore.storeCachedBatch(colTableName, c, bucketId))
-
-  def columnBuilders: Array[ColumnBuilder] = schema.map {
-    attribute =>
-      val columnType = ColumnType(attribute.dataType)
-      val initialBufferSize = columnType.defaultSize * bufferSize
-      ColumnBuilder(attribute.dataType, initialBufferSize,
-        attribute.name, useCompression)
-  }.toArray
-
-  def endRows(u: Unit): Unit = {
-    holder.forceEndOfBatch()
-    if (!reservoirInRegion) {
-      holder = getCachedBatchHolder(-1)
-    }
-  }
-
-  def startRows(u: Unit, bucketId: Int): Unit = {
-    if (reservoirInRegion) {
-      holder = getCachedBatchHolder(bucketId)
-    }
-  }
-
-  def appendRow(u: Unit, row: InternalRow): Unit = {
-    holder.appendRow(row)
-  }
-
-  def forceEndOfBatch(): Unit = endRows(())
 }

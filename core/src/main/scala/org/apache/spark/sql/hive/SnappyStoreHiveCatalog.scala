@@ -504,7 +504,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       relation: Option[BaseRelation]): Unit = {
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
-      case Some(t) =>
+      case Some(_) =>
         // remove from parent relation, if any
         relation.foreach {
           case dep: DependentRelation => dep.baseTable.foreach { t =>
@@ -550,10 +550,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
-        val newOptions = options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
-          case Some(c) => options
-          case None => options + (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
-              ExternalStoreUtils.defaultCachedBatchSize.toString)
+        var newOptions = options
+        options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+          case Some(_) =>
+          case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+              ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
+        }
+        options.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+          case Some(_) =>
+          case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
+              ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
@@ -598,7 +604,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val schemaName = tableIdent.schemaName
         val dbInHive = client.getDatabaseOption(schemaName)
         dbInHive match {
-          case Some(x) => // We are all good
+          case Some(_) => // We are all good
           case None => client.createDatabase(CatalogDatabase(
             schemaName,
             description = schemaName,
@@ -627,7 +633,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
         withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
         SnappySession.clearAllCache()
-      case Some(t) =>  // Do nothing
+      case Some(_) =>  // Do nothing
     }
   }
 

@@ -41,7 +41,6 @@ package org.apache.spark.sql.execution.benchmark
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, QueryTest, Row, SparkSession}
 import org.apache.spark.util.Benchmark
@@ -111,7 +110,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, queryPath: Boolean,
       numIters: Int = 10, runSparkCaching: Boolean = true): Unit = {
     val benchmark = new Benchmark("Cache random keys", size)
-    sparkSession.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key} = 10000")
     sparkSession.sql("drop table if exists test")
     snappySession.sql("drop table if exists test")
     val testDF = sparkSession.range(size)

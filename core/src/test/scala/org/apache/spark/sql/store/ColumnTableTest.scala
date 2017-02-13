@@ -17,23 +17,22 @@
 package org.apache.spark.sql.store
 
 import java.sql.DriverManager
-import java.util
 
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
 import io.snappydata.core.{Data, TestData, TestData2}
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
 
@@ -900,7 +899,7 @@ class ColumnTableTest
     // scalastyle:on println
   }
 
-  test("Check cachedBatch num rows") {
+  test("Check columnBatch num rows") {
     val data = (1 to 200) map (i => Seq(i, +i, +i))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -921,10 +920,10 @@ class ColumnTableTest
         .getDataStoreEntryCount.toString)
 
     val region = Misc.getRegionForTable(
-      JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+      ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
     SnappyTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
-        .getPRNumRowsInCachedBatches
+        .getPRNumRowsInColumnBatches
 
     assert(entries == 200)
     logInfo("Successful")

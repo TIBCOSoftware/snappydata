@@ -40,7 +40,7 @@ abstract class BooleanBitSetDecoderBase
 
   override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    // read the count but its not used since CachedBatch has numRows
+    // read the count but its not used since ColumnBatch has numRows
     ColumnEncoding.readInt(columnBytes, cursor)
     byteCursor = cursor + 4
     // return current bit index as the cursor so that is used and

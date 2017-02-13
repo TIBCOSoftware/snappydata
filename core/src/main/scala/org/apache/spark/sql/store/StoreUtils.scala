@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
@@ -27,9 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, Partition}
@@ -92,8 +89,9 @@ object StoreUtils extends Logging {
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
-    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION,
-    ExternalStoreUtils.RELATION_FOR_SAMPLE, ExternalStoreUtils.EXTERNAL_DATASOURCE)
+    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
+    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE,
+    ExternalStoreUtils.EXTERNAL_DATASOURCE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"

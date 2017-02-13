@@ -27,6 +27,7 @@ import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import junit.framework.Assert
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
@@ -40,7 +41,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name,
+  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name,
     SplitSnappyClusterDUnitTest.batchSize.toString)
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   val currenyLocatorPort = ClusterManagerTestBase.locPort
@@ -176,7 +177,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def getShadowRegionSize(tbl: String) : Long = {
     Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName(tbl).toUpperCase,
+        columnBatchTableName(tbl).toUpperCase,
       true).asInstanceOf[PartitionedRegion].size()
 
   }
@@ -195,37 +196,30 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    println(stats.getRowCount())
 
-    assert(stats.getRowCount == 10000100 )
+    Assert.assertEquals(10000100, stats.getRowCount)
     vm0.invoke(restartServer)
-
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats1 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    println(stats1.getRowCount())
-    assert(stats1.getRowCount == 10000100 )
+    Assert.assertEquals(10000100, stats1.getRowCount)
     vm1.invoke(restartServer)
 
-
-    //Test using using 5 buckets
+    // Test using using 5 buckets
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
         "5")
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats2 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    println(stats2.getRowCount())
-    assert(stats2.getRowCount == 10000100 )
+    Assert.assertEquals(10000100, stats2.getRowCount)
     val snc = SnappyContext(sc)
     snc.sql("insert into snappyTable values(1,'Test')")
     var stats3 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    println(stats3.getRowCount())
-    assert(stats3.getRowCount == 10000101)
+    Assert.assertEquals(10000101, stats3.getRowCount)
     vm0.invoke(restartServer)
   }
-
 }
 
 object SplitSnappyClusterDUnitTest
@@ -478,14 +472,13 @@ object SplitSnappyClusterDUnitTest
     testDF.write.insertInto("snappyTable")
     val stats = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    println(stats.getRowCount())
-    assert(stats.getRowCount == 10000000 )
+    Assert.assertEquals(10000000, stats.getRowCount)
     for (i <- 1 to 100) {
       snc.sql(s"insert into snappyTable values($i,'Test$i')")
     }
     val stats1 = SnappyTableStatsProviderService.
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    assert(stats1.getRowCount == 10000100)
+    Assert.assertEquals(10000100, stats1.getRowCount)
     logInfo("Successful")
   }
 }

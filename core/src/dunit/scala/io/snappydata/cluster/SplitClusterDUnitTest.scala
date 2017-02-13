@@ -47,8 +47,6 @@ class SplitClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
-
-
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
@@ -98,7 +96,7 @@ class SplitClusterDUnitTest(s: String)
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
     writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1 " +
-        s"-J-Dspark.sql.inMemoryColumnarStorage.batchSize=$batchSize",
+        s"-J-Dspark.snappydata.column.batchSize=$batchSize",
       s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2
