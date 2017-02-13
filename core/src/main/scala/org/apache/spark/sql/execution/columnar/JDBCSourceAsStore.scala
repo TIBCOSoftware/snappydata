@@ -17,9 +17,10 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, ResultSet, Statement}
+
 import scala.language.implicitConversions
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, NonLocalRegionEntry, OffHeapRegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, OffHeapRegionEntry}
 import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey,
 GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
@@ -105,7 +106,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
     bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
+    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) with Logging {
 
   assert(!container.isOffHeap,
     s"Unexpected byte[][] iterator call for off-heap $container")
@@ -115,12 +116,13 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
   var currentKeyUUID: DataValueDescriptor = _
   var currentKeyPartitionId: DataValueDescriptor = _
   var currentBucketRegion: BucketRegion = _
+  val baseRegion: LocalRegion = container.getRegion
 
   def getColumnLob(bufferPosition: Int): Array[Byte] = {
     val key = new CompactCompositeRegionKey(Array(
       currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
       container.getExtraTableInfo());
-    val rl = currentBucketRegion.get(key)
+    val rl = if (currentBucketRegion != null) currentBucketRegion.get(key) else baseRegion.get(key)
     val value = rl.asInstanceOf[Array[Array[Byte]]]
     val rf = container.getRowFormatter(value(0))
     rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
