@@ -19,10 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.mutable
-
 import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -30,11 +27,9 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.GemFireXDBaseDialect
+import org.apache.spark.sql.hive.{QualifiedTableName}
+import org.apache.spark.sql.jdbc.{JdbcDialect}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -44,7 +39,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
  * A LogicalPlan implementation for an external column table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-case class JDBCAppendableRelation(
+abstract case class JDBCAppendableRelation(
     table: String,
     provider: String,
     mode: SaveMode,
@@ -107,23 +102,8 @@ case class JDBCAppendableRelation(
     }
   }
 
-  override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (cachedColumnBuffers, requestedColumns) = scanTable(table,
-      requiredColumns, filters)
-    val rdd = cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
-      // Find the ordinals and data types of the requested columns.
-      // If none are requested, use the narrowest (the field with
-      // minimum default element size).
-
-      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator,
-        requestedColumns, schema, forScan = true)
-    }
-    (rdd.asInstanceOf[RDD[Any]], Nil)
-  }
-
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter]): (RDD[Any], Array[String]) = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -136,7 +116,7 @@ case class JDBCAppendableRelation(
       requiredColumns
     }
 
-    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+    val cachedColumnBuffers: RDD[Any] = readLock {
       externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkSession)
@@ -321,106 +301,5 @@ object JDBCAppendableRelation extends Logging {
   final def getTableName(cachedBatchTablename: String): String = {
     cachedBatchTablename.substring(Constant.INTERNAL_SCHEMA_NAME.length + 1,
       cachedBatchTablename.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
-  }
-}
-
-final class DefaultSource extends ColumnarRelationProvider
-
-class ColumnarRelationProvider extends SchemaRelationProvider
-    with CreatableRelationProvider {
-
-  def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
-    val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val sc = sqlContext.sparkContext
-
-    val connectionProperties =
-      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
-
-    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
-      forManagedTable = false)
-
-    val externalStore = getExternalSource(sqlContext, connectionProperties,
-      partitions)
-    val tableName = SnappyStoreHiveCatalog
-        .processTableIdentifier(table, sqlContext.conf)
-    var success = false
-    val relation = new JDBCAppendableRelation(tableName,
-      getClass.getCanonicalName, mode, schema, options,
-      externalStore, sqlContext)
-    try {
-      relation.createTable(mode)
-      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-      catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), Some(relation.schema),
-        Array.empty[String], classOf[execution.columnar.DefaultSource].getCanonicalName,
-        options, relation)
-      success = true
-      relation
-    } finally {
-      if (!success && !relation.tableExists) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
-          Some(relation))
-        // destroy the relation
-        relation.destroy(ifExists = true)
-      }
-    }
-  }
-
-  override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
-
-    val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-
-    val rel = getRelation(sqlContext, options)
-    rel.createRelation(sqlContext, mode, options, schema)
-  }
-
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
-    val rel = getRelation(sqlContext, options)
-    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-    val relation = rel.createRelation(sqlContext, mode, options,
-      catalog.normalizeSchema(data.schema))
-    var success = false
-    try {
-      relation.insert(data, mode == SaveMode.Overwrite)
-      success = true
-      relation
-    } finally {
-      if (!success && !relation.tableExists) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
-          Some(relation))
-        // destroy the relation
-        relation.destroy(ifExists = true)
-      }
-    }
-  }
-
-  def getRelation(sqlContext: SQLContext,
-      options: Map[String, String]): ColumnarRelationProvider = {
-
-    val url = options.getOrElse("url",
-      ExternalStoreUtils.defaultStoreURL(Some(sqlContext.sparkContext)))
-    val clazz = JdbcDialects.get(url) match {
-      case _: GemFireXDBaseDialect =>
-        DataSource(sqlContext.sparkSession, classOf[impl.DefaultSource]
-            .getCanonicalName).providingClass
-
-      case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
-    }
-    clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
-  }
-
-  def getExternalSource(sqlContext: SQLContext,
-      connProperties: ConnectionProperties,
-      numPartitions: Int): ExternalStore = {
-    new JDBCSourceAsStore(connProperties, numPartitions)
   }
 }

@@ -33,7 +33,7 @@ trait ExternalStore extends Serializable {
       partitionId: Int = -1, batchId: Option[UUID] = None): Unit
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch]
+      session: SparkSession): RDD[Any]
 
   def getConnectedExternalStore(tableName: String, onExecutor: Boolean): ConnectedExternalStore
 

@@ -792,13 +792,13 @@ object SnappyContext extends Logging {
 
   val DEFAULT_SOURCE = ROW_SOURCE
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
-    classOf[execution.columnar.DefaultSource].getCanonicalName,
+    classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",

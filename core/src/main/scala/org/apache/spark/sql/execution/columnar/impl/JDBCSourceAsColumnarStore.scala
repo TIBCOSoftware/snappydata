@@ -18,6 +18,10 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
+import java.util.concurrent.locks.ReentrantLock
+
+import scala.collection.mutable
+import scala.util.Random
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -28,8 +32,9 @@ import io.snappydata.impl.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.execution.RDDKryo
+import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
@@ -40,50 +45,159 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * Column Store implementation for GemFireXD.
  */
-class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
-    _numPartitions: Int)
-    extends JDBCSourceAsStore(_connProperties, _numPartitions) {
+class JDBCSourceAsColumnarStore(override val connProperties: ConnectionProperties,
+    numPartitions: Int)
+    extends ExternalStore {
 
   self =>
 
+  @transient
+  protected lazy val rand = new Random
+
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(
+    connProperties.dialect)
+
+  override def storeCachedBatch(tableName: String, batch: CachedBatch,
+      partitionId: Int = -1, batchId: Option[UUID] = None): Unit = {
+    storeCurrentBatch(tableName, batch, batchId.getOrElse(UUID.randomUUID()),
+      getPartitionID(tableName, partitionId))
+  }
+
+  /**
+   * Insert the base entry and n column entries in Snappy. Insert the base entry
+   * in the end to ensure that the partial inserts of a cached batch are ignored
+   * during iteration. We are not cleaning up the partial inserts of cached
+   * batches for now.
+   */
+  protected def doInsert(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): (Connection => Any) = {
+    {
+      (connection: Connection) => {
+        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+        val stmt = connection.prepareStatement(rowInsertStr)
+        var columnIndex = 1
+        val uuid = batchId.toString
+        try {
+          // add the columns
+          batch.buffers.foreach(buffer => {
+            stmt.setString(1, uuid)
+            stmt.setInt(2, partitionId)
+            stmt.setInt(3, columnIndex)
+            stmt.setBytes(4, buffer)
+            columnIndex += 1
+            stmt.addBatch()
+          })
+          // add the stat row
+          stmt.setString(1, uuid)
+          stmt.setInt(2, partitionId)
+          stmt.setInt(3, JDBCSourceAsStore.STATROW_COL_INDEX)
+          stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
+          stmt.addBatch()
+
+          stmt.executeBatch()
+          stmt.close()
+        } catch {
+          // TODO: test this code
+          case e: Exception =>
+            val deletestmt = connection.prepareStatement(
+              s"delete from $tableName where partitionId = $partitionId " +
+                  s" and uuid = ? and columnIndex = ? ")
+            // delete the base entry
+            try {
+              deletestmt.setString(1, uuid)
+              deletestmt.setInt(2, -1)
+              deletestmt.executeUpdate()
+            } catch {
+              case _: Exception => // Do nothing
+            }
+
+            for (idx <- 1 to batch.buffers.size) {
+              try {
+                deletestmt.setString(1, uuid)
+                deletestmt.setInt(2, idx)
+                deletestmt.executeUpdate()
+              } catch {
+                case _: Exception => // Do nothing
+              }
+            }
+            deletestmt.close()
+            throw e;
+        }
+      }
+    }
+  }
+
+  def storeCurrentBatch(tableName: String, batch: CachedBatch,
+      batchId: UUID, partitionId: Int): Unit = {
+    tryExecute(tableName, doInsert(tableName, batch, batchId, partitionId),
+      closeOnSuccess = true, onExecutor = true)
+  }
+
+  override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    val connProps = if (onExecutor) connProperties.executorConnProps
+    else connProperties.connProps
+    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+      connProperties.poolProps, connProps, connProperties.hikariCP)
+  }
+
+  protected val insertStrings: mutable.HashMap[String, String] =
+    new mutable.HashMap[String, String]()
+
+  protected def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
+    val istr = insertStrings.getOrElse(tableName, {
+      lock(makeInsertStmnt(tableName, numOfColumns))
+    })
+    istr
+  }
+
+  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
+    if (!insertStrings.contains(tableName)) {
+      val s = insertStrings.getOrElse(tableName,
+        s"insert into $tableName values(?,?,?,?)")
+      insertStrings.put(tableName, s)
+    }
+    insertStrings(tableName)
+  }
+
+  protected val insertStmntLock = new ReentrantLock()
+
+  /** Acquires a read lock on the cache for the duration of `f`. */
+  protected[sql] def lock[A](f: => A): A = {
+    insertStmntLock.lock()
+    try f finally {
+      insertStmntLock.unlock()
+    }
+  }
+
   override def getConnectedExternalStore(tableName: String,
       onExecutor: Boolean): ConnectedExternalStore =
-    new JDBCSourceAsColumnarStore(_connProperties, _numPartitions)
+    new JDBCSourceAsColumnarStore(connProperties, numPartitions)
         with ConnectedExternalStore {
       protected[this] override val connectedInstance: Connection =
         self.getConnection(tableName, onExecutor)
     }
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
+      session: SparkSession): RDD[Any] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession,
-          tableName, this).asInstanceOf[RDD[CachedBatch]]
+          tableName, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
-        val poolProps = _connProperties.poolProps -
-            (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        new SparkShellCachedBatchRDD(snappySession,
-          tableName, requiredColumns, ConnectionProperties(_connProperties.url,
-            _connProperties.driver, _connProperties.dialect, poolProps,
-            _connProperties.connProps, _connProperties.executorConnProps,
-            _connProperties.hikariCP), this)
+        val poolProps = connProperties.poolProps -
+            (if (connProperties.hikariCP) "jdbcUrl" else "url")
+        new SmartConnectorColumnRDD(snappySession,
+          tableName, requiredColumns, ConnectionProperties(connProperties.url,
+            connProperties.driver, connProperties.dialect, poolProps,
+            connProperties.connProps, connProperties.executorConnProps,
+            connProperties.hikariCP), this)
     }
   }
 
-  override protected def doInsert(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): (Connection => Any) = {
-    {
-      (connection: Connection) => {
-        super.doInsert(tableName, batch, batchId, partitionId)(connection)
-      }
-    }
-  }
-
-  override protected def getPartitionID(tableName: String,
+  protected def getPartitionID(tableName: String,
       partitionId: Int = -1): Int = {
     val connection = getConnection(tableName, onExecutor = true)
     try {
@@ -113,7 +227,7 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
           }
         // TODO: SW: for split mode, get connection to one of the
         // local servers and a bucket ID for only one of those
-        case _ => rand.nextInt(_numPartitions)
+        case _ => rand.nextInt(numPartitions)
       }
     } finally {
       connection.close()
@@ -162,21 +276,23 @@ final class ColumnarStorePartitionedRDD(
   }
 }
 
-final class SparkShellCachedBatchRDD(
+final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
     @transient private val store: ExternalStore)
-    extends RDDKryo[CachedBatch](session.sparkContext, Nil)
+    extends RDDKryo[Any](session.sparkContext, Nil)
         with KryoSerializable {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[CachedBatch] = {
+      context: TaskContext): Iterator[Array[Byte]] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
-    val query: String = helper.getSQLStatement(ExternalStoreUtils.lookupName(
-      tableName, conn.getSchema), requiredColumns, split.index)
+    // fetch the stats
+    val query: String = helper.getSQLStatement(
+      ExternalStoreUtils.lookupName(tableName, conn.getSchema),
+      requiredColumns, split.index, -1)
     val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
   }

@@ -99,7 +99,7 @@ class BaseColumnFormatRelation(
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[CachedBatch], Array[String]) = {
+      filters: Array[Filter]): (RDD[Any], Array[String]) = {
     super.scanTable(ColumnFormatRelation.cachedBatchTableName(tableName),
       requiredColumns, filters)
   }
@@ -668,9 +668,10 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   }
 }
 
-final class DefaultSource extends ColumnarRelationProvider {
+final class DefaultSource extends SchemaRelationProvider
+    with CreatableRelationProvider {
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+  def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -747,7 +748,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
         catalog.registerDataSourceTable(
           catalog.newQualifiedTableName(tableName), Some(relation.schema),
-          partitioningColumn.toArray, classOf[execution.columnar.DefaultSource].getCanonicalName,
+          partitioningColumn.toArray,
+          classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
           options, relation)
       }
       success = true
@@ -759,6 +761,36 @@ final class DefaultSource extends ColumnarRelationProvider {
           catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(tableName),
             Some(relation))
         }
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
+  }
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
+
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+
+    createRelation(sqlContext, mode, options, schema)
+  }
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val relation = createRelation(sqlContext, mode, options,
+      catalog.normalizeSchema(data.schema))
+    var success = false
+    try {
+      relation.insert(data, mode == SaveMode.Overwrite)
+      success = true
+      relation
+    } finally {
+      if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }

@@ -34,7 +34,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
