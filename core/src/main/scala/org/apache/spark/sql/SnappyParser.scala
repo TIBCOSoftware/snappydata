@@ -18,11 +18,9 @@ package org.apache.spark.sql
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
-
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis._
@@ -37,6 +35,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.datanucleus.store.rdbms.sql.expression.ParameterLiteral
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) {
@@ -45,9 +44,12 @@ class SnappyParser(session: SnappySession)
 
   override final def input: ParserInput = _input
 
+  private var paramcounter = 0
+
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
+    paramcounter = 0
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -166,6 +168,10 @@ class SnappyParser(session: SnappySession)
     booleanLiteral |
     NULL ~> (() => Literal.create(null, NullType)) |
     intervalLiteral
+  }
+
+  protected final def paramliteral: Rule1[ParamLiteral] = rule {
+    literal ~> ((l: Literal) => ParamLiteral(l, paramcounter+1))
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -632,7 +638,8 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    literal |
+    paramliteral |
+    //  literal |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |

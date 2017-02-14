@@ -24,7 +24,6 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -33,7 +32,6 @@ import com.gemstone.gemfire.internal.shared.FinalizeObject
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -63,6 +61,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
+import org.datanucleus.store.rdbms.sql.SQLText
 
 
 class SnappySession(@transient private val sc: SparkContext,
@@ -165,6 +164,10 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] final def executeSQL(sqlText: String): DataFrame =
     super.sql(sqlText)
+
+  def onlyParseSQL(sqLText: String): LogicalPlan = {
+    sessionState.sqlParser.parsePlan(sqLText)
+  }
 
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
@@ -1586,12 +1589,13 @@ object SnappySession extends Logging {
   }
 
   private[this] val planCache = {
-    val loader = new CacheLoader[(SnappySession, String),
+    val loader = new CacheLoader[(SnappySession, LogicalPlan, String),
         (CachedDataFrame, Map[String, String])] {
-      override def load(key: (SnappySession, String)): (CachedDataFrame,
+      override def load(key: (SnappySession, LogicalPlan, String)): (CachedDataFrame,
           Map[String, String]) = {
         val session = key._1
-        val df = session.executeSQL(key._2)
+        val df = session.executeSQL(key._3)
+        val hc = df.logicalPlan.hashCode()
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
         // since plan can change once caching is done (due to size stats)
@@ -1615,7 +1619,9 @@ object SnappySession extends Logging {
 
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
-      val key = session -> sqlText
+      val lp = session.onlyParseSQL(sqlText)
+      val key = (session, lp, sqlText)
+      println("sqlText = " + sqlText + " [hashcode] = " + key.hashCode())
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
