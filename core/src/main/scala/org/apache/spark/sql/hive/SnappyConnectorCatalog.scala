@@ -80,7 +80,7 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
 
   private var conn = connFactory()
   private val registerSnappyTblString = "call sys.REGISTER_SNAPPY_TABLE(?, ?, ?, ?, ?, ?)"
-  private val unregisterSnappyTblString = "call sys.UNREGISTER_SNAPPY_TABLE(?, ?)"
+  private val unregisterSnappyTblString = "call sys.UNREGISTER_SNAPPY_TABLE(?)"
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?)"
   private var getMetaDataStmt: CallableStatement = conn.prepareCall(getMetaDataStmtString)
   private var registerSnappyTblStmt: CallableStatement = conn.prepareCall(registerSnappyTblString)
@@ -314,13 +314,13 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       options: Map[String, String],
       relation: BaseRelation): Unit = {
     registerSnappyTblStmt.setString(1, tableIdent.database.get + "." + tableIdent.table)
-//    registerSnappyTblStmt.setBlob(1, SnappyConnectorCatalog.getBlob(tableIdent, conn))
-    registerSnappyTblStmt.setBlob(2, SnappyConnectorCatalog.getBlob(userSpecifiedSchema, conn))
+    registerSnappyTblStmt.setString(2, userSpecifiedSchema.get.json)
     registerSnappyTblStmt.setBlob(3, SnappyConnectorCatalog.getBlob(partitionColumns, conn))
     registerSnappyTblStmt.setString(4, provider)
     registerSnappyTblStmt.setBlob(5, SnappyConnectorCatalog.getBlob(options, conn))
     registerSnappyTblStmt.setBlob(6, SnappyConnectorCatalog.getBlob(relation, conn))
     registerSnappyTblStmt.execute
+
   }
 
   /**
@@ -329,24 +329,15 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
   override def unregisterDataSourceTable(tableIdent: QualifiedTableName,
       relation: Option[BaseRelation]): Unit = {
 //    tableIdent.invalidate()
-//    cachedDataSourceTables.invalidate(tableIdent)
+    cachedDataSourceTables.invalidate(tableIdent)
 
-    runStmtWithExceptionHandling(executeUnregisterTableStatement(tableIdent, relation))
+    runStmtWithExceptionHandling(executeUnregisterTableStatement(tableIdent))
 
     registerRelationDestroy()
   }
 
-  def executeUnregisterTableStatement(tableIdent: QualifiedTableName,
-      relation: Option[BaseRelation]): Unit = {
-//    unregisterSnappyTblStmt.setBlob(1, SnappyConnectorCatalog.getBlob(tableIdent, conn))
+  def executeUnregisterTableStatement(tableIdent: QualifiedTableName): Unit = {
     unregisterSnappyTblStmt.setString(1, tableIdent.database.get + "." + tableIdent.table)
-    relation match {
-      case Some(br) =>
-        unregisterSnappyTblStmt.setBlob(2, SnappyConnectorCatalog.getBlob(br, conn))
-      case None =>
-        val blob: java.sql.Blob = null
-        unregisterSnappyTblStmt.setBlob(2, blob)
-    }
     unregisterSnappyTblStmt.execute
   }
 }
