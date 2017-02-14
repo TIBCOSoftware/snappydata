@@ -24,6 +24,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.types.StructType
 
 trait ExternalStore extends Serializable {
 
@@ -33,7 +34,7 @@ trait ExternalStore extends Serializable {
       partitionId: Int = -1, batchId: Option[UUID] = None): Unit
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[Any]
+      session: SparkSession, schema: StructType): RDD[Any]
 
   def getConnectedExternalStore(tableName: String, onExecutor: Boolean): ConnectedExternalStore
 

@@ -40,23 +40,30 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.StructType
 
 final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
   def getSQLStatement(resolvedTableName: String,
-      partitionId: Int): (String, String) = {
+      partitionId: Int, requiredColumns: Array[String],
+      schema: StructType): (String, String) = {
 
     val fetchStatsClause = if (useLocatorURL) s" where bucketId = $partitionId " +
         s" and columnIndex = -1" else s" where columnIndex = -1"
     val fetchColClause = if (useLocatorURL) s" where bucketId = $partitionId " +
-        s" and columnIndex = ?  and uuid = ? "
-    else s" where columnIndex = ?  and uuid = ?"
+        s" and uuid = ? "
+    else s" where uuid = ? "
 
+    val schemaWithIndex = schema.zipWithIndex
+    val columnIndexString = requiredColumns.map(col => {
+      schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
+    }).map(s"columnIndex = " + _).mkString(" or ")
     // fetch stats query and fetch columns query
-    ("select data, uuid from " + resolvedTableName + fetchStatsClause,
-        "select data from " + resolvedTableName + fetchColClause)
+    (s"select data, uuid from $resolvedTableName $fetchStatsClause",
+        s"select data, columnIndex from   $resolvedTableName " +
+            s" $fetchColClause and ($columnIndexString)")
   }
 
   def executeQuery(conn: Connection, tableName: String,

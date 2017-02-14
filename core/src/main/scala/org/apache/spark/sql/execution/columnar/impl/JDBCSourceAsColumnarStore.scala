@@ -39,6 +39,7 @@ import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -178,7 +179,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     }
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[Any] = {
+      session: SparkSession, schema: StructType): RDD[Any] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -193,7 +194,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           tableName, requiredColumns, ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
-            connProperties.hikariCP), this)
+            connProperties.hikariCP), schema, this)
     }
   }
 
@@ -281,6 +282,7 @@ final class SmartConnectorColumnRDD(
     private var tableName: String,
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
+    private val schema: StructType,
     @transient private val store: ExternalStore)
     extends RDDKryo[Any](session.sparkContext, Nil)
         with KryoSerializable {
@@ -291,7 +293,7 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, split)
     val resolvedTableName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(resolvedTableName,
-      split.index)
+      split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
     val (statement, rs) = helper.executeQuery(conn, tableName, split, fetchStatsQuery)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs,

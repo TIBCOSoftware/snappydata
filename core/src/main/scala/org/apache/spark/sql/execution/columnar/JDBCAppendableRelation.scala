@@ -119,7 +119,7 @@ abstract case class JDBCAppendableRelation(
     val cachedColumnBuffers: RDD[Any] = readLock {
       externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
-        sqlContext.sparkSession)
+        sqlContext.sparkSession, schema)
     }
     (cachedColumnBuffers, requestedColumns)
   }
