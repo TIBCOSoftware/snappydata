@@ -70,7 +70,7 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  final def close() {
+  def close() {
     if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -96,11 +96,29 @@ abstract class ResultSetIterator[A](conn: Connection,
 
 final class CachedBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
-    stmt: Statement, rs: ResultSet, context: TaskContext)
+    stmt: Statement, rs: ResultSet,
+    context: TaskContext,
+    fetchColQuery: String)
     extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
+  var currentUUID: String = _
+  val ps = conn.prepareStatement(fetchColQuery)
+
+  def getColumnLob(bufferPosition: Int): Array[Byte] = {
+    ps.setString(1, bufferPosition.toString)
+    ps.setString(2, currentUUID)
+    val colIter = ps.executeQuery()
+    colIter.next()
+    colIter.getBytes(1)
+  }
 
   override protected def getCurrentValue: Array[Byte] = {
+    currentUUID = rs.getString(2)
     rs.getBytes(1)
+  }
+
+  override def close(): Unit = {
+    ps.close()
+    super.close()
   }
 }
 

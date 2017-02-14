@@ -46,11 +46,17 @@ final class SparkShellRDDHelper {
   var useLocatorURL: Boolean = false
 
   def getSQLStatement(resolvedTableName: String,
-      requiredColumns: Array[String], partitionId: Int, columnIndex: Int): String = {
-    val whereClause = if (useLocatorURL) s" where bucketId = $partitionId " +
-        s" and columnIndex = $columnIndex" else s" where columnIndex = $columnIndex"
+      partitionId: Int): (String, String) = {
 
-    "select data from " + resolvedTableName + whereClause
+    val fetchStatsClause = if (useLocatorURL) s" where bucketId = $partitionId " +
+        s" and columnIndex = -1" else s" where columnIndex = -1"
+    val fetchColClause = if (useLocatorURL) s" where bucketId = $partitionId " +
+        s" and columnIndex = ?  and uuid = ? "
+    else s" where columnIndex = ?  and uuid = ?"
+
+    // fetch stats query and fetch columns query
+    ("select data, uuid from " + resolvedTableName + fetchStatsClause,
+        "select data from " + resolvedTableName + fetchColClause)
   }
 
   def executeQuery(conn: Connection, tableName: String,

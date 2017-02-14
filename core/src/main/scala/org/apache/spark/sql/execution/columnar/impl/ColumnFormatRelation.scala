@@ -152,7 +152,7 @@ class BaseColumnFormatRelation(
           partitions
         )
       case _ =>
-        new SparkShellRowRDD(
+        new SmartConnectorRowRDD(
           session,
           resolvedName,
           isPartitioned,

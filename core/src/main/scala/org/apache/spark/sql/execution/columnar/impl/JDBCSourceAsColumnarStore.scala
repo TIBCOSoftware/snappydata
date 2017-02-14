@@ -289,12 +289,13 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[Array[Byte]] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
+    val resolvedTableName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
+    val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(resolvedTableName,
+      split.index)
     // fetch the stats
-    val query: String = helper.getSQLStatement(
-      ExternalStoreUtils.lookupName(tableName, conn.getSchema),
-      requiredColumns, split.index, -1)
-    val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
-    new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
+    val (statement, rs) = helper.executeQuery(conn, tableName, split, fetchStatsQuery)
+    new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs,
+      context, fetchColQuery)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -327,7 +328,7 @@ final class SmartConnectorColumnRDD(
   }
 }
 
-class SparkShellRowRDD(_session: SnappySession,
+class SmartConnectorRowRDD(_session: SnappySession,
     _tableName: String,
     _isPartitioned: Boolean,
     _columns: Array[String],

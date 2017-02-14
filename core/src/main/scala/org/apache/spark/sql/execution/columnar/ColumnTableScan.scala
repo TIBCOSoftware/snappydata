@@ -421,7 +421,7 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       if (!isEmbedded) {
-        columnBufferInitCode.append(s"$buffer = $buffers[$index];")
+        columnBufferInitCode.append(s"$buffer = $colInput.getColumnLob($bufferPosition);")
       } else if (isOffHeap) {
         columnBufferInitCode.append(
           s"""
