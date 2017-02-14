@@ -165,7 +165,7 @@ $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-di
 
 ** If you are using Docker**:
 ```bash
-$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+$ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 ### To get the Performance Numbers
@@ -398,7 +398,7 @@ $ docker run hello-world
 
 **Get the Docker Image: ** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
 ```scala
-$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
+$  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
 Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)

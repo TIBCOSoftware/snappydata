@@ -82,7 +82,7 @@ Let's say you want to:
 
 * Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l).
 
-* Change the Spark UI port from 4040 to 9090. 
+* Change the Spark UI port from 5050 to 9090. 
 
 * Set spark.executor.cores as 10 on all servers. 
 

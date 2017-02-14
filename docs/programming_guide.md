@@ -328,9 +328,6 @@ The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interfa
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
-<!--using javascript as the code language here... should this be sql?-->
-javascript
-
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
 $ ../../bin/snappy-shell  
@@ -370,8 +367,7 @@ To run all SnappyData functionalities you need to create a [SnappySession](http:
 ```bash
 // from the SnappyData base directory  
 # Start the Spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
-# Change the UI port because the default port 4040 is being used by Snappy’s lead. 
-$ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+$ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port 
 scala>
 #Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
@@ -385,7 +381,7 @@ Any Spark application can also use the SnappyData as store and Spark as a comput
 # Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=locatorhost:port $SNAPPY_HOME/examples/jars/quickstart.jar
 
 # The results can be seen on the command line.
 ```
@@ -668,7 +664,8 @@ PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a repli
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
+PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
+DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -738,8 +735,10 @@ The below mentioned DDL extensions are required to configure a table based on us
    5. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
 
    6. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   
+   7. DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
 
-   7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   8. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
    
    Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
