@@ -38,7 +38,7 @@ shift
 
 # Start up  the server instance
 function start_instance {
-  "$SPARK_HOME"/bin/snappy-shell server "$mode" "$@"
+  "$SPARK_HOME"/bin/snappy server "$mode" "$@"
 }
 
 start_instance "$@"

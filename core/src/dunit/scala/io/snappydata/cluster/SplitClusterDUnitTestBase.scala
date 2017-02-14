@@ -44,6 +44,7 @@ import org.apache.log4j.{Level, Logger}
  */
 trait SplitClusterDUnitTestBase extends Logging {
 
+
   def vm0: VM
 
   def vm1: VM
@@ -177,8 +178,6 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort, locatorProp,
       useThinConnectorMode, locatorClientPort)
-
-    snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
 
     // try to create the table already created in embedded mode.
     // it should throw the table exist exception.

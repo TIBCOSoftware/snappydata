@@ -1,13 +1,13 @@
 ## Using the SnappyData SQL Shell
 
-The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. Internally it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
+The SnappyData SQL Shell (_snappy-sql_) provides a simple command line interface to the SnappyData cluster. It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. Internally it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 
 <!--using javascript as the code language here... should this be sql?-->
 ```javascript
 
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
-$ ../../bin/snappy-shell  
+$ ../../bin/snappy-sql
 Version 2.0-BETA
 snappy> 
 
@@ -48,7 +48,7 @@ a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
 scala>
-#Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
+#Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
