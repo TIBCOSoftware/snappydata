@@ -490,6 +490,8 @@ private[sql] final case class ColumnTableScan(
             }
             if (!$input.hasNext()) return false;
           }
+          // dummy initialization as the logic of exiting is tied with $buffers
+         $buffers = new byte[1][];
       """
     } else if (isOffHeap) {
       val filterCode = if (filterFunction.isEmpty) {
