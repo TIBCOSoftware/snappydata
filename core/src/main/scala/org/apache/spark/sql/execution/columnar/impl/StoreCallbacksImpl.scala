@@ -31,12 +31,12 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeMetastoreUpdateContext
-import io.snappydata.Constant
+import io.snappydata.{Property, Constant}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
@@ -172,55 +172,28 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
     context.getType match {
       case LeadNodeMetastoreUpdateContext.Optype.REGISTER_TABLE =>
+        logInfo("sdeshmukh updateMetastore create table")
+        val session = SnappyContext(null: SparkContext).snappySession
+
         val tableIdent = context.getTableIdentifier
-        val jsonSchema = context.getJsonSchema
-        val userSpecifiedSchema = Option(DataType.fromJson(jsonSchema).asInstanceOf[StructType])
-//        val userSpecifiedSchema = SnappyConnectorCatalog.
-//            deserialize(context.getJsonSchema).asInstanceOf[Option[StructType]]
-        val partitionColumns = SnappyConnectorCatalog.
-            deserialize(context.getPartitionColumns).asInstanceOf[Array[String]]
+        val userSpecifiedJsonSchema = context.getUserSpecifiedJsonSchema
+        val userSpecifiedSchema = Option(DataType.fromJson(userSpecifiedJsonSchema).asInstanceOf[StructType])
+        val schemaDDL = Option(context.getSchemaDDL)
         val provider = context.getProvider
+        val mode = SmartConnectorHelper.deserialize(context.getMode).asInstanceOf[SaveMode]
         val options = SnappyConnectorCatalog
             .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
-        val relation = SnappyConnectorCatalog.
-            deserialize(context.getRelation).asInstanceOf[BaseRelation]
+        val isBuiltIn = context.getIsBuiltIn
 
-        logInfo("sdeshmukh updateMetastore calling registerDataSourceTable")
-        val session = SnappyContext(null: SparkContext).snappySession
-        session.sessionCatalog.registerDataSourceTable(
-          session.sessionCatalog.newQualifiedTableName(tableIdent),
-          userSpecifiedSchema, partitionColumns, provider, options, relation)
+        session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
+          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
 
       case LeadNodeMetastoreUpdateContext.Optype.UNREGISTER_TABLE =>
-        logInfo("sdeshmukh updateMetastore calling unregisterDataSourceTable")
-        val tableIdent = context.getTableIdentifier
+        logInfo("sdeshmukh updateMetastore drop table")
         val session = SnappyContext(null: SparkContext).snappySession
-        val qualifiedTableName = session.sessionCatalog.newQualifiedTableName(tableIdent)
-
-        val plan = try {
-          session.sessionCatalog.lookupRelation(qualifiedTableName)
-        } catch {
-          case tnfe: TableNotFoundException =>
-            return
-          case NonFatal(_) =>
-            // table loading may fail due to an initialization exception
-            // in relation, so try to remove from hive catalog in any case
-            try {
-              session.sessionCatalog.unregisterDataSourceTable(qualifiedTableName, None)
-              return
-            } catch {
-              case NonFatal(e) =>
-                return
-            }
-        }
-
-        plan match {
-          case LogicalRelation(br, _, _) =>
-            logInfo("sdeshmukh updateMetastore calling unregisterDataSourceTable tableIdent=" + tableIdent + " relation=" + br)
-            session.sessionCatalog.unregisterDataSourceTable(qualifiedTableName, Option(br))
-          case _ => // temp table - should not have come here for connector mode
-
-        }
+        val tableIdent = context.getTableIdentifier
+        val ifExists = context.getIfExists
+        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
 
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.updateMetastore unknown option")

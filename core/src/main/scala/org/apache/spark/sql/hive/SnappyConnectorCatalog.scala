@@ -286,26 +286,22 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       comment = Option(hc.getComment))
   }
 
-  override def registerDataSourceTable(
-      tableIdent: QualifiedTableName,
-      userSpecifiedSchema: Option[StructType],
-      partitionColumns: Array[String],
-      provider: String,
-      options: Map[String, String],
-      relation: BaseRelation): Unit = {
-//    logInfo(s"sdeshmukh registerDataSourceTable = tableIdent = $tableIdent , " +
-//        s"userSpecifiedSchema = $userSpecifiedSchema, partitionColumns = $partitionColumns, " +
-//        s"provider = $provider, options = $options, relation = $relation ")
-
-    // invalidate any cached plan for the table
-    tableIdent.invalidate()
-    cachedDataSourceTables.invalidate(tableIdent)
-
-    runStmtWithExceptionHandling(executeRegisterTableStatement(tableIdent, userSpecifiedSchema,
-      partitionColumns, provider, options, relation))
-
-    SnappySession.clearAllCache()
-  }
+//  override def registerDataSourceTable(
+//      tableIdent: QualifiedTableName,
+//      userSpecifiedSchema: Option[StructType],
+//      partitionColumns: Array[String],
+//      provider: String,
+//      options: Map[String, String],
+//      relation: BaseRelation): Unit = {
+//
+//    tableIdent.invalidate()
+//    cachedDataSourceTables.invalidate(tableIdent)
+//
+//    runStmtWithExceptionHandling(executeRegisterTableStatement(tableIdent, userSpecifiedSchema,
+//      partitionColumns, provider, options, relation))
+//
+//    SnappySession.clearAllCache()
+//  }
 
   def executeRegisterTableStatement(tableIdent: QualifiedTableName,
       userSpecifiedSchema: Option[StructType],
@@ -326,15 +322,15 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
   /**
    * Drops a data source table from Hive's meta-store.
    */
-  override def unregisterDataSourceTable(tableIdent: QualifiedTableName,
-      relation: Option[BaseRelation]): Unit = {
-//    tableIdent.invalidate()
-    cachedDataSourceTables.invalidate(tableIdent)
-
-    runStmtWithExceptionHandling(executeUnregisterTableStatement(tableIdent))
-
-    registerRelationDestroy()
-  }
+//  override def unregisterDataSourceTable(tableIdent: QualifiedTableName,
+//      relation: Option[BaseRelation]): Unit = {
+////    tableIdent.invalidate()
+//    cachedDataSourceTables.invalidate(tableIdent)
+//
+//    runStmtWithExceptionHandling(executeUnregisterTableStatement(tableIdent))
+//
+//    registerRelationDestroy()
+//  }
 
   def executeUnregisterTableStatement(tableIdent: QualifiedTableName): Unit = {
     unregisterSnappyTblStmt.setString(1, tableIdent.database.get + "." + tableIdent.table)

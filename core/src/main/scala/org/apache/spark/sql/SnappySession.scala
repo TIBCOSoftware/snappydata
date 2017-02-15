@@ -897,6 +897,13 @@ class SnappySession(@transient private val sc: SparkContext,
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
 
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return SmartConnectorHelper.createTable(tableIdent,
+          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+      case _ =>
+    }
+
     if (sessionCatalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
@@ -1092,6 +1099,13 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return SmartConnectorHelper.dropTable(tableIdent, ifExists)
+      case _ =>
+    }
+
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {
