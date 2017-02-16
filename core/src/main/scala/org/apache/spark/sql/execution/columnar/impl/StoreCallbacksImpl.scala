@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.lang
 import java.util.{Collections, UUID}
 
-import org.apache.spark.memory.{MemoryMode, TempMemoryManager}
+import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode, TempMemoryManager}
 import org.apache.spark.storage.TestBlockId
 import scala.collection.JavaConverters._
 
@@ -47,7 +47,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
 
-  val tempMemoryManager = new TempMemoryManager
+
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
@@ -178,35 +178,19 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     }
   }
 
-  override def acquireStorageMemory(name: String, numBytes: Long): Boolean = {
-    val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$name")
-    if (SparkEnv.get != null) {
-      SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, MemoryMode.ON_HEAP)
-    } else {
-      tempMemoryManager.acquireStorageMemory(blockId, numBytes, MemoryMode.ON_HEAP)
-    }
+  override def acquireStorageMemory(objectName: String, numBytes: Long): Boolean = {
+    val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$objectName")
+    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName, blockId, numBytes, MemoryMode.ON_HEAP)
   }
 
-  override def releaseStorageMemory(numBytes: Long): Unit = {
-    SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, MemoryMode.ON_HEAP)
+  override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {
+    MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(objectName, numBytes, MemoryMode.ON_HEAP)
   }
+
+  override def dropStorageMemory(objectName: String): Unit =
+    MemoryManagerCallback.memoryManager.dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP)
 
   override def isSnappyStore: Boolean = true
-
-
-  override def getEntryOverhead(entry: RegionEntry): Long = {
-    var entryOverhead = sizer.sizeof(entry)
-    // add key object overhead (if key is present then it will be a Long
-    //   and always be there in all entries)
-    val key = entry.getRawKey
-    if (key ne null) {
-      entryOverhead += sizer.sizeof(key)
-    }
-    if (entry.isInstanceOf[DiskEntry]) {
-      entryOverhead += sizer.sizeof(entry.asInstanceOf[DiskEntry].getDiskId)
-    }
-    entryOverhead
-  }
 
   override def getRegionOverhead(region: LocalRegion): Long = {
     region.estimateMemoryOverhead(sizer)
@@ -215,6 +199,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def getNumBytesForEviction: Long = {
     SparkEnv.get.memoryManager.maxOnHeapStorageMemory
   }
+
+
 }
 
 trait StoreCallback extends Serializable {

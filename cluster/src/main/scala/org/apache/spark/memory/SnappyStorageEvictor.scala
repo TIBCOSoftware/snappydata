@@ -114,7 +114,7 @@ class SnappyStorageEvictor extends Logging{
   protected def includePartitionedRegion(region: PartitionedRegion): Boolean = {
     return (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory)
+      && !region.getAttributes.getEnableOffHeapMemory && !region.needsBatching())
   }
 
   protected def includeLocalRegion(region: LocalRegion): Boolean = {
