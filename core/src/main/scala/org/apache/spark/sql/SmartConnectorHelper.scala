@@ -21,15 +21,17 @@ import java.sql.{CallableStatement, Connection}
 import java.util.Properties
 
 import io.snappydata.Property
+import io.snappydata.impl.SparkShellRDDHelper
+import org.apache.hadoop.hive.metastore.api.Table
 
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{RelationInfo, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, SparkContext}
 
-final object SmartConnectorHelper extends Logging {
+object SmartConnectorHelper extends Logging {
   private lazy val session = SnappyContext(null: SparkContext).snappySession
   private lazy val clusterMode = SnappyContext.getClusterMode(session.sparkContext)
 
@@ -49,6 +51,8 @@ final object SmartConnectorHelper extends Logging {
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
   private val dropSnappyIdxString = "call sys.DROP_SNAPPY_INDEX(?, ?)"
+  private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?)"
+  private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
   private var createSnappyIdxStmt: CallableStatement = _
@@ -58,6 +62,15 @@ final object SmartConnectorHelper extends Logging {
     case ThinClientConnectorMode(_, props) =>
       initializeConnection
     case _ =>
+  }
+
+  private def initializeConnection(): Unit = {
+    conn = connFactory()
+    createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
+    dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
+    createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
+    dropSnappyIdxStmt = conn.prepareCall(dropSnappyIdxString)
+    getMetaDataStmt  = conn.prepareCall(getMetaDataStmtString)
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
@@ -82,14 +95,6 @@ final object SmartConnectorHelper extends Logging {
     } else {
       false
     }
-  }
-
-  private def initializeConnection(): Unit = {
-    conn = connFactory()
-    createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
-    dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
-    createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
-    dropSnappyIdxStmt = conn.prepareCall(dropSnappyIdxString)
   }
 
   def createTable(
@@ -154,13 +159,76 @@ final object SmartConnectorHelper extends Logging {
       tableIdent: QualifiedTableName,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
+    runStmtWithExceptionHandling(
+      executeCreateIndexStmt(indexIdent, tableIdent, indexColumns, options))
+    SnappySession.clearAllCache
+  }
 
+  private def executeCreateIndexStmt(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
+    createSnappyIdxStmt.setString(1, indexIdent.schemaName + "." + indexIdent.table)
+    createSnappyIdxStmt.setString(2, tableIdent.schemaName + "." + tableIdent.table)
+    createSnappyIdxStmt.setBlob(3, getBlob(indexColumns))
+    createSnappyIdxStmt.setBlob(4, getBlob(options))
+    createSnappyIdxStmt.execute()
   }
 
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
-
+    runStmtWithExceptionHandling(executeDropIndexStmt(indexName, ifExists))
+    SnappyStoreHiveCatalog.registerRelationDestroy
+    SnappySession.clearAllCache
   }
 
+  private def executeDropIndexStmt(indexIdent: QualifiedTableName, ifExists: Boolean): Unit = {
+    dropSnappyIdxStmt.setString(1, indexIdent.schemaName + "." + indexIdent.table)
+    dropSnappyIdxStmt.setBoolean(2, ifExists)
+    dropSnappyIdxStmt.execute()
+  }
+
+  def getHiveTableAndMetadata(in: QualifiedTableName): (Table, RelationInfo) = {
+
+    runStmtWithExceptionHandling(executeMetaDataStatement(in.toString))
+
+    val tableObjectBlob = Option(getMetaDataStmt.getBlob(2)).
+        getOrElse(throw new TableNotFoundException(s"Table ${in} not found"))
+
+    val t: Table = {
+      val tableObjectBytes = tableObjectBlob.getBytes(1, tableObjectBlob.length().toInt)
+      val baip = new ByteArrayInputStream(tableObjectBytes)
+      val ois = new ObjectInputStream(baip)
+      ois.readObject().asInstanceOf[Table]
+    }
+    val bucketCount = getMetaDataStmt.getInt(3)
+    val indexColsString = getMetaDataStmt.getString(5)
+    val indexCols = Option(indexColsString) match {
+      case Some(str) => str.split(":")
+      case None => Array.empty[String]
+    }
+    if (bucketCount > 0) {
+      val partitionCols = getMetaDataStmt.getString(4).split(":")
+      val bucketToServerMappingStr = getMetaDataStmt.getString(6)
+      val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
+      val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+      (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
+    } else {
+      val replicaToNodesInfo = getMetaDataStmt.getString(6)
+      val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+      val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+      (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
+    }
+  }
+
+  def executeMetaDataStatement(tableName: String): Unit = {
+    getMetaDataStmt.setString(1, tableName)
+    getMetaDataStmt.registerOutParameter(2, java.sql.Types.BLOB) /*Hive table object*/
+    getMetaDataStmt.registerOutParameter(3, java.sql.Types.INTEGER) /*bucket count*/
+    getMetaDataStmt.registerOutParameter(4, java.sql.Types.VARCHAR) /*partitioning columns*/
+    getMetaDataStmt.registerOutParameter(5, java.sql.Types.VARCHAR) /*index columns*/
+    getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
+    getMetaDataStmt.execute
+  }
 
   def getBlob(value: Any, conn: Connection = conn): java.sql.Blob = {
     val serializedValue: Array[Byte] = serialize(value)

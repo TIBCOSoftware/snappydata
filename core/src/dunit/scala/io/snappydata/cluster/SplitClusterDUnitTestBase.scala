@@ -81,6 +81,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
 
+    logInfo("sdeshmukh useThinClientConnector =" + useThinClientConnector)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
       startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty
@@ -88,7 +89,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // make sure that table dropped from external cluster is not cached
     // in catalog of embedded mode cluster
-//    testObject.assertTableNotCachedInHiveCatalog("APP.EMBEDDEDMODETABLE1")
+    testObject.assertTableNotCachedInHiveCatalog("APP.EMBEDDEDMODETABLE1")
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = false, props)
@@ -176,7 +177,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       props: Map[String, String], locatorProp: String,
       useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
 
-    val snc: SnappyContext = getSnappyContextForComputeCluster(locatorPort, locatorProp,
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
       useThinConnectorMode, locatorClientPort)
 
     // try to create the table already created in embedded mode.
@@ -191,7 +192,7 @@ trait SplitClusterDUnitTestObject extends Logging {
           tableType, props)
       }
     } catch {
-      case e: AnalysisException => tableAlreadyExistException = e
+      case e: Exception => tableAlreadyExistException = e
     }
     assert(tableAlreadyExistException != null)
     assert(tableAlreadyExistException.getMessage.toLowerCase.contains(
@@ -222,10 +223,10 @@ trait SplitClusterDUnitTestObject extends Logging {
   }
 
   /**
-   * Returns the SnappyContext for external(compute) Spark cluster connected to
+   * Returns the SnappyContext for external(connector) Spark cluster connected to
    * SnappyData cluster
    */
-  def getSnappyContextForComputeCluster(locatorPort: Int, locatorProp: String,
+  def getSnappyContextForConnector(locatorPort: Int, locatorProp: String,
       useThinConnectorMode: Boolean, locatorClientPort: Int): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
 
@@ -288,7 +289,12 @@ trait SplitClusterDUnitTestObject extends Logging {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, propsMap)
+    // test index create op
+    snc.createIndex("tableName" + "_index", tableName, Map(("COL1" -> None)),
+      Map.empty[String, String])
     dataDF.write.insertInto(tableName)
+    // test index drop op
+    snc.dropIndex("tableName" + "_index", false)
   }
 
   def selectFromTable(snc: SnappyContext, tableName: String,

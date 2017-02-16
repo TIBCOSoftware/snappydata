@@ -20,7 +20,6 @@ import java.lang
 import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
@@ -30,14 +29,13 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import com.pivotal.gemfirexd.internal.snappy.LeadNodeMetastoreUpdateContext
-import io.snappydata.{Property, Constant}
+import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
+import io.snappydata.Constant
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, SparkContext, SparkException}
@@ -166,13 +164,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
-  override def updateMetastore(ctx: Object): Unit = {
+  override def performConnectorOp(ctx: Object): Unit = {
 
-    val context = ctx.asInstanceOf[LeadNodeMetastoreUpdateContext]
+    val context = ctx.asInstanceOf[LeadNodeSmartConnectorOpContext]
 
     context.getType match {
-      case LeadNodeMetastoreUpdateContext.Optype.REGISTER_TABLE =>
-        logInfo("sdeshmukh updateMetastore create table")
+      case LeadNodeSmartConnectorOpContext.OpType.CREATE_TABLE =>
         val session = SnappyContext(null: SparkContext).snappySession
 
         val tableIdent = context.getTableIdentifier
@@ -181,22 +178,47 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val schemaDDL = Option(context.getSchemaDDL)
         val provider = context.getProvider
         val mode = SmartConnectorHelper.deserialize(context.getMode).asInstanceOf[SaveMode]
-        val options = SnappyConnectorCatalog
+        val options = SmartConnectorHelper
             .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
         val isBuiltIn = context.getIsBuiltIn
 
+        logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
         session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
           provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
 
-      case LeadNodeMetastoreUpdateContext.Optype.UNREGISTER_TABLE =>
-        logInfo("sdeshmukh updateMetastore drop table")
+      case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
         val session = SnappyContext(null: SparkContext).snappySession
         val tableIdent = context.getTableIdentifier
         val ifExists = context.getIfExists
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
         session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
 
+      case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val tableIdent = context.getTableIdentifier
+        val indexIdent = context.getIndexIdentifier
+        val indexColumns = SmartConnectorHelper
+            .deserialize(context.getIndexColumns).asInstanceOf[Map[String, Option[SortDirection]]]
+        val options = SmartConnectorHelper
+            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp creating index $indexIdent")
+        session.createIndex(
+          session.sessionCatalog.newQualifiedTableName(indexIdent),
+          session.sessionCatalog.newQualifiedTableName(tableIdent),
+          indexColumns, options)
+
+      case LeadNodeSmartConnectorOpContext.OpType.DROP_INDEX =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val indexIdent = context.getIndexIdentifier
+        val ifExists = context.getIfExists
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping index $indexIdent")
+        session.dropIndex(session.sessionCatalog.newQualifiedTableName(indexIdent), ifExists)
+
       case _ =>
-        throw new AnalysisException("StoreCallbacksImpl.updateMetastore unknown option")
+        throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")
     }
 
   }

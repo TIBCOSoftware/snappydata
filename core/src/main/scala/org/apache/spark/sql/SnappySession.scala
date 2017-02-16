@@ -1221,6 +1221,12 @@ class SnappySession(@transient private val sc: SparkContext,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return SmartConnectorHelper.createIndex(indexIdent, tableIdent, indexColumns, options)
+      case _ =>
+    }
+
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
         s"Index and table have different databases " +
@@ -1270,6 +1276,12 @@ class SnappySession(@transient private val sc: SparkContext,
    * Drops an index on a table
    */
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return SmartConnectorHelper.dropIndex(indexName, ifExists)
+      case _ =>
+    }
 
     val indexIdent = getIndexTable(indexName)
 
