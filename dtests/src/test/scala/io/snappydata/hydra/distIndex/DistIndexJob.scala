@@ -17,7 +17,7 @@ class DistIndexJob extends SnappySQLJob {
     val resultValidation: Boolean = jobConfig.getString("resultValidation").toBoolean
     Try {
       snc.sql("set spark.sql.crossJoin.enabled = true")
-      pw.println("****** DistIndexJob started ******")
+      pw.println(s"****** DistIndexJob started at time : " + System.currentTimeMillis + " ******")
       if (resultValidation) {
         pw.println("****** executeQueriesWithResultValidation task started ******")
         DistIndexTestUtils.executeQueriesWithResultValidation(snc, pw)
@@ -27,7 +27,7 @@ class DistIndexJob extends SnappySQLJob {
         DistIndexTestUtils.executeQueriesForBenchmarkResults(snc, pw, fileOutputStream)
         pw.println("****** executeQueriesForBenchmarkResults task finished ******")
       }
-      pw.println("****** DistIndexJob finished ******")
+      pw.println(s"****** DistIndexJob finished : "  + System.currentTimeMillis + " ******" )
       return String.format("See %s/" + jobConfig.getString("logFileName"), getCurrentDirectory)
     } match {
       case Success(v) => pw.close()

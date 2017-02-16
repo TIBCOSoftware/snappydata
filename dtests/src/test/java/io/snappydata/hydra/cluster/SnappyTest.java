@@ -103,6 +103,8 @@ public class SnappyTest implements Serializable {
     public static long lastCycledTime = 0;
     public static long lastCycledTimeForLead = 0;
     public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
+    /*public static int sleepTimeSecsForJobStatus = TestConfig.tab().intAt(SnappyPrms
+            .sleepTimeSecsForJobStatus, 120);*/ //secs
     public static final int THOUSAND = 1000;
     public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
     public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
@@ -307,6 +309,7 @@ public class SnappyTest implements Serializable {
                         " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
                         SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
                         " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
+                        " -J-XX:+DisableExplicitGC" +
                         " -classpath=" /*+ getSnappyTestsJar() + ":"*/ + getStoreTestsJar();// + ":" + getClusterTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -324,7 +327,8 @@ public class SnappyTest implements Serializable {
                         " -spark.jobserver.port=" + leadPort +
                         " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
                         " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
-                        " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
+                        " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
+                        " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
                         " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
                         " -classpath=" /*+ getSnappyTestsJar() + ":"*/ + getStoreTestsJar() /*+ ":" + getClusterTestsJar()*/ + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
                         SnappyPrms.getFlightRecorderOptions(dirPath) +
@@ -1455,7 +1459,8 @@ public class SnappyTest implements Serializable {
         int currentThread = snappyTest.getMyTid();
         String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
         SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms
+                .getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
     }
 
     /**
@@ -1598,7 +1603,8 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar, String jarPath, String appName) {
+    public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar,
+                                 String jarPath, String appName) {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
@@ -1792,7 +1798,9 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "jobStatus_" + RemoteTestModule.getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
                 File commandOutput = new File(dest);
                 String expression = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " --job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": \"FINISHED\"' -e 'curl:' -e '\"status\": \"ERROR\"' " + commandOutput + " | wc -l)\"";
-                String command = "while [ \"$(" + expression + " -le  0 ] ; do rm " + commandOutput + " ;  touch " + commandOutput + "  ; done";
+                String command = "while [ \"$(" + expression + " -le  0 ] ; do rm " +
+                        commandOutput + " ;  touch " + commandOutput + "   ;  sleep " +
+                        SnappyPrms.getSleepTimeSecsForJobStatus() + " ; done";
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
                 Log.getLogWriter().info("job " + str + " starts at: " + System.currentTimeMillis());
                 executeProcess(pb, commandOutput);
