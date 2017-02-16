@@ -88,7 +88,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   // changing the test to such that batches are created
   // and looking for column table stats
-  def testSNAP205_InsertLocalBuckets(): Unit = {
+  def disabled_testSNAP205_InsertLocalBuckets(): Unit = {
     val snc = SnappyContext(sc)
 
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
@@ -134,7 +134,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   // changing the test to such that batches are created
   // and looking for column table stats
-  def testSNAP205_InsertLocalBucketsNonPartitioning(): Unit = {
+  def disabled_testSNAP205_InsertLocalBucketsNonPartitioning(): Unit = {
     val snc = SnappyContext(sc)
 
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
@@ -461,9 +461,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
-    
+    // numOfCachedBatchesInRegion is number of entries in shadow
+    // region divide by n +1 where n is number of columns.
+    val numOfCachedBatchesInRegion = (shadowRegion.size()/5)
+
     val regionSize = region.size() +
-        region.getColumnBatchSize * shadowRegion.size()
+        region.getColumnBatchSize * numOfCachedBatchesInRegion
     assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
