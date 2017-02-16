@@ -480,7 +480,16 @@ private[sql] final case class ColumnTableScan(
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val batchInit = if (!isEmbedded) {
-      s"""
+      if (filterFunction.isEmpty) {
+        s"""
+          final byte[] statBytes = (byte[])$input.next();
+          UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
+          $numBatchRows = unsafeRow.getInt(3);
+          // dummy initialization as the logic of exiting is tied with $buffers
+         $buffers = new byte[1][];
+      """
+      } else {
+        s"""
           while (true) {
             final byte[] statBytes = (byte[])$input.next();
             UnsafeRow unsafeRow = $getUnsafeRow(statBytes);
@@ -493,6 +502,8 @@ private[sql] final case class ColumnTableScan(
           // dummy initialization as the logic of exiting is tied with $buffers
          $buffers = new byte[1][];
       """
+      }
+
     } else if (isOffHeap) {
       val filterCode = if (filterFunction.isEmpty) {
         val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
