@@ -139,7 +139,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     assert(region.getColumnBatchSize == 4)
 
     assert(region.size == 0)
-    assert(shadowRegion.size == 1)
+    assert(shadowRegion.size/3 == 1)
     logInfo("Success")
   }
 
@@ -227,11 +227,11 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     // sometimes sizes may be different depending on how are the rows distributed
     if (region.getColumnBatchSize == 4) {
       assert(region.size == 1)
-      assert(shadowRegion.size == 1)
+      assert(shadowRegion.size/3 == 1)
     }
     else {
       assert(region.size == 5)
-      assert(shadowRegion.size == 0)
+      assert(shadowRegion.size/3 == 0)
     }
 
     logInfo("Success")
