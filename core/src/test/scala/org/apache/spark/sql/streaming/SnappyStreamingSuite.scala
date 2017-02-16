@@ -21,13 +21,6 @@ import java.net.InetSocketAddress
 import java.util.Properties
 import java.util.concurrent.TimeoutException
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.language.postfixOps
-import scala.util.Random
-import scala.util.control.NonFatal
-
 import io.snappydata.SnappyFunSuite
 import kafka.admin.AdminUtils
 import kafka.api.Request
@@ -37,11 +30,6 @@ import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.commons.lang3.RandomUtils
-import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
-import org.scalatest.concurrent.Eventually
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import twitter4j.{Status, TwitterObjectFactory}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
@@ -51,6 +39,17 @@ import org.apache.spark.streaming.kafka.{KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf}
+import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import twitter4j.{Status, TwitterObjectFactory}
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.Random
+import scala.util.control.NonFatal
 
 
 class SnappyStreamingSuite
@@ -138,6 +137,7 @@ class SnappyStreamingSuite
         sent === result
       })
     }
+
   }
 
   test("SnappyData Kafka Streaming") {
@@ -192,7 +192,38 @@ class SnappyStreamingSuite
     }
   }
 
-  test("Test stream plan optimizations") {
+  test("kafka structured streaming") {
+
+    val topic = "kafka_struct_topic"
+    var sent = Map("1" -> 5, "2" -> 5, "3" -> 5)
+    kafkaUtils.createTopic(topic)
+    kafkaUtils.sendMessages(topic, sent)
+
+    import org.apache.spark.sql.functions._
+
+    val query = snc.snappySession.readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", s"${kafkaUtils.brokerAddress}")
+      .option("subscribe", s"$topic")
+      .load
+      .select(col("value") cast StringType)
+      .writeStream
+      .format("console")
+      .outputMode(OutputMode.Append)
+      .start()
+    var i = 0
+    while (i<10) {
+      Thread.sleep(2000)
+      kafkaUtils.sendMessages(topic, sent)
+      // scalastyle:off println
+      println("YOGSSSSSSSSSSS" + query.lastProgress)
+      // scalastyle:on println
+      i = i + 1
+    }
+  }
+
+
+    test("Test stream plan optimizations") {
     val topic1 = "direct_kafka_topic1"
     kafkaUtils.createTopic(topic1)
 
@@ -431,6 +462,7 @@ class SnappyStreamingSuite
     schemaStream2.registerAsTable("tweetStream2")
 
     schemaStream1.foreachDataFrame(df => {
+
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
           .saveAsTable("dataTable")
     })

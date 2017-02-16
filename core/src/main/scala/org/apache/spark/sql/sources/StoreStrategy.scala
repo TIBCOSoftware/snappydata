@@ -17,34 +17,32 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecutedCommand, ExecuteCommand}
+import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.datasources.{LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.types.DataType
-import org.apache.spark.sql.{CreateTableUsing,CreateMetastoreTableUsingSelect}
 /**
  * Support for DML and other operations on external tables.
  */
 object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
-    case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-        false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
-      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
-        userSpecifiedSchema, None, SnappyContext.getProvider(provider,
-          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
-    case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-      bucketSpec, mode, opts, _) =>
-      val query = a.productElement(6).asInstanceOf[LogicalPlan]
+    case CreateTable(tableDesc, mode, None) =>
+      val cmd =
+        CreateMetastoreTableUsing(tableDesc.identifier, None, Some(tableDesc.schema),
+          None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
+          tableDesc.properties, false)
+      ExecutedCommand(cmd) :: Nil
 
-      // CreateTableUsingSelect is only invoked by DataFrameWriter etc
-      // so that should support both +builtin and external tables
-      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
-        None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
-        temporary = false, partitionCols, mode, opts, query,
-        isBuiltIn = false)) :: Nil
+    case CreateTable(tableDesc, mode, Some(query)) =>
+      val cmd =
+        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, None, None,
+          SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
+          temporary = false, tableDesc.partitionColumnNames.toArray, mode,
+          tableDesc.properties, query, isBuiltIn = false)
+      ExecutedCommand(cmd) :: Nil
 
     case create: CreateMetastoreTableUsing =>
       ExecutedCommand(create) :: Nil

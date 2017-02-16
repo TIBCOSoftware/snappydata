@@ -18,9 +18,7 @@ package org.apache.spark.jdbc
 
 import java.io.{IOException, ObjectOutputStream}
 
-import scala.StringBuilder
-
-import org.apache.spark.sql.{SnappySession, SnappyContext}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -41,27 +39,38 @@ class ConnectionConfBuilder(session: SnappySession) {
   val URL = "url"
   val DRIVER = "driver"
   val poolProvider = "poolimpl"
+  val TABLE = "table"
 
   @transient private val connSettings = new mutable.HashMap[String, String]()
 
   @transient private val poolSettings = new mutable.HashMap[String, String]()
 
   /**
-   * Set the URL for connection. For SnappyData you can skip setting this. SnappyData will
-   * automatically set the URL based on the cluster
+    * Set the table name for connection.
+    * @param table Table name for JDBC connection
+    */
+  def setTable(table: String) : ConnectionConfBuilder = {
+    connSettings.put(TABLE, table)
+    this
+  }
+
+
+  /**
+   * Set the URL for connection. For SnappyData you can skip setting this.
+    * SnappyData will automatically set the URL based on the cluster
    * @param url URL for JDBC connection
    */
-  def setURL(url: String) = {
+  def setURL(url: String) : ConnectionConfBuilder = {
     connSettings.put(URL, url)
     this
   }
 
   /**
-   * Set the driver for the connection. For SnappyData no need to set this. SnappyData will
-   * automatically set the driver based on the cluster
+   * Set the driver for the connection. For SnappyData no need to set this.
+    * SnappyData will automatically set the driver based on the cluster
    * @param driver driver for the connection
    */
-  def setDriver(driver: String) = {
+  def setDriver(driver: String) : ConnectionConfBuilder = {
     connSettings.put(DRIVER, driver)
     this
   }
@@ -71,36 +80,40 @@ class ConnectionConfBuilder(session: SnappySession) {
    * Set either of the two . Default is Tomcat.
    * @param provider provider name
    */
-  def setPoolProvider(provider: String) = {
+  def setPoolProvider(provider: String) : ConnectionConfBuilder = {
     connSettings.put(poolProvider, provider)
     this
   }
 
   /**
    * Sets a property for a pool.
-   * For detailed list for Hikari refer https://github.com/brettwooldridge/HikariCP/wiki/Configuration
-   * For detailed list for Tomcat refer https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
+   * For detailed list for Hikari refer
+   * https://github.com/brettwooldridge/HikariCP/wiki/Configuration
+   * For detailed list for Tomcat refer
+   * https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
    *
    * Even if you don't mention any properties it defaults it to some sensible values
    *
    * @param prop property name
    * @param value property value
    */
-  def setPoolConf(prop: String, value: String) = {
+  def setPoolConf(prop: String, value: String) : ConnectionConfBuilder = {
     poolSettings.put(prop, value)
     this
   }
 
   /**
    * Sets properties for a pool.
-   * For detailed list for Hikari refer https://github.com/brettwooldridge/HikariCP/wiki/Configuration
-   * For detailed list for Tomcat refer https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
+   * For detailed list for Hikari refer
+   * https://github.com/brettwooldridge/HikariCP/wiki/Configuration
+   * For detailed list for Tomcat refer
+   * https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
    *
    * Even if you don't mention any properties it defaults it to some sensible values
    *
    * @param props map of key-value
    */
-  def setPoolConfs(props: Map[String, String]) = {
+  def setPoolConfs(props: Map[String, String]) : ConnectionConfBuilder = {
     if (props != null && !props.isEmpty) {
       props.map(e => poolSettings.put(e._1, e._2))
     }
@@ -112,7 +125,7 @@ class ConnectionConfBuilder(session: SnappySession) {
    * @param prop property name
    * @param value property value
    */
-  def setConf(prop: String, value: String) = {
+  def setConf(prop: String, value: String) : ConnectionConfBuilder = {
     connSettings.put(prop, value)
     this
   }
@@ -123,7 +136,7 @@ class ConnectionConfBuilder(session: SnappySession) {
    * ConnectionConf
    */
   def build(): ConnectionConf = {
-    if(poolSettings.size > 0){
+    if (poolSettings.size > 0){
       val sb = new StringBuilder()
       val poolProperties = poolSettings.map( x => (s"${x._1}=${x._2}")).mkString(",")
       connSettings.put("poolProperties", poolProperties)
