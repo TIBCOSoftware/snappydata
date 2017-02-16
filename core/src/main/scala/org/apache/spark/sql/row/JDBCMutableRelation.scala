@@ -86,7 +86,7 @@ case class JDBCMutableRelation(
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
-    new JDBCOptions(connProperties.url, null, connProperties.connProps.asScala.toMap))
+    new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null

@@ -125,7 +125,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
 
-    val conf = new ConnectionConfBuilder(snc.snappySession).build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).setTable("MY_SCHEMA.MY_TABLE").build()
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)

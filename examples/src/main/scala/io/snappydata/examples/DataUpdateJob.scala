@@ -37,10 +37,11 @@ object DataUpdateJob extends SnappySQLJob {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
+    val tableName = "MY_SCHEMA.MY_TABLE"
 
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable(tableName)
 
-    val conf = new ConnectionConfBuilder(snc).build()
+    val conf = new ConnectionConfBuilder(snc).setTable(tableName).build()
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)

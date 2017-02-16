@@ -111,16 +111,20 @@ object TypeUtilities {
   private[spark] val jacksonApply: (StructType, JsonGenerator,
       InternalRow) => Unit = {
     val applyMethod = JacksonUtils.getClass.getMethods
-        .find(_.getName == "apply").get
-    applyMethod.getParameterTypes.length match {
-      case 3 => // Spark 2.0.0
-        (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
-          applyMethod.invoke(JacksonUtils, rowSchema,
-            gen, row).asInstanceOf[Unit]
-      case 4 => // Spark 2.0.2
-        (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
-          applyMethod.invoke(JacksonUtils, rowSchema, gen,
-            new JSONOptions(Map.empty[String, String]), row).asInstanceOf[Unit]
+        .find(_.getName == "apply")
+    if(applyMethod != None) {
+      applyMethod.get.getParameterTypes.length match {
+        case 3 => // Spark 2.0.0
+          (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
+            applyMethod.get.invoke(JacksonUtils, rowSchema,
+              gen, row).asInstanceOf[Unit]
+        case 4 => // Spark 2.0.2
+          (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
+            applyMethod.get.invoke(JacksonUtils, rowSchema, gen,
+              new JSONOptions(Map.empty[String, String]), row).asInstanceOf[Unit]
+      }
+    } else {
+      null
     }
   }
 
