@@ -737,7 +737,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | show | desc
+        ddl | set | cache | uncache | desc
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
@@ -745,8 +745,6 @@ class SnappyParser(session: SnappySession)
         ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
-
-
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()

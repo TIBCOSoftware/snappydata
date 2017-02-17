@@ -29,7 +29,7 @@ import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallb
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, Partition}
@@ -91,7 +91,9 @@ object StoreUtils extends Logging {
   val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
-    GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME)
+    GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
+    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION,
+    ExternalStoreUtils.RELATION_FOR_SAMPLE, ExternalStoreUtils.EXTERNAL_DATASOURCE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -239,26 +241,9 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  def initStore(sqlContext: SQLContext,
-      table: String,
-      schema: Option[StructType],
-      partitions: Int,
-      connProperties: ConnectionProperties,
-      baseTable: Option[String] = None,
-      dmls: ArrayBuffer[String] = ArrayBuffer.empty): Unit = {
-    // TODO for SnappyCluster manager optimize this . Rather than calling this
-    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties,
-      baseTable, dmls).collect()
-  }
-
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
-    Utils.mapExecutors(sqlContext, () => {
-      StoreCallbacksImpl.executorCatalog.remove(table)
-      Iterator.empty
-    }).count()
-    StoreCallbacksImpl.executorCatalog.remove(table)
   }
 
   def appendClause(sb: mutable.StringBuilder,

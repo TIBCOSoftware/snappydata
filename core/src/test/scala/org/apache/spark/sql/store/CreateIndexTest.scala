@@ -26,7 +26,8 @@ import org.scalatest.BeforeAndAfterEach
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation,
+IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
 import org.apache.spark.sql.execution.row.RowFormatRelation

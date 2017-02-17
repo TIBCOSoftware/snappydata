@@ -79,7 +79,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where **leadHostname** is the host name of your lead node). Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-sql](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -231,20 +231,20 @@ You can now create tables and run queries in SnappyData store using your Apache 
 
 
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy-shell)
-`snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
+## How to Use SnappyData SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy-shell` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy Shell
 
 ```
-$ bin/snappy-shell
-snappy> connect client 'locatorHostName:1527';
+$ bin/snappy-sql
+snappy> connect client '<locatorHostName>:1527';
 ```
 
- **1527** is the default port on which locatorHost listens for connections. 
+Where `<locatorHostName>` is the host name of the node on which the locator is started and **1527** is the default port on which the locator listens for connections. 
 
-**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-shell`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
@@ -609,7 +609,9 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 
-**To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://locatorHostName:locatorClientPort/`
+**To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
+
+Where the `<locatorHostName>` is the host name of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
 **Code Example: **
 **Connect to a SnappyData cluster using JDBC on default client port**

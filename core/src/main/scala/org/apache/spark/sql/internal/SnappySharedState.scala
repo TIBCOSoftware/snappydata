@@ -31,7 +31,6 @@ private[sql] class SnappySharedState(val sparkContext: SparkContext){
    */
   lazy val metadataHive = new HiveClientUtil(sparkContext).client
 
-
-  val externalCatalog = new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
-
+  val externalCatalog =
+    new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
 }

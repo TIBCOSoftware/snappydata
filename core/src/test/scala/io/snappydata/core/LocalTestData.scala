@@ -81,7 +81,7 @@ object LocalSparkConf {
     val conf = new SparkConf().
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
-    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "4")
+    conf.set(io.snappydata.Property.CachedBatchSize.name, "4")
     if (addOn != null) {
       addOn(conf)
     }
