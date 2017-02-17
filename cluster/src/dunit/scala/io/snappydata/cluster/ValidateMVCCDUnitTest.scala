@@ -124,7 +124,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
 
     val rdd1 = sc.parallelize(
-      (1 to 5).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
+      (1 to 10).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
 
     val dataDF1 = snc.createDataFrame(rdd1)
     //Write 5 records as batch size is set to 2 it will trigger the cachebatch creation
@@ -132,7 +132,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val cnt = snc.sql(s"select * from $tableName").count()
 
-    assert(cnt == 5)
+    assert(cnt == 10)
     println("Successful")
 
   }

@@ -352,7 +352,7 @@ object ClusterManagerTestBase {
     }
 
     println("Row count before creating the cachebatch: " + cnt)
-    assert(cnt == 5)
+    assert(cnt == 10)
 
 
 
@@ -363,7 +363,7 @@ object ClusterManagerTestBase {
       cnt1 = cnt1 + 1
     }
     println("Row count before creating the cachebatch in row buffer: " + cnt1)
-    assert(cnt1 == 5)
+    assert(cnt1 == 10)
 
     var cnt2 = 0;
     s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
@@ -408,7 +408,7 @@ object ClusterManagerTestBase {
       cnt5 = cnt5 + 1
     }
     println("Row count in column table : " + cnt5)
-    assert(cnt5 == 5)
+    assert(cnt5 == 10)
 
   }
 

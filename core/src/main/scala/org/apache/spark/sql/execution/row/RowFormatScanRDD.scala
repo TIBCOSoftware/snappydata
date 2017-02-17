@@ -365,7 +365,8 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
   val txIdd = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
   // transaction started by row buffer scan should be used here
   // can there be change in executor threads...in that case we should use masquerade as
-  val tx = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTXState
+  val tx = GemFireCacheImpl.getInstance().currentTxState.get();//getCacheTransactionManager
+  //.getTXState
   protected final val itr = container.getEntrySetIteratorForBucketSet(
     bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
