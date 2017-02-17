@@ -90,11 +90,12 @@ case class JDBCMutableRelation(
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
-    try {
+    var tableSchema: String = ""
+      try {
       conn = connFactory()
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      val tableSchema = conn.getSchema
+      tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
@@ -136,7 +137,6 @@ case class JDBCMutableRelation(
           case _ => // Do Nothing
         }
       }
-      tableSchema
     } catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
@@ -151,6 +151,7 @@ case class JDBCMutableRelation(
         conn.close()
       }
     }
+    tableSchema
   }
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,

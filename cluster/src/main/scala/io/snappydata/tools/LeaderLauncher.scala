@@ -44,11 +44,10 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   def initStartupArgs(args: ArrayBuffer[String]): Array[String] = {
 
-    //    if (args.length == 0) {
-    //      usage()
-    //      System.exit(1)
-    //    }
-    assert(args.length > 0, LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
+    if (args.length == 0) {
+      usage()
+      System.exit(1)
+    }
 
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
       args.indexWhere(_.indexOf(attr) > 0) match {

@@ -283,7 +283,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       case None => SnappyContext.getClusterMode(sc) match {
         case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
              LocalMode(_, _) =>
-          (true, ExternalStoreUtils.defaultStoreURL(sc) +
+          (true, ExternalStoreUtils.defaultStoreURL(Some(sc)) +
               ";disable-streaming=true;default-persistent=true",
               Constant.JDBC_EMBEDDED_DRIVER)
         case SplitClusterMode(_, props) =>

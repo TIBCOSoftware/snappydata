@@ -30,11 +30,11 @@ import org.apache.spark.sql.TPCHUtils._
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "10000")
-
-  val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
-    "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
-    "q20", "q21", "q22")
+  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "10000")
+  
+  val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+    "20", "21", "22")
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
@@ -90,7 +90,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println(s"Number of rows : $count")
 
     val expectedFile = sc.textFile(getClass.getResource(
-      s"/TPCH/RESULT/Snappy_q10.out").getPath)
+      s"/TPCH/RESULT/Snappy_10.out").getPath)
     val expectedNoOfLines = expectedFile.collect().size
     assert(count == expectedNoOfLines)
   }
@@ -134,12 +134,12 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
 object TPCHUtils {
 
-  val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9",
-    "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
-    "q20", "q21", "q22")
+  val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+    "20", "21", "22")
 
   def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath
+    val tpchDataPath = getClass.getResource("/TPCH").getPath //"/data/wrk/w/TPCH/1GB" //
 
     val usingOptionString =
       s"""

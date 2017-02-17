@@ -61,5 +61,5 @@ Here is a stream + Transactions + Analytics use case example to illustrate the S
 
 ## Contributing to SnappyData
 
-If you are interested in contributing, please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
+If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
 

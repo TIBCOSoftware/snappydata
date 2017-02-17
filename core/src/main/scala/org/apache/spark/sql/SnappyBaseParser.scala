@@ -21,7 +21,7 @@ import scala.collection.mutable
 import io.snappydata.Constant
 import org.parboiled2._
 
-import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -260,6 +260,12 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
+
+  final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, name: String) =>
+      FunctionIdentifier(name, database = schema.asInstanceOf[Option[String]]))
+  }
 }
 
 final class Keyword private[sql] (s: String) {
@@ -377,6 +383,8 @@ object SnappyParserConsts {
   final val WHEN = reservedKeyword("when")
   final val WHERE = reservedKeyword("where")
   final val WITH = reservedKeyword("with")
+  final val FUNCTIONS = reservedKeyword("functions")
+  final val FUNCTION = reservedKeyword("function")
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE = reservedKeyword(
@@ -396,8 +404,6 @@ object SnappyParserConsts {
   final val EXTENDED = nonReservedKeyword("extended")
   final val EXTERNAL = nonReservedKeyword("external")
   final val FULL = nonReservedKeyword("full")
-  final val FUNCTION = nonReservedKeyword("function")
-  final val FUNCTIONS = nonReservedKeyword("functions")
   final val GLOBAL = nonReservedKeyword("global")
   final val HASH = nonReservedKeyword("hash")
   final val IF = nonReservedKeyword("if")
@@ -426,6 +432,7 @@ object SnappyParserConsts {
   final val TRUNCATE = nonReservedKeyword("truncate")
   final val UNCACHE = nonReservedKeyword("uncache")
   final val USING = nonReservedKeyword("using")
+  final val RETURNS = nonReservedKeyword("returns")
 
   // Window analytical functions are non-reserved
   final val DURATION = nonReservedKeyword("duration")
