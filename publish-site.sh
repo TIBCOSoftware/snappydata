@@ -4,6 +4,23 @@
 # generating documentation and then call the mkdocs utility 
 # with the passed arguments.  
 
+API_DOCS_DIR="build-artifacts/scala-2.11/docs"
+
+if [ ! -d "${API_DOCS_DIR}" ]; then
+  echo "API Docs folder ${API_DOCS_DIR} does not exist. Can't Publish."
+  exit 1
+fi
+
+# Basic sanity of API DOCS folder. Check if HTML files are greater than
+# 3500 in number. Currently it is actually more than 3700
+NUM_HTML_FILES=`find ${API_DOCS_DIR} -name "*.html" | wc -l`
+
+if [ "${NUM_HTML_FILES}" -lt 3500 ]; then
+  echo "Expected at least 3500 html files but got only ${NUM_HTML_FILES} html files"
+  echo "${API_DOCS_DIR} does not seem to contain all the htmls of the apidocs"
+  exit 1 
+fi
+
 # In place replace GettingStarted.md with index.md in all the md files in docs
 FDIR="./docs"
 for f in `find ${FDIR} -name "*.md"`
